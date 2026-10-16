@@ -155,7 +155,10 @@ def _parse_events(events):
             "home": home["team"]["abbreviation"], "away": away["team"]["abbreviation"],
             "home_id": home["team"].get("id"), "away_id": away["team"].get("id"),
             "home_name": home["team"].get("shortDisplayName"),
-            "away_name": away["team"].get("shortDisplayName")})
+            "away_name": away["team"].get("shortDisplayName"),
+            # London, Munich, Mexico City, Sao Paulo: the "home" side has no
+            # crowd, and the DFS game engine plays these with home field off
+            "neutral": bool(comp.get("neutralSite"))})
     return out
 
 

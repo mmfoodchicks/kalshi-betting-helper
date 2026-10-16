@@ -600,17 +600,18 @@ def _main_slate(slates):
     """The Sunday main slate: an untagged classic slate of ten-plus games
     (the Early Only / Afternoon Only / Sun-Mon slates carry tags), the most
     games if several, within the next eight days."""
-    import datetime
-    now = datetime.datetime.now()
+    now = time.time()
     best = None
     for sl in slates:
         if sl.get("contest_type") != 21 or (sl.get("games") or 0) < 10 or sl.get("tag"):
             continue
-        try:
-            st = datetime.datetime.fromisoformat(str(sl.get("starts") or "")[:19])
-        except ValueError:
+        # Epoch on both sides. DraftKings' lobby string is EASTERN and the old
+        # comparison set it against this PC's naive local clock (Mountain), so a
+        # main slate stayed "upcoming" until six hours after kickoff.
+        st = _dt_ts(sl.get("starts"))
+        if st is None:
             continue
-        if not (now - datetime.timedelta(hours=4) <= st <= now + datetime.timedelta(days=8)):
+        if not (now - 4 * 3600 <= st <= now + 8 * 86400):
             continue
         if best is None or (sl.get("games") or 0) > (best.get("games") or 0):
             best = sl
@@ -721,7 +722,6 @@ def _task_showdown_tourney(url, tok):
     2026-09-09) sat on this disk through the next slate's 25-minute build
     and the deep task, and reached the tab after kickoff. A board finished
     in a cycle that was killed before its upload ships on the next start."""
-    import datetime
     import boardshare
     import dfs_tourney
     import dk
@@ -739,16 +739,18 @@ def _task_showdown_tourney(url, tok):
         dg = c.get("draft_group_id")
         pool_by_dg[dg] = max(pool_by_dg.get(dg, 0.0), float(c.get("prize_pool") or 0))
     wanted = _tourney_requests(url, tok)
-    now = datetime.datetime.now()
+    now = time.time()
     soon, small = [], 0
     for sl in slates:
         if sl.get("games") != 1 or sl.get("contest_type") != 96:
             continue                        # showdown captain-mode slates only
-        try:
-            st = datetime.datetime.fromisoformat(str(sl.get("starts") or "")[:19])
-        except ValueError:
+        # Epoch on both sides (see _main_slate): the lobby string is Eastern,
+        # and against this PC's Mountain clock a showdown that had kicked off
+        # stayed buildable for two and a half hours.
+        st = _dt_ts(sl.get("starts"))
+        if st is None:
             continue
-        if not (now - datetime.timedelta(minutes=30) <= st <= now + datetime.timedelta(days=8)):
+        if not (now - 30 * 60 <= st <= now + 8 * 86400):
             continue                        # a slate that has kicked off is a post-mortem, not a build
         dg = int(sl["draft_group_id"])
         if dg in wanted:

@@ -424,7 +424,14 @@ def slate_for(sport, draft_group_id=None, exclude_games=None):
     if not csv_text:
         return None
     dropped = [p["name"] for p in pool if not p["available"]]
+    # The slate's first kickoff, in the draftables feed's own UTC ("...Z").
+    # Nothing carried it before: build_nfl_classic asked slate.get("starts")
+    # for its lock-relative roster allowance and always got None (the 1-hour
+    # unknown-lock allowance on every classic board), and the live CSV has no
+    # dates, so an auto-loaded NFL sheet could not tell which week it was.
+    _starts = sorted(str(p.get("starts")) for p in pool if p.get("available") and p.get("starts"))
     return {"csv": csv_text, "draft_group_id": dg, "sport": sport,
+            "starts": (_starts[0] if _starts else None),
             "n_players": sum(1 for p in pool if p["available"]),
             "dropped": dropped[:40], "n_dropped": len(dropped),
             # Pitcher roles the CSV format can't carry (opener / bulk badges);

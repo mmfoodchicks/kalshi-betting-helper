@@ -180,8 +180,12 @@ def _nascar_races(year):
     return racing._cached(("dfslb_nas_list", year), 6 * 3600, build) or []
 
 
-def event_of(sport, req, today=None):
-    """(event_key, event_date, week) for a build made today."""
+def event_of(sport, req, today=None, res=None):
+    """(event_key, event_date, week) for a build made today. For football the
+    week is the one the build RAN on (`res["week"]`), not the request's: the
+    request's is the picker's, and an untouched picker said 1 while the sheet
+    built week 6 -- so the look-back would have graded a week-6 lineup against
+    week-1 box scores."""
     today = today or clock.today_et().isoformat()
     if sport == "f1":
         for r in _f1_schedule(today[:4]):
@@ -197,7 +201,7 @@ def event_of(sport, req, today=None):
         return f"nascar:{today}", today, None
     if sport == "nfl":
         try:
-            week = int(req.get("week") or 1)
+            week = int((res or {}).get("week") or req.get("week") or 1)
         except (TypeError, ValueError):
             week = 1
         season = int(today[:4]) if int(today[5:7]) >= 3 else int(today[:4]) - 1
@@ -256,7 +260,7 @@ def log_build(sport, req, res, auto_slate=None, csv_text=""):
     if not big:
         return 0
     _ensure()
-    event_key, event_date, week = event_of(sport, req)
+    event_key, event_date, week = event_of(sport, req, res=res)
     objective = str(req.get("objective") or res.get("objective") or "projection")
     if sport == "mlb":
         objective = "ceiling" if objective == "ceiling" else "median"

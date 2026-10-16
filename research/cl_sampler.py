@@ -140,9 +140,17 @@ def source_sha_at(commit):
     return h.hexdigest(), len(files)
 
 
-def content_identity(partials, strict=True):
+def content_identity(partials, strict=True, against=None):
     """The check, and its receipt. Returns the report; with `strict` refuses
-    (SystemExit) on any mismatch, listing every one."""
+    (SystemExit) on any mismatch, listing every one.
+
+    `against` (a commit) compares the partials' commit with that commit's
+    tree instead of the working tree. Assembly runs against the working tree
+    (None), which is the moment the rule is about; a later re-check passes the
+    ASSEMBLY commit, because the production files the partials depend on are
+    allowed to move on after the artifact exists -- dfs_tourney.py first did
+    on 2026-10-16 -- and what has to stay provable is that they were
+    identical when it was assembled, which git can show forever."""
     import dfs_tourney as T
     refuse = []
     commits = sorted({p["provenance"]["commit"] for p in partials})
@@ -158,7 +166,10 @@ def content_identity(partials, strict=True):
     files = {}
     for path in IDENTITY_FILES:
         then = _git_show(c, path) if c else None
-        now = open(os.path.join(ROOT, path), "rb").read() if os.path.exists(os.path.join(ROOT, path)) else None
+        if against:
+            now = _git_show(against, path)
+        else:
+            now = open(os.path.join(ROOT, path), "rb").read() if os.path.exists(os.path.join(ROOT, path)) else None
         rec = {"sha256_at_seed_commit": (hashlib.sha256(then).hexdigest() if then is not None else None),
                "sha256_now": (hashlib.sha256(now).hexdigest() if now is not None else None)}
         rec["identical"] = then is not None and now is not None and then == now
@@ -166,7 +177,7 @@ def content_identity(partials, strict=True):
         if not rec["identical"]:
             refuse.append(f"{path} differs from its content at {c} (or is missing)")
     then_src = _git_show(c, THIS_FILE) if c else None
-    now_src = open(os.path.join(ROOT, THIS_FILE), "rb").read()
+    now_src = _git_show(against, THIS_FILE) if against else open(os.path.join(ROOT, THIS_FILE), "rb").read()
     funcs = {}
     if then_src is None:
         refuse.append(f"{THIS_FILE} did not exist at {c}")

@@ -88,6 +88,11 @@ ENGINE = 6
 #    less than two legacy runs do. nfl_dfs_sim.SD_DISCRETE, engine 3.
 SD_ENGINE = 3
 
+# The game simulator every tournament board is built on (nfl_dfs_sim.MODELS);
+# the preseason is always legacy. PROVISIONAL: set by the 2025 blind test in
+# research/reports/nfl_dfs_engine.md.
+BOARD_MODEL = "legacy"
+
 
 def available():
     return np is not None
@@ -630,7 +635,7 @@ SD_MONEY_JOINT_MODEL_OK = False
 
 
 
-def sd_money_gate(n_legal, contest_C, field_calibrated=None, joint_validated=None):
+def sd_money_gate(n_legal, contest_C, field_calibrated=None, joint_validated=None, model="legacy"):
     """Whether a showdown board's money columns may be published as
     authoritative. Same shape as `money_gate` so the tab can read either.
 
@@ -665,9 +670,14 @@ def sd_money_gate(n_legal, contest_C, field_calibrated=None, joint_validated=Non
            "x1.07 and x0.94, in opposite directions, inside the noise of reseeding -- while the "
            "best lineup's expected payout moved -7.4% and -14.0% against -0.03% for a reseed. "
            "And fixing the SCORING rules is not validating the FOOTBALL: "
-           "showdown serves legacy-latent, whose teammate and opposing-side covariance are the "
-           "known limitations Stage 2B-2F measured, and a six-man single-game roster is more "
-           "exposed to them than a classic lineup is. That is a separate link and it is also "
+           + ("showdown serves legacy-latent, whose teammate and opposing-side covariance are the "
+              "known limitations Stage 2B-2F measured, and a six-man single-game roster is more "
+              "exposed to them than a classic lineup is. "
+              if model == "legacy" else
+              f"this board's worlds are the {model} model's, whose joint structure was measured on "
+              "one held-out season (research/reports/nfl_dfs_engine.md) -- a single season is a "
+              "measurement, not a validation of the money columns. ")
+           + "That is a separate link and it is also "
            "open, so calibrating ownership alone could never make these columns authoritative. "
            "Rank on top 1% and top 0.1%.")
     return {"columns": ["win_pct", "win_any_pct", "ev", "ev_notie", "roi_pct", "expected_copies"],
@@ -931,10 +941,11 @@ _FIELD_EXTRA_MIN_PROJ = 2.0    # a WR4 projected at 3 is in thousands of their l
 
 def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=500,
                        week=None, preseason=False, top=60, portfolio_sizes=(5, 10, 20),
-                       candidates=1200, log=print):
+                       candidates=1200, log=print, model=None, seed=None, workers=None):
     """The tournament for one DraftKings NFL showdown draft group, against the
     biggest GPP on it (or `contest_id`). Returns the artifact the tab serves,
-    or None when the pool or the contest cannot be read."""
+    or None when the pool or the contest cannot be read. `model` None is
+    BOARD_MODEL (legacy in the preseason, which no other model can play)."""
     if np is None:
         raise RuntimeError("numpy is required for the tournament")
     import dk
@@ -967,10 +978,13 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
         except Exception as e:
             errlog.note("TOURN-week", e)
             week = 1
+    model = board_model(model, preseason)
+    sd_discrete = nfl_dfs_sim.SD_DISCRETE if model == "legacy" else False
     log(f"[tourney] {slate.get('n_players')} players, {contest['name']}, week {week}: "
-        f"simulating {n_sims:,} games of {' vs '.join(sorted(teams))}...")
+        f"simulating {n_sims:,} games of {' vs '.join(sorted(teams))} ({model})...")
     pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason, teams=teams,
-                                   discrete=nfl_dfs_sim.SD_DISCRETE) or {}
+                                   discrete=sd_discrete, model=model, seed=seed,
+                                   workers=_workers(workers)) or {}
     nidx, norm = nfl_dfs._norm_index(pool)
     excluded = []
     for e in ents:
@@ -1176,8 +1190,9 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
             # served on Sunday used to look identical to one made at lock.
             "kickoff_ts": _starts_ts,
             "mins_before_lock": (None if not _starts_ts else int(round((_starts_ts - _built) / 60.0))),
-            "simulator": nfl_dfs_sim.sim_stamp(n=int(n_sims), preseason=preseason,
-                                               discrete=nfl_dfs_sim.SD_DISCRETE),
+            "simulator": simulator_stamp(model, int(n_sims), seed, preseason, discrete=sd_discrete),
+            "model": model, "seed": (int(seed) if seed is not None else None),
+            "engine_report": _engine_report(model, week, teams, seed),
             "pool_sig": pool_sig_rich(slate["csv"]), "pool_sig_kind": "rich",
             "contest": {k: contest.get(k) for k in ("id", "name", "entry_fee", "prize_pool",
                                                     "first_prize", "places_paid", "max_entries",
@@ -1195,7 +1210,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
                                      f"{100 * FIELD_TOP_SHARE:.1f}% of the field (a 231-way tie "
                                      "won DraftKings' 2021 GB-DET showdown Millionaire). "
                                      "Dollar figures assume the sim is the truth; read the ranks.")},
-            "experimental": sd_money_gate(len(idx), C),
+            "experimental": sd_money_gate(len(idx), C, model=model),
             "rules": list(nfl_dfs._SD_RULES),
             "top_win": [row(int(i), "win") for i in by_win],
             "top_ev": [row(int(i), "ev") for i in by_ev],
@@ -2141,27 +2156,56 @@ def world_split(n_worlds, opt_worlds):
     return range(0, gen), range(gen, n)
 
 
-def simulator_stamp(model, n, seed=None, preseason=False):
+def simulator_stamp(model, n, seed=None, preseason=False, discrete=False):
     """The stamp of whichever game simulator made a board's worlds."""
     import nfl_dfs_sim
     if model == "constrained":
         import nfl_dfs_csim
         return nfl_dfs_csim.sim_stamp(n=n, seed=seed, preseason=preseason)
-    return nfl_dfs_sim.sim_stamp(n=n, preseason=preseason)
+    if model == "engine":
+        import nfl_dfs_engine
+        return nfl_dfs_engine.sim_stamp(n=n, seed=seed)
+    return nfl_dfs_sim.sim_stamp(n=n, preseason=preseason, discrete=discrete)
+
+
+def board_model(model=None, preseason=False):
+    """The simulator a board is built on: the caller's, else BOARD_MODEL; the
+    preseason is always legacy (no other model has exhibition projections)."""
+    if preseason:
+        return "legacy"
+    return model or BOARD_MODEL
+
+
+def _workers(workers=None):
+    """Processes to play an engine board's worlds on: every core the PC has."""
+    import os
+    return max(1, int(workers or os.cpu_count() or 1))
+
+
+def _engine_report(model, week, teams, seed):
+    """The engine build's per-game anchor record (targets, landing, the deep
+    engine's own expectation, box means), or None for the other models."""
+    if model != "engine":
+        return None
+    import nfl_dfs_sim
+    want = tuple(sorted(str(t).upper() for t in (teams or ()) if t)) or None
+    for (s_, w_, t_, sd_), rep in sorted(nfl_dfs_sim.engine_reports.items(), key=lambda kv: str(kv[0]), reverse=True):
+        if w_ == week and t_ == want and sd_ == seed:
+            return rep
+    return None
 
 
 def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_worlds=None,
                       opt_worlds=20000, field_n=300000, cand_n=150000, cal_n=20000, chunk=500,
                       week=None, preseason=False, top=40, k_port=20, candidates=1200,
-                      seed=None, log=print, probes=None, model="legacy"):
+                      seed=None, log=print, probes=None, model=None, workers=None):
     """The tournament for a DraftKings classic slate, against every contest
     on it whose pool clears `min_pool` (or `contest_ids`). Returns the
     artifact the tab serves, or None when the slate, the contests or the
     pool cannot be read. `model` names the game simulator (nfl_dfs_sim
-    .MODELS): "legacy" is production; "constrained" is the alternate mode
-    under validation, and a board built on it says so in its stamp and its
-    `model` field. `seed` seeds the field, the candidate draws and, under
-    the constrained model, the worlds themselves."""
+    .MODELS); None is BOARD_MODEL, and a board says which in its stamp and
+    its `model` field. `seed` seeds the field, the candidate draws and, under
+    the constrained and engine models, the worlds themselves."""
     if np is None:
         raise RuntimeError("numpy is required for the tournament")
     import dk
@@ -2192,9 +2236,16 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
         except Exception as e:
             errlog.note("TOURN-week", e)
             week = 1
+    model = board_model(model, preseason)
     log(f"[tourney] classic {dg}: {len(csv_players)} players, {len(contests)} contest(s) "
         f"{', '.join(c['name'][:40] for c in contests)}; simulating week {week} x {n_sims:,} ({model})...")
-    pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason, model=model, seed=seed) or {}
+    # Only the slate's own games. The whole week used to be simulated -- 14
+    # games at 60,000 worlds for a 10-game main slate on 2026-10-16, Thursday's
+    # finished game and the London, Sunday- and Monday-night games included --
+    # which is 40% more of the build's first stage for nothing on the board.
+    slate_teams = {str(c.get("team") or "").upper() for c in csv_players if c.get("team")}
+    pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason, model=model, seed=seed,
+                                   teams=slate_teams, workers=_workers(workers)) or {}
     if not pool:
         return None
     nidx, norm = nfl_dfs._norm_index(pool)
@@ -2409,6 +2460,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
             "sims": int(n_sims), "worlds": int(N), "opt_worlds": int(n_opt), "eval_worlds": int(len(ev)),
             "model": model, "seed": (int(seed) if seed is not None else None),
             "simulator": simulator_stamp(model, int(n_sims), seed, preseason),
+            "engine_report": _engine_report(model, week, slate_teams, seed),
             "probes_configured": int(len(probes)),
             "candidate_draws": rep_c,
             "max_per_game": CL_MAX_PER_GAME, "max_per_team": CL_MAX_PER_TEAM,

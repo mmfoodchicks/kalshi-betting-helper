@@ -129,6 +129,7 @@ def weekly_games(season, week):
                     teams.append(pl["team"])
             g["teams"] = teams
             g["label"] = f"{teams[1]} @ {teams[0]}" if len(teams) >= 2 else (teams[0] if teams else "?")
+        _orient(games, season, week)
         # Stage 2C: every player also carries `recon`, his line with the
         # team's passing books balanced (nfl_recon), and every game a
         # per-team report. `means` is untouched: the legacy simulator keeps
@@ -142,6 +143,49 @@ def weekly_games(season, week):
             errlog.note("RECON-weekly", _e)
         return games or None
     return _cached(("nfl_sleeper", season, week), 3600, build)
+
+
+def espn_abbr(team):
+    """Sleeper and DraftKings write Washington WAS; ESPN, the play-by-play
+    store and the deep engine write WSH (nfl_pbp._CANON)."""
+    import nfl_pbp
+    t = str(team or "").upper()
+    return nfl_pbp._CANON.get(t, t)
+
+
+def _orient(games, season, week):
+    """Each game's real home side, its state and an honest label, from the
+    ESPN schedule. Sleeper's rows carry no home flag, and the label used to be
+    "<second team seen> @ <first team seen>" -- the order players happened to
+    sort in -- so half the week read backwards (week 6, 2026: "CLE @ BAL",
+    "LV @ BUF", "NYG @ NO", "PHI @ CAR", "TB @ PIT" against DraftKings' and
+    ESPN's BAL @ CLE, BUF @ LV, NO @ NYG, CAR @ PHI, PIT @ TB). The game
+    engines that now drive the DFS worlds need the real home side (home field
+    is part of their fit). `teams` keeps its order: the latent simulators'
+    seeded draws depend on it. Unknown orientation reads "A vs B", not a guess."""
+    try:
+        import nfl_live
+        sched = nfl_live.schedule(int(week), int(season)) or []
+    except Exception as _e:
+        errlog.note("NFLDFS-orient", _e)
+        sched = []
+    by_pair = {}
+    for sg in sched:
+        if sg.get("home") and sg.get("away"):
+            by_pair[frozenset((espn_abbr(sg["home"]), espn_abbr(sg["away"])))] = sg
+    for g in games.values():
+        teams = g.get("teams") or []
+        if len(teams) < 2:
+            continue
+        sg = by_pair.get(frozenset(espn_abbr(t) for t in teams[:2]))
+        if not sg:
+            g["label"] = f"{teams[1]} vs {teams[0]}"
+            continue
+        home = next(t for t in teams[:2] if espn_abbr(t) == espn_abbr(sg["home"]))
+        away = next(t for t in teams[:2] if t != home)
+        g["home"], g["away"], g["state"] = home, away, sg.get("state")
+        g["kickoff"], g["neutral"] = sg.get("date"), bool(sg.get("neutral"))
+        g["label"] = f"{away} @ {home}"
 
 
 # DraftKings scoring, for turning a MEAN stat line into a projected-points seed.
@@ -811,10 +855,16 @@ def _kicker_arr(k, off, n, rng, discrete=False):
     return [round(x, 2) for x in out]
 
 
-MODELS = ("legacy", "constrained")
+MODELS = ("legacy", "constrained", "engine")
+
+# The last engine build's per-game anchor reports (targets, where the engine
+# landed, its own expectation, the box means), for the board's stamp. Keyed
+# like the pool cache minus `n`; the pool itself stays {name: entry}.
+engine_reports = {}
 
 
-def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="legacy", seed=None, xside=0.0, discrete=False):
+def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="legacy", seed=None, xside=0.0, discrete=False,
+                workers=1):
     """Every DFS-relevant player for a week: skill players carry correlated point
     arrays from the game sims; DSTs carry independent Normal-sampled arrays from
     Sleeper's team-defense projection. {name: {pos, team, proj, ceiling, floor, arr}}.
@@ -832,13 +882,21 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
     reproducible draw for draw; the defenses and kickers ride the same
     seed). Both run the same defense and kicker models off the offense the
     model produced. `proj` stays Sleeper's number under either model: the
-    field is built on what the public reads."""
+    field is built on what the public reads.
+
+    "engine" (nfl_dfs_engine) plays every world's game snap by snap in the
+    deep engine at the drive model's and the deep engine's blended level and
+    deals the box score to the players; its defenses and kickers come off
+    the SAME simulated games (no Sleeper shift, no league-rate field goals).
+    numpy and the deep tables required (the PC); `workers` processes play
+    each game's worlds. A game whose teams have no deep profile falls back
+    to the legacy model for that game, ledgered NFLENG-fallback."""
     season = season or _season()      # a backtest names a past season
     want = frozenset(str(t).upper() for t in (teams or ()) if t)
     if model not in MODELS:
         raise ValueError(f"unknown simulator model {model!r}")
-    if model == "constrained" and preseason:
-        raise ValueError("the constrained model has no preseason projections to reconcile")
+    if model in ("constrained", "engine") and preseason:
+        raise ValueError(f"the {model} model has no preseason projections to reconcile")
 
     def build():
         games = (preseason_games(str(season), week) if preseason
@@ -855,15 +913,43 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
         team_off = {}
         team_rng = {}
         side_rng = _random                  # defenses and kickers: the module generator (legacy)
+        if model in ("constrained", "engine"):
+            from research import seeds as _seeds
         if model == "constrained":
             import random as _rnd
             import nfl_dfs_csim
-            from research import seeds as _seeds
             _np = nfl_dfs_csim.np            # numpy lives behind nfl_dfs_csim's ImportError guard
             if _np is None:
                 raise RuntimeError("numpy is required for the constrained model")
+        eng_ctx, eng_dst, eng_k, eng_rep = None, {}, {}, {}
+        if model == "engine":
+            import nfl_dfs_engine
+            _np = nfl_dfs_engine.np
+            if _np is None:
+                raise RuntimeError("numpy is required for the engine model")
+            eng_ctx = nfl_dfs_engine.week_context(season, week, workers=workers)
         for gid, g in games.items():
-            if model == "constrained":
+            sim = None
+            if model == "engine":
+                child = _seeds.child_seed(seed, season, week, gid, "engine") if seed is not None else None
+                sim = nfl_dfs_engine.simulate_game(g, n, _np.random.default_rng(child), eng_ctx)
+                if sim is None:
+                    errlog.note("NFLENG-fallback", msg=f"{g.get('label')}: no deep profile for a side; "
+                                                       "legacy worlds for this game")
+                else:
+                    for p in sim["players"]:
+                        p["arr"] = _np.round(p["arr"], 2).tolist()
+                    for t, a in sim["dst"].items():
+                        eng_dst[t] = [round(float(x), 2) for x in a]
+                    for t, a in sim["k"].items():
+                        eng_k[t] = [round(float(x), 2) for x in a]
+                    eng_rep[str(gid)] = sim["anchor"]
+                    for t in sim["team_def"]:
+                        team_off[t] = {k: v.tolist() for k, v in sim["team_def"][t].items()}
+                    sim["team_def"] = {}         # the defense is the game's own, not the component model's
+            if sim is not None:
+                pass                            # the engine played this game
+            elif model == "constrained":
                 child = _seeds.child_seed(seed, season, week, gid, "constrained") if seed is not None else None
                 sim = nfl_dfs_csim.simulate_game(g, n=n, rng=_np.random.default_rng(child), xside=xside)
                 side_rng = _rnd.Random(child) if seed is not None else _random
@@ -871,7 +957,8 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
                     p["arr"] = _np.round(p["arr"], 2).tolist()
                 sim["team_def"] = {t: {k: v.tolist() for k, v in d.items()} for t, d in sim["team_def"].items()}
             else:
-                sim = simulate_game(g, n=n, with_samples=True, preseason=preseason, discrete=discrete)
+                sim = simulate_game(g, n=n, with_samples=True, preseason=preseason,
+                                    discrete=(discrete or model == "engine"))
             for t, d in (sim.get("team_def") or {}).items():
                 team_off[t] = d                 # this offense's own per-iteration output
                 team_rng[t] = side_rng
@@ -913,6 +1000,13 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
             arr = pre_dst.get(team)
             if arr:
                 proj = round(sum(arr) / len(arr), 2)
+            elif eng_dst.get(team):
+                # The engine's defense is scored off the game it played --
+                # points the other offence scored with the ball, its sacks, its
+                # giveaways, this unit's own return scores and blocks -- with the
+                # units' measured rates, so it carries its own level. Sleeper's
+                # projection stays the `proj` the field reads.
+                arr, proj = eng_dst[team], d["proj"]
             elif sim_dst.get(team):
                 # Shape from the game, LEVEL from Sleeper: the component model
                 # knows this defense is in a shootout, but it does not know the
@@ -974,9 +1068,11 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
             for team, k in (kicker_projections(str(season), week) or {}).items():
                 off = team_off.get(team)
                 k_rng = team_rng.get(team, _random)
-                if not off or k["name"] in pool:
+                if (not off and team not in eng_k) or k["name"] in pool:
                     continue
-                arr = _kicker_arr(k, off, n, k_rng, discrete=discrete)
+                # the engine's kicker is his own field goals by distance and
+                # tries in the game it played
+                arr = eng_k.get(team) or _kicker_arr(k, off, n, k_rng, discrete=discrete)
                 if not arr:
                     continue
                 pool[k["name"]] = {"pos": "K", "team": team, "opp": None,
@@ -993,6 +1089,10 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
                           "proj": round(sum(arr) / len(arr), 2),
                           "ceiling": round(sorted(arr)[int(0.9 * len(arr))], 1),
                           "floor": round(sorted(arr)[int(0.1 * len(arr))], 1), "arr": arr}
+        if model == "engine":
+            engine_reports[(season, week, tuple(sorted(want)) or None, seed)] = {
+                "games": eng_rep, "drive_games": len((eng_ctx or {}).get("drive") or {}) // 2,
+                "profiles": len((eng_ctx or {}).get("profiles") or {}), "weight": (eng_ctx or {}).get("weight")}
         return pool or None
     return _cached(("nfl_pool", season, week, n, bool(preseason), tuple(sorted(want)) or None, model, seed, float(xside or 0.0), bool(discrete)),
                    1800, build)

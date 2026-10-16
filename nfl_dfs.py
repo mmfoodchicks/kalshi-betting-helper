@@ -85,8 +85,60 @@ def _slate_dates(csv_players):
     return out
 
 
-def slate_season_type(csv_players):
+def _csv_kickoff(csv_players):
+    """The earliest kickoff in a pasted export's Game Info ("NO@DET 09/13/2026
+    01:00PM ET"), as DraftKings' own string shape for iso_ts, or None. The
+    live feed's CSV carries no times, so this is None there and the caller
+    passes the slate's own `starts`."""
+    import re as _re
+    best = None
+    for c in csv_players:
+        m = _re.search(r"\b(\d{2})/(\d{2})/(\d{4})\s+(\d{1,2}):(\d{2})\s*([AP]M)", c.get("game") or "", _re.I)
+        if not m:
+            continue
+        hh = int(m.group(4)) % 12 + (12 if m.group(6).upper() == "PM" else 0)
+        s = f"{m.group(3)}-{m.group(1)}-{m.group(2)}T{hh:02d}:{m.group(5)}:00"   # Eastern, no zone
+        if best is None or s < best:
+            best = s
+    return best
+
+
+def _lock_seconds(starts, csv_players, contest):
+    """Seconds to lock for the depth gate's roster allowance: the slate's own
+    kickoff (the live feed's `starts`, UTC), else the export's Game Info, else
+    a contest dict's start. The sheet used to read only the last, and the
+    route hands `contest` over as the STRING "gpp", so no sheet build was ever
+    lock-relative."""
+    for v in (starts, _csv_kickoff(csv_players or []),
+              (contest.get("starts") if isinstance(contest, dict) else None)):
+        s = seconds_to_lock(v) if v else None
+        if s is not None:
+            return s
+    return None
+
+
+def season_type_of_date(d):
+    """(preseason, week) for a game date: NFL regular seasons start after
+    Labor Day, so an August date is exhibition and a September-or-later one is
+    real, the week counted from the first Thursday on or after Sep 4."""
+    import datetime as _dt
+    if d.month < 9 and not (d.month == 1 or d.month == 2):
+        return True, None                       # August (or earlier): exhibition
+    anchor = _dt.date(d.year if d.month >= 9 else d.year - 1, 9, 4)
+    while anchor.weekday() != 3:                # first Thursday on/after Sep 4
+        anchor += _dt.timedelta(days=1)
+    return False, max(1, min(18, (d - anchor).days // 7 + 1))
+
+
+def slate_season_type(csv_players, starts=None):
     """(preseason, week) read off the SLATE, or (None, None) when undatable.
+
+    `starts` (the live feed's first kickoff) dates a slate whose CSV carries
+    no dates: DraftKings' own export has them in Game Info, the live feed's
+    CSV does not, and an auto-loaded week-6 slate used to fall through to the
+    week picker's first option and build on WEEK 1 projections (measured
+    2026-10-16 on dg 154949 and 154941: "Week 1 regular season (from the
+    toggle - this CSV carries no game dates)").
 
     The old behavior asked the calendar -- "it is August, so this must be
     preseason" -- which ran DK's early-posted WEEK 1 slates through the
@@ -97,16 +149,14 @@ def slate_season_type(csv_players):
     week counted from the first Thursday on or after Sep 4."""
     import datetime as _dt
     dates = _slate_dates(csv_players)
+    if not dates and starts:
+        ts = iso_ts(starts)
+        if ts is not None:
+            import clock
+            dates = [_dt.datetime.fromtimestamp(ts, clock.ET).date()]
     if not dates:
         return None, None
-    d = sorted(dates)[len(dates) // 2]
-    if d.month < 9 and not (d.month == 1 or d.month == 2):
-        return True, None                       # August (or earlier): exhibition
-    anchor = _dt.date(d.year if d.month >= 9 else d.year - 1, 9, 4)
-    while anchor.weekday() != 3:                # first Thursday on/after Sep 4
-        anchor += _dt.timedelta(days=1)
-    week = max(1, min(18, (d - anchor).days // 7 + 1))
-    return False, week
+    return season_type_of_date(sorted(dates)[len(dates) // 2])
 
 
 def _matchup(game):
@@ -209,17 +259,41 @@ _LAST_ROSTER = {"state": None}
 
 
 def iso_ts(v):
-    """DraftKings' start time as epoch seconds, or None. Their strings carry a
-    trailing Z and sometimes seven fractional digits, which datetime refuses."""
+    """DraftKings' start time as epoch seconds, or None.
+
+    DraftKings writes two shapes and they are NOT the same clock. The contest
+    endpoint and the draftables feed carry UTC with a trailing Z
+    ("2026-10-18T17:00:00.0000000Z"); the lobby's StartDateEst carries EASTERN
+    time with no zone at all ("2026-10-18T13:00:00.0000000" for the same 1:00
+    pm kickoff). Both used to be read as UTC, which put every lobby kickoff
+    four hours early (five after the clocks go back): pc_worker's pre-lock
+    refreshes keyed off the lobby string, so its "last look ~25 minutes before
+    kickoff" ran at T-4h25m and no Sunday- or Monday-night showdown board was
+    ever rebuilt after the inactives (measured on the week-6 lobby, 2026-10-16:
+    dg 154959 SNF read 20:20 UTC against the contest's 00:20Z). A Z or an
+    explicit offset is honoured; a string with neither is DraftKings' Eastern.
+    Seven fractional digits, which datetime refuses, are dropped."""
     import datetime
-    t = str(v or "")[:19]
-    if not t:
+    import re
+    s = str(v or "").strip()
+    m = re.match(r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d+)?\s*(Z|[+-]\d{2}:?\d{2})?$", s, re.I)
+    if not m:
         return None
     try:
-        return int(datetime.datetime.fromisoformat(t).replace(
-            tzinfo=datetime.timezone.utc).timestamp())
+        dt = datetime.datetime.fromisoformat(m.group(1))
     except ValueError:
         return None
+    zone = (m.group(2) or "").upper()
+    if zone == "Z":
+        dt = dt.replace(tzinfo=datetime.timezone.utc)
+    elif zone:
+        sign = 1 if zone[0] == "+" else -1
+        hh, mm = int(zone[1:3]), int(zone[-2:])
+        dt = dt.replace(tzinfo=datetime.timezone(sign * datetime.timedelta(hours=hh, minutes=mm)))
+    else:
+        import clock
+        dt = dt.replace(tzinfo=clock.ET)
+    return int(dt.timestamp())
 
 
 def seconds_to_lock(starts):
@@ -1175,7 +1249,7 @@ _SD_RULES = (
 
 def _build_showdown(csv_players, week, objective, contest, contest_size,
                     entry_fee, prize_pool, first_prize, preseason, field_size=None,
-                    n_lineups=1):
+                    n_lineups=1, lock_s=None):
     ents = showdown_pool(csv_players)
     if len(ents) < len(SHOWDOWN_ROSTER):
         return {"error": f"showdown needs {len(SHOWDOWN_ROSTER)} available players "
@@ -1221,7 +1295,7 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
     ents = [e for e in ents if not e.get("_drop")]
     try:
         ents, _dx = _apply_depth(ents, preseason,
-                                 seconds_to_lock(contest.get("starts")) if isinstance(contest, dict) else None)
+                                 lock_s if lock_s is not None else _lock_seconds(None, csv_players, contest))
     except RosterUnavailable as _e:
         return {"error": f"no trustworthy roster for the depth-chart gate; the sheet is not built with the "
                          f"gate off ({_e})", "roster_source": _e.state, "excluded": excluded[:40]}
@@ -1333,31 +1407,42 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
                     "lists OUT or IR are excluded."}
 
 
-def build(csv_text, week=1, objective="projection", stack=True, contest=None,
+def build(csv_text, week=None, objective="projection", stack=True, contest=None,
           contest_size=None, entry_fee=1.0, prize_pool=None, first_prize=None,
           preseason=False, mode="auto", field_size=None, n_lineups=1, uniq=2,
-          contest_probe=None):
+          contest_probe=None, starts=None):
+    """`week` None means "the slate's own week": read off the export's game
+    dates, else the live slate's first kickoff (`starts`), else the calendar's
+    current week. A number is the owner's explicit choice and is used only
+    when the slate itself carries no date."""
     csv_players = simulate.parse_dk_csv(csv_text)
     if not csv_players:
         return {"error": "couldn't read any players out of that CSV"}
     # The slate's own dates outrank the calendar: a Week 1 CSV in August is a
     # REGULAR-season contest and must not run the inverted preseason model.
-    _sp, _sw = slate_season_type(csv_players)
+    _sp, _sw = slate_season_type(csv_players, starts=starts)
+    _src = "your CSV's game dates" if _slate_dates(csv_players) else "the DraftKings slate's kickoff"
     if _sp is not None:
         preseason = _sp
         if _sw is not None:
             week = _sw
-        slate_note = ("preseason (read from your CSV's game dates)" if _sp else
-                      f"Week {week} regular season (read from your CSV's game dates)")
-    else:
+        slate_note = (f"preseason (read from {_src})" if _sp else
+                      f"Week {week} regular season (read from {_src})")
+    elif week:
         slate_note = (("preseason" if preseason else f"Week {week} regular season")
                       + " (from the toggle - this CSV carries no game dates)")
+    else:
+        import nfl_game_sim
+        week = nfl_game_sim.current_week(preseason)
+        slate_note = (("preseason" if preseason else f"Week {week} regular season")
+                      + " (this week, from the calendar - the slate carries no date)")
+    _lock_s = _lock_seconds(starts, csv_players, contest)
     detected = detect_mode(csv_players)
     use = detected if mode in (None, "", "auto") else mode
     if use == "showdown":
         res = _build_showdown(csv_players, week, objective, contest, contest_size,
                               entry_fee, prize_pool, first_prize, preseason,
-                              field_size=field_size, n_lineups=n_lineups)
+                              field_size=field_size, n_lineups=n_lineups, lock_s=_lock_s)
         if isinstance(res, dict) and "error" not in res:
             res["slate_mode"] = slate_note
         return res
@@ -1408,8 +1493,7 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
                         "proj": round(proj, 1), "ceiling": ceiling, "floor": floor,
                         "elig": elig, "arr": samp})
     try:
-        players, _dx = _apply_depth(players, preseason,
-                                    seconds_to_lock(contest.get("starts")) if isinstance(contest, dict) else None)
+        players, _dx = _apply_depth(players, preseason, _lock_s)
     except RosterUnavailable as _e:
         return {"error": f"no trustworthy roster for the depth-chart gate; the sheet is not built with the "
                          f"gate off ({_e})", "roster_source": _e.state, "excluded": excluded[:40]}

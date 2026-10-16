@@ -87,6 +87,11 @@ _KNEEL_SNAP_S = 40          # a kneel burns the play clock
 # away, the back is stopped short). The yardage tables are sampled without
 # regard to the goal line behind the offence, so without this every such draw
 # was a safety -- 0.6% of drives against the real 0.2%.
+# The shared passing environment (play_game's env_sd): OFF for every caller
+# that does not ask for it -- the slate's deep layer and the deep season run
+# exactly as fitted and validated. nfl_dfs_engine passes its own measured
+# value for the DFS worlds.
+_ENV_SD = 0.0
 _SAFETY_SHARE = 0.33
 _ONSIDE_RECOVERY = 0.12     # league-typical since the 2018 rule change; a rule, not fitted
 _KO_MAX_YTG = 99
@@ -350,20 +355,44 @@ def _box():
             "first": 0, "drives": 0, "pen": 0, "top": 0, "kneels": 0, "fourth_go": 0,
             "third_att": 0, "third_conv": 0, "fourth_conv": 0, "rz_trips": 0, "rz_td": 0,
             "conv_att": [0, 0, 0, 0, 0], "conv": [0, 0, 0, 0, 0],
+            # What DraftKings pays the kicker and the defense on, counted as
+            # it happens (nfl_dfs_engine scores every DFS world off these):
+            # made field goals by DK's distance tiers, made tries, the points
+            # this side scored WITHOUT the ball (return touchdowns and their
+            # tries -- not "points allowed" by the other defense) and kicks
+            # this side's units blocked. Counters only: no draw is added, so
+            # every game plays exactly as it did.
+            "fg_0_39": 0, "fg_40_49": 0, "fg_50p": 0, "xp_made": 0, "two_made": 0,
+            "ret_pts": 0, "blk": 0,
             # how this side's drives ended (diagnostics; summed, not averaged)
             "ends": {"td": 0, "fg": 0, "fgm": 0, "punt": 0, "int": 0, "fum": 0, "downs": 0,
                      "safety": 0, "clock": 0}}
 
 
-def play_game(home, away, rng, T=None, neutral=False, playoff=False, form_sd=None):
-    """One game. Returns {"h": box, "a": box, "ot": bool, "tie": bool}."""
+def play_game(home, away, rng, T=None, neutral=False, playoff=False, form_sd=None, env_sd=None):
+    """One game. Returns {"h": box, "a": box, "ot": bool, "tie": bool}.
+
+    `env_sd` (default _ENV_SD, off) draws the game's shared PASSING
+    environment -- wind, rain, a dome, a crew that lets the secondaries
+    hold: one draw moves both offences' yards per completion (lognormal,
+    mean one) and completion rate (the same draw on the logit) together.
+    Off, no draw is taken and every game plays exactly as before; the DFS
+    worlds turn it on (nfl_dfs_engine.ENV_SD, where the measurement is)."""
     T = T or tables()
     if form_sd is None:
         form_sd = _FORM_SD
+    if env_sd is None:
+        env_sd = _ENV_SD
     hfa = 1.0 if neutral else _HFA_YDS
     g = rng.gauss(0.0, form_sd) if form_sd else 0.0
     th, ta = math.exp(g - form_sd * form_sd / 2.0), math.exp(-g - form_sd * form_sd / 2.0)
     sides = (_Side(home, away, T, hfa * th), _Side(away, home, T, ta / hfa))
+    if env_sd:
+        z = rng.gauss(0.0, 1.0)
+        pe = math.exp(env_sd * z - env_sd * env_sd / 2.0)
+        for sd_ in sides:
+            sd_.m_pass *= pe
+            sd_.d_comp += env_sd * z
     box = (_box(), _box())
     S = {"per": 1, "clk": 900, "off": None, "down": 1, "dist": 10, "ytg": 75,
          "ot_poss": [False, False], "sudden": False, "over": False, "kick_pending": None,
@@ -444,19 +473,25 @@ def _try_points(S, box, sides, T, rng, side):
     if rng.random() < T.p_two(sd6, late):
         if rng.random() < T.two_good:
             _score(S, box, side, 2)
+            box[side]["two_made"] += 1
+            return 2
     elif rng.random() < sides[side].xp:
         _score(S, box, side, 1)
+        box[side]["xp_made"] += 1
+        return 1
+    return 0
 
 
 def _return_td(S, box, sides, T, rng, scorer):
     """A touchdown by the side WITHOUT the ball (kick or punt return, pick-six,
     fumble return): six, the try, then whatever the rules owe next."""
     _score(S, box, scorer, 6)
+    box[scorer]["ret_pts"] += 6
     S["drive_live"] = False
     if S["per"] >= 5 and S["sudden"]:
         S["over"] = True
         return
-    _try_points(S, box, sides, T, rng, scorer)
+    box[scorer]["ret_pts"] += _try_points(S, box, sides, T, rng, scorer)
     _after_score(S, box, sides, T, rng, scorer=scorer)
 
 
@@ -611,6 +646,7 @@ def _punt(S, box, sides, T, rng):
     box[off]["ends"]["punt"] += 1
     ytg = S["ytg"]
     if rng.random() < T.punt_block:
+        box[1 - off]["blk"] += 1
         _run_clock(S, box, sides, T, rng, "punt")
         _change(S, box, sides, T, rng, max(1, 100 - ytg - 5))
         return
@@ -633,6 +669,7 @@ def _field_goal(S, box, sides, T, rng):
     kd = ytg + 17
     box[off]["fg_att"] += 1
     if rng.random() < T.fg_block:
+        box[1 - off]["blk"] += 1
         box[off]["ends"]["fgm"] += 1
         _run_clock(S, box, sides, T, rng, "fg")
         _change(S, box, sides, T, rng, max(1, 100 - ytg - 7))
@@ -640,6 +677,7 @@ def _field_goal(S, box, sides, T, rng):
     p = _sig(T.fg_a + T.fg_b * kd + sides[off].fg_shift)
     if rng.random() < p:
         box[off]["fg_made"] += 1
+        box[off]["fg_0_39" if kd <= 39 else "fg_40_49" if kd <= 49 else "fg_50p"] += 1
         box[off]["ends"]["fg"] += 1
         _score(S, box, off, 3)
         S["drive_live"] = False

@@ -2358,6 +2358,7 @@ def api_simulate_dfs():
                     text = got["csv"]
                     auto_slate = {k: got[k] for k in
                                   ("draft_group_id", "n_players", "n_dropped", "dropped")}
+                    auto_slate["starts"] = got.get("starts")
         except Exception:
             auto_slate = None
     if not text.strip():
@@ -2407,8 +2408,13 @@ def api_simulate_dfs():
         obj = obj if obj in ("projection", "ceiling", "leverage") else "projection"
         contest = d.get("contest") if d.get("contest") in ("gpp", "double_up") else None
         try:
+            # 0 / absent is "the slate's own week" (its dates, else its
+            # kickoff, else this week); the picker defaulted to Week 1 and an
+            # auto-loaded week-6 slate was built on week-1 projections.
+            _wk = int(_ni("week", 0, int) or 0)
             res = nfl_dfs.build(
-                text, week=max(1, min(18, int(_ni("week", 1, int)))), objective=obj,
+                text, week=(max(1, min(18, _wk)) if _wk else None), objective=obj,
+                starts=(auto_slate or {}).get("starts"),
                 stack=d.get("stack", True) is not False, contest=contest,
                 contest_size=(int(_ni("contest_size", 0, int)) or None),
                 entry_fee=max(0.01, _ni("entry_fee", 1.0)),

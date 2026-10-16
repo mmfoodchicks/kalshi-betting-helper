@@ -11718,7 +11718,7 @@ _odb_lb = _stlb.DB_PATH
 _stlb.DB_PATH = _os.path.join(_tflb.mkdtemp(), "lookback.db")
 _stlb.init_db()
 _oev_lb, _oact_lb = _lb.event_of, _lb._actuals
-_lb.event_of = lambda sport, req, today=None: ("f1:2026-08-23:12", "2026-08-23", None)
+_lb.event_of = lambda sport, req, today=None, res=None: ("f1:2026-08-23:12", "2026-08-23", None)
 _lb._actuals = lambda sport, ek: dict(_f1a)
 _req_lb = {"sport": "f1", "objective": "ceiling", "contest_size": 1764, "entry_fee": 20, "mode": "classic"}
 _res_lb2 = {"objective": "ceiling", "pool": 33, "lineups": [{"lineup": [
@@ -11954,7 +11954,7 @@ _odb_lb3 = _stlb.DB_PATH
 _stlb.DB_PATH = _os.path.join(_tflb.mkdtemp(), "knobs.db")
 _stlb.init_db()
 _oev_lb3 = _lb.event_of
-_lb.event_of = lambda sport, req, today=None: ("f1:2026-09-06:13", "2026-09-06", None)
+_lb.event_of = lambda sport, req, today=None, res=None: ("f1:2026-09-06:13", "2026-09-06", None)
 try:
     _lb.log_build("f1", dict(_req_lb, field_size=777, sims=4000),
                   dict(_res_lb2, contest_sim={"sample_size": 555}), {"draft_group_id": 1, "n_players": 33}, "")
@@ -13012,7 +13012,7 @@ ck("the PC builds only the primetime showdown Millionaires on its own (richest c
    and "_prelock_window(_dt_ts(sl.get(\"starts\")))" in _tt15
    and 'return "queued from the tab"' in _pcw15
    and 'return "the DraftKings pool changed"' in _pcw15 and "soon[:2]" not in _tt15
-   and "timedelta(minutes=30) <= st" in _tt15,
+   and "now - 30 * 60 <= st" in _tt15,
    "the first cycle after the engine shipped spent 25 minutes on the NO @ DET $20K "
    "Special while Sunday night's slate waited behind eleven of them")
 _old15 = (_bs14._DIR, _app14._SIM_TOKEN)
@@ -13408,7 +13408,9 @@ ck("the sampler's completion receipt is stamped on the field and on the candidat
    and '"completion": rep_f,' in _build2 and '"candidate_draws": rep_c,' in _build2
    and '"simulator": simulator_stamp(model, int(n_sims), seed, preseason),' in _build2
    and '"probes_configured": int(len(probes)),' in _build2
-   and _dts2.count('"simulator": nfl_dfs_sim.sim_stamp(') == 1 and _dts2.count('"simulator": simulator_stamp(') == 1)
+   # repinned 2026-10-16: the showdown board stamps through simulator_stamp too
+   # now (its model is the BOARD_MODEL switch, not hard-wired legacy)
+   and _dts2.count('"simulator": nfl_dfs_sim.sim_stamp(') == 0 and _dts2.count('"simulator": simulator_stamp(') == 2)
 import nfl_dfs_sim as _sim2
 _stamp2 = _sim2.sim_stamp(n=60000)
 ck("the simulator stamp names the production model and version, carries its constants, how the marginals are pinned and that it is unseeded",
@@ -13646,8 +13648,9 @@ ck("the constrained simulator's stamp names its model and version, carries every
 _sim_src = open(_os.path.join(_root, "nfl_dfs_sim.py")).read()
 _pool_src = _sim_src[_sim_src.index("def player_pool("):_sim_src.index("# ---- Week board (all games simmed)")]
 ck("player_pool takes model and seed with legacy the default, rejects an unknown model and a preseason constrained pool before any fetch, keys its cache on both, and routes the constrained model's defenses and kickers through a seeded generator while the legacy path keeps the module generator",
-   'def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="legacy", seed=None, xside=0.0, discrete=False):' in _sim_src
-   and _sim2.MODELS == ("legacy", "constrained")
+   # repinned 2026-10-16: a third model ("engine") and its `workers`
+   'def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="legacy", seed=None, xside=0.0, discrete=False,\n                workers=1):' in _sim_src
+   and _sim2.MODELS == ("legacy", "constrained", "engine")
    and 'tuple(sorted(want)) or None, model, seed, float(xside or 0.0), bool(discrete)),' in _pool_src
    and 'sim = nfl_dfs_csim.simulate_game(g, n=n, rng=_np.random.default_rng(child), xside=xside)' in _pool_src
    and 'side_rng = _rnd.Random(child) if seed is not None else _random' in _pool_src
@@ -13656,7 +13659,7 @@ ck("player_pool takes model and seed with legacy the default, rejects an unknown
    # discrete mode was threaded through to the side models (see the support
    # block below). Repinned to the new shape, plus the two defaults that keep
    # the legacy draw identical: discrete=False and scale=1.0.
-   and 'arr = _kicker_arr(k, off, n, k_rng, discrete=discrete)' in _pool_src
+   and 'arr = eng_k.get(team) or _kicker_arr(k, off, n, k_rng, discrete=discrete)' in _pool_src
    and 'def _kicker_arr(k, off, n, rng, discrete=False):' in _sim_src
    and 'def _pois(mean, rng=_random):' in _sim_src and '_pois(_LG_FG * max(0.25, opp_yd[i] / _LG_YD), rng)' in _sim_src
    and '_pois(fg_mean * scale * f, rng)' in _sim_src
@@ -13684,14 +13687,18 @@ ck("the shared-variance knob defaults to off everywhere it appears, and rides in
    "the board builder takes no such argument at all, and neither the PC nor the server mentions it")
 _dts_d = open(_os.path.join(_root, "dfs_tourney.py")).read()
 _build_d = _dts_d[_dts_d.index("def build_nfl_classic("):_dts_d.index("def build_nfl_classic(") + len(_insp.getsource(_dt14.build_nfl_classic))]
-ck("the classic build takes model (legacy by default) and passes it and the seed to the pool, stamps whichever simulator made the worlds and records the model and seed on the board; the showdown build and the PC's classic request stay on the legacy model",
-   'seed=None, log=print, probes=None, model="legacy"):' in _build_d
-   and 'pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason, model=model, seed=seed) or {}' in _build_d
+# repinned 2026-10-16: both builders take `model`, default None = the ONE
+# switch dfs_tourney.BOARD_MODEL (legacy in the preseason), and the PC passes
+# none, so a board's model moves only with that constant
+ck("the classic build takes model (None = BOARD_MODEL) and passes it and the seed to the pool, stamps whichever simulator made the worlds and records the model and seed on the board; the PC asks for no model on either board, so the switch alone decides",
+   'seed=None, log=print, probes=None, model=None, workers=None):' in _build_d
+   and 'pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason, model=model, seed=seed,\n                                   teams=slate_teams, workers=_workers(workers)) or {}' in _build_d
+   and "model = board_model(model, preseason)" in _build_d
    and '"model": model, "seed": (int(seed) if seed is not None else None),' in _build_d
    and _dt14.simulator_stamp("legacy", 5) == _sim2.sim_stamp(n=5)
    and _dt14.simulator_stamp("constrained", 5, 3)["seed"] == 3 and _dt14.simulator_stamp("constrained", 5, 3)["model"] == "constrained-team"
    and "model=" not in open(_os.path.join(_root, "pc_worker.py")).read().split("dfs_tourney.build_nfl_classic(")[1].split("\n")[0]
-   and "model=" not in _dts_d[_dts_d.index("def build_nfl_showdown("):_dts_d.index("def build_nfl_showdown(") + 400])
+   and "model=" not in open(_os.path.join(_root, "pc_worker.py")).read().split("dfs_tourney.build_nfl_showdown(")[1].split("\n")[0])
 _st2d = _json2b.load(open(_os.path.join(_root, "research", "data", "stage2d_stats.json")))
 _teams_gk = {}
 for r in _rows2b:
@@ -14060,7 +14067,7 @@ _sd_src_s2 = open(_os.path.join(_root, "dfs_tourney.py")).read()
 ck("every showdown board carries that gate, so the tab's experimental labelling switches on for showdown exactly as it does for classic",
    # repinned 2026-09-18: the gate reads the same C the build refused to
    # guess -- contest_capacity(contest), None => no board
-   '"experimental": sd_money_gate(len(idx), C),' in _sd_src_s2
+   '"experimental": sd_money_gate(len(idx), C, model=model),' in _sd_src_s2
    and "C = contest_capacity(contest)" in _sd_src_s2
    and "const exp = d.experimental && Array.isArray(d.experimental.columns) ? d.experimental : null;" in _js_s1
    and "experimental EV</th>" in _js_s1)
@@ -14379,11 +14386,14 @@ ck("the discrete mode still defaults off and still rides in the pool's cache key
    and "bool(discrete)),\n" in open(_os.path.join(_root, "nfl_dfs_sim.py")).read())
 ck("SHOWDOWN serves it, on both of its surfaces, through one greppable switch -- the tournament board and the lineup sheet cannot disagree about the same game",
    _sim2.SD_DISCRETE is True
-   and "discrete=nfl_dfs_sim.SD_DISCRETE) or {}" in _dfs_src_p
+   # repinned 2026-10-16: the board reads the switch once, for the legacy
+   # model only (the engine's scores are on the lattice by construction),
+   # and hands that one value to the pool and the stamp
+   and 'sd_discrete = nfl_dfs_sim.SD_DISCRETE if model == "legacy" else False' in _dfs_src_p
    and "discrete=nfl_dfs_sim.SD_DISCRETE) or {}" in _nfd_src_p
    # Count CALL SITES, not mentions: a comment naming the constant must not be
    # able to fail this, and the first version of this guard counted both.
-   and _dfs_src_p.count("discrete=nfl_dfs_sim.SD_DISCRETE") == 2     # the pool and the stamp
+   and _dfs_src_p.count("discrete=sd_discrete") == 2                 # the pool and the stamp
    and _nfd_src_p.count("discrete=nfl_dfs_sim.SD_DISCRETE") == 2,    # the pool and the stamp
    "one constant, reversible in one line")
 ck("CLASSIC does not, and that is asserted harder than before: its builder takes no such argument AND no classic path passes one anywhere",
@@ -14391,8 +14401,7 @@ ck("CLASSIC does not, and that is asserted harder than before: its builder takes
    and "discrete" not in _dfs_src_p[_dfs_src_p.index("def build_nfl_classic("):],
    "the Classic pool must be the frozen model, byte for byte")
 ck("every served showdown artifact stamps which model made its worlds, so a board can be audited for its simulator and not only for its numbers",
-   '"simulator": nfl_dfs_sim.sim_stamp(n=int(n_sims), preseason=preseason,' in _dfs_src_p
-   and "discrete=nfl_dfs_sim.SD_DISCRETE)" in _dfs_src_p
+   '"simulator": simulator_stamp(model, int(n_sims), seed, preseason, discrete=sd_discrete),' in _dfs_src_p
    and '"simulator": nfl_dfs_sim.sim_stamp(n=_SD_SIMS, preseason=preseason,' in _nfd_src_p
    and _sim2.sim_stamp(n=1, discrete=True)["model"] == "legacy-latent-discrete"
    and _sim2.sim_stamp(n=1, discrete=True)["discrete_version"] == 2)
@@ -17030,12 +17039,13 @@ finally:
     else:
         _os.environ["VIGIL_SIM_CACHE_DIR"] = _env21
     _sh19.rmtree(_tmpd21, ignore_errors=True)
-ck("every builder hands the gate its lock time (the contest's or slate's DraftKings start), so a mandatory pre-lock rebuild cannot be satisfied by data older than the window's purpose; pc_worker's _iso_ts still reads DraftKings' start strings",
-   all("seconds_to_lock" in t or "float(_starts_ts) - time.time()" in t for t in _src20.values())
+ck("every builder hands the gate its lock time (the slate's own kickoff, the export's Game Info, or the contest's DraftKings start), so a mandatory pre-lock rebuild cannot be satisfied by data older than the window's purpose; pc_worker's _iso_ts still reads DraftKings' start strings",
+   all("seconds_to_lock" in t or "float(_starts_ts) - time.time()" in t or "_lock_seconds(" in t for t in _src20.values())
    and "float(_starts_ts) - time.time()" in _src20["build_nfl_showdown"]
    and "nfl_dfs.seconds_to_lock(" in _src20["build_nfl_classic"]
-   and 'seconds_to_lock(contest.get("starts"))' in _src20["_build_showdown"]
-   and 'seconds_to_lock(contest.get("starts"))' in _src20["build"]
+   and "_lock_seconds(None, csv_players, contest)" in _src20["_build_showdown"]
+   and "_lock_s = _lock_seconds(starts, csv_players, contest)" in _src20["build"]
+   and 'contest.get("starts")' in _insp18.getsource(_nd20._lock_seconds)
    and _dt14._iso_ts("2026-09-19T01:00:00.0000000Z") == 1789779600 and _dt14._iso_ts(None) is None
    and _nd20.seconds_to_lock("garbage") is None)
 
@@ -17636,12 +17646,17 @@ if _CLS is None:
 else:
     import copy as _cp_cls
     _cls_parts = [_json18.load(open(_os.path.join(_root, "research", "data", "cl_sampler_seeds", f"cl_sampler_seed_{s}.json"))) for s in _CLS.SEEDS]
-    _cls_ok = _CLS.content_identity(_cls_parts, strict=False)["passed"]
+    # Re-checked against the artifact's ASSEMBLY commit, not the working tree:
+    # dfs_tourney.py, one of its identity files, moved on 2026-10-16 (the board
+    # model switch), and that must not be able to un-prove an identity that
+    # held when the artifact was assembled.
+    _cls_at = _cls["meta"]["provenance"]["commit"]
+    _cls_ok = _CLS.content_identity(_cls_parts, strict=False, against=_cls_at)["passed"]
     _cls_b1 = _cp_cls.deepcopy(_cls_parts); _cls_b1[0]["provenance"]["commit"] = "e955d97"
     _cls_b2 = _cp_cls.deepcopy(_cls_parts); _cls_b2[2]["sample"]["chunk"] = 50000
-    _cls_r1 = _CLS.content_identity(_cls_b1, strict=False); _cls_r2 = _CLS.content_identity(_cls_b2, strict=False)
+    _cls_r1 = _CLS.content_identity(_cls_b1, strict=False, against=_cls_at); _cls_r2 = _CLS.content_identity(_cls_b2, strict=False, against=_cls_at)
     try:
-        _CLS.content_identity(_cls_b2, strict=True); _cls_strict = False
+        _CLS.content_identity(_cls_b2, strict=True, against=_cls_at); _cls_strict = False
     except SystemExit:
         _cls_strict = True
     ck("the content-identity check passes the real partials and refuses a partial re-stamped at a commit where the module did not exist and a partial with a changed chunk, in strict mode by SystemExit",
@@ -18472,6 +18487,227 @@ ck("the research record ships and is OUT OF SAMPLE: each validated season is sco
    and os.path.getsize(_nds.TABLES_PATH) < 400_000)
 ck("the engine plays under the NEWEST kickoff rules its tables carry (it fell back to the oldest era when 2025+ was absent, running a 2023-24 refit's totals ~2 points low)",
    _T_nd.kickoff_era == "2025+" and "era = max(raw[\"kickoff\"])" in _eng_src_nd)
+
+# ---- 2026-10-16 NFL DFS audit: the bugs a live run-through of week 6 found ----
+print("=" * 72)
+print("NFL DFS audit (week 6, live DraftKings + Sleeper): clocks, weeks, labels, scope")
+print("=" * 72)
+import nfl_dfs as _nda
+import pc_worker as _pca
+import dk as _dka
+import dfslog as _dla
+import nfl_dfs_sim as _nsa
+# (1) DraftKings' two clocks
+ck("DraftKings' lobby StartDateEst is EASTERN with no zone and its contest/draftables strings are UTC with a Z: iso_ts reads both onto the same instant (EDT 4h, EST 5h), honours explicit offsets, refuses garbage -- reading the lobby string as UTC put every pre-lock refresh 4 hours early, so the 'last look' before a Sunday- or Monday-night showdown ran at T-4h25m, before the inactives",
+   _nda.iso_ts("2026-10-18T13:00:00.0000000") == _nda.iso_ts("2026-10-18T17:00:00.0000000Z")
+   and _nda.iso_ts("2026-11-08T13:00:00.0000000") == _nda.iso_ts("2026-11-08T18:00:00Z")
+   and _nda.iso_ts("2026-10-18T13:00:00-04:00") == _nda.iso_ts("2026-10-18T17:00:00Z")
+   and _nda.iso_ts("2026-09-19T01:00:00.0000000Z") == 1789779600
+   and _nda.iso_ts("garbage") is None and _nda.iso_ts("") is None,
+   str((_nda.iso_ts("2026-10-18T13:00:00.0000000"), _nda.iso_ts("2026-10-18T17:00:00.0000000Z"))))
+_now_a = _nda.iso_ts("2026-10-18T13:00:00.0000000")          # Sunday 1:00 pm ET, as epoch
+_o_time_a = _pca.time.time
+try:
+    _pca.time.time = lambda: _now_a + 4 * 3600 + 60       # 5:01 pm ET: the 1 pm main slate is 4h01 old
+    _ms_old = _pca._main_slate([{"draft_group_id": 1, "contest_type": 21, "games": 10, "tag": None,
+                                 "starts": "2026-10-18T13:00:00.0000000"}])
+    _pca.time.time = lambda: _now_a + 3 * 3600            # 4:00 pm ET: still inside its window
+    _ms_in = _pca._main_slate([{"draft_group_id": 2, "contest_type": 21, "games": 10, "tag": None,
+                                "starts": "2026-10-18T13:00:00.0000000"}])
+finally:
+    _pca.time.time = _o_time_a
+_tt_a = open(os.path.join(os.path.dirname(__file__), "..", "pc_worker.py")).read()
+_tt_a = _tt_a[_tt_a.index("def _task_showdown_tourney"):_tt_a.index("def _ship_boards")]
+ck("the PC's slate windows compare epochs, not DraftKings' Eastern string against the PC's own (Mountain) clock: a main slate is dropped four hours after its real kickoff (it used to survive six) and a showdown thirty minutes after (it used to survive two and a half hours), and the pre-lock refresh reads the same corrected clock",
+   _ms_old is None and (_ms_in or {}).get("draft_group_id") == 2
+   and "now - 30 * 60 <= st" in _tt_a and "datetime.datetime.now()" not in _tt_a
+   and "st = _dt_ts(sl.get(\"starts\"))" in _tt_a
+   and "datetime.datetime.now()" not in _insp.getsource(_pca._main_slate),
+   str((_ms_old, _ms_in)))
+# (2) the slate's kickoff reaches every builder
+_o_dk_a = (_dka.slates, _dka.players, _dka.salaries_csv, _dka.contests)
+try:
+    _dka.slates = lambda sport: [{"draft_group_id": 7, "starts": "2026-10-18T13:00:00.0000000", "games": 10,
+                                  "contest_type": 21, "tag": None}]
+    _dka.players = lambda dg: [{"name": "A", "available": True, "starts": "2026-10-18T20:05:00.0000000Z"},
+                               {"name": "B", "available": True, "starts": "2026-10-18T17:00:00.0000000Z"},
+                               {"name": "C", "available": False, "starts": "2026-10-18T13:30:00.0000000Z"}]
+    _dka.salaries_csv = lambda dg, exclude_games=None: "Position,Name\n"
+    _dka.contests = lambda *a, **k: []
+    _sf_a = _dka.slate_for("nfl", draft_group_id=7)
+finally:
+    _dka.slates, _dka.players, _dka.salaries_csv, _dka.contests = _o_dk_a
+ck("slate_for carries the slate's first kickoff among AVAILABLE players, in the feed's UTC: build_nfl_classic's lock-relative roster allowance read slate.get('starts') and always got None (every classic board ran on the 1-hour unknown-lock allowance)",
+   (_sf_a or {}).get("starts") == "2026-10-18T17:00:00.0000000Z", str((_sf_a or {}).get("starts")))
+_lk_a = _nda._lock_seconds(None, [{"game": "NO@DET 09/13/2026 04:25PM ET"}, {"game": "KC@BUF 09/13/2026 01:00PM ET"}], "gpp")
+ck("the sheet's lock time comes from the slate's kickoff, else the export's Game Info (earliest game, Eastern), else a contest dict -- the route hands `contest` over as the string 'gpp', so the sheet was never lock-relative",
+   _lk_a is not None and abs(_lk_a - _nda.seconds_to_lock("2026-09-13T13:00:00")) < 5
+   and _nda._lock_seconds("2026-10-18T17:00:00Z", [], "gpp") is not None
+   and _nda._lock_seconds(None, [{"game": "CHI @ ATL"}], "gpp") is None
+   and _nda._csv_kickoff([{"game": "NO@DET 09/13/2026 12:05AM ET"}]) == "2026-09-13T00:05:00")
+# (3) the week an auto-loaded slate is built on
+_app_src_a = open(os.path.join(os.path.dirname(__file__), "..", "app.py")).read()
+_js_a = open(os.path.join(os.path.dirname(__file__), "..", "static", "app.js")).read()
+ck("an auto-loaded NFL slate is built on ITS week: the live feed's CSV carries no dates, so the week comes from the slate's kickoff (week 6 for dg 154941/154949, 2026-10-16) -- it fell through to the picker's first option and built a week-6 slate on WEEK 1 projections; the picker now defaults to auto (0), the route passes 0 as 'the slate's own week' and hands the builder the slate's kickoff",
+   _nda.slate_season_type([{"game": "CHI @ ATL"}], starts="2026-10-18T17:00:00.0000000Z") == (False, 6)
+   and _nda.slate_season_type([{"game": "CHI @ ATL"}]) == (None, None)
+   and _nda.slate_season_type([{"game": "KC@BUF 10/04/2026 01:00PM ET"}], starts="2026-10-18T17:00:00Z") == (False, 4)
+   and _insp.signature(_nda.build).parameters["week"].default is None
+   and "nfl_game_sim.current_week(preseason)" in _insp.getsource(_nda.build)
+   and 'starts=(auto_slate or {}).get("starts")' in _app_src_a
+   and "week=(max(1, min(18, _wk)) if _wk else None)" in _app_src_a
+   and '<option value="0">Week: auto</option>' in _js_a
+   and '($("dfsNflWeek") || {}).value, 10) || 0 }' in _js_a)
+ck("the look-back keys a football build by the week it RAN on, not the picker's: a week-6 lineup logged under 'week 1' would be graded against week-1 box scores",
+   _dla.event_of("nfl", {"week": 1}, today="2026-10-16", res={"week": 6})[0] == "nfl:2026:w6"
+   and _dla.event_of("nfl", {"week": 3}, today="2026-09-20")[0] == "nfl:2026:w3"
+   and "event_of(sport, req, res=res)" in _insp.getsource(_dla.log_build))
+# (4) the game labels and the real home side
+import nfl_live as _nla
+_o_sched_a = _nla.schedule
+try:
+    _nla.schedule = lambda week, season, seasontype=2: [{"home": "CLE", "away": "BAL", "state": "pre", "date": "x"},
+                                                        {"home": "SF", "away": "WSH", "state": "post", "date": "y"}]
+    _gm_a = {"1": {"teams": ["BAL", "CLE"]}, "2": {"teams": ["SF", "WAS"]}, "3": {"teams": ["KC", "LAC"]}}
+    _nsa._orient(_gm_a, 2026, 6)
+finally:
+    _nla.schedule = _o_sched_a
+ck("each DFS game knows its real home side, state and kickoff from the ESPN schedule (Sleeper's WAS is ESPN's WSH); the label was '<second team seen> @ <first>', backwards for half of week 6, and an unknown orientation now reads 'A vs B' instead of a guess; `teams` keeps its order (the latent models' seeded draws depend on it)",
+   _gm_a["1"]["label"] == "BAL @ CLE" and _gm_a["1"]["home"] == "CLE" and _gm_a["1"]["teams"] == ["BAL", "CLE"]
+   and _gm_a["2"]["label"] == "WAS @ SF" and _gm_a["2"]["state"] == "post" and _gm_a["2"]["home"] == "SF"
+   and _gm_a["3"]["label"] == "LAC vs KC" and "home" not in _gm_a["3"]
+   and "_orient(games, season, week)" in _insp.getsource(_nsa.weekly_games),
+   str({k: v.get("label") for k, v in _gm_a.items()}))
+# (5) scope
+ck("the classic tournament simulates the slate's own games only (14 games at 60,000 worlds for a 10-game main slate, the finished Thursday game included)",
+   "teams=slate_teams" in _insp.getsource(__import__("dfs_tourney").build_nfl_classic))
+
+# ---- 2026-10-16 the game-engine DFS worlds (nfl_dfs_engine) -------------------
+print("=" * 72)
+print("NFL DFS engine worlds: the deep engine plays every world, the box is dealt")
+print("=" * 72)
+import random as _rde
+import subprocess as _spe
+import nfl_deep_sim as _Ede
+import nfl_dfs_engine as _Gde
+_Tde = _Ede.tables()
+_Lde = _Ede.league_profile(_Tde)
+# (1) the box counts every DraftKings category, and adds no draw
+_rng_de = _rde.Random(17)
+_bad_de = 0
+for _ in range(1500):
+    _gde = _Ede.play_game(_Lde, dict(_Lde, abbr="B"), _rng_de, _Tde)
+    for _s, _o in (("h", "a"), ("a", "h")):
+        _x, _y = _gde[_s], _gde[_o]
+        _calc = (6 * (_x["td_pass"] + _x["td_rush"] + _x["td_ret"]) + _x["xp_made"] + 2 * _x["two_made"]
+                 + 3 * _x["fg_made"] + 2 * _y["ends"]["safety"])
+        if (_calc != _x["pts"] or _x["fg_made"] != _x["fg_0_39"] + _x["fg_40_49"] + _x["fg_50p"]
+                or not (0 <= _x["ret_pts"] <= _x["pts"])):
+            _bad_de += 1
+ck("the deep engine's box counts what DraftKings pays the kicker and the defense on -- field goals by DK's distance tiers, made tries, points scored without the ball, blocks -- and its points identity holds in every team-game (6 per touchdown of every kind + tries + 3 per field goal + 2 per safety)",
+   _bad_de == 0, f"{_bad_de} of 3000 team-games")
+_r1 = _Ede.play_game(_Lde, dict(_Lde, abbr="B"), _rde.Random(5), _Tde)
+_r2 = _Ede.play_game(_Lde, dict(_Lde, abbr="B"), _rde.Random(5), _Tde, env_sd=0.0)
+_r3 = _Ede.play_game(_Lde, dict(_Lde, abbr="B"), _rde.Random(5), _Tde, env_sd=0.1)
+ck("the shared passing environment is OFF unless asked for (no draw is taken, so the slate's deep layer and the deep season play exactly as validated) and moves the game when the DFS worlds turn it on",
+   _Ede._ENV_SD == 0.0 and _r1["h"] == _r2["h"] and _r1["a"] == _r2["a"] and (_r1["h"] != _r3["h"] or _r1["a"] != _r3["a"]))
+# (2) the deal: one team's box shared out, every identity per world
+if _Gde.available():
+    import numpy as _npde
+    _pl_de = [{"name": "Q", "pos": "QB", "team": "A", "means": {"pass_att": 34, "pass_cmp": 22, "pass_yd": 240, "pass_td": 1.6, "int": 0.7,
+                                                                 "rush_att": 3, "rush_yd": 14, "rush_td": 0.1, "fum": 0.15}, "proj_pts": 18.0},
+              {"name": "R1", "pos": "RB", "team": "A", "means": {"rush_att": 16, "rush_yd": 70, "rush_td": 0.5, "rec_tgt": 4, "rec": 3, "rec_yd": 22, "rec_td": 0.1, "fum": 0.1}, "proj_pts": 14.0},
+              {"name": "R2", "pos": "RB", "team": "A", "means": {"rush_att": 7, "rush_yd": 30, "rush_td": 0.2, "rec_tgt": 2, "rec": 1.5, "rec_yd": 10, "rec_td": 0.05}, "proj_pts": 6.0},
+              {"name": "W1", "pos": "WR", "team": "A", "means": {"rec_tgt": 9, "rec": 6, "rec_yd": 80, "rec_td": 0.5, "fum": 0.05}, "proj_pts": 15.0},
+              {"name": "W2", "pos": "WR", "team": "A", "means": {"rec_tgt": 7, "rec": 4.5, "rec_yd": 55, "rec_td": 0.35}, "proj_pts": 11.0},
+              {"name": "T1", "pos": "TE", "team": "A", "means": {"rec_tgt": 5, "rec": 3.6, "rec_yd": 38, "rec_td": 0.3}, "proj_pts": 8.0}]
+    _ng = 4000
+    _rg = _npde.random.default_rng(3)
+    _box_de = {"pts": _rg.integers(0, 40, _ng), "pass_att": _rg.integers(18, 50, _ng), "rush_att": _rg.integers(12, 40, _ng),
+               "td_rush": _rg.integers(0, 4, _ng), "int": _rg.integers(0, 3, _ng), "fum_lost": _rg.integers(0, 3, _ng),
+               "kneels": _rg.integers(0, 4, _ng), "rush_yds": _rg.integers(-5, 220, _ng)}
+    _box_de["comp"] = _npde.minimum(_box_de["pass_att"], _rg.integers(8, 36, _ng))
+    _box_de["pass_yds"] = _box_de["comp"] * _rg.integers(4, 14, _ng) - _rg.integers(0, 6, _ng)
+    _box_de["td_pass"] = _npde.minimum(_box_de["comp"], _rg.integers(0, 5, _ng))
+    _deal = _Gde.deal_team(_pl_de, list(range(6)), _box_de, _npde.random.default_rng(9))
+    _rec = sum(_deal[i].get("rec", 0) for i in range(6))
+    _tgt = sum(_deal[i].get("rec_tgt", 0) for i in range(6))
+    _ok_de = (_npde.array_equal(_deal[0]["pass_cmp"], _box_de["comp"]) and _npde.array_equal(_rec, _box_de["comp"])
+              and _npde.array_equal(_deal[0]["pass_yd"], sum(_deal[i].get("rec_yd", 0) for i in range(6)))
+              and _npde.array_equal(_deal[0]["pass_yd"], _box_de["pass_yds"])
+              and _npde.array_equal(_deal[0]["pass_td"], sum(_deal[i].get("rec_td", 0) for i in range(6)))
+              and _npde.array_equal(_deal[0]["pass_td"], _box_de["td_pass"])
+              and all((_deal[i]["rec"] <= _deal[i]["rec_tgt"]).all() and (_deal[i]["rec_td"] <= _deal[i]["rec"]).all()
+                      for i in range(1, 6))
+              and (_tgt <= _box_de["pass_att"]).all() and (_tgt >= _box_de["comp"]).all()
+              and _npde.array_equal(sum(_deal[i].get("rush_att", 0) for i in range(6)), _box_de["rush_att"] + _box_de["kneels"])
+              and _npde.array_equal(sum(_deal[i].get("rush_yd", 0) for i in range(6)), _box_de["rush_yds"] - _box_de["kneels"])
+              and _npde.array_equal(sum(_deal[i].get("rush_td", 0) for i in range(6)), _box_de["td_rush"])
+              and _npde.array_equal(_deal[0]["int"], _box_de["int"])
+              and _npde.array_equal(sum(_deal[i].get("fum", 0) for i in range(6)), _box_de["fum_lost"])
+              and all(_npde.issubdtype(_npde.asarray(v).dtype, _npde.integer) for d in _deal.values() for v in d.values()))
+    _tm = float(_tgt.mean()) / float(_box_de["pass_att"].mean())
+    ck("the deal holds every box-score identity in every world: catches are the quarterback's completions, receiving yards his passing yards to the yard, receiving touchdowns his touchdowns, no catch without a target and no touchdown without a catch, carries and rushing yards the team's (kneel-downs the quarterback's own, -1 yard each), rushing touchdowns, interceptions and lost fumbles the team's -- all whole numbers -- and targets run at the measured 0.950 of attempts",
+       _ok_de and abs(_tm - _Gde._target_factor()) < 0.02, f"targets/attempts {_tm:.3f}")
+    _w1 = [float(_deal[3]["rec"].mean()), float(_deal[4]["rec"].mean()), float(_deal[5]["rec"].mean())]
+    ck("and each man's share of the catches follows his projected usage (target share x catch rate): W1 6.0 > W2 4.5 > T1 3.6 projected, in that order on the dealt worlds",
+       _w1[0] > _w1[1] > _w1[2], str([round(x, 2) for x in _w1]))
+    # (3) DraftKings scoring of the defense and the kicker, by hand
+    _me = {k: _npde.array([v]) for k, v in {"td_ret": 1, "blk": 1, "sacks": 0, "int": 0, "fum_lost": 0, "pts": 7, "ret_pts": 7,
+                                           "safety_conceded": 0, "fg_0_39": 1, "fg_40_49": 1, "fg_50p": 1, "xp_made": 2}.items()}
+    _op = {k: _npde.array([v]) for k, v in {"td_ret": 0, "blk": 0, "sacks": 3, "int": 1, "fum_lost": 1, "pts": 17, "ret_pts": 0,
+                                           "safety_conceded": 1}.items()}
+    # the other offence scored 17 with the ball (2 TD + 2 tries + 1 FG): tier 14-20 = +1;
+    # 3 sacks, 1 interception (+2), 1 fumble (+2), a return TD (+6), a safety (+2), a block (+2)
+    ck("DraftKings DST and kicker points come off the same simulated game, by DK's tables: points allowed are what the OTHER offence scored with the ball (its own return scores and the safeties this defense scored excluded), plus sacks, takeaways, return and defensive touchdowns, safeties and blocks; the kicker is 3/4/5 by distance plus his tries",
+       float(_Gde.dk_dst(_me, _op)[0]) == 1 + 3 + 2 + 2 + 6 + 2 + 2 and float(_Gde.dk_kicker(_me)[0]) == 3 + 4 + 5 + 2
+       and int(_Gde.off_points(_op, _me)[0]) == 17)
+    # (4) the level: the drive model and the deep engine, at the slate's weight
+    import nfl_game_sim as _ngsde
+    ck("each team's points target is the Sleeper drive model's and the deep engine's at the slate's own deep weight (0.30), either alone when the other is missing",
+       _Gde.blend_targets((20.0, 24.0), (30.0, 14.0)) == (0.7 * 20 + 0.3 * 30, 0.7 * 24 + 0.3 * 14)
+       and _Gde.blend_targets((None, 24.0), (30.0, 14.0))[0] == 30.0 and _ngsde._DEEP_WEIGHT == 0.30)
+    _hp_de, _ap_de, _rep_de = _Gde.anchor(_Lde, dict(_Lde, abbr="B"), (27.0, 19.0), _rde.Random(2), _Tde, n=600, iters=2)
+    _land = _Gde.play_worlds(_hp_de, _ap_de, 3000, _rde.Random(8), _Tde)
+    ck("the anchor re-levels each OFFENCE until the deep engine plays at its target (league-average sides asked for 27 and 19: lands within a point on 3,000 fresh games) and leaves both defences where the opponent has always seen them",
+       abs(float(_land[0]["pts"].mean()) - 27.0) < 1.0 and abs(float(_land[1]["pts"].mean()) - 19.0) < 1.0
+       and _hp_de["level_off"] > 1.0 > _ap_de["level_off"] and _hp_de["level_def"] == _ap_de["level_def"] == 1.0,
+       str((round(float(_land[0]["pts"].mean()), 2), round(float(_land[1]["pts"].mean()), 2), _hp_de["level_off"], _ap_de["level_off"])))
+    _s1 = _Gde.play_worlds_parallel(_Lde, dict(_Lde, abbr="B"), 2500, 11, workers=1, chunk=1000)
+    _s2 = _Gde.play_worlds_parallel(_Lde, dict(_Lde, abbr="B"), 2500, 11, workers=2, chunk=1000)
+    ck("a board's worlds are reproducible draw for draw from its seed whatever the number of processes (seeded slices, concatenated in order)",
+       all(_npde.array_equal(_s1[i][k], _s2[i][k]) for i in (0, 1) for k in _s1[0]))
+else:
+    ck("(numpy absent: the engine worlds' numeric checks run in the numpy suite)", True)
+# (5) where it plugs in
+import nfl_dfs_sim as _nsde
+import dfs_tourney as _dtde
+_pp_src = _insp.getsource(_nsde.player_pool)
+ck("the player pool offers the engine model beside legacy and constrained: one week context, the engine per game, its defenses and kickers taken from the SAME simulated games (no Sleeper shift, no league-rate field goals), a game without a deep profile falls back to legacy and says so in the ledger, the preseason refused",
+   _nsde.MODELS == ("legacy", "constrained", "engine")
+   and "nfl_dfs_engine.week_context(season, week, workers=workers)" in _pp_src
+   and "arr, proj = eng_dst[team], d[\"proj\"]" in _pp_src and "arr = eng_k.get(team) or _kicker_arr(" in _pp_src
+   and '"NFLENG-fallback"' in _pp_src and 'model in ("constrained", "engine") and preseason' in _pp_src)
+ck("every tournament board is built on ONE switch (dfs_tourney.BOARD_MODEL), the preseason always legacy, and stamps which model made its worlds, its seed and the engine's per-game anchor record; the showdown money note names the model it serves",
+   _dtde.board_model(None, True) == "legacy" and _dtde.board_model("constrained", False) == "constrained"
+   and _dtde.board_model(None, False) == _dtde.BOARD_MODEL
+   and _dtde.simulator_stamp("engine", 10)["model"] == "engine-deep"
+   and _dtde.simulator_stamp("legacy", 10, discrete=True)["model"] == "legacy-latent-discrete"
+   and "showdown serves legacy-latent" in _dtde.sd_money_gate(10, 100)["why"]
+   and "engine model's" in _dtde.sd_money_gate(10, 100, model="engine")["why"]
+   and "model = board_model(model, preseason)" in _insp.getsource(_dtde.build_nfl_showdown)
+   and "model = board_model(model, preseason)" in _insp.getsource(_dtde.build_nfl_classic)
+   and '"engine_report": _engine_report(' in _insp.getsource(_dtde.build_nfl_showdown))
+_ne_de = os.path.join(_tf_nd.mkdtemp(prefix="vigil-nonumpy-engine-"), "numpy.py")
+open(_ne_de, "w").write("raise ImportError('no numpy here (guard)')\n")
+_pe_de = _spe.run([sys.executable, "-c",
+                   "import sys\nimport nfl_dfs_engine\nassert nfl_dfs_engine.available() is False\n"
+                   "import app\nc = app.app.test_client()\nassert c.get('/healthz').status_code == 200\n"
+                   "assert 'nfl_dfs_engine' in sys.modules\nprint('ok')\n"],
+                  capture_output=True, text=True, cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                  env=dict(os.environ, PYTHONPATH=os.path.dirname(_ne_de), VIGIL_NO_BG="1", VIGIL_ALLOW_OPEN="1"))
+ck("the engine module imports on a machine with no numpy (the server), says it is unavailable, and the web app runs beside it",
+   "ok" in (_pe_de.stdout or ""), (_pe_de.stderr or "").strip()[-300:])
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

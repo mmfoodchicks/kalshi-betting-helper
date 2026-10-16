@@ -6546,7 +6546,12 @@ async function initSim() {
       wk.classList.toggle("hidden", !isNfl);
       if (isNfl && !wk.dataset.filled) {
         wk.dataset.filled = "1";
-        let o = ""; for (let w = 1; w <= 18; w++) o += `<option value="${w}">Week ${w}</option>`;
+        // "auto" first: the server reads the week off the slate itself (its
+        // game dates, else DraftKings' kickoff, else the calendar). Week 1 used
+        // to be the default, and an auto-loaded week-6 slate was built on
+        // week-1 projections whenever nobody touched this box.
+        let o = `<option value="0">Week: auto</option>`;
+        for (let w = 1; w <= 18; w++) o += `<option value="${w}">Week ${w}</option>`;
         wk.innerHTML = o;
       }
     }
@@ -6946,7 +6951,7 @@ async function runDfsSim() {
         preseason: !!(($("dfsNflPre") || {}).checked),
         grid: (($("dfsGrid") || {}).value || "").trim() || null,
         nfl_mode: ($("dfsNflMode") || {}).value || "auto",
-        week: parseInt(($("dfsNflWeek") || {}).value, 10) || 1 }),
+        week: parseInt(($("dfsNflWeek") || {}).value, 10) || 0 }),
     })).json();
     if (d.error === "upgrade_required") { box.innerHTML = upgradeNote(d); return; }
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
