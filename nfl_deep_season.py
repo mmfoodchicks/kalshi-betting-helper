@@ -80,17 +80,19 @@ def progress_read():
 def schedule_from_store(store):
     """[{id, week, home, away, final, home_pts, away_pts, neutral}] for the
     regular season, from the store's scoreboard events (nfl_pbp.season_records
-    fetches all eighteen weeks)."""
-    out = []
-    for e in store.get("events") or []:
-        if e.get("st") != 2 or e.get("home") not in nfl_season._DIV_OF or e.get("away") not in nfl_season._DIV_OF:
-            continue
-        fin = e.get("state") == "post"
-        out.append({"id": e["id"], "week": e["week"], "home": e["home"], "away": e["away"],
-                    "final": fin, "home_pts": e.get("home_pts") if fin else None,
-                    "away_pts": e.get("away_pts") if fin else None, "neutral": bool(e.get("neutral"))})
-    out.sort(key=lambda g: (g["week"], g["id"]))
-    return out
+    fetches all eighteen weeks and merges them by event id)."""
+    return P.regular_schedule(store, set(nfl_season._DIV_OF))
+
+
+def schedule_complete(games):
+    """True when every team has its full seventeen-game schedule (banked plus
+    remaining). A season sim on a partial schedule plays a different season --
+    the old gate could not see it (coverage counts only the events it has)."""
+    n = defaultdict(int)
+    for g in games:
+        n[g["home"]] += 1
+        n[g["away"]] += 1
+    return len(n) == 32 and all(v == 17 for v in n.values())
 
 
 class _Season:
@@ -136,13 +138,21 @@ class _Season:
                 n += 1; s += r
         return (s / n) if n else None
 
+    def _combined(self, teams):
+        """The COMBINED won-lost-tied percentage of a list of clubs (with
+        multiplicity: a club beaten twice counts twice) -- the rulebook's
+        strength of victory / schedule, not an average of percentages."""
+        w = g = 0.0
+        for o in teams:
+            w += self.w[o] + 0.5 * self.t[o]
+            g += self.w[o] + self.l[o] + self.t[o]
+        return w / g if g else 0.0
+
     def sov(self, ab):
-        b = self.beaten[ab]
-        return sum(self.pct(o) for o in b) / len(b) if b else 0.0
+        return self._combined(self.beaten[ab])
 
     def sos(self, ab):
-        o = self.opps[ab]
-        return sum(self.pct(x) for x in o) / len(o) if o else 0.0
+        return self._combined(self.opps[ab])
 
 
 def _common_opps(group, S):
@@ -161,6 +171,23 @@ def _break(group, S, rng, wildcard):
 
     def h2h(ab):
         others = set(group) - {ab}
+        if wildcard and len(group) > 2:
+            # Among three or more wild-card clubs head-to-head is a SWEEP rule:
+            # it applies only to a club that beat each of the others (it goes
+            # first) or lost to each of them (it goes last). The old version
+            # took any perfect percentage as a sweep, so a club 1-0 against one
+            # rival that had not played the third "swept" them.
+            res = {}
+            for opp, r in S.games[ab]:
+                if opp in others:
+                    res.setdefault(opp, []).append(r)
+            if len(res) < len(others):
+                return 0.0
+            if all(all(x == 1.0 for x in rs) for rs in res.values()):
+                return 1.0
+            if all(all(x == 0.0 for x in rs) for rs in res.values()):
+                return -1.0
+            return 0.0
         return S.rec_vs(ab, others)
 
     def div_rec(ab):
@@ -169,24 +196,25 @@ def _break(group, S, rng, wildcard):
     def conf_rec(ab):
         return S.rec_vs(ab, {o for o in conf_of if conf_of[o] == conf_of[ab] and o != ab})
 
+    com = _common_opps(group, S)
+
     def common(ab):
-        com = _common_opps(group, S)
-        if wildcard and sum(1 for opp in S.opps[ab] if opp in com) < 4:
-            return None
         return S.rec_vs(ab, com)
+
+    # wild card: the common-games step needs four common games for EVERY tied
+    # club, otherwise it is skipped for the whole group (it used to rank the
+    # short club last instead)
+    common_ok = (not wildcard) or all(sum(1 for opp in S.opps[ab] if opp in com) >= 4 for ab in group)
 
     rules = ([h2h, conf_rec, common, S.sov, S.sos] if wildcard
              else [h2h, div_rec, common, conf_rec, S.sov, S.sos])
     for rule in rules:
+        if rule is common and not common_ok:
+            continue
         vals = {}
         for ab in group:
             v = rule(ab)
             vals[ab] = -1.0 if v is None else v
-        if wildcard and rule is h2h and len(group) > 2:
-            # a sweep is required for head-to-head to apply among three or more
-            top = max(vals.values()); bot = min(vals.values())
-            if not (top >= 1.0 or bot <= 0.0):
-                continue
         best = max(vals.values())
         if all(v == best for v in vals.values()):
             continue
@@ -395,6 +423,9 @@ def run_deep(season=None, n_seasons=2000, workers=None, seed=None, profiles=None
                        "pbp_games_finished": _d, "pbp_games_held": held, "season": season,
                        "prior_season": True, "teams_with_games": sum(1 for p in profiles.values() if p.get("g"))}
         games = schedule_from_store(store)
+        quality["schedule_complete"] = schedule_complete(games)
+        quality["schedule_games"] = len(games)
+        quality["failed_weeks"] = list(store.get("failed_weeks") or [])
         played = [g for g in games if g["final"] and g["home_pts"] is not None]
         remaining = [g for g in games if not g["final"]]
         shared = {"profiles": profiles, "played": played, "remaining": remaining,
@@ -438,9 +469,15 @@ def run_deep(season=None, n_seasons=2000, workers=None, seed=None, profiles=None
 
 
 def publishable(agg):
-    """The quality gate the server and the PC both apply before saving."""
+    """The quality gate the server and the PC both apply before saving: the
+    play-by-play behind the profiles covers the finished games, every team has
+    its full seventeen-game schedule (a scoreboard week that failed to load
+    would otherwise drop its games from the simulated season unseen), and the
+    profiles have a prior season or games for every team."""
     q = agg.get("quality") or {}
     if (q.get("coverage") or 0) < MIN_COVERAGE:
+        return False
+    if not q.get("schedule_complete"):
         return False
     if not q.get("prior_season") and (q.get("teams_with_games") or 0) < 32:
         return False

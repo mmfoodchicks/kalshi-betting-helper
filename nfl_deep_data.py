@@ -9,9 +9,10 @@ team's overall strength.
 WHERE THE RATES COME FROM. Every finished game of the season, from the
 play-by-play (nfl_pbp.team_units), shrunk toward a prior with the K the fit
 measured for each stat -- the number of games of evidence it takes before a
-team's own rate counts as much as the prior (yards per play 7.3, completions
-63, sacks 15.5, interceptions 14, yards per carry 6.8, penalties 12, pass rate
-4.1; research/nfl_deep_fit.py). The prior is the league mean plus the part of
+team's own rate counts as much as the prior, the median over the three full
+seasons 2023-2025 (yards per play 5.9, completions 11.5, sacks 7.9,
+interceptions 26, yards per carry 22, pass rate 8.7, penalties 251 -- capped at
+60 here; research/nfl_deep_fit.py, every season's value in the tables). The prior is the league mean plus the part of
 LAST season's deviation that survives a year, also measured (the persistence
 slopes: an offence keeps ~0.42 of its yards-per-play edge, a defence ~0.16;
 interceptions, fumbles, punting and returns keep nothing, so their prior is
@@ -21,17 +22,20 @@ have taken over for the fast stats and the slow ones still lean on the prior.
 THE LEVEL. Unit rates say how a team moves the ball; they do not know what
 the market knows about the roster. The anchor is the one nfl_season already
 trusts -- Kalshi's win-total ladder (or the roster-aware ratings when the
-ladder is thin), as points of margin against an average team -- blended with
-the engine's own read at the weight nfl_season._ratings gives the prior
-against live results, 6 / (6 + games). The difference becomes a yardage
-multiplier through the measured points-per-yard elasticity (pts ~ ypp^1.45),
-half on the offence and half on the defence. The season job reports each
-team's realized margin so the anchor's residual is visible, never assumed.
+ladder is thin) -- converted to the market's REST-OF-SEASON strength
+(nfl_season.market_pace: the ladder prices the whole season, banked wins
+included) and then to points of margin against an average team, blended with
+the engine's own read at the weight the validation supports -- the whole level
+(see _ANCHOR_PRIOR_GAMES). The difference becomes a yardage multiplier through the
+ENGINE's measured points elasticity (_ENGINE_PTS_ELASTICITY), half on the
+offence and half on the defence. The team view carries the anchor record
+(source, engine read, market read, weight, target) so the residual is visible.
 
 Rosters this week: Sleeper's team projection for the week against the team's
 own season average is the only roster signal the codebase has for football
 (a quarterback out moves it directly). It is applied to the current week's
-games only, at half weight -- a judgment, stated as one.
+games only, at half weight, to the OFFENCE's level alone -- a judgment, stated
+as one.
 """
 import math
 
@@ -50,7 +54,28 @@ _K_KO = 40.0
 # Last season counts this much of a full season for the kicker (judgment:
 # kickers persist, but a 60-kick season is a small sample either way).
 _PREV_FG_WEIGHT = 0.5
-_ANCHOR_PRIOR_GAMES = 6.0        # nfl_season._ratings' weight on the prior
+# The market's weight in the level: None = the WHOLE level (weight 1), a
+# number k = k / (k + games). Full weight is what the out-of-sample walk-forward
+# supports (research/reports/nfl_deep_validation.md, 2024-25, 512 games, the
+# points-differential ratings standing in for Kalshi): anchored at weight 1 the
+# engine's log loss is 0.6317 against 0.6418 at 6/(6+g) (paired -0.0101 +/-
+# 0.0073; better in each season on its own, 2024 0.6216 v 0.6327, 2025 0.6418 v
+# 0.6509) and level with the PD ratings themselves (0.6331; -0.0014 +/- 0.0045),
+# with calibration closer and a margin slope of 0.88 against 1.39; the unit
+# model's own level read is the weakest part of the engine (alone 0.660,
+# margins compressed: slope 1.87). So
+# the market sets the level and the engine supplies what a rating cannot -- both
+# teams' score shapes, totals, spreads and the matchup-dependent spread of
+# outcomes. (The first version used nfl_season's 6/(6+g), a prior-vs-live blend,
+# on a market that is already a live posterior.)
+_ANCHOR_PRIOR_GAMES = None
+# The engine's own d ln(points) / d ln(level), measured on the engine with the
+# unbiased yardage rounding (league-average teams, 12,000 neutral games a point,
+# review_opus/r4b_level_slopes.py): 1.42 / 1.41 for the side whose yards move,
+# against the 1.45 measured on real team-games (pts ~ ypp^1.45) -- the engine and
+# the real game agree. With the old int(round()) rounding the same level moved
+# the margin by 9-72% of this.
+_ENGINE_PTS_ELASTICITY = 1.42
 _ROSTER_WEIGHT = 0.5
 _ROSTER_CLAMP = (0.85, 1.12)
 _LEVEL_CLAMP = (0.80, 1.25)
@@ -169,7 +194,7 @@ def build_profiles(season, store=None, T=None, anchor=True, log=None):
                "prior_season": bool(prev), "season": int(season)}
     if anchor:
         try:
-            apply_anchor(profs, season, T)
+            apply_anchor(profs, season, T, recs=P.records(store, set(nfl_season._DIV_OF)))
             quality["anchor"] = "applied"
         except Exception as e:
             errlog.note("NFLDD-anchor", e)
@@ -199,32 +224,37 @@ def engine_margin(prof, T):
     return off - dfn
 
 
-def market_margins(season):
-    """{abbr: points of margin vs average} from Kalshi's win totals, else the
-    roster-aware ratings nfl_season already uses."""
+def market_margins(season, recs=None):
+    """{abbr: points of margin vs average, for the games LEFT} from Kalshi's win
+    totals converted to rest-of-season pace with the banked records `recs`
+    ({abbr: (w, l, t, games_left)}), else the roster-aware ratings nfl_season
+    already uses (which carry the same conversion)."""
     import nfl_season
     mkt = nfl_season._market_wins()
-    src = "kalshi_win_totals"
-    if len(mkt) < 24:
+    src = "kalshi_win_totals_rest_of_season"
+    if len(mkt) >= 24:
+        mkt = nfl_season.market_pace(mkt, recs or {})
+    else:
         mkt = nfl_season._ratings(str(season))
         src = "nfl_season_ratings"
     return {ab: (w - 8.5) * nfl_season._PTS_PER_WIN for ab, w in mkt.items()}, src
 
 
-def apply_anchor(profs, season, T):
-    """Set each profile's `level` so the team's margin blends the market's read
-    with the engine's at 6 / (6 + games) on the market."""
+def apply_anchor(profs, season, T, recs=None):
+    """Set each profile's `level` so the team's margin is the market's
+    rest-of-season read (blended with the engine's own when _ANCHOR_PRIOR_GAMES
+    is a number)."""
     L = _lg(T)
-    elast = (T.raw.get("pts_vs_ypp") or [0, 1.45])[1]
+    elast = _ENGINE_PTS_ELASTICITY
     pts = L["pts_pg"]
-    mm, src = market_margins(season)
+    mm, src = market_margins(season, recs)
     for ab, prof in profs.items():
         own = engine_margin(prof, T)
         if ab not in mm:
             prof["anchor"] = {"source": None, "engine_margin": round(own, 2)}
             continue
         g = prof.get("g") or 0
-        w = _ANCHOR_PRIOR_GAMES / (_ANCHOR_PRIOR_GAMES + g)
+        w = 1.0 if _ANCHOR_PRIOR_GAMES is None else _ANCHOR_PRIOR_GAMES / (_ANCHOR_PRIOR_GAMES + g)
         target = w * mm[ab] + (1 - w) * own
         delta = target - own
         lvl = (1.0 + (delta / 2.0) / pts) ** (1.0 / elast) if pts > 0 else 1.0
@@ -269,19 +299,19 @@ def roster_factors(season, week):
 
 def with_roster(profs, factors):
     """Copies of the profiles with this week's roster factor folded into the
-    offence's level (the defence's level is left alone: Sleeper projects
-    offences)."""
+    OFFENCE's level only (Sleeper projects offences). It used to multiply the
+    team's single `level`, which the engine applies to both sides: a 0.88
+    factor (a starter out) cut the team's points 12.1% as intended AND raised
+    its opponent's 10.9% (review_opus/r4_level.py), doubling the effect."""
     out = {}
     for ab, p in profs.items():
         q = dict(p)
         f = factors.get(ab)
         if f:
-            q = dict(p)
-            q["off"] = dict(p["off"])
+            base = p.get("level") or 1.0
             q["roster_factor"] = f
-            # the level multiplies yards; a roster factor on points maps through
-            # the same elasticity
-            q["level"] = round((p.get("level") or 1.0) * (f ** (1.0 / 1.45)), 4)
+            q["level_def"] = p.get("level_def") or base
+            q["level_off"] = round((p.get("level_off") or base) * (f ** (1.0 / _ENGINE_PTS_ELASTICITY)), 4)
         out[ab] = q
     return out
 

@@ -24,8 +24,9 @@ leave-one-out in the fit: with both rates shrunk toward the league by the
 fitted K, an offence carries ~1.0 of its own deviation into a game and a
 defence ~0.7 of its own (yards per play 1.08 / 0.76, completions 1.11 / 0.91,
 sacks 1.01 / 0.36, interceptions 0.39 / 0.28, penalties 0.48 / 0.52; fumbles
-lost carry nothing measurable, K = 147,000 games, so every team fumbles at the
-league rate). A per-game zero-sum form tilt and a home-field yardage edge are
+lost carry nothing measurable -- the between-team variance is indistinguishable
+from zero in every season, a shrinkage K of 50 to 147,000 games -- so every team
+fumbles at the league rate). A per-game zero-sum form tilt and a home-field yardage edge are
 the only fitted free parameters; both are set against the measured margin SD
 and home win rate (see _FORM_SD, _HFA_YDS).
 
@@ -45,6 +46,7 @@ import json
 import math
 import os
 import random
+import zlib
 
 import nfl_pbp as P
 
@@ -52,23 +54,29 @@ TABLES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                            "research", "data", "nfl_deep_tables.json")
 # Home field as a yardage edge: the home offence's positive yards x_HFA_YDS, the
 # visitor's / _HFA_YDS, on every rush and completion. Fitted so two league-
-# average teams give p_home 0.5415 against the measured 0.5402 home win rate
-# (2023-2026 regular season, n=1,152; grid of 8,000 games a point: 1.02 ->
-# 0.5415, 1.04 -> 0.5665, 1.06 -> 0.5994). That realizes +1.18 points of home
-# margin against a real +2.04, deliberately -- the same choice as the drive
-# engine's _HFA_SCORE: real margins are right-skewed by blowouts, matching the
-# mean overshoots the win rate, and the moneyline is the market that gets
-# logged, calibrated and built into combos.
-_HFA_YDS = 1.020
+# average teams give p_home ~0.540 against the measured 0.5402 home win rate
+# (2023-2026 regular season, n=1,152). Refitted 2026-10-16 after the yardage
+# multipliers moved to unbiased rounding (_scale): form 0.075, 20,000 games a
+# point, 1.012 -> 0.5204, 1.016 -> 0.5300, 1.020 -> 0.5379, 1.024 -> 0.5446;
+# at form 0.08, 40,000 games each, 1.019 -> 0.5372 and 1.021 -> 0.5374, and
+# 1.022 -> 0.5450 over 60,000 -- the response is shallow and noisy here (SE
+# ~0.0025 a point); a line through all of them crosses 0.5402 at ~1.021.
+# That realizes ~+1.2 points of home margin against a real +2.04, deliberately --
+# the same choice as the drive engine's _HFA_SCORE: real margins are right-skewed
+# by blowouts, matching the mean overshoots the win rate, and the moneyline is
+# the market that gets logged, calibrated and built into combos.
+_HFA_YDS = 1.021
 # Zero-sum game-day tilt on each side's yardage, e^{+/-g}, g ~ N(0, _FORM_SD),
 # mean-preserving. The snap-level dice alone leave the engine's margin SD at
-# 12.29 against the real conditional 13.3 (unconditional 14.43 less the
+# 12.03 against the real conditional 13.3 (unconditional 14.43 less the
 # spread's own ~5.4 SD), exactly as they did in the drive engine; the missing
 # variance is anti-correlated between the sides, so it is added as a tilt
-# rather than a symmetric widening that would ruin totals. Fitted on the grid
-# (6,000 league-average games a point): 0.06 -> 12.91, 0.09 -> 13.44,
-# 0.12 -> 14.45; the total SD does not move with it (13.06 / 12.92 / 12.75).
-_FORM_SD = 0.085
+# rather than a symmetric widening that would ruin totals. Refitted with the
+# unbiased rounding (10,000 league-average games a point, no home edge):
+# 0.00 -> 12.03, 0.03 -> 12.30, 0.05 -> 12.49, 0.07 -> 13.12; 0.08 with the home
+# edge -> 13.26 over 60,000 games. The total SD does not move with it
+# (12.80 / 12.98 / 12.74 / 12.77).
+_FORM_SD = 0.080
 # Prior mass for the hierarchical smoothing of the situation tables.
 _CALL_PRIOR = 20.0
 _FOURTH_PRIOR = 8.0
@@ -118,6 +126,26 @@ def _sig(z):
     if z < -35:
         return 0.0
     return 1.0 / (1.0 + math.exp(-z))
+
+
+def _stoch(x, rng):
+    """x rounded to an integer at random, E[result] = x exactly."""
+    i = math.floor(x)
+    return i + (1 if rng.random() < x - i else 0)
+
+
+def _scale(yds, m, rng):
+    """A positive gain scaled by a team multiplier, rounded at RANDOM so the mean
+    scales by exactly m. The old int(round(yds * m)) erased small multipliers:
+    at m=1.02 a run of under 25 yards was unchanged, 18% of the intended change
+    in rushing yards survived (43% for completions), the anchor's levels
+    delivered 9-72% of their target margin and a third-and-two run converted at
+    63.85% for every m between 0.85 and 1.15 (Opus review 2026-10-16,
+    review_opus/r3_rounding.py, r4_level.py). Losses and the red-zone
+    touchdown sentinel (>= 99) pass through untouched."""
+    if yds <= 0 or yds >= 99:
+        return yds
+    return max(1, _stoch(yds * m, rng))
 
 
 def _rate(cell, prior_p, prior_n):
@@ -207,9 +235,15 @@ class Tables:
         self.punt_block = pb[0] / pb[1] if pb[1] else 0.005
         pt = raw["punt_td"].get("all") or [0, 1]
         self.punt_td = pt[0] / pt[1] if pt[1] else 0.0035
-        ko = raw["kickoff"].get("2025+") or next(iter(raw["kickoff"].values()))
-        self.kickoff = _H(ko)
-        kt = raw["kickoff_td"].get("2025+") or [0, 1]
+        # The NEWEST kickoff-rules era the fit carries ("2025+" > "2024" > "2023"):
+        # the touchback moved twice in the fit window and the engine plays under
+        # the current rules. It used to fall back to the OLDEST era when 2025+
+        # was absent -- a 2023-24 refit kicked off under 2023 rules (74.5 yards
+        # to go against 69.9) and ran totals ~2 points low.
+        era = max(raw["kickoff"])
+        self.kickoff = _H(raw["kickoff"][era])
+        self.kickoff_era = era
+        kt = raw["kickoff_td"].get(era) or [0, 1]
         self.ko_td = kt[0] / kt[1] if kt[1] else 0.002
         # ---- clock
         self.clock = {}
@@ -281,7 +315,11 @@ class _Side:
         L = T.league
         o, d = me["off"], opp["def"]
         ea, eb = T.exp["ypcomp"]
-        lvl = (me.get("level") or 1.0) / (opp.get("level") or 1.0)
+        # A profile's `level` is the anchor's (half on its offence, half on its
+        # defence); `level_off` / `level_def` override one side -- the weekly
+        # roster factor is the offence's alone.
+        lvl = ((me.get("level_off") or me.get("level") or 1.0)
+               / (opp.get("level_def") or opp.get("level") or 1.0))
         self.m_pass = (o["ypcomp"] / L["ypc_pass"]) ** ea * (d["ypcomp"] / L["ypc_pass"]) ** eb * home_edge * lvl
         ea, eb = T.exp["ypc"]
         self.m_rush = (o["ypc"] / L["ypc"]) ** ea * (d["ypc"] / L["ypc"]) ** eb * home_edge * lvl
@@ -329,11 +367,22 @@ def play_game(home, away, rng, T=None, neutral=False, playoff=False, form_sd=Non
     box = (_box(), _box())
     S = {"per": 1, "clk": 900, "off": None, "down": 1, "dist": 10, "ytg": 75,
          "ot_poss": [False, False], "sudden": False, "over": False, "kick_pending": None,
-         "drive_live": False}
+         "drive_live": False, "playoff": playoff}
     first_recv = rng.randrange(2)
-    _kickoff(S, box, sides, T, rng, kicking=1 - first_recv)
     S["half2_recv"] = 1 - first_recv
+    _kickoff(S, box, sides, T, rng, kicking=1 - first_recv)
+    # A kickoff the RULES owe (the second half, an overtime period) is queued by
+    # _end_period and played here, before the next snap -- never inline. Inline,
+    # whatever ended the period (a punt, a turnover, a missed kick) went on to
+    # hand the ball over AFTER the half-time kickoff had already been set up, and
+    # overrode it: in 4.2% of 20,000 league-average games the wrong team opened
+    # the second half (Opus review, 2026-10-16, review_opus/r1_period_bugs.py).
     while not S["over"]:
+        k = S["kick_pending"]
+        if k is not None:
+            S["kick_pending"] = None
+            _kickoff(S, box, sides, T, rng, kicking=k)
+            continue
         _snap(S, box, sides, T, rng, playoff)
     h, a = box
     return {"h": h, "a": a, "ot": S["per"] > 4, "tie": h["pts"] == a["pts"]}
@@ -356,6 +405,11 @@ def _new_drive(S, box, off, ytg):
     box[off]["drives"] += 1
     S["drive_live"] = True
     S["rz"] = False
+    # The fourth-down choice drawn when a down arose belongs to THAT down. When
+    # the snap never came (the half ran out, the clock-expiring kick fired) it
+    # used to survive into the next drive and decide some later fourth down --
+    # 16% of games carried one.
+    S.pop("fourth_pre", None)
     if S["per"] >= 5:
         S["ot_poss"][off] = True
 
@@ -374,40 +428,56 @@ def _kickoff(S, box, sides, T, rng, kicking):
         S["clk"] = max(0, S["clk"] - 4)
         return
     if rng.random() < T.ko_td:
-        _score(S, box, recv, 6)
         box[recv]["td_ret"] += 1
-        _try(S, box, sides, T, rng, recv)
+        _return_td(S, box, sides, T, rng, recv)
         return
-    ytg = T.kickoff.draw(rng) - int(round(sides[recv].ko_shift))
+    ytg = T.kickoff.draw(rng) - _stoch(sides[recv].ko_shift, rng)
     _new_drive(S, box, recv, max(1, min(_KO_MAX_YTG, ytg)))
     S["clk"] = max(0, S["clk"] - T.clock_draw("kickoff", 0, rng))
 
 
-def _try(S, box, sides, T, rng, side):
-    """Point after a touchdown: two or kick, then the kickoff (unless the game
-    is decided or time has run out)."""
-    sd6 = box[side]["pts"] - box[1 - side]["pts"]          # six already on the board
+def _try_points(S, box, sides, T, rng, side):
+    """The try after a touchdown (six already on the board): two or kick. Untimed,
+    so it is scored BEFORE any end-of-period ruling."""
+    sd6 = box[side]["pts"] - box[1 - side]["pts"]
     late = 1 if S["per"] >= 4 else 0
-    if S["per"] >= 5 and S["sudden"]:
-        S["over"] = True
-        return
     if rng.random() < T.p_two(sd6, late):
         if rng.random() < T.two_good:
             _score(S, box, side, 2)
     elif rng.random() < sides[side].xp:
         _score(S, box, side, 1)
-    _after_score(S, box, sides, T, rng, scorer=side)
+
+
+def _return_td(S, box, sides, T, rng, scorer):
+    """A touchdown by the side WITHOUT the ball (kick or punt return, pick-six,
+    fumble return): six, the try, then whatever the rules owe next."""
+    _score(S, box, scorer, 6)
+    S["drive_live"] = False
+    if S["per"] >= 5 and S["sudden"]:
+        S["over"] = True
+        return
+    _try_points(S, box, sides, T, rng, scorer)
+    _after_score(S, box, sides, T, rng, scorer=scorer)
 
 
 def _after_score(S, box, sides, T, rng, scorer):
+    """After any score is final (try included, clock already run): overtime
+    decided -> over; a kickoff the rules already owe (second half, overtime)
+    supersedes; a period the play ran out ends now; otherwise the scorer kicks.
+    The kickoff after a score at the END of the first or third quarter used to
+    be skipped (the scorer kept the ball on fourth down; 0.85% of games)."""
     S["drive_live"] = False
-    if S["per"] >= 5:
-        if _ot_decided(S, box):
-            S["over"] = True
-            return
+    if S["over"]:
+        return
+    if S["per"] >= 5 and _ot_decided(S, box):
+        S["over"] = True
+        return
+    if S["kick_pending"] is not None:
+        return
     if S["clk"] <= 0:
         _end_period(S, box, sides, T, rng)
-        return
+        if S["over"] or S["kick_pending"] is not None:
+            return
     _kickoff(S, box, sides, T, rng, kicking=scorer)
 
 
@@ -423,8 +493,11 @@ def _ot_decided(S, box):
 
 
 def _change(S, box, sides, T, rng, new_ytg):
-    """Change of possession at `new_ytg` for the new offence."""
+    """Change of possession at `new_ytg` for the new offence -- unless the period
+    that just ended owes a kickoff (half-time, overtime), which supersedes it."""
     S["drive_live"] = False
+    if S["over"] or S["kick_pending"] is not None:
+        return
     if S["per"] >= 5 and _ot_decided(S, box):
         S["over"] = True
         return
@@ -442,7 +515,7 @@ def _end_period(S, box, sides, T, rng):
             box[S["off"]]["ends"]["clock"] += 1
         S["per"], S["clk"] = 3, 900
         S["drive_live"] = False
-        _kickoff(S, box, sides, T, rng, kicking=1 - S["half2_recv"])
+        S["kick_pending"] = 1 - S["half2_recv"]           # played by play_game's loop
         return
     h, a = box[0]["pts"], box[1]["pts"]
     if S["drive_live"] and S["off"] is not None:
@@ -456,8 +529,7 @@ def _end_period(S, box, sides, T, rng):
         S["ot_poss"] = [False, False]
         S["sudden"] = False
         S["drive_live"] = False
-        recv = rng.randrange(2)
-        _kickoff(S, box, sides, T, rng, kicking=1 - recv)
+        S["kick_pending"] = 1 - rng.randrange(2)
         return
     # end of an overtime period
     if h != a or not S.get("playoff"):
@@ -466,8 +538,7 @@ def _end_period(S, box, sides, T, rng):
     S["per"] += 1
     S["clk"] = 900
     if not S["drive_live"]:
-        recv = rng.randrange(2)
-        _kickoff(S, box, sides, T, rng, kicking=1 - recv)
+        S["kick_pending"] = 1 - rng.randrange(2)
 
 
 def _tempo(S, box):
@@ -482,9 +553,10 @@ def _tempo(S, box):
     return 0
 
 
-def _run_clock(S, box, sides, T, rng, cls, tempo_mult=1.0):
+def _run_clock(S, box, sides, T, rng, cls, tempo_mult=1.0, defer_end=False):
     """Consume the time to the next snap; stop at the two-minute warning and the
-    end of the period."""
+    end of the period. `defer_end` reports a period that ran out without ending
+    it, so an untimed try can be scored first."""
     tempo = _tempo(S, box)
     dt = T.clock_draw(cls, tempo, rng)
     if tempo == 0 and cls in ("run", "oob"):
@@ -495,7 +567,8 @@ def _run_clock(S, box, sides, T, rng, cls, tempo_mult=1.0):
     S["clk"] = max(0, clk - dt)
     box[S["off"]]["top"] += min(dt, clk)
     if S["clk"] <= 0:
-        _end_period(S, box, sides, T, rng)
+        if not defer_end:
+            _end_period(S, box, sides, T, rng)
         return True
     return False
 
@@ -539,23 +612,19 @@ def _punt(S, box, sides, T, rng):
     ytg = S["ytg"]
     if rng.random() < T.punt_block:
         _run_clock(S, box, sides, T, rng, "punt")
-        if not S["over"]:
-            _change(S, box, sides, T, rng, max(1, 100 - ytg - 5))
+        _change(S, box, sides, T, rng, max(1, 100 - ytg - 5))
         return
     if rng.random() < T.punt_td:
         box[1 - off]["td_ret"] += 1
-        _score(S, box, 1 - off, 6)
-        S["off"] = 1 - off
-        _try(S, box, sides, T, rng, 1 - off)
+        _run_clock(S, box, sides, T, rng, "punt", defer_end=True)
+        _return_td(S, box, sides, T, rng, 1 - off)
         return
     h = T.punt.get(min(95, max(30, ytg // 5 * 5))) or T.punt[65]
-    recv_ytg = h.draw(rng) + int(round(sides[off].punt_shift))
-    if _run_clock(S, box, sides, T, rng, "punt"):
-        if S["over"]:
-            return
-        # the period ended on the punt: the receiver starts the next one
-    if not S["over"]:
-        _change(S, box, sides, T, rng, max(1, min(99, recv_ytg)))
+    recv_ytg = h.draw(rng) + _stoch(sides[off].punt_shift, rng)
+    # a period that ends on the punt: the receiver starts the next quarter at the
+    # spot; at half-time / regulation the owed kickoff supersedes (_change)
+    _run_clock(S, box, sides, T, rng, "punt")
+    _change(S, box, sides, T, rng, max(1, min(99, recv_ytg)))
 
 
 def _field_goal(S, box, sides, T, rng):
@@ -566,8 +635,7 @@ def _field_goal(S, box, sides, T, rng):
     if rng.random() < T.fg_block:
         box[off]["ends"]["fgm"] += 1
         _run_clock(S, box, sides, T, rng, "fg")
-        if not S["over"]:
-            _change(S, box, sides, T, rng, max(1, 100 - ytg - 7))
+        _change(S, box, sides, T, rng, max(1, 100 - ytg - 7))
         return
     p = _sig(T.fg_a + T.fg_b * kd + sides[off].fg_shift)
     if rng.random() < p:
@@ -578,17 +646,13 @@ def _field_goal(S, box, sides, T, rng):
         if S["per"] >= 5 and _ot_decided(S, box):
             S["over"] = True
             return
-        if _run_clock(S, box, sides, T, rng, "fg"):
-            return
-        _kickoff(S, box, sides, T, rng, kicking=off)
+        _run_clock(S, box, sides, T, rng, "fg")
+        _after_score(S, box, sides, T, rng, scorer=off)
         return
     # missed: the defence takes over at the spot of the kick (touchback inside the 20)
     box[off]["ends"]["fgm"] += 1
-    if _run_clock(S, box, sides, T, rng, "fg"):
-        if S["over"]:
-            return
-    if not S["over"]:
-        _change(S, box, sides, T, rng, max(1, 100 - max(20, ytg + 7)))
+    _run_clock(S, box, sides, T, rng, "fg")
+    _change(S, box, sides, T, rng, max(1, 100 - max(20, ytg + 7)))
 
 
 def _snap(S, box, sides, T, rng, playoff):
@@ -682,18 +746,15 @@ def _snap(S, box, sides, T, rng, playoff):
                 if adv >= 99 or 100 - ytg - adv <= 0:
                     # pick-six
                     box[1 - off]["td_ret"] += 1
-                    _score(S, box, 1 - off, 6)
-                    S["off"] = 1 - off
-                    _try(S, box, sides, T, rng, 1 - off)
+                    _run_clock(S, box, sides, T, rng, "to", me.tempo, defer_end=True)
+                    _return_td(S, box, sides, T, rng, 1 - off)
                     return
                 turnover_ytg = max(1, min(99, 100 - ytg - adv))
                 to_kind = "int"
             elif rng.random() < _sig(_logit(T.comp.get((down, db), T.league["comp"])) + me.d_comp):
                 bx["comp"] += 1
                 h = T.comp_yds.get((down, db, zn)) or T.comp_yds_dz.get((db, zn)) or T.comp_yds_dz[(2, 3)]
-                yds = h.draw(rng)
-                if yds > 0:
-                    yds = int(round(yds * me.m_pass)) or 1
+                yds = _scale(h.draw(rng), me.m_pass, rng)
                 if yds >= ytg:
                     yds = ytg
                     td = True
@@ -710,9 +771,7 @@ def _snap(S, box, sides, T, rng, playoff):
     else:
         bx["rush_att"] += 1
         h = T.rush_yds.get((down, db, zn)) or T.rush_yds_dz.get((db, zn)) or T.rush_yds_dz[(2, 3)]
-        yds = h.draw(rng)
-        if yds > 0:
-            yds = int(round(yds * me.m_rush)) or 1
+        yds = _scale(h.draw(rng), me.m_rush, rng)
         if yds >= ytg:
             yds = ytg
             td = True
@@ -734,13 +793,19 @@ def _snap(S, box, sides, T, rng, playoff):
         bx["conv"][down] += 1
         if S.get("rz"):
             bx["rz_td"] += 1
-        # the clock stops on a score; the time off the clock is the play itself
-        if not _run_clock(S, box, sides, T, rng, "score", me.tempo):
-            _try(S, box, sides, T, rng, off)
-        else:
-            # the period ended on the touchdown: try, then the next period's kickoff
-            S["clk"] = 0
-            _try_after_period(S, box, sides, T, rng, off)
+        S["drive_live"] = False
+        if S["per"] >= 5 and S["sudden"]:
+            S["over"] = True                  # sudden death: no try
+            return
+        # The play's time comes off, the untimed try is scored, and only THEN
+        # does a period that ran out end -- so a touchdown that ties the game at
+        # the gun is decided by the kick, and a touchdown as the first quarter
+        # expires no longer advanced the period twice (skipping a quarter).
+        ended = _run_clock(S, box, sides, T, rng, "score", me.tempo, defer_end=True)
+        _try_points(S, box, sides, T, rng, off)
+        if ended:
+            _end_period(S, box, sides, T, rng)
+        _after_score(S, box, sides, T, rng, scorer=off)
         return
     ytg2 = ytg - yds
     if ytg2 >= 100 and rng.random() < _SAFETY_SHARE:
@@ -748,24 +813,23 @@ def _snap(S, box, sides, T, rng, playoff):
         _score(S, box, 1 - off, 2)
         bx["ends"]["safety"] += 1
         S["drive_live"] = False
-        if _run_clock(S, box, sides, T, rng, "to", me.tempo):
-            return
         if S["per"] >= 5 and _ot_decided(S, box):
             S["over"] = True
             return
+        _run_clock(S, box, sides, T, rng, "to", me.tempo)
+        if S["over"] or S["kick_pending"] is not None:
+            return
+        # the free kick to the scorers (also after a safety that ended the 1st/3rd)
         h = T.punt[80]
         _new_drive(S, box, 1 - off, max(1, min(99, h.draw(rng) + 8)))
         return
     if turnover_ytg is not None:
         bx["ends"][to_kind or "fum"] += 1
-        if _run_clock(S, box, sides, T, rng, "to", me.tempo):
-            if S["over"]:
-                return
-            # the period ended on the turnover; the new offence opens the next
-            if S["per"] == 3 and S["clk"] == 900:
-                return
-        if not S["over"]:
-            _change(S, box, sides, T, rng, turnover_ytg)
+        # The old guard here ("per == 3 and clk == 900") missed every half-time
+        # kickoff that took time off the clock, and overtime entirely; _change
+        # now defers to an owed kickoff itself.
+        _run_clock(S, box, sides, T, rng, "to", me.tempo)
+        _change(S, box, sides, T, rng, turnover_ytg)
         return
     if ytg2 >= 100:
         ytg2 = 99                 # held up at the goal line / thrown away instead
@@ -784,11 +848,8 @@ def _snap(S, box, sides, T, rng, playoff):
     if S["down"] > 4:
         # turnover on downs
         bx["ends"]["downs"] += 1
-        if _run_clock(S, box, sides, T, rng, "to", me.tempo):
-            if S["over"] or (S["per"] == 3 and S["clk"] == 900):
-                return
-        if not S["over"]:
-            _change(S, box, sides, T, rng, max(1, 100 - ytg2))
+        _run_clock(S, box, sides, T, rng, "to", me.tempo)
+        _change(S, box, sides, T, rng, max(1, 100 - ytg2))
         return
     # the clock to the next snap depends on what the next snap is
     if S["down"] == 4:
@@ -801,33 +862,16 @@ def _snap(S, box, sides, T, rng, playoff):
     _run_clock(S, box, sides, T, rng, cls, me.tempo)
 
 
-def _try_after_period(S, box, sides, T, rng, side):
-    """A touchdown as the period expired: the try happens, then the period
-    changes hands by the normal rule (half-time kickoff, overtime, or the end)."""
-    sd6 = box[side]["pts"] - box[1 - side]["pts"]
-    late = 1 if S["per"] >= 4 else 0
-    if S["per"] >= 5 and S["sudden"]:
-        S["over"] = True
-        return
-    if rng.random() < T.p_two(sd6, late):
-        if rng.random() < T.two_good:
-            _score(S, box, side, 2)
-    elif rng.random() < sides[side].xp:
-        _score(S, box, side, 1)
-    S["drive_live"] = False
-    if S["per"] >= 5 and _ot_decided(S, box):
-        S["over"] = True
-        return
-    _end_period(S, box, sides, T, rng)
-
-
 # ---- Monte Carlo over one matchup ---------------------------------------------
 def simulate(home, away, n=2000, seed=None, neutral=False, playoff=False, T=None, form_sd=None):
     """n games of away @ home. Returns the summary the boards read: win
     probabilities for BOTH sides (and the tie), score means, margin and total
     distributions, team box means."""
     T = T or tables()
-    rng = random.Random(seed if seed is not None else hash((home.get("abbr"), away.get("abbr"))) & 0xFFFFFFFF)
+    # crc32, not hash(): Python randomizes str hashes per process, so the same
+    # matchup gave different numbers on every worker and on the PC
+    rng = random.Random(seed if seed is not None
+                        else zlib.crc32(f"{home.get('abbr')}|{away.get('abbr')}".encode()))
     hw = aw = ties = ot = 0
     margins, totals = [], []
     acc = ({}, {})

@@ -18118,9 +18118,9 @@ ck("the parser: a home team's punt row gets its yards to go rebuilt from the yar
    and [k[3] for k in _rec_nd["scoring"]] == [1, 0, 4] and _rec_nd["scoring"][2][4] == (3 + 6) - 7
    and isinstance(_rec_nd["plays"], _arr_nd.array) and len(_rec_nd["plays"]) % _pbp.PLAY_W == 0,
    f"punt ytg {_punt_nd[_pbp.I_YTG]} scoring {_rec_nd['scoring']}")
-ck("the engine's two free parameters are the fitted ones, with the measurement in the comment: form tilt 0.085 (grid 0.06 -> 12.91, 0.09 -> 13.44, target 13.3) and the home yardage edge 1.02 (8,000-game grid: 1.02 -> 0.5415 against the real 0.5402); the safety share and the kneel rule are stated as rules",
-   _nds._FORM_SD == 0.085 and _nds._HFA_YDS == 1.02 and "0.06 -> 12.91, 0.09 -> 13.44" in _eng_flat_nd
-   and "1.02 -> 0.5415" in _eng_flat_nd and _nds._SAFETY_SHARE == 0.33 and "_SAFETY_SHARE" in _eng_src_nd
+ck("the engine's two free parameters are the ones REFITTED after the unbiased rounding (2026-10-16), with the grid in the comment: form tilt 0.080 (0.07 -> 13.12, 0.08 with the home edge -> 13.26 over 60,000 games; target 13.3) and the home yardage edge 1.021 (1.019 -> 0.5372, 1.021 -> 0.5374, 1.022 -> 0.5450; target 0.5402); the safety share and the kneel rule are stated as rules",
+   _nds._FORM_SD == 0.080 and _nds._HFA_YDS == 1.021 and "1.019 -> 0.5372 and 1.021 -> 0.5374" in _eng_flat_nd and "0.07 -> 13.12; 0.08 with the home edge -> 13.26" in _eng_flat_nd
+   and "1.020 -> 0.5379, 1.024 -> 0.5446" in _eng_flat_nd and _nds._SAFETY_SHARE == 0.33 and "_SAFETY_SHARE" in _eng_src_nd
    and _nds._KNEEL_SNAP_S == 40)
 _L_nd = _nds.league_profile(_T_nd)
 _A_nd = dict(_L_nd); _A_nd["abbr"] = "AWY"
@@ -18147,22 +18147,23 @@ _prev_nd = _pbp._unit(); _prev_nd.update({"snaps": 1100, "pass": 650, "comp": 43
 _prev_nd["clock"] = [400, 15000]
 _u_nd = _ndd._unit_profile(_T_nd, "off", _cur_nd, _prev_nd, 6)
 _lgv_nd = _T_nd.league["ypc_pass"]; _curv_nd = 2400 / 170
-ck("a unit's rate is the season's games shrunk toward the prior by the fit's K (yards per completion: 6 games of 14.1 against K=18.8 land between the prior and 14.1), the prior is the league plus the measured year-over-year persistence of last season's deviation (an offence keeps ~0.39 of its yards-per-completion edge; fumbles keep the league rate regardless), and every engine key is present",
+ck("a unit's rate is the season's games shrunk toward the prior by the fit's K (yards per completion: 6 games of 14.1 against the pooled K=13.6 land between the prior and 14.1), the prior is the league plus the measured year-over-year persistence of last season's deviation (an offence keeps ~0.39 of its yards-per-completion edge; fumbles keep the league rate regardless), and every engine key is present",
    _lgv_nd < _u_nd["ypcomp"] < _curv_nd and abs(_u_nd["fum"] - _T_nd.league["fum"]) < 1e-9
    and set(_u_nd) == set(_nds.PROFILE_KEYS) and 0 < _ndd._persist(_T_nd, "off", "ypcomp") < 0.6
    and _ndd._persist(_T_nd, "off", "int") < 0.1,
    f"ypcomp {_u_nd['ypcomp']:.2f} (league {_lgv_nd:.2f}, season {_curv_nd:.2f})")
 _profs_nd = {ab: dict(_nds.league_profile(_T_nd, abbr=ab, name=ab), g=6) for ab in __import__("nfl_season")._DIV_OF}
 _orig_mm_nd = _ndd.market_margins
-_ndd.market_margins = lambda _s: ({ab: (6.0 if ab == "KC" else -6.0 if ab == "TEN" else 0.0) for ab in _profs_nd}, "test")
+_ndd.market_margins = lambda _s, recs=None: ({ab: (6.0 if ab == "KC" else -6.0 if ab == "TEN" else 0.0) for ab in _profs_nd}, "test")
 try:
     _ndd.apply_anchor(_profs_nd, 2026, _T_nd)
 finally:
     _ndd.market_margins = _orig_mm_nd
-ck("the level anchor: a team the market rates six points better than its units gets a level above 1, one rated six worse a level below 1, an even one stays at 1; the market's weight is 6/(6+games) (0.5 at six games), and the anchor record names its source and both margins",
+ck("the level anchor: a team the market rates six points better than its units gets a level above 1, one rated six worse a level below 1, an even one stays at 1; the market sets the WHOLE level (weight 1 -- the out-of-sample walk-forward's choice: 0.6317 log loss against 0.6418 at the first version's 6/(6+g)), and the anchor record names its source and both margins",
    _profs_nd["KC"]["level"] > 1.02 and _profs_nd["TEN"]["level"] < 0.98 and abs(_profs_nd["BUF"]["level"] - 1.0) < 1e-6
-   and abs(_profs_nd["KC"]["anchor"]["weight_market"] - 0.5) < 1e-6 and _profs_nd["KC"]["anchor"]["source"] == "test"
-   and abs(_profs_nd["KC"]["anchor"]["target_margin"] - 3.0) < 0.01,
+   and abs(_profs_nd["KC"]["anchor"]["weight_market"] - 1.0) < 1e-6 and _profs_nd["KC"]["anchor"]["source"] == "test"
+   and abs(_profs_nd["KC"]["anchor"]["target_margin"] - 6.0) < 0.01 and _ndd._ANCHOR_PRIOR_GAMES is None
+   and "0.6317 against 0.6418" in " ".join(_insp.getsource(_ndd).split()),
    f"KC {_profs_nd['KC']['level']} TEN {_profs_nd['TEN']['level']}")
 # The season: tiebreakers on a hand-built ledger, the bracket on a tiny run.
 _ns_nd = __import__("nfl_season")
@@ -18171,11 +18172,11 @@ for _h, _a, _hp, _ap in (("KC", "DEN", 27, 20), ("DEN", "LV", 24, 10), ("LV", "K
                           ("BUF", "KC", 20, 17), ("BUF", "DEN", 20, 17), ("MIA", "LV", 20, 17)):
     _S_nd.add(_h, _a, _hp, _ap)
 _rk_nd = _ndss._rank(["KC", "DEN", "LV", "LAC"], _S_nd, _rnd.Random(1), wildcard=False)
-# KC 2-2, DEN 2-2, LV 2-2 (a three-way head-to-head circle at 1-1 each); the
-# division record breaks it: KC 2-1, DEN 2-1, LV 2-1 -- all equal; common games
-# equal; conference record: KC 2-2, DEN 2-2, LV 2-2; strength of victory then
-# strength of schedule: LV's loss came to MIA (0-0 otherwise... MIA 1-0), its
-# schedule is the strongest. LAC is last at 0-3 whatever happens.
+# KC, DEN, LV all 2-2 in a head-to-head circle (1-1 each), 2-1 in the division,
+# 1-0 against the only common opponent (LAC), 2-2 in the conference, and equal on
+# strength of victory and of schedule -- so the three are separated by the COIN.
+# This guard only pins that the chain terminates and places LAC (0-3) last; the
+# rule-by-rule order is pinned by the rulebook scenarios further down.
 ck("the NFL tiebreaker chain runs (head-to-head, division record, common games, conference record, strength of victory, strength of schedule, the coin) and re-applies from the top as a tie shrinks: a hand-built three-way circle at 2-2 ranks all three above the 0-3 team, LAC last, with every team placed exactly once",
    sorted(_rk_nd) == ["DEN", "KC", "LAC", "LV"] and _rk_nd[-1] == "LAC" and len(set(_rk_nd)) == 4,
    str(_rk_nd))
@@ -18186,12 +18187,12 @@ ck("seeding a conference gives seven distinct seeds, the first four being the fo
 _evs_nd, _games_nd = [], {}
 _abbrs_nd = list(_ns_nd._DIV_OF)
 _gid_nd = 0
-for _w in range(1, 19):
+for _w in range(1, 18):                      # 17 weeks: every team plays 17 (the schedule gate)
     _rng_w = _rnd.Random(_w)
     _order = _abbrs_nd[:]; _rng_w.shuffle(_order)
     for _i in range(0, 32, 2):
         _gid_nd += 1
-        _fin = _w <= 15
+        _fin = _w <= 14
         _evs_nd.append({"id": str(_gid_nd), "week": _w, "st": 2, "state": "post" if _fin else "pre", "home": _order[_i], "away": _order[_i + 1],
                         "home_pts": _rng_w.randrange(10, 35) if _fin else -1, "away_pts": _rng_w.randrange(10, 35) if _fin else -1, "neutral": False})
         if _fin:
@@ -18209,7 +18210,7 @@ try:
     _gr_nd = _ndss.game_rows(_agg_nd)
 finally:
     _ns_nd.team_detail, _ns_nd._price_maps = _o_td_nd, _o_pm_nd
-ck("a tiny deep season on a hand-built store (15 weeks banked, 3 to play, league-average profiles, no network): three seasons run inline, the board's Super Bowl shares sum to 100, division to 800, playoffs to 1,400, the No. 1 seed market exists, every remaining game carries both teams' probabilities that sum to one with the tie, the team view lists each remaining game with win AND loss probabilities beside the banked results, and the quality gate passes",
+ck("a tiny deep season on a hand-built store (14 weeks banked, 3 to play, league-average profiles, no network): three seasons run inline, the board's Super Bowl shares sum to 100, division to 800, playoffs to 1,400, the No. 1 seed market exists, every remaining game carries both teams' probabilities that sum to one with the tie, the team view lists each remaining game with win AND loss probabilities beside the banked results, and the quality gate passes",
    _agg_nd["n"] == 3 and _agg_nd["n_games_left"] == 48 and _agg_nd["quality"]["ok"]
    and abs(sum(r["model_pct"] for r in _bd_nd["markets"]["world_series"]["teams"]) - 100) < 0.5
    and abs(sum(r["model_pct"] for r in _bd_nd["markets"]["division"]["teams"]) - 800) < 2
@@ -18218,11 +18219,14 @@ ck("a tiny deep season on a hand-built store (15 weeks banked, 3 to play, league
    and len(_gr_nd) == 48 and all(abs(g["p_home"] + g["p_away"] + g["p_tie"] - 1.0) < 1e-6 for g in _gr_nd)
    and _td_nd["engine"] == "deep" and sum(1 for s_ in _td_nd["schedule"] if not s_["final"]) == 3
    and all({"p_win", "p_loss", "p_tie", "exp_margin"} <= set(s_) for s_ in _td_nd["schedule"] if not s_["final"])
-   and sum(1 for s_ in _td_nd["schedule"] if s_["final"]) == 15 and _td_nd["wins"] + _td_nd["losses"] + _td_nd["ties"] == 15
+   and sum(1 for s_ in _td_nd["schedule"] if s_["final"]) == 14 and _td_nd["wins"] + _td_nd["losses"] + _td_nd["ties"] == 14
    and {"units", "level", "anchor"} <= set(_td_nd["units"]),
    f"n {_agg_nd['n']} left {_agg_nd['n_games_left']} rows {len(_gr_nd)}")
-ck("the quality gate refuses a run whose play-by-play store misses more than a tenth of the finished games",
+ck("the quality gate refuses a run whose play-by-play store misses more than a tenth of the finished games, and one whose schedule is short of seventeen games for any team (a scoreboard week that failed to load used to drop its games from the simulated season while coverage still read 100%)",
    _ndss.publishable(_agg_nd) and not _ndss.publishable(dict(_agg_nd, quality=dict(_agg_nd["quality"], coverage=0.8)))
+   and not _ndss.publishable(dict(_agg_nd, quality=dict(_agg_nd["quality"], schedule_complete=False)))
+   and _agg_nd["quality"]["schedule_complete"] is True and _agg_nd["quality"]["schedule_games"] == 272
+   and not _ndss.schedule_complete([g for g in _ndss.schedule_from_store(_store_nd) if g["week"] != 5])
    and _ndss.MIN_COVERAGE == 0.90)
 # The wiring: the nightly job, the routes, the slate's deep layer, the PC, the schema, the cards.
 import app as _app_nd
@@ -18239,7 +18243,7 @@ ck("the nightly scheduler carries nfl_deep beside nfl_season, and its runner ask
    _reg_nd and '_deep_pc_first("nfl_deep")' in _run_src_nd and "deep_cache.HEAVY_BUILD" in _run_src_nd
    and 'jobs.timed(f"deep:nfl:w{workers}")' in _run_src_nd and 'pro_sim.in_season("nfl")' in _run_src_nd
    and "nfl_deep_season.publishable(agg)" in _run_src_nd and "_NFL_DEEP_SERVER_SEASONS" in _run_src_nd
-   and _app_nd._NFL_DEEP_SERVER_SEASONS == 2000)
+   and _app_nd._NFL_DEEP_SERVER_SEASONS == 1000 and "225 ms a season" in _insp.getsource(_app_nd))
 _c_nd = _app_nd.app.test_client()
 _rs_nd = _c_nd.get("/api/nfl/deep/status"); _js_nd = _rs_nd.get_json() or {}
 _rst_nd = _c_nd.get("/api/sim/status"); _jst_nd = _rst_nd.get_json() or {}
@@ -18258,7 +18262,7 @@ ck("the weekly slate's deep layer: every regular-season game also runs the play-
    _ngs_nd._DEEP_WEIGHT == 0.30 and 400 <= _ngs_nd._DEEP_N <= 1000 and "~8 s per half-hourly" in _insp.getsource(_ngs_nd)
    and 'ph = (1 - _DEEP_WEIGHT) * ph + _DEEP_WEIGHT * deep["p_home"]' in _bb_src_nd
    and 'g["p_home_deep"], g["p_away_deep"], g["p_tie_deep"]' in _bb_src_nd and 'g["p_home_model"]' in _bb_src_nd
-   and 'predlog.log_many("nfl_deep", deep_rows)' in _bb_src_nd and "0.673" in _insp.getsource(_ngs_nd) and "0.637" in _insp.getsource(_ngs_nd)
+   and 'predlog.log_shadow("nfl_deep", deep_rows)' in _bb_src_nd and "-0.0015 +/- 0.0013" in " ".join(_insp.getsource(_ngs_nd).split())
    and 'errlog.note("NFLG-deep-sim"' in _bb_src_nd and 'errlog.note("NFLG-deep-profiles"' in _bb_src_nd
    and "nfl_deep_data.roster_factors(season, week)" in _insp.getsource(_ngs_nd._deep_profiles)
    and 'deep_cache.load("nfl_deep")' in _insp.getsource(_ngs_nd._deep_profiles)
@@ -18276,13 +18280,198 @@ ck("the PC runs the same deep NFL season (4,000 seasons, the same quality gate, 
    '("nfl_deep", _nfl_deep)' in _pwd_src_nd and "nfl_deep_season.publishable(agg)" in _pwd_src_nd
    and 'deep_cache.save("nfl_deep", agg)' in _pwd_src_nd and "n_seasons=4000" in _pwd_src_nd
    and _art_nd.SCHEMA == 4 and "nfl_deep.pkl" in _insp.getsource(_art_nd) and "nfl_pbp_<season>.pkl" in _insp.getsource(_art_nd))
+# ---- The 2026-10-16 review fixes (Opus review of f048760; every guard here
+# would have caught the bug it names -- each was measured on the shipped code).
+import collections as _col_nd2
+# (1) period transitions: invariants checked from OUTSIDE the engine. On the
+# shipped engine this harness found, in 20,000 games: the wrong team opening the
+# second half 833 times (4.17%), a score at the end of the 1st/3rd quarter with
+# the scorer keeping the ball 171, a period advancing twice inside one snap 9,
+# a fourth-down choice carried into a new drive 3,266 (16%).
+_tr_c = _col_nd2.Counter()
+_o_snap_nd, _o_nd_nd, _o_kick_nd = _nds._snap, _nds._new_drive, _nds._kickoff
+_tr_st = {}
+def _tr_kick(S, box, sides, T_, rng, kicking):
+    if S["per"] == 3 and not _tr_st["h2_kick"]:
+        _tr_st["h2_kick"] = True
+        if _tr_st["h2_drive_before"] or kicking != 1 - S["half2_recv"]:
+            _tr_c["2nd half not opened by the owed kickoff"] += 1
+    if S["per"] >= 5 and not _tr_st["ot_kick"]:
+        _tr_st["ot_kick"] = True
+        if _tr_st["ot_drive_before"]:
+            _tr_c["overtime not opened by a kickoff"] += 1
+    p0 = box[0]["pts"] + box[1]["pts"]
+    _o_kick_nd(S, box, sides, T_, rng, kicking)
+    if S["per"] == 3 and not _tr_st["h2_snap"] and box[0]["pts"] + box[1]["pts"] != p0:
+        _tr_st["h2_ret_td"] = True
+def _tr_nd(S, box, off, ytg):
+    _tr_st["drives"] += 1
+    if S["per"] == 3 and not _tr_st["h2_kick"]:
+        _tr_st["h2_drive_before"] = True
+    if S["per"] >= 5 and not _tr_st["ot_kick"]:
+        _tr_st["ot_drive_before"] = True
+    _o_nd_nd(S, box, off, ytg)
+    if "fourth_pre" in S:
+        _tr_c["new drive holding a fourth-down choice"] += 1
+def _tr_snap(S, box, sides, T_, rng, po):
+    if _tr_st["last_per"] is not None and S["per"] - _tr_st["last_per"] >= 2:
+        _tr_c["period advanced twice"] += 1
+    if _tr_st["scored"] and _tr_st["drives"] == _tr_st["drives_before"]:
+        _tr_c["scorer snapped again without a new drive"] += 1
+    if S["per"] == 3 and not _tr_st["h2_snap"]:
+        _tr_st["h2_snap"] = True
+        if S["off"] != S["half2_recv"] and not _tr_st["h2_ret_td"]:
+            _tr_c["first snap of the 2nd half not by the owed receiver"] += 1
+    p0 = box[0]["pts"] + box[1]["pts"]
+    _tr_st["last_per"], _tr_st["drives_before"] = S["per"], _tr_st["drives"]
+    _o_snap_nd(S, box, sides, T_, rng, po)
+    _tr_st["scored"] = box[0]["pts"] + box[1]["pts"] != p0
+_nds._snap, _nds._new_drive, _nds._kickoff = _tr_snap, _tr_nd, _tr_kick
+try:
+    _tr_rng = _rnd.Random(2026)
+    for _i in range(1500):
+        _tr_st.update(drives=0, h2_kick=False, ot_kick=False, h2_drive_before=False, ot_drive_before=False,
+                      last_per=None, scored=False, drives_before=-1, h2_snap=False, h2_ret_td=False)
+        _nds.play_game(_L_nd, _A_nd, _tr_rng, _T_nd, playoff=(_i % 5 == 0))
+finally:
+    _nds._snap, _nds._new_drive, _nds._kickoff = _o_snap_nd, _o_nd_nd, _o_kick_nd
+ck("period transitions keep every rule in 1,500 games (a fifth of them playoffs): the second half is opened by the owed kickoff and its receiver has the first snap, overtime opens with a kickoff, every score is followed by a new drive, no period advances twice in one snap, no drive inherits a fourth-down choice -- and the owed kickoff is QUEUED (kick_pending, played by play_game's loop), never kicked inline where a possession change could override it",
+   sum(_tr_c.values()) == 0 and 'S["kick_pending"] = 1 - S["half2_recv"]' in _eng_src_nd
+   and "_try_after_period" not in _eng_src_nd and 'S.pop("fourth_pre", None)' in _insp.getsource(_nds._new_drive)
+   and 'if S["over"] or S["kick_pending"] is not None:' in _insp.getsource(_nds._change),
+   str(dict(_tr_c)))
+# (2) yardage multipliers: unbiased rounding. Shipped: int(round(yds * m)) left
+# a run under 25 yards unchanged at m=1.02 (18% of the intended change in rushing
+# yards survived) and a third-and-two run converted at 63.85% for every m between
+# 0.85 and 1.15.
+_rg = _rnd.Random(4)
+_m5 = sum(_nds._scale(5, 1.05, _rg) for _ in range(40000)) / 40000
+_h32 = _T_nd.rush_yds[(3, 0, 5)]
+def _pconv_nd(m, n=30000, seed=8):
+    r_ = _rnd.Random(seed)
+    return sum(1 for _ in range(n) if _nds._scale(_h32.draw(r_), m, r_) >= 2) / n
+_pc_lo, _pc_hi = _pconv_nd(0.85), _pconv_nd(1.15)
+ck("a team's yardage multiplier is applied with unbiased random rounding: 40,000 five-yard gains at m=1.05 average 5.25 (within 0.02), losses and the red-zone touchdown sentinel pass through, and a third-and-two run now converts more often for a better rushing team than a worse one (m 0.85 vs 1.15)",
+   abs(_m5 - 5.25) < 0.02 and _nds._scale(-3, 1.2, _rg) == -3 and _nds._scale(99, 0.8, _rg) == 99
+   and _pc_hi > _pc_lo + 0.01 and "int(round(yds" not in _insp.getsource(_nds._snap),
+   f"mean {_m5:.3f}; P(conv 3rd&2) {_pc_lo:.4f} -> {_pc_hi:.4f}")
+# (3) the level the anchor sets is DELIVERED. Shipped: 9-72% of the intended
+# margin for levels 0.95-1.08; the fixed engine's own points elasticity (1.42)
+# matches the 1.45 measured on real team-games.
+_lv_b = dict(_L_nd); _lv_b["abbr"] = "X"
+_lv_u = dict(_L_nd); _lv_u["abbr"] = "X"; _lv_u["level"] = 1.08
+_r_lb = _nds.simulate(_lv_b, _A_nd, n=3000, seed=31, neutral=True, form_sd=0.0)
+_r_lu = _nds.simulate(_lv_u, _A_nd, n=3000, seed=31, neutral=True, form_sd=0.0)
+_int_nd = 2 * _T_nd.league["pts_pg"] * (1.08 ** _ndd._ENGINE_PTS_ELASTICITY - 1)
+_got_nd = _r_lu["mean_margin"] - _r_lb["mean_margin"]
+ck("a level of 1.08 moves the margin by at least 80% of what the anchor intends (2 x points x (1.08^1.42 - 1)), and the anchor maps margins to levels with the engine's own measured elasticity (1.42, beside the 1.45 measured on real games)",
+   _got_nd >= 0.8 * _int_nd and _ndd._ENGINE_PTS_ELASTICITY == 1.42
+   and "elast = _ENGINE_PTS_ELASTICITY" in _insp.getsource(_ndd.apply_anchor),
+   f"delivered {_got_nd:+.2f} of {_int_nd:+.2f}")
+# (4) the roster factor is the OFFENCE's alone. Shipped: a 0.88 factor cut the
+# team's points 12.1% as intended and raised its opponent's 10.9%.
+_rb_nd = dict(_L_nd); _rb_nd["abbr"] = "X"
+_rq_nd = _ndd.with_roster({"X": _rb_nd}, {"X": 0.88})["X"]
+ck("the weekly roster factor moves the team's own offence (level_off) and leaves its defence untouched: the opponent's yardage multiplier against it is unchanged to the digit, its own falls",
+   _nds._Side(_A_nd, _rq_nd, _T_nd, 1.0).m_pass == _nds._Side(_A_nd, _rb_nd, _T_nd, 1.0).m_pass
+   and _nds._Side(_rq_nd, _A_nd, _T_nd, 1.0).m_pass < _nds._Side(_rb_nd, _A_nd, _T_nd, 1.0).m_pass
+   and _rq_nd["level_def"] == 1.0 and _rq_nd["level_off"] < 1.0 and _rq_nd["roster_factor"] == 0.88,
+   f"level_off {_rq_nd['level_off']}")
+# (5) the market anchor prices the games LEFT. Shipped: Kalshi's season win total
+# (banked wins included) read as a full-season rating -- MIN at 5-0 anchored
+# +6.2 points against the market's own rest-of-season +0.8; the error correlated
+# +0.90 with W-L across all 32 teams. The same conversion was missing in
+# nfl_season._ratings (the fast season sim).
+_mp_nd = _ns_nd.market_pace({"MIN": 11.26, "LAC": 5.45, "NEW": 9.0}, {"MIN": (5, 0, 0, 12), "LAC": (0, 5, 0, 12)})
+ck("nfl_season.market_pace turns a season win total into the market's rest-of-season strength: a 5-0 team at 11.26 expected wins is an 8.87-win pace over its remaining twelve, an 0-5 team at 5.45 a 7.72-win pace, a team with no record keeps its total; the deep anchor and the fast season sim's ratings both use it",
+   abs(_mp_nd["MIN"] - 17 * 6.26 / 12) < 0.01 and abs(_mp_nd["LAC"] - 17 * 5.45 / 12) < 0.01 and _mp_nd["NEW"] == 9.0
+   and "market_pace(mkt, recs or {})" in _insp.getsource(_ndd.market_margins)
+   and "market_pace(mkt, _banked(season))" in _insp.getsource(_ns_nd._ratings)
+   and "apply_anchor(profs, season, T, recs=P.records(" in _insp.getsource(_ndd.build_profiles),
+   str(_mp_nd))
+# (6) shrinkage K pooled across the full seasons. Shipped: assigned inside the
+# season loop, so every K was 2026's alone (five games a team) -- completions 62.7
+# against 11-26 in the full seasons, interceptions 14 against 20-143.
+_kok_nd = True
+for _st_k, _m_k in _T_nd.raw["matchup"].items():
+    _ks = sorted(_m_k["K_by_season"][str(y)] for y in _m_k["K_seasons"])
+    _med = _ks[len(_ks) // 2] if len(_ks) % 2 else 0.5 * (_ks[len(_ks) // 2 - 1] + _ks[len(_ks) // 2])
+    _kok_nd &= abs(_m_k["K_games"] - round(_med, 2)) < 1e-6 and _m_k["K_seasons"] == [2023, 2024, 2025]
+ck("every shipped shrinkage K is the MEDIAN of the full seasons' K (2023-2025), each season's value recorded beside it -- not the partial 2026 season's (completions 11.5 shipped, 2026 alone 62.7)",
+   _kok_nd and abs(_T_nd.raw["matchup"]["comp"]["K_games"] - _T_nd.raw["matchup"]["comp"]["K_by_season"]["2026"]) > 10,
+   str({k: v["K_games"] for k, v in _T_nd.raw["matchup"].items()}))
+# (7) the tiebreakers, on scenarios with a rulebook answer
+def _tbs(games):
+    S_ = _ndss._Season(list(_ns_nd._DIV_OF))
+    for g_ in games:
+        S_.add(*g_)
+    return S_
+_tb_a = _ndss._break(["BUF", "KC", "LAC"], _tbs([("BUF", "KC", 20, 10), ("MIA", "BUF", 20, 10), ("BUF", "NYG", 20, 10), ("PHI", "BUF", 20, 10),
+                                                  ("KC", "HOU", 20, 10), ("KC", "WSH", 20, 10), ("PHI", "KC", 20, 10),
+                                                  ("LAC", "PIT", 20, 10), ("LAC", "CIN", 20, 10), ("NYG", "LAC", 20, 10), ("DAL", "LAC", 20, 10)]), _rnd.Random(1), True)
+_tb_b = _ndss._break(["BUF", "KC", "LAC"], _tbs([("BUF", "KC", 20, 10), ("BUF", "LAC", 20, 10), ("KC", "LAC", 20, 10), ("LAC", "PIT", 20, 10), ("KC", "PIT", 20, 10),
+                                                  ("LAC", "CIN", 20, 10), ("BUF", "NYG", 10, 20), ("KC", "NYG", 10, 20), ("BUF", "DAL", 10, 20)]), _rnd.Random(1), True)
+_tb_c = _ndss._break(["KC", "DEN"], _tbs([("KC", "DEN", 20, 10), ("DEN", "KC", 20, 10), ("KC", "LV", 20, 10), ("DEN", "LV", 10, 20)]), _rnd.Random(1), False)
+ck("the tiebreakers follow the rulebook: among three wild-card clubs head-to-head applies only to a true SWEEP (BUF 1-0 against KC but never having played LAC is no sweep, so LAC's better conference record wins, then BUF over KC head-to-head; the shipped code put BUF first); a real sweep wins; a split division head-to-head goes to the division record; strength of victory / schedule are combined records",
+   _tb_a == ["LAC", "BUF", "KC"] and _tb_b[0] == "BUF" and _tb_c == ["KC", "DEN"]
+   and "def _combined" in _insp.getsource(_ndss._Season),
+   f"{_tb_a} {_tb_b} {_tb_c}")
+# (8) a failed scoreboard week never drops games from the stored schedule
+_ev_old_nd = [{"id": str(9000 + i), "week": w_, "st": 2, "state": "post", "home": "KC", "away": "LV", "home_pts": 20, "away_pts": 10, "neutral": False}
+              for i, w_ in enumerate((4, 5))]
+_o_ls_nd, _o_we_nd, _o_sv_nd = _pbp.load_season, _pbp.week_events, _pbp.deep_cache.save
+def _we_nd(season, w, st=2):
+    if st == 2 and w == 5:
+        raise OSError("403 from the WAF")
+    return [e for e in _ev_old_nd if e["week"] == w and st == 2]
+_pbp.load_season = lambda season: {"games": {e["id"]: {} for e in _ev_old_nd}, "events": list(_ev_old_nd), "updated": 1.0}
+_pbp.week_events = _we_nd
+_pbp.deep_cache.save = lambda key, payload: 0.0
+try:
+    _sr_nd = _pbp.season_records(2026, postseason=False)
+finally:
+    _pbp.load_season, _pbp.week_events, _pbp.deep_cache.save = _o_ls_nd, _o_we_nd, _o_sv_nd
+ck("a scoreboard week that fails to load keeps the games already stored for it: season_records MERGES events by id (the shipped code replaced the stored schedule with the weeks that answered) and records which weeks failed",
+   sorted(e["week"] for e in _sr_nd["events"]) == [4, 5] and _sr_nd["failed_weeks"] == ["st2w5"],
+   str(_sr_nd.get("failed_weeks")))
+# (9) the deep engine's own graded record actually records
+import predlog as _pl_nd
+import tempfile as _tf_nd
+_o_db_nd = _pl_nd._DB
+_pl_nd._DB = os.path.join(_tf_nd.mkdtemp(), "shadow_guard.db")
+try:
+    _pl_nd.init_db()
+    _tkh, _tka = "KXNFLGAME-26OCT18HOUJAX-JAX", "KXNFLGAME-26OCT18HOUJAX-HOU"
+    _pl_nd.log_many("nfl", [(_tkh, 0.62, None, 0.60, None), (_tka, 0.38, None, 0.40, None)])
+    _pl_nd.log_shadow("nfl_deep", [(_tkh, 0.676, None, 0.60, None), (_tka, 0.324, None, 0.40, None)])
+    _pl_nd.log_shadow("nfl_deep", [(_tkh, 0.9, None, 0.60, None)])
+    _pl_nd.log_many("nfl_deep", [(_tkh, 0.5, None, 0.6, None)])
+    _pl_nd._mark(_tkh, 1, 1, 1); _pl_nd._mark(_tka, 1, 0, 1)
+    _sh_pairs = sorted(p_[0] for p_ in _pl_nd.pairs("nfl_deep"))
+    _nfl_pairs = sorted(p_[0] for p_ in _pl_nd.pairs("nfl"))
+finally:
+    _pl_nd._DB = _o_db_nd
+ck("the deep engine's forecasts are graded apart: predlog keys a second model's forecast of a market another model owns in a SHADOW table (ticker, model), first write wins per model, graded off the owning row -- the shipped log_many('nfl_deep') on the drive model's tickers was silently ignored (ticker is the predictions primary key) and the bucket recorded nothing; the slate now calls log_shadow",
+   _sh_pairs == [0.324, 0.676] and _nfl_pairs == [0.38, 0.62]
+   and 'predlog.log_shadow("nfl_deep", deep_rows)' in _insp.getsource(__import__("nfl_game_sim")._build_board)
+   and 'log_many("nfl_deep"' not in _insp.getsource(__import__("nfl_game_sim")._build_board),
+   f"shadow {_sh_pairs} nfl {_nfl_pairs}")
+# (10) seeds that are the same on every process
+ck("the deep layer's seeds are process-stable (crc32 of the matchup), not hash() of strings, which Python randomizes per process -- every worker and the PC drew different deep figures for the same game",
+   "hash((" not in _insp.getsource(_nds.simulate) and "zlib.crc32(" in _insp.getsource(_nds.simulate)
+   and "zlib.crc32(" in _insp.getsource(__import__("nfl_game_sim")._build_board))
 _rep_dir_nd = os.path.join(os.path.dirname(__file__), "..", "research", "reports")
 _val_rep_nd = open(os.path.join(_rep_dir_nd, "nfl_deep_validation.md")).read()
-_val_rep2_nd = open(os.path.join(_rep_dir_nd, "nfl_deep_validation_anchored.md")).read()
-ck("the research record ships: the fit report, the walk-forward validation (engine alone) and its anchored arm, each with the whole-span table and the calibration table, and the tables file stays small",
-   os.path.exists(os.path.join(_rep_dir_nd, "nfl_deep_fit.md")) and "## Whole span" in _val_rep_nd and "## Calibration" in _val_rep_nd
-   and "| deep engine |" in _val_rep_nd and "points-differential ratings" in _val_rep_nd and "anchored to the points-differential ratings" in _val_rep2_nd
+import research.nfl_deep_validate as _ndv
+ck("the research record ships and is OUT OF SAMPLE: each validated season is scored with tables refit on the seasons BEFORE it (the first version scored 2025 with tables fit on 2023-2026), every arm and the 0.30 blends on the same games, paired differences with standard errors, calibration; the fit report; the tables file stays small; the superseded in-sample report is gone",
+   os.path.exists(os.path.join(_rep_dir_nd, "nfl_deep_fit.md")) and "REFIT ON THE SEASONS BEFORE IT" in _val_rep_nd
+   and "tables fit on [2023, 2024]" in _val_rep_nd and "## Paired log-loss differences" in _val_rep_nd and "## Calibration" in _val_rep_nd
+   and "| deep engine, PD-anchored at weight 1 | 512 |" in _val_rep_nd and "| 0.30 anchored weight 1 + 0.70 PD | 512 |" in _val_rep_nd
+   and "if s < season" in _insp.getsource(_ndv.run)
+   and not os.path.exists(os.path.join(_rep_dir_nd, "nfl_deep_validation_anchored.md"))
    and os.path.getsize(_nds.TABLES_PATH) < 400_000)
+ck("the engine plays under the NEWEST kickoff rules its tables carry (it fell back to the oldest era when 2025+ was absent, running a 2023-24 refit's totals ~2 points low)",
+   _T_nd.kickoff_era == "2025+" and "era = max(raw[\"kickoff\"])" in _eng_src_nd)
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

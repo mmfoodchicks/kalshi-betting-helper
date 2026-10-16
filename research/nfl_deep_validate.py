@@ -1,37 +1,51 @@
-"""Walk-forward validation of the NFL deep engine on a past season. RESEARCH.
+"""Out-of-sample walk-forward validation of the NFL deep engine. RESEARCH.
 
-For every regular-season week w from --from-week on, the team profiles are
-built from the season's games BEFORE week w only (exactly what production
-would have known), with the previous season's units as the prior and NO
-market anchor -- so this measures the engine and its unit model alone, not
-Kalshi's win totals. Every game of week w is then simulated n times and the
-engine's home win probability and expected margin are scored against what
-happened: log loss, Brier, accuracy, a calibration table, margin MAE/RMSE and
-the slope of actual on predicted margin (1.0 = the spread is on scale).
+For a past season S, the engine's tables are REFIT on the seasons BEFORE S only
+(research/nfl_deep_fit.build_tables), so nothing the engine samples -- yardage
+tables, exponents, shrinkage K, persistence -- has seen the games it is scored
+on or anything after them. (The first version of this
+script used the shipped tables, fit on 2023-2026, which include the season it
+scored; review 2026-10-16.) The two engine constants _FORM_SD / _HFA_YDS are
+global calibration targets (margin SD, home win rate) and stay as shipped.
 
-Two baselines sit beside it: the constant home rate (0.54), and the ratings
-formula nfl_season already uses in-season (8.5 + 0.5 x points differential per
-game, blended toward 8.5 at games/(games+6), through _wp) -- the model the
-deep engine has to beat to be worth its cost.
+For every week w >= --from-week the profiles are built from S's games BEFORE w
+only, with S-1's units as the prior, and every game of week w is simulated n
+times in each ARM on the same seeds:
+
+  engine     the unit model alone, no anchor
+  anch_g     levels anchored to the points-differential ratings at weight
+             6/(6+games) (the first version's production weight) -- PD stands
+             in for Kalshi's win totals, which have no history here
+  anch_full  levels anchored to the PD ratings at weight 1 (production since
+             2026-10-16, on this evidence)
+
+and scored against what happened beside the PD ratings themselves
+(nfl_season._wp on 8.5 + 0.5 x PD/g blended toward 8.5 at g/(g+6)), the
+constant home rate 0.54, and BLENDS of each arm with the PD ratings at 30% --
+the proxy for the production question "does putting the deep engine into a
+rating-like headline at 0.30 help?" (the drive model itself cannot be
+replayed: its Sleeper team projections are not archived).
 
 Usage:
-  python3 -m research.nfl_deep_validate <store dir> [--season 2025] [--prior 2024] [--n 300]
-      [--from-week 2] [--out research/reports/nfl_deep_validation.md]
+  python3 -m research.nfl_deep_validate <store dir> [--seasons 2024,2025] [--n 400] [--from-week 2]
+      [--workers 4] [--out research/reports/nfl_deep_validation.md]
 """
 import collections
 import datetime
 import math
+import multiprocessing as mp
 import os
 import pickle
 import sys
 import time
 
-import nfl_pbp as P
 import nfl_deep_data as D
 import nfl_deep_sim as E
 import nfl_season
 
 OUT_DEFAULT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reports", "nfl_deep_validation.md")
+ARMS = ("engine", "anch_g", "anch_full")
+BLEND = 0.30
 
 
 def _load(store_dir, season):
@@ -42,8 +56,15 @@ def _load(store_dir, season):
 
 def _subset(store, before_week):
     games = {gid: r for gid, r in store["games"].items() if r.get("st") == 2 and r.get("week", 99) < before_week}
-    return {"games": games, "events": [e for e in store["events"] if e.get("st") == 2 and e.get("week", 99) < before_week],
+    return {"games": games, "events": [e for e in store["events"] if e.get("st") == 2 and _w(e) < before_week],
             "updated": store.get("updated")}
+
+
+def _w(e):
+    try:
+        return int(e.get("week") or 99)
+    except (TypeError, ValueError):
+        return 99
 
 
 def _pd_rating(store, before_week):
@@ -66,11 +87,75 @@ def _pd_rating(store, before_week):
     return out
 
 
+_W = {}
+
+
+def _init(store_dir, season, prior, fit_seasons):
+    from research import nfl_deep_fit as F
+    stores = F.load_stores(store_dir, fit_seasons)
+    raw = F.build_tables(stores, prior_season=prior)
+    _W["T"] = E.Tables(raw)
+    _W["cur"] = _load(store_dir, season)
+    _W["season"] = season
+
+
+def _week(args):
+    w, n = args
+    T, cur, season = _W["T"], _W["cur"], _W["season"]
+    sub = _subset(cur, w)
+    rt = _pd_rating(cur, w)
+    base, _q = D.build_profiles(season, store=sub, T=T, anchor=False)
+    profs = {"engine": base}
+    pd_margin = {ab: (r - 8.5) * nfl_season._PTS_PER_WIN for ab, r in rt.items()}
+    orig_mm, orig_k = D.market_margins, D._ANCHOR_PRIOR_GAMES
+    try:
+        D.market_margins = lambda _s, recs=None: (dict(pd_margin), "pd_ratings")
+        for arm, k in (("anch_g", 6.0), ("anch_full", None)):
+            D._ANCHOR_PRIOR_GAMES = k
+            pr = {ab: dict(p) for ab, p in base.items()}
+            D.apply_anchor(pr, season, T)
+            profs[arm] = pr
+    finally:
+        D.market_margins, D._ANCHOR_PRIOR_GAMES = orig_mm, orig_k
+    events = {e["id"]: e for e in cur["events"]}
+    rows = []
+    for r in cur["games"].values():
+        if r.get("st") != 2 or r.get("week") != w:
+            continue
+        h, a = r["home"], r["away"]
+        if h not in base or a not in base:
+            continue
+        neutral = bool((events.get(r["id"]) or {}).get("neutral"))
+        y = 1.0 if r["home_pts"] > r["away_pts"] else 0.0 if r["home_pts"] < r["away_pts"] else 0.5
+        row = {"season": season, "week": w, "home": h, "away": a, "y": y,
+               "margin": r["home_pts"] - r["away_pts"], "total": r["home_pts"] + r["away_pts"],
+               "p_pd": nfl_season._wp(rt[h], rt[a], 0.0 if neutral else 2.1), "p_const": 0.54}
+        for arm in ARMS:
+            res = E.simulate(profs[arm][h], profs[arm][a], n=n, seed=int(r["id"]) % (1 << 30), neutral=neutral, T=T)
+            row[f"p_{arm}"] = res["p_home_raw"] + 0.5 * res["p_tie"]
+            row[f"m_{arm}"] = res["mean_margin"]
+            row[f"t_{arm}"] = res["exp_total"]
+        for arm in ARMS:
+            row[f"p_blend_{arm}"] = BLEND * row[f"p_{arm}"] + (1 - BLEND) * row["p_pd"]
+        rows.append(row)
+    return rows
+
+
+def run(store_dir, season, n, from_week, workers=4, fit_seasons=None, log=print):
+    # strictly PAST seasons: the tables an engine would have had going into S
+    fit_seasons = fit_seasons or [s for s in (2022, 2023, 2024, 2025, 2026)
+                                  if s < season and os.path.exists(os.path.join(store_dir, f"nfl_pbp_{s}.pkl"))]
+    t0 = time.time()
+    with mp.Pool(workers, initializer=_init, initargs=(store_dir, season, season - 1, fit_seasons)) as pool:
+        parts = pool.map(_week, [(w, n) for w in range(from_week, 19)])
+    rows = [r for part in parts for r in part]
+    log(f"[validate] {season}: {len(rows)} games, tables fit on {fit_seasons}, {time.time()-t0:.0f}s")
+    return rows, fit_seasons
+
+
 def _metrics(rows, key_p, key_m=None):
-    """rows: dicts with actual home win (0/1, ties 0.5), p (home), margin."""
     n = len(rows)
-    ll = br = acc = 0.0
-    mae = se = 0.0
+    ll = br = acc = mae = se = 0.0
     for r in rows:
         p = min(1 - 1e-6, max(1e-6, r[key_p]))
         y = r["y"]
@@ -85,107 +170,77 @@ def _metrics(rows, key_p, key_m=None):
         out["margin_rmse"] = round(math.sqrt(se / n), 3)
         mx = sum(r[key_m] for r in rows) / n; my = sum(r["margin"] for r in rows) / n
         sxx = sum((r[key_m] - mx) ** 2 for r in rows) or 1e-9
-        sxy = sum((r[key_m] - mx) * (r["margin"] - my) for r in rows)
-        out["margin_slope"] = round(sxy / sxx, 3)
+        out["margin_slope"] = round(sum((r[key_m] - mx) * (r["margin"] - my) for r in rows) / sxx, 3)
     return out
+
+
+def _paired(rows, a, b):
+    """Mean per-game log-loss difference a - b with its standard error (negative = a better)."""
+    d = []
+    for r in rows:
+        y = r["y"]
+        pa, pb = min(1 - 1e-6, max(1e-6, r[a])), min(1 - 1e-6, max(1e-6, r[b]))
+        la = -(y * math.log(pa) + (1 - y) * math.log(1 - pa))
+        lb = -(y * math.log(pb) + (1 - y) * math.log(1 - pb))
+        d.append(la - lb)
+    n = len(d)
+    m = sum(d) / n
+    sd = math.sqrt(sum((x - m) ** 2 for x in d) / (n - 1)) if n > 1 else 0.0
+    return m, sd / math.sqrt(n) if n else 0.0
 
 
 def _calibration(rows, key_p):
     bins = collections.defaultdict(lambda: [0, 0.0, 0.0])
     for r in rows:
         p = r[key_p]
-        # fold to the favourite so each bin is "the side we liked"
         fav_p, y = (p, r["y"]) if p >= 0.5 else (1 - p, 1 - r["y"])
-        b = min(9, int(fav_p * 10))
-        c = bins[b]
+        c = bins[min(9, int(fav_p * 10))]
         c[0] += 1; c[1] += fav_p; c[2] += y
-    out = []
-    for b in sorted(bins):
-        n, sp, sy = bins[b]
-        out.append({"bin": f"{b/10:.1f}-{(b+1)/10:.1f}", "n": n, "pred": round(sp / n, 3), "real": round(sy / n, 3)})
-    return out
+    return [{"bin": f"{b/10:.1f}-{(b+1)/10:.1f}", "n": c[0], "pred": round(c[1] / c[0], 3), "real": round(c[2] / c[0], 3)}
+            for b, c in sorted(bins.items())]
 
 
-def run(store_dir, season, prior, n, from_week, log=print, anchor=None):
-    """`anchor` None = the engine alone; "pd" = the engine anchored (at
-    nfl_deep_data's 6/(6+g) weight) to the points-differential ratings, which
-    is what production does with Kalshi's win totals -- the test of whether
-    the unit model adds anything on top of a rating."""
-    T = E.tables()
-    cur = _load(store_dir, season)
-    prev = _load(store_dir, prior)
-    T.raw["team_prior"] = {"season": int(prior), "units": P.team_units(prev, seasontype=2)}
-    rows = []
-    t0 = time.time()
-    for w in range(from_week, 19):
-        sub = _subset(cur, w)
-        rt = _pd_rating(cur, w)
-        profs, _q = D.build_profiles(season, store=sub, T=T, anchor=False)
-        if anchor == "pd":
-            _orig = D.market_margins
-            D.market_margins = lambda _s, _rt=rt: ({ab: (r - 8.5) * nfl_season._PTS_PER_WIN for ab, r in _rt.items()}, "pd_ratings")
-            try:
-                D.apply_anchor(profs, season, T)
-            finally:
-                D.market_margins = _orig
-        games = [r for r in cur["games"].values() if r.get("st") == 2 and r.get("week") == w]
-        for r in games:
-            h, a = r["home"], r["away"]
-            if h not in profs or a not in profs:
-                continue
-            ev = next((e for e in cur["events"] if e["id"] == r["id"]), {})
-            res = E.simulate(profs[h], profs[a], n=n, seed=int(r["id"]) % (1 << 30), neutral=bool(ev.get("neutral")), T=T)
-            y = 1.0 if r["home_pts"] > r["away_pts"] else 0.0 if r["home_pts"] < r["away_pts"] else 0.5
-            rows.append({"week": w, "home": h, "away": a, "y": y, "margin": r["home_pts"] - r["away_pts"],
-                         "total": r["home_pts"] + r["away_pts"],
-                         "p": res["p_home_raw"] + 0.5 * res["p_tie"], "m": res["mean_margin"], "t": res["exp_total"],
-                         "p_pd": nfl_season._wp(rt[h], rt[a], 0.0 if ev.get("neutral") else 2.1),
-                         "p_const": 0.54, "g_home": profs[h]["g"]})
-        log(f"[validate] week {w}: {len(games)} games, {len(rows)} scored, {time.time()-t0:.0f}s")
-    return rows
+_LABEL = {"p_engine": "deep engine alone (no anchor)", "p_anch_g": "deep engine, PD-anchored at 6/(6+g)",
+          "p_anch_full": "deep engine, PD-anchored at weight 1", "p_pd": "points-differential ratings (nfl_season._wp)",
+          "p_const": "constant home 0.54", "p_blend_engine": "0.30 engine alone + 0.70 PD",
+          "p_blend_anch_g": "0.30 anchored 6/(6+g) + 0.70 PD", "p_blend_anch_full": "0.30 anchored weight 1 + 0.70 PD"}
 
 
-def report(rows, season, prior, n, from_week, anchor=None):
-    L = [f"# NFL deep engine -- walk-forward validation, {season} regular season"
-         + (" (anchored to the points-differential ratings)" if anchor == "pd" else " (engine alone)"),
-         f"Built {datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}. "
-         f"Profiles from the games before each week only (prior: {prior} units), "
-         + ("levels anchored to the PD ratings at 6/(6+games) as production anchors to Kalshi; "
-            if anchor == "pd" else "no anchor; ")
-         + f"{n} simulated games per real game; weeks {from_week}-18; {len(rows)} games.", ""]
-    L.append("## Whole span")
-    L.append("| model | n | log loss | Brier | accuracy | margin MAE | margin RMSE | slope actual~pred |")
-    L.append("|---|---|---|---|---|---|---|---|")
-    m = _metrics(rows, "p", "m")
-    L.append(f"| deep engine | {m['n']} | {m['log_loss']} | {m['brier']} | {m['accuracy']} | {m['margin_mae']} | {m['margin_rmse']} | {m['margin_slope']} |")
-    for key, name in (("p_pd", "points-differential ratings (nfl_season._wp)"), ("p_const", "constant home 0.54")):
-        m2 = _metrics(rows, key)
-        L.append(f"| {name} | {m2['n']} | {m2['log_loss']} | {m2['brier']} | {m2['accuracy']} | - | - | - |")
+def report(rows_by_season, n, from_week):
+    allrows = [r for rows, _ in rows_by_season.values() for r in rows]
+    L = ["# NFL deep engine -- out-of-sample walk-forward validation",
+         f"Built {datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M UTC')} by research/nfl_deep_validate.py. "
+         f"Each season is scored with tables REFIT ON THE SEASONS BEFORE IT; profiles from that season's games before each week only, the "
+         f"previous season's units as the prior; {n} simulated games per real game per arm, weeks {from_week}-18. "
+         + "; ".join(f"{s}: {len(rows)} games, tables fit on {fs}" for s, (rows, fs) in sorted(rows_by_season.items())) + ".",
+         "", "PD = the points-differential ratings, standing in for Kalshi's win totals (which have no history here).", ""]
+    for title, rows in [("All seasons", allrows)] + [(f"{s}", rs) for s, (rs, _f) in sorted(rows_by_season.items())]:
+        L.append(f"## {title}")
+        L.append("| model | n | log loss | Brier | accuracy | margin MAE | slope actual~pred |")
+        L.append("|---|---|---|---|---|---|---|")
+        for key in ("p_engine", "p_anch_g", "p_anch_full", "p_pd", "p_const", "p_blend_engine", "p_blend_anch_g", "p_blend_anch_full"):
+            mk = ("m_" + key[2:]) if key in ("p_engine", "p_anch_g", "p_anch_full") else None
+            m = _metrics(rows, key, mk)
+            L.append(f"| {_LABEL[key]} | {m['n']} | {m['log_loss']} | {m['brier']} | {m['accuracy']} | "
+                     f"{m.get('margin_mae', '-')} | {m.get('margin_slope', '-')} |")
+        L.append("")
+    L.append("## Paired log-loss differences, all seasons (per game; negative = the first is better; +/- one SE)")
+    for a, b in (("p_engine", "p_pd"), ("p_anch_g", "p_pd"), ("p_anch_full", "p_pd"),
+                 ("p_blend_engine", "p_pd"), ("p_blend_anch_g", "p_pd"), ("p_blend_anch_full", "p_pd"),
+                 ("p_anch_full", "p_anch_g")):
+        m, se = _paired(allrows, a, b)
+        L.append(f"- {_LABEL[a]} minus {_LABEL[b]}: {m:+.4f} +/- {se:.4f}")
     L.append("")
-    L.append("## By stretch of the season")
-    L.append("| weeks | n | deep log loss | deep Brier | deep acc | PD log loss | PD Brier | deep margin MAE | slope |")
-    L.append("|---|---|---|---|---|---|---|---|---|")
-    for lo, hi in ((from_week, 6), (7, 12), (13, 18)):
-        sub = [r for r in rows if lo <= r["week"] <= hi]
-        if not sub:
-            continue
-        a = _metrics(sub, "p", "m"); b = _metrics(sub, "p_pd")
-        L.append(f"| {lo}-{hi} | {a['n']} | {a['log_loss']} | {a['brier']} | {a['accuracy']} | {b['log_loss']} | {b['brier']} | {a['margin_mae']} | {a['margin_slope']} |")
+    L.append("## Calibration (favourite's side), all seasons")
+    L.append("| arm | predicted | n | mean predicted | realized |")
+    L.append("|---|---|---|---|---|")
+    for key in ("p_engine", "p_anch_full"):
+        for c in _calibration(allrows, key):
+            L.append(f"| {_LABEL[key]} | {c['bin']} | {c['n']} | {c['pred']} | {c['real']} |")
+    tp = sum(r["t_engine"] for r in allrows) / len(allrows); tr = sum(r["total"] for r in allrows) / len(allrows)
     L.append("")
-    L.append("## Calibration (favourite's side), deep engine")
-    L.append("| predicted | n | mean predicted | realized |")
-    L.append("|---|---|---|---|")
-    for c in _calibration(rows, "p"):
-        L.append(f"| {c['bin']} | {c['n']} | {c['pred']} | {c['real']} |")
-    tot_pred = sum(r["t"] for r in rows) / len(rows); tot_real = sum(r["total"] for r in rows) / len(rows)
-    L.append("")
-    L.append(f"Totals: predicted mean {tot_pred:.2f}, real {tot_real:.2f}; "
-             f"total MAE {sum(abs(r['t'] - r['total']) for r in rows)/len(rows):.2f}.")
-    L.append("")
-    L.append("Reading: log loss below the ratings baseline is the engine earning its matchup "
-             "structure; a margin slope near 1.0 means its spreads are on scale (below 1 = too "
-             "confident, above = too timid). The calibration table is the honesty check: a bin's "
-             "realized rate should sit near its mean prediction.")
+    L.append(f"Totals (engine alone): predicted mean {tp:.2f}, real {tr:.2f}; total MAE "
+             f"{sum(abs(r['t_engine'] - r['total']) for r in allrows)/len(allrows):.2f}.")
     return "\n".join(L)
 
 
@@ -193,26 +248,24 @@ def main(argv):
     if not argv or argv[0].startswith("-"):
         print(__doc__); return 2
     store_dir = argv[0]
-    season, prior, n, from_week, out = 2025, 2024, 300, 2, OUT_DEFAULT
-    anchor = None
+    seasons, n, from_week, workers, out = [2024, 2025], 400, 2, 4, OUT_DEFAULT
     i = 1
     while i < len(argv):
-        if argv[i] == "--season":
-            season = int(argv[i + 1]); i += 2
-        elif argv[i] == "--prior":
-            prior = int(argv[i + 1]); i += 2
-        elif argv[i] == "--n":
+        a = argv[i]
+        if a == "--seasons":
+            seasons = [int(x) for x in argv[i + 1].split(",")]; i += 2
+        elif a == "--n":
             n = int(argv[i + 1]); i += 2
-        elif argv[i] == "--from-week":
+        elif a == "--from-week":
             from_week = int(argv[i + 1]); i += 2
-        elif argv[i] == "--out":
+        elif a == "--workers":
+            workers = int(argv[i + 1]); i += 2
+        elif a == "--out":
             out = argv[i + 1]; i += 2
-        elif argv[i] == "--anchor":
-            anchor = argv[i + 1]; i += 2
         else:
             i += 1
-    rows = run(store_dir, season, prior, n, from_week, anchor=anchor)
-    rep = report(rows, season, prior, n, from_week, anchor=anchor)
+    res = {s: run(store_dir, s, n, from_week, workers) for s in seasons}
+    rep = report(res, n, from_week)
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, "w") as fh:
         fh.write(rep + "\n")

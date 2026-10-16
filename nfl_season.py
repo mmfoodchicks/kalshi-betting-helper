@@ -138,7 +138,14 @@ def _ratings(season):
     # ratings then blend toward actual results as games are played.
     mkt = _market_wins()
     if len(mkt) >= 24:
-        for ab, v in mkt.items():
+        # The ladder prices the WHOLE season, banked wins included; these
+        # ratings price the games LEFT. Taken raw, a 5-0 team's 11.3 expected
+        # wins read as an 11.3-win team when the market's own read of its
+        # remaining twelve is a .52 side (2026-10-16: MIN anchored +6.2 points
+        # against the market's +0.8; error vs W-L correlation +0.90 across all
+        # 32 teams, Opus review, review_opus/r5_anchor.py).
+        pace = market_pace(mkt, _banked(season))
+        for ab, v in pace.items():
             if ab in out:
                 out[ab] = v
     try:
@@ -166,6 +173,42 @@ def _ratings(season):
 
 
 _WINS_PER_PD = 0.5
+
+
+def market_pace(mkt, recs):
+    """{abbr: the market's REST-OF-SEASON strength on the 17-game wins scale}.
+
+    `mkt` is {abbr: E[season wins]} from the win-total ladder (banked wins
+    included); `recs` is {abbr: (wins, losses, ties, games_left)}. The pace is
+    the market's expected win rate over the games left, times 17; with nothing
+    banked (preseason) it is E[W] itself. A team missing from `recs` keeps E[W]."""
+    out = {}
+    for ab, ew in mkt.items():
+        w, l, t, left = (recs.get(ab) or (0, 0, 0, 17))
+        if left <= 0:
+            out[ab] = ew
+            continue
+        rate = (ew - w - 0.5 * t) / left
+        out[ab] = round(17.0 * max(0.0, min(1.0, rate)), 3)
+    return out
+
+
+def _banked(season):
+    """{abbr: (wins, losses, ties, games_left)} off this module's schedule (a
+    tie reads as the away side's win in full_schedule; rare and noted)."""
+    rec = defaultdict(lambda: [0, 0, 0, 0])
+    for g in full_schedule(season):
+        h, a = g["home"], g["away"]
+        if not g.get("final"):
+            rec[h][3] += 1
+            rec[a][3] += 1
+        elif g.get("home_won"):
+            rec[h][0] += 1
+            rec[a][1] += 1
+        else:
+            rec[a][0] += 1
+            rec[h][1] += 1
+    return {ab: tuple(v) for ab, v in rec.items()}
 
 
 def _market_wins():

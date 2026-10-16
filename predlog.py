@@ -94,6 +94,17 @@ def init_db():
         c.execute("UPDATE predictions SET model='nfl_pre' "
                   "WHERE model='nfl' AND ticker LIKE 'KXNFLGAME-%' "
                   "AND substr(ticker, 13, 3) = 'AUG'")
+        # SHADOW predictions: a second model's forecast of a market another model
+        # already owns. `predictions` is keyed on the ticker alone (first write
+        # wins, which is what keeps a forecast honest), so a second model's
+        # log_many on the same tickers was silently ignored -- the NFL deep
+        # engine's "own graded record" (bucket nfl_deep, 2026-10-16) recorded
+        # nothing at all. Keyed (ticker, model), first write wins per model,
+        # graded off the OWNING row's settlement (resolve_due grades tickers,
+        # not models), read by pairs() / vs_market() like any bucket.
+        c.execute("""CREATE TABLE IF NOT EXISTS shadow (
+            ticker TEXT, model TEXT, prob REAL, ts INTEGER, mkt REAL,
+            PRIMARY KEY (ticker, model))""")
 
 
 def log_many(model, rows):
@@ -146,6 +157,32 @@ def log_many(model, rows):
         c.executemany(
             "UPDATE predictions SET mkt=? WHERE ticker=? AND graded=0 AND mkt IS NULL",
             [(row[5], row[0]) for row in clean if row[5] is not None])
+    return len(clean)
+
+
+def log_shadow(model, rows):
+    """Shadow forecasts for markets another model owns in `predictions` (see
+    init_db). rows: (ticker, prob 0-1, close_time|None[, mkt 0-1[, event_ts]])
+    -- log_many's shape. Returns how many rows were offered."""
+    clean = []
+    now = int(time.time())
+    for row in rows:
+        tk, p = row[0], row[1]
+        mk = row[3] if len(row) > 3 else None
+        try:
+            p = float(p)
+            mk = float(mk) if mk is not None else None
+        except (TypeError, ValueError):
+            continue
+        if not tk or not (0.0 < p < 1.0):
+            continue
+        if mk is not None and not (0.0 < mk < 1.0):
+            mk = None
+        clean.append((tk, model, p, now, mk))
+    if not clean:
+        return 0
+    with _lock, _conn() as c:
+        c.executemany("INSERT OR IGNORE INTO shadow (ticker, model, prob, ts, mkt) VALUES (?,?,?,?,?)", clean)
     return len(clean)
 
 
@@ -280,13 +317,20 @@ def pairs(model):
     across days, not rows. calibrate._fit accepts bare (prob, outcome) too, so
     older callers are unaffected."""
     with _lock, _conn() as c:
+        rows = c.execute(
+            "SELECT prob, outcome, close_time FROM predictions "
+            "WHERE model=? AND graded=1 AND outcome IS NOT NULL",
+            (model,)).fetchall()
+        # a shadow bucket's rows, graded off the owning row's settlement
+        rows += c.execute(
+            "SELECT s.prob AS prob, p.outcome AS outcome, p.close_time AS close_time "
+            "FROM shadow s JOIN predictions p ON p.ticker = s.ticker "
+            "WHERE s.model=? AND p.graded=1 AND p.outcome IS NOT NULL",
+            (model,)).fetchall()
         return [(r["prob"], float(r["outcome"]),
                  time.strftime("%Y-%m-%d", time.gmtime(r["close_time"]))
                  if r["close_time"] else None)
-                for r in c.execute(
-                    "SELECT prob, outcome, close_time FROM predictions "
-                    "WHERE model=? AND graded=1 AND outcome IS NOT NULL",
-                    (model,)).fetchall()]
+                for r in rows]
 
 
 def vs_market(model):
@@ -303,6 +347,11 @@ def vs_market(model):
             "SELECT prob, mkt, outcome FROM predictions "
             "WHERE model=? AND graded=1 AND outcome IS NOT NULL AND mkt IS NOT NULL",
             (model,)).fetchall()]
+        rows += [(r["prob"], r["mkt"], float(r["outcome"])) for r in c.execute(
+            "SELECT s.prob AS prob, COALESCE(s.mkt, p.mkt) AS mkt, p.outcome AS outcome "
+            "FROM shadow s JOIN predictions p ON p.ticker = s.ticker "
+            "WHERE s.model=? AND p.graded=1 AND p.outcome IS NOT NULL "
+            "AND COALESCE(s.mkt, p.mkt) IS NOT NULL", (model,)).fetchall()]
     if len(rows) < 30:
         return {"n": len(rows), "ready": False}
 
@@ -436,10 +485,20 @@ def status():
             "COALESCE(SUM(CASE WHEN graded=1 THEN 1 ELSE 0 END),0) g, "
             "COALESCE(SUM(CASE WHEN graded=2 THEN 1 ELSE 0 END),0) dead "
             "FROM predictions GROUP BY model").fetchall()
+        shadow = c.execute(
+            "SELECT s.model AS model, COUNT(*) n, "
+            "COALESCE(SUM(CASE WHEN p.graded=1 THEN 1 ELSE 0 END),0) g, "
+            "COALESCE(SUM(CASE WHEN p.graded=2 THEN 1 ELSE 0 END),0) dead "
+            "FROM shadow s LEFT JOIN predictions p ON p.ticker = s.ticker "
+            "GROUP BY s.model").fetchall()
     # "logged" excludes abandoned (delisted/void) markets so the count reflects
     # predictions that can actually graduate to a grade.
-    return {r["model"]: {"logged": r["n"] - r["dead"], "graded": r["g"],
-                         "abandoned": r["dead"]} for r in rows}
+    out = {r["model"]: {"logged": r["n"] - r["dead"], "graded": r["g"],
+                        "abandoned": r["dead"]} for r in rows}
+    for r in shadow:
+        out[r["model"]] = {"logged": r["n"] - r["dead"], "graded": r["g"],
+                           "abandoned": r["dead"], "shadow": True}
+    return out
 
 
 # ---- Harvest: piggyback on the sims' (cached) boards -----------------------

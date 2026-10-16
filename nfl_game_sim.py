@@ -24,6 +24,7 @@ parlays honest. Leg masks feed the same bitmask machinery MLB uses
 import math
 import predlog
 import random
+import zlib
 import errlog
 
 # ---- Engine constants -------------------------------------------------------
@@ -922,17 +923,21 @@ def kalshi_canon(ab):
 
 _BOARD_TTL = 1800
 # THE DEEP LAYER on the weekly board. Every regular-season game is also played
-# by the play-by-play engine (nfl_deep_sim, both units against each other,
-# this week's roster signal folded into the level) and the card shows BOTH
-# teams' probabilities from both models. The headline blends them at
-# _DEEP_WEIGHT on the deep engine. Why a minority weight: the 2025 walk-forward
-# (research/reports/nfl_deep_validation.md, 256 games, profiles from the games
-# before each week, no market anchor) scored the engine alone at log loss
-# 0.673 against 0.690 for the constant home rate and 0.637 for the
-# points-differential ratings -- real skill, less of it than a rating. In
-# production the engine's levels ARE anchored to Kalshi's win totals, and its
-# raw probability is logged to its own predlog bucket ("nfl_deep") so the
-# weight can be earned from a graded record rather than argued. Baseball's
+# by the play-by-play engine (nfl_deep_sim, both units against each other, its
+# level anchored to Kalshi's rest-of-season win totals, this week's roster
+# signal on the offence) and the card shows BOTH teams' probabilities from both
+# models. The headline blends them at _DEEP_WEIGHT on the deep engine -- a
+# judgment the evidence neither supports nor contradicts: in the out-of-sample
+# walk-forward (research/reports/nfl_deep_validation.md, 2024-25, 512 games,
+# the points-differential ratings standing in for both the market and the
+# headline model, since the drive model's Sleeper inputs are not archived) a
+# 0.30 market-anchored deep + 0.70 rating scored -0.0015 +/- 0.0013 log loss
+# against the rating alone (slightly better, not significant); the anchored
+# engine alone -0.0014 +/- 0.0045. (The
+# first version quoted an in-sample 0.673 / 0.637 and logged the deep engine to
+# a predlog bucket that never recorded a row.) Its raw probability now goes to
+# the SHADOW bucket "nfl_deep" (predlog.log_shadow), graded apart from the drive
+# model's, so this weight can be earned or cut from a real record. Baseball's
 # deep engine entered its headline at 35 on the same reasoning.
 _DEEP_WEIGHT = 0.30
 # Games per matchup for the deep layer. The board builds in a thread inside a
@@ -1147,9 +1152,11 @@ def _build_board(season, week, n=2400, preseason=False):
             if profs and h["abbr"] in profs and a["abbr"] in profs:
                 try:
                     import nfl_deep_sim
+                    # crc32, not hash(): str hashes are randomized per process,
+                    # so every worker (and the PC) drew a different deep figure
                     sim["_deep"] = nfl_deep_sim.simulate(
                         profs[h["abbr"]], profs[a["abbr"]], n=_DEEP_N,
-                        seed=hash((season, week, h["abbr"], a["abbr"])) & 0xFFFFFFFF)
+                        seed=zlib.crc32(f"{season}|{week}|{h['abbr']}|{a['abbr']}".encode()))
                 except Exception as _e:
                     errlog.note("NFLG-deep-sim", _e, path=f"{a['abbr']}@{h['abbr']}")
             yield sim
@@ -1262,7 +1269,10 @@ def _build_board(season, week, n=2400, preseason=False):
             # big enough to look obviously wrong.
             predlog.log_many("nfl_pre" if preseason else "nfl", log_rows)
             if deep_rows:
-                predlog.log_many("nfl_deep", deep_rows)
+                # a SHADOW bucket: the drive model owns these tickers in
+                # predictions (first write wins per ticker), so log_many here
+                # recorded nothing -- log_shadow keys on (ticker, model)
+                predlog.log_shadow("nfl_deep", deep_rows)
         except Exception as _e:
             errlog.note("NFLG-build_board", _e)
     out.sort(key=lambda g: g["date"] or "")

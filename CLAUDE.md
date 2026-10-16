@@ -100,15 +100,22 @@ data-only `sim-history` branch (which never deploys):
   measures the matchup exponents, the shrinkage K per stat and the
   year-over-year persistence; `nfl_deep_sim.py` plays a game snap by snap
   (both units against each other, clock, fourth downs, kicks, OT; two fitted
-  parameters, `_FORM_SD` and `_HFA_YDS`); `nfl_deep_data.py` builds the team
-  unit profiles (shrunk toward the measured prior, level anchored to Kalshi's
-  win totals at 6/(6+games)); `nfl_deep_season.py` plays the rest of the
+  parameters, `_FORM_SD` and `_HFA_YDS`; team multipliers applied with
+  UNBIASED random rounding -- `int(round())` erased them); `nfl_deep_data.py`
+  builds the team unit profiles (shrunk toward the measured prior by the
+  pooled full-season K; the level anchored at full weight to Kalshi's win
+  totals converted to REST-OF-SEASON pace, `nfl_season.market_pace` -- the
+  ladder includes banked wins); `nfl_deep_season.py` plays the rest of the
   season and the bracket with the NFL tiebreakers (deep job `nfl_deep`,
-  PC-first, HEAVY_BUILD, quality gate). The weekly slate blends the deep
-  engine into the headline at `nfl_game_sim._DEEP_WEIGHT` (0.30) and logs its
-  raw probability to predlog bucket `nfl_deep` so the weight can be earned.
-  Validation: `research/reports/nfl_deep_validation*.md` (2025 walk-forward,
-  the engine alone and anchored) — read before quoting any skill figure.
+  PC-first, HEAVY_BUILD, quality gate incl. a full 17-game schedule). The weekly
+  slate blends the deep engine into the headline at `nfl_game_sim._DEEP_WEIGHT`
+  (0.30) and logs its raw probability with `predlog.log_shadow` to bucket
+  `nfl_deep` -- `predictions` is keyed on the ticker alone, so a second model
+  can only be graded through the shadow table. Validation:
+  `research/reports/nfl_deep_validation.md` (OUT-OF-SAMPLE walk-forward,
+  2024-25, tables refit on past seasons only) — read before quoting any skill
+  figure; the review that found and fixed the first version's bugs is in
+  `research/reports/nfl_deep_plan.md` §9.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 

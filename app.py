@@ -1416,10 +1416,15 @@ _MIN_CAREER_FRAC = float(os.environ.get("VIGIL_MIN_CAREER_FRAC") or 0.70)
 # PSS at one worker and 613 MB at two, beside ~330 MB of web workers, so two
 # is the most a 2 GB plan carries. VIGIL_SIM_WORKERS still overrides.
 _DEEP_SERVER_WORKERS = 2
-# The deep NFL season on the server: 2,000 seasons at ~90 ms a season a core
-# (measured 2026-10-16: 200 seasons in 18 s on four cores, 192 games left
-# plus the bracket) is three minutes on one worker; the PC runs 4,000.
-_NFL_DEEP_SERVER_SEASONS = 2000
+# The deep NFL season on the server, measured on ONE worker the way it runs
+# here (workers=1, a niced child): 225 ms a season with 192 games left plus the
+# bracket (2026-10-16, review_opus/r7_season_cost.py), ~320 ms with a full
+# schedule left -- so 1,000 seasons is ~4-5 minutes of the one-core quota on
+# that box and more on Render's. (The first version said 2,000 seasons was
+# "three minutes on one worker", reading a four-core wall time as per-core; it
+# was ~7.5-11 minutes.) 1,000 seasons puts a Super Bowl share's Monte Carlo SE
+# under 1.4 points; the PC, which takes the job whenever it is on, runs 4,000.
+_NFL_DEEP_SERVER_SEASONS = 1000
 # How long the PC gets to answer a deep request before the server runs the
 # job itself (gated and capped). pc_loop cycles every 10 min and the desktop
 # run is minutes, so 45 min means "not delivering", not "slow".

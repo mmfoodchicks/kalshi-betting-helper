@@ -421,6 +421,8 @@ def _persistence(units, seasons):
         for stat in _PERSIST_STATS:
             rows = []
             for a, b in zip(full, full[1:]):
+                if int(b) != int(a) + 1:
+                    continue                  # persistence is a ONE-year slope
                 ra = {ab: P.unit_rates(t[side]).get(stat) for ab, t in units[str(a)].items()}
                 rb = {ab: P.unit_rates(t[side]).get(stat) for ab, t in units[str(b)].items()}
                 ra = {k: v for k, v in ra.items() if v is not None}
@@ -532,6 +534,16 @@ def _val(side, num, den):
     return n, d
 
 
+def _full_season(st):
+    """True when every team played at least 16 regular-season games in the store."""
+    g = collections.Counter()
+    for r in st["games"].values():
+        if r.get("st") == 2:
+            g[r["home"]] += 1
+            g[r["away"]] += 1
+    return len(g) >= 32 and min(g.values()) >= 16
+
+
 def _matchup_exponents(stores):
     """Leave-one-out, per stat: the game value of an offence regressed on its own
     season rate over the other games and the opposing defence's rate over its
@@ -592,10 +604,28 @@ def _matchup_exponents(stores):
                         continue
                     rows_raw.append((lg_(y_c), lg_(xo), lg_(xd)))
                     rows_shr.append((lg_(y_c), lg_(xo_s), lg_(xd_s)))
-            out.setdefault(name, {})["K_games"] = round(K, 2)
-            out[name]["league"] = round(mu, 5)
-        out.setdefault(name, {})["raw"] = _ols(rows_raw)
-        out[name]["shrunk"] = _ols(rows_shr)
+            rec = out.setdefault(name, {})
+            rec.setdefault("K_by_season", {})[str(season)] = round(K, 2)
+            rec.setdefault("league_by_season", {})[str(season)] = round(mu, 5)
+            rec.setdefault("_full", []).append(_full_season(st))
+        # K and the league rate are POOLED across the full seasons, not taken
+        # from whichever season the loop met last. They used to be assigned
+        # inside the season loop, so the shipped K was 2026's alone -- five games
+        # a team, and 2-10x off the full seasons for most stats (interceptions 14
+        # against 20-143, yards per carry 6.75 against 12-30; Opus review,
+        # review_opus/r6_k_by_season.py). The median is used because the
+        # method-of-moments K is unstable when the between-team variance is near
+        # zero (penalties 2025: 1.2 million games).
+        rec = out[name]
+        full = [s_ for s_, ok in zip(rec["K_by_season"], rec.pop("_full")) if ok]
+        use = full or list(rec["K_by_season"])
+        ks = sorted(rec["K_by_season"][s_] for s_ in use)
+        rec["K_games"] = round(ks[len(ks) // 2] if len(ks) % 2 else 0.5 * (ks[len(ks) // 2 - 1] + ks[len(ks) // 2]), 2)
+        rec["K_seasons"] = [int(s_) for s_ in use]
+        ls = [rec["league_by_season"][s_] for s_ in use]
+        rec["league"] = round(sum(ls) / len(ls), 5)
+        rec["raw"] = _ols(rows_raw)
+        rec["shrunk"] = _ols(rows_shr)
     return out
 
 
@@ -625,7 +655,7 @@ def report(T):
     L.append("")
     L.append("## Matchup exponents (own offence, opposing defence); K = games of shrinkage")
     for name, m in T["matchup"].items():
-        L.append(f"- {name}: league {m.get('league')}  K={m.get('K_games')}  raw (c,a,b,r2,n)={m.get('raw')}  shrunk={m.get('shrunk')}")
+        L.append(f"- {name}: league {m.get('league')}  K={m.get('K_games')} (median of {m.get('K_seasons')}; by season {m.get('K_by_season')})  raw (c,a,b,r2,n)={m.get('raw')}  shrunk={m.get('shrunk')}")
     L.append(f"- points vs yards/play elasticity (c, slope, r2, n): {T.get('pts_vs_ypp')}")
     L.append("")
     L.append("## Year-over-year persistence of team unit rates (slope of next season's deviation on this season's)")

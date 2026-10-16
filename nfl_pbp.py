@@ -411,17 +411,25 @@ def season_records(season, max_fetch=400, postseason=True, log=None):
     immutable, so a cached record is never re-fetched."""
     store = load_season(season)
     games = store.setdefault("games", {})
-    events = []
+    # MERGED by event id, never replaced: one week's scoreboard failing (ESPN's
+    # WAF has refused this host for whole evenings) used to replace the stored
+    # schedule with the weeks that did answer, so the season sim silently lost
+    # those games -- results and fixtures alike -- while the coverage gate, which
+    # counts only the events it can see, still read 100%.
+    events = {e["id"]: e for e in store.get("events") or []}
     weeks = [(2, w) for w in range(1, 19)]
     if postseason:
         weeks += [(3, w) for w in (1, 2, 3, 5)]
+    failed = []
     for st, w in weeks:
         try:
-            events.extend(week_events(season, w, st))
+            for ev in week_events(season, w, st):
+                events[ev["id"]] = ev
         except Exception as e:
+            failed.append(f"st{st}w{w}")
             errlog.note("PBP-week", e, path=f"{season} st{st} w{w}")
-    if events:
-        store["events"] = events
+    store["events"] = sorted(events.values(), key=lambda e: (e.get("st", 2), e.get("week", 0), e["id"]))
+    store["failed_weeks"] = failed
     fetched = 0
     for ev in store.get("events") or []:
         if ev.get("state") != "post" or ev["id"] in games:
@@ -443,6 +451,46 @@ def season_records(season, max_fetch=400, postseason=True, log=None):
         store["updated"] = time.time()
         deep_cache.save(_key(season), store)
     return store
+
+
+def regular_schedule(store, teams=None):
+    """[{id, week, home, away, final, home_pts, away_pts, neutral}] for the
+    regular season from the store's scoreboard events, scores as ints. `teams`
+    (a set of abbreviations) drops anything else (ESPN's placeholder events)."""
+    out = []
+    for e in store.get("events") or []:
+        if e.get("st") != 2:
+            continue
+        if teams is not None and (e.get("home") not in teams or e.get("away") not in teams):
+            continue
+        fin = e.get("state") == "post"
+        out.append({"id": e["id"], "week": _int(e.get("week")), "home": e["home"], "away": e["away"],
+                    "final": fin, "home_pts": _int(e.get("home_pts")) if fin else None,
+                    "away_pts": _int(e.get("away_pts")) if fin else None,
+                    "neutral": bool(e.get("neutral"))})
+    out.sort(key=lambda g: (g["week"], g["id"]))
+    return out
+
+
+def records(store, teams=None):
+    """{abbr: (wins, losses, ties, games_left)} from the regular-season schedule --
+    what each team has BANKED and how many games it has left."""
+    rec = {}
+    for g in regular_schedule(store, teams):
+        for ab in (g["home"], g["away"]):
+            rec.setdefault(ab, [0, 0, 0, 0])
+        if not g["final"]:
+            rec[g["home"]][3] += 1
+            rec[g["away"]][3] += 1
+            continue
+        hp, ap = g["home_pts"], g["away_pts"]
+        if hp > ap:
+            rec[g["home"]][0] += 1; rec[g["away"]][1] += 1
+        elif ap > hp:
+            rec[g["away"]][0] += 1; rec[g["home"]][1] += 1
+        else:
+            rec[g["home"]][2] += 1; rec[g["away"]][2] += 1
+    return {ab: tuple(v) for ab, v in rec.items()}
 
 
 def coverage(store):

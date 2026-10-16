@@ -56,162 +56,217 @@ distance), rush yards (by down, distance, zone), the no-play penalty and its
 outcome, the fourth-down decision (go / punt / kick by field position,
 distance, score, time, smoothed down a hierarchy), the field-goal curve (a
 two-parameter logistic in kick distance: 5.94 − 0.0961·yards, n = 3,624), punt
-and kickoff field position (kickoffs under the 2025+ rules only), the clock
-between snaps by what the previous play did (run / incomplete / out of bounds /
-score / turnover / penalty) and by tempo (normal / hurry-up / clock-killing),
-the extra point (95.0%) and the two-point decision by the score after the six.
-Rules that are rules: the two-minute warning, end of quarter and half, the
-kneel-out when the lead is safe, the clock-expiring field goal, the late-game
-fourth-down overrides a table cannot see, overtime (regular season: ten
-minutes, both teams possess, then sudden death, ties stand; postseason:
-fifteen-minute periods until decided), onside kicks when trailing late, field
-position after a missed or blocked kick, and a safety on a third of the draws
-that would reach the offence's own end zone (calibrated to 0.2% of drives).
+and kickoff field position (kickoffs under the NEWEST rules era the tables
+carry — 2025+ in production), the clock between snaps by what the previous play
+did (run / incomplete / out of bounds / score / turnover / penalty) and by
+tempo (normal / hurry-up / clock-killing), the extra point (95.0%) and the
+two-point decision by the score after the six. Rules that are rules: the
+two-minute warning, end of quarter and half, the kneel-out when the lead is
+safe, the clock-expiring field goal, the late-game fourth-down overrides a table
+cannot see, overtime (regular season: ten minutes, both teams possess, then
+sudden death, ties stand; postseason: fifteen-minute periods until decided),
+onside kicks when trailing late, field position after a missed or blocked kick,
+and a safety on a third of the draws that would reach the offence's own end
+zone (calibrated to 0.2% of drives). A kickoff the rules owe (the second half,
+an overtime period) is QUEUED and played by the game loop before the next snap,
+never inline — see §9 for what inline cost.
 
 **Decision: matchups by measured exponents on shrunk rates.** For every unit
 stat the fit regresses a team-game's value on its own season rate over the
 OTHER games and the opponent's allowed rate over its other games, both shrunk
 toward the league with a K from the within-game / between-team variance
 decomposition. With shrunk inputs an offence carries ~1.0 of its deviation and
-a defence ~0.7: yards per play 1.08 / 0.76 (K 7.3 games), yards per completion
-1.13 / 0.69 (K 18.8), completions 1.11 / 0.91 (K 63), sacks 1.01 / 0.36 (K
-15.5), interceptions 0.39 / 0.28 (K 14), penalties 0.48 / 0.52 (K 12), pass
-rate 0.99 / 0.77 (K 4.1). Fumbles lost: K = 147,000 games — nothing carries,
-every team fumbles at the league rate. These are measured (`_matchup_exponents`
-in `research/nfl_deep_fit.py`), not chosen.
+a defence ~0.7: yards per play 1.08 / 0.76, yards per completion 1.13 / 0.69,
+completions 1.11 / 0.91, sacks 1.01 / 0.36, interceptions 0.39 / 0.28,
+penalties 0.48 / 0.52, pass rate 0.99 / 0.78. Fumbles lost carry nothing
+measurable (between-team variance indistinguishable from zero in every season),
+so every team fumbles at the league rate. These are measured
+(`_matchup_exponents` in `research/nfl_deep_fit.py`), not chosen. The shrinkage
+K is the MEDIAN over the three full seasons 2023-2025, every season's value
+recorded in the tables: yards per play 5.9 games, yards per completion 13.6,
+completions 11.5, sacks 7.9, interceptions 26, yards per carry 22, pass rate
+8.7. A team's multiplier is applied to each gain with unbiased random
+rounding, so its mean scales exactly.
 
 **Decision: the two free parameters are fitted to real results, not to the
-projection.** The zero-sum game-day form tilt `_FORM_SD = 0.085` puts the
-engine's margin SD at 13.29 against the real conditional 13.3 (unconditional
-14.43 less the spread's own ~5.4; grid 0.06 → 12.91, 0.09 → 13.44, 0.12 →
-14.45; the total SD does not move with it). The home yardage edge `_HFA_YDS =
-1.02` gives two average teams p_home 0.5415 against the real 0.5402 (1.04 →
-0.5665, 1.06 → 0.5994); that realizes +1.18 points of margin against the real
-+2.04, deliberately, for the same reason the drive engine's `_HFA_SCORE` does
-(skewed margins; the moneyline is what gets graded).
+projection.** The zero-sum game-day form tilt `_FORM_SD = 0.080` puts the
+engine's margin SD at 13.26 against the real conditional 13.3 (unconditional
+14.43 less the spread's own ~5.4; grid 0.00 → 12.03, 0.03 → 12.30, 0.05 →
+12.49, 0.07 → 13.12; the total SD does not move with it). The home yardage
+edge `_HFA_YDS = 1.021` gives two average teams p_home ~0.537-0.540 against the
+real 0.5402 (1.019 → 0.5372, 1.021 → 0.5374 on 40,000 games each, 1.022 →
+0.5450 on 60,000; shallow and noisy here); that realizes ~+1.2 points of margin
+against the real +2.04, deliberately, for the same reason the drive engine's
+`_HFA_SCORE` does (skewed margins; the moneyline is what gets graded).
 
 **What the engine reproduces with no points parameter anywhere** (league
-average against itself, `pbp_tools/engine_check`): 22.9 points a side (real
-22.6), total SD 13.0 (13.7), overtime 5.9% (5.6%), ties 0.22% (0.22%),
-62.8 pass+rush plays a side (62.9), pass share 0.576 (0.577), completion
-63.9% (64.0%), 10.8 yards a completion (10.7), sack rate 7.0% (6.9%),
-interception 2.2% (2.2%), 4.4 yards a carry (4.25; the effective yardage
-carries tacked-on penalty yards), conversions by down 22.5 / 34.3 / 40.0 /
-53.0% (real 21.6 / 32.6 / 40.4 / 54.9%), red-zone trips 3.5 a side (3.15) at
-59% touchdowns (58%), 1.5 kneel-downs a game (1.6), points by quarter 4.64 /
-6.40 / 4.72 / 7.00 (real 4.61 / 6.93 / 4.70 / 6.60). Known residuals: drives
-run ~5% more numerous and shorter than real, and the fourth quarter scores ~6%
-high while the second scores ~8% low.
+average against itself, 8,000 games): 23.0 points a side (real 22.6), margin SD
+13.2 (13.3 conditional), total SD 12.6 (13.7), overtime 5.6% (5.6%), ties
+0.22% (0.22%), 62.6 pass+rush plays a side (62.9), pass share 0.573 (0.577),
+10.8 yards a completion (10.7), sack rate 7.0% (6.9%), interception 2.2%
+(2.2%), conversions by down 22.5 / 34.2 / 39.6 / 52.7% (real 21.6 / 32.6 /
+40.4 / 54.9%), red-zone trips 3.5 a side (3.15) at 59% touchdowns (58%), 1.6
+kneel-downs a game (1.6), points by quarter 4.70 / 6.35 / 4.71 / 7.04 (real
+4.61 / 6.93 / 4.70 / 6.60). Two box figures read high by construction: the
+completion rate (65.7% against 64.0%) and yards a carry (4.48 against 4.25),
+because the tables store EFFECTIVE results — a defensive penalty that moved the
+chains on an incompletion or a short run is stored as the gain it produced.
+Known residuals: drives run ~10% more numerous and shorter than real, and the
+fourth quarter scores ~7% high while the second scores ~8% low.
 
 Speed: ~1.0 ms a game in pure Python.
 
 ## 4. The profiles (`nfl_deep_data.py`)
 
-**Decision: shrink toward a measured prior, by the fit's K, with last season's
-deviation weighted by its measured persistence.** Year-over-year slopes (two
-season pairs, 64 team-pairs each): an offence keeps ~0.42 of its yards-per-play
-edge, 0.38 of its pass rate, 0.33 of its completion rate, 0.39 of its yards per
-completion, 0.24 of its sack rate; a defence keeps 0.16 / 0.25 / 0.25 / 0.04 /
-0.12 of the same; interceptions, fumbles, punting and returns keep nothing. So
-before week 1 a profile IS last season times its persistence; by mid-season the
-games have taken over the fast stats (pass rate, yards per play) and the slow
-ones (completion %, interceptions) still lean on the prior. Kicker, punter and
-returners are shrunk in kicks (K 30 / 40 / 40 — judgment, stated as such).
+**Decision: shrink toward a measured prior, by the pooled K, with last season's
+deviation weighted by its measured persistence.** Year-over-year slopes
+(consecutive full seasons only, 64 team-pairs): an offence keeps ~0.42 of its
+yards-per-play edge, 0.38 of its pass rate, 0.33 of its completion rate, 0.39
+of its yards per completion, 0.24 of its sack rate; a defence keeps 0.16 / 0.25
+/ 0.25 / 0.04 / 0.12 of the same; interceptions, fumbles, punting and returns
+keep nothing. Kicker, punter and returners are shrunk in kicks (K 30 / 40 / 40
+— judgment, stated as such).
 
-**Decision: anchor the level to the market the codebase already trusts.**
-Unit rates say how a team moves the ball; they do not know the roster. Each
-team's engine margin (through the measured points–yards elasticity, pts ∝
-ypp^1.45) is blended with Kalshi's win-total margin at the weight
-`nfl_season._ratings` already gives the prior against live results, 6/(6+games)
-(0.5 at six games), and the difference becomes a yardage multiplier, half on
-the offence and half on the defence. The team view shows the anchor record
-(source, engine read, market read, weight, target) so the residual is visible.
+**Decision: the market sets the level, converted to the games LEFT, at full
+weight.** Unit rates say how a team moves the ball; they do not know the
+roster. Kalshi's win-total ladder prices the WHOLE season, banked wins
+included, so it is converted to the market's rest-of-season pace
+(`nfl_season.market_pace`: (E[W] − wins banked) / games left × 17) before it
+becomes points of margin. That margin is the level's target at weight 1 — the
+out-of-sample walk-forward's choice (§6) — and the difference from the engine's
+own read becomes a yardage multiplier, half on the offence and half on the
+defence, through the engine's own measured points elasticity (1.42, beside the
+1.45 measured on real team-games). The engine's "own read" is an analytic
+approximation that tracks the simulated margin with correlation 0.92 and slope
+0.89 (mean gap 0.68 points against Monte Carlo noise 0.30). On today's board
+the simulated rest-of-season margin tracks the target with correlation 0.975
+and slope 1.13 — a 13% overshoot at the extremes, recorded rather than tuned on
+one board. The team view shows the anchor record (source, engine read, market
+read, weight, target).
 
 **Decision: Sleeper's weekly team projection is the roster signal, at half
-weight, for the current week only.** It is the only football roster signal the
-codebase has; a quarterback out moves it directly. A judgment, bounded
-[0.85, 1.12].
+weight, for the current week only, on the offence alone** (`level_off`). It is
+the only football roster signal the codebase has; a quarterback out moves it
+directly. A judgment, bounded [0.85, 1.12].
 
 ## 5. The season (`nfl_deep_season.py`)
 
 Every unfinished game played with the engine (real neutral-site flag, each
 game on its own random stream seeded from the season seed and the game index,
 so paired runs difference cleanly); the real results banked; standings ranked
-with the NFL tiebreakers (head-to-head, division record, common games,
-conference record, strength of victory, strength of schedule, the coin;
-re-applied from the top as a tie shrinks; same-division ties settled by the
-division procedure before a wild-card tie, as the rulebook has it); seven seeds
-a conference; wild card 2v7 3v6 4v5, the 1 seed's bye, the divisional round
-with the 1 seed drawing the lowest survivor, the conference game, the Super
-Bowl neutral under postseason overtime. Output: per team the exact-wins and
-seed histograms, playoffs / division / No. 1 seed / conference / Super Bowl
-counts, mean points for and against; per remaining game BOTH teams' win
-probabilities, the tie rate, the mean margin and total; the profiles the run
-used; a quality block.
+with the NFL tiebreakers (head-to-head — among three or more wild-card clubs a
+SWEEP only —, division record, common games — four minimum for every tied club
+in a wild-card tie —, conference record, strength of victory and of schedule as
+COMBINED records, the coin; re-applied from the top as a tie shrinks;
+same-division ties settled by the division procedure before a wild-card tie);
+seven seeds a conference; wild card 2v7 3v6 4v5, the 1 seed's bye, the
+divisional round with the 1 seed drawing the lowest survivor, the conference
+game, the Super Bowl neutral under postseason overtime. Output: per team the
+exact-wins and seed histograms, playoffs / division / No. 1 seed / conference /
+Super Bowl counts, mean points for and against; per remaining game BOTH teams'
+win probabilities, the tie rate, the mean margin and total; the profiles the
+run used; a quality block.
 
-Measured: 200 seasons in 18 s on four cores (90 ms a season with 192 games
-left plus the bracket). The server runs 2,000 seasons (one worker ≈ 3 min);
-the PC 4,000. Registered as deep job `nfl_deep`: PC first (`_deep_pc_first`),
-one heavy build at a time (`HEAVY_BUILD`), a timeline row naming the pool,
-None out of season before any fetch, and the quality gate (play-by-play
-coverage ≥ 90% of finished games; a prior season or games for every team)
-before anything is published. The futures board keeps `nfl_season`'s payload
-shape and adds the No. 1 seed market; the team view adds record, projected
-wins, seeds, every remaining game with win AND loss probabilities, the unit
-profile beside the league, and keeps the player lines.
+Measured on ONE worker the way the server runs it: 225 ms a season with 192
+games left plus the bracket (~320 ms with a full schedule left). The server
+runs 1,000 seasons (~4-5 minutes on this box, more on Render's core); the PC,
+which takes the job whenever it is on, runs 4,000. Registered as deep job
+`nfl_deep`: PC first (`_deep_pc_first`), one heavy build at a time
+(`HEAVY_BUILD`), a timeline row naming the pool, None out of season before any
+fetch, and the quality gate before anything is published: play-by-play coverage
+≥ 90% of the finished games, every team's full seventeen-game schedule present
+(scoreboard weeks are MERGED into the store by event id; a week that fails to
+load is recorded, never dropped), and a prior season or games for every team.
 
 ## 6. The cards: both teams, two models
 
 Every regular-season game on the weekly slate is also played by the deep
 engine (600 games; ~8 s of worker CPU per half-hourly build, measured, kept
 deliberately small because the board builds in a web worker on a one-core
-quota). The pick line now reads "Pick: **Jaguars** 63.7% · Texans 36.3%", and
-a line under the win bar shows both models for both sides: "drive model HOU
-38.0% – 62.0% JAX · play-by-play deep engine HOU 32.4% – 67.6% JAX (tie 0.4%)
-· deep score HOU 19.1 – 24.4 JAX". The headline blends the two at 0.30 on the
-deep engine.
+quota). The pick line reads "Pick: **Jaguars** 63.7% · Texans 36.3%", and a
+line under the win bar shows both models for both sides. The headline blends
+the two at 0.30 on the deep engine; the deep engine's raw probability is logged
+with `predlog.log_shadow` to the bucket `nfl_deep` and graded apart.
 
-**Why 0.30 and not more — the validation.** A 2025 walk-forward
-(`research/nfl_deep_validate.py`; profiles from the games before each week
-only, 2024 units as the prior, 300 simulated games per real game, weeks 2–18,
-256 games):
+**The validation — out of sample.** `research/nfl_deep_validate.py`: for 2024
+and 2025 the tables are REFIT on the seasons before (2023; 2023-24), profiles
+come from that season's games before each week only, every arm runs on the same
+games and seeds, 400 simulated games per real game per arm, weeks 2-18, 512
+games. PD = the points-differential ratings, standing in for Kalshi's win totals
+(no history) and for the drive model (its Sleeper inputs are not archived).
 
-| model | log loss | Brier | accuracy | margin MAE | slope actual~pred |
-|---|---|---|---|---|---|
-| deep engine alone (no anchor) | 0.673 | 0.239 | 0.578 | 10.97 | 1.14 |
-| deep engine anchored to the PD ratings at 6/(6+g) | 0.655 | 0.231 | 0.594 | 10.73 | 1.26 |
-| points-differential ratings (`nfl_season._wp`) | 0.637 | 0.223 | 0.590 | — | — |
-| constant home 0.54 | 0.690 | 0.248 | 0.539 | — | — |
+| model | log loss | Brier | accuracy | slope actual~pred |
+|---|---|---|---|---|
+| deep engine alone (no anchor) | 0.6596 | 0.2332 | 0.613 | 1.87 |
+| deep engine, anchored at 6/(6+g) (the first version) | 0.6418 | 0.2251 | 0.621 | 1.39 |
+| deep engine, anchored at weight 1 (production) | 0.6317 | 0.2210 | 0.623 | 0.88 |
+| points-differential ratings | 0.6331 | 0.2217 | 0.617 | — |
+| constant home 0.54 | 0.6915 | 0.2487 | 0.531 | — |
+| 0.30 anchored weight 1 + 0.70 PD | 0.6316 | 0.2211 | 0.615 | — |
 
-The engine has real skill (it beats the constant) and, on moneylines over one
-season, less of it than a plain points-differential rating — anchored or not.
-Its margin slopes above 1 say its spreads are too narrow later in the season
-(and the weeks 2–6 slope of 0.40 says the preseason prior is too confident),
-each on ~85 games with a slope standard error near 0.4: suggestive, not
-something to tune on. So the deep engine enters the headline at a minority
-weight, its raw probability is logged to its own predlog bucket (`nfl_deep`)
-and graded apart from the drive model's, and the weight is to be earned from
-that record, not argued. Baseball's deep engine entered its headline at 35 on
-the same reasoning. Where the engine's value is not in doubt is the structure:
-totals, spreads, both-team score shapes, the tie rate, and (next) the joint of
-player lines with the game — which a rating cannot produce at all.
+Paired per-game differences (± one SE): full anchoring beats 6/(6+g) by
+−0.0101 ± 0.0073 and in each season on its own; the fully anchored engine is
+level with the rating it is anchored to (−0.0014 ± 0.0045); the 0.30 blend is
+level with the rating alone (−0.0015 ± 0.0013, slightly better, not
+significant). Reading: the unit model's own LEVEL read is the weakest part of
+the engine — its margins are compressed (slope 1.87) — so the market sets the
+level, and the engine's value is the structure a rating cannot produce: both
+teams' score shapes, totals, spreads, the tie rate, the matchup-dependent spread
+of outcomes. The 0.30 headline weight is a judgment the evidence neither
+supports nor contradicts; the shadow record decides it from here. Out-of-sample
+totals run 44.5 against a real 46.1, because a fit on 2023 alone has only 2023's
+kickoff rules (receiver 74.5 yards to go against 69 since the touchback moved);
+with the 2025+ kickoff table the same fit reproduces the real level, and
+production carries it.
 
 ## 7. What is deliberately not done yet
 
 - The player dealer still runs off the drive engine's team game; dealing the
   deep engine's team box (pass attempts, completions, yards, sacks, rushes)
-  to players would carry the matchup into props and same-game parlays.
+  to players would carry the matchup into props and same-game parlays. Next:
+  the owner's request to make the Sleeper drive model and this engine work
+  with the 40,000-world DFS deep sims, after a full bug run-through of that
+  system.
 - No day-over-day history / attribution (`deep_history`'s twin) for football.
-- Timeouts are implicit in the measured clock deltas, not modelled; spikes are
-  not modelled; onside recovery (12%) and the safety share (33%) are rules.
+- Timeouts are implicit in the measured clock deltas, not modelled (the kneel
+  rule therefore lets a leader kneel from ~2:05 regardless of the opponent's
+  timeouts); spikes are not modelled; onside recovery (12%) and the safety
+  share (33%) are rules.
+- Red-zone touchdowns are a table sentinel, so a team's yardage multiplier does
+  not change its per-play touchdown rate inside the 20 (it changes how often it
+  gets there and what the non-scoring plays gain).
 - Preseason (exhibition) games stay on the Kalshi-anchored drive path.
+- Tables must be refit each offseason (`research/nfl_deep_fit.py`): the prior
+  season's units ride inside them, and a new season without them runs on the
+  league prior until every team has played.
 
 ## 8. Files
 
 `nfl_pbp.py`, `nfl_deep_sim.py`, `nfl_deep_data.py`, `nfl_deep_season.py`,
 `research/nfl_deep_fit.py`, `research/nfl_deep_validate.py`,
 `research/data/nfl_deep_tables.json`, `research/reports/nfl_deep_fit.md`,
-`research/reports/nfl_deep_validation.md`,
-`research/reports/nfl_deep_validation_anchored.md`; wiring in `app.py`,
-`nfl_game_sim.py`, `pc_worker.py`, `artifacts.py` (SCHEMA 4), `static/app.js`;
-guards at the end of `tests/combo_audit_guards.py` ("The NFL deep engine").
+`research/reports/nfl_deep_validation.md`; wiring in `app.py`,
+`nfl_game_sim.py`, `nfl_season.py` (`market_pace`), `predlog.py` (shadow
+table), `pc_worker.py`, `artifacts.py` (SCHEMA 4), `static/app.js`; guards at
+the end of `tests/combo_audit_guards.py` ("The NFL deep engine", and "the
+2026-10-16 review fixes").
+
+## 9. Review and fixes (2026-10-16, a second model reviewing the first)
+
+Every finding was measured on the shipped code (f048760) before it was fixed,
+and each fix ships with a guard that would have caught it.
+
+| # | What was wrong | Measured | Fix |
+|---|---|---|---|
+| 1 | The half-time / overtime kickoff was kicked inline in `_end_period`; a punt, turnover or missed kick that ended the half then handed the ball over again, overriding it. A score at the end of the 1st/3rd quarter skipped the kickoff; a touchdown as a period expired advanced the period twice; a fourth-down choice survived into later drives. | 20,000 games: wrong team opened the 2nd half 4.17%, scorer kept the ball 0.85%, quarter skipped 0.04%, stale choice 16% of games | Owed kickoffs queued and played by the game loop; one after-score path; the try scored before an end-of-period ruling; new drives clear the choice. 0 anomalies in 25,000 games. |
+| 2 | `predlog` keys `predictions` on the ticker alone; the deep engine's `log_many("nfl_deep")` on the drive model's tickers was silently ignored. The "graded record that earns the weight" recorded nothing. | 0 rows | A shadow table keyed (ticker, model), graded off the owning row; `pairs()` / `vs_market()` / `status()` read it. |
+| 3 | `int(round(yds × m))` erased small team multipliers. | m = 1.02: 18% of the intended rushing change survived (43% completions); 3rd-and-2 conversion 63.85% for every m in 0.85-1.15 | Unbiased random rounding; form tilt and home edge refitted. |
+| 4 | The anchor's level delivered a fraction of its target; the roster factor moved both sides. | 9-72% of the target margin delivered; a 0.88 factor raised the opponent's points 10.9% | Fixed by (3) (a 1.08 level now delivers ≥ 95%); engine-measured elasticity; roster factor on `level_off` only. |
+| 5 | Kalshi's season win total (banked wins included) read as a rest-of-season rating — here and in `nfl_season._ratings`. | Error correlated +0.90 with W−L; MIN at 5-0 anchored +6.2 against the market's own +0.8; the board showed MIN 16.7% to win the Super Bowl against 4¢ | `market_pace`; mean Super Bowl edge on today's board 1.6 points. |
+| 6 | The shrinkage K was assigned inside the season loop: every K was 2026's alone (five games a team). | completions 62.7 (full seasons 11-26), interceptions 14 (20-143), yards per carry 6.75 (12-30) | Median over the full seasons, every season recorded. |
+| 7 | The anchor blended a live posterior (the market) with the engine at a prior-vs-live weight 6/(6+g). | out of sample: 0.6418 against 0.6317 at full weight | Full weight. |
+| 8 | Wild-card head-to-head took any perfect percentage as a sweep; the common-games minimum ranked the short club last; strength of victory / schedule averaged percentages. | Rulebook scenario: the shipped code put BUF first; the rule puts LAC first | Sweep rule, group-wide minimum, combined records. |
+| 9 | One failed scoreboard week replaced the stored schedule with the weeks that answered; the coverage gate could not see it. | — (code path) | Events merged by id; failed weeks recorded; a full 17-game schedule required to publish. |
+| 10 | The validation scored 2025 with tables fit on 2023-2026 (in sample). | 0.673 in sample against 0.660 out of sample after the fixes | Refit on the seasons before; 2024 and 2025; every arm on the same games; paired SEs. |
+| 11 | The engine fell back to the OLDEST kickoff era when 2025+ was absent. | a 2023-24 refit ran totals ~2 points low | Newest era. |
+| 12 | Seeds from `hash()` of strings (randomized per process); the server's cost comment read a four-core wall time as per-core. | 3 min claimed, 7.5-11 min measured for 2,000 seasons on one worker | `zlib.crc32`; 1,000 seasons on the server, the measurement in the comment. |
