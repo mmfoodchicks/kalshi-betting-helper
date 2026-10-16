@@ -72,7 +72,12 @@ VERSION = 3                              # 3: every leaf a plain Python value (n
 # 8: the engine's passing volume anchored to Sleeper's projected attempts
 # (nfl_dfs_engine.ATT_WEIGHT 1, 2026-10-16): every team's passing game moves,
 # so every board built under 7 is rebuilt.
-ENGINE = 8
+# 9: "best chance to win money" (2026-10-16): a sixth curve, P(finishing in a
+# place that pays more than the fee), its own ranked list (top_money), and the
+# steady candidates (safe_lineups) in the pool it ranks. The other lists'
+# figures mean what they meant, but the pool grew, so a board built under 8
+# is rebuilt rather than served without the list the owner asked for.
+ENGINE = 9
 # Showdown carries its OWN semantic version. The two engines change for
 # different reasons -- a classic field-model fix has nothing to say about a
 # single-game board -- and each build is expensive enough (an hour for
@@ -102,7 +107,9 @@ ENGINE = 8
 # 5: the engine's passing volume anchored to Sleeper's projected attempts
 #    (nfl_dfs_engine.ATT_WEIGHT 1), shipped on the pre-registered 2026 test
 #    (research/reports/nfl_dfs_engine.md).
-SD_ENGINE = 5
+# 6: the money curve and its ranked list (top_money); the universe is every
+#    legal lineup already, so nothing else moves -- rebuilt for the list.
+SD_ENGINE = 6
 
 # The game simulator every tournament board is built on (nfl_dfs_sim.MODELS);
 # the preseason is always legacy. "engine" since 2026-10-16: on the held-out
@@ -401,6 +408,18 @@ def _tie_nodes(lam):
     return t, w / w.sum()
 
 
+def money_places(payouts, entry_fee, places):
+    """The deepest finishing position whose prize is MORE than the entry fee:
+    finish there or better and the entry made money. `places` (the paid
+    count) when the schedule is missing, so a contest read without its
+    payout table falls back to the cash line rather than to nothing."""
+    rows = [(int(r["from"]), int(r["to"]), float(r["prize"])) for r in (payouts or [])
+            if int(r["to"]) >= int(r["from"])]
+    if not rows:
+        return int(places)
+    return max((hi for lo, hi, p in rows if p > float(entry_fee)), default=0)
+
+
 def payout_grid(C, payouts, entry_fee, places, n=6000, n_tie=160):
     """The payout curves as a function of F = the field mass scoring strictly
     ABOVE an entry and E = the field mass scoring EXACTLY LEVEL with it, both
@@ -450,6 +469,15 @@ def payout_grid(C, payouts, entry_fee, places, n=6000, n_tie=160):
     # rank on and the top 1% is 8,300 places; the top 832 is the money.
     top01 = p_at_most(max(1, int(0.001 * C)) - 1)
     cash = p_at_most(int(places) - 1)
+    # "Win money": a place that pays MORE than the entry fee, the deepest of
+    # which is the money line. On every DraftKings football schedule read on
+    # 2026-10-16 (the week-6 Classic and Showdown contests) the smallest prize
+    # beat the fee, so the money line is the cash line and this IS `cash`; a
+    # schedule whose last places only hand the fee back (or less) moves the
+    # line up, and a schedule with no prize above the fee has no money line.
+    mplaces = money_places(payouts, entry_fee, places)
+    money = cash if mplaces == int(places) else (p_at_most(mplaces - 1) if mplaces > 0
+                                                 else np.zeros(n, dtype=np.float64))
     rows = [(int(r["from"]), int(r["to"]), float(r["prize"]))
             for r in (payouts or []) if float(r["prize"]) > 0 and int(r["to"]) >= int(r["from"])]
 
@@ -497,6 +525,7 @@ def payout_grid(C, payouts, entry_fee, places, n=6000, n_tie=160):
     clamp = float(np.max(np.diff(ev2, axis=1), initial=0.0))
     ev2 = np.minimum.accumulate(ev2, axis=1)
     return {"F": F, "E": E, "first": first, "top1": top1, "top01": top01, "cash": cash,
+            "money": money, "money_places": int(mplaces),
             "ev": ev2[:, 0], "ev2": ev2, "win_sole": win_sole, "first_share": share1,
             "monotone_clamp": clamp,
             "C": C, "places": places, "entry_fee": float(entry_fee), "prize1": prize1}
@@ -728,12 +757,12 @@ def sd_money_gate(n_legal, contest_C, field_calibrated=None, joint_validated=Non
             "why": why}
 
 
-_GRID_COLS = ("first", "top1", "top01", "cash", "ev")
+_GRID_COLS = ("first", "top1", "top01", "cash", "ev", "money")
 _TIE_COLS = ("win_sole", "ev2")
 
 
 def _grid_table(grids):
-    """Every contest's above-only curves side by side, (n_grid, 5 x contests),
+    """Every contest's above-only curves side by side, (n_grid, 6 x contests),
     so a world costs one gather however many contests share the slate."""
     return np.concatenate([np.stack([g[c] for c in _GRID_COLS], axis=1) for g in grids], axis=1)
 
@@ -812,7 +841,7 @@ def run_vs_field(Wc, Wf, wf, X, grids, chunk=500, progress=None):
     summing to one (showdown: every legal lineup and the field model;
     classic: a sample from the field generator, 1/M each), X (P, N) player
     points per world, grids one payout_grid per contest. Returns
-    ([{win, win_sole, top1, top01, cash, ev, ev_notie} per contest], opt (K,), N):
+    ([{win, win_sole, top1, top01, cash, money, ev, ev_notie} per contest], opt (K,), N):
     means over worlds, and how often each candidate scored highest of the
     candidates. `win` is a share of first or better; `win_sole` is first
     outright; `ev` splits every tied position the way DraftKings does.
@@ -847,11 +876,12 @@ def run_vs_field(Wc, Wf, wf, X, grids, chunk=500, progress=None):
         if progress:
             progress(min(N, start + chunk), N, time.time() - t0)
     out = []
+    nc = len(_GRID_COLS)
     for gi in range(len(grids)):
-        cols = acc[:, gi * 5:(gi + 1) * 5] / N
+        cols = acc[:, gi * nc:(gi + 1) * nc] / N
         tie = acc2[:, gi * 2:(gi + 1) * 2] / N
         out.append({"win": cols[:, 0], "top1": cols[:, 1], "top01": cols[:, 2],
-                    "cash": cols[:, 3], "ev_notie": cols[:, 4],
+                    "cash": cols[:, 3], "ev_notie": cols[:, 4], "money": cols[:, 5],
                     "win_sole": tie[:, 0], "ev": tie[:, 1]})
     return out, opt, N
 
@@ -863,7 +893,8 @@ def run(W, X, f, grid, chunk=500, progress=None):
     res, opt, N = run_vs_field(W, W, f, X, [grid], chunk=chunk, progress=progress)
     r = res[0]
     return {"win": r["win"], "win_sole": r["win_sole"], "top1": r["top1"], "top01": r["top01"],
-            "cash": r["cash"], "ev": r["ev"], "ev_notie": r["ev_notie"], "opt": opt, "n_worlds": N}
+            "cash": r["cash"], "money": r["money"], "ev": r["ev"], "ev_notie": r["ev_notie"],
+            "opt": opt, "n_worlds": N}
 
 
 def greedy_cover(P, k):
@@ -1138,6 +1169,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
                 "win_any_pct": round(100.0 * float(res["win"][i]), 4),
                 "top1_pct": round(100.0 * float(res["top1"][i]), 2),
                 "cash_pct": round(100.0 * float(res["cash"][i]), 1),
+                "money_pct": round(100.0 * float(res["money"][i]), 1),
                 "ev": round(float(res["ev"][i]), 2), "ev_notie": round(float(res["ev_notie"][i]), 2),
                 "roi_pct": round(100.0 * float(roi[i]), 1),
                 "expected_copies": round(float(copies[i]), 1),
@@ -1147,6 +1179,11 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     by_win = ok[np.argsort(-res["win_sole"][ok])][:top]
     by_ev = ok[np.argsort(-res["ev"][ok])][:top]
     by_top1 = ok[np.argsort(-res["top1"][ok])][:top]
+    # Best chance to win money: P(finishing in a place that pays more than
+    # the fee). The universe is every legal lineup, so the best one is in it.
+    # Equal chances (to a millionth) break toward expected payout, so two
+    # lineups the sim cannot tell apart are ordered by what they pay.
+    by_money = ok[np.lexsort((-res["ev"][ok], -np.round(res["money"][ok], 6)))][:top]
     # the portfolio: greedy cover over the strongest allowed lineups by top-1%
     cand = ok[np.argsort(-res["top1"][ok])][:int(candidates)]
     kmax = max(portfolio_sizes)
@@ -1249,6 +1286,8 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
             "top_win": [row(int(i), "win") for i in by_win],
             "top_ev": [row(int(i), "ev") for i in by_ev],
             "top_top1": [row(int(i), "top1") for i in by_top1],
+            "top_money": [row(int(i), "money") for i in by_money],
+            "money_places": int(grid["money_places"]),
             "portfolio": ports,
             "players": players_out,
             "excluded": excluded[:40],
@@ -2046,6 +2085,91 @@ def _solver_pool(X, pos, gen, keep=_CL_KEEP):
     return np.asarray(sorted(out), dtype=np.int64)
 
 
+# The steady candidates (the "best chance to win money" list). Every other
+# candidate is built to WIN something: a world's hindsight-optimal lineup,
+# or a draw from a generator tuned toward the public's tournament builds.
+# The lineup most likely to finish above a cash line 20% of the way down the
+# field is a different animal -- the one with the most points on average,
+# not the most in its best world -- and nothing guaranteed it a place in the
+# pool. These are the exact best lineups of the AVERAGE world and of worlds
+# pulled most of the way back toward it (each generation world's deviation
+# from the mean scaled by a lambda), so they spread around the projection
+# optimum along the directions the worlds actually move. Generation worlds
+# only, like every candidate (world_split).
+#
+# The solver knows the salary cap and the slots, not our rulebook, and the
+# rule its optimum breaks is the stack: on a four-game synthetic slate
+# (2026-10-16, three seeds) 69-85% of the unforced lineups failed
+# classic_allowed, and on one seed the best survivor cashed LESS often than
+# the rule-abiding draws (37.2% against 41.1%). So every column but the
+# first forces a quarterback and one of his receivers or tight ends in (a
+# large bonus on both, a large penalty on every other quarterback and on the
+# defenses facing him); the pairs are the top quarterbacks by mean with
+# their top three catchers, cycled through the shrunk worlds. Measured after
+# the change: on five four-game seeds the best steady lineup out-cashed the
+# best draw on every one, by 0.3 to 5.5 points (39-52% still fail the team
+# cap or a defense facing one of our backs and are dropped by the filter);
+# on an eight-game slate 81% pass and the best cashes 51.0% against the
+# draws' 47.2% and the world-optimal lineups' 43.7%. Synthetic pools and
+# fields: the ORDER is the claim, not those levels.
+_SAFE_COLS = 480
+_SAFE_LAMBDAS = (0.25, 0.4, 0.55)
+_SAFE_QBS = 12
+_SAFE_CATCHERS = 3
+_SAFE_FORCE = 1000.0          # points: more than any lineup scores, so a forced pair always enters
+
+
+def safe_lineups(X, players, keep, gen, n_cols=_SAFE_COLS, lambdas=_SAFE_LAMBDAS):
+    """Distinct sorted player-index tuples (indices into `players` and X's
+    rows): the exact optimum of the generation worlds' mean, of the mean
+    with each stacked pair forced in, and of mean + lambda (world - mean) for
+    the first `n_cols` generation worlds with the pairs cycled. Rules beyond
+    the stack and the defense are left to classic_allowed, which every
+    candidate passes through."""
+    if not len(gen) or not len(keep):
+        return []
+    keep = np.asarray(keep, dtype=np.int64)
+    kp = [players[i] for i in keep]
+    pos = [p["pos"] for p in kp]
+    sal = np.asarray([int(p["salary"]) for p in kp])
+    Xg = np.asarray(X[keep][:, gen.start:gen.stop], dtype=np.float64)
+    mu = Xg.mean(axis=1)
+    qbs = sorted((j for j in range(len(kp)) if pos[j] == "QB" and not kp[j].get("_field_only")),
+                 key=lambda j: -mu[j])[:_SAFE_QBS]
+    pairs = []
+    for q in qbs:
+        mates = sorted((j for j in range(len(kp)) if pos[j] in ("WR", "TE")
+                        and kp[j].get("team") == kp[q].get("team") and not kp[j].get("_field_only")),
+                       key=lambda j: -mu[j])[:_SAFE_CATCHERS]
+        pairs += [(q, c) for c in mates]
+    m = min(int(n_cols), Xg.shape[1])
+    lam = np.asarray([lambdas[j % len(lambdas)] for j in range(m)], dtype=np.float64)
+    base = [mu] + [mu] * len(pairs) + list((mu[:, None] + (Xg[:, :m] - mu[:, None]) * lam[None, :]).T)
+    V = np.stack(base, axis=1)
+    off = np.asarray([bool(p.get("_field_only")) for p in kp])
+    V[off, :] -= _SAFE_FORCE
+    qb_rows = np.asarray([j for j in range(len(kp)) if pos[j] == "QB"], dtype=np.int64)
+    for col in range(1, V.shape[1]):
+        if not pairs:
+            break
+        q, c = pairs[(col - 1) % len(pairs)]
+        V[qb_rows, col] -= _SAFE_FORCE
+        V[q, col] += 2.0 * _SAFE_FORCE
+        V[c, col] += _SAFE_FORCE
+        for j in range(len(kp)):
+            if pos[j] == "DST" and kp[j].get("opp") == kp[q].get("team"):
+                V[j, col] -= _SAFE_FORCE
+    L, _v = optimal_lineups(V.astype(np.float32), sal, pos, chunk=64)
+    out, seen = [], set()
+    for lu in L:
+        if lu:
+            t = tuple(sorted(int(keep[i]) for i in lu))
+            if t not in seen:
+                seen.add(t)
+                out.append(t)
+    return out
+
+
 # Fixed probe lineups: exact nine-man lineups evaluated against every
 # completed board whether or not this build's candidates happened to hold
 # them, as diagnostic passengers only -- they never enter candidate
@@ -2384,7 +2508,9 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     # the chalk row on the sheet is the real chalk
     top_f = np.argsort(-counts_f)[:3]
     idx_chalk = _slot_rows([tuple(int(v) for v in _uf[i]) for i in top_f], pos)
-    both = np.concatenate([idx_chalk, idx_o, idx_c], axis=0) if len(idx_o) else np.concatenate([idx_chalk, idx_c], axis=0)
+    safe = safe_lineups(X, ents, keep, gen)
+    idx_s = _slot_rows(safe, pos) if safe else np.zeros((0, 9), dtype=idx_chalk.dtype)
+    both = np.concatenate([a for a in (idx_chalk, idx_s, idx_o, idx_c) if len(a)], axis=0)
     srt = np.sort(both, axis=1)
     _u, first = np.unique(srt, axis=0, return_index=True)
     idx_k = both[np.sort(first)]
@@ -2399,7 +2525,8 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                          int(c.get("places_paid") or 1)) for c in contests]
     t4 = time.time()
     log(f"[tourney] classic {dg}: {K:,} candidates ({int(allowed.sum()):,} we may enter, "
-        f"{len(idx_o):,} hindsight-optimal) ({t4 - t3:.0f}s); scoring against the field in every world...")
+        f"{len(idx_o):,} hindsight-optimal, {len(idx_s):,} steady) ({t4 - t3:.0f}s); "
+        "scoring against the field in every world...")
     ch = chunk_for(max(K, M), chunk)
     Xe = np.ascontiguousarray(X[:, ev.start:ev.stop])      # the evaluation worlds only (world_split)
     every = max(ch, (len(ev) // 6 // ch) * ch)
@@ -2433,6 +2560,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                 "top1_pct": round(100.0 * float(r["top1"][i]), 2),
                 "top01_pct": round(100.0 * float(r["top01"][i]), 3),
                 "cash_pct": round(100.0 * float(r["cash"][i]), 1),
+                "money_pct": round(100.0 * float(r["money"][i]), 1),
                 "ev": round(float(r["ev"][i]), 2), "ev_notie": round(float(r["ev_notie"][i]), 2),
                 "roi_pct": round(100.0 * (float(r["ev"][i]) - fee) / fee, 1),
                 "expected_copies": round(float(copies), 1),
@@ -2451,6 +2579,9 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
             "top_ev": [row(int(i), gi, "ev") for i in ok[np.argsort(-r["ev"][ok])][:top]],
             "top_top1": [row(int(i), gi, "top1") for i in ok[np.argsort(-r["top1"][ok])][:top]],
             "top_top01": [row(int(i), gi, "top01") for i in ok[np.argsort(-r["top01"][ok])][:top]],
+            "top_money": [row(int(i), gi, "money")
+                          for i in ok[np.lexsort((-r["ev"][ok], -np.round(r["money"][ok], 6)))][:top]],
+            "money_places": int(grids[gi]["money_places"]),
             "portfolio": {"entries": [row(int(cand[j]), gi, "cover") for j in chosen],
                           "p_any_top1_pct": [round(100.0 * v, 1) for v in p_any]},
             "chalk": row(chalk_i, gi, "chalk") if chalk_i is not None else None,
@@ -2474,7 +2605,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     players_out.sort(key=lambda p: -p["opt_pct"])
     pivotal = {e["name"] for e in sorted(ents, key=lambda e: -e["proj"])[:60]}
     for rs in results.values():
-        for lst in ("top_win", "top_ev", "top_top1", "top_top01"):
+        for lst in ("top_win", "top_ev", "top_top1", "top_top01", "top_money"):
             for rw in rs[lst][:10]:
                 pivotal.update(rw["names"])
         for rw in rs["portfolio"]["entries"]:
@@ -2514,7 +2645,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                        "ev_notie": "the same expected payout with ties ignored, for the size of the difference",
                        "bucket_pts": round(1.0 / _RES, 3), "tie_grid": len(grids[0]["E"]) if grids else None},
             "candidates": int(K), "candidates_allowed": int(allowed.sum()),
-            "optimal_distinct": int(len(opt_count)),
+            "optimal_distinct": int(len(opt_count)), "steady_distinct": int(len(idx_s)),
             "field_model": {"kind": "sampled: softmax on projection and price, stack and bring-back "
                                     "rates from the public record",
                             "n": int(M), "beta": round(beta, 4), "kappa": round(kappa, 4),

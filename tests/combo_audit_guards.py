@@ -13273,7 +13273,7 @@ if _dt14.available():
     _one16r = _dt14.run(_W14, _X14, _f14, _g16a, chunk=100)
     ck("payout curves carry top 0.1% <= top 1% <= cash, several contests share one scoring pass, and the single-contest form equals the first of them",
        bool((_g16a["top01"] <= _g16a["top1"] + 1e-12).all() and (_g16a["top1"] <= _g16a["cash"] + 1e-12).all())
-       and _dt14._grid_table([_g16a, _g16b]).shape[1] == 10 and len(_res16) == 2
+       and _dt14._grid_table([_g16a, _g16b]).shape[1] == 2 * len(_dt14._GRID_COLS) and len(_res16) == 2
        and float(_np14.abs(_res16[0]["top1"] - _one16r["top1"]).max()) < 1e-12
        and float(_np14.abs(_res16[1]["ev"] - _res16[0]["ev"]).max()) > 0)
 else:
@@ -13367,8 +13367,10 @@ if _dt14.available():
        "candidate construction must see only generation-world simulation outputs")
 ck("the board stamps its engine semantics, the field's targets and achieved receipts, and names its experimental columns; the PC rebuilds a classic board built by an older engine",
    # 7 since the engine model (2026-10-16); the version comment says why
-   _dt14.ENGINE == 8 and "# 7: the worlds are the engine model's" in _dts1
-   and "# 8: the engine's passing volume anchored" in _dts1 and '"engine": ENGINE, "kind": "classic"' in _dts1
+   # (8 its passing anchor, 9 the money list, the same day)
+   _dt14.ENGINE == 9 and "# 7: the worlds are the engine model's" in _dts1
+   and "# 8: the engine's passing volume anchored" in _dts1
+   and '# 9: "best chance to win money" (2026-10-16)' in _dts1 and '"engine": ENGINE, "kind": "classic"' in _dts1
    and '"achieved": achieved,' in _dts1 and '"targets": {"max_own": CL_FIELD_MAX_OWN' in _dts1
    and '"dst_vs_own_qb_not_avoiding": CL_DST_VS_OWN_QB' in _dts1
    # repinned 2026-09-18: the field size is DraftKings' maximumEntries via
@@ -14307,8 +14309,9 @@ ck("the report's header carries the withdrawn claim and points at the retraction
 ck("and the engine number in the findings section no longer contradicts the production table",
    "is **3** as of the discrete-v2 promotion" in _sdrw and "**4** since the engine model" in _sdrw
    and "**5** since its passing-volume anchor" in _sdrw
-   and "| Showdown engine | `SD_ENGINE = 5` |" in _sdrw
-   and _dt14.SD_ENGINE == 5)
+   and "**6** for the \"best chance to win money\" list" in _sdrw
+   and "| Showdown engine | `SD_ENGINE = 6` |" in _sdrw and "Classic's is 9 |" in _sdrw
+   and _dt14.SD_ENGINE == 6)
 ck("and the report records the seed-stamp gap, that it was fixed prospectively, and that the historical artifacts were deliberately NOT regenerated",
    "### R1c. Six artifacts stamped `seed: null` while running on fixed seeds" in _sdrw
    and "deliberately NOT\nregenerated" in _sdr.replace("\r", "")
@@ -14414,13 +14417,15 @@ ck("and the showdown engine moved, so every board built under the old scorer is 
    # later bump is a different reason, recorded in SD_ENGINE's own comment;
    # the discrete promotion itself still did not move classic's (6 then; 7
    # only for the engine model)
-   # and 5 at its passing-volume anchor, the same day, for the same kind of reason
-   _dt14.SD_ENGINE == 5 and "# 4: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read()
+   # and 5 at its passing-volume anchor, the same day, for the same kind of
+   # reason; 6 for the money list (a new curve and list, nothing else moved)
+   _dt14.SD_ENGINE == 6 and "# 4: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read()
+   and "# 6: the money curve and its ranked list (top_money)" in open(_os.path.join(_root, "dfs_tourney.py")).read()
    and "# 5: the engine's passing volume anchored" in open(_os.path.join(_root, "dfs_tourney.py")).read()
    and _pw_s1._expected_engine("showdown") == _dt14.SD_ENGINE
    and _pw_s1._rebuild_reason(_sdb(engine=2), "AAA", None, {}, 1, None)[0] == "engine updated"
    and _pw_s1._rebuild_reason(_sdb(engine=4), "AAA", None, {}, 1, None)[0] == "engine updated"
-   and _dt14.ENGINE == 8,
+   and _dt14.ENGINE == 9,          # classic's own reasons: the engine model, its anchor, the money list
    "showdown's numbers mean something new; classic's do not")
 ck("and it stamps itself differently, so a board built with it could never be mistaken for a production one",
    _sim2.sim_stamp(n=1, discrete=True)["model"].endswith("-discrete")
@@ -14842,7 +14847,8 @@ ck("and on a LIVE board the whole span of defensible conventions is worth about 
    and _s4t["by_q"]["top1"]["best_lineup_same_under_both"] is True
    and _s4t["by_q"]["top01"]["rank_corr"] > 0.95
    # NOT bumped for a 1% effect: 3 stood until the engine model moved it to 4
-   and _dt14.SD_ENGINE == 5 and "# 4: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read()
+   # (5 its passing anchor, 6 the money list -- none of them a tie convention)
+   and _dt14.SD_ENGINE == 6 and "# 4: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read()
    and "# 5: the engine's passing volume anchored" in open(_os.path.join(_root, "dfs_tourney.py")).read(),
    f"top1 bracket {100 * _s4t['by_q']['top1']['relative_bracket_at_best']:.1f}%, "
    f"top0.1% {100 * _s4t['by_q']['top01']['relative_bracket_at_best']:.1f}%")
@@ -14986,8 +14992,8 @@ ck("and the tab says it too, under the number, rather than leaving it to read as
    "any top 1% (in-sample)" in _js_s1
    and "these worlds also chose the lineups" in _js_s1
    and "basis.measured_optimism_pct.worst" in _js_s1)
-ck("no board was invalidated for the label, because no number changed (the versions moved later -- 3 -> 4 -> 5 and 6 -> 7 -> 8, for the engine model and its passing anchor -- and say so)",
-   _dt14.SD_ENGINE == 5 and _dt14.ENGINE == 8
+ck("no board was invalidated for the label, because no number changed (the versions moved later -- 3 -> 4 -> 5 -> 6 and 6 -> 7 -> 8 -> 9, for the engine model, its passing anchor and the money list -- and say so)",
+   _dt14.SD_ENGINE == 6 and _dt14.ENGINE == 9
    and "# 5: the engine's passing volume anchored" in open(_os.path.join(_root, "dfs_tourney.py")).read()
    and "# 8: the engine's passing volume anchored" in open(_os.path.join(_root, "dfs_tourney.py")).read()
    and "# 4: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read()
@@ -18931,7 +18937,7 @@ if _EVE is not None:
     ck("and the boards run the anchor because both rules said so: the 2024 rule's choice is 1, it was frozen before 2026 was read, and the 2026 rule passed every link",
        _EVE.choose_att(_va24, 0.14) == _Gde.ATT_WEIGHT_CHOSEN == _Gde.ATT_WEIGHT == 1.0
        and _EVE.att_gate(_va26, 0.14, 1.0)["promote"][0] is True
-       and _dtde.SD_ENGINE == 5 and _dtde.ENGINE == 8,
+       and _dtde.SD_ENGINE >= 5 and _dtde.ENGINE >= 8,         # the anchor's bump; later ones stack on it
        str(_EVE.att_gate(_va26, 0.14, 1.0)))
 _evrep2 = open(os.path.join(_d_ev, "reports", "nfl_dfs_engine.md")).read()
 ck("the report carries the anchor: the rules as written before the runs, the 2024 grid and its choice, 2025 labelled SEEN, the 2026 verdict with the game-clustered paired errors, the warning that 63 games of pair correlations are mostly noise, and that on 2026 the anchor moved volume AWAY from what happened",
@@ -19693,6 +19699,137 @@ ck("the light stops promising 'self-updates within a minute': yellow says which 
    and "its git pull is FAILING: ${d.pc.pull_error}" in _js7
    and "PC on, updating after its current build" in _js7
    and "self-updates within a minute" not in open(_os.path.join(_root, "boardshare.py")).read())
+
+# ---- "Best chance to win money" on the tournament board (owner, 2026-10-16) ----
+# The board ranked by top 1%, top 0.1%, EV and first place and nothing ranked
+# by the chance of making money; the classic pool held world-optimal lineups
+# and tournament-shaped draws, and nothing built for a cash line.
+import inspect as _insp_m8
+_pay_m8 = [{"from": 1, "to": 1, "prize": 100.0}, {"from": 2, "to": 300, "prize": 10.0},
+           {"from": 301, "to": 1000, "prize": 4.0}]
+ck("the money line is the deepest place paying MORE than the fee: every paid place on a DraftKings-shaped table, "
+   "above a band that only hands the fee back, none when nothing beats the fee, the paid count when the table is missing",
+   _dt14.money_places([{"from": 1, "to": 1, "prize": 1e6}, {"from": 2, "to": 166000, "prize": 10.0}], 5.0, 166000) == 166000
+   and _dt14.money_places(_pay_m8, 4.0, 1000) == 300
+   and _dt14.money_places([{"from": 1, "to": 10, "prize": 3.0}], 4.0, 10) == 0
+   and _dt14.money_places([], 4.0, 37) == 37 and _dt14.money_places(None, 4.0, 37) == 37)
+if _dt14.available():
+    _gA_m8 = _dt14.payout_grid(5000, [{"from": 1, "to": 1, "prize": 500.0}, {"from": 2, "to": 1000, "prize": 8.0}], 4.0, 1000)
+    # The line sits 300 deep: rank probabilities 40-80 deep carry a step of up
+    # to half a point where p_at_most hands over from the Poisson count to the
+    # normal one (lambda 60; measured 2026-10-16, 0.48 points at 50 deep in a
+    # 5,000-entry contest) -- the cash and top-0.1% curves' own seam, not the
+    # money curve's, and a separate task.
+    _gB_m8 = _dt14.payout_grid(5000, _pay_m8, 4.0, 1000)
+    _gC_m8 = _dt14.payout_grid(5000, _pay_m8, 4.0, 300)      # the same contest had it paid only the profit places
+    ck("the money curve MEANS the cash curve of the places that pay more than the fee: identical to cash when every "
+       "paid place does, the 300-place cash curve when places 301-1000 only return the fee, never above cash, never rising",
+       _gA_m8["money"] is _gA_m8["cash"] and _gA_m8["money_places"] == 1000
+       and _gB_m8["money_places"] == 300
+       and float(_np14.abs(_gB_m8["money"] - _gC_m8["cash"]).max()) < 1e-12
+       and bool((_gB_m8["money"] <= _gB_m8["cash"] + 1e-12).all())
+       and int((_np14.diff(_gB_m8["money"]) > 1e-12).sum()) == 0
+       and _dt14._GRID_COLS[-1] == "money")
+    _rA_m8 = _dt14.run(_W14, _X14, _f14, _gA_m8, chunk=100)
+    _rB_m8 = _dt14.run(_W14, _X14, _f14, _gB_m8, chunk=100)
+    ck("the scoring pass returns the money column beside cash: equal to it on a table whose every paid place profits, "
+       "at or below it where the last band only returns the fee",
+       float(_np14.abs(_rA_m8["money"] - _rA_m8["cash"]).max()) < 1e-12
+       and bool((_rB_m8["money"] <= _rB_m8["cash"] + 1e-12).all())
+       and float(_rB_m8["cash"].max() - _rB_m8["money"].max()) > 0)
+    # the steady candidates on a small slate: exact, stacked, generation-only
+    _rng_m8 = _np14.random.default_rng(63)
+    _tms_m8 = [f"T{i:02d}" for i in range(8)]
+    _opp_m8 = {_tms_m8[2 * g_]: _tms_m8[2 * g_ + 1] for g_ in range(4)}
+    _opp_m8.update({v: k for k, v in list(_opp_m8.items())})
+    _pl_m8 = []
+    for _pos_m8, _per_m8, _lo_m8, _hi_m8 in (("QB", 2, 5000, 8500), ("RB", 3, 3000, 9000), ("WR", 4, 3000, 9000),
+                                             ("TE", 2, 3000, 6000), ("DST", 1, 3000, 4000)):
+        for _t_m8 in _tms_m8:
+            for _i_m8 in range(_per_m8):
+                _sal_m8 = int(_rng_m8.integers(_lo_m8, _hi_m8) // 100 * 100)
+                _pl_m8.append({"name": f"{_t_m8}{_pos_m8}{_i_m8}", "pos": _pos_m8, "team": _t_m8, "opp": _opp_m8[_t_m8],
+                               "game": "-".join(sorted([_t_m8, _opp_m8[_t_m8]])), "salary": _sal_m8,
+                               "proj": float(_np14.clip(_sal_m8 / 400 + _rng_m8.normal(0, 3), 2, 30)),
+                               "depth": f"{_pos_m8}{_i_m8 + 1}"})
+    _P_m8, _N_m8 = len(_pl_m8), 1800
+    _k_m8 = _rng_m8.choice([0.8, 2.0, 6.0], size=_P_m8)          # boom/bust, middling and steady players
+    _X_m8 = _np14.asarray([_rng_m8.gamma(_k_m8[i], _pl_m8[i]["proj"] / _k_m8[i], size=_N_m8) for i in range(_P_m8)],
+                          dtype=_np14.float32)
+    _pos_l_m8 = [p["pos"] for p in _pl_m8]
+    _gen_m8, _ev_m8 = _dt14.world_split(_N_m8, 300)
+    _keep_m8 = _dt14._solver_pool(_X_m8, _pos_l_m8, _gen_m8)
+    _safe_m8 = _dt14.safe_lineups(_X_m8, _pl_m8, _keep_m8, _gen_m8, n_cols=120)
+    _Xe2_m8 = _X_m8.copy()
+    _Xe2_m8[:, _gen_m8.stop:] = _rng_m8.permutation(_Xe2_m8[:, _gen_m8.stop:], axis=1) * 3.0
+    _mu_m8 = _X_m8[_keep_m8][:, _gen_m8.start:_gen_m8.stop].astype(_np14.float64).mean(axis=1)
+    _Lmu_m8, _vmu_m8 = _dt14.optimal_lineups(_mu_m8[:, None].astype(_np14.float32),
+                                             _np14.asarray([p["salary"] for p in _pl_m8])[_keep_m8],
+                                             [_pos_l_m8[i] for i in _keep_m8])
+    _stk_m8 = [any(_pl_m8[j]["pos"] in ("WR", "TE") and _pl_m8[j]["team"] == _pl_m8[q]["team"] for j in L)
+               for L in _safe_m8 for q in L if _pl_m8[q]["pos"] == "QB"]
+    _dstq_m8 = [any(_pl_m8[d]["opp"] == _pl_m8[q]["team"] for d in L if _pl_m8[d]["pos"] == "DST")
+                for L in _safe_m8 for q in L if _pl_m8[q]["pos"] == "QB"]
+    ck("the steady lineups: the first is the exact optimum of the generation worlds' mean, every forced one is stacked "
+       "with no defense facing its quarterback, all nine under the cap, and the evaluation worlds have no say",
+       len(_safe_m8) > 100
+       and _safe_m8[0] == tuple(sorted(int(_keep_m8[i]) for i in _Lmu_m8[0]))
+       and sum(1 for v in _stk_m8 if not v) <= 1 and sum(1 for v in _dstq_m8[1:] if v) == 0
+       and all(len(L) == 9 and sum(_pl_m8[i]["salary"] for i in L) <= 50000 for L in _safe_m8)
+       and _dt14.safe_lineups(_Xe2_m8, _pl_m8, _keep_m8, _gen_m8, n_cols=120) == _safe_m8,
+       f"{len(_safe_m8)} lineups, unstacked {sum(1 for v in _stk_m8 if not v)}")
+    # and they are what the money list needs: against the rule-abiding draws on
+    # the same worlds and field, the best steady lineup cashes more often
+    # (measured 42.3% against 36.8% on this seed; the four other seeds tried
+    # all went the same way, by 0.3 to 3.7 points)
+    _fld_m8 = _dt14.classic_sample(_pl_m8, 8000, _rng_m8, 0.3, 0.0)
+    _cs_m8 = _dt14.classic_sample(_pl_m8, 5000, _rng_m8, 0.3, 0.0, rules=True)
+    _isf_m8 = _dt14._slot_rows(_safe_m8, _pos_l_m8)
+    _both_m8 = _np14.concatenate([_isf_m8, _cs_m8])
+    _src_m8 = _np14.concatenate([_np14.ones(len(_isf_m8), dtype=int), _np14.zeros(len(_cs_m8), dtype=int)])
+    _ok_m8 = _np14.where(_dt14.classic_allowed(_both_m8, _pl_m8))[0]
+    _gm_m8 = _dt14.payout_grid(50000, [{"from": 1, "to": 1, "prize": 10000.0}, {"from": 2, "to": 100, "prize": 200.0},
+                                       {"from": 101, "to": 2000, "prize": 30.0}, {"from": 2001, "to": 10000, "prize": 8.0}],
+                               4.0, 10000)
+    _rm_m8, _o_m8, _n_m8 = _dt14.run_vs_field(_dt14.lineup_matrix(_both_m8, _P_m8), _dt14.lineup_matrix(_fld_m8, _P_m8),
+                                              _np14.full(len(_fld_m8), 1.0 / len(_fld_m8)),
+                                              _np14.ascontiguousarray(_X_m8[:, _ev_m8.start:_ev_m8.stop]), [_gm_m8], chunk=200)
+    _mon_m8 = _rm_m8[0]["money"]
+    _bs_m8 = float(_mon_m8[_ok_m8[_src_m8[_ok_m8] == 1]].max())
+    _bd_m8 = float(_mon_m8[_ok_m8[_src_m8[_ok_m8] == 0]].max())
+    ck("the best rule-abiding steady lineup cashes more often than the best of 5,000 rule-abiding draws on held-out worlds "
+       "(what the money list needs in its pool)",
+       int((_src_m8[_ok_m8] == 1).sum()) >= 50 and _bs_m8 > _bd_m8 + 0.02,
+       f"steady {_bs_m8:.4f} vs draws {_bd_m8:.4f}")
+else:
+    ck("(numpy is not installed here -- the money list's numeric guards run where it is)", True)
+_src_cl_m8 = _insp_m8.getsource(_dt14.build_nfl_classic)
+_src_sd_m8 = _insp_m8.getsource(_dt14.build_nfl_showdown)
+ck("both boards carry the money list ranked by the money column over the lineups we may enter, and its line; the classic pool "
+   "holds the steady lineups; the status signature watches the list's players; both engines bumped so the PC rebuilds",
+   "safe = safe_lineups(X, ents, keep, gen)" in _src_cl_m8
+   and "for a in (idx_chalk, idx_s, idx_o, idx_c) if len(a)" in _src_cl_m8
+   and '"top_money": [row(int(i), gi, "money")' in _src_cl_m8
+   and 'ok[np.lexsort((-r["ev"][ok], -np.round(r["money"][ok], 6)))]' in _src_cl_m8
+   and '"money_places": int(grids[gi]["money_places"])' in _src_cl_m8
+   and '("top_win", "top_ev", "top_top1", "top_top01", "top_money")' in _src_cl_m8
+   and 'by_money = ok[np.lexsort((-res["ev"][ok], -np.round(res["money"][ok], 6)))][:top]' in _src_sd_m8
+   and '"top_money": [row(int(i), "money") for i in by_money]' in _src_sd_m8
+   and '"money_pct": round(100.0 * float(res["money"][i]), 1)' in _src_sd_m8
+   and '"money_pct": round(100.0 * float(r["money"][i]), 1)' in _src_cl_m8
+   and _dt14.ENGINE >= 9 and _dt14.SD_ENGINE >= 6)
+_js_m8 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the Single entries row offers 'Best chance to win money' on both board kinds, ranks it by the win-money column, "
+   "and an older board without the list says the PC rebuilds it instead of showing an empty table",
+   _js_m8.count('["top_money", "💵 Best chance to win money"]') == 2
+   and "top_money: rs.top_money || []" in _js_m8 and "top_money: d.top_money || []" in _js_m8
+   and "hasMoney: Array.isArray(rs.top_money)" in _js_m8 and "hasMoney: Array.isArray(d.top_money)" in _js_m8
+   and "This board was built before the money list existed" in _js_m8
+   # the levels read high against the modelled field (a reduced build of the
+   # week-6 main slate: 68% to cash in a Millionaire paying 23%), and say so
+   and "Read them as a ranking, not as odds." in _js_m8 and "probably read a little high" not in _js_m8
+   and 'list === "top_money" ? `<th title="finishes in a place that pays MORE than the entry fee' in _js_m8
+   and "pct(r.money_pct != null ? r.money_pct : r.cash_pct, 1)" in _js_m8)
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
