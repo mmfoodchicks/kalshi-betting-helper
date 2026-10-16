@@ -139,6 +139,27 @@ data-only `sim-history` branch (which never deploys):
   zone, contest and draftables strings are UTC with a Z. Parse both through
   `nfl_dfs.iso_ts` (reading the lobby as UTC ran every pre-lock refresh four
   hours early).
+- **The NHL deep stack** (2026-10-16): `nhl_pbp.py` turns the league's own
+  feed (api-web.nhle.com -- strength states, shooter and goalie, shot type and
+  location; ESPN has no strength states) into fourteen-int event records and
+  holds the ONE game `walk` the fit and the team units both cut games with
+  (delayed penalties as their own phase, same-second calls netted into
+  man-advantage incidents, the clock split half-and-half across a state
+  change); `research/nhl_deep_fit.py` -> `research/data/nhl_deep_tables.json`
+  (2022-23 to 2025-26); `nhl_deep_sim.py` plays a game as exponential clocks
+  per strength state, score and the last five minutes (the box, the delayed
+  call, the goalie pull's measured intention and conditioned timing, 3-on-3,
+  the shootout); `nhl_deep_data.py` ten team units shrunk by the K the
+  validation RAN WITH (the measured K are tabled beside them -- swapping is a
+  change for 2026-27 games to judge), last season's profiles committed as the
+  prior (`nhl_deep_priors.json`), the nightly `nhl_deep` job (server and PC)
+  keeping counts, never play-by-play. The board (`hockey.py`) shows both
+  models; the headline blends the deep engine at `_DEEP_WEIGHT` 0.5, chosen on
+  2024-25 and confirmed on 2025-26 out of sample by a rule written first
+  (`research/reports/nhl_deep_validation.md`); deep figures are computed once a
+  date in a niced child and never for a date already played; shadow bucket
+  `nhl_deep`. The league's abbreviations are not ESPN's (five differ,
+  `nhl_pbp.to_espn`).
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 

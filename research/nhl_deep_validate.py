@@ -239,6 +239,91 @@ def season_label(s):
     return f"{s}-{(s + 1) % 100:02d}"
 
 
+# ---- the report --------------------------------------------------------------------
+def write_report(v24, v25, calib, out):
+    """research/reports/nhl_deep_validation.md from the two seasons' artifacts
+    and the shipped engine's league calibration."""
+    s24, s25 = v24["score"], v25["score"]
+    w = choose_w(s24)
+    b25 = s25["blends"][f"{w:g}"]
+    ship = b25["minus_prod"] < 0
+    e, r = calib["engine"], calib["real"]
+
+    def tab(sc):
+        L = ["| arm | log loss | Brier |", "|---|---|---|"]
+        for k, name in (("prod", "production (hockey.py, the board's model)"), ("deep", "deep engine"),
+                        ("home_rate", "home rate alone")):
+            L.append(f"| {name} | {sc[k]['logloss']:.5f} | {sc[k]['brier']:.5f} |")
+        L += ["", "| blend w (on the deep engine) | log loss | minus production | SE (paired) |", "|---|---|---|---|"]
+        for wt in GRID:
+            b = sc["blends"][f"{wt:g}"]
+            L.append(f"| {wt:g} | {b['logloss']:.5f} | {b['minus_prod']:+.5f} | {b['se']:.5f} |")
+        L += ["", f"Total goals: ranked probability score deep {sc['totals_rps']['deep']:.4f}, production "
+              f"{sc['totals_rps']['prod']:.4f}; mean total real {sc['mean_total']['real']:.3f}, deep "
+              f"{sc['mean_total']['deep']:.3f}, production {sc['mean_total']['prod']:.3f}.", "",
+              "Calibration (games, mean forecast, home win rate) by decile of the home probability:", ""]
+        for k in ("deep", "prod"):
+            L.append(f"- {k}: " + "; ".join(f"{c} @ {p:.3f} -> {y:.3f}" for c, p, y in sc["calibration"][k]))
+        return L
+    m24, m25 = s24["meta"], s25["meta"]
+    L = ["# The NHL deep engine: out-of-sample validation", "",
+         f"research/nhl_deep_validate.py; 2024-25 ({s24['n_games']} games, tables fit on {m24['fit_seasons']}) and "
+         f"2025-26 ({s25['n_games']} games, tables fit on {m25['fit_seasons']}), {m25['n']} engine games a matchup, "
+         f"base seed {m25['base_seed']}. Provenance: 2024-25 commit {m24['provenance']['commit']} (dirty "
+         f"{m24['provenance']['dirty']}), 2025-26 commit {m25['provenance']['commit']} (dirty {m25['provenance']['dirty']}).",
+         "",
+         "## What it is", "",
+         "The league's own play-by-play (nhl_pbp: every event's strength state, shooter, goalie, shot type and "
+         "location, 2022-23 through 2025-26, every game reproducing its final score) fitted into tables "
+         "(research/nhl_deep_fit.py): shot-attempt and penalty-incident rates by strength state, goal difference "
+         "and the last five minutes; blocked, missed, saved and scored by distance and rebound; delayed penalties as "
+         "their own phase; the goalie pull's intention and timing; three-on-three overtime and the shootout. The "
+         "engine (nhl_deep_sim) plays a game as a race of exponential clocks over those tables, each team a profile "
+         "of ten units measured from its games (nhl_deep_data).", "",
+         "## The engine against the league (shipped tables, league-average sides, "
+         f"{calib['n']:,} games)", "",
+         "| | engine | real (2022-23 to 2025-26) |", "|---|---|---|"]
+    for k, name in (("goals", "goals a game"), ("home_win", "home win rate"), ("ot", "past regulation"),
+                    ("so", "shootouts"), ("en_goals", "empty-net goals"), ("pp_goals", "power-play goals"),
+                    ("sh_goals", "shorthanded goals"), ("delayed_goals", "goals during a delayed call"),
+                    ("pp_opp", "man-advantage incidents")):
+        L.append(f"| {name} | {e[k]:.3f} | {r[k]:.3f} |")
+    L += ["", "## The rule, written before any deep run on a scored season", "",
+          "The headline blends the deep engine into the production probability at a weight w on the grid "
+          "0 / 0.15 / 0.3 / 0.5 / 0.7 / 1, chosen on 2024-25 by log loss. It ships only if, on 2025-26 at that "
+          "frozen w, the blend's log loss is below production's (the point estimate decides; the paired standard "
+          "error is reported beside it). Nothing is tuned on 2025-26.", "",
+          f"## 2024-25 (where w was chosen): w = **{w:g}**", ""]
+    L += tab(s24)
+    L += ["", "## 2025-26, the test", ""]
+    L += tab(s25)
+    L += ["", f"**Verdict: {'SHIPPED' if ship else 'NOT shipped'}** -- at the frozen w = {w:g} the blend's log loss is "
+          f"{b25['logloss']:.5f} against production's {s25['prod']['logloss']:.5f} ({b25['minus_prod']:+.5f} +/- "
+          f"{b25['se']:.5f}). hockey._DEEP_WEIGHT = {w:g}.", "",
+          "## Limits, stated", "",
+          f"- Home ice runs light: the league-average engine wins {e['home_win']:.3f} at home against the league's "
+          f"{r['home_win']:.3f}, and in both seasons the deep engine's calibration shows home teams winning more often "
+          "than it said, bin after bin. A home-ice lever fitted like the NBA engine's is the obvious next change; it "
+          "is a model change, judged on 2026-27 games.",
+          f"- The deep engine's totals ran {s25['mean_total']['deep'] - s25['mean_total']['real']:+.2f} goals a game on "
+          f"2025-26 ({s24['mean_total']['deep'] - s24['mean_total']['real']:+.2f} on 2024-25); production's "
+          f"{s25['mean_total']['prod'] - s25['mean_total']['real']:+.2f} and "
+          f"{s24['mean_total']['prod'] - s24['mean_total']['real']:+.2f}. The rule covered the moneyline only, so the "
+          "board's total edges still come from production; the deep total is shown beside it.",
+          "- The team units run on round K and persistence values set before anything was measured; the measured "
+          "ones are tabled in nhl_deep_data and differ (attempt generation's K is 3.9 games, not 15). Swapping them "
+          "is a model change for 2026-27 to judge.",
+          "- Goaltending is a TEAM unit; the starting goalie, the biggest single-game factor in hockey, is not "
+          "modelled. Nor are injuries or line changes. There is no market anchor: Kalshi lists no NHL season win "
+          "totals to anchor a level to.",
+          "- Matching minors at even strength (four-on-four) are not played: incidents that leave nobody short are "
+          "not drawn, so the engine's four-on-four time is about half the league's.",
+          "- Two seasons is a measurement, not a proof. 2024-25 chose the weight; 2025-26 alone tested it.", ""]
+    with open(out, "w") as fh:
+        fh.write("\n".join(L) + "\n")
+    return ship
+
+
 if __name__ == "__main__":
     s = main(sys.argv[1:])
     print(json.dumps({k: v for k, v in s.items() if k != "calibration"}, indent=1))

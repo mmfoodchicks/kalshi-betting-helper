@@ -18976,6 +18976,141 @@ ck("ENV_SD's comment quotes the corrected 2024 grid: offence CRPS, pair and cros
    and f"{_qq['engine_0']:.3f}                    {_ev24['worlds']['engine_0']['corr_pts_median']:+.3f}" in _envsrc
    and f"{_qq['engine_0.14']:.3f}                    {_ev24['worlds']['engine_0.14']['corr_pts_median']:+.3f}" in _envsrc)
 
+# ---- 2026-10-16 the NHL deep engine (owner: "give NHL and NBA the same treatment") ----
+print("=" * 72)
+print("NHL deep engine: the league's play-by-play, the event engine, the board's deep layer")
+print("=" * 72)
+import json as _jsnh
+import nhl_pbp as _Pnh
+import nhl_deep_sim as _Enh
+import nhl_deep_data as _Dnh
+_d_nh = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "research", "data")
+_fx_nh = _Pnh.parse_game(_jsnh.load(open(os.path.join(_d_nh, "fixtures", "nhl_feed_2024020983.json"))))
+_wk_nh = list(_Pnh.walk(_fx_nh))
+_ot_goal = [e for e in _Pnh.iter_events(_fx_nh) if e[_Pnh.I_CODE] == _Pnh.GOAL and e[_Pnh.I_PER] == 4]
+ck("a real game's feed (WSH @ NYR, 2025-03-05, 3-2 in overtime) parses to 330 events whose goals add up to the final score, the overtime winner scored three-on-three (situation 1331)",
+   (_fx_nh["home"], _fx_nh["away"], _fx_nh["home_score"], _fx_nh["away_score"], _fx_nh["last"]) == ("NYR", "WSH", 2, 3, "OT")
+   and _Pnh.goals_check(_fx_nh) == (2, 3) and len(_fx_nh["events"]) // _Pnh.EV_W == 330
+   and len(_ot_goal) == 1 and _ot_goal[0][_Pnh.I_SIT] == 1331 and _ot_goal[0][_Pnh.I_TEAM] == 1)
+ck("the walk charges every second of play exactly once -- 3,600 of regulation plus the 247 of overtime, less the 8 spent in four delayed-penalty windows (their own phase, kept out of the strength states) -- and nets the calls into seven man-advantage incidents (one a double minor) and one even group",
+   sum(x[4] for k, x in _wk_nh if k == "time") == 3600 + 247 - 8
+   and [x[0] for k, x in _wk_nh if k == "dwin"] == [2, 2, 2, 2]
+   and [x[5] for k, x in _wk_nh if k == "pen"].count("double") == 1 and sum(1 for k, x in _wk_nh if k == "pen") == 7
+   and sum(1 for k, x in _wk_nh if k == "pen_even") == 1)
+ck("the league's five differing abbreviations map to ESPN's (the board's) and back, Utah included",
+   [_Pnh.to_espn(a) for a in ("LAK", "NJD", "SJS", "TBL", "UTA", "BOS")] == ["LA", "NJ", "SJ", "TB", "UTAH", "BOS"]
+   and all(_Pnh.from_espn(_Pnh.to_espn(a)) == a for a in ("LAK", "NJD", "SJS", "TBL", "UTA", "TOR")))
+# the box: a power-play goal ends the earliest minor, a double minor's
+# current half; majors are served in full; a third penalty waits its turn
+_sd_a = _Enh._Side(_Enh.league_profile())
+_Enh._take_penalty(_sd_a, "minor", 100.0)
+_Enh._take_penalty(_sd_a, "double", 110.0)
+_Enh._take_penalty(_sd_a, "major", 120.0)
+_q_before = (len(_sd_a.serving), list(_sd_a.queue))
+_Enh._pp_goal_release(_sd_a, 150.0)
+_after1 = sorted(_sd_a.serving)
+_Enh._pp_goal_release(_sd_a, 160.0)
+_after2 = sorted(_sd_a.serving)
+ck("the penalty box: at most two of a side serve (a third waits), a power-play goal ends the earliest minor and the next queued penalty starts, a goal on a double minor ends only its current two minutes, majors are served in full",
+   _q_before == (2, ["major"]) and _after1 == [(230.0, "double2"), (450.0, "major")]
+   and _after2 == [(280.0, "minor"), (450.0, "major")], str((_q_before, _after1, _after2)))
+import random as _rnh
+_Tnh = _Enh.tables()
+_Lnh = _Enh.league_profile()
+_gnh = [_Enh.play_game(_Lnh, dict(_Lnh, abbr="B"), _rnh.Random(20261016 + i), _Tnh) for i in range(1500)]
+_gpg = sum(g["score"][0] + g["score"][1] for g in _gnh) / 1500.0
+_otr = sum(1 for g in _gnh if g["ot"]) / 1500.0
+_en = sum(g["h"]["en_goals"] + g["a"]["en_goals"] for g in _gnh) / 1500.0
+_hw = sum(1 for g in _gnh if g["winner"] == 0) / 1500.0
+_late = sum(sum(v for (st, sd, late), v in g["h"]["secs"].items() if late == 1) for g in _gnh) / 1500.0
+ck("the shipped engine on the shipped tables (2022-23 to 2025-26) plays a league-average game like the league: 5.9-6.6 goals (real 6.23), overtime 19-30% (22.3%), empty-net goals 0.28-0.50 a game, home wins 48-56% -- and the last five minutes are their own cells (~300 s of them a game; charged from the step's start they read 270)",
+   5.9 <= _gpg <= 6.6 and 0.19 <= _otr <= 0.30 and 0.28 <= _en <= 0.50 and 0.48 <= _hw <= 0.56 and 292 <= _late <= 301,
+   f"goals {_gpg:.2f} OT {_otr:.3f} EN {_en:.3f} home {_hw:.3f} late {_late:.1f}")
+from research import nhl_deep_fit as _Fnh
+ck("one cut of a game for the fit and the team units: the research fit's walk IS nhl_pbp's, and the units read it through nhl_pbp",
+   _Fnh.walk is _Pnh.walk and "for kind, x in P.walk(rec):" in _insp.getsource(_Dnh.game_units))
+ck("the team units run on the K and persistence the validation ran with; the measured ones are tabled beside them as a change for 2026-27 to judge, not shipped on the seasons that measured them",
+   _Dnh.K_GAMES == {"att_off": 15.0, "att_def": 15.0, "xg_off": 30.0, "xg_def": 30.0, "fin": 120.0, "gk": 80.0,
+                    "pp": 80.0, "pk": 80.0, "pen_take": 40.0, "pen_draw": 40.0}
+   and set(_Dnh.PERSIST.values()) == {0.5}
+   and "Swapping them in is a MODEL CHANGE, to be judged on 2026-27 games" in open(_Dnh.__file__).read())
+_pri = _jsnh.load(open(os.path.join(_d_nh, "nhl_deep_priors.json")))
+ck("the committed prior is last season's 32 final team profiles, every unit present",
+   _pri["season"] == 2025 and len(_pri["profiles"]) == 32
+   and all(all(k in p for k in _Enh.PROFILE_KEYS) for p in _pri["profiles"].values()))
+import hockey as _hknh
+_bb_src = _insp.getsource(_hknh._build_board)
+ck("the board blends the deep engine into the headline at _DEEP_WEIGHT, shows both models, shadow-grades the deep figure in its own bucket, and never prices a date already played on profiles that saw it",
+   _hknh._DEEP_WEIGHT == 0.5
+   and 'ph = (1 - _DEEP_WEIGHT) * ph + _DEEP_WEIGHT * deep["p_home"]' in _bb_src
+   and 'predlog.log_shadow("nhl_deep", deep_rows)' in _bb_src
+   and "if date >= clock.today_et().isoformat():" in _bb_src
+   and "deep_figs = nhl_deep_data.cached_day_figures(date)" in _bb_src
+   and "p_home_deep=deep[\"p_home\"]" in _bb_src)
+ck("the deep figures cost the web worker nothing: once a date in a niced child process, kept in the deep store for every worker, seeded so the PC and the server agree; the nightly state keeps counts, not play-by-play",
+   "os.nice(10)" in _insp.getsource(_Dnh.day_figures) and "deep_cache.save(DAY_KEY" in _insp.getsource(_Dnh.day_figures)
+   and "figs = _figures(" not in _insp.getsource(_Dnh.day_figures)
+   and "zlib.crc32(f\"{_SEED}|{date}|{home}|{away}\"" in _insp.getsource(_Dnh.game_figure)
+   and "The\n    raw events are dropped" in _insp.getsource(_Dnh.update)
+   and '"games"' not in _insp.getsource(_Dnh.update))
+# and what a failed child does: the build thread lives in a gunicorn worker,
+# so it gets NO figures -- never the engine run in-process
+def _df_fail_child(mod):
+    import subprocess as _sp_df
+    calls, saved = [], []
+    keep = (_sp_df.run, mod.current_profiles, mod._days, mod._figures)
+    import deep_cache as _dc_df
+    keep_save = _dc_df.save
+    try:
+        _sp_df.run = lambda *a, **k: _sp_df.CompletedProcess(a, 1, b"", b"")
+        mod.current_profiles = lambda season: {"AAA": {}, "BBB": {}}
+        mod._days = lambda: {}
+        mod._figures = lambda *a, **k: calls.append(a) or {"AAA|BBB": {"p_home": 0.5}}
+        _dc_df.save = lambda *a, **k: saved.append(a)
+        got = mod.day_figures("2026-11-02", [("AAA", "BBB")])
+    finally:
+        _sp_df.run, mod.current_profiles, mod._days, mod._figures = keep
+        _dc_df.save = keep_save
+    return got, calls, saved
+_dfn = _df_fail_child(_Dnh)
+ck("a failed deep-figure child leaves the NHL card on production alone: no figures, nothing run in-process, nothing cached for the date",
+   _dfn == ({}, [], []), repr(_dfn))
+ck("the nightly nhl_deep job runs on the server and on the PC (which builds the NHL board too, so its deep figures must come from the same profiles)",
+   'deep_cache.register("nhl_deep", run_nhl_deep)' in open(os.path.join(os.path.dirname(_d_nh), "..", "app.py")).read()
+   and '("nhl_deep", lambda: _plain("nhl_deep"' in open(os.path.join(os.path.dirname(_d_nh), "..", "pc_worker.py")).read())
+
+_v24 = _jsnh.load(open(os.path.join(_d_nh, "nhl_deep_validation_2024.json")))["score"]
+_v25 = _jsnh.load(open(os.path.join(_d_nh, "nhl_deep_validation_2025.json")))["score"]
+_vsrc = open(os.path.join(os.path.dirname(_d_nh), "nhl_deep_validate.py")).read()
+ck("the NHL validation ran out of sample on committed code: each season's tables refit on the seasons before it, 2025-26 on a clean tree, 1,312 games each, 300 engine games a matchup",
+   _v24["meta"]["fit_seasons"] == [2022, 2023] and _v25["meta"]["fit_seasons"] == [2022, 2023, 2024]
+   and _v24["n_games"] == _v25["n_games"] == 1312 and _v25["meta"]["n"] == 300
+   and _v25["meta"]["provenance"]["dirty"] is False and _v25["meta"]["provenance"]["commit"] == _v24["meta"]["provenance"]["commit"]
+   and 'provenance.require_clean("the NHL deep test")' in _vsrc)
+ck("the numbers the board's comment quotes are the artifacts': log loss production 0.67591 / 0.69282, deep 0.67459 / 0.68569, the 0.5 blend 0.67186 / 0.68638, the home rate 0.68714 / 0.69300 (2024-25 / 2025-26); the 2025-26 blend minus production -0.00644 +/- 0.00214",
+   [_v24[k]["logloss"] for k in ("prod", "deep", "home_rate")] == [0.67591, 0.67459, 0.68714]
+   and [_v25[k]["logloss"] for k in ("prod", "deep", "home_rate")] == [0.69282, 0.68569, 0.693]
+   and _v24["blends"]["0.5"]["logloss"] == 0.67186 and _v25["blends"]["0.5"]["logloss"] == 0.68638
+   and (_v25["blends"]["0.5"]["minus_prod"], _v25["blends"]["0.5"]["se"]) == (-0.00644, 0.00214)
+   and "#   blend at 0.5           0.67186            0.68638  (-0.0064 +/- 0.0021)" in open(_hknh.__file__).read())
+# and what they MEAN: a blend is the weighted mean of the two probabilities,
+# log loss the mean negative log likelihood of the winner, and no game is
+# priced on counts that include its own night
+ck("and the definitions: the blend is w x deep + (1 - w) x production, log loss is the mean -log p of the winner, the weight is the grid's lowest 2024-25 log loss, and a day's games enter the profiles only after every game of that day is priced",
+   'wt * r["deep"] + (1 - wt) * r["prod"]' in _vsrc
+   and "-(y * math.log(p) + (1 - y) * math.log(1 - p))" in _vsrc
+   and 'min(GRID, key=lambda wt: (sc["blends"][f"{wt:g}"]["logloss"], wt))' in _vsrc
+   and "# the day's games enter the accumulators only after every game of\n            # the day is priced: nothing priced that morning sees that night" in _vsrc
+   and _vsrc.index("deep = {gid: (p, dist) for gid, p, dist in pool.map(_price, jobs)}") < _vsrc.index("U = D.game_units(g, T, F)"))
+ck("the weight is the rule's: chosen on 2024-25 (0.5), confirmed at that frozen value on 2025-26 (the blend below production), and that is the board's _DEEP_WEIGHT",
+   _v24["chosen_w"] == 0.5 and _v25["blends"]["0.5"]["minus_prod"] < 0 and _hknh._DEEP_WEIGHT == 0.5
+   and "THE RULE, written 2026-10-16 before any deep run on a scored season" in _vsrc)
+_rep_nh = open(os.path.join(os.path.dirname(_d_nh), "reports", "nhl_deep_validation.md")).read()
+ck("the report carries the rule as written, both seasons, the verdict and the limits -- home ice running light, the totals, the round K, the team-level goaltending, no market anchor",
+   "## The rule, written before any deep run on a scored season" in _rep_nh and "**Verdict: SHIPPED**" in _rep_nh
+   and "Home ice runs light" in _rep_nh and "Goaltending is a TEAM unit" in _rep_nh
+   and "round K and persistence values set before anything was measured" in _rep_nh)
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

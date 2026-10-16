@@ -372,8 +372,8 @@ def cached_day_figures(date):
 def day_figures(date, matchups):
     """{"HOME|AWAY" (ESPN abbreviations): figure} for a date's games, computed
     once a date in a niced child process (the board builds inside a web worker
-    on a one-core quota) and kept in the deep store for every worker; the
-    in-process path only when no child can run. {} when no profiles exist."""
+    on a one-core quota) and kept in the deep store for every worker. {} when
+    no profiles exist or the child fails (never computed in-process)."""
     import deep_cache
     days = _days()
     have = days.get(date) or {}
@@ -396,11 +396,15 @@ def day_figures(date, matchups):
         if out.returncode == 0 and out.stdout:
             figs = pickle.loads(out.stdout)
         else:
-            errlog.note("NHLDEEP-child", msg=f"child rc={out.returncode}; computing in-process")
+            errlog.note("NHLDEEP-child", msg=f"child rc={out.returncode}; no deep figures this build")
     except Exception as e:
         errlog.note("NHLDEEP-child", e)
     if figs is None:
-        figs = _figures(date, matchups, profs)
+        # NOT computed in-process: this runs on the board's build thread inside
+        # a gunicorn worker on a one-core quota, the exact placement that took
+        # the instance down twice on 2026-09-05. The card shows production
+        # alone until the next build's child succeeds.
+        return {}
     try:
         days = _days()
         days[date] = figs
