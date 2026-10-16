@@ -2,10 +2,10 @@
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `DEEP-mlb_deep` | 339 | 10-16 08:27 | HTTPError: HTTP Error 400: Bad Request |
+| `DEEP-mlb_deep` | 337 | 10-16 08:27 | HTTPError: HTTP Error 400: Bad Request |
 | `KIDX-markets-fetch` | 21 | 10-15 22:50 | HTTPError: HTTP Error 429: Too Many Requests |
 | `KNFL-markets-fetch` | 14 | 10-16 14:10 | HTTPError: HTTP Error 429: Too Many Requests |
-| `MEM-high` | 4 | 10-16 19:25 | 1928/2048MB: 1468.3MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 193.9MB pid8 /usr/local/bin/python3.11 /usr |
+| `MEM-high` | 5 | 10-16 20:57 | 1996/2048MB: 1450.9MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 239.7MB pid9 /usr/local/bin/python3.11 /usr |
 | `SIM-child` | 4 | 10-15 07:59 | TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', 'import os; os.nice(10)\nimport sys, baseball; sys.stdout.b |
 | `KAL-candles` | 3 | 10-15 21:53 | HTTPError: HTTP Error 429: Too Many Requests |
 | `UFCC-rounds` | 2 | 10-14 19:12 | HTTPError: HTTP Error 429: Too Many Requests |
