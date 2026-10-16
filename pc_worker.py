@@ -335,6 +335,28 @@ def _task_deep(url, tok):
         print(f"[vigil-pc] deep mlb: done in {(time.time()-t0)/60:.1f} min "
               f"({q.get('teams_ok', '?')}/{q.get('teams', '?')} teams clean)")
 
+    def _nfl_deep():
+        """The play-by-play NFL season, same pipeline as the server's
+        run_nfl_deep: the season's play-by-play store (fetched here, uploaded
+        with the rest of the deep store), 4,000 seasons on this machine's
+        cores, the quality gate, the same payload the server saves."""
+        import nfl_deep_season
+        import nfl_season
+        import pro_sim
+        if not pro_sim.in_season("nfl"):
+            print("[vigil-pc] deep nfl_deep: out of season - skipping")
+            return
+        season = nfl_season._season()
+        t0 = time.time()
+        agg = nfl_deep_season.run_deep(season, n_seasons=4000, log=print)
+        if not nfl_deep_season.publishable(agg):
+            print(f"[vigil-pc] deep nfl_deep: REJECTED by the quality gate {agg.get('quality')} - "
+                  "not shipping; the server keeps its previous board")
+            return
+        deep_cache.save("nfl_deep", agg)
+        print(f"[vigil-pc] deep nfl_deep: done in {(time.time()-t0)/60:.1f} min "
+              f"({agg.get('n')} seasons, {agg.get('n_games_left')} games left)")
+
     def _mt():
         """Full-sample model-trust backtests -- the server only ever runs the
         quick pass (60 bouts / 120 games); a desktop can afford the real one.
@@ -359,6 +381,7 @@ def _task_deep(url, tok):
         ("f1", lambda: _plain("f1", lambda: __import__("racing_sim").sim_f1(3000))),
         ("nascar", lambda: _plain("nascar", lambda: __import__("racing_sim").sim_nascar(3000))),
         ("nfl_season", lambda: _plain("nfl_season", lambda: __import__("nfl_season").run_season(n=4000))),
+        ("nfl_deep", _nfl_deep),
         ("cfb", lambda: _plain("cfb", lambda: __import__("cfb").run_season(n=4000))),
         ("nfl", lambda: _plain("nfl", lambda: __import__("pro_sim").project("nfl", 4000))),
         ("nba", lambda: _plain("nba", lambda: __import__("pro_sim").project("nba", 4000))),

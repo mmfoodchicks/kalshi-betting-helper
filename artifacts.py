@@ -28,7 +28,9 @@ import re
 
 # 2: the UFC board carries per-sample end-round/method arrays (ufc_combo).
 # 3: sd_tourney_nfl_<draft group> boards (dfs_tourney, PC-built).
-SCHEMA = 3
+# 4: the deep store gains nfl_deep.pkl (nfl_deep_season.run_deep's aggregate)
+#    and nfl_pbp_<season>.pkl (nfl_pbp's compact play-by-play season store).
+SCHEMA = 4
 
 _NAME_RE = re.compile(r"^[\w.,@=+-]{1,140}\.pkl$")
 

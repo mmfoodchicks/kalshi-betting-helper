@@ -921,6 +921,62 @@ def kalshi_canon(ab):
 
 
 _BOARD_TTL = 1800
+# THE DEEP LAYER on the weekly board. Every regular-season game is also played
+# by the play-by-play engine (nfl_deep_sim, both units against each other,
+# this week's roster signal folded into the level) and the card shows BOTH
+# teams' probabilities from both models. The headline blends them at
+# _DEEP_WEIGHT on the deep engine. Why a minority weight: the 2025 walk-forward
+# (research/reports/nfl_deep_validation.md, 256 games, profiles from the games
+# before each week, no market anchor) scored the engine alone at log loss
+# 0.673 against 0.690 for the constant home rate and 0.637 for the
+# points-differential ratings -- real skill, less of it than a rating. In
+# production the engine's levels ARE anchored to Kalshi's win totals, and its
+# raw probability is logged to its own predlog bucket ("nfl_deep") so the
+# weight can be earned from a graded record rather than argued. Baseball's
+# deep engine entered its headline at 35 on the same reasoning.
+_DEEP_WEIGHT = 0.30
+# Games per matchup for the deep layer. The board builds in a thread inside a
+# web worker on a one-core quota, so this is CPU the worker pays: measured
+# 2026-10-16 at ~1.0 ms a game, 600 x 14 games is ~8 s per half-hourly
+# build (the drive engine's own 16 x 2,400 is 0.4 s). 600 games put +/-2pp of
+# Monte Carlo noise on a 30%-weight component; the futures board's numbers
+# come from the nightly 2,000-4,000-season run, not from here.
+_DEEP_N = 600
+_DEEP_PROFILES_TTL = 6 * 3600
+_deep_prof_cache = {"key": None, "t": 0.0, "profiles": None}
+
+
+def _deep_profiles(season, week):
+    """This week's unit profiles for the deep layer: the nightly deep run's
+    profiles when a run for this season is on disk (the same levels the
+    futures board shows), else built from the play-by-play store; the roster
+    factor for the week folded in. Cached in-process for six hours so the
+    half-hourly board rebuild does not refetch. None when nothing can be
+    built -- the board then carries the drive model alone."""
+    key = (str(season), int(week))
+    hit = _deep_prof_cache
+    if hit["key"] == key and hit["profiles"] and _time.time() - hit["t"] < _DEEP_PROFILES_TTL:
+        return hit["profiles"]
+    import nfl_deep_data
+    base = None
+    try:
+        import deep_cache
+        payload, ts = deep_cache.load("nfl_deep")
+        if (isinstance(payload, dict) and payload.get("profiles") and int(payload.get("season") or 0) == int(season)
+                and ts and _time.time() - ts < 36 * 3600):
+            base = payload["profiles"]
+    except Exception as _e:
+        errlog.note("NFLG-deep-load", _e)
+    if base is None:
+        base, _q = nfl_deep_data.build_profiles(int(season))
+    try:
+        factors = nfl_deep_data.roster_factors(season, week)
+    except Exception as _e:
+        errlog.note("NFLG-deep-roster", _e)
+        factors = {}
+    profs = nfl_deep_data.with_roster(base, factors) if factors else base
+    hit.update(key=key, t=_time.time(), profiles=profs)
+    return profs
 
 
 def board(week=1, preseason=False):
@@ -1064,7 +1120,7 @@ def _build_board(season, week, n=2400, preseason=False):
     except Exception:
         cal = lambda p: p
 
-    out, log_rows = [], []
+    out, log_rows, deep_rows = [], [], []
 
     def _regular_sims():
         # Every regular-season sim is built on KALSHI'S OWN LINES (spread,
@@ -1077,10 +1133,26 @@ def _build_board(season, week, n=2400, preseason=False):
         except Exception as _e:
             errlog.note("NFLG-board-index", _e)
             idx = {}
+        # The deep layer's profiles once per build; a failure here costs the
+        # deep figures on the cards, never the board.
+        profs = None
+        try:
+            profs = _deep_profiles(season, week)
+        except Exception as _e:
+            errlog.note("NFLG-deep-profiles", _e)
         for h, a in games:
             lad = _game_ladders(idx, h["abbr"], a["abbr"])
-            yield simulate_game(h, a, n=n, ladders=lad,
+            sim = simulate_game(h, a, n=n, ladders=lad,
                                 prop_lad=(lad or {}).get("props"))
+            if profs and h["abbr"] in profs and a["abbr"] in profs:
+                try:
+                    import nfl_deep_sim
+                    sim["_deep"] = nfl_deep_sim.simulate(
+                        profs[h["abbr"]], profs[a["abbr"]], n=_DEEP_N,
+                        seed=hash((season, week, h["abbr"], a["abbr"])) & 0xFFFFFFFF)
+                except Exception as _e:
+                    errlog.note("NFLG-deep-sim", _e, path=f"{a['abbr']}@{h['abbr']}")
+            yield sim
 
     # A preseason model has no independent read on the level -- it is anchored TO
     # the market -- so the calibrator, which corrects a model against its own
@@ -1095,6 +1167,16 @@ def _build_board(season, week, n=2400, preseason=False):
         g = {k: sim[k] for k in ("home", "away", "home_name", "away_name", "date",
                                  "state", "exp_home", "exp_away", "exp_total",
                                  "mean_margin", "spread_ladder", "n_sims")}
+        deep = sim.get("_deep")
+        if deep and not preseason:
+            # Both models, both sides, on the card; the headline is the blend.
+            g["p_home_model"] = round(ph, 4)
+            g["p_away_model"] = round(1 - ph, 4)
+            g["p_home_deep"], g["p_away_deep"], g["p_tie_deep"] = deep["p_home"], deep["p_away"], deep["p_tie"]
+            g["exp_home_deep"], g["exp_away_deep"] = deep["exp_home"], deep["exp_away"]
+            g["exp_total_deep"], g["margin_deep"] = deep["exp_total"], deep["mean_margin"]
+            g["deep_weight"] = _DEEP_WEIGHT
+            ph = (1 - _DEEP_WEIGHT) * ph + _DEEP_WEIGHT * deep["p_home"]
         g["p_home"] = round(ph, 4)
         g["p_away"] = round(1 - ph, 4)
         g["p_home_raw"] = raw_ph
@@ -1135,6 +1217,12 @@ def _build_board(season, week, n=2400, preseason=False):
                         log_rows.append((tk, p, px.get("close"),
                                          predlog.devig(own, opp),
                                          _iso_ts(g.get("date"))))
+                        # The deep engine's own record, graded apart from the
+                        # drive model's, so its blend weight can be earned.
+                        if deep and not preseason:
+                            deep_rows.append((tk, deep["p_home"] if side == "home" else deep["p_away"],
+                                              px.get("close"), predlog.devig(own, opp),
+                                              _iso_ts(g.get("date"))))
 
         # Model pick (calibrated) + default same-game parlay.
         pick_home = ph >= 0.5
@@ -1173,6 +1261,8 @@ def _build_board(season, week, n=2400, preseason=False):
             # been steady rather than dramatic, which is worse: it never gets
             # big enough to look obviously wrong.
             predlog.log_many("nfl_pre" if preseason else "nfl", log_rows)
+            if deep_rows:
+                predlog.log_many("nfl_deep", deep_rows)
         except Exception as _e:
             errlog.note("NFLG-build_board", _e)
     out.sort(key=lambda g: g["date"] or "")

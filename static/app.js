@@ -3487,7 +3487,7 @@ async function loadFeatured(force) {
       const d = await (await fetch("/api/nfl/futures" + (bust ? "?" + bust : ""))).json();
       if (stale()) return;
       if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
-      _boardData = d; renderFeatured(d);
+      _boardData = d; _featGenTime = d.age_sec != null ? _genTime(d.age_sec) : 0; renderFeatured(d);
     } else {
       const d = await (await fetch(`/api/racing/${sport}` + (bust ? "?" + bust : ""))).json();
       if (stale()) return;
@@ -3743,14 +3743,24 @@ function nflSlateCard(g) {
     if (p.td1_pct != null) bits.push(`TD ${p.td1_pct}%`);
     return `<span class="nfl-pl"><span class="nfl-plrole">${p.pos}</span> ${p.name} <b>${bits.join(" · ")}</b></span>`;
   }).join("");
+  // Both teams on the pick line: the pick's number and the other side's, so a
+  // card never reads as one team's probability alone.
+  const pickHome = g.pick && g.pick.team === g.home;
+  const otherName = pickHome ? (g.away_name || g.away) : (g.home_name || g.home);
+  const otherPct = g.pick ? Math.round((100 - g.pick.pct) * 10) / 10 : null;
+  const pct1 = (x) => (Math.round(x * 1000) / 10).toFixed(1);
+  const twoModels = g.p_home_deep != null
+    ? `<div class="small" style="color:var(--muted);margin-top:2px" title="The win% above blends two models. Drive model: Sleeper's matchup projections through the alternating-possession engine (the graded record behind the pick). Deep engine: the play-by-play simulation (nfl_deep_sim) -- every snap, both units against each other, this week's roster signal, levels anchored to Kalshi's win totals. Blended at ${Math.round((g.deep_weight || 0) * 100)}% deep until the deep engine's own graded record earns more.">🧬 drive model ${g.away} <b>${pct1(g.p_away_model)}%</b> – <b>${pct1(g.p_home_model)}%</b> ${g.home} · play-by-play deep engine ${g.away} <b>${pct1(g.p_away_deep)}%</b> – <b>${pct1(g.p_home_deep)}%</b> ${g.home}${g.p_tie_deep ? ` <span class="small">(tie ${pct1(g.p_tie_deep)}%)</span>` : ""} · deep score ${g.away} ${g.exp_away_deep} – ${g.exp_home_deep} ${g.home}</div>`
+    : "";
   return `<div class="bbgame nflcard">
     <div class="top"><div>
       <div class="matchup">${g.away_name || g.away} @ ${g.home_name || g.home} <span class="small" style="color:var(--muted)">${(g.date || "").slice(0, 10)}</span></div>
-      <div class="pick">Pick: <b>${g.pick.name || g.pick.team}</b> ${g.pick.pct}% · total <b>${g.exp_total}</b></div>
+      <div class="pick">Pick: <b>${g.pick.name || g.pick.team}</b> ${g.pick.pct}%${otherPct != null ? ` <span style="color:var(--muted)">· ${otherName} ${otherPct}%</span>` : ""} · total <b>${g.exp_total}</b></div>
     </div></div>
     <div class="nfl-score"><span class="nfl-sc">${g.away} <b>${g.exp_away}</b></span><span class="nfl-scsep">-</span><span class="nfl-sc"><b>${g.exp_home}</b> ${g.home}</span></div>
     <div class="winbar"><div class="fill" style="width:${ph}%"></div>
       <div class="lbl">${g.away} ${pa}% ${_nflEdgeChip(kx.away_cents, g.edge_away)} - ${_nflEdgeChip(kx.home_cents, g.edge_home)} ${ph}% ${g.home}</div></div>
+    ${twoModels}
     <div class="small" style="margin:4px 0">${ladder} ${spreads}</div>
     <div class="nfl-pls">${players}</div>
     ${props ? `<details class="simdetail"><summary>📊 Top props</summary><ul class="legs">${props}</ul></details>` : ""}
@@ -5848,6 +5858,13 @@ async function startDeepRun() {
   watchFeatured();
 }
 
+async function startNflDeepRun() {
+  const btn = $("nflDeepBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "starting…"; }
+  try { await fetch("/api/sim/rerun?sport=nfl_deep", { method: "POST" }); } catch (e) {}
+  watchFeatured();
+}
+
 function deepBar(s) {
   const pct = Math.max(0, Math.min(100, s.pct || 0));
   const eta = s.eta_sec != null ? `~${Math.max(1, Math.ceil(s.eta_sec / 60))} min left` : "estimating…";
@@ -6036,6 +6053,33 @@ async function watchFeatured() {
           loadFeatured(); return;                      // loadFeatured re-arms the watcher
         }
       }
+    } else if (_featSport === "nfl") {
+      // Same shape as the MLB watcher, off the NFL deep run's status: the bar
+      // while it runs, "queued" / "handed to your PC" while it waits, and a
+      // reload the moment a newer run lands.
+      const s = await (await fetch("/api/nfl/deep/status")).json();
+      if (s.running) {
+        if (prog) prog.innerHTML = deepBar(s).replace("Deep pitch-by-pitch sim running", "Deep play-by-play NFL season running").replace("every pitch, hit &amp; walk", "every snap, drive &amp; kick");
+        delay = 3000;
+      } else if (s.queued) {
+        if (prog) prog.innerHTML = `<div class="small">⏳ <b>Deep season queued</b> — starting shortly…</div>`;
+        delay = 3000;
+      } else if (s.pc_pending_s != null) {
+        if (prog) prog.innerHTML = `<div class="small">🖥️ <b>Deep season handed to your PC</b> — requested ${agoStr(s.pc_pending_s)}; the board refreshes here when the upload lands.</div>`;
+        delay = 15000;
+      } else {
+        const last = s.last || {};
+        const endedAgo = last.ended ? (Date.now() / 1000 - last.ended) : null;
+        if (prog && endedAgo != null && endedAgo < 86400 && (last.phase === "error" || last.phase === "empty")) {
+          prog.innerHTML = `<div class="small" style="color:var(--muted)">⚠️ last deep season ${last.phase === "error" ? `failed: ${escapeHtml(String(last.err || "unknown error"))}` : "finished but declined to publish (kept the previous board — the quality gate)"} · ${agoStr(endedAgo)}</div>`;
+        } else if (prog) prog.innerHTML = "";
+        const newGen = s.age_sec != null ? _genTime(s.age_sec) : 0;
+        const firstDeep = !_boardData || _boardData.engine !== "deep";
+        const newer = newGen > _featGenTime + 20;
+        if (s.ready && (firstDeep || newer) && _featuredVisible()) {
+          loadFeatured(); return;
+        }
+      }
     } else {
       const key = _featSport;                          // "f1" | "nascar"
       const st = (await (await fetch("/api/sim/status")).json())[key] || {};
@@ -6051,8 +6095,19 @@ async function watchFeatured() {
 
 function renderFeatured(d) {
   if (d.sport === "nfl") {
+    const deepN = d.engine === "deep";
+    const engineNoteN = deepN
+      ? `<b>play-by-play deep engine</b> - every remaining game snap by snap, both units against each other, NFL tiebreakers, the full bracket; levels anchored to Kalshi's win totals`
+      : `<b>roster-aware model</b> (projected wins → game-by-game season + full playoff bracket)`;
+    const deepCtlN = deepN
+      ? `<span class="deepbadge">⚡ deep engine · ${d.n_sims.toLocaleString()} seasons</span>
+         <span class="small" style="color:var(--muted);margin-left:6px">updated <b>${agoStr(d.age_sec)}</b> · reruns nightly (auto-updates here)</span>
+         <button class="track-mini" style="margin-left:6px" onclick="startNflDeepRun()">↻ rerun now</button>`
+      : `<button class="track-mini" id="nflDeepBtn" onclick="startNflDeepRun()">⚡ Run the play-by-play deep season (~2,000 seasons)</button>`;
     $("featuredSummary").innerHTML =
-      `<div class="small" style="margin-bottom:6px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · ${d.n_games_left} games left · <b>roster-aware model</b> (projected wins → game-by-game season + full playoff bracket). Pick a market and search any team - the count is how many of the ${d.n_sims.toLocaleString()} simulated seasons that team won it, next to our model %, Kalshi and Polymarket.</div>`;
+      `<div class="small" style="margin-bottom:6px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · ${d.n_games_left} games left · ${engineNoteN}. Pick a market and search any team - the count is how many of the ${d.n_sims.toLocaleString()} simulated seasons that team won it, next to our model %, Kalshi and Polymarket.</div>
+       <div style="margin-bottom:8px">${deepCtlN}</div>
+       <div id="deepProg" style="margin-bottom:8px"></div>`;
     const groupsN = {};
     d.order.forEach((k) => { const m = d.markets[k]; (groupsN[m.group] = groupsN[m.group] || []).push([k, m.label]); });
     const ogN = Object.entries(groupsN).map(([g, items]) =>
@@ -6065,7 +6120,7 @@ function renderFeatured(d) {
         <select id="futMarket" onchange="_featMarket=this.value;renderFeaturedTable()">${ogN}</select>
         <input id="futSearch" placeholder="🔍 search team…" oninput="renderFeaturedTable()" autocomplete="off"/>
       </div>
-      <div class="small" style="margin:2px 0 6px;color:var(--muted)">Click a team for its projected player stat lines (Sleeper projections; real stats blend in during the season).</div>
+      <div class="small" style="margin:2px 0 6px;color:var(--muted)">${deepN ? "Click a team for its simulated season: record, projected wins, seeds, every remaining game with both teams' win probabilities, its units against the league, and the player lines." : "Click a team for its projected player stat lines (Sleeper projections; real stats blend in during the season)."}</div>
       <div id="futTeamDetail"></div>
       <div id="futTable"></div>`;
     $("futMarket").value = curN;
@@ -6182,12 +6237,43 @@ function renderNflSeasonTeam(d) {
       <td>${cell(p, "pass_yd")}</td><td>${cell(p, "pass_td")}</td><td>${cell(p, "pass_int")}</td>
       <td>${cell(p, "rush_yd")}</td><td>${cell(p, "rush_td")}</td>
       <td>${cell(p, "rec")}</td><td>${cell(p, "rec_yd")}</td><td>${cell(p, "rec_td")}</td></tr>`).join("");
-  return `<div class="teamdetail">
+  const playersTbl = `<div><table class="seasontbl"><thead><tr><th>Player</th><th>FPTS</th>
+      <th>PaYd</th><th>PaTD</th><th>INT</th><th>RuYd</th><th>RuTD</th><th>Rec</th><th>ReYd</th><th>ReTD</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+  if (d.engine !== "deep") {
+    return `<div class="teamdetail">
     <div class="teamdetailhead"><b>${d.team}</b> - projected <b>season-end</b> player stat lines <span class="small" style="color:var(--muted)">· ${d.source}${d.weeks_played ? ` · real stats through week ${d.weeks_played} in <span class="rp">(parentheses)</span>` : ""}</span>
       <span class="tdclose" onclick="closeTeamDetail()">✕</span></div>
-    <div class="tdtbls"><div><table class="seasontbl"><thead><tr><th>Player</th><th>FPTS</th>
-      <th>PaYd</th><th>PaTD</th><th>INT</th><th>RuYd</th><th>RuTD</th><th>Rec</th><th>ReYd</th><th>ReTD</th></tr></thead>
-      <tbody>${rows}</tbody></table></div></div></div>`;
+    <div class="tdtbls">${playersTbl}</div></div>`;
+  }
+  // The deep run's team: record and projection, titles and seeds, then EVERY
+  // remaining game with both sides' probabilities, the units against the
+  // league, and the player lines underneath.
+  const pct1 = (x) => (Math.round(x * 1000) / 10).toFixed(1);
+  const seeds = Object.entries(d.seeds || {}).map(([k, v]) => `<span class="chip">#${k} <b>${v}%</b></span>`).join(" ");
+  const sched = (d.schedule || []).map((s) => s.final
+    ? `<tr class="small"><td>${s.week}</td><td>${s.home ? "vs" : "@"} ${s.opp}</td><td colspan="4" style="color:var(--muted)"><b>${s.result}</b> ${s.score}</td></tr>`
+    : `<tr><td>${s.week}</td><td>${s.neutral ? "n" : s.home ? "vs" : "@"} ${s.opp}</td>
+        <td><b>${pct1(s.p_win)}%</b> <span class="small" style="color:var(--muted)">win</span></td>
+        <td><b>${pct1(s.p_loss)}%</b> <span class="small" style="color:var(--muted)">${s.opp}</span>${s.p_tie ? `<span class="small" style="color:var(--muted)"> · tie ${pct1(s.p_tie)}%</span>` : ""}</td>
+        <td>${s.exp_margin >= 0 ? "+" : ""}${s.exp_margin}</td><td>${s.exp_total}</td></tr>`).join("");
+  const u = d.units || {};
+  const unitRows = (u.units || []).map((r) => `<tr><td>${r.stat}</td><td>${r.off}</td><td>${r.def}</td><td style="color:var(--muted)">${r.league}</td></tr>`).join("");
+  const anchor = u.anchor && u.anchor.source
+    ? `level ×${u.level} · engine read ${u.anchor.engine_margin >= 0 ? "+" : ""}${u.anchor.engine_margin} pts vs average, market ${u.anchor.market_margin >= 0 ? "+" : ""}${u.anchor.market_margin} (${u.anchor.source}, weight ${u.anchor.weight_market}) → ${u.anchor.target_margin >= 0 ? "+" : ""}${u.anchor.target_margin}`
+    : `level ×${u.level}`;
+  return `<div class="teamdetail">
+    <div class="teamdetailhead"><b>${d.team}</b> <span class="small">${d.wins}-${d.losses}${d.ties ? `-${d.ties}` : ""} · projected <b>${d.proj_wins}</b> wins · ${(d.n_sims || 0).toLocaleString()} simulated seasons</span>
+      <span class="tdclose" onclick="closeTeamDetail()">✕</span></div>
+    <div class="small" style="margin:4px 0">playoffs <b>${d.p_playoffs}%</b> · division <b>${d.p_division}%</b> · No. 1 seed <b>${d.p_bye}%</b> · conference <b>${d.p_conf}%</b> · Super Bowl <b>${d.p_sb}%</b> · points ${d.exp_pf} for / ${d.exp_pa} against a season</div>
+    <div class="small" style="margin:2px 0 6px">seeds: ${seeds || "-"}</div>
+    <div class="tdtbls">
+      <div><table class="seasontbl"><thead><tr><th>Wk</th><th>Game</th><th>${d.abbr} win</th><th>Opponent win</th><th>Margin</th><th>Total</th></tr></thead><tbody>${sched}</tbody></table></div>
+      <div><table class="seasontbl"><thead><tr><th>Unit rate</th><th>Offence</th><th>Defence allows</th><th>League</th></tr></thead><tbody>${unitRows}</tbody></table>
+        <div class="small" style="color:var(--muted);margin-top:4px">${anchor}</div></div>
+    </div>
+    <div class="small" style="margin:8px 0 2px;color:var(--muted)">Projected season-end player lines · ${d.source}</div>
+    <div class="tdtbls">${playersTbl}</div></div>`;
 }
 window.openTeamDetail = openTeamDetail;
 window.closeTeamDetail = () => { const b = $("futTeamDetail"); if (b) b.innerHTML = ""; };

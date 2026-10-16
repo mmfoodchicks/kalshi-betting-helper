@@ -1416,6 +1416,10 @@ _MIN_CAREER_FRAC = float(os.environ.get("VIGIL_MIN_CAREER_FRAC") or 0.70)
 # PSS at one worker and 613 MB at two, beside ~330 MB of web workers, so two
 # is the most a 2 GB plan carries. VIGIL_SIM_WORKERS still overrides.
 _DEEP_SERVER_WORKERS = 2
+# The deep NFL season on the server: 2,000 seasons at ~90 ms a season a core
+# (measured 2026-10-16: 200 seasons in 18 s on four cores, 192 games left
+# plus the bracket) is three minutes on one worker; the PC runs 4,000.
+_NFL_DEEP_SERVER_SEASONS = 2000
 # How long the PC gets to answer a deep request before the server runs the
 # job itself (gated and capped). pc_loop cycles every 10 min and the desktop
 # run is minutes, so 45 min means "not delivering", not "slow".
@@ -1547,6 +1551,31 @@ def _register_deep_sims():
         import cfb
         return cfb.run_season(n=4000)
 
+    def run_nfl_deep():
+        """The play-by-play NFL season (nfl_deep_season): the PC first, one
+        heavy build at a time, the quality gate before anything is published.
+        None outside the season window, before any fetch."""
+        import pro_sim
+        if not pro_sim.in_season("nfl"):
+            return None
+        import jobs
+        import nfl_deep_season
+        import nfl_season as _ns
+        season = _ns._season()
+        if _deep_pc_first("nfl_deep"):
+            return deep_cache.DEFERRED
+        workers = _deep_workers()
+        with deep_cache.HEAVY_BUILD, jobs.timed(f"deep:nfl:w{workers}"):
+            agg = nfl_deep_season.run_deep(season, n_seasons=_NFL_DEEP_SERVER_SEASONS,
+                                           workers=workers)
+        # A run built on a play-by-play store missing finished games, or on
+        # profiles with neither games nor a prior season, keeps the previous
+        # board rather than publishing a confident wrong one.
+        if not nfl_deep_season.publishable(agg):
+            app.logger.warning("nfl deep run REJECTED by the quality gate: %s", agg.get("quality"))
+            return None
+        return agg
+
     def run_model_trust():
         """Re-measure how far each sport's model may depart from the market, by
         replaying point-in-time history. Stores the fitted blend weights."""
@@ -1588,6 +1617,7 @@ def _register_deep_sims():
     deep_cache.register("f1", run_f1)
     deep_cache.register("nascar", run_nascar)
     deep_cache.register("nfl_season", run_nfl_season)
+    deep_cache.register("nfl_deep", run_nfl_deep)
     deep_cache.register("cfb", run_cfb)
     deep_cache.register("model_trust", run_model_trust)
     # Every pro-league season is played out game by game with its own engine
@@ -3145,11 +3175,51 @@ def api_pro_league(league):
     return jsonify(data)
 
 
+# The latest deep NFL run, kept in-process behind the file's mtime: the
+# nightly saves in one worker (or the PC uploads), every worker adopts it on
+# its next read. {mtime, agg}.
+_nfl_deep = {"mtime": None, "agg": None}
+
+
+def _nfl_deep_agg(season=None):
+    """The deep NFL aggregate for `season` (default: the current NFL season),
+    or None when no completed run is on disk."""
+    import deep_cache
+    import nfl_season
+    season = int(season or nfl_season._season())
+    try:
+        m = os.stat(deep_cache._path("nfl_deep")).st_mtime
+    except OSError:
+        return None
+    if _nfl_deep.get("mtime") != m or not _nfl_deep.get("agg"):
+        payload, _ts = deep_cache.load("nfl_deep")
+        _nfl_deep["agg"] = payload if isinstance(payload, dict) and payload.get("n") else None
+        _nfl_deep["mtime"] = m
+    agg = _nfl_deep.get("agg")
+    if agg and int(agg.get("season") or 0) == season:
+        return agg
+    return None
+
+
 @app.route("/api/nfl/futures")
 def api_nfl_futures():
     """NFL futures board (Featured tab): Super Bowl / conference / division /
-    playoffs / win-total lines from a 4,000-season Monte Carlo, priced vs the
-    live Kalshi futures series. Mirrors /api/baseball/futures exactly."""
+    No. 1 seed / playoffs / win-total lines, priced vs the live Kalshi futures
+    series. The play-by-play deep run (nfl_deep_season) is the headline
+    whenever a completed run is on disk; ?engine=fast forces the ratings
+    season sim, which is also the cold-start fallback before the first run.
+    Mirrors /api/baseball/futures."""
+    if request.args.get("engine") != "fast":
+        agg = _nfl_deep_agg()
+        if agg:
+            try:
+                import deep_cache
+                import nfl_deep_season
+                b = nfl_deep_season.futures_board(agg)
+                b["age_sec"] = deep_cache.age("nfl_deep")
+                return jsonify(b)
+            except Exception as e:
+                errlog.note("APP-nfl-deep-board", e)
     try:
         import nfl_season
         b = nfl_season.futures_board(n=tiers.cap_sims(_tier(), request.args.get("sims", 4000)))
@@ -3158,6 +3228,28 @@ def api_nfl_futures():
     if not b:
         return jsonify({"error": "NFL schedule not available yet"}), 502
     return jsonify(b)
+
+
+@app.route("/api/nfl/deep/status")
+def api_nfl_deep_status():
+    """Progress and freshness of the deep NFL run -- the poll behind the
+    Featured tab's loading bar, read from the shared progress file because
+    the run happens in ONE worker and this lands on any of them."""
+    import deep_cache
+    import nfl_deep_season
+    p = nfl_deep_season.progress_read()
+    if p.get("running") and p.get("started"):
+        done, total = p.get("done", 0), p.get("total", 1) or 1
+        elapsed = time.time() - p["started"]
+        p["pct"] = round(100 * done / total, 1)
+        p["eta_sec"] = round(elapsed / done * (total - done)) if done else None
+    p["ready"] = _nfl_deep_agg() is not None
+    p["age_sec"] = deep_cache.age("nfl_deep")
+    p["queued"] = "nfl_deep" in deep_cache._json_read(deep_cache._RERUN_REQ)
+    p["last"] = deep_cache.run_state("nfl_deep")
+    _pp = deep_cache.pc_pending("nfl_deep", max_age=_DEEP_PC_WAIT_S)
+    p["pc_pending_s"] = round(time.time() - _pp) if _pp else None
+    return jsonify(p)
 
 
 @app.route("/api/cfb/futures")
@@ -3184,6 +3276,18 @@ def api_nfl_team():
     abbr = (request.args.get("abbr") or "").upper()
     if not abbr:
         return jsonify({"error": "abbr required"}), 400
+    # The deep run's view first (record, projected wins, seeds, every remaining
+    # game with BOTH sides' probabilities, the unit profile; the player lines
+    # ride inside it); the Sleeper-only view when no run is on disk.
+    agg = _nfl_deep_agg() if request.args.get("engine") != "fast" else None
+    if agg:
+        try:
+            import nfl_deep_season
+            d = nfl_deep_season.team_detail(agg, abbr)
+            if d:
+                return jsonify(d)
+        except Exception as e:
+            errlog.note("APP-nfl-deep-team", e)
     try:
         import nfl_season
         return jsonify(nfl_season.team_detail(abbr))
@@ -4159,7 +4263,7 @@ def api_model_trust():
 def api_sim_status():
     """Freshness + run state of each cached season sim."""
     import deep_cache
-    return jsonify({k: deep_cache.status(k) for k in ("mlb_deep", "f1", "nascar")})
+    return jsonify({k: deep_cache.status(k) for k in ("mlb_deep", "f1", "nascar", "nfl_deep")})
 
 
 @app.route("/api/sim/rerun", methods=["POST"])
@@ -4173,7 +4277,7 @@ def api_sim_rerun():
     literal "I hit rerun now and nothing happens"."""
     import deep_cache
     key = {"mlb": "mlb_deep", "f1": "f1", "nascar": "nascar",
-           "nfl": "nfl", "nba": "nba", "nhl": "nhl"}.get(
+           "nfl": "nfl", "nba": "nba", "nhl": "nhl", "nfl_deep": "nfl_deep"}.get(
         (request.args.get("sport") or "").lower())
     if not key:
         return jsonify({"error": "unknown sport"}), 400
