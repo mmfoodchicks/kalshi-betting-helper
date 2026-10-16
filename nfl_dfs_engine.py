@@ -95,6 +95,9 @@ ATT_WEIGHT = 0.0
 # because 2024's real passing ran ABOVE Sleeper's projection (the anchor pulls
 # toward Sleeper), the opposite of 2025 -- which is why the decision belongs to
 # a season neither was chosen on.
+# (BOTH 2024 tables here, and ENV_SD's below, came from runs whose final
+# worlds were drawn from the shipped tables -- play_worlds_parallel's leak;
+# re-run under the same rules before anything is read again.)
 ATT_WEIGHT_CHOSEN = 0.5
 # A pass-rate step is capped on the logit, for the same reason.
 _CALL_STEP = 0.6
@@ -158,18 +161,30 @@ def play_worlds(hp, ap, n, rng, T=None, neutral=False, env_sd=None):
 
 
 def _worlds_chunk(args):
-    """Process-pool entry: one slice of a game's worlds on its own seed."""
-    hp, ap, n, seed, neutral, env_sd = args
-    return play_worlds(hp, ap, n, random.Random(seed), None, neutral, env_sd)
+    """Process-pool entry: one slice of a game's worlds on its own seed, on
+    the caller's tables (None = the shipped ones)."""
+    hp, ap, n, seed, neutral, env_sd, T = args
+    return play_worlds(hp, ap, n, random.Random(seed), T, neutral, env_sd)
 
 
-def play_worlds_parallel(hp, ap, n, seed, neutral=False, workers=1, chunk=5000, env_sd=None):
+def play_worlds_parallel(hp, ap, n, seed, neutral=False, workers=1, chunk=5000, env_sd=None, T=None):
     """play_worlds split across processes in seeded slices and concatenated.
     The slicing is deterministic in (seed, chunk), so a build is reproducible
-    draw for draw whatever `workers` is."""
+    draw for draw whatever `workers` is.
+
+    `T` is the SAME tables the anchor measured on. It used to be dropped here:
+    every slice played on the shipped tables (fit on 2023-2026) while the
+    anchor had levelled the teams on the caller's. Production never noticed
+    (it passes the shipped tables), but the research replay did -- its worlds
+    were drawn from tables that contain the season being scored, and on 2024
+    they played 1.25 points a team above the level they were anchored to
+    (found 2026-10-16; research/reports/nfl_dfs_engine.md). The shipped tables
+    are not pickled into every slice: None stands for them."""
+    import nfl_deep_sim as E
+    tpass = None if (T is None or T is E._T.get("tables")) else T
     seeds = [zlib.crc32(f"{seed}|{j}".encode()) for j in range((n + chunk - 1) // chunk)]
     sizes = [min(chunk, n - j * chunk) for j in range(len(seeds))]
-    jobs = [(hp, ap, m, s, neutral, env_sd) for m, s in zip(sizes, seeds)]
+    jobs = [(hp, ap, m, s, neutral, env_sd, tpass) for m, s in zip(sizes, seeds)]
     parts = None
     if workers and workers > 1 and len(jobs) > 1:
         try:
@@ -473,7 +488,7 @@ def simulate_game(game, n, rng, ctx):
     if w_att > 0:
         rep["att_weight"] = w_att
     bh, ba = play_worlds_parallel(hp2, ap2, n, seed, neutral, workers=int(ctx.get("workers") or 1),
-                                  env_sd=ctx.get("env_sd"))
+                                  env_sd=ctx.get("env_sd"), T=T)
     boxes = {home: bh, away: ba}
     opp = {home: away, away: home}
     by_team = {}

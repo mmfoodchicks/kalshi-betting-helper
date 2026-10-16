@@ -18686,6 +18686,31 @@ if _Gde.available():
     _s2 = _Gde.play_worlds_parallel(_Lde, dict(_Lde, abbr="B"), 2500, 11, workers=2, chunk=1000)
     ck("a board's worlds are reproducible draw for draw from its seed whatever the number of processes (seeded slices, concatenated in order)",
        all(_npde.array_equal(_s1[i][k], _s2[i][k]) for i in (0, 1) for k in _s1[0]))
+    # 2026-10-16: the final worlds were drawn from the SHIPPED tables whatever
+    # tables the caller anchored on. Production passes the shipped ones, so it
+    # never showed; the research replay passes tables refit on the seasons
+    # before the one scored, and its worlds came from tables fit on that very
+    # season (2024's played 1.25 points a team above the level they were
+    # anchored to). A table no real season has -- a field goal never good (the
+    # make curve lives in the tables; the extra point rides in the profile, so
+    # it would not tell) -- shows at once which tables the worlds came from.
+    import json as _jsde
+    _raw_alt = _jsde.load(open(_Ede.TABLES_PATH))
+    _raw_alt["fg_logit"][0] = -30.0
+    _T_alt = _Ede.Tables(_raw_alt)
+    _x1 = _Gde.play_worlds_parallel(_Lde, dict(_Lde, abbr="B"), 2500, 11, workers=1, chunk=1000, T=_T_alt)
+    _x2 = _Gde.play_worlds_parallel(_Lde, dict(_Lde, abbr="B"), 2500, 11, workers=2, chunk=1000, T=_T_alt)
+    _gm_de_t = {"label": "BUF @ KC", "teams": ["KC", "BUF"], "home": "KC", "away": "BUF", "neutral": False,
+                "players": [dict(p, team=t, name=f"{p['name']}-{t}") for t in ("KC", "BUF") for p in _pl_de]}
+    _x3 = _Gde.simulate_game(_gm_de_t, 1500, _npde.random.default_rng(3),
+                             {"T": _T_alt, "profiles": {"KC": _Lde, "BUF": dict(_Lde, abbr="BUF")}, "drive": {},
+                              "workers": 2, "anchor_n": 300, "keep_boxes": True})
+    ck("a game's worlds are drawn from the SAME tables its anchor measured on, in one process or many (a table where no field goal is good: none in the parallel slices or in simulate_game's final worlds; the shipped tables make about two a team)",
+       all(_npde.array_equal(_x1[i][k], _x2[i][k]) for i in (0, 1) for k in _x1[0])
+       and float(_x1[0]["fg_made"].mean()) < 0.01 and float(_s1[0]["fg_made"].mean()) > 1.0
+       and all(float(b["fg_made"].mean()) < 0.01 for b in _x3["boxes"].values())
+       and "env_sd=ctx.get(\"env_sd\"), T=T)" in _insp.getsource(_Gde.simulate_game),
+       str((float(_x1[0]["fg_made"].mean()), [float(b["fg_made"].mean()) for b in _x3["boxes"].values()])))
 else:
     ck("(numpy absent: the engine worlds' numeric checks run in the numpy suite)", True)
 # (5) where it plugs in
