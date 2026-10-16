@@ -127,6 +127,11 @@ def _task_mlb_sims(url, tok):
     import datetime
     import baseball
     import clock
+    if baseball.MLB_SIMS_PAUSED:
+        # The season switch, read from this checkout's baseball.py (the server's
+        # environment does not reach this machine, so the default lives in code).
+        print("[vigil-pc] MLB sims: paused for the season (baseball.MLB_SIMS_PAUSED) - skipping")
+        return
     have_resp = _api(url, tok, "/api/sim/have")
     have = have_resp.get("have") or {}
     # sim/have keys are bare game pks (art/have's were "<pk>.pkl" filenames);
@@ -303,8 +308,12 @@ def _task_deep(url, tok):
         """Same pipeline as the server's run_mlb: run, QUALITY GATE (a run
         built on partial roster hydration tracks record, not talent -- refuse
         to ship it), save the same {"agg", "season"} wrapper, day history."""
+        import baseball
         import clock
         import deep_season
+        if baseball.MLB_SIMS_PAUSED:
+            print("[vigil-pc] deep mlb: paused for the season (baseball.MLB_SIMS_PAUSED) - skipping")
+            return
         season = str(clock.today_et().year)
         print("[vigil-pc] deep mlb: 4,000-season sim (the big one)...")
         t0 = time.time()

@@ -2242,6 +2242,15 @@ async function loadBaseball(silent) {
     const d = await r.json();
     _slateFails = 0;
     if (d.error) { if (!silent) { gamesBox.innerHTML = `<div class="empty">${d.error}</div>`; combosBox.innerHTML = ""; } return; }
+    // The season switch (baseball.MLB_SIMS_PAUSED): the server says so with a
+    // 200 and no games. Say it once and stop polling -- a 202 here would have
+    // read "Simulating every game..." forever.
+    if (d.paused) {
+      gamesBox.innerHTML = `<div class="empty">⏸ ${escapeHtml(d.message || "MLB simulations are paused for the season.")}</div>`;
+      combosBox.innerHTML = "";
+      clearTimeout(_slatePoll);
+      return;
+    }
     if (!Array.isArray(d.games)) { throw new Error("malformed slate"); }
     if (!d.games.length) {
       gamesBox.innerHTML = `<div class="empty">No MLB games scheduled for ${date}.</div>`;

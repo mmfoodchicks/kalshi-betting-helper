@@ -1637,6 +1637,36 @@ def deep_blend_info():
             "w_prior": _DEEP_WP_WEIGHT}
 
 
+# ---- the season switch -------------------------------------------------------
+# 2026-10-16, the owner: "Disable all of baseball, no more baseball. World Series
+# is in full swing -- don't remove it from the site, just stop it simulating for
+# the deep sim and the model." So: every path that would SIMULATE a game or a
+# season checks this flag -- the slate build (which simulates every game), the
+# per-game 4,000-run sim, the live resume, the nightly season sim, the warmer,
+# the PC worker's two MLB tasks and the two workflows that asked for reruns.
+# What stays: the pages, the shared caches and disk stores (a cached board or
+# sim is still served), the deep store's last run, and the recorder's GRADING of
+# past picks and props. The default is paused in CODE, not only by environment,
+# because pc_worker reads this file from git on the owner's PC where the
+# server's environment does not reach -- an env-only switch would have stopped
+# the server and left the PC simulating and uploading. VIGIL_MLB_SIMS=on turns
+# it back on for next season without a code change.
+def _mlb_sims_paused(value):
+    """The switch's reading of VIGIL_MLB_SIMS: unset and every off-word pause."""
+    return (value or "off").strip().lower() in ("0", "off", "false", "no", "paused")
+
+
+MLB_SIMS_PAUSED = _mlb_sims_paused(_os.environ.get("VIGIL_MLB_SIMS"))
+MLB_SIMS_PAUSED_MSG = ("MLB simulations are paused for the season (owner, 2026-10-16): the pages and the "
+                       "last results stay, nothing new is simulated. VIGIL_MLB_SIMS=on resumes them.")
+
+
+class MLBSimsPaused(RuntimeError):
+    """Raised where a caller asked for a simulation the season switch forbids.
+    A RuntimeError so every route's existing `except Exception` turns it into
+    its error JSON with this message, not a 500."""
+
+
 def stale_slate(date, season, max_age=3600):
     """The cached slate even if the TTL has lapsed, with its age in seconds, as
     (games, age) -- or (None, None) when there is nothing worth showing.
@@ -1678,6 +1708,9 @@ def analyze_slate(date, season, cached_only=False):
         return disk
     if cached_only:
         return None
+    if MLB_SIMS_PAUSED:
+        # The season switch: nothing cached means nothing, never a build.
+        raise MLBSimsPaused(MLB_SIMS_PAUSED_MSG)
 
     # Share one build across every caller. analyze_slate is reached from the web
     # handler, the prop recorder's background loop, best-bets and the DFS board,
@@ -3239,8 +3272,20 @@ def _game_sim(g):
     """The shared 4000-run game simulation + its candidate legs, cached per game
     (see _GAME_SIM_TTL). Everything that prices a leg reads this, so combos,
     edges and SGPs are the SAME simulation."""
-    import mlb_sim
     pk = g.get("game_pk")
+    if MLB_SIMS_PAUSED:
+        # The season switch: a cached or disk-shared sim is still served (the
+        # pages keep their last numbers); an uncached one is refused rather than
+        # built. Checked BEFORE the engine import so the refusal needs no numpy.
+        if pk is not None:
+            hit = _cache.get(("game_sim", pk))
+            if hit and _time.time() - hit[0] < hit[2]:
+                return hit[1]
+            disk = _sim_disk_get(pk)
+            if disk is not None:
+                return disk
+        raise MLBSimsPaused(MLB_SIMS_PAUSED_MSG)
+    import mlb_sim
 
     def build():
         val = _game_sim_isolated(g, n=_SIM_N)   # a niced child, on the server
@@ -3315,6 +3360,8 @@ def _live_game_sim(g):
     """Sim + candidates for a game ALREADY UNDER WAY, resumed from where it
     stands. Returns None when the live feed can't be read, so callers can fall
     back to the thin score-derived legs rather than showing nothing."""
+    if MLB_SIMS_PAUSED:
+        return None        # the season switch; None is the fallback callers already handle
     import mlb_sim, mlb_live
     pk = g.get("game_pk")
     if pk is None:

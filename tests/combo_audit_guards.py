@@ -103,6 +103,12 @@ ck("_game_variants: Final -> [] even when opted in",
 ck("_candidate_legs drops live games when not opted in",
    B._candidate_legs([fake_live], allow_live=False) == [])
 
+# The season switch (baseball.MLB_SIMS_PAUSED, owner 2026-10-16) is ON by
+# default in code. The sections below exercise the model on the live slate, so
+# they run with the switch lifted; the switch's own guards near the end put it
+# back and test the paused behaviour. The import-time value is kept for them.
+_MLB_PAUSED_AT_IMPORT = B.MLB_SIMS_PAUSED
+B.MLB_SIMS_PAUSED = False
 DATE = datetime.date.today().isoformat()
 games = B.analyze_slate(DATE, 2026)
 states = collections.Counter(B._game_state(g) for g in games)
@@ -1338,7 +1344,14 @@ B._SIM_N = 800
 _struct_games = playable[:4]
 _off = B.build_mixed_parlay(_struct_games, n_legs=4, target_pct=50,
                             max_legs_per_game=1, max_total_legs=8)
-if _off:
+if len(_struct_games) < 2:
+    # The October postseason plays one game a day: with fewer than two playable
+    # games today and tomorrow a CROSS-game parlay cannot exist, so this
+    # end-to-end check has no premise. Stated, not failed (first hit 2026-10-16,
+    # a 1-game slate on both days); it runs again on the next multi-game slate.
+    ck("(skipped for a stated reason: fewer than two playable games on the live slate today and tomorrow, so a cross-game parlay cannot exist) a same-game-OFF mixed parlay puts at most one leg in each game",
+       True, f"{len(_struct_games)} playable game(s)")
+elif _off:
     _sizes = [g["size"] for g in _off["groups"]]
     ck("a same-game-OFF mixed parlay puts at most one leg in each game",
        set(_sizes) <= {1},
@@ -5811,9 +5824,13 @@ ck("...into the data branch, serialized with the history snapshot",
    "sim-history" in _gwf and "group: sim-history" in _gwf,
    "two workflows pushing the same branch concurrently reject each other's "
    "pushes")
-ck("the nightly history fetch now authenticates too",
-   _gnh.count("X-Sim-Token") >= 2,
-   "it always sent the token on the trigger step and never on the fetch")
+ck("the nightly history fetch authenticates (the token is set inside the fetch step, before the export call), and the trigger step that used to be the only authenticated one is gone with the MLB pause",
+   _gnh.count("X-Sim-Token") >= 1
+   and _gnh.index('AUTH=(-H "X-Sim-Token: $SIM_TOKEN")') < _gnh.index("futures/deep/history/export")
+   and "name: Trigger the next deep run" not in _gnh,
+   "it once sent the token on the trigger step and never on the fetch; since 2026-10-16 "
+   "there is no trigger step (MLB simulations are paused for the season), so the fetch's "
+   "own token is the one that matters")
 ck("prod persists the ledger and knows about the token",
    "ERRLOG_DB" in open(_os.path.join(_root, "render.yaml")).read()
    and "SIM_TOKEN" in open(_os.path.join(_root, "render.yaml")).read())
@@ -9312,8 +9329,8 @@ finally:
 _apy42 = open(_os.path.join(_root, "app.py")).read()
 _js42 = open(_os.path.join(_root, "static", "app.js")).read()
 _pl42 = open(_os.path.join(_root, "pc_loop.py")).read()
-ck("the light rides the warm poll (both return shapes), and the loop beats -- from a thread the worker cannot block",
-   _apy42.count('"pc": _pc_status()') == 2
+ck("the light rides the warm poll (all three return shapes: cold, warm, and paused since 2026-10-16), and the loop beats -- from a thread the worker cannot block",
+   _apy42.count('"pc": _pc_status()') == 3
    and _pl42.count("_ping_server()") >= 2 and "/api/pc/ping" in _pl42
    and "def _heartbeat" in _pl42
    and "threading.Thread(target=_heartbeat, daemon=True).start()" in _pl42
@@ -17895,6 +17912,120 @@ else:
        and _w2_sup["week1_representable_share_for_comparison_pct"] == 99.733
        and _W2.SECONDARY_SEEDS == (20260914, 20260915, 20260916, 20260917) and _W2.PARAMS == _sl["parameters"])
 
+
+# ---- The season switch: MLB simulations paused (owner, 2026-10-16) ----
+# "Disable all of baseball ... don't remove it from the site, just stop it
+# simulating for the deep sim and the model." Every path that would simulate
+# checks baseball.MLB_SIMS_PAUSED; the pages, caches, last results and the
+# recorder's grading stay. Paused by DEFAULT IN CODE because the PC worker reads
+# baseball.py from git, where the server's environment does not reach.
+import baseball as _bbp                     # noqa: E402
+import deep_cache as _dcp                   # noqa: E402
+import mlb_recorder as _mrp                 # noqa: E402
+import presets as _psp                      # noqa: E402
+import pc_worker as _pwp                    # noqa: E402
+_bbp.MLB_SIMS_PAUSED = True                 # the suite lifted it near the top for the live-slate sections
+_bb_src_p = open(_os.path.join(_root, "baseball.py")).read()
+_app_src_p = open(_os.path.join(_root, "app.py")).read()
+_pw_src_p = open(_os.path.join(_root, "pc_worker.py")).read()
+_wk_p = open(_os.path.join(_root, ".github", "workflows", "weekly-sim.yml")).read()
+_nh_p = open(_os.path.join(_root, ".github", "workflows", "nightly-history.yml")).read()
+_js_p = open(_os.path.join(_root, "static", "app.js")).read()
+ck("MLB simulations are paused by default in code (the import-time value, before the suite lifted it), the switch reads VIGIL_MLB_SIMS with unset and every off-word meaning paused and on/1/true meaning running, the message names the owner's date and the way back, and the refusal is a RuntimeError so every route's existing except-Exception turns it into its error JSON",
+   _MLB_PAUSED_AT_IMPORT is True and _bbp._mlb_sims_paused(None) and _bbp._mlb_sims_paused("off") and _bbp._mlb_sims_paused("0")
+   and _bbp._mlb_sims_paused("paused") and not _bbp._mlb_sims_paused("on") and not _bbp._mlb_sims_paused("1") and not _bbp._mlb_sims_paused("true")
+   and 'MLB_SIMS_PAUSED = _mlb_sims_paused(_os.environ.get("VIGIL_MLB_SIMS"))' in _bb_src_p
+   and "2026-10-16" in _bbp.MLB_SIMS_PAUSED_MSG and "VIGIL_MLB_SIMS=on" in _bbp.MLB_SIMS_PAUSED_MSG
+   and issubclass(_bbp.MLBSimsPaused, RuntimeError))
+# behavioural: the slate is never built and the per-game sim is never run while paused
+_bbp._cache.pop(("slate", "2099-05-01", "2099"), None)
+_p_calls = []
+_o_iso, _o_unc, _o_gi = _bbp._analyze_slate_isolated, _bbp._analyze_slate_uncached, _bbp._game_sim_isolated
+_bbp._analyze_slate_isolated = lambda *a, **k: _p_calls.append("slate-child") or {}
+_bbp._analyze_slate_uncached = lambda *a, **k: _p_calls.append("slate-inproc") or []
+_bbp._game_sim_isolated = lambda *a, **k: _p_calls.append("sim-child")
+try:
+    _p_cached = _bbp.analyze_slate("2099-05-01", "2099", cached_only=True)
+    try:
+        _bbp.analyze_slate("2099-05-01", "2099"); _p_raised = False
+    except _bbp.MLBSimsPaused as _e_p:
+        _p_raised = "paused" in str(_e_p)
+    try:
+        _bbp._game_sim({"game_pk": 987654321, "matchup": "X @ Y"}); _p_graised = False
+    except _bbp.MLBSimsPaused:
+        _p_graised = True
+    _p_live = _bbp._live_game_sim({"game_pk": 987654321})
+finally:
+    _bbp._analyze_slate_isolated, _bbp._analyze_slate_uncached, _bbp._game_sim_isolated = _o_iso, _o_unc, _o_gi
+ck("while paused the slate is never built (cached_only still answers None, an uncached call refuses by MLBSimsPaused and neither the child nor the in-process builder is reached), an uncached per-game sim refuses before importing the engine (no child spawned), and the live resume answers None, the fallback its callers already handle",
+   _p_cached is None and _p_raised and _p_graised and _p_live is None and _p_calls == [])
+# routes: the rerun and the manual deep start refuse with 409, the slate route says paused with 200 and spawns no build, the warm bar hides
+_appp = __import__("app")
+_p_inflight_before = set(_appp._slate_inflight)
+with _appp.app.test_client() as _pc_:
+    _r1 = _pc_.post("/api/sim/rerun?sport=mlb")
+    _r2 = _pc_.post("/api/baseball/futures/deep")
+    _r3 = _pc_.get("/api/baseball/today?date=2099-05-01")
+    _r4 = _pc_.get("/api/warm?date=2099-05-01")
+_j3, _j4 = _r3.get_json() or {}, _r4.get_json() or {}
+_wkeys_p = {"ready", "slate_ready", "total", "warm", "at", "phase", "always_warm", "stalled", "warm_err", "beat_s", "note", "pc"}
+ck("while paused: POST /api/sim/rerun?sport=mlb and POST /api/baseball/futures/deep answer 409 with paused true and the message (refused, never queued); GET /api/baseball/today answers 200 with paused true, no games and no build thread (the inflight set is untouched); GET /api/warm answers ready with paused true, phase paused and every field the other branches carry, so the bar hides and the PC light still updates",
+   _r1.status_code == 409 and (_r1.get_json() or {}).get("paused") is True and "paused" in str((_r1.get_json() or {}).get("error"))
+   and _r2.status_code == 409 and (_r2.get_json() or {}).get("paused") is True
+   and _r3.status_code == 200 and _j3.get("paused") is True and _j3.get("games") == [] and "paused" in str(_j3.get("message"))
+   and set(_appp._slate_inflight) == _p_inflight_before
+   and _r4.status_code == 200 and _j4.get("paused") is True and _j4.get("ready") is True and _j4.get("phase") == "paused" and _wkeys_p <= set(_j4)
+   and 'if key == "mlb_deep" and baseball.MLB_SIMS_PAUSED:' in _app_src_p
+   and "if games is None and baseball.MLB_SIMS_PAUSED:" in _app_src_p
+   and "d.paused" in _js_p and "clearTimeout(_slatePoll)" in _js_p[_js_p.index("if (d.paused)"):][:400])
+# the nightly scheduler never sees an MLB job, every other sport registers as before
+_p_saved_jobs = dict(_dcp._jobs)
+_dcp._jobs.pop("mlb_deep", None); _dcp._jobs.pop("mlb_nightly_extras", None)
+try:
+    _appp._register_deep_sims()
+    _p_reg_ok = ("mlb_deep" not in _dcp._jobs and "mlb_nightly_extras" not in _dcp._jobs
+                 and {"f1", "nascar", "nfl_season", "cfb", "model_trust"} <= set(_dcp._jobs))
+finally:
+    _dcp._jobs.clear(); _dcp._jobs.update(_p_saved_jobs)
+# the warmer starts no thread and says why
+_p_started = []
+class _NoThreadP:
+    def __init__(self, *a, **k): _p_started.append(k.get("target"))
+    def start(self): pass
+_o_T = _appp.threading.Thread
+_appp._warm_json_write(_appp._WARM_STATUS, {})
+_appp.threading.Thread = _NoThreadP
+try:
+    _appp._start_slate_warmer()
+finally:
+    _appp.threading.Thread = _o_T
+_p_wst = _appp._warm_json_read(_appp._WARM_STATUS) or {}
+_appp._warm_json_write(_appp._WARM_STATUS, {})
+ck("while paused the scheduler never sees an MLB job (neither mlb_deep nor mlb_nightly_extras registers; F1, NASCAR, the NFL and CFB seasons and model trust register as before) and the slate warmer starts no thread, writing phase=paused to the status file so a poll never reads it as stalled",
+   _p_reg_ok and _p_started == [] and _p_wst.get("phase") == "paused" and 'deep_cache.register("mlb_deep", run_mlb)' in _app_src_p
+   and "if not baseball.MLB_SIMS_PAUSED:" in _app_src_p[_app_src_p.index("def _register_deep_sims"):])
+# the recorder logs nothing (and never fetches prices), the PC skips both MLB tasks, the presets PC build answers None, the workflows ask for nothing
+_o_pp, _o_api = _mrp._kalshi_prop_prices, _pwp._api
+def _boom_p(*a, **k):
+    raise AssertionError("reached a network call while paused")
+_mrp._kalshi_prop_prices = _boom_p
+_pwp._api = _boom_p
+try:
+    _p_rec = _mrp.record_once()
+    try:
+        _pwp._task_mlb_sims("http://x", "t"); _p_pw_ok = True
+    except AssertionError:
+        _p_pw_ok = False
+    _p_pb = _psp.pc_build()
+finally:
+    _mrp._kalshi_prop_prices, _pwp._api = _o_pp, _o_api
+ck("while paused the prop recorder logs nothing and never fetches prices (record_once returns 0 before the Kalshi call; grade_due and the other tickers in its loop are untouched), the PC worker's MLB game-sim task returns before its first call to the server and its nightly deep MLB job returns before the season sim, the presets PC build answers None, and the two scheduled workflows no longer ask the server for an MLB rerun",
+   _p_rec == 0 and _p_pw_ok and _p_pb is None
+   and "if baseball.MLB_SIMS_PAUSED:" in _insp.getsource(_pwp._task_mlb_sims)
+   and "deep mlb: paused for the season" in _insp.getsource(_pwp._task_deep)
+   and "for sport in f1 nascar; do" in _wk_p and "for sport in mlb" not in _wk_p
+   and "api/sim/rerun?sport=mlb" not in _nh_p.replace("# The \"Trigger the next deep run\" step (POST /api/sim/rerun?sport=mlb)", "")
+   and "grade_due()" in _insp.getsource(_mrp._loop) and "record_once()" in _insp.getsource(_mrp._loop))
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

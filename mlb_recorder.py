@@ -69,6 +69,10 @@ def _market_key(stat, line):
 def record_once():
     """Log every Kalshi batter prop we can attach to a player, with model %,
     price, and recent form. Returns the number of props (re)logged."""
+    if baseball.MLB_SIMS_PAUSED:
+        # The season switch: no model this season, so no prop is logged with a
+        # model number. grade_due and the other tickers in the loop continue.
+        return 0
     season, date = _season(), clock.today_et().isoformat()
 
     prices = _kalshi_prop_prices()

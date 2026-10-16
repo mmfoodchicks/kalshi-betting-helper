@@ -255,6 +255,14 @@ def _api_warm():
     warmer is working through, so the page can say so up front."""
     date = request.args.get("date") or clock.today_et().isoformat()
     season = request.args.get("season") or date[:4]
+    if baseball.MLB_SIMS_PAUSED:
+        # The season switch: the bar hides (ready, nothing to warm) and the
+        # payload says why, with every field the other two branches carry.
+        return jsonify({"ready": True, "slate_ready": True, "total": 0, "warm": 0,
+                        "at": None, "phase": "paused", "always_warm": bool(_WARM_ALWAYS),
+                        "stalled": False, "warm_err": None, "beat_s": None,
+                        "pc": _pc_status(), "paused": True,
+                        "note": baseball.MLB_SIMS_PAUSED_MSG})
     # The date being POLLED is the date being LOOKED AT -- tell the warmer, so
     # a user parked on tomorrow's slate gets tomorrow warmed, not today's.
     try:
@@ -1362,6 +1370,11 @@ def _warm_tick():
 
 
 def _start_slate_warmer():
+    if baseball.MLB_SIMS_PAUSED:
+        # The season switch: no warmer thread at all, and the status file says
+        # so, so /api/warm reads "paused" rather than "stalled" on every poll.
+        _warm_status(phase="paused", at=None, err=None)
+        return
     if _WARM_WINDOW <= 0:
         return
 
@@ -1541,7 +1554,12 @@ def _register_deep_sims():
         model_trust.refresh()
         return model_trust.load()
 
-    deep_cache.register("mlb_deep", run_mlb)
+    if not baseball.MLB_SIMS_PAUSED:
+        # The season switch (baseball.MLB_SIMS_PAUSED, owner 2026-10-16): the
+        # MLB nightlies are not registered at all, so the scheduler, the rerun
+        # button and the PC request marker have nothing to run. Every other
+        # sport's job registers exactly as before.
+        deep_cache.register("mlb_deep", run_mlb)
 
     def run_nightly_extras():
         """The light nightly work that must run on the SERVER even when the PC
@@ -1565,7 +1583,8 @@ def _register_deep_sims():
         except Exception as _e:
             errlog.note("APP-extras-ump", _e)
         return {"at": time.time()}
-    deep_cache.register("mlb_nightly_extras", run_nightly_extras)
+    if not baseball.MLB_SIMS_PAUSED:
+        deep_cache.register("mlb_nightly_extras", run_nightly_extras)
     deep_cache.register("f1", run_f1)
     deep_cache.register("nascar", run_nascar)
     deep_cache.register("nfl_season", run_nfl_season)
@@ -2520,6 +2539,12 @@ def api_baseball_today():
     key = (date, season)
     _note_slate_use(date, season)   # keep this board warm while it's in use
     games = _slate_ready(date, season)
+    if games is None and baseball.MLB_SIMS_PAUSED:
+        # The season switch: say so once, with 200, instead of a 202 the client
+        # would poll every six seconds without ever being told why. A board
+        # still cached within its TTL is served above as before.
+        return jsonify({"date": date, "games": [], "combos": {}, "paused": True,
+                        "message": baseball.MLB_SIMS_PAUSED_MSG})
     if games is None:
         with _slate_lock:
             starting = key not in _slate_inflight
@@ -4152,6 +4177,11 @@ def api_sim_rerun():
         (request.args.get("sport") or "").lower())
     if not key:
         return jsonify({"error": "unknown sport"}), 400
+    if key == "mlb_deep" and baseball.MLB_SIMS_PAUSED:
+        # The season switch: refused, never queued (a queued request would
+        # read "started" to the caller and then run nowhere).
+        return jsonify({"started": False, "paused": True,
+                        "error": baseball.MLB_SIMS_PAUSED_MSG}), 409
     if deep_cache.running_anywhere(key):
         return jsonify({"started": False, "already_running": True,
                         "status": deep_cache.status(key)})
@@ -4176,6 +4206,9 @@ def api_baseball_deep_start():
     this one)."""
     import deep_season
     import deep_cache
+    if baseball.MLB_SIMS_PAUSED:
+        return jsonify({"started": False, "paused": True,
+                        "error": baseball.MLB_SIMS_PAUSED_MSG}), 409   # the season switch
     if (deep_season.progress_read().get("running")
             or deep_cache.running_anywhere("mlb_deep")):
         return jsonify({"started": False, "already_running": True,

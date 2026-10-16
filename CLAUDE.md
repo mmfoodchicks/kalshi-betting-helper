@@ -80,7 +80,10 @@ data-only `sim-history` branch (which never deploys):
 - `app.py` — every route; background jobs are claimed by ONE worker via a
   file lock (`_own_background_jobs`).
 - `baseball.py` — MLB slate, game sims, the shared TTL cache, disk-shared
-  boards/sims. `mlb_sim.py` is the 4,000-run engine; `deep_season.py` /
+  boards/sims. **Since 2026-10-16 every MLB simulation path checks
+  `baseball.MLB_SIMS_PAUSED`** (paused by default in code so the PC worker
+  inherits it from git; `VIGIL_MLB_SIMS=on` resumes): pages and last results
+  stay, nothing new is simulated. `mlb_sim.py` is the 4,000-run engine; `deep_season.py` /
   `deep_data.py` / `deep_sim.py` are the pitch-by-pitch season engine.
 - `combo_engine.py` — the parlay frontier DP + objective chooser. Leg-count
   depth is demand-driven (`dp_legs`).

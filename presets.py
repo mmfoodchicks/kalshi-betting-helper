@@ -474,6 +474,8 @@ def pc_build():
     import boardshare
     import clock
     import baseball
+    if baseball.MLB_SIMS_PAUSED:
+        return None         # the season switch: the PC has no MLB board to build
     date = clock.today_et().isoformat()
     games = baseball.analyze_slate(date, date[:4])
     sig = slate_sig(games)

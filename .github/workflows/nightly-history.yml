@@ -140,13 +140,8 @@ jobs:
           git commit -q -m "sim history: snapshot $(date -u +%Y-%m-%d)"
           git push origin "HEAD:$HISTORY_BRANCH"
 
-      - name: Trigger the next deep run
-        if: steps.cfg.outputs.ok == '1'
-        env:
-          APP_URL: ${{ vars.APP_URL }}
-          SIM_TOKEN: ${{ secrets.SIM_TOKEN }}
-        run: |
-          AUTH=()
-          [ -n "$SIM_TOKEN" ] && AUTH=(-H "X-Sim-Token: $SIM_TOKEN")
-          curl -sS -X POST --max-time 60 "${AUTH[@]}" \
-            "$APP_URL/api/sim/rerun?sport=mlb" || true
+      # The "Trigger the next deep run" step (POST /api/sim/rerun?sport=mlb)
+      # was removed 2026-10-16: MLB simulations are paused for the season
+      # (baseball.MLB_SIMS_PAUSED) and the server answers that request 409.
+      # The export above still runs, so the history on the data branch keeps
+      # its last state. Restore the step when the switch is turned back on.

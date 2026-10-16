@@ -28,7 +28,9 @@ jobs:
           fi
           AUTH=""
           [ -n "$SIM_TOKEN" ] && AUTH="-H \"X-Sim-Token: $SIM_TOKEN\""
-          for sport in mlb f1 nascar; do
+          # mlb left out 2026-10-16: MLB simulations are paused for the season
+          # (baseball.MLB_SIMS_PAUSED); the server answers that request 409.
+          for sport in f1 nascar; do
             echo "Rerunning $sport…"
             eval curl -sS -X POST $AUTH "\"$APP_URL/api/sim/rerun?sport=$sport\"" || true
             echo
