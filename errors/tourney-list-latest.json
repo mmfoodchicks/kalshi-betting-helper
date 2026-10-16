@@ -1,7 +1,21 @@
 {
  "boards": [
   {
-   "age_s": 8401,
+   "age_s": 3359,
+   "built_ts": 1792137096,
+   "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st, $100K Leaderboard Eligible]",
+   "dg": 154941,
+   "entries": 161764,
+   "entry_fee": 20.0,
+   "kind": "classic",
+   "label": "Sunday main (10 games)",
+   "n_contests": 2,
+   "starts": "2026-10-18T17:00:00.0000000Z",
+   "teams": null,
+   "worlds": 60000
+  },
+  {
+   "age_s": 23927,
    "built_ts": 1792116529,
    "contest": "NFL Showdown $1.5M Thursday Night Showdown [$500K to 1st] (WAS @ SF)",
    "dg": 154960,
@@ -17,7 +31,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 10597,
+   "age_s": 26124,
    "built_ts": 1792114332,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (DAL @ GB)",
    "dg": 154959,
@@ -33,7 +47,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 16244,
+   "age_s": 31770,
    "built_ts": 1792108685,
    "contest": "NFL Showdown $1.5M Thursday Night Showdown [$500K to 1st] (SEA @ DEN)",
    "dg": 154947,
@@ -46,20 +60,6 @@
     "DEN",
     "SEA"
    ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 21398,
-   "built_ts": 1792103530,
-   "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st, $100K Leaderboard Eligible]",
-   "dg": 154941,
-   "entries": 161764,
-   "entry_fee": 20.0,
-   "kind": "classic",
-   "label": "Sunday main (10 games)",
-   "n_contests": 2,
-   "starts": "2026-10-18T17:00:00.0000000Z",
-   "teams": null,
    "worlds": 60000
   }
  ],
