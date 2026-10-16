@@ -4109,6 +4109,7 @@ async function loadNHL(attempt) {
 }
 function nhlGameCard(g) {
   const ph = Math.round(g.p_home * 1000) / 10, pa = Math.round(g.p_away * 1000) / 10;
+  const pct1 = (x) => (Math.round(x * 1000) / 10).toFixed(1);
   const kx = g.kalshi || {};
   const live = g.state === "in" ? `<span style="color:#e0566a">🔴 ${g.detail || "live"} · ${g.away} ${g.away_score}–${g.home_score} ${g.home}</span> · ` : "";
   const done = g.state === "post" ? `<b>Final: ${g.away} ${g.away_score}–${g.home_score} ${g.home}</b> · ` : "";
@@ -4133,6 +4134,7 @@ function nhlGameCard(g) {
     <div class="nfl-score"><span class="nfl-sc">${g.away} <b>${g.exp_away}</b></span><span class="nfl-scsep">-</span><span class="nfl-sc"><b>${g.exp_home}</b> ${g.home}</span></div>
     <div class="winbar"><div class="fill" style="width:${ph}%"></div>
       <div class="lbl">${g.away} ${pa}% ${_nflEdgeChip(kx.away_cents, g.edge_away)} - ${_nflEdgeChip(kx.home_cents, g.edge_home)} ${ph}% ${g.home}</div></div>
+    ${g.p_home_deep != null ? `<div class="small" style="color:var(--muted);margin-top:2px" title="The win% above blends two models. Shot-event model: goals for/against from the standings through the shot-event engine (the graded record behind the pick). Deep engine: the play-by-play simulation (nhl_deep_sim) -- every shot attempt and penalty in continuous time, strength states, delayed penalties, the goalie pull, 3-on-3 and the shootout, both teams' units from this season's play-by-play. Blended at ${Math.round((g.deep_weight || 0) * 100)}% deep, the weight a rule written before the runs chose on 2024-25 and a frozen 2025-26 test confirmed.">🧬 shot-event model ${g.away} <b>${pct1(g.p_away_model)}%</b> – <b>${pct1(g.p_home_model)}%</b> ${g.home} · play-by-play deep engine ${g.away} <b>${pct1(g.p_away_deep)}%</b> – <b>${pct1(g.p_home_deep)}%</b> ${g.home} <span class="small">(OT ${pct1(g.p_ot_deep)}%)</span> · deep score ${g.away} ${g.exp_away_deep} – ${g.exp_home_deep} ${g.home}</div>` : ""}
     ${_basketEdges(g.spread_edges, "spread")}
     ${_basketEdges(g.total_edges, "total")}
     <div class="nfl-pls">${players}</div>

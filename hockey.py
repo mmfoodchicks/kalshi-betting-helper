@@ -36,6 +36,26 @@ _BYATH = ("https://site.web.api.espn.com/apis/common/v3/sports/hockey/nhl/"
           "statistics/byathlete?region=us&lang=en&contentorigin=espn"
           "&limit=50&sort=offensive.points:desc&page={page}")
 
+# THE DEEP LAYER (2026-10-16): every game is also played by the NHL deep
+# engine (nhl_deep_sim: event by event in continuous time, strength states,
+# delayed penalties, the goalie pull, 3-on-3 and the shootout, both teams'
+# units from the season's play-by-play, nhl_deep_data) and the card shows both
+# models' probabilities. The headline blends them at _DEEP_WEIGHT on the deep
+# engine, the weight a rule written before any deep run chose on 2024-25 and a
+# frozen 2025-26 test confirmed (research/reports/nhl_deep_validation.md):
+# both seasons out of sample, tables refit on the seasons before each, every
+# game priced from what was known that morning --
+#
+#                          2024-25 log loss   2025-26 log loss
+#   this board's model     0.67591            0.69282
+#   deep engine            0.67459            0.68569
+#   blend at 0.5           0.67186            0.68638  (-0.0064 +/- 0.0021)
+#   the home rate alone    0.68714            0.69300
+#
+# The deep engine's raw probability goes to the SHADOW bucket "nhl_deep"
+# (predlog.log_shadow), graded apart from this model's, so the weight can be
+# re-earned or cut on the live record.
+_DEEP_WEIGHT = 0.5
 _LG_GOALS = 3.05                 # league goals/team/game fallback
 _HCA_G = 1.045                   # home-ice: ~±4.5% on scoring (~0.27 goals)
 _SHOTS = 30.0                    # shot events per side per game
@@ -494,7 +514,21 @@ def _build_board(date, n=3000):
     except Exception:
         cal = lambda p: p
 
-    games, log_rows = [], []
+    games, log_rows, deep_rows = [], [], []
+    # The deep layer's figures for the date, once: computed only for today and
+    # later (the nightly profiles never contain a game they price), a past
+    # date showing a figure only if one was kept from that day -- recomputed
+    # afterwards it would be priced on profiles that already saw its results.
+    deep_figs = {}
+    try:
+        import nhl_deep_data
+        matchups = [(g["home"], g["away"]) for g in sched]
+        if date >= clock.today_et().isoformat():
+            deep_figs = nhl_deep_data.day_figures(date, matchups)
+        else:
+            deep_figs = nhl_deep_data.cached_day_figures(date)
+    except Exception as _e:
+        errlog.note("NHL-deep", _e)
     for g in sched:
         rh, ra = rt.get(g["home"]), rt.get(g["away"])
         if not rh or not ra:
@@ -507,6 +541,14 @@ def _build_board(date, n=3000):
         row = {k: sim[k] for k in ("home", "away", "exp_home", "exp_away",
                                    "exp_total", "mean_margin", "total_ladder",
                                    "spread_ladder", "players", "props", "n_sims")}
+        deep = deep_figs.get(f"{g['home']}|{g['away']}")
+        if deep:
+            # both models, both sides, on the card; the headline is the blend
+            row.update(p_home_model=round(ph, 4), p_away_model=round(1 - ph, 4),
+                       p_home_deep=deep["p_home"], p_away_deep=deep["p_away"], p_ot_deep=deep["p_ot"],
+                       exp_home_deep=deep["exp_home"], exp_away_deep=deep["exp_away"],
+                       exp_total_deep=deep["exp_total"], deep_weight=_DEEP_WEIGHT)
+            ph = (1 - _DEEP_WEIGHT) * ph + _DEEP_WEIGHT * deep["p_home"]
         row.update({"home_name": g.get("home_name"), "away_name": g.get("away_name"),
                     "date": g.get("date"), "state": g.get("state"),
                     "detail": g.get("detail"),
@@ -563,6 +605,9 @@ def _build_board(date, n=3000):
                 if ml and ml.get("ticker"):
                     log_rows.append((ml["ticker"], p, ml.get("close"),
                                      predlog.devig(own, opp)))
+                    if deep:
+                        deep_rows.append((ml["ticker"], deep["p_home"] if side == "home" else deep["p_away"],
+                                          ml.get("close"), predlog.devig(own, opp)))
 
         pick_home = ph >= 0.5
         row["pick"] = {"team": row["home" if pick_home else "away"],
@@ -578,13 +623,21 @@ def _build_board(date, n=3000):
         try:
             predlog.init_db()
             predlog.log_many("nhl", log_rows)
+            if deep_rows:
+                # this model owns the tickers in predictions (first write wins),
+                # so the deep engine is graded in the shadow table, keyed
+                # (ticker, model)
+                predlog.log_shadow("nhl_deep", deep_rows)
         except Exception as _e:
             errlog.note("NHL-build_board", _e)
     games.sort(key=lambda x: x["date"] or "")
     return {"date": date, "n_games": len(games), "games": games, "n_sims": n,
             "league": "nhl",
+            "deep_weight": _DEEP_WEIGHT if deep_figs else None,
             "note": "Shot-event Monte Carlo: expected goals vs the opponent's "
                     "defense with home ice, empty-net endgames, 3-on-3 OT and "
                     "the shootout. Skater goal/point props are dealt from the "
                     "simulated team goals; spread/total edges price at Kalshi's "
-                    "exact lines once the season's markets list."}
+                    "exact lines once the season's markets list."
+                    + (" The win% blends in the play-by-play deep engine at "
+                       f"{int(_DEEP_WEIGHT * 100)}% (validated out of sample on two seasons)." if deep_figs else "")}

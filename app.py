@@ -1581,6 +1581,19 @@ def _register_deep_sims():
             return None
         return agg
 
+    def run_nhl_deep():
+        """The NHL deep engine's season state (nhl_deep_data.update): the
+        schedule merged, each newly finished game fetched once, cut into team
+        units and added to the running counts, the profiles rebuilt. Light --
+        a night's dozen games, the raw events dropped -- so it runs here as
+        well as on the PC. None outside the season window, before any fetch."""
+        import pro_sim
+        if not pro_sim.in_season("nhl"):
+            return None
+        import clock
+        import nhl_deep_data
+        return nhl_deep_data.update(nhl_deep_data.season_of(clock.today_et().isoformat()))
+
     def run_model_trust():
         """Re-measure how far each sport's model may depart from the market, by
         replaying point-in-time history. Stores the fitted blend weights."""
@@ -1623,6 +1636,7 @@ def _register_deep_sims():
     deep_cache.register("nascar", run_nascar)
     deep_cache.register("nfl_season", run_nfl_season)
     deep_cache.register("nfl_deep", run_nfl_deep)
+    deep_cache.register("nhl_deep", run_nhl_deep)
     deep_cache.register("cfb", run_cfb)
     deep_cache.register("model_trust", run_model_trust)
     # Every pro-league season is played out game by game with its own engine

@@ -382,6 +382,13 @@ def _task_deep(url, tok):
         ("nascar", lambda: _plain("nascar", lambda: __import__("racing_sim").sim_nascar(3000))),
         ("nfl_season", lambda: _plain("nfl_season", lambda: __import__("nfl_season").run_season(n=4000))),
         ("nfl_deep", _nfl_deep),
+        # the NHL deep engine's season state -- the PC builds the NHL board
+        # too, and its deep figures must come from the same profiles the
+        # server's do, not from the priors alone
+        ("nhl_deep", lambda: _plain("nhl_deep", lambda: (
+            None if not __import__("pro_sim").in_season("nhl") else
+            __import__("nhl_deep_data").update(__import__("nhl_deep_data").season_of(
+                __import__("clock").today_et().isoformat()))))),
         ("cfb", lambda: _plain("cfb", lambda: __import__("cfb").run_season(n=4000))),
         ("nfl", lambda: _plain("nfl", lambda: __import__("pro_sim").project("nfl", 4000))),
         ("nba", lambda: _plain("nba", lambda: __import__("pro_sim").project("nba", 4000))),
