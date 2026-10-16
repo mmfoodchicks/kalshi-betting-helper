@@ -72,33 +72,33 @@ _STEP_CLAMP = (0.75, 1.33)
 # team's mean pass attempts are moved to (1 - ATT_WEIGHT) x the engine's own +
 # ATT_WEIGHT x Sleeper's projected team attempts, through a pass-rate shift on
 # the logit of every play call (nfl_deep_sim profile key `call_shift`),
-# iterated with the points anchor. The promoted engine threw ~4% too many
-# passes in both seasons it was measured on (team-game attempts, engine /
-# Sleeper / real: 2024 34.15 / 31.89 / 32.81, 2025 33.24 / 31.59 / 31.99).
-# PROVISIONAL at 0 (the shipped engine) until the rule written in
-# research/nfl_dfs_engine_eval.py picks the weight on 2024 and the 2026 test
-# decides whether it ships.
+# iterated with the points anchor. The engine throws too often: team-game
+# attempts, engine / Sleeper / real, 2024 33.64 / 31.89 / 32.81 (+2.5% on
+# reality; the flawed first runs read 34.15, ~4%, on worlds drawn from the
+# wrong tables -- see play_worlds_parallel).
+# PROVISIONAL at 0 (the shipped engine) until the 2026 test, written in
+# research/nfl_dfs_engine_eval.py before any anchored run, decides whether the
+# 2024 choice ships.
 ATT_WEIGHT = 0.0
 # The 2024 rule's choice, frozen BEFORE the 2026 test reads a game: the
 # harness refuses any other weight for seasons >= 2025. On 2024 (256 games,
-# the same seeds; the w = 0 arm reproduced the shipped engine's 2024 numbers
-# exactly):
+# the same seeds; the w = 0 arm reproduces the ENV grid's 0.14 arm exactly),
+# the corrected run (b292fad):
 #
-#   w     offence CRPS   PIT KS   pair RMSE   cross-team RMSE   DST CRPS   K CRPS
-#   0     3.9328         0.0238   0.0536      0.0332            2.8958     2.5329
-#   0.5   3.9222         0.0303   0.0504      0.0298            2.9024     2.5345
-#   1     3.9249         0.0352   0.0474      0.0266            2.9146     2.5307
+#   w     offence CRPS   PIT KS   pair RMSE   cross-team RMSE   DST CRPS   K CRPS   attempts
+#   0     3.9252         0.0291   0.0515      0.0259            2.9011     2.5220   33.64
+#   0.5   3.9288         0.0299   0.0502      0.0250            2.9016     2.5248   32.71
+#   1     3.9242         0.0337   0.0482      0.0250            2.9026     2.5285   31.83
 #
-# The rule (lowest offence CRPS among weights whose pair and cross-team RMSE
-# stay within 0.01 of w = 0's) chose 0.5; paired against w = 0 its offence
-# CRPS is -0.0106 +/- 0.0071 (SE clustered by game). Its PIT is worse on 2024
-# because 2024's real passing ran ABOVE Sleeper's projection (the anchor pulls
-# toward Sleeper), the opposite of 2025 -- which is why the decision belongs to
-# a season neither was chosen on.
-# (BOTH 2024 tables here, and ENV_SD's below, came from runs whose final
-# worlds were drawn from the shipped tables -- play_worlds_parallel's leak;
-# re-run under the same rules before anything is read again.)
-ATT_WEIGHT_CHOSEN = 0.5
+# (real 32.81, Sleeper 31.89.) The rule (lowest offence CRPS among weights
+# whose pair and cross-team RMSE stay within 0.01 of w = 0's) chose 1, by
+# 0.0010: paired against w = 0 its offence CRPS is -0.0009 +/- 0.0104 (SE
+# clustered by game) -- no measurable gain on 2024; the rule decides on the
+# point estimate, as written. The flawed first run had chosen 0.5 (3.9222
+# against 3.9328). Pulling attempts to Sleeper's moves them BELOW 2024's real
+# volume (31.83 against 32.81), which is what its PIT pays for, and why the
+# decision belongs to a season it was not chosen on.
+ATT_WEIGHT_CHOSEN = 1.0
 # A pass-rate step is capped on the logit, for the same reason.
 _CALL_STEP = 0.6
 # The game's shared passing environment (nfl_deep_sim.play_game env_sd): one
@@ -110,19 +110,24 @@ _CALL_STEP = 0.6
 # and missed exactly this: the two teams' passing yards correlate +0.18 in
 # real games and +0.03 in the engine. Chosen on 2024 by the rule written in
 # research/nfl_dfs_engine_eval.py before any 2025 run (the grid value with
-# the smallest cross-team pair RMSE among those within 0.5% of env-0's CRPS):
+# the smallest cross-team pair RMSE among those within 0.5% of env-0's CRPS).
+# The corrected run (2026-10-16, b292fad: worlds on the refit 2023 tables;
+# the first run drew them from the shipped ones -- play_worlds_parallel):
 #
-#   env    offence CRPS   pair RMSE   cross-team RMSE   QB1/opp QB1 (obs .176)
-#   0.00   3.9311         0.0843      0.1192            0.035
-#   0.05   3.9311         0.0749      0.0991            --
-#   0.08   3.9241         0.0611      0.0697            --
-#   0.11   3.9313         0.0495      0.0343            0.173
-#   0.14   3.9328         0.0536      0.0332            0.242
+#   env    offence CRPS   pair RMSE   cross-team RMSE   QB1/opp QB1 (obs .176)   points corr in a game
+#   0.00   3.9292         0.0946      0.1396            0.003                    -0.106
+#   0.05   3.9339         0.0842      0.1193            0.032
+#   0.08   3.9291         0.0698      0.0887            0.079
+#   0.11   3.9279         0.0534      0.0499            0.144
+#   0.14   3.9252         0.0515      0.0259            0.206                    +0.055
 #
 # (the constrained model: 3.9018 / 0.0686 / 0.0996 / 0.029, in-sample on
-# 2024; legacy 4.0758 / 0.2724 / 0.1408 / 0.174). The grid's edge won, by a
-# hair over 0.11; frozen at the rule's answer rather than re-gridded, because
-# 2024 is the only season it may be chosen on.
+# 2024; legacy 4.0758 / 0.2715 / 0.1405 / 0.171). The grid's edge wins
+# again, now clearly (the flawed run had it by a hair over 0.11, 0.0332
+# against 0.0343); frozen at the rule's answer rather than re-gridded,
+# because 2024 is the only season it may be chosen on. The last column is
+# the median over games of the two teams' points correlation inside the
+# worlds (world_summary): the term moves it from -0.106 to +0.055.
 ENV_SD = 0.14
 
 # The quantities read off each side's box, per world (counters of

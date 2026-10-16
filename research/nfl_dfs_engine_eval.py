@@ -863,18 +863,141 @@ def _season_tables(sc, models):
     return L
 
 
-def write_report(dev, test, out, audit_md=None, anchor=None):
+def _ws(sc, m):
+    """An artifact's final-world summary for one arm (world_summary), {} if absent."""
+    return (sc.get("worlds") or {}).get(m) or {}
+
+
+def _vs(a, b, eps=0.005):
+    return "above" if a > b + eps else ("below" if a < b - eps else "level with")
+
+
+SUPERSEDED = os.path.join(DATA, "superseded")
+
+
+def load_superseded():
+    """The flawed runs' artifacts (kept for the correction's before/after)."""
+    J = lambda f: json.load(open(os.path.join(SUPERSEDED, f)))          # noqa: E731
+    return {"dev": J("nfl_dfs_engine_2024.json"), "test": J("nfl_dfs_engine_2025.json"),
+            "adev": J("nfl_dfs_engine_att_2024.json"), "aseen": J("nfl_dfs_engine_att_2025.json"),
+            "atest": J("nfl_dfs_engine_att_2026.json")}
+
+
+def correction_section(sup, dev, test, anchor):
+    """What the table leak was, how it showed, and every headline number
+    before and after: the superseded artifacts against the corrected ones."""
+    env_o, env = choose_env(sup["dev"]), choose_env(dev)
+    ko, kn = f"engine_{env_o:g}", f"engine_{env:g}"
+    go, gn = gate(sup["test"], env_o), gate(test, env)
+    lo, ln = _ws(sup["dev"], ko).get("pts_minus_target") or {}, _ws(dev, kn).get("pts_minus_target") or {}
+    lo25, ln25 = _ws(sup["test"], ko).get("pts_minus_target") or {}, _ws(test, kn).get("pts_minus_target") or {}
+    wo = choose_att(sup["adev"], env_o)
+    wn = choose_att(anchor[0], env) if anchor else None
+    ago = att_gate(sup["atest"], env_o, wo) if wo else None
+    agn = att_gate(anchor[2], env, wn) if (anchor and wn and anchor[2]) else None
+
+    def row(label, f_old, f_new):
+        return f"| {label} | {f_old} | {f_new} |"
+    c = lambda sc, k: sc["calibration"][k]["_pooled"]                   # noqa: E731
+    L = ["## Correction: the first runs drew their worlds from the wrong tables", "",
+         "The replay is out of sample by construction: for each season it refits the engine's tables on the seasons "
+         "before it, levels every team on those tables, and scores the worlds that come out. The worlds did not come out "
+         "of those tables. `nfl_dfs_engine.play_worlds_parallel`, which plays a game's final worlds, did not pass the "
+         "caller's tables on, so every scored world was played on the SHIPPED tables -- fit on 2023-2026, the season "
+         "being scored included -- while the anchor had levelled the teams on the refit ones. Production was never "
+         "affected (it passes the shipped tables); every number in the first version of this report was.", "",
+         f"How it showed: on 2024 the scored worlds sat {lo.get('mean', 0):+.2f} points a team above the target the "
+         f"anchor had levelled them to (mean over {lo.get('n')} team-games; 2025 {lo25.get('mean', 0):+.2f}, its refit "
+         "tables being closer to the shipped ones). Corrected, the same check reads "
+         f"{ln.get('mean', 0):+.2f} on 2024 and {ln25.get('mean', 0):+.2f} on 2025 -- the anchor's own measuring noise.", "",
+         "What it touched: the choice of ENV_SD, the 2025 promotion test, and all three runs of the passing-volume anchor. "
+         "The fix carries the tables into every slice; a guard plays a table where no field goal is good and requires "
+         "none in the slices and none in simulate_game's final worlds (the old code made 1.8 a team). Everything was "
+         "re-run in the order and under the rules written before the first runs, with that order written into the "
+         "harness before the re-run started (commit b292fad), the choices frozen in a commit before 2025 and 2026 were "
+         "read again. Those two had each been read once by a flawed run; the rules leave nothing to choose on them. "
+         "The flawed artifacts are kept in research/data/superseded/ with their final worlds summarised after the fact.", "",
+         "| | first runs (flawed) | corrected |", "|---|---|---|",
+         row("ENV_SD, the 2024 rule's choice", f"{env_o:g}", f"**{env:g}**"),
+         row("2025 engine offence CRPS (constrained's)",
+             f"{c(sup['test'], ko)['crps_mean_over_roles']:.4f} ({c(sup['test'], 'constrained')['crps_mean_over_roles']:.4f})",
+             f"{c(test, kn)['crps_mean_over_roles']:.4f} ({c(test, 'constrained')['crps_mean_over_roles']:.4f})"),
+         row("2025 engine PIT KS", f"{c(sup['test'], ko)['pit_ks']:.4f}", f"{c(test, kn)['pit_ks']:.4f}"),
+         row("2025 engine pair RMSE (constrained's)", f"{sup['test']['pair_rmse'][ko]:.4f} ({sup['test']['pair_rmse']['constrained']:.4f})",
+             f"{test['pair_rmse'][kn]:.4f} ({test['pair_rmse']['constrained']:.4f})"),
+         row("2025 engine DST / K CRPS", f"{sup['test']['sides'][ko]['dst']['crps']:.4f} / {sup['test']['sides'][ko]['k']['crps']:.4f}",
+             f"{test['sides'][kn]['dst']['crps']:.4f} / {test['sides'][kn]['k']['crps']:.4f}"),
+         row("2025 promotion gate", "PROMOTED" if go["promote"][0] else "not promoted (" + go["promote"][1] + ")",
+             "**PROMOTED**" if gn["promote"][0] else "**NOT promoted** (" + gn["promote"][1] + ")"),
+         row("passing-volume weight, the 2024 rule's choice", f"{wo:g}", f"**{wn:g}**" if wn is not None else "-"),
+         row("2026 anchor gate", ("SHIPPED" if ago and ago["promote"][0] else "not shipped") if wo else "-",
+             ("**SHIPPED**" if agn["promote"][0] else "**not shipped** (" + agn["promote"][1] + ")") if agn
+             else ("- (the 2024 rule chose w = 0)" if anchor else "-")),
+         ""]
+    return L
+
+
+def limits_section(dev, test, anchor, env, ek):
+    """The report's stated limits, every figure read from the artifacts."""
+    m = test["means"][ek]
+    wr1, wr2, qb1 = m["WR1"], m["WR2"], m["QB1"]
+    lean = _vs(wr1["sim"], wr1["actual"], 0.1)
+    c0 = _ws(dev, "engine_0").get("corr_pts_median")
+    cd, ct = _ws(dev, ek).get("corr_pts_median"), _ws(test, ek).get("corr_pts_median")
+    L = ["## Limits, stated", "",
+         "- One held-out season is a measurement, not a proof. The 2025 outcomes had been opened before (Stage 2E, for the "
+         "legacy-vs-constrained test, and once by this replay's flawed first run -- see the correction); nothing was tuned on them.",
+         "- The drive model that sets 70% of every team's points target is NOT out of sample on 2025: its level trims rest "
+         "on Sleeper's 2025 optimism (team points 0.969 of projection over 544 team-games, touchdowns 0.939) and its "
+         "per-stat pins (_PROJ_BIAS) are 2025's actual-over-projected ratios (nfl_game_sim). On 2025 the engine is partly "
+         "scored against a level fitted to that season. 2024 shares only the home-field split (fitted on 2023-2025 home "
+         "win rates); 2026 weeks 2-5 share none of it.",
+         "- The deep engine's two global constants (_FORM_SD, _HFA_YDS) were calibrated on 2023-2025 margins and home "
+         "win rates: game-level, and 2025 is inside that fit.",
+         "- The replay anchors the deep layer to the points-differential ratings (Kalshi's win totals have no history) and "
+         "leaves out the weekly roster factor; production uses both.",
+         "- The allocation noise (share_sd, ypr_sd, rshare_sd, ypc_sd) is the constrained model's 2022-2024 fit, taken as "
+         "is; the engine replaces that model's team-level draws with a played game.",
+         "- Two-point conversions and offensive return touchdowns are not dealt to players (no model here deals them).",
+         "- The showdown money columns stay experimental: the field model is uncalibrated whatever simulator made the worlds.",
+         f"- The engine's receivers on 2025 sat {lean} what happened: WR1 {wr1['sim']:.2f} simulated against "
+         f"{wr1['actual']:.2f} real ({wr1['sleeper']:.2f} Sleeper), WR2 {wr2['sim']:.2f} against {wr2['actual']:.2f}, QB1 "
+         f"{qb1['sim']:.2f} against {qb1['actual']:.2f}; {100 * test['calibration'][ek]['_pooled']['pit_hist'][0]:.0f}% of "
+         "real outcomes fell in the bottom tenth of its distribution (10% for a calibrated model). On 2024: WR1 "
+         f"{dev['means'][ek]['WR1']['sim']:.2f} against {dev['means'][ek]['WR1']['actual']:.2f}."]
+    if env > 0 and None not in (c0, cd, ct):
+        L.append(f"- The environment term buys the yardage coupling at a measured cost in points independence: inside the "
+                 f"engine's worlds the two teams' points in one game correlate {cd:+.3f} (2024) and {ct:+.3f} (2025) at the "
+                 f"frozen value, against {c0:+.3f} with it off on 2024 (median over the games, world_summary). Real games "
+                 "pooled across matchups show -0.055, a figure that mixes in the spread's negative pull, so the real "
+                 "within-game value is near zero.")
+    L += ["- The engine over-couples a quarterback with his own backs (QB1/RB1 "
+          f"{next(r[ek] for r in test['pairs'] if r['moment'].endswith('QB1/RB1')):.3f} against "
+          f"{next(r['obs'] for r in test['pairs'] if r['moment'].endswith('QB1/RB1')):.3f} real on 2025): the played game "
+          "ties a team's rushing and passing to the same scoring.",
+          "- The lineup SHEET in the app stays on legacy-discrete: the server has no numpy and must not play thousands of "
+          "snap-by-snap games inside a one-core web worker. The tournament boards, built on the PC, are where the engine runs.",
+          ""]
+    return L
+
+
+def write_report(dev, test, out, audit_md=None, anchor=None, sup=None):
     """research/reports/nfl_dfs_engine.md from the two artifacts, plus the
-    passing-volume anchor's three (`anchor` = (2024 grid, 2025 seen, 2026 test))."""
+    passing-volume anchor's three (`anchor` = (2024 grid, 2025 seen, 2026 test)) and
+    the superseded first runs (`sup`, load_superseded) for the correction."""
     env = test["meta"]["envs"][0]
     ek = f"engine_{env:g}"
     g = gate(test, env)
     dev_models = ["legacy", "constrained"] + [f"engine_{e:g}" for e in dev["meta"]["envs"]]
     L = ["# The game-engine DFS worlds: the deep engine plays every world",
          "",
+         ("**Corrected 2026-10-16.** The first version of this report scored worlds drawn from the wrong tables (see "
+          "the correction below). Every number here is from the re-run; the flawed artifacts are kept in "
+          "research/data/superseded/." if sup else ""),
+         "",
          f"Built {time.strftime('%Y-%m-%d %H:%M UTC', time.gmtime())} by research/nfl_dfs_engine_eval.py. "
          f"Development season 2024 ({dev['n_games']} games, weeks {dev['meta']['from_week']}-18, tables fit on {dev['meta']['fit_seasons']}); "
-         f"blind test 2025 ({test['n_games']} games, tables fit on {test['meta']['fit_seasons']}), {test['meta']['k']} worlds per game per model, "
+         f"held-out test 2025 ({test['n_games']} games, tables fit on {test['meta']['fit_seasons']}), {test['meta']['k']} worlds per game per model, "
          f"base seed {test['meta']['base_seed']}. 2025 provenance: commit {test['meta']['provenance'].get('commit')}, "
          f"dirty {test['meta']['provenance'].get('dirty')}; engine sources {test['meta']['engine_sources']['sha256']} "
          f"(dirty {test['meta']['engine_sources']['dirty']}).",
@@ -899,6 +1022,7 @@ def write_report(dev, test, out, audit_md=None, anchor=None):
          "exactly one thing: the two teams' passing yards (+0.18 real, +0.03 engine). The term is off for every other "
          "caller (the slate's deep layer, the deep season).",
          "",
+         *(correction_section(sup, dev, test, anchor) if sup else []),
          "## The rules, written before 2025 was run",
          "",
          "ENV_SD: the 2024 grid value (0, 0.05, 0.08, 0.11, 0.14) with the smallest cross-team pair RMSE among those whose "
@@ -909,7 +1033,7 @@ def write_report(dev, test, out, audit_md=None, anchor=None):
          "RMSE below both legacy's and constrained's; (c) pooled PIT KS <= max(0.05, constrained's + 0.01); (d) defense "
          "and kicker CRPS each <= 1.02 x legacy's. Any link failing keeps the boards on legacy.",
          "",
-         "## 2025, blind",
+         "## 2025, held out" + (" (re-run after the correction)" if sup else ""),
          ""]
     L += _season_tables(test, ["legacy", "constrained", ek])
     L += ["", "### The gate", ""]
@@ -919,46 +1043,9 @@ def write_report(dev, test, out, audit_md=None, anchor=None):
     L.append(f"- **verdict: {'PROMOTED -- the boards are built on the engine model' if g['promote'][0] else 'NOT promoted -- ' + g['promote'][1]}**")
     L += ["", "## 2024, development (where ENV_SD was chosen)", ""]
     L += _season_tables(dev, dev_models)
-    L += ["", "## Limits, stated",
-          "",
-          "- One held-out season is a measurement, not a proof. The 2025 outcomes had been opened once before (Stage 2E, "
-          "for the legacy-vs-constrained test); this is the engine's first contact with them, and nothing was tuned on them.",
-          "- The deep engine's two global constants (_FORM_SD, _HFA_YDS) were calibrated on 2023-2025 margins and home "
-          "win rates: game-level, and 2025 is inside that fit.",
-          "- The replay anchors the deep layer to the points-differential ratings (Kalshi's win totals have no history) and "
-          "leaves out the weekly roster factor; production uses both.",
-          "- The allocation noise (share_sd, ypr_sd, rshare_sd, ypc_sd) is the constrained model's 2022-2024 fit, taken as "
-          "is; the engine replaces that model's team-level draws with a played game.",
-          "- Two-point conversions and offensive return touchdowns are not dealt to players (no model here deals them).",
-          "- The showdown money columns stay experimental: the field model is uncalibrated whatever simulator made the worlds.",
-          f"- The engine's passing level ran above both Sleeper's and reality on 2025: WR1 {test['means'][ek]['WR1']['sim']:.2f} "
-          f"simulated against {test['means'][ek]['WR1']['actual']:.2f} real ({test['means'][ek]['WR1']['sleeper']:.2f} Sleeper), WR2 "
-          f"{test['means'][ek]['WR2']['sim']:.2f} against {test['means'][ek]['WR2']['actual']:.2f}, QB1 {test['means'][ek]['QB1']['sim']:.2f} "
-          f"against {test['means'][ek]['QB1']['actual']:.2f}. The lean shows in its PIT: "
-          f"{100 * test['calibration'][ek]['_pooled']['pit_hist'][0]:.0f}% of real outcomes fell in the bottom tenth of its "
-          "distribution, against 10% for a calibrated model, and the PIT link passed by "
-          f"{0.05 - test['calibration'][ek]['_pooled']['pit_ks']:.3f}. On 2024 the same level sat close to what happened "
-          f"(WR1 {dev['means'][ek]['WR1']['sim']:.2f} against {dev['means'][ek]['WR1']['actual']:.2f}). Anchoring each team's passing "
-          "volume to Sleeper's projected attempts is the obvious next lever. It was not tried here: it would have to be chosen on 2024 "
-          "and could only be judged on 2026." + (
-              " It has since been done (next section): on 2025 the anchored engine's WR1 averages "
-              f"{anchor[1]['means'][arm_key(env, choose_att(anchor[0], env))]['WR1']['sim']:.2f} and WR2 "
-              f"{anchor[1]['means'][arm_key(env, choose_att(anchor[0], env))]['WR2']['sim']:.2f}, still above what happened."
-              if anchor else ""),
-          "- The environment term buys the yardage coupling at a measured cost in points independence: inside the engine's "
-          "worlds the two teams' points in one game correlate +0.124 (2024) and +0.128 (2025) at the frozen value, against "
-          "-0.033 with it off (median over the 256 games; measured from the runs' raw per-game records, which are not "
-          "committed at 86 MB). Real games pooled across matchups show -0.055, a figure that mixes in the spread's negative "
-          "pull, so the real within-game value is near zero and the term overshoots it. The defenses' CRPS improved anyway.",
-          "- The engine over-couples a quarterback with his own backs (QB1/RB1 "
-          f"{next(r[ek] for r in test['pairs'] if r['moment'].endswith('QB1/RB1')):.3f} against "
-          f"{next(r['obs'] for r in test['pairs'] if r['moment'].endswith('QB1/RB1')):.3f} real): the played game ties a team's "
-          "rushing and passing to the same scoring.",
-          "- The lineup SHEET in the app stays on legacy-discrete: the server has no numpy and must not play thousands of "
-          "snap-by-snap games inside a one-core web worker. The tournament boards, built on the PC, are where the engine runs.",
-          ""]
+    L += [""] + limits_section(dev, test, anchor, env, ek)
     if anchor:
-        L += anchor_section(*anchor) + [""]
+        L += anchor_section(*anchor, sup=sup) + [""]
     if audit_md:
         L += ["## The DFS audit that preceded this (live week 6, 2026-10-16)", "", audit_md.strip(), ""]
     with open(out, "w") as fh:
@@ -966,58 +1053,69 @@ def write_report(dev, test, out, audit_md=None, anchor=None):
     return g
 
 
-def _mname_att(m):
-    return _mname(m)
-
-
-def anchor_section(dev, seen, test):
+def anchor_section(dev, seen, test, sup=None):
     """The report's section on the passing-volume anchor, from the three
-    artifacts (2024 grid, 2025 seen, 2026 test)."""
-    env = 0.14
+    artifacts (2024 grid, 2025 seen, 2026 test), at the env they ran."""
+    env = dev["meta"]["envs"][0]
     w = choose_att(dev, env)
+    k0 = arm_key(env, 0.0)
+
+    def vol(sc, k=k0):
+        p = _ws(sc, k).get("per_team_game") or {}
+        a = p.get("pass_att")
+        return f"{a['engine']:.2f} / {a['sleeper']:.2f} / {a['real']:.2f}" if a else "-"
     L = ["## The passing-volume anchor (2026-10-16)", "",
-         "The owner: \"anchor passing volume\". The promoted engine threw about 4% too many passes in both seasons it was "
-         "measured on. Team-game attempts, engine / Sleeper / real: 2024 34.15 / 31.89 / 32.81, 2025 33.24 / 31.59 / 31.99. "
-         "Its 2025 completions ran 21.96 against 20.56 real, which is what made its receivers hot. Sleeper's own team "
-         "passing was within 1% of reality on 2025.", "",
-         "The lever is a per-team pass-rate shift on the logit of every play call (`call_shift`), iterated with the points "
-         "anchor, so each team's mean attempts land on (1 - w) x the engine's own + w x Sleeper's projected team attempts. "
-         "The rules were written before any anchored run: w is chosen on 2024 alone (lowest offence CRPS among grid values "
-         "whose pair and cross-team RMSE stay within 0.01 of w = 0's); 2025 is reported but cannot judge the fix, because "
-         "the defect was found on it; the test is 2026 weeks 2-5, which no engine run had read.", ""]
+         "The owner: \"anchor passing volume\". The lever is a per-team pass-rate shift on the logit of every play call "
+         "(`call_shift`), iterated with the points anchor, so each team's mean attempts land on (1 - w) x the engine's own "
+         "+ w x Sleeper's projected team attempts. The rules were written before any anchored run: w is chosen on 2024 "
+         "alone (lowest offence CRPS among grid values whose pair and cross-team RMSE stay within 0.01 of w = 0's); 2025 is "
+         "reported but cannot judge the fix, because the defect was found on it; the test is 2026 weeks 2-5.", ""]
+    if sup:
+        so = choose_env(sup["dev"])
+        L += ["The defect as first measured, on the flawed runs: attempts a team-game, engine / Sleeper / real, 2024 "
+              f"{vol(sup['adev'], arm_key(so, 0.0))}, 2025 {vol(sup['aseen'], arm_key(so, 0.0))}. Corrected, the engine "
+              f"alone throws 2024 {vol(dev)}, 2025 {vol(seen) if seen else '-'}, 2026 weeks 2-5 {vol(test) if test else '-'}.", ""]
     dm = [arm_key(env, x) for x in ATT_GRID if arm_key(env, x) in dev["calibration"]]
     L += [f"### 2024, development ({dev['n_games']} games): w = **{w:g}** chosen", ""]
     L += _season_tables(dev, ["constrained"] + dm)
     for k, v in (dev.get("att_anchor") or {}).items():
-        L.append(f"- {_mname_att(k)}: attempts land {v['mean_abs_att_landing_err']} from target on average, points "
+        L.append(f"- {_mname(k)}: attempts land {v['mean_abs_att_landing_err']} from target on average, points "
                  f"{v['mean_abs_pts_landing_err']}; mean pass-rate shift {v['mean_call_shift']} on the logit")
-    if w:
-        k1 = arm_key(env, w)
-        for name, sc in (("2025, SEEN (the season the defect was found on; it cannot judge the fix)", seen),
-                         ("2026 weeks 2-5, the test", test)):
-            if not sc:
-                continue
-            L += ["", f"### {name}: {sc['n_games']} games", ""]
-            L += _season_tables(sc, ["legacy", "constrained", arm_key(env, 0.0), k1])
-            pr = (sc.get("paired") or {}).get(k1) or {}
-            for kind, lab in (("offence", "offence (roled player-weeks)"), ("dst", "defenses"), ("k", "kickers")):
-                d = pr.get(kind)
-                if d:
-                    L.append(f"- CRPS anchored minus shipped, {lab}: {d['mean_diff']:+.4f} +/- {d['se_game_clustered']:.4f} "
-                             f"(SE clustered by game; n {d['n']}, {d['games']} games)")
-        if test:
-            g = att_gate(test, env, w)
-            L += ["", "### The 2026 rule", ""]
-            for k in ("a_crps", "b_pairs", "c_dst", "c_k"):
-                L.append(f"- {k}: {'PASS' if g[k][0] else 'FAIL'} -- {g[k][1]}")
-            L.append(f"- **verdict: {'SHIPPED -- the boards anchor passing volume at w ' + format(w, 'g') if g['promote'][0] else 'NOT shipped -- ' + g['promote'][1] + '; the boards stay on the unanchored engine'}**")
-            scl = [r["scale"] for r in test["pairs"] if r.get("scale") is not None]
-            L += ["", "How to read it. The gain is small: on 2026 it sits inside one standard error, and it had the same sign on "
-                  "2024 (where it was chosen) and on 2025 (seen). On 63 games each observed role-pair correlation carries "
-                  f"bootstrap noise of {min(scl):.2f} to {max(scl):.2f}, so every model's 2026 pair RMSE (0.13-0.34) mostly "
-                  "measures that noise, and the cross-team ranking on this sample (the constrained model ahead of the engine) "
-                  "is not a reliable read against 2024's and 2025's 256 games each, where the engine led it by a wide margin."]
-    else:
+    pd = (dev.get("paired") or {})
+    for k, d in pd.items():
+        o = d.get("offence")
+        if o:
+            L.append(f"- {_mname(k)} minus w 0, offence CRPS: {o['mean_diff']:+.4f} +/- {o['se_game_clustered']:.4f} "
+                     f"(SE clustered by game)")
+    if not w:
         L += ["", "The 2024 rule chose w = 0: the anchor did not earn its place on the development season, so nothing "
               "ships and 2026 was not run with it."]
+        return L
+    k1 = arm_key(env, w)
+    for name, sc in (("2025, SEEN (the season the defect was found on; it cannot judge the fix)", seen),
+                     ("2026 weeks 2-5, the test", test)):
+        if not sc:
+            continue
+        L += ["", f"### {name}: {sc['n_games']} games", ""]
+        L += _season_tables(sc, ["legacy", "constrained", k0, k1])
+        pr = (sc.get("paired") or {}).get(k1) or {}
+        for kind, lab in (("offence", "offence (roled player-weeks)"), ("dst", "defenses"), ("k", "kickers")):
+            d = pr.get(kind)
+            if d:
+                L.append(f"- CRPS anchored minus unanchored, {lab}: {d['mean_diff']:+.4f} +/- {d['se_game_clustered']:.4f} "
+                         f"(SE clustered by game; n {d['n']}, {d['games']} games)")
+    if test:
+        g = att_gate(test, env, w)
+        L += ["", "### The 2026 rule", ""]
+        for k in ("a_crps", "b_pairs", "c_dst", "c_k"):
+            L.append(f"- {k}: {'PASS' if g[k][0] else 'FAIL'} -- {g[k][1]}")
+        L.append(f"- **verdict: {'SHIPPED -- the boards anchor passing volume at w ' + format(w, 'g') if g['promote'][0] else 'NOT shipped -- ' + g['promote'][1] + '; the boards stay on the unanchored engine'}**")
+        diffs = [((sc.get("paired") or {}).get(k1) or {}).get("offence") for sc in (dev, seen, test)]
+        lab = ("2024 (chosen there)", "2025 (seen)", "2026 (the test)")
+        scl = [r["scale"] for r in test["pairs"] if r.get("scale") is not None]
+        L += ["", "How to read it. The paired offence differences, anchored minus unanchored: " + "; ".join(
+            f"{lb} {d['mean_diff']:+.4f} +/- {d['se_game_clustered']:.4f}" for lb, d in zip(lab, diffs) if d) + ". "
+              f"On {test['n_games']} games each observed role-pair correlation carries bootstrap noise of "
+              f"{min(scl):.2f} to {max(scl):.2f}, so every model's 2026 pair RMSE mostly measures that noise; 2024's and "
+              "2025's 256 games each are the better read of structure."]
     return L
