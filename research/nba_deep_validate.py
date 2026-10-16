@@ -319,6 +319,36 @@ if __name__ == "__main__":
 
 
 # ---- the report --------------------------------------------------------------------
+def shape(rows, k):
+    """How a forecaster's probabilities sit against the outcomes: the
+    logistic calibration slope and intercept (y on the forecast's logit; a
+    slope above 1 means outcomes are more extreme than forecast -- the
+    forecaster is UNDER-confident) and the spread of its logits."""
+    def lg(p):
+        p = min(1 - 1e-6, max(1e-6, p))
+        return math.log(p / (1 - p))
+    xs = [lg(r[k]) for r in rows]
+    a, b = 0.0, 1.0
+    for _ in range(50):
+        ga = gb = haa = hab = hbb = 0.0
+        for x, r in zip(xs, rows):
+            q = 1.0 / (1.0 + math.exp(-(a + b * x)))
+            e, wq = r["y"] - q, q * (1 - q)
+            ga, gb, haa, hab, hbb = ga + e, gb + e * x, haa + wq, hab + wq * x, hbb + wq * x * x
+        det = haa * hbb - hab * hab
+        a, b = a + (hbb * ga - hab * gb) / det, b + (haa * gb - hab * ga) / det
+    m = sum(xs) / len(xs)
+    return {"slope": b, "intercept": a, "sd_logit": (sum((x - m) ** 2 for x in xs) / len(xs)) ** 0.5}
+
+
+def logit_corr(rows):
+    import statistics
+    def lg(p):
+        p = min(1 - 1e-6, max(1e-6, p))
+        return math.log(p / (1 - p))
+    return statistics.correlation([lg(r["deep"]) for r in rows], [lg(r["prod"]) for r in rows])
+
+
 def write_report(v24, v25, calib, out):
     """research/reports/nba_deep_validation.md from the two seasons' artifacts
     and the shipped engine's league calibration."""
@@ -397,6 +427,23 @@ def write_report(v24, v25, calib, out):
           f"**Verdict: NOT shipped** -- at the frozen w = {w:g} the blend's log loss is {b25['logloss']:.5f} against "
           f"production's {s25['prod']['logloss']:.5f} ({b25['minus_prod']:+.5f} +/- {b25['se']:.5f}). The deep "
           "figure is shown on the card and shadow-graded; basket._DEEP_WEIGHT = 0.", "",
+          "## How it misses", ""]
+    sh = {(s_, k): shape(v["rows"], k) for s_, v in ((2024, v24), (2025, v25)) for k in ("deep", "prod")}
+    L += ["| | calibration slope | intercept | SD of the logit |", "|---|---|---|---|"]
+    for s_ in (2024, 2025):
+        for k, name in (("prod", "production"), ("deep", "deep engine")):
+            x = sh[(s_, k)]
+            L.append(f"| {season_label(s_)} {name} | {x['slope']:.3f} | {x['intercept']:+.3f} | {x['sd_logit']:.3f} |")
+    L += ["", f"Both models are UNDER-confident: a calibration slope above 1 means the outcomes are more extreme than "
+          f"the forecasts, here by about half again in logit, every season. The deep engine's forecasts are the more "
+          f"compressed (a narrower logit spread), and the two agree closely -- their logits correlate "
+          f"{logit_corr(v24['rows']):.3f} on 2024-25 and {logit_corr(v25['rows']):.3f} on 2025-26 -- so the engine adds "
+          "little that production lacks, and less than it costs in sharpness. The board's live calibration "
+          "(calibrate.apply on the graded ledger) stretches production's figure; nothing stretches the deep one. "
+          "Two candidates for the compression, neither tested here: the round shrinkage K (heavy for an 82-game "
+          "sport's shooting units) and the lever exponent, measured on full-season units the engine never sees "
+          "unshrunk. Changing either is a model change, judged on 2026-27 games through the shadow bucket; this "
+          "test does not choose it.", "",
           "## Limits, stated", "",
           f"- Overtime is too rare: {e['ot']:.3f} of the engine's games against the league's {r['ot']:.3f}. Real "
           "endings cluster at a tie (the trailing team fouls and shoots threes, the leader protects); the engine's "

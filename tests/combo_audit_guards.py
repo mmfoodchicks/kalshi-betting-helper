@@ -19111,6 +19111,131 @@ ck("the report carries the rule as written, both seasons, the verdict and the li
    and "Home ice runs light" in _rep_nh and "Goaltending is a TEAM unit" in _rep_nh
    and "round K and persistence values set before anything was measured" in _rep_nh)
 
+# ---- 2026-10-16 the NBA deep engine (owner: "give NHL and NBA the same treatment") ----
+print("=" * 72)
+print("NBA deep engine: ESPN's play-by-play, the possession engine, the board's deep layer")
+print("=" * 72)
+import nba_pbp as _Pnb
+import nba_poss as _Qnb
+import nba_deep_sim as _Enb
+import nba_deep_data as _Dnb
+_fx_nb = _Pnb.parse_summary(_jsnh.load(open(os.path.join(_d_nh, "fixtures", "nba_summary_401705433.json"))))
+_ps_nb = _Qnb.possessions(_fx_nb)
+ck("a real game's summary (POR @ CLE, 2025-03-02, 133-129 in overtime) parses to 574 plays whose shots and free throws add up to the final score, and its 229 possessions carry every point",
+   (_fx_nb["home"], _fx_nb["away"], _fx_nb["home_score"], _fx_nb["away_score"], _fx_nb["periods"]) == ("CLE", "POR", 133, 129, 5)
+   and _Pnb.points_check(_fx_nb) == (133, 129) and len(_fx_nb["plays"]) // _Pnb.PLAY_W == 574
+   and len(_ps_nb) == 229 and [sum(x["pts"] for x in _ps_nb if x["side"] == s) for s in (0, 1)] == [133, 129])
+ck("ESPN files the All-Star games as regular-season games; league play is a regular-season game between two of the thirty franchises",
+   len(_Pnb.FRANCHISES) == 30
+   and not any(_Pnb.league_game({"st": 2, "home": h, "away": a})
+               for h, a in (("LEB", "GIA"), ("EAST", "WEST"), ("CHK", "KEN"), ("STARS", "WORLD"), ("BOS", "STRIPES")))
+   and _Pnb.league_game({"st": 2, "home": "BOS", "away": "NY"})
+   and not _Pnb.league_game({"st": 3, "home": "BOS", "away": "NY"}))
+from research import nba_deep_fit as _Fnb
+from research import nba_deep_validate as _Vnb
+ck("and every table, unit, league total and scored game reads it: the fit, the pull's slopes, the elasticity, the harness (games and prior), the nightly update",
+   "if not Q.P.league_game(rec):" in _insp.getsource(_Fnb.fit)
+   and "if Q.P.league_game(g)]" in _insp.getsource(_Fnb.score_slopes)
+   and "if Q.P.league_game(g)]" in _insp.getsource(_Fnb.measure_elasticity)
+   and _insp.getsource(_Vnb.run).count("P.league_game(g)") == 2
+   and "if not P.league_game(g) or" in _insp.getsource(_Dnb.update)
+   and "st\") != 2" not in _insp.getsource(_Fnb) + _insp.getsource(_Vnb) + _insp.getsource(_Dnb))
+_Tnb = _Enb.tables()
+_Lnb = _Enb.league_profile()
+_gnb = [_Enb.play_game(_Lnb, dict(_Lnb, abbr="B"), _rnh.Random(20261016 + i), _Tnb) for i in range(1500)]
+_ppg = sum(g["score"][0] + g["score"][1] for g in _gnb) / 1500.0
+_otb = sum(1 for g in _gnb if g["ot"]) / 1500.0
+_hwb = sum(1 for g in _gnb if g["winner"] == 0) / 1500.0
+_psb = sum(g["h"]["poss"] + g["a"]["poss"] for g in _gnb) / 3000.0
+ck("the shipped engine on the shipped tables (2022-23 to 2025-26, 4,851 franchise games) plays a league-average game like the league: 224-236 points (real 229.1), 98-103 possessions a team (100.2), home wins 51-58% (55.7%), overtime 1.5-6% (5.1% -- the engine's runs light, stated in the report)",
+   _Tnb.raw["games"] == 4851 and _Tnb.raw["seasons"] == [2022, 2023, 2024, 2025]
+   and 224 <= _ppg <= 236 and 98 <= _psb <= 103 and 0.51 <= _hwb <= 0.58 and 0.015 <= _otb <= 0.06,
+   f"pts {_ppg:.1f} poss {_psb:.1f} home {_hwb:.3f} OT {_otb:.3f}")
+_cal_nb = _jsnh.load(open(os.path.join(_d_nh, "nba_deep_calibration.json")))
+ck("the report's engine-against-the-league table is the committed measurement (4,000 games, seed 77+i): points 230.2 / 229.1, overtime 0.034 / 0.051, home 0.544 / 0.557",
+   _cal_nb["n"] == 4000 and _cal_nb["real_games"] == 4851
+   and round(_cal_nb["engine"]["pts"], 1) == 230.2 and round(_cal_nb["real"]["pts"], 1) == 229.1
+   and round(_cal_nb["engine"]["ot"], 3) == 0.034 and round(_cal_nb["real"]["ot"], 3) == 0.051
+   and round(_cal_nb["engine"]["home_win"], 3) == 0.544 and round(_cal_nb["real"]["home_win"], 3) == 0.557)
+_dsrc_nb = open(_Dnb.__file__).read()
+ck("the lever exponent is the one measured on 2023-24 with the All-Star games out (slope of real on engine 1.004 at 1.15), not the 1.5 the contaminated first measurement read; home court is the make-rate lever matched to 2024-25",
+   _Dnb.LEVER_EXP == 1.15 and _Enb._HFA_MAKE == 1.012
+   and "#   slope   1.162  1.029  1.004  0.971  0.915  0.908  0.802  0.700  0.596" in _dsrc_nb
+   and "dragged the correlation to 0.85 and read 1.5" in _dsrc_nb
+   and all(abs(v ** 1.15 - _Dnb.levers({"mk_rim": v})["mk_rim"]) < 1e-12 for v in (0.9, 1.07))
+   and _Dnb.levers({"pace": 1.1})["pace"] == 1.1)
+_pri_nb = _jsnh.load(open(os.path.join(_d_nh, "nba_deep_priors.json")))
+ck("the committed prior is 2025-26's thirty final franchise units (every unit present, no exhibition team) and that season's league totals",
+   _pri_nb["season"] == 2025 and sorted(_pri_nb["units"]) == sorted(_Pnb.FRANCHISES)
+   and all(all(k in u for k in _Dnb.UNIT_KEYS) for u in _pri_nb["units"].values())
+   and _pri_nb["league"]["games"] == sum(_pri_nb["games"].values()) == 2 * 1202)
+_w24 = _jsnh.load(open(os.path.join(_d_nh, "nba_deep_validation_2024.json")))
+_w25 = _jsnh.load(open(os.path.join(_d_nh, "nba_deep_validation_2025.json")))
+_x24, _x25 = _w24["score"], _w25["score"]
+_vsrc_nb = open(_Vnb.__file__).read()
+ck("the NBA validation ran out of sample on committed code: each season's tables refit on the seasons before it, both seasons on one clean commit, 1,216 and 1,202 franchise games, 300 engine games a matchup",
+   _x24["meta"]["fit_seasons"] == [2022, 2023] and _x25["meta"]["fit_seasons"] == [2022, 2023, 2024]
+   and (_x24["n_games"], _x25["n_games"]) == (1216, 1202) == (len(_w24["rows"]), len(_w25["rows"]))
+   and _x25["meta"]["n"] == 300
+   and _x24["meta"]["provenance"]["dirty"] is False and _x25["meta"]["provenance"]["dirty"] is False
+   and _x24["meta"]["provenance"]["commit"] == _x25["meta"]["provenance"]["commit"]
+   and 'provenance.require_clean("the NBA deep test")' in _vsrc_nb
+   and all(_Pnb.league_game({"st": 2, "home": r["home"], "away": r["away"]}) for r in _w24["rows"] + _w25["rows"]))
+ck("the numbers the board's comment quotes are the artifacts': production 0.61655 / 0.60867, deep 0.62063 / 0.61560, the chosen 0.3 blend 0.61618 / 0.60932 (2024-25 / 2025-26), the test's blend minus production +0.00065 +/- 0.00102",
+   [_x24[k]["logloss"] for k in ("prod", "deep")] == [0.61655, 0.62063]
+   and [_x25[k]["logloss"] for k in ("prod", "deep")] == [0.60867, 0.6156]
+   and _x24["blends"]["0.3"]["logloss"] == 0.61618 and _x25["blends"]["0.3"]["logloss"] == 0.60932
+   and (_x25["blends"]["0.3"]["minus_prod"], _x25["blends"]["0.3"]["se"]) == (0.00065, 0.00102)
+   and "#   blend at 0.3 (chosen)  0.61618            0.60932  (+0.00065 +/- 0.00102)" in open(__import__("basket").__file__).read())
+ck("and the definitions: the blend is w x deep + (1 - w) x production, log loss the mean -log p of the winner, the weight the grid's lowest 2024-25 log loss, a day's games entering the profiles only after the whole day is priced, the Eastern date deciding the day",
+   'wt * r["deep"] + (1 - wt) * r["prod"]' in _vsrc_nb
+   and "-(y * math.log(p) + (1 - y) * math.log(1 - p))" in _vsrc_nb
+   and 'min(GRID, key=lambda wt: (sc["blends"][f"{wt:g}"]["logloss"], wt))' in _vsrc_nb
+   and "# the day's games enter the accumulators only after every game of\n            # the day is priced: nothing priced that morning sees that night" in _vsrc_nb
+   and _vsrc_nb.index("deep = {gid: (p, dist) for gid, p, dist in pool.map(_price, jobs)}") < _vsrc_nb.index("U = D.game_units(g)\n                for s_")
+   and _Vnb.et_day("2024-10-23T02:30Z") == "2024-10-22" and _Vnb.et_day("2024-10-22T23:30Z") == "2024-10-22")
+ck("the production arm reads what basket.ratings would that morning: points and box-score possessions a game to date, pace clamped to the config's +/-12, the league's means over the teams that have played, regress_g; the config's league before any game",
+   "a[\"poss\"] += bp[s_]" in _vsrc_nb and "fga - orb + tov + 0.44 * fta" in _vsrc_nb
+   and 'max(cfg["lg_pace"] - 12, min(cfg["lg_pace"] + 12, a["poss"] / a["g"]))' in _vsrc_nb
+   and 'w = a["g"] / (a["g"] + cfg["regress_g"])' in _vsrc_nb
+   and abs(_Vnb._prod_model(__import__("basket"), {}, "BOS", "NY", "x")[0] - _Vnb._prod_model(__import__("basket"), {}, "NY", "BOS", "x")[0]) < 0.05)
+import basket as _bk_nb
+_bkb_src = _insp.getsource(_bk_nb._build_board)
+ck("the rule's verdict is the board's: 0.3 chosen on 2024-25, the frozen 2025-26 blend ABOVE production, so _DEEP_WEIGHT is 0 -- the deep figure shown and shadow-graded, the headline production's",
+   _x24["chosen_w"] == 0.3 and _x25["blends"]["0.3"]["minus_prod"] > 0 and _bk_nb._DEEP_WEIGHT == 0.0
+   and "THE RULE, written 2026-10-16 before any deep run on a scored season" in _vsrc_nb
+   and _Vnb.choose_w(_x24) == 0.3)
+ck("the board shows both models, logs the deep figure to its own shadow bucket, blends at _DEEP_WEIGHT, and never prices a date already played on profiles that saw it",
+   'ph = (1 - _DEEP_WEIGHT) * ph + _DEEP_WEIGHT * deep["p_home"]' in _bkb_src
+   and 'predlog.log_shadow("nba_deep", deep_rows)' in _bkb_src
+   and "if date >= clock.today_et().isoformat():" in _bkb_src
+   and "deep_figs = nba_deep_data.cached_day_figures(date)" in _bkb_src
+   and 'p_home_deep=deep["p_home"]' in _bkb_src
+   and "log_rows.append((ml[\"ticker\"], p, ml.get(\"close\")," in _bkb_src)
+_dfb = _df_fail_child(_Dnb)
+ck("the NBA deep figures cost the web worker nothing: once a date in a niced child, kept in the deep store, seeded so the PC and the server agree; a failed child leaves production alone -- nothing run in-process, nothing cached",
+   "os.nice(10)" in _insp.getsource(_Dnb.day_figures) and "deep_cache.save(DAY_KEY" in _insp.getsource(_Dnb.day_figures)
+   and "figs = _figures(" not in _insp.getsource(_Dnb.day_figures)
+   and "zlib.crc32(f\"{_SEED}|{date}|{home}|{away}\"" in _insp.getsource(_Dnb.game_figure)
+   and _dfb == ({}, [], []), repr(_dfb))
+_app_nb = open(os.path.join(os.path.dirname(_d_nh), "..", "app.py")).read()
+_pcw_nb = open(os.path.join(os.path.dirname(_d_nh), "..", "pc_worker.py")).read()
+_js_nb = open(os.path.join(os.path.dirname(_d_nh), "..", "static", "app.js")).read()
+ck("the nightly nba_deep job runs on the server and on the PC (both build the NBA board), inside the season window; the NBA card shows both models and says the deep one is not blended",
+   'deep_cache.register("nba_deep", run_nba_deep)' in _app_nb and 'pro_sim.in_season("nba")' in _app_nb
+   and '("nba_deep", lambda: _plain("nba_deep"' in _pcw_nb
+   and "🧬 possession model ${g.away}" in _js_nb and "NOT blended into the win% above" in _js_nb)
+_rep_nb = open(os.path.join(os.path.dirname(_d_nh), "reports", "nba_deep_validation.md")).read()
+_sh_nb = {(s_, k): _Vnb.shape(v["rows"], k) for s_, v in ((2024, _w24), (2025, _w25)) for k in ("deep", "prod")}
+ck("the report carries the rule, both seasons, the verdict and the limits -- and its words about how the engine misses are TRUE of the rows: every calibration slope above 1 (under-confident), the deep engine's logits the narrower both seasons, the two correlating 0.9",
+   "## The rule, written before any deep run on a scored season" in _rep_nb and "**Verdict: NOT shipped**" in _rep_nb
+   and "Overtime is too rare" in _rep_nb and "Teams are TEAM units" in _rep_nb and "There is no market anchor" in _rep_nb
+   and "Both models are UNDER-confident" in _rep_nb
+   and all(x["slope"] > 1.3 for x in _sh_nb.values())
+   and all(_sh_nb[(s_, "deep")]["sd_logit"] < _sh_nb[(s_, "prod")]["sd_logit"] for s_ in (2024, 2025))
+   and all(0.88 <= _Vnb.logit_corr(v["rows"]) <= 0.94 for v in (_w24, _w25)),
+   str({k: round(v["slope"], 3) for k, v in _sh_nb.items()}))
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

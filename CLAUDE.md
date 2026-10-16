@@ -160,6 +160,24 @@ data-only `sim-history` branch (which never deploys):
   date in a niced child and never for a date already played; shadow bucket
   `nhl_deep`. The league's abbreviations are not ESPN's (five differ,
   `nhl_pbp.to_espn`).
+- **The NBA deep stack** (2026-10-16): `nba_pbp.py` turns ESPN game summaries
+  into thirteen-int play records (2022-23 to 2025-26 held, every stored game
+  reproducing its final score). **ESPN files the All-Star games as
+  regular-season games**: everything measures `nba_pbp.league_game` (both sides
+  in `FRANCHISES`) -- the first elasticity measurement let two one-game "teams"
+  in and read 1.5 instead of 1.15. `nba_poss.py` cuts possessions;
+  `research/nba_deep_fit.py` -> `research/data/nba_deep_tables.json`;
+  `nba_deep_sim.py` plays possessions on the real clock (how the ball came
+  decides the shot, the clutch and garbage time, the period's last
+  possession, the pull back toward an even game); `nba_deep_data.py` eighteen
+  units, round K, `LEVER_EXP` 1.15 (measured on 2023-24), priors committed,
+  nightly `nba_deep` job (server and PC). **The pre-registered test FAILED**:
+  0.3 chosen on 2024-25, the 2025-26 blend +0.00065 above production, so
+  `basket._DEEP_WEIGHT` is 0 -- the card shows the deep figure, shadow bucket
+  `nba_deep` grades it, the headline is production's
+  (`research/reports/nba_deep_validation.md`: both models under-confident
+  ~1.5x in logit, the deep one more compressed, the two correlating 0.9).
+  Any change to K or the exponent is judged on 2026-27 games.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 

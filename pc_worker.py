@@ -389,6 +389,11 @@ def _task_deep(url, tok):
             None if not __import__("pro_sim").in_season("nhl") else
             __import__("nhl_deep_data").update(__import__("nhl_deep_data").season_of(
                 __import__("clock").today_et().isoformat()))))),
+        # the NBA deep engine's season state, for the same reason
+        ("nba_deep", lambda: _plain("nba_deep", lambda: (
+            None if not __import__("pro_sim").in_season("nba") else
+            __import__("nba_deep_data").update(__import__("nba_deep_data").season_of(
+                __import__("clock").today_et().isoformat()))))),
         ("cfb", lambda: _plain("cfb", lambda: __import__("cfb").run_season(n=4000))),
         ("nfl", lambda: _plain("nfl", lambda: __import__("pro_sim").project("nfl", 4000))),
         ("nba", lambda: _plain("nba", lambda: __import__("pro_sim").project("nba", 4000))),

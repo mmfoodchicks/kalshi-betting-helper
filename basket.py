@@ -31,6 +31,28 @@ import clock
 import racing                       # shared cached-JSON getter
 import errlog
 
+# THE DEEP LAYER (NBA, 2026-10-16): every game is also played by the NBA deep
+# engine (nba_deep_sim: possession by possession on the real clock, how the
+# ball came deciding the shot, the pull back toward an even game, the clutch
+# and garbage time, the period's last possession; both teams' units from the
+# season's play-by-play, nba_deep_data) and the card shows both models.
+# The headline does NOT blend it. A rule written before any deep run chose
+# 0.3 on 2024-25 and a frozen 2025-26 test judged it: at that weight the
+# blend's log loss came out ABOVE this board's, so _DEEP_WEIGHT is 0 and the
+# deep figure is shown and graded on its own (research/reports/
+# nba_deep_validation.md), both seasons out of sample --
+#
+#                          2024-25 log loss   2025-26 log loss
+#   this board's model     0.61655            0.60867
+#   deep engine            0.62063            0.61560
+#   blend at 0.3 (chosen)  0.61618            0.60932  (+0.00065 +/- 0.00102)
+#
+# Both models are UNDER-confident (outcomes ~1.5x more extreme in logit than
+# either says) and they agree to a correlation of 0.9, so a blend has little
+# to add; the deep engine's raw probability goes to the SHADOW bucket
+# "nba_deep" so 2026-27 can judge it again.
+_DEEP_WEIGHT = 0.0
+
 LEAGUES = {
     "nba":  {"path": "nba", "label": "🏀 NBA", "hca_eff": 1.010,
              "lg_ppp": 1.145, "lg_pace": 99.0, "regress_g": 12.0,
@@ -598,7 +620,20 @@ def _build_board(lg, date, n=3000):
     except Exception:
         cal = lambda p: p
 
-    games, log_rows = [], []
+    games, log_rows, deep_rows = [], [], []
+    # The deep layer's figures for the date, once, for today and later only (a
+    # past date shows one only if it was kept from that day).
+    deep_figs = {}
+    if lg == "nba":
+        try:
+            import nba_deep_data
+            matchups = [(g["home"], g["away"]) for g in sched]
+            if date >= clock.today_et().isoformat():
+                deep_figs = nba_deep_data.day_figures(date, matchups)
+            else:
+                deep_figs = nba_deep_data.cached_day_figures(date)
+        except Exception as _e:
+            errlog.note("BK-deep", _e)
     for g in sched:
         rh, ra = rt.get(g["home"]), rt.get(g["away"])
         if not rh or not ra:
@@ -612,6 +647,13 @@ def _build_board(lg, date, n=3000):
         row = {k: sim[k] for k in ("home", "away", "exp_home", "exp_away",
                                    "exp_total", "mean_margin", "total_ladder",
                                    "spread_ladder", "players", "props", "n_sims")}
+        deep = deep_figs.get(f"{g['home']}|{g['away']}")
+        if deep:
+            row.update(p_home_model=round(ph, 4), p_away_model=round(1 - ph, 4),
+                       p_home_deep=deep["p_home"], p_away_deep=deep["p_away"], p_ot_deep=deep["p_ot"],
+                       exp_home_deep=deep["exp_home"], exp_away_deep=deep["exp_away"],
+                       exp_total_deep=deep["exp_total"], deep_weight=_DEEP_WEIGHT)
+            ph = (1 - _DEEP_WEIGHT) * ph + _DEEP_WEIGHT * deep["p_home"]
         row.update({"home_name": g.get("home_name"), "away_name": g.get("away_name"),
                     "date": g.get("date"), "state": g.get("state"),
                     "detail": g.get("detail"),
@@ -668,6 +710,9 @@ def _build_board(lg, date, n=3000):
                 if ml and ml.get("ticker"):
                     log_rows.append((ml["ticker"], p, ml.get("close"),
                                      predlog.devig(own, opp)))
+                    if deep:
+                        deep_rows.append((ml["ticker"], deep["p_home"] if side == "home" else deep["p_away"],
+                                          ml.get("close"), predlog.devig(own, opp)))
 
         pick_home = ph >= 0.5
         row["pick"] = {"team": row["home" if pick_home else "away"],
@@ -683,11 +728,13 @@ def _build_board(lg, date, n=3000):
         try:
             predlog.init_db()
             predlog.log_many(cfg["cal"], log_rows)
+            if deep_rows:
+                predlog.log_shadow("nba_deep", deep_rows)
         except Exception as _e:
             errlog.note("BK-build_board", _e)
     games.sort(key=lambda x: x["date"] or "")
     return {"date": date, "n_games": len(games), "games": games, "n_sims": n,
-            "league": lg,
+            "league": lg, "deep_weight": _DEEP_WEIGHT if deep_figs else None,
             "note": "Possession-level Monte Carlo: efficiency matchup (points per "
                     "possession vs the opponent's defense) at the game's blended "
                     "pace, with garbage time and OT. Player lines are dealt from "
