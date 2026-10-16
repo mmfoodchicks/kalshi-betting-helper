@@ -6845,14 +6845,24 @@ function renderNflDfs(d) {
   const money = (v) => "$" + Math.round(v).toLocaleString();
   const cs = d.contest_sim;
   const objName = { projection: "Cash (max projection)", ceiling: "GPP (max ceiling)", leverage: "GPP leverage" }[d.objective] || d.objective;
+  // A figure the sampled field cannot resolve is shown as unreadable, never as
+  // a number: a 600-lineup field against a 161,764-entry Millionaire printed
+  // "win ~1 in 374 · ROI +17,759.8%" off the normal curve's tail (nfl_dfs.resolution).
+  const _rv = (c) => (c && c.resolved) || null;
+  const _unread = (c, k) => { const r = _rv(c); return !!(r && r[k] === false); };
+  const _nr = (label) => `<span title="the sampled field cannot read this line - see the note below">${label} <b style="color:var(--muted)">not readable</b></span>`;
+  const _roi = (c) => _unread(c, "roi") ? _nr("ROI")
+    : `<span>ROI <b class="${c.roi_pct >= 0 ? "ev pos" : "ev neg"}">${c.roi_pct >= 0 ? "+" : ""}${c.roi_pct}%</b></span>`;
+  const _top1 = (c) => _unread(c, "top1") ? _nr("top 1%") : `<span>top 1% <b>${c.top1_pct}%</b></span>`;
   const csHead = cs
-    ? `<div class="dfs-note">🏆 ${nf(cs.entries)}-entry ${cs.contest === "double_up" ? "double-up" : "GPP"} · ${money(cs.prize_pool)} pool · ${money(cs.first_prize)} to 1st · ${cs.places_paid} paid · ${money(cs.entry_fee)} entry. <i>Modeled estimate.</i></div>
+    ? `<div class="dfs-note">🏆 ${nf(cs.entries)}-entry ${cs.contest === "double_up" ? "double-up" : "GPP"} · ${money(cs.prize_pool)} pool · ${money(cs.first_prize)} to 1st · ${nf(cs.places_paid)} paid${cs.payouts_from === "draftkings" ? " (DraftKings' table)" : " (modelled payout curve - pick the contest to use its own)"} · ${money(cs.entry_fee)} entry. <i>Modeled estimate against a ${nf(cs.sample_size)}-lineup field.</i></div>
        <div class="cnums" style="margin:6px 0">
-         <span>win <b>~1 in ${cs.win_pct > 0 ? Math.round(100 / cs.win_pct) : "∞"}</b></span>
+         ${_unread(cs, "win") ? _nr("win") : `<span>win <b>~1 in ${cs.win_pct > 0 ? Math.round(100 / cs.win_pct) : "∞"}</b></span>`}
          <span>cash <b>${cs.cash_pct}%</b></span>
-         <span>top 1% <b>${cs.top1_pct}%</b></span>
-         <span>ROI <b class="${cs.roi_pct >= 0 ? "ev pos" : "ev neg"}">${cs.roi_pct >= 0 ? "+" : ""}${cs.roi_pct}%</b></span>
-       </div>` : "";
+         ${_top1(cs)}
+         ${_roi(cs)}
+       </div>
+       ${_rv(cs) && _rv(cs).note ? `<div class="small" style="color:var(--muted);margin:0 0 6px">${escapeHtml(_rv(cs).note)}</div>` : ""}` : "";
   const rowsOf = (lineup) => (lineup || []).map((p) => {
     const own = p.own != null ? `<span class="small" style="color:var(--faint)"> · own ${p.own}%</span>` : "";
     return `<div class="nfl-dfsrow">
@@ -6868,7 +6878,7 @@ function renderNflDfs(d) {
   // captains, which is how a big single-game GPP is played), each scored
   // against the same simulated field. Entry 1 is also the card's own numbers.
   const csLine = (c) => c
-    ? `<div class="cnums" style="margin:4px 0"><span>top 1% <b>${c.top1_pct}%</b></span><span>cash <b>${c.cash_pct}%</b></span><span>ROI <b class="${c.roi_pct >= 0 ? "ev pos" : "ev neg"}">${c.roi_pct >= 0 ? "+" : ""}${c.roi_pct}%</b></span></div>` : "";
+    ? `<div class="cnums" style="margin:4px 0">${_top1(c)}<span>cash <b>${c.cash_pct}%</b></span>${_roi(c)}</div>` : "";
   const entriesHtml = (d.entries && d.entries.length > 1)
     ? `<div style="margin-top:10px"><b>${d.entries.length} entries, one captain each</b> <span class="small" style="color:var(--muted)">- best captain first; every entry obeys the rules below</span></div>`
       + d.entries.map((e, i) => `<div style="margin-top:8px;padding:6px 8px;border:1px solid var(--line,#333);border-radius:8px">
@@ -6955,6 +6965,7 @@ async function runDfsSim() {
         preseason: !!(($("dfsNflPre") || {}).checked),
         grid: (($("dfsGrid") || {}).value || "").trim() || null,
         nfl_mode: ($("dfsNflMode") || {}).value || "auto",
+        payouts: _dfsDkPay,
         week: parseInt(($("dfsNflWeek") || {}).value, 10) || 0 }),
     })).json();
     if (d.error === "upgrade_required") { box.innerHTML = upgradeNote(d); return; }
@@ -8208,6 +8219,9 @@ function initDfsLookback() {
 // CSV box. Hand-typed numbers and a pasted CSV were the two ways the contest
 // sim ended up modeling a contest that did not exist.
 let _dfsDkContests = [], _dfsDkShape = null, _dfsDkBusy = false;
+// The picked contest's own payout table (dk.contest_detail tiers), sent with the
+// build so the contest sim prices THIS contest, not a fitted curve.
+let _dfsDkPay = null;
 function _dfsDkKey() { return "dfsDk:" + (($("dfsSport") || {}).value || ""); }
 function _dfsDkRemember(dg, id) {
   try { localStorage.setItem(_dfsDkKey(), JSON.stringify({ dg, id })); } catch (e) { /* private mode */ }
@@ -8238,7 +8252,7 @@ async function loadDfsSlates() {
   sel.innerHTML = `<option value="">loading DraftKings…</option>`;
   csel.innerHTML = `<option value="">- pick a contest -</option>`;
   if (info) info.textContent = "";
-  _dfsDkContests = []; _dfsDkShape = null;
+  _dfsDkContests = []; _dfsDkShape = null; _dfsDkPay = null;
   loadDfsTourney(null);
   try {
     const d = await (await fetch(`/api/dfs/slates?sport=${encodeURIComponent(sp)}`)).json();
@@ -8256,7 +8270,7 @@ async function loadDfsContests(preferId) {
   const sel = $("dfsDkSlate"), csel = $("dfsDkContest"), info = $("dfsDkInfo");
   const dg = sel && sel.value;
   csel.innerHTML = `<option value="">- pick a contest -</option>`;
-  _dfsDkContests = []; _dfsDkShape = null;
+  _dfsDkContests = []; _dfsDkShape = null; _dfsDkPay = null;
   if (!dg) { loadDfsTourney(null); return; }
   try {
     const d = await (await fetch(`/api/dfs/contests?sport=${encodeURIComponent($("dfsSport").value)}&dg=${encodeURIComponent(dg)}`)).json();
@@ -8285,13 +8299,14 @@ function renderDfsContestOptions() {
 }
 async function applyDfsContest(id) {
   const info = $("dfsDkInfo"), sp = $("dfsSport").value, dg = ($("dfsDkSlate") || {}).value;
-  if (!id) { if (info) info.textContent = ""; return; }
+  if (!id) { _dfsDkPay = null; if (info) info.textContent = ""; return; }
   if (_dfsDkBusy) return;
   _dfsDkBusy = true;
   if (info) info.textContent = "Reading the contest from DraftKings…";
   try {
     const c = await (await fetch(`/api/dfs/contest?id=${encodeURIComponent(id)}`)).json();
     if (c.error) { if (info) info.textContent = c.error; return; }
+    _dfsDkPay = (c.payouts && c.payouts.length) ? c.payouts : null;
     const set = (elid, v) => { const el = $(elid); if (el && v != null) el.value = v; };
     set("dfsEntries", c.max_entries || 0);
     set("dfsEntry", c.entry_fee || 1);

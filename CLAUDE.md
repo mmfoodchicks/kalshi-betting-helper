@@ -139,6 +139,24 @@ data-only `sim-history` branch (which never deploys):
   zone, contest and draftables strings are UTC with a Z. Parse both through
   `nfl_dfs.iso_ts` (reading the lobby as UTC ran every pre-lock refresh four
   hours early).
+- **The DFS builder sheet** (`nfl_dfs.build`, the tab's Build; checked end to end
+  on the week-6 slates, 2026-10-16). The tab pastes DraftKings' own pool back
+  into the builder, so that pool is the contract: `dk.salaries_csv` adds a
+  Status column (healthy = ACTIVE, so the sheet KNOWS the pool was checked) and,
+  for NFL, Game Info in DK's dated export shape ("CHI@ATL 10/18/2026 01:00PM
+  ET"), so the sheet dates its own week. DK's football out-statuses (IR, OUT,
+  PUP, ...) are unavailable -- `dk._UNAVAILABLE` held only baseball's IL until
+  then, and 65 IR players were "available" on the main slate. The NFL slate list
+  is an ALLOWLIST (`dk._LINEUP_TYPES`: Classic 21, Showdown 96); Snake came
+  UNTAGGED and listed exactly like the 10-game main slate. The contest sim
+  prices the picked contest off DK's own payout table and says which figures
+  its sampled field can READ (`nfl_dfs.resolution`: a line needs ten sampled
+  lineups above it; ROI needs <=10% of the prize money above the deepest line
+  read) -- a Millionaire's first place and ROI never can, and the card prints
+  "not readable", never a five-figure ROI. The classic optimizer is a seeded
+  local search (fills, every stack team polished by 1-2 swaps, kicks, a defense
+  switch) measured exact against an integer program on four week-6 slates and
+  against brute force on 180 two-game pools; the old fills ran 3-6% short.
 - **The NHL deep stack** (2026-10-16): `nhl_pbp.py` turns the league's own
   feed (api-web.nhle.com -- strength states, shooter and goalie, shot type and
   location; ESPN has no strength states) into fourteen-int event records and

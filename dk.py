@@ -55,6 +55,22 @@ _AVG_PPG_ATTR_NFL = 90       # ...NFL files it under 90 (read off the live
 # "tonight". Never a real slate for any sport.
 _CLASSIC_TYPES = {"nfl": {21}}
 _NEVER_TYPES = {158, 159}
+# The formats a builder here can make a lineup for, where the sport's ids are
+# known: an ALLOWLIST, because the lobby keeps inventing formats and a
+# blocklist only learns about each one after it has been served. The week-6
+# NFL lobby (2026-10-16) carried, beside Classic (21) and Showdown (96):
+# Snake (189, UNTAGGED -- listed exactly like the 10-game main slate, same
+# kickoff, same game count), Single Stat "(Touchdowns)" (353), Tiers (51,
+# tagged only "(Afternoon Only)"), Snake Showdown (192, tagged "(BUF @ LV)"
+# like any showdown), In-Game 2H / 4Q showdowns (108 / 110: half a game, not
+# the game the projections are for) and Best Ball (145, "Sit + Go"). Every one
+# would have built a salary-cap lineup for a contest that takes none.
+_LINEUP_TYPES = {"nfl": {21, 96}}
+# For sports whose ids are not pinned yet: a draft group whose contests are ALL
+# one of these formats (read off the contest names, which say it plainly:
+# "NFL Snake $10,600 3-Player", "NFL Single Stat ... (Touchdowns)", "NFL In-Game
+# ... (2H DAL @ GB)", "NFL Best Ball ...") is not a salary-cap slate.
+_NEVER_NAMES = ("snake", "tiers", "single stat", "in-game", "best ball", "pick'em", "pick 'em", "madden")
 # Draft-group tags for DK formats that are not salary-cap lineups at all --
 # snake drafts, Tiers, Total Yards, best ball, pick'em -- read off the live
 # NFL lobby ("(NE @ SEA Snake)", "(NE @ SEA Total Yards)"). A builder fed one
@@ -63,7 +79,13 @@ _NEVER_TAGS = ("madden", "snake", "tiers", "total yards", "best ball", "pick'em"
 _OPP_PITCHER_ATTR = 112      # MLB: opposing starter + handedness
 _OPENER_ATTR = 135           # MLB: "PO" badge -- listed pitcher is an OPENER
 _BULK_ATTR = 136             # MLB: "PLR" badge -- the probable long reliever
-_UNAVAILABLE = {"IL", "OUT", "NA", "SUSP"}
+# DK's statuses meaning "will not play". Baseball writes IL; football writes IR
+# (and OUT, PUP, NFI, SUS): with only the baseball words here, the week-6 NFL
+# main slate (2026-10-16) kept 65 injured-reserve players "available" -- A.J.
+# Brown at $6,100 among them -- and only Sleeper's roster stood between them and
+# a lineup. Questionable and Doubtful are NOT here: DK has not ruled them out,
+# and the builders decide (the CSV's Status column carries them).
+_UNAVAILABLE = {"IL", "IR", "OUT", "O", "PUP", "NFI", "NA", "SUSP", "SUS"}
 
 
 def _get(url, timeout=25):
@@ -83,6 +105,10 @@ def slates(sport):
         except Exception:
             return None
         out = []
+        allowed = _LINEUP_TYPES.get((sport or "").lower())
+        names = {}
+        for c in d.get("Contests") or []:
+            names.setdefault(c.get("dg"), []).append((c.get("n") or "").lower())
         for g in d.get("DraftGroups") or []:
             dg = g.get("DraftGroupId")
             if not dg:
@@ -94,6 +120,11 @@ def slates(sport):
             ctype = g.get("ContestTypeId")
             if ctype in _NEVER_TYPES or any(k in (tag or "").lower() for k in _NEVER_TAGS):
                 continue
+            if allowed is not None and ctype not in allowed:
+                continue                      # a format no builder here makes (see _LINEUP_TYPES)
+            nm = names.get(dg) or []
+            if nm and all(any(k in n for k in _NEVER_NAMES) for n in nm):
+                continue                      # every contest on it is a non-lineup format
             out.append({"draft_group_id": dg, "sport": sport,
                         "starts": g.get("StartDateEst"),
                         "games": g.get("GameCount"),
@@ -336,7 +367,27 @@ def players(draft_group_id):
     return racing._cached(("dk_players", draft_group_id), 600, build) or []
 
 
-def salaries_csv(draft_group_id, drop_unavailable=True, exclude_games=None):
+def _export_game(game, starts):
+    """A feed game ("CHI @ ATL", kickoff "2026-10-18T17:00:00.0000000Z") in
+    DraftKings' own export shape, "CHI@ATL 10/18/2026 01:00PM ET": the date and
+    the Eastern kickoff ride inside Game Info, so a sheet built from the pasted
+    box dates ITSELF (nfl_dfs._slate_dates / _csv_kickoff read exactly this).
+    The tab pastes the feed's CSV into the box and posts it back without the
+    slate's kickoff, so the build fell back to the calendar's week: right on
+    the weekend, wrong for a Thursday slate built on Monday. The game as it
+    was when the kickoff cannot be read."""
+    import datetime as _dt
+    import re as _re
+    m = _re.match(r"\s*([A-Za-z0-9]+)\s*@\s*([A-Za-z0-9]+)\s*$", game or "")
+    st = _re.match(r"(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})", str(starts or ""))
+    if not m or not st or not str(starts).rstrip().endswith("Z"):
+        return game
+    import clock
+    t = _dt.datetime(*(int(x) for x in st.groups()), tzinfo=_dt.timezone.utc).astimezone(clock.ET)
+    return f"{m.group(1).upper()}@{m.group(2).upper()} {t.strftime('%m/%d/%Y %I:%M%p')} ET"
+
+
+def salaries_csv(draft_group_id, drop_unavailable=True, exclude_games=None, dated=False):
     """The slate as a DraftKings-format CSV string — the exact shape
     simulate.parse_dk_csv already reads, so it drops straight into the DFS
     builder with no pasting.
@@ -344,13 +395,22 @@ def salaries_csv(draft_group_id, drop_unavailable=True, exclude_games=None):
     drop_unavailable: leave out players DK flags IL/OUT/inactive.
     exclude_games:    iterable of game/bout substrings to drop entirely (a
                       postponed fight or a rained-out game DK hasn't pulled yet).
+    dated:            write Game Info in DK's export shape with the date and
+                      the Eastern kickoff (_export_game) -- NFL, whose builder
+                      reads the week and the lock off it.
     """
     pool = players(draft_group_id)
     if not pool:
         return None
     skip = [s.lower() for s in (exclude_games or []) if s]
+    # Status rides as a tenth column (DK's own export has none): the builders
+    # read it (simulate.parse_dk_csv) to tag a Questionable player and to KNOW
+    # the pool was checked. Without it every auto-loaded NFL build said "DK's
+    # Status column isn't in this paste, so OUT and IR players could NOT be
+    # excluded" about DK's own pool. A healthy player is ACTIVE, never blank, so
+    # a slate with nobody questionable still reads as checked.
     rows = [["Position", "Name + ID", "Name", "ID", "Roster Position", "Salary",
-             "Game Info", "TeamAbbrev", "AvgPointsPerGame"]]
+             "Game Info", "TeamAbbrev", "AvgPointsPerGame", "Status"]]
     for p in pool:
         if drop_unavailable and not p["available"]:
             continue
@@ -359,16 +419,18 @@ def salaries_csv(draft_group_id, drop_unavailable=True, exclude_games=None):
         if not p.get("salary"):
             continue
         ppg = p["avg_ppg"] if p["avg_ppg"] not in (None, "-") else ""
+        st = p["status"] if p["status"] not in (None, "", "NONE") else "ACTIVE"
+        gm = _export_game(p["game"], p.get("starts")) if dated else p["game"]
         if p.get("cpt_salary"):
             # DK's own export lists the captain row first: Roster Position
             # CPT at the 1.5x price. The F1 builder needs it (it picks the
             # captain from CPT rows) and the Showdown builders read it as
             # the showdown tell.
             rows.append([p["position"] or "", f"{p['name']} ({p['dk_id']})", p["name"],
-                         p["dk_id"], "CPT", p["cpt_salary"], p["game"], p["team"], ppg])
+                         p["dk_id"], "CPT", p["cpt_salary"], gm, p["team"], ppg, st])
         rows.append([p["position"] or "", f"{p['name']} ({p['dk_id']})", p["name"],
-                     p["dk_id"], p["roster_pos"] or "", p["salary"], p["game"],
-                     p["team"], ppg])
+                     p["dk_id"], p["roster_pos"] or "", p["salary"], gm,
+                     p["team"], ppg, st])
     if len(rows) < 2:
         return None
     buf = io.StringIO()
@@ -420,7 +482,7 @@ def slate_for(sport, draft_group_id=None, exclude_games=None):
             break
     if not pool:
         return None
-    csv_text = salaries_csv(dg, exclude_games=exclude_games)
+    csv_text = salaries_csv(dg, exclude_games=exclude_games, dated=(sport or "").lower() == "nfl")
     if not csv_text:
         return None
     dropped = [p["name"] for p in pool if not p["available"]]

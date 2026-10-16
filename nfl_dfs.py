@@ -46,7 +46,11 @@ SHOWDOWN_MIN_TEAMS = 2
 # DK's own "this player is not playing" flags. Q (questionable) is deliberately
 # NOT here: questionable players play all the time and pricing them out would
 # throw away real leverage.
-_OUT_STATUS = {"OUT", "IR", "NA", "SUSP"}
+# DK's will-not-play statuses as the CSV's Status column carries them (dk.py
+# writes them for an auto-loaded slate), plus Doubtful, which the depth-chart
+# gate already treats as out on Sleeper's word (_INJ_OUT): with "D" missing a
+# DK-doubtful player Sleeper had not marked survived the gate.
+_OUT_STATUS = {"OUT", "O", "IR", "PUP", "NFI", "NA", "SUSP", "SUS", "D", "DOUBTFUL"}
 
 
 def _elig(pos):
@@ -391,7 +395,10 @@ def _apply_depth(players, preseason, seconds_to_lock=None):
             p["depth"] = pos if pos not in _DEPTH_KEEP else None
             kept.append(p)
             continue
-        p["_order"], p["_q"] = order, q
+        # Questionable on EITHER source: DK listed Tyler Warren Q on the week-6
+        # main slate while Sleeper had nothing, and the sheet tagged him a
+        # plain TE1
+        p["_order"], p["_q"] = order, q or (p.get("dk_status") or "") in ("Q", "QUESTIONABLE")
         groups.setdefault((p.get("team"), pos), []).append(p)
     for (_tm, pos), grp in groups.items():
         grp.sort(key=lambda x: (x["_order"], -(x.get("proj") or 0)))
@@ -549,7 +556,8 @@ def showdown_pool(csv_players):
                     # scaled up; and if only FLEX rows exist, DK's captain price
                     # is 1.5x by rule.
                     "cpt_salary": cpt_sal.get(nm, int(round(flex * CPT_MULT))),
-                    "proj": float(c.get("proj") or 0.0)})
+                    "proj": float(c.get("proj") or 0.0),
+                    "dk_status": (c.get("status") or "").upper()})
     return out
 
 
@@ -893,28 +901,270 @@ def _build_one(by_pos, cap, objective, stack_team=None, stack_min=0, rng=random,
     return lineup, sal
 
 
-def optimize(players, cap, objective, stack_min=0, restarts=8000, bring_min=0,
-             exclude=None):
+def _lineup_ok(lu, cap, stack_min=0, bring_min=0, exclude=None):
+    """Every rule _build_one enforces, on a finished lineup: the roster shape
+    (QB, DST and TE exactly one -- a TE is never the FLEX here -- RB 2-3 and WR
+    3-4 for seven skill players), the cap, the QB's stack and bring-back, no
+    player facing the lineup's own defense, and the portfolio's overlap rule."""
+    if len(lu) != len(ROSTER) or len({p["name"] for p in lu}) != len(ROSTER):
+        return False
+    if sum(p["salary"] for p in lu) > cap:
+        return False
+    n = {"QB": 0, "RB": 0, "WR": 0, "TE": 0, "DST": 0}
+    for p in lu:
+        if p["pos"] not in n:
+            return False
+        n[p["pos"]] += 1
+    if not (n["QB"] == 1 and n["DST"] == 1 and n["TE"] == 1 and 2 <= n["RB"] <= 3
+            and 3 <= n["WR"] <= 4 and n["RB"] + n["WR"] == 6):
+        return False
+    dst = next(p for p in lu if p["pos"] == "DST")
+    if dst.get("opp") and any((p.get("team") or "").upper() == dst["opp"].upper()
+                              for p in lu if p["pos"] != "DST"):
+        return False
+    qb = next(p for p in lu if p["pos"] == "QB")
+    if stack_min and sum(1 for p in lu if p["pos"] in ("WR", "TE") and p.get("team") == qb.get("team")) < stack_min:
+        return False
+    if bring_min and (not qb.get("opp") or sum(1 for p in lu if p["pos"] in ("WR", "TE")
+                                                 and p.get("team") == qb["opp"]) < bring_min):
+        return False
+    if exclude:
+        names = frozenset(p["name"] for p in lu)
+        if any(len(names & x) > len(ROSTER) - exclude[1] for x in exclude[0]):
+            return False
+    return True
+
+
+def _polish(lu, players, objective, cap, stack_min=0, bring_min=0, exclude=None):
+    """Hill-climb a valid lineup to a local optimum of the objective by
+    one-player and two-player swaps that keep every rule (_lineup_ok).
+
+    The random fills alone stopped wherever a fill landed: on the week-6 main
+    slate (2026-10-16) six builds of the SAME pool scored 219.2-221.7 on the
+    ceiling objective against an exact optimum of 229.2 (an integer program
+    over the same rules, research-side), and 136.9-139.7 against 145.8 on
+    projection -- 3 to 6% short of the sheet's own objective, every build."""
+    val = {p["name"]: _value(p, objective) for p in players}
+    by_pos = {}
+    for p in players:
+        by_pos.setdefault(p["pos"], []).append(p)
+    for v in by_pos.values():
+        v.sort(key=lambda p: -val[p["name"]])
+    alt = {"QB": ("QB",), "DST": ("DST",), "TE": ("TE",), "RB": ("RB", "WR"), "WR": ("WR", "RB")}
+    sal = {p["name"]: p["salary"] for p in players}
+    cur = list(lu)
+    cur_v = sum(val[p["name"]] for p in cur)
+
+    def shape_ok(n_rb, n_wr):
+        return 2 <= n_rb <= 3 and 3 <= n_wr <= 4
+    improved = True
+    while improved:
+        improved = False
+        names = {p["name"] for p in cur}
+        cur_sal = sum(p["salary"] for p in cur)
+        n_rb = sum(1 for p in cur if p["pos"] == "RB")
+        n_wr = sum(1 for p in cur if p["pos"] == "WR")
+        best = None
+        for i, out in enumerate(cur):                       # one-player swaps: the best one
+            for pos in alt[out["pos"]]:
+                for c in by_pos.get(pos, ()):
+                    gain = val[c["name"]] - val[out["name"]]
+                    if gain <= 1e-9 or (best and gain <= best[0]):
+                        break
+                    if c["name"] in names or cur_sal - out["salary"] + sal[c["name"]] > cap:
+                        continue
+                    if pos != out["pos"] and not shape_ok(n_rb + (pos == "RB") - (out["pos"] == "RB"),
+                                                          n_wr + (pos == "WR") - (out["pos"] == "WR")):
+                        continue
+                    new = cur[:i] + [c] + cur[i + 1:]
+                    if _lineup_ok(new, cap, stack_min, bring_min, exclude):
+                        best = (gain, new)
+                        break
+        if best is None:                                    # two-player swaps
+            for i in range(len(cur)):
+                for k in range(i + 1, len(cur)):
+                    oi, ok_ = cur[i], cur[k]
+                    v_out = val[oi["name"]] + val[ok_["name"]]
+                    room = cap - cur_sal + oi["salary"] + ok_["salary"]
+                    for pa in alt[oi["pos"]]:
+                        for pb in alt[ok_["pos"]]:
+                            d_rb = (pa == "RB") + (pb == "RB") - (oi["pos"] == "RB") - (ok_["pos"] == "RB")
+                            d_wr = (pa == "WR") + (pb == "WR") - (oi["pos"] == "WR") - (ok_["pos"] == "WR")
+                            if not shape_ok(n_rb + d_rb, n_wr + d_wr):
+                                continue
+                            la, lb = by_pos.get(pa, ()), by_pos.get(pb, ())
+                            if not la or not lb:
+                                continue
+                            top_b = val[lb[0]["name"]]
+                            for a in la:
+                                va = val[a["name"]]
+                                if va + top_b - v_out <= 1e-9 or (best and va + top_b - v_out <= best[0]):
+                                    break
+                                if a["name"] in names or sal[a["name"]] >= room:
+                                    continue
+                                for b in lb:
+                                    gain = va + val[b["name"]] - v_out
+                                    if gain <= 1e-9 or (best and gain <= best[0]):
+                                        break
+                                    if (b["name"] in names or b["name"] == a["name"]
+                                            or sal[a["name"]] + sal[b["name"]] > room):
+                                        continue
+                                    new = [x for j, x in enumerate(cur) if j not in (i, k)] + [a, b]
+                                    if _lineup_ok(new, cap, stack_min, bring_min, exclude):
+                                        best = (gain, new)
+                                        break
+        if best is not None:
+            cur, cur_v = best[1], cur_v + best[0]
+            improved = True
+    return cur
+
+
+def _kick(lu, players, objective, cap, stack_min=0, bring_min=0, exclude=None):
+    """Iterated local search on a polished lineup: bar each of its players in
+    turn, re-polish without him (_polish over the rest of the pool), then let
+    him compete back (a full _polish); keep any lineup that beats the current
+    one and go round again. A perturbation plus the two-player polish reaches
+    most three-player swaps, which the polish alone cannot make: on a pool
+    built to need one (tests: the leverage board), the polish stopped at
+    186.21 against an exact 186.67."""
+    val = lambda lineup: sum(_value(p, objective) for p in lineup)
+    cur, cur_v = list(lu), val(lu)
+    improved = True
+    while improved:
+        improved = False
+        for out in list(cur):
+            rest = [p for p in players if p["name"] != out["name"]]
+            # the barred player's slot is refilled by the best LEGAL fill of the
+            # rest of the pool (the drop is allowed: that is the perturbation)
+            start = _refill(cur, out, rest, objective, cap, stack_min, bring_min, exclude)
+            if start is None:
+                continue
+            cand = _polish(start, rest, objective, cap, stack_min, bring_min, exclude)
+            cand = _polish(cand, players, objective, cap, stack_min, bring_min, exclude)
+            v = val(cand)
+            if v > cur_v + 1e-9:
+                cur, cur_v, improved = cand, v, True
+                break
+    return cur
+
+
+def _dst_kick(lu, players, objective, cap, stack_min=0, bring_min=0, exclude=None):
+    """The one move no swap neighbourhood crosses: a different DEFENSE, which
+    bars every player on the team it faces. For each other defense, the
+    lineup's players on that team are replaced by the cheapest legal player of
+    the same position, then the whole lineup is re-polished; the best result
+    wins. On two-game pools (tests) the polish and kicks stopped short exactly
+    here: the optimum held the other defense and five players it unlocked."""
+    val = lambda lineup: sum(_value(p, objective) for p in lineup)
+    best, best_v = lu, val(lu)              # `lu` itself when nothing beats it
+    qb = next(p for p in lu if p["pos"] == "QB")
+    cheap = {}
+    for p in sorted(players, key=lambda p: p["salary"]):
+        cheap.setdefault(p["pos"], []).append(p)
+    for d in cheap.get("DST", ()):
+        if d["name"] in {p["name"] for p in lu} or not d.get("opp"):
+            continue
+        bar = d["opp"].upper()
+        if (qb.get("team") or "").upper() == bar or (bring_min and (qb.get("opp") or "").upper() == bar):
+            continue                        # this defense faces the stack or its bring-back
+        start = [d if p["pos"] == "DST" else p for p in lu]
+        names = {p["name"] for p in start}
+        ok = True
+        for i, p in enumerate(start):
+            if p["pos"] == "DST" or (p.get("team") or "").upper() != bar:
+                continue
+            sub_ = next((c for c in cheap.get(p["pos"], ()) if c["name"] not in names
+                         and (c.get("team") or "").upper() != bar), None)
+            if sub_ is None:
+                ok = False
+                break
+            names.discard(p["name"])
+            names.add(sub_["name"])
+            start[i] = sub_
+        if not ok or not _lineup_ok(start, cap, stack_min, bring_min, exclude):
+            continue
+        cand = _kick(_polish(start, players, objective, cap, stack_min, bring_min, exclude),
+                     players, objective, cap, stack_min, bring_min, exclude)
+        v = val(cand)
+        if v > best_v + 1e-9:
+            best, best_v = cand, v
+    return best
+
+
+def _refill(cur, out, pool, objective, cap, stack_min, bring_min, exclude):
+    """`cur` with `out` replaced by the best-valued player of `pool` that keeps
+    every rule (a drop in value is allowed), or None when no single player
+    fits."""
+    names = {p["name"] for p in cur}
+    i = next(j for j, p in enumerate(cur) if p["name"] == out["name"])
+    best = None
+    for c in sorted(pool, key=lambda p: -_value(p, objective)):
+        if c["name"] in names:
+            continue
+        new = cur[:i] + [c] + cur[i + 1:]
+        if _lineup_ok(new, cap, stack_min, bring_min, exclude):
+            best = new
+            break
+    return best
+
+
+def optimize(players, cap, objective, stack_min=0, restarts=2000, bring_min=0,
+             exclude=None, seed=None, polish_top=None, starts_per_team=1, thorough=True):
+    """The best lineup for an additive objective under every _build_one rule:
+    random greedy fills (_build_one), the best fill of EVERY stack team
+    polished by one- and two-player swaps (_polish), the winner kicked
+    (_kick: each player barred in turn and the rest re-polished) and, when
+    `thorough`, every other defense tried with the team it faces unlocked
+    (_dst_kick). Measured exact: on the 12 real cases of 2026-10-16 (four
+    week-6 classic slates x cash, ceiling, leverage) against an integer
+    program over the same rules (research-side; the server has no solver),
+    and on 180 two-game pools against brute force -- the hardest terrain, where
+    a defense bars a quarter of the pool. The fills alone, which is all the
+    sheet used to run, came back 3-6% short of the same objective every build.
+
+    Seeded from the pool and the objective, so the same pool gives the same
+    lineup on every build (the old search drew on the process's global RNG:
+    two builds a minute apart handed the owner different lineups)."""
+    import hashlib
     by_pos = _by_pos(players)
     if by_pos is None:
         return None
+    if seed is None:
+        sig = "|".join(sorted(f"{p['name']}:{p['salary']}:{_value(p, objective):.3f}" for p in players))
+        seed = int(hashlib.sha1(f"{objective}|{stack_min}|{bring_min}|{sig}".encode()).hexdigest()[:12], 16)
+    rng = random.Random(seed)
     teams = sorted({p.get("team") for p in players if p.get("pos") == "QB" and p.get("team")})
-    best = None
+    best_by = {}                        # stack team -> {roster: (score, lineup)}
     for _ in range(restarts):
-        st = random.choice(teams) if (stack_min and teams) else None
+        st = rng.choice(teams) if (stack_min and teams) else None
         r = _build_one(by_pos, cap, objective, stack_team=st, stack_min=stack_min,
-                       rng=random, bring_min=bring_min)
-        if r and exclude:
-            names = frozenset(p["name"] for p in r[0])
-            if any(len(names & x) > len(ROSTER) - exclude[1] for x in exclude[0]):
-                continue
+                       rng=rng, bring_min=bring_min)
         if not r:
             continue
-        lineup, sal = r
+        lineup, _sal = r
+        if not _lineup_ok(lineup, cap, stack_min, bring_min, exclude):
+            continue
         score = sum(_value(p, objective) for p in lineup)
-        if best is None or score > best[0]:
-            best = (score, lineup, sal)
-    return best[1] if best else None
+        qb_team = next((p.get("team") for p in lineup if p["pos"] == "QB"), None)
+        fills = best_by.setdefault(qb_team, {})
+        key = frozenset(p["name"] for p in lineup)
+        if key not in fills:
+            fills[key] = (score, lineup)
+            if len(fills) > starts_per_team:
+                fills.pop(min(fills, key=lambda k: fills[k][0]))
+    best = None
+    ranked = sorted((f for fills in best_by.values() for f in fills.values()), key=lambda x: -x[0])
+    for _score, lineup in (ranked[:polish_top] if polish_top else ranked):
+        lu = _polish(lineup, players, objective, cap, stack_min, bring_min, exclude)
+        sc = sum(_value(p, objective) for p in lu)
+        if best is None or sc > best[0] + 1e-9:
+            best = (sc, lu)
+    if best is None:
+        return None
+    lu = _kick(best[1], players, objective, cap, stack_min, bring_min, exclude)
+    if not thorough:
+        return lu
+    return _dst_kick(lu, players, objective, cap, stack_min, bring_min, exclude)
 
 
 # ---- ownership model --------------------------------------------------------
@@ -996,9 +1246,106 @@ def _field_lineup(by_pos, cap, own_w, rng, tries=8):
     return None
 
 
+def payout_table(tiers, contest_size=None):
+    """(payout(rank), places_paid, first, pool) from DraftKings' own payout
+    table (dk.contest_detail's `payouts`: [{from, to, prize}]), or None when
+    the table is missing or malformed. The builder used to price every GPP
+    off _gpp_curve -- 20% of the field paid on a fitted power law -- whatever
+    the contest really paid: the week-6 $2.75M Millionaire pays 37,425 of
+    161,764 (23.1%), so the card's cash line sat 5,072 places short."""
+    import bisect
+    rows = []
+    for t in tiers or []:
+        try:
+            lo, hi, pr = int(t["from"]), int(t["to"]), float(t["prize"])
+        except (KeyError, TypeError, ValueError):
+            return None
+        if lo < 1 or hi < lo or pr < 0:
+            return None
+        if pr > 0:
+            rows.append((lo, hi, pr))
+    if not rows:
+        return None
+    rows.sort()
+    for (a_lo, a_hi, _a), (b_lo, _b_hi, _b) in zip(rows, rows[1:]):
+        if b_lo <= a_hi:
+            return None                       # overlapping tiers: not a table we can trust
+    places = rows[-1][1]
+    if contest_size and places > int(contest_size):
+        return None
+    starts = [r[0] for r in rows]
+
+    def payout(r):
+        i = bisect.bisect_right(starts, int(r)) - 1
+        if i < 0:
+            return 0.0
+        lo, hi, pr = rows[i]
+        return pr if lo <= int(r) <= hi else 0.0
+    pool = sum((hi - lo + 1) * pr for lo, hi, pr in rows)
+    return payout, places, payout(1), pool
+
+
+# A finishing line is READ off the sampled field only when at least this many
+# sampled lineups sit above it; past that the number is the fitted normal
+# curve's thin tail, not the field. A round floor, set before any measurement.
+# On the week-6 $2.75M Millionaire (161,764 entries) a 600-lineup sample reads
+# down to rank 2,696: cash (37,425 paid) is readable, first place is 0.004 of a
+# sampled lineup and is not -- and the card printed "win ~1 in 374, ROI
+# +17,759.8%" off it, the same unresolvable first-place term the September
+# audit took off the tournament board's headline (dfs_final_audit_report.md N).
+_READ_MIN = 10
+# ROI is readable when no more than this share of the prize money is paid
+# ABOVE the deepest line the sample reads (a double-up: none of it).
+_ROI_UNREAD_MAX = 0.10
+
+
+def resolution(sample, C, places, payout, pool):
+    """What a `sample`-lineup field can say about a C-entry contest:
+    {sample, entries, per_sample, best_rank_read, win, top1, cash, roi,
+    prize_above_share, note}. Each flag is True when that figure is read off
+    the field rather than off the normal curve's tail."""
+    sample = max(1, int(sample or 0))
+    C = max(2, int(C))
+    r_read = _READ_MIN * C / float(sample)      # the best rank with >= _READ_MIN sampled lineups above it
+    k = min(int(places), int(math.ceil(r_read)) - 1)
+    above = sum(payout(r) for r in range(1, k + 1)) if k >= 1 else 0.0
+    share = above / pool if pool else 0.0
+    out = {"sample": sample, "entries": C, "per_sample": round(C / float(sample), 1),
+           "best_rank_read": max(1, int(math.ceil(r_read))),
+           "win": r_read <= 1.0, "top1": r_read <= 0.01 * C, "cash": r_read <= places,
+           "roi": share <= _ROI_UNREAD_MAX, "prize_above_share": round(share, 3)}
+    if not out["roi"] or not out["win"]:
+        out["note"] = (f"{sample:,} sampled lineups against {C:,} entries: one sampled lineup stands for "
+                       f"{C / float(sample):,.0f} real ones, so the field is read down to rank "
+                       f"{out['best_rank_read']:,} and no higher. "
+                       + ("First place cannot be read off it" if not out["win"] else "")
+                       + (f"{' and ' if not out['win'] else ''}{100 * share:.0f}% of the prize money is paid "
+                          f"above that line, so the ROI cannot either" if not out["roi"] else "")
+                       + ". For this contest the PC's tournament board (a 300,000-lineup field) is the tool.")
+    return out
+
+
+def _payout_setup(contest, C, prize_pool, first_prize, entry_fee, payouts):
+    """(payout, places, first, pool, each) for a C-entry contest: DraftKings'
+    own table when the build carries it, else the double-up rule or the
+    fitted GPP curve. `each` is a double-up's flat prize, else None."""
+    tab = payout_table(payouts, C) if payouts else None
+    if tab:
+        payout, places, first, pool = tab
+        return payout, places, first, pool, None
+    pool = float(prize_pool) if prize_pool else entry_fee * C * 0.85
+    if contest == "double_up":
+        places = max(1, int(round(0.45 * C)))
+        each = pool / places
+        return (lambda r: each if r <= places else 0.0), places, each, pool, each
+    first = float(first_prize) if first_prize else 0.20 * pool
+    payout, places = _gpp_curve(C, pool, first, entry_fee)
+    return payout, places, first, pool, None
+
+
 def contest_sim(your_lineup, players, contest="gpp", entry_fee=1.0, contest_size=None,
                 prize_pool=None, first_prize=None, sample_size=500, n_iter=400,
-                extra_lineups=None, seed=None):
+                extra_lineups=None, seed=None, payouts=None):
     by_pos = _by_pos(players)
     arr = {p["name"]: p.get("arr") for p in players if p.get("arr")}
     if by_pos is None or not arr:
@@ -1021,15 +1368,8 @@ def contest_sim(your_lineup, players, contest="gpp", entry_fee=1.0, contest_size
         return None
 
     C = max(2, int(contest_size or (len(field) + 1)))
-    pool = float(prize_pool) if prize_pool else entry_fee * C * 0.85
-    if contest == "double_up":
-        places = max(1, int(round(0.45 * C)))
-        each = pool / places
-        payout = lambda r: each if r <= places else 0.0
-        first = each
-    else:
-        first = float(first_prize) if first_prize else 0.20 * pool
-        payout, places = _gpp_curve(C, pool, first, entry_fee)
+    payout, places, first, pool, each = _payout_setup(contest, C, prize_pool, first_prize,
+                                                      entry_fee, payouts)
     grid = _rank_grid(places)
 
     import statistics
@@ -1055,7 +1395,7 @@ def contest_sim(your_lineup, players, contest="gpp", entry_fee=1.0, contest_size
             sr = math.sqrt(max(1e-9, (C - 1) * q * (1.0 - q)))
             cash[k] += _ncdf((places - mr) / sr)
             top1[k] += _ncdf((top1_line - mr) / sr)
-            if contest == "double_up":
+            if each is not None:
                 ret[k] += each * _ncdf((places - mr) / sr)
             else:
                 ev = first * winp
@@ -1072,7 +1412,8 @@ def contest_sim(your_lineup, players, contest="gpp", entry_fee=1.0, contest_size
                 "field_hash": simulate._field_hash(field),
                 "entries": C, "contest": contest, "entry_fee": entry_fee,
                 "prize_pool": round(pool), "first_prize": round(first),
-                "places_paid": places})
+                "places_paid": places, "payouts_from": "draftkings" if payouts and payout_table(payouts, C) else "model",
+                "resolved": resolution(len(field), C, places, payout, pool)})
     if K > 1:
         out["lineups"] = per
     return out
@@ -1136,16 +1477,16 @@ def _sd_field_lineup(players, cap, own_w, rng, tries=10):
 
 
 def _showdown_contest_sim(your, players, contest, entry_fee, contest_size,
-                          prize_pool, first_prize, sample_size=400, n_iter=300):
+                          prize_pool, first_prize, sample_size=400, n_iter=300, payouts=None):
     """One lineup against a simulated field (see _showdown_contest_sims)."""
     got = _showdown_contest_sims([your], players, contest, entry_fee, contest_size,
                                  prize_pool, first_prize, sample_size=sample_size,
-                                 n_iter=n_iter)
+                                 n_iter=n_iter, payouts=payouts)
     return got[0] if got else None
 
 
 def _showdown_contest_sims(yours, players, contest, entry_fee, contest_size,
-                           prize_pool, first_prize, sample_size=400, n_iter=300):
+                           prize_pool, first_prize, sample_size=400, n_iter=300, payouts=None):
     """Same maths as the classic contest sim, over showdown rosters, for
     SEVERAL lineups against ONE field: the field's per-iteration score
     distribution is the expensive part (sample_size lineups x n_iter), and it
@@ -1183,17 +1524,12 @@ def _showdown_contest_sims(yours, players, contest, entry_fee, contest_size,
     if len(field) < 30:
         return [None for _ in yours]
     C = max(2, int(contest_size or (len(field) + 1)))
-    pool = float(prize_pool) if prize_pool else entry_fee * C * 0.85
-    if contest == "double_up":
-        places = max(1, int(round(0.45 * C)))
-        each = pool / places
-        payout = lambda r: each if r <= places else 0.0
-        first = each
-    else:
-        first = float(first_prize) if first_prize else 0.20 * pool
-        payout, places = _gpp_curve(C, pool, first, entry_fee)
+    payout, places, first, pool, each = _payout_setup(contest, C, prize_pool, first_prize,
+                                                      entry_fee, payouts)
     grid = _rank_grid(places)
     top1_line = max(1, int(0.01 * C))
+    res = resolution(len(field), C, places, payout, pool)
+    src = "draftkings" if payouts and payout_table(payouts, C) else "model"
     acc = [[0.0, 0.0, 0.0, 0.0] for _ in yours]        # win, cash, ret, top1
     for it in range(n_iter):
         fs = [sc(f, it) for f in field]
@@ -1208,7 +1544,7 @@ def _showdown_contest_sims(yours, players, contest, entry_fee, contest_size,
             a[0] += winp
             a[1] += _ncdf((places - mr) / sr)
             a[3] += _ncdf((top1_line - mr) / sr)
-            if contest == "double_up":
+            if each is not None:
                 a[2] += each * _ncdf((places - mr) / sr)
             else:
                 ev = first * winp
@@ -1223,7 +1559,8 @@ def _showdown_contest_sims(yours, players, contest, entry_fee, contest_size,
                     "roi_pct": round(100 * (ret - entry_fee) / entry_fee, 1),
                     "avg_return": round(ret, 2), "sample_size": len(field), "entries": C,
                     "contest": contest, "entry_fee": entry_fee, "prize_pool": round(pool),
-                    "first_prize": round(first), "places_paid": places})
+                    "first_prize": round(first), "places_paid": places,
+                    "payouts_from": src, "resolved": res})
     return out
 
 
@@ -1249,7 +1586,7 @@ _SD_RULES = (
 
 def _build_showdown(csv_players, week, objective, contest, contest_size,
                     entry_fee, prize_pool, first_prize, preseason, field_size=None,
-                    n_lineups=1, lock_s=None):
+                    n_lineups=1, lock_s=None, payouts=None):
     ents = showdown_pool(csv_players)
     if len(ents) < len(SHOWDOWN_ROSTER):
         return {"error": f"showdown needs {len(SHOWDOWN_ROSTER)} available players "
@@ -1316,7 +1653,7 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
             csims = _showdown_contest_sims(all_slots, ents, contest, entry_fee, contest_size,
                                            prize_pool, first_prize,
                                            sample_size=max(150, min(2000, int(field_size or 400))),
-                                           n_iter=_SD_ITERS)
+                                           n_iter=_SD_ITERS, payouts=payouts)
         except Exception as _e:
             errlog.note("NFLDFS-sd-contest", _e)
             csims = [None for _ in builds]
@@ -1410,7 +1747,7 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
 def build(csv_text, week=None, objective="projection", stack=True, contest=None,
           contest_size=None, entry_fee=1.0, prize_pool=None, first_prize=None,
           preseason=False, mode="auto", field_size=None, n_lineups=1, uniq=2,
-          contest_probe=None, starts=None):
+          contest_probe=None, starts=None, payouts=None):
     """`week` None means "the slate's own week": read off the export's game
     dates, else the live slate's first kickoff (`starts`), else the calendar's
     current week. A number is the owner's explicit choice and is used only
@@ -1442,7 +1779,8 @@ def build(csv_text, week=None, objective="projection", stack=True, contest=None,
     if use == "showdown":
         res = _build_showdown(csv_players, week, objective, contest, contest_size,
                               entry_fee, prize_pool, first_prize, preseason,
-                              field_size=field_size, n_lineups=n_lineups, lock_s=_lock_s)
+                              field_size=field_size, n_lineups=n_lineups, lock_s=_lock_s,
+                              payouts=payouts)
         if isinstance(res, dict) and "error" not in res:
             res["slate_mode"] = slate_note
         return res
@@ -1489,7 +1827,7 @@ def build(csv_text, week=None, objective="projection", stack=True, contest=None,
             ceiling, floor = round(_pct(samp, 0.9), 1), round(_pct(samp, 0.1), 1)
             unmatched.append(nm)
         players.append({"name": nm, "pos": pos, "team": c.get("team"), "opp": c.get("opp"),
-                        "salary": int(c["salary"]),
+                        "salary": int(c["salary"]), "dk_status": (c.get("status") or "").upper(),
                         "proj": round(proj, 1), "ceiling": ceiling, "floor": floor,
                         "elig": elig, "arr": samp})
     try:
@@ -1534,18 +1872,25 @@ def build(csv_text, week=None, objective="projection", stack=True, contest=None,
         import collections as _cl
         rosters = [frozenset(p["name"] for p in lineup)]
         expo = _cl.Counter(p["name"] for p in lineup)
-        tries = 0
-        while len(lineups) < n_lineups and tries < n_lineups * 12:
-            tries += 1
-            cand = optimize(players, CAP, objective, stack_min=stack_min,
-                            bring_min=bring_min, restarts=2500,
-                            exclude=(rosters, uniq))
+        while len(lineups) < n_lineups:
+            # The exposure cap is a CONSTRAINT, not a filter on the answer: the
+            # search is seeded and exact, so a candidate rejected for crossing
+            # 60% would come back identical on every retry and the portfolio
+            # would end short. A name that would cross it sits this one out.
+            pool_k = players
+            if len(lineups) >= 3:
+                capped = {nm for nm, c in expo.items() if (c + 1) / (len(lineups) + 1) > 0.6}
+                pool_k = [p for p in players if p["name"] not in capped]
+            cand = optimize(pool_k, CAP, objective, stack_min=stack_min,
+                            bring_min=bring_min, restarts=1000,
+                            exclude=(rosters, uniq), seed=len(lineups),
+                            # the defense kick is the headline lineup's (up to
+                            # 3 s on a 12-game slate); twenty of them would sit
+                            # a web worker on one core for a minute
+                            thorough=False)
             if not cand:
-                continue
+                break                     # nothing legal is left at this uniqueness
             names = frozenset(p["name"] for p in cand)
-            if len(lineups) >= 3 and any(
-                    (expo[nm] + 1) / (len(lineups) + 1) > 0.6 for nm in names):
-                continue
             lineups.append(cand)
             rosters.append(names)
             expo.update(names)
@@ -1565,8 +1910,10 @@ def build(csv_text, week=None, objective="projection", stack=True, contest=None,
                                contest_size=contest_size, prize_pool=prize_pool,
                                first_prize=first_prize,
                                sample_size=max(200, min(3000, int(field_size or 500))),
-                               extra_lineups=lineups[1:])
-        except Exception:
+                               extra_lineups=lineups[1:], payouts=payouts)
+        except Exception as _e:
+            # the card drops its contest lines; the ledger says why
+            errlog.note("NFLDFS-contest", _e)
             csim = None
     # Sample-noise probe (dfs_backtest.run_sample): the same lineup against
     # fields of the asked sizes and seeds at the asked entry counts.

@@ -4062,7 +4062,7 @@ ck("GPP shapes bring back a catcher from the QB's opponent",
    "a shootout lifts both sides; the game-stack owns that outcome")
 ck("portfolios exist: unique tickets with an exposure cap",
    "n_lineups=1, uniq=2" in _insp.getsource(_ND.build)
-   and "> 0.6 for nm in names" in _insp.getsource(_ND.build)
+   and "(c + 1) / (len(lineups) + 1) > 0.6" in _insp.getsource(_ND.build)
    and "exclude=(rosters, uniq)" in _insp.getsource(_ND.build),
    "more unique tickets is the one honest way to raise the chance of hitting "
    "a huge field")
@@ -18548,7 +18548,7 @@ try:
     _dka.players = lambda dg: [{"name": "A", "available": True, "starts": "2026-10-18T20:05:00.0000000Z"},
                                {"name": "B", "available": True, "starts": "2026-10-18T17:00:00.0000000Z"},
                                {"name": "C", "available": False, "starts": "2026-10-18T13:30:00.0000000Z"}]
-    _dka.salaries_csv = lambda dg, exclude_games=None: "Position,Name\n"
+    _dka.salaries_csv = lambda dg, exclude_games=None, dated=False: "Position,Name\n"
     _dka.contests = lambda *a, **k: []
     _sf_a = _dka.slate_for("nfl", draft_group_id=7)
 finally:
@@ -19235,6 +19235,243 @@ ck("the report carries the rule, both seasons, the verdict and the limits -- and
    and all(_sh_nb[(s_, "deep")]["sd_logit"] < _sh_nb[(s_, "prod")]["sd_logit"] for s_ in (2024, 2025))
    and all(0.88 <= _Vnb.logit_corr(v["rows"]) <= 0.94 for v in (_w24, _w25)),
    str({k: round(v["slope"], 3) for k, v in _sh_nb.items()}))
+
+# ---- 2026-10-16 NFL DFS, week 6 readiness (owner: "make sure dfs is fully built
+# and ready for nfl, I wanna make a lineup. Ensure everything is perfect") ----
+print("=" * 72)
+print("NFL DFS week 6: the lobby's formats, DK's statuses, the dated CSV, the money lines, an exact sheet")
+print("=" * 72)
+import dk as _dk6
+import nfl_dfs as _nd6
+import simulate as _sim6
+_rc6 = _dk6.racing._cached
+_get6 = _dk6._get
+_lobby6 = {
+    "DraftGroups": [
+        {"DraftGroupId": 1, "Sport": "NFL", "ContestTypeId": 21, "ContestStartTimeSuffix": None, "GameCount": 10, "StartDateEst": "2026-10-18T13:00:00.0000000"},
+        {"DraftGroupId": 2, "Sport": "NFL", "ContestTypeId": 189, "ContestStartTimeSuffix": None, "GameCount": 10, "StartDateEst": "2026-10-18T13:00:00.0000000"},
+        {"DraftGroupId": 3, "Sport": "NFL", "ContestTypeId": 353, "ContestStartTimeSuffix": "(Touchdowns)", "GameCount": 10, "StartDateEst": "2026-10-18T13:00:00.0000000"},
+        {"DraftGroupId": 4, "Sport": "NFL", "ContestTypeId": 51, "ContestStartTimeSuffix": "(Afternoon Only)", "GameCount": 3, "StartDateEst": "2026-10-18T16:05:00.0000000"},
+        {"DraftGroupId": 5, "Sport": "NFL", "ContestTypeId": 192, "ContestStartTimeSuffix": "(BUF @ LV)", "GameCount": 1, "StartDateEst": "2026-10-18T16:25:00.0000000"},
+        {"DraftGroupId": 6, "Sport": "NFL", "ContestTypeId": 108, "ContestStartTimeSuffix": "(2H DAL @ GB)", "GameCount": 1, "StartDateEst": "2026-10-18T21:20:00.0000000"},
+        {"DraftGroupId": 7, "Sport": "NFL", "ContestTypeId": 145, "ContestStartTimeSuffix": "(W7-W17 Sit & Go)", "GameCount": 14, "StartDateEst": "2026-10-22T20:15:00.0000000"},
+        {"DraftGroupId": 8, "Sport": "NFL", "ContestTypeId": 96, "ContestStartTimeSuffix": "(DAL @ GB)", "GameCount": 1, "StartDateEst": "2026-10-18T20:20:00.0000000"}],
+    "Contests": [
+        {"n": "NFL $2.75M Fantasy Football Millionaire", "dg": 1}, {"n": "NFL Snake $10,600 3-Player", "dg": 2},
+        {"n": "NFL Single Stat $10,600 3-Player (Touchdowns)", "dg": 3}, {"n": "NFL Tiers $10,600 3-Player (Afternoon Only)", "dg": 4},
+        {"n": "NFL Snake Showdown $10,600 3-Player (BUF @ LV)", "dg": 5}, {"n": "NFL In-Game $10,600 3-Player (2H DAL @ GB)", "dg": 6},
+        {"n": "NFL Best Ball $1,060 12-Player (W7-W17 Sit + Go)", "dg": 7}, {"n": "NFL Showdown $1M Sunday Night Showdown (DAL @ GB)", "dg": 8}]}
+_nba6 = {"DraftGroups": [
+        {"DraftGroupId": 11, "Sport": "NBA", "ContestTypeId": 70, "ContestStartTimeSuffix": None, "GameCount": 9, "StartDateEst": "2026-10-21T19:00:00.0000000"},
+        {"DraftGroupId": 12, "Sport": "NBA", "ContestTypeId": 999, "ContestStartTimeSuffix": None, "GameCount": 9, "StartDateEst": "2026-10-21T19:00:00.0000000"}],
+    "Contests": [{"n": "NBA $250K Shot", "dg": 11}, {"n": "NBA Snake $10,600 3-Player", "dg": 12}, {"n": "NBA Snake $5,300 3-Player", "dg": 12}]}
+try:
+    _dk6.racing._cached = lambda key, ttl, build: build()
+    _dk6._get = lambda url, timeout=25: _nba6 if "sport=NBA" in url else _lobby6
+    _sl6 = [s["draft_group_id"] for s in _dk6.slates("nfl")]
+    _sb6 = [s["draft_group_id"] for s in _dk6.slates("nba")]
+finally:
+    _dk6.racing._cached, _dk6._get = _rc6, _get6
+ck("the NFL slate picker offers only the formats a lineup builder can make (Classic, Showdown): week 6's lobby carried Snake (UNTAGGED, listed exactly like the 10-game main slate), Single Stat, Tiers, Snake Showdown, In-Game 2H and Best Ball beside them",
+   _sl6 == [1, 8] and _dk6._LINEUP_TYPES == {"nfl": {21, 96}}, str(_sl6))
+ck("and a sport whose format ids are not pinned drops a draft group whose every contest is a non-lineup format, read off the contest names",
+   _sb6 == [11] and "snake" in _dk6._NEVER_NAMES and "single stat" in _dk6._NEVER_NAMES and "in-game" in _dk6._NEVER_NAMES, str(_sb6))
+_dr6 = {"draftables": [
+    {"displayName": "Healthy Wr", "salary": 6000, "position": "WR", "teamAbbreviation": "CHI", "status": "None", "playerDkId": 1, "rosterSlotId": 70,
+     "competition": {"name": "CHI @ ATL", "startTime": "2026-10-18T17:00:00.0000000Z"}},
+    {"displayName": "Questionable Wr", "salary": 5000, "position": "WR", "teamAbbreviation": "CHI", "status": "Q", "playerDkId": 2, "rosterSlotId": 70,
+     "competition": {"name": "CHI @ ATL", "startTime": "2026-10-18T17:00:00.0000000Z"}},
+    {"displayName": "Reserve Wr", "salary": 6100, "position": "WR", "teamAbbreviation": "NE", "status": "IR", "playerDkId": 3, "rosterSlotId": 70,
+     "competition": {"name": "NYJ @ NE", "startTime": "2026-10-18T17:00:00.0000000Z"}},
+    {"displayName": "Out Qb", "salary": 6700, "position": "QB", "teamAbbreviation": "BAL", "status": "OUT", "playerDkId": 4, "rosterSlotId": 66,
+     "competition": {"name": "BAL @ CLE", "startTime": "2026-10-18T17:00:00.0000000Z"}},
+    {"displayName": "Doubtful Rb", "salary": 5300, "position": "RB", "teamAbbreviation": "PHI", "status": "D", "playerDkId": 5, "rosterSlotId": 67,
+     "competition": {"name": "CAR @ PHI", "startTime": "2026-10-18T17:00:00.0000000Z"}},
+    {"displayName": "Night Wr", "salary": 7000, "position": "WR", "teamAbbreviation": "SF", "status": "None", "playerDkId": 6, "rosterSlotId": 70,
+     "competition": {"name": "WAS @ SF", "startTime": "2026-10-20T00:15:00.0000000Z"}}]}
+try:
+    _dk6.racing._cached = lambda key, ttl, build: build()
+    _dk6._get = lambda url, timeout=25: _dr6
+    _pl6 = {p["name"]: p for p in _dk6.players(99)}
+    _csv6 = _dk6.salaries_csv(99, dated=True)
+    _csv6u = _dk6.salaries_csv(99)
+finally:
+    _dk6.racing._cached, _dk6._get = _rc6, _get6
+_pc6 = {c["name"]: c for c in _sim6.parse_dk_csv(_csv6)}
+ck("DK's football out-statuses are unavailable: IR (65 players on the week-6 main slate, A.J. Brown at $6,100 among them, were 'available' with only baseball's IL in the set) and OUT drop; Questionable and Doubtful are DK's to report, not to remove",
+   not _pl6["Reserve Wr"]["available"] and not _pl6["Out Qb"]["available"]
+   and _pl6["Questionable Wr"]["available"] and _pl6["Doubtful Rb"]["available"]
+   and {"IR", "OUT", "IL", "PUP"} <= _dk6._UNAVAILABLE and "Q" not in _dk6._UNAVAILABLE
+   and set(_pc6) == {"Healthy Wr", "Questionable Wr", "Doubtful Rb", "Night Wr"}, str(sorted(_pc6)))
+ck("the auto-loaded CSV carries DK's Status (healthy = ACTIVE, never blank), so the sheet knows the pool was checked and stops warning that OUT/IR 'could NOT be excluded'; a Doubtful player is out at the sheet, as Sleeper's DOUBTFUL already was",
+   _pc6["Healthy Wr"]["status"] == "ACTIVE" and _pc6["Questionable Wr"]["status"] == "Q"
+   and _csv6.splitlines()[0].endswith(",Status")
+   and _nd6._status_seen(list(_pc6.values()))
+   and not _nd6._playable(_pc6["Doubtful Rb"]) and _nd6._playable(_pc6["Questionable Wr"])
+   and {"D", "DOUBTFUL", "IR", "OUT"} <= _nd6._OUT_STATUS)
+ck("an NFL slate's Game Info is DraftKings' export shape, dated in Eastern time (Monday night's 00:15Z is 08:15PM ET on the 19th), so the pasted box dates its own week -- week 6 -- instead of asking the calendar; other sports keep the feed's string",
+   _pc6["Healthy Wr"]["game"] == "CHI@ATL 10/18/2026 01:00PM ET"
+   and _pc6["Night Wr"]["game"] == "WAS@SF 10/19/2026 08:15PM ET"
+   and _nd6.slate_season_type(list(_pc6.values())) == (False, 6)
+   and _nd6.game_key(_pc6["Night Wr"]["game"]) == "WAS@SF"
+   and "CHI @ ATL" in _csv6u and "CHI@ATL 10" not in _csv6u
+   and 'dated=(sport or "").lower() == "nfl"' in _insp.getsource(_dk6.slate_for))
+# the money lines: what a sampled field can read
+_tiers6 = [{"from": 1, "to": 1, "prize": 1000000}, {"from": 2, "to": 2, "prize": 100000},
+           {"from": 3, "to": 10, "prize": 10000}, {"from": 11, "to": 37425, "prize": 40}]
+_pt6 = _nd6.payout_table(_tiers6, 161764)
+_rs6 = _nd6.resolution(600, 161764, _pt6[1], _pt6[0], _pt6[3])
+ck("DraftKings' own payout table prices the contest (places paid 37,425 on the week-6 Millionaire, not the fitted curve's 20% of the field); overlapping tiers or a table deeper than the field are refused",
+   _pt6[1] == 37425 and _pt6[2] == 1000000 and _pt6[3] == 1000000 + 100000 + 80000 + 37415 * 40
+   and _pt6[0](37425) == 40 and _pt6[0](37426) == 0 and _pt6[0](5) == 10000
+   and _nd6.payout_table([{"from": 1, "to": 5, "prize": 10}, {"from": 5, "to": 9, "prize": 5}]) is None
+   and _nd6.payout_table(_tiers6, 1000) is None)
+ck("a 600-lineup field cannot read a 161,764-entry Millionaire's first place or its ROI (the card printed 'win ~1 in 374, ROI +17,759.8%'): read down to rank 2,697, ten sampled lineups above the line; cash is read",
+   _rs6["best_rank_read"] == 2697 and _rs6["win"] is False and _rs6["roi"] is False
+   and _rs6["cash"] is True and _rs6["top1"] is False and _rs6["per_sample"] == 269.6
+   and "270 real ones" in _rs6["note"] and _nd6._READ_MIN == 10, str(_rs6))
+_du6 = lambda r: 18.0 if r <= 4500 else 0.0
+_rd6 = _nd6.resolution(600, 10000, 4500, _du6, 18.0 * 4500)
+_rsm6 = _nd6.resolution(600, 20, 4, lambda r: [0, 100, 50, 30, 20][r] if r <= 4 else 0, 200)
+ck("and the definition: a line is read when at least ten sampled lineups sit above it; ROI is read when no more than 10% of the prize money is paid above the deepest line read -- a double-up is (3.7% of its prizes above rank 167), a 20-entry contest is entirely",
+   _rd6["roi"] is True and _rd6["win"] is False and _rd6["best_rank_read"] == 167
+   and _rsm6["win"] is True and _rsm6["roi"] is True and _rsm6["cash"] is True and "note" not in _rsm6
+   and _nd6._ROI_UNREAD_MAX == 0.10)
+_srcb6 = open(_nd6.__file__).read()
+ck("both contest sims (classic and showdown) take the table and carry the verdict; the route passes the picked contest's table; the card shows an unreadable figure as unreadable, never as a number",
+   _srcb6.count('payout, places, first, pool, each = _payout_setup(contest, C, prize_pool, first_prize,') == 2
+   and '"resolved": resolution(len(field), C, places, payout, pool)' in _srcb6
+   and '"payouts_from": src, "resolved": res' in _srcb6
+   and 'payouts=(d.get("payouts") if isinstance(d.get("payouts"), list) else None)' in open(_os.path.join(_root, "app.py")).read()
+   and "payouts: _dfsDkPay," in open(_os.path.join(_root, "static", "app.js")).read()
+   and '_unread(cs, "win") ? _nr("win")' in open(_os.path.join(_root, "static", "app.js")).read())
+# the sheet's optimizer: exact on a pool built so the old search could not be
+import itertools as _it6
+import random as _rn6
+_g6 = _rn6.Random(20261016)
+_pool6 = []
+for _tm, _op in (("AAA", "BBB"), ("BBB", "AAA"), ("CCC", "DDD"), ("DDD", "CCC")):
+    if _tm in ("AAA", "BBB"):
+        _pool6.append({"name": f"QB {_tm}", "pos": "QB", "team": _tm, "opp": _op, "salary": _g6.choice([6000, 6400, 7000])})
+    else:
+        _pool6.append({"name": f"DST {_tm}", "pos": "DST", "team": _tm, "opp": _op, "salary": _g6.choice([2600, 3000, 3400])})
+    if _tm != "DDD":
+        _pool6.append({"name": f"TE {_tm}", "pos": "TE", "team": _tm, "opp": _op, "salary": _g6.choice([3000, 4200, 5000])})
+        _pool6.append({"name": f"RB {_tm}", "pos": "RB", "team": _tm, "opp": _op, "salary": _g6.choice([5000, 6200, 7800])})
+    for _k in range(4):
+        _pool6.append({"name": f"WR{_k} {_tm}", "pos": "WR", "team": _tm, "opp": _op, "salary": _g6.choice([3500, 4500, 5500, 6500, 7500, 8500])})
+for _p in _pool6:
+    _p["proj"] = round(_p["salary"] / 400.0 + _g6.uniform(-2, 2), 1)
+    _p["ceiling"] = round(_p["proj"] * _g6.uniform(1.3, 1.8), 1)
+    _p["floor"] = round(_p["proj"] * 0.5, 1)
+    _p["elig"] = _nd6._elig(_p["pos"])
+# the one the old search could never see: a $3,500 receiver whose ceiling is the
+# best per dollar on the board, projected below every other receiver -- 15th or
+# lower, outside the old 14-by-projection shortlist of every receiver slot
+_pool6.append({"name": "Boom Wr CCC", "pos": "WR", "team": "CCC", "opp": "DDD", "salary": 3500,
+               "proj": 1.0, "ceiling": 40.0, "floor": 0.0, "elig": _nd6._elig("WR")})
+
+
+def _brute6(players, objective, stack_min, bring_min):
+    best = None
+    bp = {}
+    for p in players:
+        bp.setdefault(p["pos"], []).append(p)
+    for qb, dst, te in _it6.product(bp["QB"], bp["DST"], bp["TE"]):
+        for nrb in (2, 3):
+            for rbs in _it6.combinations(bp["RB"], nrb):
+                for wrs in _it6.combinations(bp["WR"], 6 - nrb):
+                    lu = [qb, dst, te, *rbs, *wrs]
+                    if sum(p["salary"] for p in lu) > 50000:
+                        continue
+                    if not _nd6._lineup_ok(lu, 50000, stack_min, bring_min):
+                        continue
+                    v = sum(_nd6._value(p, objective) for p in lu)
+                    if best is None or v > best:
+                        best = v
+    return best
+
+
+_ok6, _det6 = True, []
+for _obj6, _sm6, _bm6 in (("ceiling", 2, 1), ("projection", 1, 0), ("leverage", 2, 1)):
+    for _p in _pool6:
+        _p.pop("own", None)
+    _nd6._set_ownership(_pool6)
+    _ex6 = _brute6(_pool6, _obj6, _sm6, _bm6)
+    _a6 = _nd6.optimize(_pool6, 50000, _obj6, stack_min=_sm6, bring_min=_bm6)
+    _b6 = _nd6.optimize(_pool6, 50000, _obj6, stack_min=_sm6, bring_min=_bm6)
+    _va6 = sum(_nd6._value(p, _obj6) for p in _a6)
+    _det6.append((_obj6, round(_ex6, 2), round(_va6, 2), "Boom Wr CCC" in {p["name"] for p in _a6}))
+    _ok6 = (_ok6 and abs(_va6 - _ex6) < 1e-6 and [p["name"] for p in _a6] == [p["name"] for p in _b6]
+            and _nd6._lineup_ok(_a6, 50000, _sm6, _bm6))
+# and a two-game pool whose optimum holds the OTHER defense and the five
+# players it unlocks -- a move no swap neighbourhood crosses (_dst_kick)
+_g6b = _rn6.Random(14)
+_poolb6 = []
+for _gi, (_a, _b) in enumerate((("T0A", "T0B"), ("T1A", "T1B"))):
+    for _tm, _op in ((_a, _b), (_b, _a)):
+        if _gi == 0:
+            _poolb6.append({"name": f"QB {_tm}", "pos": "QB", "team": _tm, "opp": _op, "salary": _g6b.choice([5600, 6000, 6400, 7000, 7600])})
+        else:
+            _poolb6.append({"name": f"DST {_tm}", "pos": "DST", "team": _tm, "opp": _op, "salary": _g6b.choice([2400, 2800, 3200, 3600])})
+        if not (_gi == 1 and _tm == _b):
+            _poolb6.append({"name": f"TE {_tm}", "pos": "TE", "team": _tm, "opp": _op, "salary": _g6b.choice([2500, 3200, 4200, 5500])})
+            _poolb6.append({"name": f"RB {_tm}", "pos": "RB", "team": _tm, "opp": _op, "salary": _g6b.choice([4500, 5500, 6500, 7800, 8800])})
+        for _k in range(4):
+            _poolb6.append({"name": f"WR{_k} {_tm}", "pos": "WR", "team": _tm, "opp": _op, "salary": _g6b.choice([3000, 3500, 4500, 5500, 6500, 7500, 8500])})
+for _p in _poolb6:
+    _p["proj"] = round(max(1.0, _p["salary"] / 400.0 + _g6b.uniform(-4, 4)), 1)
+    _p["ceiling"] = round(_p["proj"] * _g6b.uniform(1.2, 2.0), 1)
+    _p["floor"] = 0.0
+    _p["elig"] = _nd6._elig(_p["pos"])
+_exb6 = _brute6(_poolb6, "ceiling", 2, 1)
+_gotb6 = _nd6.optimize(_poolb6, 50000, "ceiling", stack_min=2, bring_min=1)
+_nokick6 = _nd6.optimize(_poolb6, 50000, "ceiling", stack_min=2, bring_min=1, thorough=False)
+_det6.append(("ceiling, defense switch", round(_exb6, 2), round(sum(_nd6._value(p, "ceiling") for p in _gotb6), 2),
+              round(sum(_nd6._value(p, "ceiling") for p in _nokick6), 2)))
+ck("the sheet's lineup is the EXACT optimum of its objective under every rule (brute force over every legal lineup: three objectives on a pool whose best receiver the old 14-by-projection shortlist never saw, and a pool whose optimum needs the other defense) and the same lineup on every build of the same pool; on the week-6 main slate the old search came back 219.2-221.7 against an exact 229.2 on ceiling, a different lineup each build",
+   _ok6 and any(d[3] is True for d in _det6[:3])
+   and abs(sum(_nd6._value(p, "ceiling") for p in _gotb6) - _exb6) < 1e-6
+   and sum(_nd6._value(p, "ceiling") for p in _nokick6) < _exb6 - 0.5, str(_det6))
+_lu6 = [p for p in _pool6 if p["name"] in ("QB AAA", "DST CCC", "TE AAA", "RB AAA", "RB BBB", "WR0 AAA", "WR1 AAA", "WR0 BBB", "WR2 BBB")]
+_by6 = {p["name"]: p for p in _pool6}
+_swap6 = lambda lu, out, inn: [p for p in lu if p["name"] not in out] + [_by6[n] for n in inn]
+_te2 = _swap6(_lu6, ("WR2 BBB",), ("TE BBB",))
+_dbad6 = _swap6(_lu6, ("DST CCC", "WR2 BBB"), ("DST DDD", "WR0 CCC"))     # DDD's defense faces CCC's receiver
+_dgood6 = _swap6(_lu6, ("WR2 BBB",), ("WR0 CCC",))                         # CCC's own defense beside him: fine
+_nobring6 = _swap6(_lu6, ("WR0 BBB", "WR2 BBB"), ("WR2 AAA", "WR3 AAA"))
+ck("the rule checker is _build_one's rules: a second TE (never the FLEX here) fails, a defense facing a rostered offense fails and its own offense does not, the stack and the bring-back are counted, the cap binds",
+   _nd6._lineup_ok(_lu6, 99999, 2, 1) and not _nd6._lineup_ok(_te2, 99999, 2, 1)
+   and not _nd6._lineup_ok(_dbad6, 99999, 2, 1) and _nd6._lineup_ok(_dgood6, 99999, 2, 1)
+   and _nd6._lineup_ok(_lu6, 99999, 3, 1) and not _nd6._lineup_ok(_lu6, 99999, 4, 1)
+   and _nd6._lineup_ok(_nobring6, 99999, 2, 0) and not _nd6._lineup_ok(_nobring6, 99999, 2, 1)
+   and not _nd6._lineup_ok(_lu6, sum(p["salary"] for p in _lu6) - 1, 2, 1))
+ck("a portfolio's exposure cap is a constraint of the search, so a seeded exact search can never return the same rejected candidate until the retries run out and the portfolio ends short",
+   'capped = {nm for nm, c in expo.items() if (c + 1) / (len(lineups) + 1) > 0.6}' in _srcb6
+   and "exclude=(rosters, uniq), seed=len(lineups)," in _srcb6 and "thorough=False)" in _srcb6
+   and "tries < n_lineups * 12" not in _srcb6)
+# DK's Questionable shows on the sheet even when Sleeper has nothing
+import nfl_adp as _na6
+_ocr6 = _na6.roster
+_olr6 = dict(_nd6._LAST_ROSTER)
+try:
+    _na6.roster = lambda now=None, seconds_to_lock=None: (
+        {"tyler warren": {"status": "Active", "active": True, "depth": 1, "injury": None},
+         "colby parkinson": {"status": "Active", "active": True, "depth": 2, "injury": None}},
+        {"source": "stub", "records": 2, "fetched_utc": None, "age_s": 0, "error": None})
+    _kq6, _xq6 = _nd6._apply_depth([{"name": "Tyler Warren", "pos": "TE", "team": "IND", "proj": 9.0, "dk_status": "Q"},
+                                     {"name": "Colby Parkinson", "pos": "TE", "team": "IND", "proj": 4.0, "dk_status": "ACTIVE"}],
+                                    preseason=False)
+finally:
+    _na6.roster = _ocr6
+    _nd6._LAST_ROSTER.clear()
+    _nd6._LAST_ROSTER.update(_olr6)
+ck("DK's Questionable tags the sheet's row even when Sleeper lists nothing (Tyler Warren, week 6: DK Q, Sleeper healthy, tagged a plain TE1)",
+   {p["name"]: p.get("depth") for p in _kq6} == {"Tyler Warren": "TE1·Q", "Colby Parkinson": "TE2"}
+   and '"dk_status": (c.get("status") or "").upper()' in _srcb6)
+ck("a lobby failure on the auto-load and a failed classic contest sim reach the ledger instead of vanishing",
+   'errlog.note("DFS-autoslate", _e, path=str(d.get("sport")))' in open(_os.path.join(_root, "app.py")).read()
+   and 'errlog.note("NFLDFS-contest", _e)' in _srcb6)
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

@@ -2388,7 +2388,9 @@ def api_simulate_dfs():
                     auto_slate = {k: got[k] for k in
                                   ("draft_group_id", "n_players", "n_dropped", "dropped")}
                     auto_slate["starts"] = got.get("starts")
-        except Exception:
+        except Exception as _e:
+            # the owner sees "paste your CSV"; the ledger says the lobby failed
+            errlog.note("DFS-autoslate", _e, path=str(d.get("sport")))
             auto_slate = None
     if not text.strip():
         return jsonify({"error": "paste your DraftKings salaries CSV "
@@ -2460,7 +2462,11 @@ def api_simulate_dfs():
                 # `mode` for the racing/UFC builders and reusing it would let a
                 # NASCAR setting decide an NFL roster.
                 mode=(d.get("nfl_mode") if d.get("nfl_mode") in ("showdown", "classic")
-                      else "auto"))
+                      else "auto"),
+                # DraftKings' own payout table for the contest picked in the tab
+                # (dk.contest_detail's tiers); nfl_dfs.payout_table validates it
+                # and the sims fall back to the fitted curve without it
+                payouts=(d.get("payouts") if isinstance(d.get("payouts"), list) else None))
             if auto_slate and isinstance(res, dict):
                 res["dk_slate"] = auto_slate
             _dfs_log("nfl", d, res, auto_slate, text)
