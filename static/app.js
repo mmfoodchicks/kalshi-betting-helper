@@ -4164,11 +4164,43 @@ function renderNHL() {
 // underdogs (underdog YES ask at least 5c under the tie's, in Kalshi's own
 // prices). The card leads with the leg the owner bets: NO on the underdog,
 // which pays on the favourite's win and on the tie.
-let _soccerData = null, _soccerView = "all";
+let _soccerData = null, _soccerView = "all", _soccerSortKey = "kickoff";
 function initSoccer() {
   if (!$("soccerResults").dataset.loaded) { $("soccerResults").dataset.loaded = "1"; loadSoccer(0); }
 }
-function soccerView(v) { _soccerView = v; renderSoccer(); }
+// each view keeps the order it always had (All by kickoff, Heavy by the
+// edge) until the owner picks another from the sort menu
+function soccerView(v) {
+  _soccerView = v;
+  _soccerSortKey = v === "heavy" ? "edge" : "kickoff";
+  const s = $("soccerSort"); if (s) s.value = _soccerSortKey;
+  renderSoccer();
+}
+function soccerSort(k) { _soccerSortKey = k; renderSoccer(); }
+// the sort keys: a number, higher first (null = the match has no such
+// figure and sits at the bottom), ties by kickoff
+const _soccerKeys = {
+  nodog: (g) => (g.no_dog || {}).model_pct ?? null,
+  edge: (g) => (g.no_dog || {}).edge ?? null,
+  noask: (g) => ((g.no_dog || {}).no_ask != null ? -(g.no_dog.no_ask) : null),
+  gap: (g) => (g.dog && g.tie_ask != null && ((g[g.dog] || {}).kalshi || {}).yes_ask != null
+    ? g.tie_ask - g[g.dog].kalshi.yes_ask : null),
+  draw: (g) => (g.model ? g.model.p_draw : null),
+};
+function _soccerOrder(games, key) {
+  // the Kalshi (Eastern) date first, then the kickoff: a late kickoff is the
+  // next day in UTC, and ordering on it alone split a day's header in two
+  const when = (g) => `${g.date || ""}|${g.kickoff || ""}`;
+  if (key === "kickoff") return games.slice().sort((a, b) => when(a).localeCompare(when(b)));
+  if (key === "league") return games.slice().sort((a, b) => String(a.league).localeCompare(String(b.league)) || when(a).localeCompare(when(b)));
+  const f = _soccerKeys[key];
+  if (!f) return games;
+  return games.slice().sort((a, b) => {
+    const x = f(a), y = f(b);
+    if (x == null || y == null) return (x == null) - (y == null) || when(a).localeCompare(when(b));
+    return (y - x) || when(a).localeCompare(when(b));
+  });
+}
 async function loadSoccer(attempt) {
   attempt = attempt || 0;
   const box = $("soccerResults");
@@ -4262,19 +4294,20 @@ function renderSoccer() {
   const modelOnly = !!(($("soccerModelOnly") || {}).checked);
   let games = (d.games || []).filter((g) => (!heavy || g.heavy) && (!lg || g.league === lg)
     && (!q || `${g.home.name} ${g.away.name} ${g.league}`.toLowerCase().includes(q)) && (!modelOnly || g.model));
-  // the heavy view ranks by the model's edge on NO-the-underdog where there is one
-  if (heavy) games = games.slice().sort((a, b) => (((b.no_dog || {}).edge ?? -999) - ((a.no_dog || {}).edge ?? -999)) || String(a.kickoff || a.date).localeCompare(String(b.kickoff || b.date)));
+  games = _soccerOrder(games, _soccerSortKey);
+  const sortLbl = { kickoff: "kickoff", nodog: "the model's chance the underdog does not win", edge: "the model's edge on NO-the-underdog (pre-game only)",
+    noask: "the NO ask, cheapest first", gap: "how far the underdog's YES ask sits under the tie's", draw: "the model's tie chance", league: "league" }[_soccerSortKey] || "";
   $("soccerBuilt").textContent = d.built_ts ? `built ${agoStr(Math.max(0, Date.now() / 1000 - d.built_ts))}` : "";
   const fit = d.fit || {};
-  $("soccerSummary").innerHTML = `<b>${d.n_games}</b> matches on Kalshi · <b>${d.n_model}</b> modelled · <b>${d.n_heavy}</b> heavy underdogs · showing <b>${games.length}</b> · fit: ${(fit.teams || 0).toLocaleString()} teams from ${(fit.n || 0).toLocaleString()} results as of ${fit.asof || "-"} <span style="color:var(--muted)">(half-life ${Math.round(Math.log(2) / (fit.xi || 0.005))} days, ${fit.kappa} matches of shrinkage, ρ ${fit.rho})</span>${heavy ? ` · <i style="color:var(--muted)">ranked by the model's edge on NO-the-underdog; matches without a model sit at the bottom</i>` : ""}<div class="small" style="color:var(--muted);margin-top:2px" title="held out, weekly refits: the model's chance that the underdog does not win on heavy-underdog matches, by bucket, against how often it did not">Calibration of the NO-the-underdog figure on held-out heavy underdogs - 2025: ${((d.calibration || {}).heavy || []).map((c) => `said ${(100 * c.pred).toFixed(1)}% → happened ${(100 * c.hit).toFixed(1)}% (n ${c.n.toLocaleString()})`).join(" · ")}; 2026 so far: ${((d.calibration || {}).heavy_2026 || []).map((c) => `${(100 * c.pred).toFixed(1)}% → ${(100 * c.hit).toFixed(1)}%`).join(" · ")}. It ran about a point and a half high in 2025 and within about a point in 2026; the edge column does not correct for that.</div>`;
+  $("soccerSummary").innerHTML = `<b>${d.n_games}</b> matches on Kalshi · <b>${d.n_model}</b> modelled · <b>${d.n_heavy}</b> heavy underdogs · showing <b>${games.length}</b> · fit: ${(fit.teams || 0).toLocaleString()} teams from ${(fit.n || 0).toLocaleString()} results as of ${fit.asof || "-"} <span style="color:var(--muted)">(half-life ${Math.round(Math.log(2) / (fit.xi || 0.005))} days, ${fit.kappa} matches of shrinkage, ρ ${fit.rho})</span>${_soccerSortKey !== "kickoff" ? ` · <i style="color:var(--muted)">ranked by ${sortLbl}; matches without that figure sit at the bottom</i>` : ""}<div class="small" style="color:var(--muted);margin-top:2px" title="held out, weekly refits: the model's chance that the underdog does not win on heavy-underdog matches, by bucket, against how often it did not">Calibration of the NO-the-underdog figure on held-out heavy underdogs - 2025: ${((d.calibration || {}).heavy || []).map((c) => `said ${(100 * c.pred).toFixed(1)}% → happened ${(100 * c.hit).toFixed(1)}% (n ${c.n.toLocaleString()})`).join(" · ")}; 2026 so far: ${((d.calibration || {}).heavy_2026 || []).map((c) => `${(100 * c.pred).toFixed(1)}% → ${(100 * c.hit).toFixed(1)}%`).join(" · ")}. It ran about a point and a half high in 2025 and within about a point in 2026; the edge column does not correct for that.</div>`;
   if (!games.length) {
     $("soccerResults").innerHTML = `<div class="empty">${heavy ? "No heavy underdogs match the filter." : "No matches match the filter."}</div>`;
     return;
   }
-  // grouped by the Kalshi (Eastern) date
+  // grouped by the Kalshi (Eastern) date when the order is by kickoff
   let html = "", day = null;
   for (const g of games) {
-    if (!heavy && g.date !== day) { day = g.date; html += `<div class="small" style="margin:10px 0 4px;color:var(--muted)"><b>${escapeHtml(day)}</b></div>`; }
+    if (_soccerSortKey === "kickoff" && g.date !== day) { day = g.date; html += `<div class="small" style="margin:10px 0 4px;color:var(--muted)"><b>${escapeHtml(day)}</b></div>`; }
     html += soccerGameCard(g);
   }
   $("soccerResults").innerHTML = html;

@@ -82,13 +82,26 @@ def teams():
     return racing._cached(("nhl_teams",), 24 * 3600, build) or {}
 
 
+def _season():
+    """ESPN labels a season by the year it ENDS (2026-27 is 2027)."""
+    t = clock.today_et()
+    return t.year + 1 if t.month >= 8 else t.year
+
+
 def ratings():
     """{abbr: {w, l, g, gf, ga, lg_g}} — goals for/against per game from the
-    standings, regressed early. Cached 3h."""
+    standings, regressed early. Cached 3h.
+
+    REGULAR SEASON ONLY (`seasontype=2`): ESPN's bare /standings answers with
+    whatever season type is current, and through September that is the
+    preseason (the NBA's read "New York 1-4" on 2026-10-17 off exhibition
+    games). A club that has not played is rated the league average, the
+    validated model's own opening-night rating
+    (research/pro_prior_validation.py, K = _REGRESS_G, rho = 0)."""
     def build():
         try:
             d = racing._get_json(
-                "https://site.api.espn.com/apis/v2/sports/hockey/nhl/standings",
+                f"https://site.api.espn.com/apis/v2/sports/hockey/nhl/standings?season={_season()}&seasontype=2",
                 timeout=15)
         except Exception:
             return None
@@ -101,18 +114,19 @@ def ratings():
                 tid = e["team"]["id"]
                 ab = (by_id.get(tid) or {}).get("abbr") or e["team"].get("abbreviation")
                 w, l = int(st.get("wins") or 0), int(st.get("losses") or 0)
-                g = int(st.get("gamesPlayed") or (w + l) or 1)
+                g = int(st.get("gamesPlayed") or 0)
                 gf = st.get("pointsFor") or 0            # ESPN generic name = goals
                 ga = st.get("pointsAgainst") or 0
-                if not gf or not g:
-                    continue
+                if g and not gf:
+                    continue                             # games but no goals: a broken row
                 rows[ab] = {"abbr": ab, "id": tid, "w": w, "l": l, "g": g,
-                            "gf": gf / g, "ga": ga / g}
+                            "gf": gf / g if g else 0.0, "ga": ga / g if g else 0.0}
         if not rows:
             return None
-        lg_g = sum(r["gf"] for r in rows.values()) / len(rows)
+        played = [r for r in rows.values() if r["g"]]
+        lg_g = sum(r["gf"] for r in played) / len(played) if played else _LG_GOALS
         for r in rows.values():
-            wgt = r["g"] / (r["g"] + _REGRESS_G)
+            wgt = r["g"] / (r["g"] + _REGRESS_G)         # 0 before a club's first game
             r["gf"] = wgt * r["gf"] + (1 - wgt) * lg_g
             r["ga"] = wgt * r["ga"] + (1 - wgt) * lg_g
             r["lg_g"] = lg_g

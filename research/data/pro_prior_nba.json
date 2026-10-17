@@ -1,0 +1,337 @@
+{
+ "rule": "Last season as the prior for the NBA and NHL board ratings: chosen on\n2024-25, tested on 2025-26 -- every game priced the way the board would have\npriced it that morning. RESEARCH.\n\nThe boards' production models (basket.ratings, hockey.ratings) rate each\nteam from this season's points (goals) for and against per game, regressed\ntoward the LEAGUE AVERAGE by regress_g (NBA 12) / _REGRESS_G (NHL 10) games.\nOn opening night every team is average; a week in, a team that won the title\nand a team that won 20 games are still most of the way to the same rating.\nThe candidate replaces the league average with LAST SEASON'S final rating:\n\n  prior = league_now * (1 + rho * (last_season / league_last_season - 1))\n  rating = (g * this_season + K * prior) / (g + K)\n\nfor offence, defence and (NBA) pace, rho the share of last season's edge\ncarried over (rosters change), K the games the prior is worth. rho = 0 and\nK = the shipped constant IS production, to the digit: the harness's\n`variant` with those values is the harnesses' _prod_model\n(research/nba_deep_validate.py, research/nhl_deep_validate.py).\n\nTHE RULE (written before any number below was computed)\n  Grid: K in {R, 2R, 3R, 5R} (R the shipped constant), rho in {0, 0.4, 0.6,\n  0.8}: 16 variants, production among them.\n  1. Select on 2024-25 by mean log loss on the home side's win over every\n     regular-season game.\n  2. Ship on 2025-26 only if the chosen variant's log loss beats\n     production's by more than two standard errors of the per-game\n     difference. Otherwise production stays.\n  Each league is decided on its own. The NHL board blends production with\n  the deep engine at 0.5 (hockey._DEEP_WEIGHT); that weight was chosen with\n  production as it is and is NOT re-chosen here -- this tests production's\n  own probability, the piece being changed.\n\nSame-day games never see each other: a day's results enter the\naccumulators only after every game of the day is priced. Each game's\nsimulation draws from one seed for every variant (common random numbers),\nso differences between variants are differences between ratings.\n\n",
+ "league": "nba",
+ "select": {
+  "season": 2024,
+  "meta": {
+   "season": 2024,
+   "R": 12.0,
+   "prior_teams": 30,
+   "seconds": 214
+  },
+  "variants": [
+   {
+    "K": 12.0,
+    "rho": 0.0,
+    "logloss": 0.61655,
+    "minus_prod": 0.0,
+    "se": 0.0,
+    "early_n": 236,
+    "early_logloss": 0.63804
+   },
+   {
+    "K": 12.0,
+    "rho": 0.4,
+    "logloss": 0.61207,
+    "minus_prod": -0.00447,
+    "se": 0.00175,
+    "early_n": 236,
+    "early_logloss": 0.62526
+   },
+   {
+    "K": 12.0,
+    "rho": 0.6,
+    "logloss": 0.61154,
+    "minus_prod": -0.00501,
+    "se": 0.00246,
+    "early_n": 236,
+    "early_logloss": 0.62088
+   },
+   {
+    "K": 12.0,
+    "rho": 0.8,
+    "logloss": 0.60971,
+    "minus_prod": -0.00684,
+    "se": 0.00317,
+    "early_n": 236,
+    "early_logloss": 0.62083
+   },
+   {
+    "K": 24.0,
+    "rho": 0.0,
+    "logloss": 0.6239,
+    "minus_prod": 0.00735,
+    "se": 0.00175,
+    "early_n": 236,
+    "early_logloss": 0.64481
+   },
+   {
+    "K": 24.0,
+    "rho": 0.4,
+    "logloss": 0.61808,
+    "minus_prod": 0.00153,
+    "se": 0.00204,
+    "early_n": 236,
+    "early_logloss": 0.63223
+   },
+   {
+    "K": 24.0,
+    "rho": 0.6,
+    "logloss": 0.61472,
+    "minus_prod": -0.00182,
+    "se": 0.00278,
+    "early_n": 236,
+    "early_logloss": 0.62407
+   },
+   {
+    "K": 24.0,
+    "rho": 0.8,
+    "logloss": 0.6145,
+    "minus_prod": -0.00204,
+    "se": 0.00364,
+    "early_n": 236,
+    "early_logloss": 0.62575
+   },
+   {
+    "K": 36.0,
+    "rho": 0.0,
+    "logloss": 0.6327,
+    "minus_prod": 0.01615,
+    "se": 0.00253,
+    "early_n": 236,
+    "early_logloss": 0.65397
+   },
+   {
+    "K": 36.0,
+    "rho": 0.4,
+    "logloss": 0.62096,
+    "minus_prod": 0.00441,
+    "se": 0.00254,
+    "early_n": 236,
+    "early_logloss": 0.63294
+   },
+   {
+    "K": 36.0,
+    "rho": 0.6,
+    "logloss": 0.61992,
+    "minus_prod": 0.00337,
+    "se": 0.00324,
+    "early_n": 236,
+    "early_logloss": 0.63485
+   },
+   {
+    "K": 36.0,
+    "rho": 0.8,
+    "logloss": 0.617,
+    "minus_prod": 0.00046,
+    "se": 0.00409,
+    "early_n": 236,
+    "early_logloss": 0.62823
+   },
+   {
+    "K": 60.0,
+    "rho": 0.0,
+    "logloss": 0.64219,
+    "minus_prod": 0.02564,
+    "se": 0.00361,
+    "early_n": 236,
+    "early_logloss": 0.66155
+   },
+   {
+    "K": 60.0,
+    "rho": 0.4,
+    "logloss": 0.62811,
+    "minus_prod": 0.01156,
+    "se": 0.00335,
+    "early_n": 236,
+    "early_logloss": 0.63647
+   },
+   {
+    "K": 60.0,
+    "rho": 0.6,
+    "logloss": 0.62552,
+    "minus_prod": 0.00898,
+    "se": 0.00396,
+    "early_n": 236,
+    "early_logloss": 0.63608
+   },
+   {
+    "K": 60.0,
+    "rho": 0.8,
+    "logloss": 0.62379,
+    "minus_prod": 0.00725,
+    "se": 0.00486,
+    "early_n": 236,
+    "early_logloss": 0.63099
+   }
+  ]
+ },
+ "chosen": {
+  "K": 12.0,
+  "rho": 0.8
+ },
+ "test": {
+  "season": 2025,
+  "meta": {
+   "season": 2025,
+   "R": 12.0,
+   "prior_teams": 30,
+   "seconds": 219
+  },
+  "variants": [
+   {
+    "K": 12.0,
+    "rho": 0.0,
+    "logloss": 0.60867,
+    "minus_prod": 0.0,
+    "se": 0.0,
+    "early_n": 233,
+    "early_logloss": 0.6214
+   },
+   {
+    "K": 12.0,
+    "rho": 0.4,
+    "logloss": 0.60313,
+    "minus_prod": -0.00554,
+    "se": 0.0019,
+    "early_n": 233,
+    "early_logloss": 0.60077
+   },
+   {
+    "K": 12.0,
+    "rho": 0.6,
+    "logloss": 0.60231,
+    "minus_prod": -0.00636,
+    "se": 0.00267,
+    "early_n": 233,
+    "early_logloss": 0.5936
+   },
+   {
+    "K": 12.0,
+    "rho": 0.8,
+    "logloss": 0.60209,
+    "minus_prod": -0.00657,
+    "se": 0.00334,
+    "early_n": 233,
+    "early_logloss": 0.59075
+   },
+   {
+    "K": 24.0,
+    "rho": 0.0,
+    "logloss": 0.61703,
+    "minus_prod": 0.00836,
+    "se": 0.0018,
+    "early_n": 233,
+    "early_logloss": 0.63921
+   },
+   {
+    "K": 24.0,
+    "rho": 0.4,
+    "logloss": 0.60939,
+    "minus_prod": 0.00072,
+    "se": 0.00221,
+    "early_n": 233,
+    "early_logloss": 0.6115
+   },
+   {
+    "K": 24.0,
+    "rho": 0.6,
+    "logloss": 0.60756,
+    "minus_prod": -0.0011,
+    "se": 0.003,
+    "early_n": 233,
+    "early_logloss": 0.6053
+   },
+   {
+    "K": 24.0,
+    "rho": 0.8,
+    "logloss": 0.60797,
+    "minus_prod": -0.0007,
+    "se": 0.00393,
+    "early_n": 233,
+    "early_logloss": 0.60055
+   },
+   {
+    "K": 36.0,
+    "rho": 0.0,
+    "logloss": 0.62456,
+    "minus_prod": 0.0159,
+    "se": 0.00271,
+    "early_n": 233,
+    "early_logloss": 0.64806
+   },
+   {
+    "K": 36.0,
+    "rho": 0.4,
+    "logloss": 0.61445,
+    "minus_prod": 0.00578,
+    "se": 0.0027,
+    "early_n": 233,
+    "early_logloss": 0.61796
+   },
+   {
+    "K": 36.0,
+    "rho": 0.6,
+    "logloss": 0.61332,
+    "minus_prod": 0.00465,
+    "se": 0.00347,
+    "early_n": 233,
+    "early_logloss": 0.61144
+   },
+   {
+    "K": 36.0,
+    "rho": 0.8,
+    "logloss": 0.61482,
+    "minus_prod": 0.00615,
+    "se": 0.00447,
+    "early_n": 233,
+    "early_logloss": 0.61052
+   },
+   {
+    "K": 60.0,
+    "rho": 0.0,
+    "logloss": 0.63487,
+    "minus_prod": 0.0262,
+    "se": 0.00377,
+    "early_n": 233,
+    "early_logloss": 0.6577
+   },
+   {
+    "K": 60.0,
+    "rho": 0.4,
+    "logloss": 0.62122,
+    "minus_prod": 0.01256,
+    "se": 0.0035,
+    "early_n": 233,
+    "early_logloss": 0.62626
+   },
+   {
+    "K": 60.0,
+    "rho": 0.6,
+    "logloss": 0.62042,
+    "minus_prod": 0.01175,
+    "se": 0.00416,
+    "early_n": 233,
+    "early_logloss": 0.61791
+   },
+   {
+    "K": 60.0,
+    "rho": 0.8,
+    "logloss": 0.62072,
+    "minus_prod": 0.01205,
+    "se": 0.00522,
+    "early_n": 233,
+    "early_logloss": 0.61277
+   }
+  ],
+  "chosen": {
+   "K": 12.0,
+   "rho": 0.8,
+   "logloss": 0.60209,
+   "minus_prod": -0.00657,
+   "se": 0.00334,
+   "early_n": 233,
+   "early_logloss": 0.59075
+  },
+  "production": {
+   "K": 12.0,
+   "rho": 0.0,
+   "logloss": 0.60867,
+   "minus_prod": 0.0,
+   "se": 0.0,
+   "early_n": 233,
+   "early_logloss": 0.6214
+  }
+ },
+ "ship": false
+}

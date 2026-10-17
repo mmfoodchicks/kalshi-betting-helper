@@ -492,6 +492,15 @@
         <button class="track-mini" id="soccerAllBtn" type="button" onclick="soccerView('all')">All games</button>
         <button class="track-mini" id="soccerHeavyBtn" type="button" onclick="soccerView('heavy')">Heavy underdogs only</button>
         <select id="soccerLeague" style="width:auto" onchange="renderSoccer()"><option value="">every league</option></select>
+        <select id="soccerSort" style="width:auto" onchange="soccerSort(this.value)" title="order the matches">
+          <option value="kickoff">sort: kickoff (soonest)</option>
+          <option value="nodog">sort: model - underdog doesn't win %</option>
+          <option value="edge">sort: edge on NO the underdog</option>
+          <option value="noask">sort: NO ask (cheapest = biggest payout)</option>
+          <option value="gap">sort: underdog's price under the tie</option>
+          <option value="draw">sort: model tie %</option>
+          <option value="league">sort: league</option>
+        </select>
         <input id="soccerFind" type="text" placeholder="find a team" style="width:160px" oninput="renderSoccer()"/>
         <label class="small" style="color:var(--muted)"><input type="checkbox" id="soccerModelOnly" onchange="renderSoccer()"/> modelled only</label>
       </div>

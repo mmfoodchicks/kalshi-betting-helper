@@ -124,14 +124,23 @@ def _team_stats(lg, season, tid):
 
 def ratings(lg):
     """{abbr: {w, l, g, pf, pa, pace, off_ppp, def_ppp, lg_ppp, lg_pace}} —
-    standings + possession math, regressed to league average early. Cached 3h."""
+    standings + possession math, regressed to league average early. Cached 3h.
+
+    REGULAR SEASON ONLY. ESPN's bare /standings answers with whatever season
+    type is current, and from the first exhibition until opening night that
+    is the PRESEASON (2026-10-17: New York "1-4", 106 a game, every one of
+    those points in a game the starters sat): five exhibition games carried
+    5/17 of every rating. `seasontype=2` reads the real table, 0-0 until the
+    opener; a club that has not played is rated the league average, which
+    is the validated model's own opening-night rating
+    (research/pro_prior_validation.py, K = regress_g, rho = 0)."""
     cfg = LEAGUES[lg]
 
     def build():
         try:
             d = racing._get_json(
-                f"https://site.api.espn.com/apis/v2/sports/basketball/{cfg['path']}/standings",
-                timeout=15)
+                f"https://site.api.espn.com/apis/v2/sports/basketball/{cfg['path']}/standings"
+                f"?season={_season(lg)}&seasontype=2", timeout=15)
         except Exception:
             return None
         tmap = teams(lg)
@@ -143,15 +152,19 @@ def ratings(lg):
                 tid = e["team"]["id"]
                 ab = (by_id.get(tid) or {}).get("abbr") or e["team"].get("abbreviation")
                 w, l = int(st.get("wins") or 0), int(st.get("losses") or 0)
-                g = max(1, w + l)
-                rows[ab] = {"abbr": ab, "id": tid, "w": w, "l": l, "g": g,
+                rows[ab] = {"abbr": ab, "id": tid, "w": w, "l": l, "g": w + l,
                             "pf": float(st.get("avgPointsFor") or 0.0),
                             "pa": float(st.get("avgPointsAgainst") or 0.0)}
-        rows = {ab: r for ab, r in rows.items() if r["pf"] > 0}
+        # a club with games but no scoring is a broken row; a club with no
+        # games yet is rated the league average below
+        rows = {ab: r for ab, r in rows.items() if r["pf"] > 0 or r["g"] == 0}
         if not rows:
             return None
         season = _season(lg)
         for ab, r in rows.items():
+            if not r["g"]:
+                r["pace"] = cfg["lg_pace"]
+                continue
             ts = _team_stats(lg, season, r["id"]) or {}
             g = ts.get("g") or r["g"]
             try:
@@ -161,10 +174,17 @@ def ratings(lg):
                 poss = cfg["lg_pace"]
             r["pace"] = max(cfg["lg_pace"] - 12, min(cfg["lg_pace"] + 12,
                                                      poss or cfg["lg_pace"]))
-        lg_pf = sum(r["pf"] for r in rows.values()) / len(rows)
-        lg_pace = sum(r["pace"] for r in rows.values()) / len(rows)
-        lg_ppp = lg_pf / lg_pace if lg_pace else cfg["lg_ppp"]
+        played = [r for r in rows.values() if r["g"]]
+        if played:
+            lg_pf = sum(r["pf"] for r in played) / len(played)
+            lg_pace = sum(r["pace"] for r in played) / len(played)
+            lg_ppp = lg_pf / lg_pace if lg_pace else cfg["lg_ppp"]
+        else:
+            lg_pace, lg_ppp = cfg["lg_pace"], cfg["lg_ppp"]
         for r in rows.values():
+            if not r["g"]:
+                r.update(pace=lg_pace, off_ppp=lg_ppp, def_ppp=lg_ppp, lg_ppp=lg_ppp, lg_pace=lg_pace)
+                continue
             w = r["g"] / (r["g"] + cfg["regress_g"])     # early-season regression
             off = (r["pf"] / r["pace"]) if r["pace"] else lg_ppp
             dfn = (r["pa"] / r["pace"]) if r["pace"] else lg_ppp

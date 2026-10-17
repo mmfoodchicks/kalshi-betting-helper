@@ -20022,6 +20022,18 @@ ck("the Soccer tab exists with its two views, a league filter and a team search;
    and "NO on <b>${escapeHtml(dogName)}</b> (the underdog)" in _js9
    and "no model: ${escapeHtml(g.why || \"\")}" in _js9
    and 'fetch("/api/soccer/board")' in _js9)
+ck("the Soccer tab's sort menu (owner 2026-10-17): kickoff, the model's underdog-does-not-win %, the edge, the NO ask, the underdog's gap under the tie, "
+   "the model's tie %, league; each view starts in its old order (All by kickoff, Heavy by edge), a match without the figure sits at the bottom, "
+   "the edge read only from no_dog.edge (pre-game -- a live match has none), and the day headers drawn only in kickoff order",
+   all(f'<option value="{k}">' in _html9 for k in ("kickoff", "nodog", "edge", "noask", "gap", "draw", "league"))
+   and 'onchange="soccerSort(this.value)"' in _html9
+   and '_soccerSortKey = v === "heavy" ? "edge" : "kickoff";' in _js9
+   and "edge: (g) => (g.no_dog || {}).edge ?? null," in _js9
+   and "noask: (g) => ((g.no_dog || {}).no_ask != null ? -(g.no_dog.no_ask) : null)," in _js9
+   and "if (x == null || y == null) return (x == null) - (y == null) || when(a).localeCompare(when(b));" in _js9
+   and "const when = (g) => `${g.date || \"\"}|${g.kickoff || \"\"}`;" in _js9
+   and 'if (_soccerSortKey === "kickoff" && g.date !== day)' in _js9
+   and "games = _soccerOrder(games, _soccerSortKey);" in _js9)
 import json as _json_s9
 _val9 = _json_s9.load(open(_os.path.join(_root, "research", "data", "soccer_validation.json")))
 ck("the shipped soccer parameters are the ones the 2024 selection chose, and on 2025 -- read once, with them frozen -- the model beats the "
@@ -20250,6 +20262,92 @@ _js9b = open(_os.path.join(_root, "static", "app.js")).read()
 ck("the soccer card shows last-five form chips and the head-to-head meetings with the weight statement, and says why an in-play match has no edge",
    "form (last 5)" in _js9b and "head-to-head" in _js9b and "did not improve the model on held-out matches, so it carries no weight" in _js9b
    and "so no edge is shown against a live price" in _js9b and "${formHtml}" in _js9b and "${h2hHtml}" in _js9b)
+
+# ---- 2026-10-17 the NBA / NHL boards read the regular season only ----
+print("=" * 72)
+print("NBA / NHL board ratings: regular season only, a club that has not played at the league average")
+print("=" * 72)
+import basket as _bk10
+import hockey as _hk10
+import racing as _rc10
+_orig10 = _rc10._get_json
+_urls10 = []
+
+
+def _fake10(url, timeout=12, _state={}):
+    _urls10.append(url)
+    if url.endswith("/teams"):
+        return {"sports": [{"leagues": [{"teams": [{"team": {"id": str(i), "abbreviation": ab, "displayName": ab,
+                                                             "location": ab.lower(), "name": ab.lower()}}
+                                                   for i, ab in enumerate(("NY", "BOS", "LAL"), 1)]}]}]}
+    if "/standings" in url:
+        # the bare endpoint answers with the PRESEASON (2026-10-17: NY 1-4,
+        # 106 a game); seasontype=2 with the real table, 0-0 but for BOS 1-0
+        reg = "seasontype=2" in url
+        rows = ([(1, "NY", 0, 0, 0.0, 0.0), (2, "BOS", 1, 0, 120.0, 100.0), (3, "LAL", 0, 0, 0.0, 0.0)] if reg
+                else [(1, "NY", 1, 4, 106.0, 112.0), (2, "BOS", 3, 1, 99.0, 95.0), (3, "LAL", 2, 2, 130.0, 90.0)])
+        return {"children": [{"standings": {"entries": [
+            {"team": {"id": str(i), "abbreviation": ab},
+             "stats": [{"name": "wins", "value": w}, {"name": "losses", "value": l},
+                       {"name": "gamesPlayed", "value": w + l},
+                       {"name": "avgPointsFor", "value": pf}, {"name": "avgPointsAgainst", "value": pa},
+                       {"name": "pointsFor", "value": (pf / 30.0) * (w + l)},
+                       {"name": "pointsAgainst", "value": (pa / 30.0) * (w + l)}]}
+            for i, ab, w, l, pf, pa in rows]}}]}
+    return {}
+
+
+_keys10 = [("bk_ratings", "nba"), ("bk_teams", "nba"), ("nhl_ratings",), ("nhl_teams",)]
+try:
+    for _k in _keys10:
+        _rc10._form_cache.pop(_k, None)
+    _rc10._get_json = _fake10
+    _r10 = _bk10.ratings("nba")
+    _h10 = _hk10.ratings()
+finally:
+    _rc10._get_json = _orig10
+    for _k in list(_rc10._form_cache):
+        if _k in _keys10 or (isinstance(_k, tuple) and _k and _k[0] == "bk_tstat"):
+            _rc10._form_cache.pop(_k, None)
+_cfg10 = _bk10.LEAGUES["nba"]
+_st10 = [u for u in _urls10 if "/standings" in u]
+ck("both boards ask ESPN for the REGULAR season (the bare endpoint served the NBA's preseason on 2026-10-17, five exhibition games carrying 5/17 of every rating)",
+   len(_st10) == 2 and all("seasontype=2" in u for u in _st10) and all("season=" in u for u in _st10), str(_st10))
+_bos10 = _r10.get("BOS") or {}
+_lgppp10 = 120.0 / _cfg10["lg_pace"]
+ck("NBA: every club is rated, the one that played regressed by regress_g toward the league of clubs that played, the two that have not AT that league "
+   "(the validated model's opening-night rating) -- no preseason figure anywhere",
+   sorted(_r10) == ["BOS", "LAL", "NY"]
+   and abs(_bos10["off_ppp"] - (1 / 13 * (120.0 / _cfg10["lg_pace"]) + 12 / 13 * _lgppp10)) < 1e-9
+   and abs(_bos10["def_ppp"] - (1 / 13 * (100.0 / _cfg10["lg_pace"]) + 12 / 13 * _lgppp10)) < 1e-9
+   and all(abs(_r10[t]["off_ppp"] - _lgppp10) < 1e-9 and abs(_r10[t]["def_ppp"] - _lgppp10) < 1e-9
+           and _r10[t]["pace"] == _cfg10["lg_pace"] and _r10[t]["g"] == 0 for t in ("NY", "LAL"))
+   and (_r10["NY"]["w"], _r10["NY"]["l"]) == (0, 0),
+   str({t: (v["g"], round(v["off_ppp"], 4), round(v["def_ppp"], 4)) for t, v in _r10.items()}))
+ck("NHL: the same -- the club with a game regressed by _REGRESS_G toward the league of clubs that have played, the rest at it",
+   sorted(_h10) == ["BOS", "LAL", "NY"]
+   and abs(_h10["BOS"]["gf"] - (1 / 11 * 4.0 + 10 / 11 * 4.0)) < 1e-9
+   and abs(_h10["BOS"]["ga"] - (1 / 11 * (100.0 / 30) + 10 / 11 * 4.0)) < 1e-9
+   and all(abs(_h10[t]["gf"] - 4.0) < 1e-9 and abs(_h10[t]["ga"] - 4.0) < 1e-9 and _h10[t]["g"] == 0 for t in ("NY", "LAL")),
+   str({t: (v["g"], round(v["gf"], 3), round(v["ga"], 3)) for t, v in _h10.items()}))
+import json as _json10
+_pn10 = _json10.load(open(_os.path.join(_root, "research", "data", "pro_prior_nba.json")))
+_ph10 = _json10.load(open(_os.path.join(_root, "research", "data", "pro_prior_nhl.json")))
+import research.pro_prior_validation as _ppv10
+_ppsrc10 = _insp.getsource(_ppv10)
+ck("last season as the prior: the rule chose on 2024-25 and the frozen 2025-26 test shipped NEITHER league (NBA -0.00657 +/- 0.00334, 1.97 SE against "
+   "the two required; NHL +0.00175 worse), so production's league-average regression stands: regress_g 12, _REGRESS_G 10, no prior read",
+   _pn10["ship"] is False and _ph10["ship"] is False
+   and _pn10["chosen"] == {"K": 12.0, "rho": 0.8} and _ph10["chosen"] == {"K": 50.0, "rho": 0.8}
+   and (_pn10["test"]["chosen"]["minus_prod"], _pn10["test"]["chosen"]["se"]) == (-0.00657, 0.00334)
+   and _ph10["test"]["chosen"]["minus_prod"] == 0.00175
+   and len(_pn10["select"]["variants"]) == len(_ph10["select"]["variants"]) == 16
+   and 'ship = t["minus_prod"] < -2 * t["se"] and best != prod_ix' in _ppsrc10
+   and "THE RULE (written before any number below was computed)" in _ppsrc10
+   and _cfg10["regress_g"] == 12.0 and _hk10._REGRESS_G == 10.0
+   and "prior" not in _insp.getsource(_bk10.ratings).split('"""')[2]
+   and "prior" not in _insp.getsource(_hk10.ratings).split('"""')[2]
+   and "**not shipped**" in open(_os.path.join(_root, "research", "reports", "pro_prior.md")).read())
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
