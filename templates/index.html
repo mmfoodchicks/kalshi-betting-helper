@@ -510,11 +510,10 @@
         <label class="small" style="color:var(--muted)"><input type="checkbox" id="soccerBttsOnly" onchange="renderSoccer()"/> has a both-teams-score market</label>
       </div>
       <div class="combomaker" style="margin:6px 0 10px">
-        ⚡ <b>Quick combo</b> <span class="small" style="color:var(--muted)">type how many legs and it picks the best slip for Kalshi's combo builder from the matches starting next - today in Mountain time first - one leg per match, only markets the combo accepts</span>
+        ⚡ <b>Quick combo</b> <span class="small" style="color:var(--muted)">type how many legs and it fills a slip for Kalshi's combo builder from the surest legs down - 🔒 locks (95%+), then 90%+, then 80%+, nothing under - skipping any leg where the model and Kalshi are 15+ points apart. Matches starting next, today in Mountain time first, one leg per match, only markets the combo accepts.</span>
         <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px">
           <input id="soccerQuickN" type="number" min="2" max="12" value="4" style="width:56px"/> legs
           <select id="soccerQuickDay" style="width:auto" title="which day's matches"><option value="">next up (today first)</option></select>
-          <select id="soccerQuickObj" style="width:auto"><option value="balanced">⚖️ best odds that aren't -EV</option><option value="safe">🛡️ likeliest, any price</option></select>
           <label class="small"><input type="checkbox" id="soccerQuickBtts" checked style="width:auto"/> both-teams-score legs</label>
           <button class="track-mini primary-mini" type="button" onclick="soccerQuick()">Pick my slip</button>
         </div>

@@ -4302,7 +4302,20 @@ function soccerGameCard(g) {
   </div>`;
 }
 // The quick combo: N legs for Kalshi's combo builder off the board already
-// built (soccer.quick_combo), the owner's today in Mountain time first.
+// built (soccer.quick_combo), the owner's today in Mountain time first, by
+// the tier rule both quick picks share (combo_engine.quick_tier).
+const QUICK_TIER_LBL = { lock: "🔒 lock", "90+": "90%+", "80+": "80%+" };
+function _quickBlockedHtml(n, list, what) {
+  // the legs the rule refused, so a short slip explains itself
+  if (!n) return "";
+  return `<div class="small" style="color:var(--muted);margin-top:4px">⛔ ${n} leg${n === 1 ? "" : "s"} Kalshi rates 80%+ blocked: the model and Kalshi are 15+ points apart${n > list.length ? ` (the ${list.length} widest)` : ""}: `
+    + list.map((b) => `${escapeHtml(b[what] || b.label)} (model ${b.model_pct}%, Kalshi ${b.kalshi_pct}%)`).join(" · ") + `</div>`;
+}
+function soccerQuickAll(n) {
+  const el = $("soccerQuickN");
+  if (el) el.value = n;
+  soccerQuick();
+}
 function _mtDay(iso) {
   // an ISO date as the owner's calendar names it ("Sat Oct 17")
   const d = new Date(`${iso}T12:00:00Z`);
@@ -4321,13 +4334,12 @@ async function soccerQuick() {
   if (!out) return;
   const n = Math.max(2, Math.min(12, parseInt(($("soccerQuickN") || {}).value, 10) || 4));
   const day = ($("soccerQuickDay") || {}).value || "";
-  const obj = ($("soccerQuickObj") || {}).value || "balanced";
   const btts = ($("soccerQuickBtts") || {}).checked ? 1 : 0;
-  out.innerHTML = `<div class="empty">Picking the best ${n} legs…</div>`;
+  out.innerHTML = `<div class="empty">Picking the surest ${n} legs…</div>`;
   let d = null;
   for (let i = 0; i < 20; i++) {
     try {
-      const r = await fetch(`/api/soccer/combo?n=${n}&objective=${obj}&btts=${btts}${day ? `&day=${encodeURIComponent(day)}` : ""}`);
+      const r = await fetch(`/api/soccer/combo?n=${n}&btts=${btts}${day ? `&day=${encodeURIComponent(day)}` : ""}`);
       d = await r.json();
       if (r.status !== 502) break;
     } catch (e) { d = null; }
@@ -4335,12 +4347,18 @@ async function soccerQuick() {
   }
   if (!d) { out.innerHTML = `<div class="empty">Quick combo unavailable.</div>`; return; }
   _soccerQuickDays(d);
-  if (d.error) { out.innerHTML = `<div class="empty">${escapeHtml(d.error)}</div>`; return; }
+  if (d.error) {
+    out.innerHTML = `<div class="empty">${escapeHtml(d.error)}${d.n_matches >= 2
+      ? ` <a href="#" onclick="event.preventDefault();soccerQuickAll(${d.n_matches})">Pick all ${d.n_matches}</a>` : ""}</div>`
+      + _quickBlockedHtml(d.n_blocked, d.blocked || [], "match");
+    return;
+  }
   const win = (d.window || []).map(_mtDay).join(" + ");
   const where = d.window && d.window.length && d.window[0] === d.today
     ? (d.extended ? `today had too few, so this reaches into ${escapeHtml(win)}` : `from today's matches (${escapeHtml(win)}, Mountain time)`)
     : `${escapeHtml(win)} - nothing left today that can go on a combo`;
   const rows = d.legs.map((l) => `<tr>
+      <td><b>${escapeHtml(QUICK_TIER_LBL[l.tier] || l.tier || "")}</b></td>
       <td>${escapeHtml(fmtStartTime(l.kickoff))}</td>
       <td>${escapeHtml(l.match)}<div class="small" style="color:var(--muted)">${escapeHtml(l.league)}</div></td>
       <td><b>${escapeHtml(l.label)}</b><div class="small" style="color:var(--muted)">${escapeHtml(l.side.toUpperCase())} on ${escapeHtml(l.ticker)}</div></td>
@@ -4353,13 +4371,15 @@ async function soccerQuick() {
   out.innerHTML = `<div style="margin-top:8px">
     <div><b>${d.legs.length} legs</b> · the model <b>${d.prob_pct.toFixed(1)}%</b>${d.kalshi_prob_pct != null ? ` · Kalshi's own odds ${d.kalshi_prob_pct.toFixed(1)}%` : ""} · pays about <b>${d.payout_x.toFixed(2)}×</b> <span class="small" style="color:var(--muted)">(the asks multiply to ${d.asks_x.toFixed(2)}×; Kalshi's one combo fee in)</span>${ev}${d.kelly_pct ? ` · Kelly ${d.kelly_pct.toFixed(1)}%` : ""}</div>
     <div class="small" style="color:var(--muted)">${where}; ${d.n_matches} matches could take a leg.</div>
-    ${d.ev_ok === false ? `<div class="small" style="color:var(--neg)">No ${d.n}-leg slip is +EV by the model at these prices; this is the likeliest one.</div>` : ""}
+    <div class="small">${Object.entries(d.tiers || {}).filter(([, k]) => k).map(([t, k]) => `${escapeHtml(QUICK_TIER_LBL[t] || t)} ×${k}`).join(" · ")}</div>
+    ${d.ev_ok === false ? `<div class="small" style="color:var(--neg)">-EV by the model at these prices: the slip is the surest legs, not the best value.</div>` : ""}
     ${d.eligibility_known ? "" : `<div class="small" style="color:var(--neg)">Kalshi's list of combo-eligible matches could not be read; a leg here may be one the combo builder refuses.</div>`}
     <table class="small" style="width:100%;margin-top:6px;border-collapse:collapse">
-      <tr style="color:var(--muted)"><th style="text-align:left">kickoff</th><th style="text-align:left">match</th><th style="text-align:left">leg</th><th style="text-align:right">ask</th><th style="text-align:right">model</th><th style="text-align:right">Kalshi</th></tr>
+      <tr style="color:var(--muted)"><th style="text-align:left">tier</th><th style="text-align:left">kickoff</th><th style="text-align:left">match</th><th style="text-align:left">leg</th><th style="text-align:right">ask</th><th style="text-align:right">model</th><th style="text-align:right">Kalshi</th></tr>
       ${rows}</table>
+    ${_quickBlockedHtml(d.n_blocked, d.blocked || [], "match")}
     ${q}
-    <div class="small" style="color:var(--muted);margin-top:4px">Kalshi prices a combo by a market maker's quote, usually a little under what the asks multiply to, so read the payout as a ceiling. The model's figures were tested against results, not against Kalshi's prices; the gap between the two columns is the model disagreeing with the market, and the record has not yet said which is right.</div>
+    <div class="small" style="color:var(--muted);margin-top:4px">A leg's tier is the lower of the model's chance and Kalshi's, so a lock is a lock to both. Kalshi prices a combo by a market maker's quote, usually a little under what the asks multiply to, so read the payout as a ceiling. The model's figures were tested against results, not against Kalshi's prices; the gap between the two columns is the model disagreeing with the market, and the record has not yet said which is right.</div>
   </div>`;
 }
 function renderSoccer() {
@@ -4669,7 +4689,7 @@ function renderCFBComboMaker() {
     <div style="margin-top:8px;padding:6px 9px;border:1px dashed rgba(91, 140, 255, 0.45);border-radius:9px">⚡ <b>Quick pick</b>
       <input id="${_cx("cfbQuickN")}" type="number" min="2" step="1" value="${cfbQuickN}" style="width:60px"/> legs
       <button class="track-mini primary-mini" style="margin-left:4px" onclick="buildCFBCombo(false, false, true)">Pick my slip</button>
-      <div class="small" style="color:var(--muted)">One number, as big as you like: the best slip of that many <b>moneylines</b>, one per game, from the games starting next (today in Mountain time first, the next day only if today runs short), only markets Kalshi's combo accepts, each pick 50%+. The games left are the only limit. It follows the <b>goal</b> below; everything else here is ignored.</div>
+      <div class="small" style="color:var(--muted)">One number, as big as you like: that many <b>moneylines</b>, one per game, filled from the surest down - 🔒 locks (95%+), then 90%+, then 80%+, nothing under - and any game where the ratings model and Kalshi are 15+ points apart is skipped. Games starting next (today in Mountain time first, the next day only if today runs short), only markets Kalshi's combo accepts. Everything else here is ignored.</div>
     </div>
     <div style="margin-top:8px">each leg ≥
       <input id="${_cx("cfbComboTarget")}" type="number" min="20" max="97" value="${cfbComboTarget}" style="width:54px"/>%
@@ -4801,8 +4821,10 @@ function _renderCfbComboResult(d, out) {
       : (d.hint === "all_started")
       ? `<div class="empty">Every game on this week's board has already kicked off (${d.n_started || "all"} started). Try the next week.</div>`
       : (d.hint === "quick_short")
-      ? `<div class="empty">Only <b>${d.n_games_available || 0}</b> game${d.n_games_available === 1 ? "" : "s"} left on this week's board can take a moneyline on a combo (not started, priced, 50%+).${d.n_games_available >= 2
+      ? `<div class="empty">Only <b>${d.n_games_available || 0}</b> game${d.n_games_available === 1 ? "" : "s"} left on this week's board have a moneyline at 80%+ that the ratings model and Kalshi agree on (within 15 points; not started, combo-eligible).${d.n_games_available >= 2
           ? ` <a href="#" onclick="event.preventDefault();cfbQuickAll(${d.n_games_available})">Build with all ${d.n_games_available}</a>, or ask for fewer.` : " Try the next week."}</div>`
+        + _quickBlockedHtml((d.quick || {}).n_blocked, (d.quick || {}).blocked || [], "pick")
+        + ((d.quick || {}).no_model ? `<div class="small" style="color:var(--neg)">The week's board (the model's own numbers) is still building, so no leg could be checked against Kalshi yet - try again in a minute.</div>` : "")
       : (d.hint === "max_bet_unreachable")
       ? `<div class="empty">No slip on this week's board can pay <b>${d.cap_x || MAX_BET_X}×</b> - every leg needs a real Kalshi quote behind it.</div>`
       : (d.hint === "optimal_unbuildable")
@@ -4811,9 +4833,14 @@ function _renderCfbComboResult(d, out) {
     return;
   }
   const qk = d.parlay.quick;
-  const qkHtml = qk ? `<div class="small" style="color:var(--muted);margin-bottom:4px">⚡ Quick pick, moneylines only, from ${qk.window[0] === qk.today
+  const qlegs = qk ? (d.parlay.groups || []).flatMap((g) => g.legs || []).filter((l) => l.tier) : [];
+  const qTable = qlegs.length ? `<table class="small" style="width:100%;border-collapse:collapse;margin-bottom:4px">
+      <tr style="color:var(--muted)"><th style="text-align:left">tier</th><th style="text-align:left">pick</th><th style="text-align:right" title="the ratings model's own number, before any blend with Kalshi">model</th><th style="text-align:right" title="Kalshi's moneyline, overround stripped">Kalshi</th><th style="text-align:right">ask</th></tr>
+      ${qlegs.map((l) => `<tr><td><b>${escapeHtml(QUICK_TIER_LBL[l.tier] || l.tier)}</b></td><td>${escapeHtml(l.pick)}</td><td style="text-align:right">${l.model_raw_pct}%</td><td style="text-align:right">${l.kalshi_pct}%</td><td style="text-align:right">${l.market_cents == null ? "-" : l.market_cents + "¢"}</td></tr>`).join("")}</table>` : "";
+  const qkHtml = qk ? `<div class="small" style="color:var(--muted);margin-bottom:4px">⚡ Quick pick, moneylines only, surest first, from ${qk.window[0] === qk.today
       ? (qk.extended ? `today and ${qk.window.slice(1).map(_mtDay).join(", ")} (today had too few games left)` : `today's games (${_mtDay(qk.today)}, Mountain time)`)
-      : `${qk.window.map(_mtDay).join(", ")} - nothing left today`}.${qk.eligibility_known ? "" : " Kalshi's combo-eligible list could not be read, so a leg may be one the combo builder refuses."}</div>`
+      : `${qk.window.map(_mtDay).join(", ")} - nothing left today`}.${qk.eligibility_known ? "" : " Kalshi's combo-eligible list could not be read, so a leg may be one the combo builder refuses."} A leg's tier is the lower of the model's number and Kalshi's, so a lock is a lock to both.</div>`
+    + qTable + _quickBlockedHtml(qk.n_blocked, qk.blocked || [], "pick")
     + (d.parlay.combined_prob_pct != null && d.parlay.combined_prob_pct < 0.1 && d.parlay.fair_payout_x
       ? `<div class="small" style="margin-bottom:4px">Chance all ${d.parlay.n_legs} win: about <b>1 in ${Math.round(d.parlay.fair_payout_x).toLocaleString()}</b> (the card's percentage rounds it to 0).</div>` : "")
     + (qk.legs_to_cap ? `<div class="small" style="color:var(--neg);margin-bottom:4px">⚠️ A Kalshi combo has been measured to pay at most about <b>${qk.cap_x}×</b>. The safest <b>${qk.legs_to_cap}</b> of these legs already multiply past that, so the other ${d.parlay.n_legs - qk.legs_to_cap} add ways to lose without adding payout. Kalshi's combo builder shows what it will actually pay.</div>` : "") : "";

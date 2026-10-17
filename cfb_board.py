@@ -622,12 +622,15 @@ def _combo_event(idx, suffix, kref):
     return tk.rsplit("-", 1)[0] if tk and "-" in tk else None
 
 
-def quick_window(games_bundles, kicks, n, now):
+def quick_window(games_bundles, kicks, n, now, key=None):
     """The quick pick's games: the owner's next game day (Mountain time)
     with a game still to play, and the days after it only while the window
     holds fewer than `n` games. A game with no kickoff time is never in it.
-    (kept games_bundles, {"today", "window": [ISO dates], "days": {date:
-    games}, "extended"})."""
+    With `key`, the window is trimmed to `n`: every game of the earlier days
+    (they were short, so all are needed) and the last day's surest first by
+    `key` -- the owner prefers today, so tomorrow's lock never displaces
+    today's 80%. (kept games_bundles, {"today", "window": [ISO dates],
+    "days": {date: games}, "extended"})."""
     by_day = {}
     for gb, ts in zip(games_bundles, kicks):
         if ts:
@@ -640,8 +643,62 @@ def quick_window(games_bundles, kicks, n, now):
             break
     today = clock.mt_date(now).isoformat()
     kept = [gb for d in window for gb in by_day[d]]
+    if key is not None and window:
+        kept = [gb for d in window[:-1] for gb in by_day[d]]
+        kept += sorted(by_day[window[-1]], key=key)[:max(0, n - len(kept))]
     return kept, {"today": today, "window": window, "days": {d: len(by_day[d]) for d in days},
                   "extended": bool(window) and window[-1] != today}
+
+
+def _raw_ml(week):
+    """{(Kalshi event suffix, Kalshi team code): the RAW model's chance} off
+    the week's board -- the ratings' margin through the margin SD, before
+    the market anchor and the leg blend (the board's p_home_raw, the figure
+    the record grades). {} while the board is building."""
+    out = {}
+    for card in (board(week) or {}).get("games") or []:
+        kx = card.get("kx")
+        if kx and card.get("p_home_raw") is not None:
+            out[(kx["suffix"], kx["home"])] = card["p_home_raw"]
+            out[(kx["suffix"], kx["away"])] = 1.0 - card["p_home_raw"]
+    return out
+
+
+def _quick_gate(cands, g, idx, raw_of, blocked):
+    """The tier rule (combo_engine.quick_tier) on one game's moneylines:
+    the raw model against Kalshi's de-vigged moneyline (the two asks, the
+    overround stripped, predlog.devig). The slip's own leg figure cannot be
+    the model's side of this -- the game is simulated 75% on Kalshi's line
+    (_ANCHOR_W_DEFAULT) and each leg is blended toward its book again, so on
+    2026-10-17 Miami's leg read 91.1%, Kalshi's number exactly, while the
+    ratings said 86.7%. Measured that day: 9 of 42 pre-game favourites were
+    15+ points apart (Louisville 64.8% against Kalshi's 84.2% the one at
+    80%+). A refused leg Kalshi rates 80%+ goes on `blocked` for the slip."""
+    import combo_engine
+    ml = ((idx or {}).get(g.get("suffix")) or {}).get("ml") or {}
+    keep = []
+    for c in cands:
+        team = (c.get("kref") or {}).get("team")
+        other = next((t for t in ml if t != team), None)
+        kp = predlog.devig(ml.get(team), ml.get(other)) if team in ml and other else None
+        raw = raw_of.get((g.get("suffix"), team))
+        tier, why = combo_engine.quick_tier(raw, kp)
+        c["tier"], c["kalshi_p"], c["model_p"] = tier, kp, raw
+        if tier:
+            keep.append(c)
+        elif why == "gap" and kp >= combo_engine.QUICK_TIERS[-1][0] / 100.0:
+            blocked.append({"pick": c.get("label"), "game": g.get("label"), "ts": _iso_ts(g.get("date")),
+                            "model_pct": round(100 * raw, 1), "kalshi_pct": round(100 * kp, 1)})
+    return keep
+
+
+def _quick_key(gb):
+    """A game's place in the quick pick: its surest tiered leg."""
+    import combo_engine
+    legs = [l for b in gb[1] for l in b["legs"] if l.get("tier")]
+    if not legs:
+        return (1.0, 0.0)
+    return min(combo_engine.quick_order(l["model_p"], l["kalshi_p"]) for l in legs)
 
 
 def build_parlay(week=1, n_legs=3, target_pct=55, cap_pct=None, target_payout=0,
@@ -693,10 +750,11 @@ def build_parlay(week=1, n_legs=3, target_pct=55, cap_pct=None, target_payout=0,
         idx = kalshi_cfb.index() or {}
     except Exception:
         idx = {}
-    elig = set()
+    elig, raw_of, blocked = set(), {}, []
     if quick:
         import kalshi
         elig = kalshi.combo_events()
+        raw_of = _raw_ml(week)
     sel_map = {}
     for tok in (game_sel or ()):
         base, _, team = str(tok).partition(":")
@@ -728,6 +786,8 @@ def build_parlay(week=1, n_legs=3, target_pct=55, cap_pct=None, target_payout=0,
         if elig:
             cands = [c for c in cands
                      if _combo_event(idx, g.get("suffix"), c.get("kref")) in elig]
+        if quick:
+            cands = _quick_gate(cands, g, idx, raw_of, blocked)
         cands = [c for c in cands if floor <= c["marg"] <= ceil]
         if len(cands) > 40:
             cands.sort(key=lambda c: (
@@ -747,10 +807,20 @@ def build_parlay(week=1, n_legs=3, target_pct=55, cap_pct=None, target_payout=0,
             gb_kick.append(_iso_ts(g.get("date")))
     window = None
     if quick:
-        games_bundles, window = quick_window(games_bundles, gb_kick, n_legs, now)
+        games_bundles, window = quick_window(games_bundles, gb_kick, n_legs, now, key=_quick_key)
         window["eligibility_known"] = bool(elig)
+        days = set(window["window"]) or {clock.mt_date(now).isoformat()}
+        bl = sorted((b for b in blocked if b["ts"] and clock.mt_date(b["ts"]).isoformat() in days),
+                    key=lambda b: -abs(b["model_pct"] - b["kalshi_pct"]))
+        window["n_blocked"] = len(bl)
+        window["blocked"] = [{k: v for k, v in b.items() if k != "ts"} for b in bl[:8]]
+        window["rule"] = {"tiers": [list(t) for t in combo_engine.QUICK_TIERS],
+                          "max_gap": combo_engine.QUICK_MAX_GAP, "model": "raw ratings"}
+        if not raw_of:
+            window["no_model"] = True
         if len(games_bundles) < n_legs:
-            return {"error_hint": "quick_short", "n_games_available": len(games_bundles)}
+            return {"error_hint": "quick_short", "n_games_available": len(games_bundles),
+                    "quick": window}
     if not games_bundles:
         return None
     if len(games_bundles) < 2 and max_legs_per_game <= 1:
@@ -783,11 +853,18 @@ def build_parlay(week=1, n_legs=3, target_pct=55, cap_pct=None, target_payout=0,
     if payout_basis == "market":
         item["payout_basis"] = "market"      # payout_reached comes from meta
     kick = {(g.get("suffix") or g.get("pair")): _iso_ts(g.get("date")) for g in games}
+    tiered = {(gb[2], (l.get("kref") or {}).get("team")): l
+              for gb in games_bundles for b in gb[1] for l in b["legs"] if l.get("tier")} if quick else {}
     for grp in item.get("groups") or []:
         for leg in grp.get("legs") or []:
             tk, close = kalshi_cfb.ticker_leg(idx, grp.get("suffix"), leg.get("kref"))
             leg["ticker"], leg["close_time"] = tk, close
             leg["start_ts"] = kick.get(grp.get("suffix"))
+            src = tiered.get((grp.get("suffix"), (leg.get("kref") or {}).get("team")))
+            if src:
+                leg["tier"] = src["tier"]
+                leg["model_raw_pct"] = round(100 * src["model_p"], 1)
+                leg["kalshi_pct"] = round(100 * src["kalshi_p"], 1)
     for k, v in meta.items():
         if k != "objective" and v is not None:
             item[k] = v

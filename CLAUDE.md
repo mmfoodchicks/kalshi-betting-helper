@@ -251,14 +251,23 @@ data-only `sim-history` branch (which never deploys):
   189 of 957 soccer GAME events, every college leg), one leg per match, the
   owner's today in **Mountain time** first (`clock.mt_date`; a 9 pm MDT
   kickoff is tomorrow in UTC), the next day only while today is short. The
-  chooser is combo_engine's frontier + `choose`; soccer offers no `value`
-  objective (one model, no market blend: its max-EV slip was four longshots
-  at twice Kalshi's price). College's is **moneylines only and has no leg
-  cap** (the owner: "endless, not 12"): the route passes `types={"ML"}`, the
-  owner tier skips the 30-leg cap, and `frontier(ceiling=)` lifts the DP
-  ceiling for this one-leg-a-game pool only; the slip counts how many of its
-  safest legs already pass `MAX_PAYOUT_X`. On 2026-10-17 every all-favourite
-  moneyline slip was -EV by the model (4 legs -8%, 33 legs -55%).
+  legs come by the owner's **tier rule** (`combo_engine.quick_tier`): locks
+  95%+, then 90%+, then 80%+, nothing under, a leg's tier the LOWER of the
+  model's number and Kalshi's de-vigged price, and any leg the two put 15+
+  points apart disqualified (inclusive: the owner's example, 85 vs 70, is
+  blocked) and listed on the slip. The model's side is its OWN number --
+  college's is the raw ratings (`p_home_raw`), never the slip's leg figure,
+  which is 75% Kalshi's line and would never disagree. College's is
+  **moneylines only and has no leg cap** (the owner: "endless, not 12"): the
+  route passes `types={"ML"}`, the owner tier skips the 30-leg cap, and
+  `frontier(ceiling=)` lifts the DP ceiling for this one-leg-a-game pool
+  only; the slip counts how many of its safest legs already pass
+  `MAX_PAYOUT_X`. On 2026-10-17 every all-favourite moneyline slip was -EV
+  by the model (4 legs -8%, 33 legs -55%). **`kalshi_nfl._fetch` never
+  returns part of a series**: a page that fails after two retries fails the
+  build and `index()` keeps the last good one (one 429 had rebuilt the
+  college index from 400 of 552 moneyline markets, the weekend's 76 games
+  cut).
 - **The NBA / NHL seasons** (2026-10-17, `pro_season.py` rules + Monte
   Carlo, `pro_season_job.py` the job and the board): NHL three per division +
   two wildcards, the division bracket, points then RW, ROW, W, head-to-head,

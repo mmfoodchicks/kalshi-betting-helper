@@ -3584,10 +3584,11 @@ def api_soccer_board():
 
 @app.route("/api/soccer/combo")
 def api_soccer_combo():
-    """The quick pick: the best `n`-leg Kalshi combo off the soccer board
-    already built (soccer.quick_combo) -- one leg per match, combo-eligible
-    markets only, the owner's today in Mountain time first. `day` (ISO)
-    pins the window; `btts=0` leaves both-teams-to-score out."""
+    """The quick pick: `n` legs for one Kalshi combo off the soccer board
+    already built (soccer.quick_combo) -- the surest legs first by the tier
+    rule (combo_engine.quick_tier), one per match, combo-eligible markets
+    only, the owner's today in Mountain time first. `day` (ISO) pins the
+    window; `btts=0` leaves both-teams-to-score out."""
     locked = _locked("mixed_parlay")
     if locked:
         return locked
@@ -3603,7 +3604,7 @@ def api_soccer_combo():
         data = soccer.board()
         if not data:
             return jsonify({"error": "pricing every Kalshi soccer match in the background - retry shortly"}), 502
-        return jsonify(soccer.quick_combo(data, n, request.args.get("objective", "balanced"), day=day,
+        return jsonify(soccer.quick_combo(data, n, day=day,
                                           use_btts=request.args.get("btts", "1") != "0"))
     except Exception as e:
         errlog.note("SOC-combo", e)
@@ -3861,7 +3862,9 @@ def api_cfb_parlay():
             if isinstance(item, dict) and item.get("error_hint"):
                 return {"parlay": None, "hint": item["error_hint"],
                         "n_games_available": item.get("n_games_available"),
-                        "n_started": item.get("n_started")}
+                        "n_started": item.get("n_started"),
+                        # the quick pick's window and the legs its rule refused
+                        "quick": item.get("quick")}
             _log(item)
             return {"parlay": item}
 

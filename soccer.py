@@ -1401,37 +1401,27 @@ def _game_row(ev, art, slug_ids, by_date, now=None, btts=None):
 
 
 # ---- quick pick: N legs for one Kalshi combo slip --------------------------------
-# The owner types a number and gets the best slip of that many legs for
-# Kalshi's combo builder. One leg per match: legs of one match move
-# together, and Kalshi's maker prices that against you
-# (combo_engine.QUOTE_ROOM). Every leg is a market the combo accepts
-# (kalshi.combo_events: on 2026-10-17, 189 of the 957 soccer GAME events and
-# 109 BTTS events, mostly that day's big leagues), on a book that is
-# two-sided and at most QUICK_MAX_SPREAD wide, in a match the model prices
-# and that has not kicked off. The default window is the owner's own day
-# in Mountain time (clock.mt_date), reaching into the next day only when
-# today cannot fill N. The chooser is the other makers' (combo_engine
-# frontier + choose): `balanced` is the likeliest slip that is not -EV
-# against the asks with Kalshi's one combo fee in.
+# The owner types a number and gets that many legs for Kalshi's combo
+# builder. One leg per match: legs of one match move together, and Kalshi's
+# maker prices that against you (combo_engine.QUOTE_ROOM). Every leg is a
+# market the combo accepts (kalshi.combo_events: on 2026-10-17, 189 of the
+# 957 soccer GAME events and 109 BTTS events, mostly that day's big
+# leagues), on a book that is two-sided and at most QUICK_MAX_SPREAD wide,
+# in a match the model prices and that has not kicked off. The default
+# window is the owner's own day in Mountain time (clock.mt_date), reaching
+# into the next day only when today cannot fill N.
 #
-# What the probability rests on: the three-way figures were tested against
-# results and a league baseline, the BTTS figure against the league's own
-# rate (BTTS_RECAL); neither has been tested against Kalshi's prices. The
-# slip prints Kalshi's own chance beside the model's so the gap is visible.
+# Which legs (the owner's rule, combo_engine.quick_tier): surest first --
+# locks (95%+), then 90%+, then 80%+, nothing under -- a leg's tier the lower
+# of the model's chance and Kalshi's (the de-vigged three-way price; the BTTS
+# mid), and any leg the two put 15 points or more apart is disqualified.
+# The model here is unblended, so the comparison is the model's own number.
+# Before this rule the chooser was the makers' "likeliest not -EV", whose
+# EV leaned on the model wherever it disagreed with Kalshi -- the gap this
+# rule now refuses.
 QUICK_MAX_SPREAD = 10.0
 QUICK_LEAD_S = 300          # a match kicking off inside five minutes is not offered
 QUICK_MAX_LEGS = 12
-# Legs under this chance are not offered. Measured on the 2026-10-17 board
-# (106 matches that day): the slips at 3, 6, 10 and 12 legs, both
-# objectives, came out identical with and without it, and the 12-leg
-# search fell from 10.7 s to 1.7 s -- the difference between a click and a
-# web worker held hostage.
-QUICK_FLOOR = 0.5
-# `value` (the most EV) is not offered here: with one model and no market
-# blend, the largest EV is the model's largest disagreement with Kalshi, and
-# on that board it was four longshots at twice Kalshi's price (Telstar 23.9%
-# against 12c) -- the winner's curse combo_engine's blend exists to stop.
-QUICK_OBJECTIVES = ("balanced", "safe")
 
 
 def _book_ok(ask, bid):
@@ -1440,30 +1430,38 @@ def _book_ok(ask, bid):
 
 
 def quick_legs(row, eligible, now):
-    """Every leg of one card a combo can take: YES and NO on the home win,
-    the draw and the away win, and YES and NO on both teams scoring, each at
-    QUICK_FLOOR or better. [] for
-    a match with no model, one that has started or starts inside
+    """(legs, blocked) for one card. `legs`: every leg a combo can take that
+    passes the tier rule -- YES and NO on the home win, the draw and the away
+    win, YES and NO on both teams scoring -- each with its tier. `blocked`:
+    the legs Kalshi would sell at 80%+ that the rule refused because the model
+    and Kalshi are 15+ points apart (shown to the owner, never bet). Both
+    empty for a match with no model, one that has started or starts inside
     QUICK_LEAD_S, or one in a competition the model is flagged weak in.
     `eligible` is the set of combo-eligible event tickers; empty means the
     feed is down (unknown), and then nothing is excluded for it."""
+    import combo_engine
     m = row.get("model")
     if not m or m.get("weak") or not row.get("pregame"):
-        return []
+        return [], []
     ko = _ko_ts(row.get("kickoff"))
     if ko is None or ko < now + QUICK_LEAD_S:
-        return []
+        return [], []
     hn, an = row["home"]["name"], row["away"]["name"]
-    out = []
+    out, blocked = [], []
 
     def add(mk, yes, p, kind, label, kalshi_p):
         ask, bid = (mk.get("yes_ask"), mk.get("yes_bid")) if yes else (mk.get("no_ask"), mk.get("no_bid"))
-        if p < QUICK_FLOOR or not mk.get("ticker") or not _book_ok(ask, bid):
+        if not mk.get("ticker") or not _book_ok(ask, bid):
             return
-        out.append({"ticker": mk["ticker"], "side": "yes" if yes else "no", "kind": kind,
-                    "label": label, "prob": p, "marg": p, "price_cents": ask,
-                    "kalshi_p": kalshi_p, "event": row["event"], "league": row["league"],
-                    "match": f"{hn} v {an}", "kickoff": row["kickoff"], "ko_ts": ko})
+        tier, why = combo_engine.quick_tier(p, kalshi_p)
+        leg = {"ticker": mk["ticker"], "side": "yes" if yes else "no", "kind": kind,
+               "label": label, "prob": p, "marg": p, "price_cents": ask, "tier": tier,
+               "kalshi_p": kalshi_p, "event": row["event"], "league": row["league"],
+               "match": f"{hn} v {an}", "kickoff": row["kickoff"], "ko_ts": ko}
+        if tier:
+            out.append(leg)
+        elif why == "gap" and kalshi_p >= combo_engine.QUICK_TIERS[-1][0] / 100.0:
+            blocked.append(leg)
     if row.get("readable") and (not eligible or row["event"] in eligible):
         fr = row.get("fair") or {}
         for side in ("home", "draw", "away"):
@@ -1485,27 +1483,37 @@ def quick_legs(row, eligible, now):
         p, k = b["model_pct"] / 100.0, b["mid"] / 100.0
         add(b, True, p, "btts", "Both teams score", k)
         add(b, False, 1.0 - p, "not_btts", "Not both teams score", 1.0 - k)
-    return out
+    return out, blocked
 
 
-def quick_combo(board_, n, objective="balanced", day=None, now=None, eligible=None,
-                use_btts=True):
-    """The best `n`-leg Kalshi combo off the cached board. `day` (an ISO
-    date, Mountain time) pins the window; None takes the owner's today and
-    adds the next day only while the window holds fewer than `n` matches.
-    {"error": ...} when no window can fill n."""
+def quick_combo(board_, n, day=None, now=None, eligible=None, use_btts=True):
+    """`n` legs for one Kalshi combo off the cached board, by the tier rule:
+    each match's surest leg, the window's matches surest first. `day` (an
+    ISO date, Mountain time) pins the window; None takes the owner's today
+    and adds the next day only while the window holds fewer than `n`
+    matches -- every match of the earlier days is then on the slip and the
+    last day fills the rest, surest first. {"error": ...} when no window
+    can fill n (with the count, so the page can offer them all)."""
     import combo_engine
     now = time.time() if now is None else now
     n = max(2, min(QUICK_MAX_LEGS, int(n)))
-    if objective not in QUICK_OBJECTIVES:
-        objective = "balanced"
     if eligible is None:
         eligible = kalshi.combo_events()
-    by_day = {}
+    by_day, blocked = {}, {}
+
+    def key(l):
+        return combo_engine.quick_order(l["prob"], l["kalshi_p"])
     for row in (board_ or {}).get("games") or []:
-        legs = [l for l in quick_legs(row, eligible, now) if use_btts or "btts" not in l["kind"]]
+        legs, bl = quick_legs(row, eligible, now)
+        if not use_btts:
+            legs = [l for l in legs if "btts" not in l["kind"]]
+            bl = [l for l in bl if "btts" not in l["kind"]]
+        d = None
         if legs:
-            by_day.setdefault(clock.mt_date(legs[0]["ko_ts"]).isoformat(), []).append(legs)
+            d = clock.mt_date(legs[0]["ko_ts"]).isoformat()
+            by_day.setdefault(d, []).append(min(legs, key=key))
+        for l in bl:
+            blocked.setdefault(clock.mt_date(l["ko_ts"]).isoformat(), []).append(l)
     today = clock.mt_date(now).isoformat()
     days = sorted(by_day)
     counts = {d: len(by_day[d]) for d in days}
@@ -1517,40 +1525,41 @@ def quick_combo(board_, n, objective="balanced", day=None, now=None, eligible=No
             window.append(d)
             if sum(counts[x] for x in window) >= n:
                 break
-    pool = [legs for d in window for legs in by_day[d]]
-    base = {"n": n, "objective": objective, "today": today, "window": window, "days": counts,
-            "eligibility_known": bool(eligible), "n_matches": len(pool)}
-    if len(pool) < n:
+    n_avail = sum(counts[d] for d in window)
+    bl_win = sorted((l for d in (window or ([day] if day else days[:1])) for l in blocked.get(d, [])),
+                    key=lambda l: -abs(l["prob"] - l["kalshi_p"]))
+    base = {"n": n, "today": today, "window": window, "days": counts,
+            "eligibility_known": bool(eligible), "n_matches": n_avail,
+            "rule": {"tiers": [list(t) for t in combo_engine.QUICK_TIERS], "max_gap": combo_engine.QUICK_MAX_GAP},
+            "n_blocked": len(bl_win),
+            "blocked": [{"match": l["match"], "label": l["label"], "model_pct": round(100 * l["prob"], 1),
+                         "kalshi_pct": round(100 * l["kalshi_p"], 1)} for l in bl_win[:8]]}
+    if n_avail < n:
         what = f"on {day}" if day else "in every listed day together"
-        return dict(base, error=f"only {len(pool)} match{'es' if len(pool) != 1 else ''} {what} can take a "
-                                f"combo leg (combo-eligible, readable book, model priced, not started); "
-                                f"asked for {n}")
-    games_bundles = [(legs[0]["match"], [{"size": 1, "prob": l["prob"], "legs": [l]} for l in legs],
-                      legs[0]["event"]) for legs in pool]
-    states = combo_engine.frontier(games_bundles, max_total_legs=n, net=True)
-    best, meta = combo_engine.choose(states, objective=objective, legs_target=n, legs_mode="require")
-    if not best or best["legs"] != n:
-        return dict(base, error=f"no {n}-leg slip could be built from {len(pool)} matches")
-    picked = sorted((b["legs"][0] for _gi, b in best["sel"]), key=lambda l: (l["ko_ts"], l["match"]))
-    gross = 1.0
-    kal, kal_ok = 1.0, True
+        return dict(base, error=f"only {n_avail} match{'es' if n_avail != 1 else ''} {what} have a leg at 80%+ "
+                                f"that the model and Kalshi agree on (within {combo_engine.QUICK_MAX_GAP:g} points, "
+                                f"combo-eligible, readable book, not started); asked for {n}")
+    picked = [l for d in window[:-1] for l in by_day[d]]
+    picked += sorted(by_day[window[-1]], key=key)[:n - len(picked)]
+    picked.sort(key=lambda l: (l["ko_ts"], l["match"]))
+    gross = prob = kal = 1.0
     for l in picked:
         gross *= l["price_cents"] / 100.0
-        if l["kalshi_p"] is None:
-            kal_ok = False
-        else:
-            kal *= l["kalshi_p"]
+        prob *= l["prob"]
+        kal *= l["kalshi_p"]
+    cost = combo_engine.combo_cost(gross)
     legs_out = [{"match": l["match"], "league": l["league"], "kickoff": l["kickoff"], "label": l["label"],
                  "kind": l["kind"], "ticker": l["ticker"], "side": l["side"], "ask": l["price_cents"],
-                 "model_pct": round(100 * l["prob"], 1),
-                 "kalshi_pct": None if l["kalshi_p"] is None else round(100 * l["kalshi_p"], 1)}
-                for l in picked]
+                 "tier": l["tier"], "model_pct": round(100 * l["prob"], 1),
+                 "kalshi_pct": round(100 * l["kalshi_p"], 1)} for l in picked]
     item = {"groups": [{"legs": [{"ticker": l["ticker"]}]} for l in picked]}
-    return dict(base, legs=legs_out, ev_ok=meta.get("ev_ok"),
+    ev = prob / cost - 1.0
+    return dict(base, legs=legs_out, ev_ok=ev >= 0,
                 extended=bool(not day and window and window[-1] != today),
-                prob_pct=round(100 * best["prob"], 2),
-                kalshi_prob_pct=round(100 * kal, 2) if kal_ok else None,
-                asks_x=round(1.0 / gross, 2), payout_x=round(best["payout"], 2),
-                cost_c=round(100 * best["cost"], 2), ev_pct=round(100 * best["ev"], 1),
-                kelly_pct=round(100 * combo_engine.kelly(best["prob"], best["cost"]), 2),
+                tiers={t: sum(1 for l in picked if l["tier"] == t) for _c, t in combo_engine.QUICK_TIERS},
+                prob_pct=round(100 * prob, 2), kalshi_prob_pct=round(100 * kal, 2),
+                asks_x=round(1.0 / gross, 2), payout_x=round(1.0 / cost, 2),
+                cost_c=round(100 * cost, 2), ev_pct=round(100 * ev, 1),
+                kelly_pct=round(100 * combo_engine.kelly(prob, cost), 2),
+                cap_x=combo_engine.MAX_PAYOUT_X,
                 quote=combo_engine.quote_status(item), quote_room=combo_engine.QUOTE_ROOM)

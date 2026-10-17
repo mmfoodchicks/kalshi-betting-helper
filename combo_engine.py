@@ -136,6 +136,40 @@ def quote_status(item):
 
 OBJECTIVES = ("balanced", "safe", "value")
 
+# The quick picks' rule (the owner, 2026-10-17): fill the slip from the
+# surest legs down -- absolute locks, then 90%+, then 80%+, nothing under --
+# and disqualify any leg where the model and Kalshi are 15 points or more
+# apart. "Kalshi is community based": a crowd that far from the model
+# usually knows something the model does not (an injury, a lineup, a stale
+# rating). The owner's own example, Kalshi 85% against the model's 70%, is
+# exactly 15 and blocked, so the bar is inclusive. A leg's tier is the LOWER
+# of the two numbers, so a lock is a lock to both. The model's number is its
+# OWN, before any blend with the market (college's slip figure is mostly
+# Kalshi's already and would never disagree).
+QUICK_TIERS = ((95.0, "lock"), (90.0, "90+"), (80.0, "80+"))
+QUICK_MAX_GAP = 15.0
+
+
+def quick_tier(p_model, p_kalshi):
+    """(tier, None) for a leg the quick picks may take, else (None, why):
+    "gap" when the two disagree by QUICK_MAX_GAP points or more, "low" under
+    the last tier, "unknown" when either number is missing. Both 0-1."""
+    if p_model is None or p_kalshi is None:
+        return None, "unknown"
+    if abs(p_model - p_kalshi) * 100.0 >= QUICK_MAX_GAP - 1e-9:
+        return None, "gap"
+    low = 100.0 * min(p_model, p_kalshi)
+    for cut, name in QUICK_TIERS:
+        if low >= cut - 1e-9:
+            return name, None
+    return None, "low"
+
+
+def quick_order(p_model, p_kalshi):
+    """The quick picks' sort key, surest first: the lower of the two numbers
+    (the tier's own measure), then the model's."""
+    return (-min(p_model, p_kalshi), -p_model)
+
 # An EV-driven objective must be mostly BETTABLE. Unpriced legs are charged at
 # fair value (EV-neutral), so without this a slip could post a healthy EV earned
 # by one priced leg while the rest have no Kalshi market to place at all.

@@ -82,18 +82,38 @@ def _norm(name):
 # unpriced. Fifteen pages is 3,000 markets, about three weeks of the widest
 # series; a walk that still has a cursor at the end is logged, not ignored.
 _MAX_PAGES = 15
+# A page that fails is asked for again after these pauses. Kalshi answers a
+# burst with 429, and a failed page used to END the walk with the pages
+# already read -- returned as if it were the whole series. On 2026-10-17 the
+# college index was rebuilt from 400 of 552 moneyline markets (one 429 on
+# page 3). Kalshi pages the newest listings first, so the 76 games cut were
+# that weekend's own -- the partial index held two games dated the 17th and
+# the next two weeks in full -- and every board, maker and quick pick read
+# them as unpriced for the index's lifetime. A page that still fails now fails the BUILD, and
+# index() keeps the last good one (it already did for an empty build).
+_RETRY_WAITS = (1.5, 4.0)
 
 
 def _fetch(series, max_pages=_MAX_PAGES):
     out, cursor = [], None
-    for _ in range(max_pages):
+    for page in range(max_pages):
         url = f"{kalshi.BASE}/markets?series_ticker={series}&status=open&limit=200"
         if cursor:
             url += f"&cursor={cursor}"
-        try:
-            d = kalshi._get_json(url)
-        except Exception as _e:
-            errlog.note("KNFL-markets-fetch", _e)
+        d, err = None, None
+        for wait in (0.0,) + tuple(_RETRY_WAITS):
+            if wait:
+                time.sleep(wait)
+            try:
+                d = kalshi._get_json(url)
+                break
+            except Exception as _e:
+                err = _e
+        if d is None:
+            errlog.note("KNFL-markets-fetch", err)
+            if out:
+                raise RuntimeError(f"{series}: page {page + 1} failed after {len(out)} markets "
+                                   "-- a partial series is not an index")
             break
         out.extend(d.get("markets") or [])
         cursor = d.get("cursor")
