@@ -3794,6 +3794,11 @@ def api_cfb_parlay():
         return jsonify({"error": "optimal mode needs a payout target above 1x"}), 400
     ptok = (request.args.get("ptok") or "")[:64] or None
     prop_types = _prop_types()
+    # Read off the request HERE: with a ptok, _build and _log run in a job
+    # thread (_run_job), where Flask has no request -- reading the tab's
+    # division inside them failed every college Build from the page with
+    # "Working outside of request context" (the owner, 2026-10-17).
+    div, slip_sport = _cfb_div(), _cfb_slip_sport()
     try:
         import cfb_board
 
@@ -3809,7 +3814,7 @@ def api_cfb_parlay():
                 conn=conn, objective="balanced" if _opt else objective,
                 payout_basis="market" if _opt else "fair",
                 types=prop_types, game_sel=sel or None, max_bet=_mb,
-                div=_cfb_div(), quick=quick,
+                div=div, quick=quick,
                 abort_cb=(None if not ptok else
                           (lambda: baseball.combo_slot_holder()
                            not in (None, ptok))))
@@ -3822,7 +3827,7 @@ def api_cfb_parlay():
                 # each division's slips live in its own tab, so they are
                 # their own book: a 30-point FCS favourite is not the same
                 # correlation claim as an FBS conference game
-                sliplog.log_from_item(item, sport=_cfb_slip_sport())
+                sliplog.log_from_item(item, sport=slip_sport)
             except Exception as _e:
                 errlog.note("CFB-SLIP-log", _e)
 

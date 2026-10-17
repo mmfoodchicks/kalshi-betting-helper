@@ -11437,7 +11437,8 @@ ck("the college routes exist and mirror the NFL ones: slate, record, parlay with
    "the job pattern, the combo slot and the cfb slip ledger",
    {"/api/cfb/slate", "/api/cfb/record", "/api/cfb/parlay"} <= _rules64
    and '_run_job(ptok, _core, "CFB-COMBO-build")' in _cpar64
-   and "sliplog.log_from_item(item, sport=_cfb_slip_sport())" in _cpar64
+   and "div, slip_sport = _cfb_div(), _cfb_slip_sport()" in _cpar64
+   and "sliplog.log_from_item(item, sport=slip_sport)" in _cpar64
    and "cfb_track.record_from_board(data)" in _insp.getsource(_app64.api_cfb_slate)
    and "cfb_track.record(" in _insp.getsource(_app64.api_cfb_record))
 _html64 = open(_os.path.join(_root, "templates", "index.html")).read()
@@ -11500,7 +11501,10 @@ ck("a slip built on one division's tab can only use that division's games (a "
    all("division" in x for x in _sims_d64)
    and _pf64 and all(g["suffix"] == "26SEP05UNTIND" for g in _pf64["groups"])
    and (_pc64 or {}).get("error_hint") in ("all_started", "no_slip", "single_game_no_stack", None)
-   and 'div=_cfb_div()' in _apy64 and 'sport=_cfb_slip_sport()' in _apy64
+   # read in the request, passed into the job thread as locals (a read inside
+   # the thread failed every Build from the page; see the job-context guard)
+   and 'div, slip_sport = _cfb_div(), _cfb_slip_sport()' in _apy64
+   and 'div=div, quick=quick,' in _apy64 and 'sport=slip_sport' in _apy64
    and '"cfb_fcs" if _cfb_div() == "fcs" else "cfb"' in _apy64
    and 'loadSlipLog(_cx("cfbSlipLog"), cfbDivFilter === "fcs" ? "cfb_fcs" : "cfb")' in _js64
    and 'div=${cfbDivFilter === "fcs" ? "fcs" : "fbs"}' in _js64,
@@ -20952,9 +20956,92 @@ ck("college's quick pick never takes a leg Kalshi's combo refuses and stays on t
 _apq13 = open(_os.path.join(_root, "app.py")).read()
 ck("the route's quick flag fixes everything but the number (exactly N, one per game, no game picks), and the maker's box sends it",
    'quick = request.args.get("quick") == "1" and not (max_bet or optimal)' in _apq13
-   and 'legs_mode, same_game, sel = "require", False, set()' in _apq13 and "div=_cfb_div(), quick=quick," in _apq13
+   and 'legs_mode, same_game, sel = "require", False, set()' in _apq13 and "div=div, quick=quick," in _apq13
    and "&legs_mode=require&payout_mode=off&conn=or&same_game=0&quick=1" in _jsq13
    and 'onclick="buildCFBCombo(false, false, true)"' in _jsq13 and 'd.hint === "quick_short"' in _jsq13)
+
+# A job thread has no Flask request. With a ptok every maker's build runs in
+# _run_job's thread, and the college route read the tab's division
+# (_cfb_div) and the slip ledger (_cfb_slip_sport) INSIDE the build: every
+# college Build from the page died with "Working outside of request context"
+# (the owner, 2026-10-17, on the new quick pick; the route test that shipped
+# it ran without a ptok, i.e. inside the request). Two checks: no closure in
+# any route that hands work to _run_job reads the request, directly or
+# through a helper that does; and the college route, driven the page's way
+# (ptok, poll), finishes in the job thread with the tab's division intact.
+import ast as _ast14
+import tempfile as _tf14q
+import shutil as _sh14q
+_asrc14 = open(_os.path.join(_root, "app.py")).read()
+_atree14 = _ast14.parse(_asrc14)
+_afn14 = {n.name: n for n in _atree14.body if isinstance(n, _ast14.FunctionDef)}
+
+
+def _reads_req14(fn, seen):
+    if fn.name in seen:
+        return False
+    seen.add(fn.name)
+    for n in _ast14.walk(fn):
+        if isinstance(n, _ast14.Name) and n.id == "request":
+            return True
+        if isinstance(n, _ast14.Call) and isinstance(n.func, _ast14.Name) and n.func.id in _afn14:
+            if _reads_req14(_afn14[n.func.id], seen):
+                return True
+    return False
+
+
+_reqh14 = {k for k, f in _afn14.items() if _reads_req14(f, set())}
+_jobs14, _leak14 = [], []
+for _k, _f in _afn14.items():
+    if not any(isinstance(n, _ast14.Call) and isinstance(n.func, _ast14.Name) and n.func.id == "_run_job"
+               for n in _ast14.walk(_f)):
+        continue
+    _jobs14.append(_k)
+    for _inner in _ast14.walk(_f):
+        if _inner is _f or not isinstance(_inner, (_ast14.FunctionDef, _ast14.Lambda)):
+            continue
+        for _n in _ast14.walk(_inner):
+            if isinstance(_n, _ast14.Name) and _n.id == "request":
+                _leak14.append((_k, _n.lineno, "request"))
+            elif isinstance(_n, _ast14.Call) and isinstance(_n.func, _ast14.Name) and _n.func.id in _reqh14:
+                _leak14.append((_k, _n.lineno, _n.func.id))
+ck("no build handed to a job thread reads the request: every closure inside a route that calls _run_job takes the request's "
+   "values as locals (the college route read its division in the thread and every Build died)",
+   len(_jobs14) >= 4 and "api_cfb_parlay" in _jobs14 and "_cfb_div" in _reqh14 and not _leak14, str((_jobs14, _leak14)))
+import baseball as _bb14q
+import sliplog as _sl14q
+_tmp14q = _tf14q.mkdtemp(prefix="vigil-job-ctx-guard-")
+_sv14q = (_bb14q._JOB_DIR, _bb14q._SLOT_PATH, _cb13.build_parlay, _sl14q.log_from_item)
+_seen14q, _logged14q = [], []
+try:
+    _bb14q._JOB_DIR = _tmp14q
+    _bb14q._SLOT_PATH = _os.path.join(_tmp14q, "combo-slot.json")
+
+    def _fake14q(**kw):
+        _seen14q.append({k: kw.get(k) for k in ("div", "quick", "legs_mode", "max_legs_per_game", "n_legs")})
+        return {"groups": [], "sport": "cfb", "n_legs": kw.get("n_legs")}
+    _cb13.build_parlay = _fake14q
+    _sl14q.log_from_item = lambda item, sport=None: _logged14q.append(sport)
+    _cq14 = __import__("app").app.test_client()
+    _url14 = "/api/cfb/parlay?week=7&div=fcs&legs=3&target=50&payout=0&quick=1&ptok=guardctx14"
+    _first14 = _cq14.get(_url14)
+    _fin14 = None
+    for _i in range(100):
+        _rq = _cq14.get(_url14)
+        if _rq.status_code != 202:
+            _fin14 = _rq
+            break
+        _tm.sleep(0.05)
+finally:
+    _bb14q._JOB_DIR, _bb14q._SLOT_PATH, _cb13.build_parlay, _sl14q.log_from_item = _sv14q
+    _sh14q.rmtree(_tmp14q, ignore_errors=True)
+_fj14 = (_fin14.get_json() if _fin14 is not None else None) or {}
+ck("the college maker driven the page's way (a ptok, then polls) builds in the job thread: the FCS tab's division and the quick "
+   "flag reach the builder, and the slip is filed in the FCS ledger",
+   _first14.status_code == 202 and _fin14 is not None and _fin14.status_code == 200 and (_fj14.get("parlay") or {}).get("n_legs") == 3
+   and _seen14q[:1] == [{"div": "fcs", "quick": True, "legs_mode": "require", "max_legs_per_game": 1, "n_legs": 3}]
+   and _logged14q == ["cfb_fcs"],
+   str((_first14.status_code, _fin14.status_code if _fin14 is not None else None, _fj14.get("error"), _seen14q, _logged14q)))
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
