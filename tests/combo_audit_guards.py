@@ -20117,7 +20117,8 @@ ck("a match under way (ESPN 'in', or a kickoff already past) is not pre-game: th
    and _rowl9["no_dog"]["model_pct"] == _rowh9["no_dog"]["model_pct"]
    and _rowk9["pregame"] is False and "edge" not in _rowk9["no_dog"]
    and _rowh9["pregame"] is True and "edge" in _rowh9["no_dog"])
-_keep9 = (_soc9.kalshi_events, _soc9.model_artifact, _soc9.upcoming, _soc9._slug_ids, _soc9.time.time)
+_keep9 = (_soc9.kalshi_events, _soc9.model_artifact, _soc9.upcoming, _soc9._slug_ids, _soc9.time.time,
+          _soc9.btts_markets)
 _logged9 = []
 import predlog as _pl9
 _keep9b = (_pl9.init_db, _pl9.log_many, _pl9.log_shadow)
@@ -20137,18 +20138,27 @@ try:
     _soc9.upcoming = lambda day: [_espn9[0], dict(_espn9[1], state="in")] if day == "2026-10-25" else []
     _soc9._slug_ids = lambda by_date: _slug9
     _soc9.time.time = lambda: _now9
+    # both matches the model prices carry a readable BTTS book: only the
+    # pre-game one may be logged
+    _soc9.btts_markets = lambda evs: {
+        "KXEPLBTTS-26OCT25CRYNEW-BTTS": {"ticker": "KXEPLBTTS-26OCT25CRYNEW-BTTS", "yes_bid": 54.0, "yes_ask": 56.0,
+                                         "no_bid": 44.0, "no_ask": 46.0, "close": None},
+        "KXEPLBTTS-26OCT25HULBRE-BTTS": {"ticker": "KXEPLBTTS-26OCT25HULBRE-BTTS", "yes_bid": 50.0, "yes_ask": 52.0,
+                                         "no_bid": 48.0, "no_ask": 50.0, "close": None}}
     _pl9.init_db = lambda: None
     _pl9.log_many = lambda model, rows: _logged9.append((model, [r[0] for r in rows]))
     _pl9.log_shadow = lambda model, rows: _logged9.append((model, [r[0] for r in rows]))
     _b9 = _soc9._build_board()
 finally:
-    (_soc9.kalshi_events, _soc9.model_artifact, _soc9.upcoming, _soc9._slug_ids, _soc9.time.time) = _keep9
+    (_soc9.kalshi_events, _soc9.model_artifact, _soc9.upcoming, _soc9._slug_ids, _soc9.time.time,
+     _soc9.btts_markets) = _keep9
     (_pl9.init_db, _pl9.log_many, _pl9.log_shadow) = _keep9b
 _bsrc9b = _insp.getsource(_soc9._build_board)
 _live9 = next(g for g in _b9["games"] if g["event"] == "KXEPLGAME-26OCT25HULBRE")
 ck("the board logs only pre-game matches to the record: the pre-game match's three outcomes are logged; the one under way is priced but not logged, and the unmatched one has nothing to log",
-   _b9["n_games"] == 3 and [m for m, _t in _logged9] == ["soccer", "soccer_dk"]
-   and all(sorted(t) == sorted(m["ticker"] for m in _evh9["markets"].values()) for _m, t in _logged9)
+   _b9["n_games"] == 3 and [m for m, _t in _logged9] == ["soccer", "soccer_dk", "soccer_btts"]
+   and all(sorted(t) == sorted(m["ticker"] for m in _evh9["markets"].values()) for _m, t in _logged9[:2])
+   and _logged9[2][1] == ["KXEPLBTTS-26OCT25CRYNEW-BTTS"]
    and _live9["model"] is not None and _live9["pregame"] is False
    and _bsrc9b.index('if not row.get("pregame"):') < _bsrc9b.index('log_rows.append('),
    str(_logged9))
@@ -20171,13 +20181,18 @@ try:
     _soc9.model_artifact(["eng.1"])                       # yesterday's artifact: refit
     _soc9.model_artifact(["eng.1"])                       # within 30 minutes of the attempt: no second refit
     _soc9._refit_try[0] = 0.0
-    _soc9._load_artifact = lambda: ({"asof": "2026-10-17", "slugs": ["eng.1"], "model": _fit9}, 100.0)
+    _soc9._load_artifact = lambda: ({"asof": "2026-10-17", "slugs": ["eng.1"], "model": _fit9,
+                                     "btts_base": {"comp": {}, "global": 0.52}}, 100.0)
     _soc9.model_artifact(["eng.1"])                       # fresh: nothing
     _soc9.model_artifact(["eng.1", "esp.1"])              # a league the board now needs: refit
+    _soc9._refit_try[0] = 0.0
+    _soc9._load_artifact = lambda: ({"asof": "2026-10-17", "slugs": ["eng.1", "esp.1"], "model": _fit9}, 100.0)
+    _soc9.model_artifact(["eng.1"])                       # today's, but built before the BTTS rates were stored: refit
 finally:
     (_soc9._load_artifact, _soc9._refit_child, _soc9._refit_try[0], _soc9.clock.today_et) = _keep9c
-ck("the artifact refits when it is from another day or misses a league the board needs, not when it is fresh, and at most once in 30 minutes",
-   _calls9 == [["eng.1"], ["eng.1", "esp.1"]], str(_calls9))
+ck("the artifact refits when it is from another day, misses a league the board needs, or predates the BTTS rates -- not when it is fresh, "
+   "and at most once in 30 minutes",
+   _calls9 == [["eng.1"], ["eng.1", "esp.1"], ["eng.1"]], str(_calls9))
 # 4. Kalshi: an empty series is looked at again after an hour, not every build
 _keep9d = (_soc9.soccer_series, _soc9._fetch_series, dict(_soc9._empty_series))
 _fetched9 = []
@@ -20653,6 +20668,62 @@ ck("a mapped league whose ESPN id lookup failed is not left off the model for th
    "(one failed fetch took the NWSL and the French women's league off the soccer board, 2026-10-17)",
    "usa.nwsl" not in _j1 and "eng.1" in _j1 and _n2 == _n1 and "usa.nwsl" in _j3 and _n3 == _n2 + 1
    and _calls12[-1] == "usa.nwsl" and _soc12._SLUG_RETRY == 3600, str((_n1, _n2, _n3, sorted(_j3)[:3])))
+
+# ---- 2026-10-17 soccer both teams to score ----
+_bv12 = _json10.load(open(_os.path.join(_root, "research", "data", "soccer_btts_validation.json")))
+# read as text: the harness imports research.soccer_form_validation, which
+# needs numpy -- absent on the server on purpose, and the suite runs there too
+_bvs12 = open(_os.path.join(_root, "research", "soccer_btts_validation.py")).read()
+ck("both teams to score, by the rules written first: the RAW grid figure failed (worse than the league's own rate on 2025 and 2026), "
+   "the recalibration fitted on 2024 alone passed BOTH years -- so the board's BTTS figure is the recalibrated one, its coefficients "
+   "the test's, and only then does it carry an edge",
+   _bv12["decision"]["ship"] is False and _bv12["decision_b"]["ship"] is True
+   and _bv12["2025"]["all"]["minus_base"] == 0.00381 and _bv12["2026"]["all"]["minus_base"] == 0.00632
+   and _bv12["recal_2025"]["minus_base"] < -2 * _bv12["recal_2025"]["se"] and _bv12["recal_2026"]["minus_base"] < -2 * _bv12["recal_2026"]["se"]
+   and _soc12.BTTS_RECAL == (_bv12["recal"]["a"], _bv12["recal"]["b"], _bv12["recal"]["c"]) and _soc12.BTTS_EDGE is True
+   and "THE RULE (written before any number below was computed)" in _bvs12 and "RULE B (a second attempt" in _bvs12
+   and "okB = okB and sB[\"minus_base\"] < -2 * sB[\"se\"]" in _bvs12 and "w = calib_fit([r for r in rows if r[\"y\"] == CALIB])" in _bvs12,
+   str((_bv12["decision"], _bv12["decision_b"], _bv12["recal"])))
+_ev12 = {"event": "KXEPLGAME-26OCT24AVLMCI", "series": "KXEPLGAME"}
+_bk12 = {"ticker": "KXEPLBTTS-26OCT24AVLMCI-BTTS", "yes_bid": 54.0, "yes_ask": 56.0, "no_bid": 44.0, "no_ask": 46.0}
+_mod12 = {"btts": 0.62}
+_r_pre = _soc12.btts_row(_bk12, _mod12, True)
+_r_live = _soc12.btts_row(_bk12, _mod12, False)
+_r_dead = _soc12.btts_row(dict(_bk12, yes_bid=26.0, yes_ask=94.0, no_ask=74.0), _mod12, True)
+_kal12 = __import__("kalshi")
+ck("a BTTS market is found by name off the match's own ticker; a pre-game readable book (two-sided, within 10c) carries YES and NO edges net "
+   "of Kalshi's fee; a match under way and a dead book (Aston Villa - Man City read 26c bid / 94c ask on 2026-10-17) carry none",
+   _soc12.btts_ticker(_ev12) == "KXEPLBTTS-26OCT24AVLMCI-BTTS"
+   and _r_pre["readable"] and _r_pre["mid"] == 55.0 and _r_pre["model_pct"] == 62.0
+   and _r_pre["edge_yes"] == round(62.0 - 56.0 - _kal12.fee_for_market(_bk12["ticker"], 56.0), 1)
+   and _r_pre["edge_no"] == round(38.0 - 46.0 - _kal12.fee_for_market(_bk12["ticker"], 46.0), 1)
+   and _r_live.get("live") is True and "edge_yes" not in _r_live and "edge_no" not in _r_live
+   and _r_dead["readable"] is False and _r_dead["mid"] is None and "edge_yes" not in _r_dead and _soc12.BTTS_MAX_SPREAD == 10.0,
+   str((_r_pre, _r_live, _r_dead)))
+_rows12 = [(738000 + i, "eng.1", "a", "b", 1 if i % 2 else 0, 1, False) for i in range(40)]
+_br12 = _soc12.btts_rates(_rows12, 738040)
+_wt12 = [_math10.exp(-_soc12.XI * (738040 - (738000 + i))) for i in range(40)]
+_exp12 = (sum(w for i, w in enumerate(_wt12) if i % 2) + 1.0) / (sum(_wt12) + 2.0)
+_art12 = {"model": _soc12._empty(), "btts_base": {"comp": {"eng.1": 0.6}, "global": 0.5}}
+_pm12 = _soc12.predict_match(_art12, "x", "y", "eng.1")
+_pm12g = _soc12.predict_match(_art12, "x", "y", "ita.1")
+ck("the recalibration's league input is the fit's own decayed BTTS rate per competition (Laplace +1/+2), stored in the refit artifact; the "
+   "card's figure is logistic(a + b logit(grid) + c logit(league)), the league's rate where it has one and the overall rate where not",
+   abs(_br12["comp"]["eng.1"] - _exp12) < 1e-12
+   and abs(_pm12["btts"] - round(_soc12.btts_cal(_pm12["btts_raw"], 0.6), 3)) < 1e-9 and _pm12["btts_league"] == 0.6
+   and _pm12g["btts_league"] == 0.5
+   and '"btts_base": btts_rates(rows, asof.toordinal()),' in _insp.getsource(_soc12.build_artifact)
+   and 'or "btts_base" not in art)' in _insp.getsource(_soc12.model_artifact),
+   str((_br12["comp"], _exp12, _pm12["btts"], _pm12["btts_raw"])))
+ck("the BTTS markets come by name, a hundred tickers a call (one call a series read 429), and the tab shows them: Kalshi's YES and NO beside "
+   "the model, a sort by Kalshi's own BTTS price and a has-a-market filter",
+   "markets?tickers={','.join(chunk)}" in _insp.getsource(_soc12.btts_markets) and "range(0, len(want), 100)" in _insp.getsource(_soc12.btts_markets)
+   and '<option value="bttsk">' in _html9 and 'id="soccerBttsOnly"' in _html9
+   and "bttsk: (g) => (g.btts && g.btts.mid != null ? g.btts.mid : null)," in _js11 and "${bttsHtml}" in _js11)
+ck("and the tab says what the BTTS edge has NOT been tested against: the recalibrated figure is flatter than Kalshi's (SD 6.1 against "
+   "9.1 points over 284 books on 2026-10-17), measured every build and printed beside the edges",
+   '"btts_spread": btts_spread' in _insp.getsource(_soc12._build_board) and "if len(pairs) >= 30:" in _insp.getsource(_soc12._build_board)
+   and "${bttsNote}" in _js11 and "It has <b>not</b> been tested against Kalshi's price" in _js11)
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

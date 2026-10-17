@@ -233,7 +233,17 @@ data-only `sim-history` branch (which never deploys):
   (`research/soccer_form_validation.py`, `research/reports/soccer_form.md`),
   form did not confirm and every head-to-head weight made predictions worse.
   The card shows both as information; a weight is a change to judge on new
-  seasons, not to set by hand.
+  seasons, not to set by hand. **Both teams to score** (2026-10-17): the raw
+  grid figure FAILED its held-out test (worse than the league's own BTTS rate,
+  too extreme both ways); the shipped figure is recalibrated toward the
+  league rate (`BTTS_RECAL`, fitted on 2024, beat the league rate on 2025 AND
+  2026; `research/reports/soccer_btts.md`). Kalshi's KX<league>BTTS markets
+  are fetched by name off the GAME tickers (100 a call -- one call a series
+  read 429), edged only off two-sided books within 10c, pre-game, bucket
+  `soccer_btts`. The figure is flatter than Kalshi's (SD 6.1 vs 9.1) and is
+  untested against the market; the tab says so. **Data sources**: ESPN carries
+  73% of Kalshi's matches; FotMob would carry ~96% but its terms forbid
+  automated use and its robots.txt disallows /api/* -- not used.
 - **The NBA / NHL seasons** (2026-10-17, `pro_season.py` rules + Monte
   Carlo, `pro_season_job.py` the job and the board): NHL three per division +
   two wildcards, the division bracket, points then RW, ROW, W, head-to-head,

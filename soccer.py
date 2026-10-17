@@ -599,6 +599,87 @@ def kalshi_events():
     return racing._cached(("soccer_kalshi",), 240, build) or {}
 
 
+# ---- Kalshi both teams to score ------------------------------------------------
+# Kalshi lists a full-match BTTS market beside most GAME events: series
+# KX<league>BTTS, the same event tail as the GAME event, one market
+# "<event>-BTTS" whose YES pays when both sides score in 90 minutes plus
+# stoppage (the rules; no extra time) -- the model's own window. The tickers
+# are known from the GAME events, so the board asks for them by name, a
+# hundred a call (10 calls on 2026-10-17 for 968 matches; one call per BTTS
+# series was 88 calls and read 429 from Kalshi). 452 of the 968 had one; 389
+# of those were two-sided books within 10c, the rest 35-50c wide or empty.
+BTTS_MAX_SPREAD = 10.0
+# research/soccer_btts_validation.py. Rule A (written first): the RAW grid
+# P(BTTS) did WORSE than the league's own BTTS rate on held-out matches --
+# 2025 +0.00381 +/- 0.00125 log loss a match, 2026 +0.00632 +/- 0.00140 --
+# too extreme both ways (said 26% -> 36% happened; 73% -> 66%): treating the
+# two sides' goals as independent overstates how much BTTS varies. Rule B
+# (written after A failed, so held to both years): the figure recalibrated
+# toward the league rate, p = logistic(a + b logit(raw) + c logit(league)),
+# (a, b, c) fitted on 2024 alone, beat the league rate on 2025 (-0.00270 +/-
+# 0.00053) AND 2026 (-0.00207 +/- 0.00060), calibrated within about a point
+# (said 54% -> 55%). That figure is the card's and carries the edge. Against
+# Kalshi it is untested: the live record (bucket soccer_btts) is the test.
+BTTS_RECAL = (0.03561, 0.42932, 0.48344)
+BTTS_EDGE = True
+# A league with no BTTS rate in the artifact (an artifact built before the
+# rate was stored) uses the measured overall rate (2025 51.4%, 2026 52.6%).
+BTTS_GLOBAL_FALLBACK = 0.52
+
+
+def btts_ticker(ev):
+    return f"{ev['series'][:-4]}BTTS-{ev['event'].split('-', 1)[1]}-BTTS"
+
+
+def btts_markets(evs):
+    """{BTTS ticker: {ticker, yes_bid, yes_ask, no_bid, no_ask, volume,
+    close}} for the GAME events' BTTS markets. Cached 4 minutes."""
+    def build():
+        want = sorted({btts_ticker(e) for e in evs.values() if e.get("series", "").endswith("GAME")})
+        out = {}
+        for i in range(0, len(want), 100):
+            chunk = want[i:i + 100]
+            try:
+                d = kalshi._get_json(f"{kalshi.BASE}/markets?tickers={','.join(chunk)}&limit=200", timeout=25)
+            except Exception as e:
+                errlog.note("SOC-btts", e)
+                continue
+            for m in d.get("markets") or []:
+                out[m.get("ticker")] = {
+                    "ticker": m.get("ticker"),
+                    "yes_bid": kalshi._cents(m.get("yes_bid_dollars")),
+                    "yes_ask": kalshi._cents(m.get("yes_ask_dollars")),
+                    "no_bid": kalshi._cents(m.get("no_bid_dollars")),
+                    "no_ask": kalshi._cents(m.get("no_ask_dollars")),
+                    "volume": kalshi._f(m.get("volume_fp")) or 0.0,
+                    "close": kalshi._parse_time(m.get("close_time"))}
+            time.sleep(0.3)
+        return out
+    return racing._cached(("soccer_btts",), 240, build) or {}
+
+
+def btts_row(bm, model, pregame):
+    """The card's BTTS block: Kalshi's book, the model's figure, and an edge
+    only when the figure has earned one (BTTS_EDGE) on a readable pre-game
+    book."""
+    b = dict(bm)
+    ya, yb = bm.get("yes_ask"), bm.get("yes_bid")
+    b["readable"] = bool(ya is not None and yb and 0 < ya < 100 and ya - yb <= BTTS_MAX_SPREAD)
+    b["mid"] = round((ya + yb) / 2.0, 1) if b["readable"] else None
+    if model and model.get("btts") is not None:
+        p = model["btts"]
+        b["model_pct"] = round(100 * p, 1)
+        if not pregame:
+            b["live"] = True
+        elif BTTS_EDGE and b["readable"]:
+            na = bm.get("no_ask")
+            b["edge_yes"] = round(100 * p - ya - kalshi.fee_for_market(bm["ticker"], ya), 1)
+            if na and 0 < na < 100:
+                b["edge_no"] = round(100 * (1 - p) - na - kalshi.fee_for_market(bm["ticker"], na), 1)
+    b["edge_shown"] = BTTS_EDGE
+    return b
+
+
 # ---- ESPN schedule and matching ----------------------------------------------
 def _dk_odds(od):
     """DraftKings' three-way line as ESPN's scoreboard carries it: the home
@@ -868,7 +949,37 @@ def build_artifact(slugs, asof=None):
     recent, meetings = _recent_and_meetings(rows, model)
     return {"asof": asof.isoformat(), "slugs": sorted(set(slugs)), "model": model, "short": short,
             "recent": recent, "meetings": meetings, "names": names,
+            "btts_base": btts_rates(rows, asof.toordinal()),
             "n_rows": len(rows), "fit_s": round(time.time() - t0, 1)}
+
+
+def btts_rates(rows, asof_ord):
+    """{"comp": {competition: rate}, "global": rate}: each competition's
+    decayed both-teams-score frequency over the fit's own results (weights
+    exp(-XI x age), Laplace +1/+2) -- research/soccer_btts_validation.py's
+    benchmark and the recalibration's second input, built the same way."""
+    acc, g = {}, [0.0, 0.0]
+    for r in rows:
+        day, comp, hg, ag = r[0], r[1], r[4], r[5]
+        w = math.exp(-XI * (asof_ord - day))
+        y = 1.0 if (hg > 0 and ag > 0) else 0.0
+        a_ = acc.setdefault(comp, [0.0, 0.0])
+        a_[0] += w * y
+        a_[1] += w
+        g[0] += w * y
+        g[1] += w
+    return {"comp": {c: (v[0] + 1.0) / (v[1] + 2.0) for c, v in acc.items()},
+            "global": (g[0] / g[1]) if g[1] else BTTS_GLOBAL_FALLBACK}
+
+
+def btts_cal(raw, base):
+    """The shipped P(BTTS): the grid's figure recalibrated toward the
+    league's rate (BTTS_RECAL)."""
+    def lg(p):
+        p = min(1 - 1e-6, max(1e-6, p))
+        return math.log(p / (1 - p))
+    a, b, c = BTTS_RECAL
+    return 1.0 / (1.0 + math.exp(-(a + b * lg(raw) + c * lg(base))))
 
 
 def refit_main(params):
@@ -941,7 +1052,7 @@ def model_artifact(slugs):
     today = clock.today_et().isoformat()
     need = set(s for s in slugs if s)
     stale = (art is None or art.get("asof") != today or age > _ART_TTL
-             or not need <= set(art.get("slugs") or []))
+             or not need <= set(art.get("slugs") or []) or "btts_base" not in art)
     if stale and time.time() - _refit_try[0] > 1800:
         _refit_try[0] = time.time()
         if _refit_child(need):
@@ -1012,10 +1123,16 @@ def predict_match(art, home, away, comp, neutral=False):
     def moved(a_, b_):
         return {"home": round(100 * (b_[0] - a_[0]), 1), "draw": round(100 * (b_[1] - a_[1]), 1),
                 "away": round(100 * (b_[2] - a_[2]), 1)}
+    bb = art.get("btts_base") or {}
+    b_base = (bb.get("comp") or {}).get(comp, bb.get("global", BTTS_GLOBAL_FALLBACK))
+    b_raw = sum(p for (x, y), p in g.items() if x > 0 and y > 0)
     return {"p_home": round(ph, 4), "p_draw": round(pd, 4), "p_away": round(pa, 4),
             "exp_home": round(lh, 2), "exp_away": round(la, 2),
             "over25": round(sum(p for (x, y), p in g.items() if x + y > 2.5), 3),
-            "btts": round(sum(p for (x, y), p in g.items() if x > 0 and y > 0), 3),
+            # the shipped BTTS figure is the recalibrated one (BTTS_RECAL);
+            # the grid's own and the league's rate ride along
+            "btts": round(btts_cal(b_raw, b_base), 3), "btts_raw": round(b_raw, 3),
+            "btts_league": round(b_base, 3),
             "scorelines": [{"score": f"{x}-{y}", "pct": round(100 * p, 1)} for (x, y), p in top],
             "known": {"home": home in model["att"], "away": away in model["att"]},
             "base": {"home": round(base[0], 4), "draw": round(base[1], 4), "away": round(base[2], 4)},
@@ -1053,9 +1170,14 @@ def _build_board():
     # the league id of every ESPN match seen -> the slug: learned from the
     # leagues we fetch results for (their events carry the same ids)
     slug_ids = _slug_ids(by_date)
-    games, log_rows, dk_rows = [], [], []
+    try:
+        btts = btts_markets(evs)
+    except Exception as e:
+        errlog.note("SOC-btts-board", e)
+        btts = {}
+    games, log_rows, dk_rows, btts_rows = [], [], [], []
     for ev in sorted(evs.values(), key=lambda e: (e.get("date") or "", e["event"])):
-        row = _game_row(ev, art if art else model, slug_ids, by_date)
+        row = _game_row(ev, art if art else model, slug_ids, by_date, btts=btts)
         if not row:
             continue
         games.append(row)
@@ -1065,6 +1187,12 @@ def _build_board():
         # in-game information touch a number that claims to be pre-game).
         if not row.get("pregame"):
             continue
+        # the BTTS figure goes on the record in its own bucket against
+        # Kalshi's mid on a readable book, so the live record can re-judge
+        # a figure the held-out test turned down
+        b = row.get("btts")
+        if b and b.get("model_pct") is not None and b.get("readable"):
+            btts_rows.append((b["ticker"], b["model_pct"] / 100.0, b.get("close"), b["mid"] / 100.0))
         for side in ("home", "draw", "away"):
             mk = row[side]["kalshi"]
             p = (row.get("model") or {}).get(f"p_{side}")
@@ -1072,19 +1200,40 @@ def _build_board():
                 log_rows.append((mk["ticker"], p, mk.get("close"), row["fair"][side]))
                 if row.get("dk"):
                     dk_rows.append((mk["ticker"], row["dk"][side], mk.get("close"), row["fair"][side]))
-    if log_rows:
+    if log_rows or btts_rows:
         try:
             import predlog
             predlog.init_db()
-            predlog.log_many("soccer", log_rows)
+            if log_rows:
+                predlog.log_many("soccer", log_rows)
             if dk_rows:
                 predlog.log_shadow("soccer_dk", dk_rows)
+            if btts_rows:
+                predlog.log_many("soccer_btts", btts_rows)
         except Exception as e:
             errlog.note("SOC-predlog", e)
+    n_btts = sum(1 for g in games if g.get("btts"))
+    # how spread out the BTTS figure is beside Kalshi's, over this build's
+    # readable books: the recalibration that beat the league average is
+    # FLATTER than the market (2026-10-17: SD 6.1 points against Kalshi's 9.1
+    # over 284 matches, correlation 0.66), so its largest edges sit where
+    # Kalshi is most extreme -- the place a flatter model is most likely the
+    # one that is wrong. Printed beside the edges; the live record (bucket
+    # soccer_btts) is what can settle which of the two is right.
+    pairs = [(g["btts"]["model_pct"], g["btts"]["mid"]) for g in games
+             if g.get("btts") and g["btts"].get("readable") and g["btts"].get("model_pct") is not None]
+    btts_spread = None
+    if len(pairs) >= 30:
+        def _sd(v):
+            m_ = sum(v) / len(v)
+            return (sum((x - m_) ** 2 for x in v) / len(v)) ** 0.5
+        btts_spread = {"n": len(pairs), "model_sd": round(_sd([p for p, _ in pairs]), 1),
+                       "kalshi_sd": round(_sd([k for _, k in pairs]), 1)}
     n_model = sum(1 for g in games if g.get("model"))
     n_heavy = sum(1 for g in games if g.get("heavy"))
     return {"built_ts": int(time.time()), "n_games": len(games), "n_model": n_model,
-            "n_heavy": n_heavy, "games": games,
+            "n_heavy": n_heavy, "n_btts": n_btts, "btts_edge": BTTS_EDGE, "btts_spread": btts_spread,
+            "games": games,
             "fit": {"n": model.get("n"), "asof": (art or {}).get("asof"), "fit_s": (art or {}).get("fit_s"),
                     "teams": len(model.get("att") or {}), "xi": XI, "kappa": KAPPA, "rho": RHO,
                     "form": {"kind": FORM_KIND, "param": FORM_PARAM, "weight": W_FORM}, "h2h_weight": W_H2H},
@@ -1158,7 +1307,7 @@ def _slug_ids(by_date):
     return got
 
 
-def _game_row(ev, art, slug_ids, by_date, now=None):
+def _game_row(ev, art, slug_ids, by_date, now=None, btts=None):
     """One card. `art` is the artifact (or a bare fit, wrapped). A match
     ESPN shows as started or finished keeps its prices and the model's
     pre-game figure but no edge: the model knows nothing of the match in
@@ -1241,4 +1390,6 @@ def _game_row(ev, art, slug_ids, by_date, now=None):
                 nd["fee"] = round(fee, 2)
                 nd["edge"] = round(100 * p_no - no_ask - fee, 1)
         row["no_dog"] = nd
+    bm = (btts or {}).get(btts_ticker(ev))
+    row["btts"] = btts_row(bm, row["model"], row["pregame"]) if bm else None
     return row

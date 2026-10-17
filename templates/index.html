@@ -502,10 +502,12 @@
           <option value="gap">sort: underdog's price under the tie</option>
           <option value="draw">sort: model tie %</option>
           <option value="btts">sort: both teams score % (model)</option>
+          <option value="bttsk">sort: both teams score - Kalshi's price</option>
           <option value="league">sort: league</option>
         </select>
         <input id="soccerFind" type="text" placeholder="find a team" style="width:160px" oninput="renderSoccer()"/>
         <label class="small" style="color:var(--muted)"><input type="checkbox" id="soccerModelOnly" onchange="renderSoccer()"/> modelled only</label>
+        <label class="small" style="color:var(--muted)"><input type="checkbox" id="soccerBttsOnly" onchange="renderSoccer()"/> has a both-teams-score market</label>
       </div>
       <div id="soccerSummary" class="small"></div>
       <div id="soccerResults" class="markets"><div class="empty">Loading…</div></div>

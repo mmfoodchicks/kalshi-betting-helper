@@ -4195,6 +4195,8 @@ const _soccerKeys = {
   draw: (g) => (g.model ? g.model.p_draw : null),
   // both teams score: the model's scoreline grid, P(home >= 1 and away >= 1)
   btts: (g) => (g.model && g.model.btts != null ? g.model.btts : null),
+  // Kalshi's own BTTS figure: the mid of a readable book (none on a dead one)
+  bttsk: (g) => (g.btts && g.btts.mid != null ? g.btts.mid : null),
 };
 function _soccerOrder(games, key) {
   // the Kalshi (Eastern) date first, then the kickoff: a late kickoff is the
@@ -4267,6 +4269,12 @@ function soccerGameCard(g) {
     lead = `<div class="pick">NO on <b>${escapeHtml(dogName)}</b> (the underdog): <span class="kmkt">NO ask <b>${nd.no_ask != null ? nd.no_ask + "¢" : "-"}</b></span>${nd.fair_pct != null ? ` · Kalshi fair ${nd.fair_pct}%` : ""} <span class="small" style="color:var(--muted)">· no model: ${escapeHtml(g.why || "")}</span></div>`;
   }
   const prices = `<div class="small" style="margin-top:3px"><span style="display:inline-block;width:92px;color:var(--muted)">Kalshi YES ask</span> ${escapeHtml(g.home.name)} <b>${kx("home").yes_ask ?? "-"}¢</b> · tie <b>${kx("draw").yes_ask ?? "-"}¢</b> · ${escapeHtml(g.away.name)} <b>${kx("away").yes_ask ?? "-"}¢</b>${g.heavy ? ` <span class="chip" title="the underdog's YES ask is at least ${(_soccerData || {}).heavy_gap || 5}¢ under the tie's">🐶 heavy underdog</span>` : ""}</div>`;
+  // both teams to score: Kalshi's own market beside the model's figure. The
+  // figure carries no edge -- on held-out matches it did worse than the
+  // league's own BTTS rate (research/soccer_btts_validation.py)
+  const b = g.btts;
+  const bEdge = (v) => (v == null ? "" : ` <b class="${v >= 0 ? "ev pos" : "ev neg"}">${v >= 0 ? "+" : ""}${v}</b>`);
+  const bttsHtml = b ? `<div class="small" style="margin-top:3px"><span style="display:inline-block;width:92px;color:var(--muted)">both score</span> Kalshi YES <b>${b.yes_ask ?? "-"}¢</b> · NO <b>${b.no_ask ?? "-"}¢</b>${b.readable ? ` <span style="color:var(--muted)">(mid ${b.mid}%)</span>` : ` <span style="color:var(--muted)">- book too thin to read</span>`}${b.model_pct != null ? ` · model <b>${b.model_pct}%</b> <span style="color:var(--muted);cursor:help" title="the goals model's figure pulled toward the league's own both-teams-score rate: the raw figure was too extreme (said 26%, happened 36%), the recalibrated one beat the league average on 2025 and 2026 held out and is calibrated within about a point. Not yet tested against Kalshi's price - the live record grades that.">ⓘ</span>` : ""}${b.edge_shown ? `${b.edge_yes != null ? ` YES${bEdge(b.edge_yes)}` : ""}${b.edge_no != null ? ` NO${bEdge(b.edge_no)}` : ""}` : (b.model_pct != null ? ` <span style="color:var(--muted)" title="tested on 2025 and 2026 out of sample: worse than the league's own both-teams-score rate, and too extreme both ways (said 26%, happened 36%; said 73%, happened 66%)">- information only: the model's both-teams-score figure did worse than the league average on held-out matches, so no edge is shown</span>` : "")}</div>` : "";
   const weak = (m && m.weak) ? `<div class="small" style="color:#e0a040;margin-top:2px">⚠️ on every held-out week of 2024-2026 the model did worse than this competition's own base rate - read the price, not the edge.</div>` : "";
   const scorelines = m ? `<div class="small" style="color:var(--muted);margin-top:2px">expected goals ${escapeHtml(g.home.name)} <b>${m.exp_home}</b> – <b>${m.exp_away}</b> ${escapeHtml(g.away.name)} · over 2.5 ${pct(m.over25)} · both score ${pct(m.btts)} · likeliest ${(m.scorelines || []).slice(0, 4).map((s) => `${s.score} (${s.pct}%)`).join(", ")}${(m.known && !(m.known.home && m.known.away)) ? ` · <i>${!m.known.home ? escapeHtml(g.home.name) : escapeHtml(g.away.name)} has no results in the fit: rated at the league's average</i>` : ""}</div>` : "";
   // recent form and head-to-head: always shown; whether they move the
@@ -4286,6 +4294,7 @@ function soccerGameCard(g) {
     ${row3("Kalshi fair", f, "Kalshi's three YES prices with the overround stripped (bid-ask midpoints)")}
     ${row3("DraftKings", dk, "DraftKings' three-way line as ESPN shows it, de-vigged - a sharper book's opinion, for reference")}
     ${prices}
+    ${bttsHtml}
     ${weak}
     ${scorelines}
     ${formHtml}
@@ -4301,15 +4310,20 @@ function renderSoccer() {
   const lg = ($("soccerLeague") || {}).value || "";
   const q = (($("soccerFind") || {}).value || "").trim().toLowerCase();
   const modelOnly = !!(($("soccerModelOnly") || {}).checked);
+  const bttsOnly = !!(($("soccerBttsOnly") || {}).checked);
   let games = (d.games || []).filter((g) => (!heavy || g.heavy) && (!lg || g.league === lg)
-    && (!q || `${g.home.name} ${g.away.name} ${g.league}`.toLowerCase().includes(q)) && (!modelOnly || g.model));
+    && (!q || `${g.home.name} ${g.away.name} ${g.league}`.toLowerCase().includes(q)) && (!modelOnly || g.model)
+    && (!bttsOnly || g.btts));
   games = _soccerOrder(games, _soccerSortKey);
   const sortLbl = { kickoff: "kickoff", nodog: "the model's chance the underdog does not win", edge: "the model's edge on NO-the-underdog (pre-game only)",
     noask: "the NO ask, cheapest first", gap: "how far the underdog's YES ask sits under the tie's", draw: "the model's tie chance",
-    btts: "the model's chance both teams score", league: "league" }[_soccerSortKey] || "";
+    btts: "the model's chance both teams score", bttsk: "Kalshi's both-teams-score price (mid of a readable book)",
+    league: "league" }[_soccerSortKey] || "";
   $("soccerBuilt").textContent = d.built_ts ? `built ${agoStr(Math.max(0, Date.now() / 1000 - d.built_ts))}` : "";
   const fit = d.fit || {};
-  $("soccerSummary").innerHTML = `<b>${d.n_games}</b> matches on Kalshi · <b>${d.n_model}</b> modelled · <b>${d.n_heavy}</b> heavy underdogs · showing <b>${games.length}</b> · fit: ${(fit.teams || 0).toLocaleString()} teams from ${(fit.n || 0).toLocaleString()} results as of ${fit.asof || "-"} <span style="color:var(--muted)">(half-life ${Math.round(Math.log(2) / (fit.xi || 0.005))} days, ${fit.kappa} matches of shrinkage, ρ ${fit.rho})</span>${_soccerSortKey !== "kickoff" ? ` · <i style="color:var(--muted)">ranked by ${sortLbl}; matches without that figure sit at the bottom</i>` : ""}<div class="small" style="color:var(--muted);margin-top:2px" title="held out, weekly refits: the model's chance that the underdog does not win on heavy-underdog matches, by bucket, against how often it did not">Calibration of the NO-the-underdog figure on held-out heavy underdogs - 2025: ${((d.calibration || {}).heavy || []).map((c) => `said ${(100 * c.pred).toFixed(1)}% → happened ${(100 * c.hit).toFixed(1)}% (n ${c.n.toLocaleString()})`).join(" · ")}; 2026 so far: ${((d.calibration || {}).heavy_2026 || []).map((c) => `${(100 * c.pred).toFixed(1)}% → ${(100 * c.hit).toFixed(1)}%`).join(" · ")}. It ran about a point and a half high in 2025 and within about a point in 2026; the edge column does not correct for that.</div>`;
+  const bs = d.btts_spread;
+  const bttsNote = d.n_btts ? `<div class="small" style="color:#e0a040;margin-top:2px">⚠️ Both teams to score (${d.n_btts} matches with a Kalshi market): the model's figure is pulled toward each league's own rate - the raw figure was too extreme - and that version beat the league average on 2025 and 2026 held out. It has <b>not</b> been tested against Kalshi's price, and it is flatter than Kalshi's${bs ? ` (spread ${bs.model_sd} points against Kalshi's ${bs.kalshi_sd} over ${bs.n} readable books)` : ""}: its biggest edges sit where Kalshi is most extreme, which is where a flatter model is most likely the one that is wrong. The record grades every figure against Kalshi from here.</div>` : "";
+  $("soccerSummary").innerHTML = `<b>${d.n_games}</b> matches on Kalshi · <b>${d.n_model}</b> modelled · <b>${d.n_heavy}</b> heavy underdogs · showing <b>${games.length}</b> · fit: ${(fit.teams || 0).toLocaleString()} teams from ${(fit.n || 0).toLocaleString()} results as of ${fit.asof || "-"} <span style="color:var(--muted)">(half-life ${Math.round(Math.log(2) / (fit.xi || 0.005))} days, ${fit.kappa} matches of shrinkage, ρ ${fit.rho})</span>${_soccerSortKey !== "kickoff" ? ` · <i style="color:var(--muted)">ranked by ${sortLbl}; matches without that figure sit at the bottom</i>` : ""}<div class="small" style="color:var(--muted);margin-top:2px" title="held out, weekly refits: the model's chance that the underdog does not win on heavy-underdog matches, by bucket, against how often it did not">Calibration of the NO-the-underdog figure on held-out heavy underdogs - 2025: ${((d.calibration || {}).heavy || []).map((c) => `said ${(100 * c.pred).toFixed(1)}% → happened ${(100 * c.hit).toFixed(1)}% (n ${c.n.toLocaleString()})`).join(" · ")}; 2026 so far: ${((d.calibration || {}).heavy_2026 || []).map((c) => `${(100 * c.pred).toFixed(1)}% → ${(100 * c.hit).toFixed(1)}%`).join(" · ")}. It ran about a point and a half high in 2025 and within about a point in 2026; the edge column does not correct for that.</div>${bttsNote}`;
   if (!games.length) {
     $("soccerResults").innerHTML = `<div class="empty">${heavy ? "No heavy underdogs match the filter." : "No matches match the filter."}</div>`;
     return;

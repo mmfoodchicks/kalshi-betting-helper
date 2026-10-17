@@ -1,0 +1,312 @@
+{
+ "rule": "Both teams to score: is the goals model's P(BTTS) worth showing as a\nprobability? Tested out of sample on 2025 and confirmed on 2026. RESEARCH.\n\nThe model is the shipped one, frozen (soccer.XI, soccer.KAPPA, soccer.RHO,\nform and head-to-head at weight 0): nothing is chosen here, so there is no\nselection year. P(BTTS) is read off the same scoreline grid the three-way\nprice comes from -- P(home >= 1 and away >= 1) -- the figure the card has\nshown since the tab shipped, untested until now: the three-way validation\nscored the result, not the split of the goals.\n\nTHE RULE (written before any number below was computed)\n  Walk-forward by WEEK in production's window (soccer_form_validation's\n  construction: fitted on every match from 1 January of the year before the\n  week up to the week's first day, predicting every match in the week).\n  Benchmark: the competition's own decayed BTTS frequency in the same window\n  (weights exp(-XI x age), Laplace +1/+2), the global rate where a\n  competition has none.\n  1. TEST on 2025: the model's mean BTTS log loss must beat the benchmark's\n     by more than two standard errors of the per-match difference.\n  2. CONFIRM on 2026 (1 January to the data's last week): the model must not\n     be worse than the benchmark by more than two standard errors.\n  Both, and the board prices Kalshi's BTTS markets as a probability with an\n  edge; otherwise it shows the model's figure as information and no edge.\n  Reported beside it: calibration by tenth, the Brier score, and the matches\n  where both sides were in the fit.\n\nRESULT OF THE RULE ABOVE (2026-10-17): it FAILED. The model's BTTS was worse\nthan the league's own rate on 2025 (+0.00381 +/- 0.00125 log loss a match)\nand on 2026 (+0.00632 +/- 0.00140), and too extreme both ways (said 26% ->\nhappened 36%; said 73% -> 66%).\n\nRULE B (a second attempt, written after rule A failed and after 2025's and\n2026's calibration had been read; so it is held to a stricter bar):\n  Recalibrate: p' = logistic(a + b logit(p_model) + c logit(base)), (a, b, c)\n  the maximum-likelihood fit on the 2024 weekly walk-forward (out of sample\n  for the goals model itself; 2025 and 2026 play no part in the fit).\n  Frozen, it ships as a probability with an edge only if it beats the league\n  base rate by more than two standard errors on 2025 AND on 2026 -- both,\n  since neither year is unseen any longer.\n\n",
+ "data_last_day": "2026-10-16",
+ "seconds": 128,
+ "2025": {
+  "all": {
+   "n": 20625,
+   "rate": 0.5141,
+   "logloss": 0.69157,
+   "logloss_base": 0.68775,
+   "minus_base": 0.00381,
+   "se": 0.00125,
+   "brier": 0.249,
+   "brier_base": 0.24731,
+   "calibration": [
+    {
+     "pred": 0.2646,
+     "hit": 0.3603,
+     "n": 716
+    },
+    {
+     "pred": 0.3599,
+     "hit": 0.4371,
+     "n": 3171
+    },
+    {
+     "pred": 0.4531,
+     "hit": 0.4996,
+     "n": 6979
+    },
+    {
+     "pred": 0.5464,
+     "hit": 0.5468,
+     "n": 6717
+    },
+    {
+     "pred": 0.6369,
+     "hit": 0.5893,
+     "n": 2720
+    },
+    {
+     "pred": 0.7287,
+     "hit": 0.6582,
+     "n": 275
+    }
+   ]
+  },
+  "known": {
+   "n": 20197,
+   "rate": 0.5149,
+   "logloss": 0.69135,
+   "logloss_base": 0.68744,
+   "minus_base": 0.00391,
+   "se": 0.00127,
+   "brier": 0.2489,
+   "brier_base": 0.24715,
+   "calibration": [
+    {
+     "pred": 0.2643,
+     "hit": 0.3564,
+     "n": 707
+    },
+    {
+     "pred": 0.3598,
+     "hit": 0.4378,
+     "n": 3118
+    },
+    {
+     "pred": 0.453,
+     "hit": 0.4996,
+     "n": 6839
+    },
+    {
+     "pred": 0.5465,
+     "hit": 0.5493,
+     "n": 6548
+    },
+    {
+     "pred": 0.637,
+     "hit": 0.5906,
+     "n": 2665
+    },
+    {
+     "pred": 0.7289,
+     "hit": 0.6593,
+     "n": 273
+    }
+   ]
+  }
+ },
+ "2026": {
+  "all": {
+   "n": 17503,
+   "rate": 0.5261,
+   "logloss": 0.69302,
+   "logloss_base": 0.6867,
+   "minus_base": 0.00632,
+   "se": 0.0014,
+   "brier": 0.24965,
+   "brier_base": 0.24677,
+   "calibration": [
+    {
+     "pred": 0.2675,
+     "hit": 0.3928,
+     "n": 555
+    },
+    {
+     "pred": 0.3595,
+     "hit": 0.4508,
+     "n": 2562
+    },
+    {
+     "pred": 0.4532,
+     "hit": 0.503,
+     "n": 6024
+    },
+    {
+     "pred": 0.5458,
+     "hit": 0.5626,
+     "n": 5841
+    },
+    {
+     "pred": 0.638,
+     "hit": 0.5998,
+     "n": 2204
+    },
+    {
+     "pred": 0.7295,
+     "hit": 0.6466,
+     "n": 266
+    }
+   ]
+  },
+  "known": {
+   "n": 16710,
+   "rate": 0.53,
+   "logloss": 0.6928,
+   "logloss_base": 0.68657,
+   "minus_base": 0.00624,
+   "se": 0.00143,
+   "brier": 0.24954,
+   "brier_base": 0.2467,
+   "calibration": [
+    {
+     "pred": 0.2673,
+     "hit": 0.3948,
+     "n": 542
+    },
+    {
+     "pred": 0.3593,
+     "hit": 0.453,
+     "n": 2435
+    },
+    {
+     "pred": 0.4538,
+     "hit": 0.5071,
+     "n": 5636
+    },
+    {
+     "pred": 0.5457,
+     "hit": 0.566,
+     "n": 5677
+    },
+    {
+     "pred": 0.6374,
+     "hit": 0.6048,
+     "n": 2105
+    },
+    {
+     "pred": 0.7293,
+     "hit": 0.6477,
+     "n": 264
+    }
+   ]
+  }
+ },
+ "decision": {
+  "test_passes": false,
+  "confirm_vetoes": true,
+  "ship": false
+ },
+ "recal": {
+  "a": 0.03561,
+  "b": 0.42932,
+  "c": 0.48344
+ },
+ "recal_2025": {
+  "n": 20625,
+  "rate": 0.5141,
+  "logloss": 0.68505,
+  "logloss_base": 0.68775,
+  "minus_base": -0.0027,
+  "se": 0.00053,
+  "brier": 0.24598,
+  "brier_base": 0.24731,
+  "calibration": [
+   {
+    "pred": 0.3637,
+    "hit": 0.3673,
+    "n": 1454
+   },
+   {
+    "pred": 0.4622,
+    "hit": 0.4694,
+    "n": 6813
+   },
+   {
+    "pred": 0.5433,
+    "hit": 0.5466,
+    "n": 10773
+   },
+   {
+    "pred": 0.6227,
+    "hit": 0.6257,
+    "n": 1547
+   }
+  ]
+ },
+ "recal_2026": {
+  "n": 17503,
+  "rate": 0.5261,
+  "logloss": 0.68463,
+  "logloss_base": 0.6867,
+  "minus_base": -0.00207,
+  "se": 0.0006,
+  "brier": 0.24577,
+  "brier_base": 0.24677,
+  "calibration": [
+   {
+    "pred": 0.3692,
+    "hit": 0.399,
+    "n": 1243
+   },
+   {
+    "pred": 0.4627,
+    "hit": 0.4827,
+    "n": 5792
+   },
+   {
+    "pred": 0.5438,
+    "hit": 0.5554,
+    "n": 8887
+   },
+   {
+    "pred": 0.6252,
+    "hit": 0.622,
+    "n": 1545
+   }
+  ]
+ },
+ "decision_b": {
+  "ship": true
+ },
+ "weak": [
+  "afc.champions",
+  "arg.1",
+  "arg.2",
+  "arg.3",
+  "aut.1",
+  "bel.1",
+  "bol.1",
+  "bra.1",
+  "bra.2",
+  "bra.copa_do_brazil",
+  "caf.champions",
+  "chi.1",
+  "chn.1",
+  "club.friendly",
+  "col.1",
+  "conmebol.libertadores",
+  "conmebol.sudamericana",
+  "den.1",
+  "ecu.1",
+  "eng.1",
+  "eng.2",
+  "eng.4",
+  "esp.copa_del_rey",
+  "esp.w.1",
+  "fifa.friendly",
+  "fra.1",
+  "fra.2",
+  "fra.w.1",
+  "ger.2",
+  "ger.dfb_pokal",
+  "gre.1",
+  "ind.1",
+  "ita.1",
+  "ita.2",
+  "jpn.1",
+  "ksa.1",
+  "mex.1",
+  "mex.2",
+  "ned.2",
+  "ned.w.1",
+  "par.1",
+  "por.1",
+  "rsa.1",
+  "sco.tennents",
+  "swe.1",
+  "tur.1",
+  "uefa.europa",
+  "uefa.europa.conf",
+  "uefa.europa_qual",
+  "uru.1",
+  "usa.1",
+  "usa.ncaa.m.1",
+  "usa.nwsl",
+  "usa.open",
+  "usa.usl.l1",
+  "ven.1"
+ ]
+}
