@@ -598,7 +598,7 @@ def dp_legs(n_legs, legs_mode, max_total_legs, payout_mode="off"):
     return max(2, min(allowed, _MAX_DP_LEGS, want))
 
 
-def frontier(games_bundles, max_total_legs=8, net=True):
+def frontier(games_bundles, max_total_legs=8, net=True, ceiling=None):
     """Every efficient (legs, cost) combination and the likeliest slip at each.
     `net` charges the exchange's ONE combo fee on each state's basket price
     (combo_cost); the legs themselves are costed at their asks.
@@ -606,8 +606,13 @@ def frontier(games_bundles, max_total_legs=8, net=True):
     games_bundles: [(label, [bundle, ...], suffix), ...] as built by
     mlb_sim.game_bundles -- one entry per game, at most one bundle taken from
     each. Each bundle is {"size": k, "prob": joint, "legs": [cand, ...]}.
+
+    `ceiling` replaces _MAX_DP_LEGS for a caller whose pool cannot blow up:
+    the college quick pick offers one moneyline a game (at most two bundles
+    a game), so its state count grows with the games, not combinatorially --
+    measured 2026-10-17 on both divisions' 64 games: 60 legs in 4 s.
     """
-    max_total_legs = min(max_total_legs, _MAX_DP_LEGS)
+    max_total_legs = min(max_total_legs, ceiling or _MAX_DP_LEGS)
     dp = {(0, 0): [(0.0, 0.0, 0, 0, [])]}
     for gi, entry in enumerate(games_bundles):
         bundles = entry[1]

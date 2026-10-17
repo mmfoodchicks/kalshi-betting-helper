@@ -609,6 +609,12 @@ def price_cands(cands, suffix, idx, blend=True):
     return cands
 
 
+# The quick pick's leg count has no product limit (the owner, 2026-10-17:
+# "endless, not 12"); this bounds a typo, not a slip -- a full week of both
+# divisions is about 130 games.
+QUICK_MAX_LEGS = 300
+
+
 def _combo_event(idx, suffix, kref):
     """The Kalshi event a leg's market belongs to, None when it has no
     ticker."""
@@ -652,7 +658,8 @@ def build_parlay(week=1, n_legs=3, target_pct=55, cap_pct=None, target_payout=0,
     built on the FCS board must not quietly take an FBS leg, and a buy game
     belongs to both. Without it the whole college slate is in play.
 
-    `quick` is the tab's quick pick: only legs Kalshi's combo accepts
+    `quick` is the tab's quick pick (moneylines only -- the route passes
+    types={"ML"}; any number of legs): only legs Kalshi's combo accepts
     (kalshi.combo_events; on 2026-10-17 all 3,962 legs with a ticker in the
     week's 115 games were, but the list is the exchange's to change and
     soccer's covers a fifth of its matches), and only the games of the
@@ -748,10 +755,17 @@ def build_parlay(week=1, n_legs=3, target_pct=55, cap_pct=None, target_payout=0,
         return None
     if len(games_bundles) < 2 and max_legs_per_game <= 1:
         return {"error_hint": "single_game_no_stack", "n_games_available": len(games_bundles)}
-    _dp = combo_engine.dp_legs(
-        n_legs, "off" if max_bet else legs_mode, max_total_legs,
-        payout_mode="require" if max_bet else payout_mode)
-    states = combo_engine.frontier(games_bundles, max_total_legs=_dp, net=True)
+    if quick:
+        # exactly n_legs, one moneyline a game: no headroom wanted, and no
+        # 30-leg ceiling -- the owner asked for none (2026-10-17); the games
+        # left are the limit
+        states = combo_engine.frontier(games_bundles, max_total_legs=n_legs, net=True,
+                                       ceiling=n_legs)
+    else:
+        _dp = combo_engine.dp_legs(
+            n_legs, "off" if max_bet else legs_mode, max_total_legs,
+            payout_mode="require" if max_bet else payout_mode)
+        states = combo_engine.frontier(games_bundles, max_total_legs=_dp, net=True)
     if max_bet:
         targets = {}
         best, meta = combo_engine.max_bet(states, cap=cap_x)
@@ -817,4 +831,20 @@ def build_parlay(week=1, n_legs=3, target_pct=55, cap_pct=None, target_payout=0,
                  "kalshi_payout_net_x": round(net, 2) if priced else None,
                  "kalshi_priced": priced, "kalshi_total_legs": total,
                  "kalshi_full": priced == total and priced > 0})
+    if window is not None:
+        # With no leg cap a slip runs past what a Kalshi combo pays: 30 FBS
+        # moneylines on 2026-10-17 multiplied to 1,966x at the asks against
+        # the measured ceiling (combo_engine.MAX_PAYOUT_X). Say how many of
+        # the slip's SAFEST legs already reach it -- every leg past that adds
+        # a way to lose and nothing to the payout.
+        x, k_cap = 1.0, None
+        cents = sorted((leg.get("market_cents") for grp in item.get("groups") or []
+                        for leg in grp.get("legs") or [] if leg.get("market_cents")), reverse=True)
+        for i, c in enumerate(cents, 1):
+            x *= 100.0 / c
+            if x >= combo_engine.MAX_PAYOUT_X:
+                k_cap = i
+                break
+        window["cap_x"] = combo_engine.MAX_PAYOUT_X
+        window["legs_to_cap"] = k_cap
     return item

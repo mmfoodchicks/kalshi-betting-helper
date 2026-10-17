@@ -253,7 +253,12 @@ data-only `sim-history` branch (which never deploys):
   kickoff is tomorrow in UTC), the next day only while today is short. The
   chooser is combo_engine's frontier + `choose`; soccer offers no `value`
   objective (one model, no market blend: its max-EV slip was four longshots
-  at twice Kalshi's price).
+  at twice Kalshi's price). College's is **moneylines only and has no leg
+  cap** (the owner: "endless, not 12"): the route passes `types={"ML"}`, the
+  owner tier skips the 30-leg cap, and `frontier(ceiling=)` lifts the DP
+  ceiling for this one-leg-a-game pool only; the slip counts how many of its
+  safest legs already pass `MAX_PAYOUT_X`. On 2026-10-17 every all-favourite
+  moneyline slip was -EV by the model (4 legs -8%, 33 legs -55%).
 - **The NBA / NHL seasons** (2026-10-17, `pro_season.py` rules + Monte
   Carlo, `pro_season_job.py` the job and the board): NHL three per division +
   two wildcards, the division bracket, points then RW, ROW, W, head-to-head,

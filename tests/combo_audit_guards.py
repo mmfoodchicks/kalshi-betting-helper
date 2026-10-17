@@ -20745,6 +20745,10 @@ import clock as _clk13
 import kalshi as _k13
 import cfb_board as _cb13
 _NOW13 = datetime.datetime(2026, 10, 17, 15, 0, tzinfo=datetime.timezone.utc).timestamp()   # 09:00 MDT
+# hermetic: the slip asks who is quoting (combo_engine.quote_status -> Kalshi's
+# collection feed); every check below answers "unknown" instead of the network
+_oqtop13 = _k13.combo_quoters
+_k13.combo_quoters = lambda: {}
 
 
 def _qrow13(ev, ko, ph, pd, pa, asks, btts=None, **kw):
@@ -20862,18 +20866,23 @@ ck("the slip's money is Kalshi's: the asks multiplied, ONE combo fee on the bask
    and _soc13.QUICK_OBJECTIVES == ("balanced", "safe"),
    str((_g13.get("asks_x"), _g13.get("payout_x"), _g13.get("ev_pct"))))
 # the route answers off the board already built, never building one inline
-_ob13, _oe13, _oq13 = _soc13.board, _k13.combo_events, _k13.combo_quoters
+# The route reads the clock itself; pinned to the fixture's, or the fixture's
+# kickoffs pass in real time and the matches drop out (it went red on
+# 2026-10-17 at 17:00 UTC, the first fixture kickoff, in the next suite run).
+_ob13, _oe13, _oqc13 = _soc13.board, _k13.combo_events, _soc13.quick_combo
 try:
     _soc13.board = lambda: _bp13
     _k13.combo_events = lambda: _evp13
-    _k13.combo_quoters = lambda: {}
+    _soc13.quick_combo = lambda b, n, objective="balanced", day=None, now=None, **kw: _oqc13(
+        b, n, objective, day=day, now=_NOW13, **kw)
     _c13 = __import__("app").app.test_client()
     _rr13 = _c13.get("/api/soccer/combo?n=3&objective=safe&btts=0")
     _rb13 = _c13.get("/api/soccer/combo?n=3&day=nope")
     _soc13.board = lambda: None
     _rn13b = _c13.get("/api/soccer/combo?n=3")
 finally:
-    _soc13.board, _k13.combo_events, _k13.combo_quoters = _ob13, _oe13, _oq13
+    _soc13.board, _k13.combo_events, _soc13.quick_combo = _ob13, _oe13, _oqc13
+    _k13.combo_quoters = _oqtop13
 _rj13 = _rr13.get_json() or {}
 ck("/api/soccer/combo serves the pick off the cached board (a bad day is a 400, no board yet a 502 that the button retries)",
    _rr13.status_code == 200 and _rj13.get("objective") == "safe" and _rj13.get("n") == 3 and len(_rj13.get("legs") or []) == 3
@@ -20956,7 +20965,7 @@ ck("college's quick pick never takes a leg Kalshi's combo refuses and stays on t
 _apq13 = open(_os.path.join(_root, "app.py")).read()
 ck("the route's quick flag fixes everything but the number (exactly N, one per game, no game picks), and the maker's box sends it",
    'quick = request.args.get("quick") == "1" and not (max_bet or optimal)' in _apq13
-   and 'legs_mode, same_game, sel = "require", False, set()' in _apq13 and "div=div, quick=quick," in _apq13
+   and 'legs_mode, same_game, sel, prop_types = "require", False, set(), {"ML"}' in _apq13 and "div=div, quick=quick," in _apq13
    and "&legs_mode=require&payout_mode=off&conn=or&same_game=0&quick=1" in _jsq13
    and 'onclick="buildCFBCombo(false, false, true)"' in _jsq13 and 'd.hint === "quick_short"' in _jsq13)
 
@@ -21018,12 +21027,12 @@ try:
     _bb14q._SLOT_PATH = _os.path.join(_tmp14q, "combo-slot.json")
 
     def _fake14q(**kw):
-        _seen14q.append({k: kw.get(k) for k in ("div", "quick", "legs_mode", "max_legs_per_game", "n_legs")})
+        _seen14q.append({k: kw.get(k) for k in ("div", "quick", "legs_mode", "max_legs_per_game", "n_legs", "types")})
         return {"groups": [], "sport": "cfb", "n_legs": kw.get("n_legs")}
     _cb13.build_parlay = _fake14q
     _sl14q.log_from_item = lambda item, sport=None: _logged14q.append(sport)
     _cq14 = __import__("app").app.test_client()
-    _url14 = "/api/cfb/parlay?week=7&div=fcs&legs=3&target=50&payout=0&quick=1&ptok=guardctx14"
+    _url14 = "/api/cfb/parlay?week=7&div=fcs&legs=45&target=50&payout=0&quick=1&ptok=guardctx14"
     _first14 = _cq14.get(_url14)
     _fin14 = None
     for _i in range(100):
@@ -21037,11 +21046,75 @@ finally:
     _sh14q.rmtree(_tmp14q, ignore_errors=True)
 _fj14 = (_fin14.get_json() if _fin14 is not None else None) or {}
 ck("the college maker driven the page's way (a ptok, then polls) builds in the job thread: the FCS tab's division and the quick "
-   "flag reach the builder, and the slip is filed in the FCS ledger",
-   _first14.status_code == 202 and _fin14 is not None and _fin14.status_code == 200 and (_fj14.get("parlay") or {}).get("n_legs") == 3
-   and _seen14q[:1] == [{"div": "fcs", "quick": True, "legs_mode": "require", "max_legs_per_game": 1, "n_legs": 3}]
+   "flag reach the builder -- moneylines only, and 45 legs past the 30-leg tier ceiling (the owner: \"endless, not 12\") -- and "
+   "the slip is filed in the FCS ledger",
+   _first14.status_code == 202 and _fin14 is not None and _fin14.status_code == 200 and (_fj14.get("parlay") or {}).get("n_legs") == 45
+   and _seen14q[:1] == [{"div": "fcs", "quick": True, "legs_mode": "require", "max_legs_per_game": 1, "n_legs": 45,
+                         "types": {"ML"}}]
    and _logged14q == ["cfb_fcs"],
    str((_first14.status_code, _fin14.status_code if _fin14 is not None else None, _fj14.get("error"), _seen14q, _logged14q)))
+
+# The college quick pick, moneylines only and no leg cap (the owner,
+# 2026-10-17: "the max to be endless, not 12 ... only moneyline, not extra
+# other random props"). A stubbed week of 40 games, each with a moneyline
+# and a likelier spread: 35 legs come back (past the frontier's 30-leg
+# ceiling, lifted for this one-leg-a-game pool only), every one a
+# moneyline, the safe objective's 35 the 35 likeliest, and the slip says how
+# many of its safest legs already reach Kalshi's measured payout ceiling.
+def _cgml15(i, p):
+    g = _cg13(i, "2026-10-17T19:00Z", p)
+    sp = dict(g["cands"][0], type="Spread", label=f"H{i} by over 0.5 points", group="Spread",
+              kref={"t": "spread", "team": f"H{i}", "by": 1}, marg=min(0.99, g["cands"][0]["marg"] + 0.02))
+    return dict(g, cands=g["cands"] + [sp])
+
+
+_rn15 = _rn13.Random(1018)
+_wk15 = [_cgml15(i, round(_rn15.uniform(0.55, 0.97), 3)) for i in range(40)]
+_sv15 = (_cb13._slate_sims, _cb13.price_cands, _cb13.kalshi_cfb.index, _cb13.kalshi_cfb.ticker_leg, _cb13._time,
+         _k13.combo_events)
+try:
+    _cb13._slate_sims = lambda week: [dict(g, cands=[dict(c) for c in g["cands"]]) for g in _wk15]
+    _cb13.price_cands = _pc13
+    _cb13.kalshi_cfb.index = lambda: {"guard": 1}
+    _cb13.kalshi_cfb.ticker_leg = lambda idx, sfx, kref: ((f"KXNCAAFGAME-{sfx}-{kref['team']}" if kref.get("t") == "ml"
+                                                           else f"KXNCAAFSPREAD-{sfx}-{kref['team']}{kref.get('by')}"), None)
+    _cb13._time = _ty13.SimpleNamespace(time=lambda: _NOW13)
+    _k13.combo_events = lambda: set()      # the feed down: nothing excluded for eligibility
+    _ml15 = _cb13.build_parlay(week=7, n_legs=35, target_pct=50, max_legs_per_game=1, max_total_legs=30,
+                               legs_mode="require", objective="safe", quick=True, types={"ML"})
+finally:
+    (_cb13._slate_sims, _cb13.price_cands, _cb13.kalshi_cfb.index, _cb13.kalshi_cfb.ticker_leg, _cb13._time,
+     _k13.combo_events) = _sv15
+_mll15 = [l for g in (_ml15 or {}).get("groups") or [] for l in g["legs"]]
+_top15 = sorted((max(c["marg"] for c in g["cands"] if c["type"] == "ML"), g["suffix"]) for g in _wk15)[-35:]
+_cents15 = sorted((l["market_cents"] for l in _mll15), reverse=True)
+_x15, _k15 = 1.0, None
+for _i, _c in enumerate(_cents15, 1):
+    _x15 *= 100.0 / _c
+    if _x15 >= _ce13.MAX_PAYOUT_X:
+        _k15 = _i
+        break
+_st15 = _ce13.frontier([(f"g{i}", [{"size": 1, "prob": 0.9, "legs": [{"price_cents": 85, "marg": 0.9}]}], f"g{i}") for i in range(40)],
+                       max_total_legs=35)
+ck("college's quick pick takes as many moneylines as asked -- 35 here, past the 30-leg ceiling every other maker keeps -- and "
+   "nothing but moneylines; safe's 35 are the 35 likeliest; the slip counts the safest legs that already reach Kalshi's "
+   "measured payout ceiling",
+   len(_mll15) == 35 and {l.get("type") for l in _mll15} == {"ML"}
+   and all((l.get("ticker") or "").startswith("KXNCAAFGAME-") for l in _mll15)
+   and sorted(g["suffix"] for g in _ml15["groups"]) == sorted(s_ for _p, s_ in _top15)
+   and _k15 is not None and _ml15["quick"]["legs_to_cap"] == _k15 and _ml15["quick"]["cap_x"] == _ce13.MAX_PAYOUT_X
+   and max(s_["legs"] for s_ in _st15) == 30 and _ce13._MAX_DP_LEGS == 30
+   and _cb13.QUICK_MAX_LEGS >= 200,
+   str((len(_mll15), sorted({l.get("type") for l in _mll15}), (_ml15 or {}).get("quick"), _k15, max(s_["legs"] for s_ in _st15))))
+_js15 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("and the box has no maximum: the count goes to the server as typed, a request past the games left offers 'build with all N', "
+   "a near-zero chance reads '1 in N', and the ceiling warning names how many legs add risk without payout",
+   'id="${_cx("cfbQuickN")}" type="number" min="2" step="1"' in _js15
+   and 'Math.max(2, Math.round(num(_cx("cfbQuickN"), 4)))' in _js15
+   and "cfbQuickAll(${d.n_games_available})" in _js15
+   and "about <b>1 in ${Math.round(d.parlay.fair_payout_x).toLocaleString()}</b>" in _js15
+   and "add ways to lose without adding payout" in _js15
+   and "<b>moneylines</b>, one per game" in _js15)
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

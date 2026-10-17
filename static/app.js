@@ -4667,9 +4667,9 @@ function renderCFBComboMaker() {
   box.innerHTML = `<div class="combomaker">
     🎯 <b>Combo maker</b>
     <div style="margin-top:8px;padding:6px 9px;border:1px dashed rgba(91, 140, 255, 0.45);border-radius:9px">⚡ <b>Quick pick</b>
-      <input id="${_cx("cfbQuickN")}" type="number" min="2" max="12" value="${cfbQuickN}" style="width:50px"/> legs
+      <input id="${_cx("cfbQuickN")}" type="number" min="2" step="1" value="${cfbQuickN}" style="width:60px"/> legs
       <button class="track-mini primary-mini" style="margin-left:4px" onclick="buildCFBCombo(false, false, true)">Pick my slip</button>
-      <div class="small" style="color:var(--muted)">One number: the best slip of that many legs, one per game, from the games starting next (today in Mountain time first, the next day only if today runs short), only markets Kalshi's combo accepts, each leg 50%+. It follows the <b>goal</b> below; everything else here is ignored.</div>
+      <div class="small" style="color:var(--muted)">One number, as big as you like: the best slip of that many <b>moneylines</b>, one per game, from the games starting next (today in Mountain time first, the next day only if today runs short), only markets Kalshi's combo accepts, each pick 50%+. The games left are the only limit. It follows the <b>goal</b> below; everything else here is ignored.</div>
     </div>
     <div style="margin-top:8px">each leg ≥
       <input id="${_cx("cfbComboTarget")}" type="number" min="20" max="97" value="${cfbComboTarget}" style="width:54px"/>%
@@ -4697,11 +4697,18 @@ function renderCFBComboMaker() {
   </div>`;
   if (prev) { const el = $(_cx("cfbComboOut")); if (el) el.innerHTML = prev; }
 }
+function cfbQuickAll(n) {
+  // the "build with all N" link: the box takes the count, the pick reruns
+  const el = $(_cx("cfbQuickN"));
+  if (el) el.value = n;
+  buildCFBCombo(false, false, true);
+}
 async function buildCFBCombo(maxBet, optimal, quick) {
   const out = $(_cx("cfbComboOut"));
   if (!out) return;
   const num = (id, dflt) => { const v = parseFloat(($(id) || {}).value); return isNaN(v) ? dflt : v; };
-  if (quick) cfbQuickN = Math.max(2, Math.min(12, Math.round(num(_cx("cfbQuickN"), 4))));
+  // no ceiling: the server takes as many as the games left allow
+  if (quick) cfbQuickN = Math.max(2, Math.round(num(_cx("cfbQuickN"), 4)));
   cfbComboLegs = Math.max(2, Math.min(12, num(_cx("cfbComboN"), 3)));
   cfbComboTarget = Math.max(20, Math.min(97, num(_cx("cfbComboTarget"), 55)));
   let cap = parseInt(($(_cx("cfbComboCap")) || {}).value, 10);
@@ -4794,7 +4801,8 @@ function _renderCfbComboResult(d, out) {
       : (d.hint === "all_started")
       ? `<div class="empty">Every game on this week's board has already kicked off (${d.n_started || "all"} started). Try the next week.</div>`
       : (d.hint === "quick_short")
-      ? `<div class="empty">Only <b>${d.n_games_available || 0}</b> game${d.n_games_available === 1 ? "" : "s"} left on this week's board can take a combo leg (not started, priced, 50%+). Ask for fewer legs, or try the next week.</div>`
+      ? `<div class="empty">Only <b>${d.n_games_available || 0}</b> game${d.n_games_available === 1 ? "" : "s"} left on this week's board can take a moneyline on a combo (not started, priced, 50%+).${d.n_games_available >= 2
+          ? ` <a href="#" onclick="event.preventDefault();cfbQuickAll(${d.n_games_available})">Build with all ${d.n_games_available}</a>, or ask for fewer.` : " Try the next week."}</div>`
       : (d.hint === "max_bet_unreachable")
       ? `<div class="empty">No slip on this week's board can pay <b>${d.cap_x || MAX_BET_X}×</b> - every leg needs a real Kalshi quote behind it.</div>`
       : (d.hint === "optimal_unbuildable")
@@ -4803,9 +4811,12 @@ function _renderCfbComboResult(d, out) {
     return;
   }
   const qk = d.parlay.quick;
-  const qkHtml = qk ? `<div class="small" style="color:var(--muted);margin-bottom:4px">⚡ Quick pick from ${qk.window[0] === qk.today
+  const qkHtml = qk ? `<div class="small" style="color:var(--muted);margin-bottom:4px">⚡ Quick pick, moneylines only, from ${qk.window[0] === qk.today
       ? (qk.extended ? `today and ${qk.window.slice(1).map(_mtDay).join(", ")} (today had too few games left)` : `today's games (${_mtDay(qk.today)}, Mountain time)`)
-      : `${qk.window.map(_mtDay).join(", ")} - nothing left today`}.${qk.eligibility_known ? "" : " Kalshi's combo-eligible list could not be read, so a leg may be one the combo builder refuses."}</div>` : "";
+      : `${qk.window.map(_mtDay).join(", ")} - nothing left today`}.${qk.eligibility_known ? "" : " Kalshi's combo-eligible list could not be read, so a leg may be one the combo builder refuses."}</div>`
+    + (d.parlay.combined_prob_pct != null && d.parlay.combined_prob_pct < 0.1 && d.parlay.fair_payout_x
+      ? `<div class="small" style="margin-bottom:4px">Chance all ${d.parlay.n_legs} win: about <b>1 in ${Math.round(d.parlay.fair_payout_x).toLocaleString()}</b> (the card's percentage rounds it to 0).</div>` : "")
+    + (qk.legs_to_cap ? `<div class="small" style="color:var(--neg);margin-bottom:4px">⚠️ A Kalshi combo has been measured to pay at most about <b>${qk.cap_x}×</b>. The safest <b>${qk.legs_to_cap}</b> of these legs already multiply past that, so the other ${d.parlay.n_legs - qk.legs_to_cap} add ways to lose without adding payout. Kalshi's combo builder shows what it will actually pay.</div>` : "") : "";
   out.innerHTML = qkHtml + renderMixed(d.parlay)
     + (d.parlay.excluded_started
        ? `<div class="small" style="color:var(--muted);margin-top:4px">🔴 ${d.parlay.excluded_started} game${d.parlay.excluded_started > 1 ? "s" : ""} already under way - excluded (pre-game pricing only).</div>` : "");

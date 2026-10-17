@@ -3788,12 +3788,20 @@ def api_cfb_parlay():
     # the quick pick: exactly `legs` legs, one per game, combo-eligible
     # markets only, the next game day in Mountain time (cfb_board.quick_window)
     quick = request.args.get("quick") == "1" and not (max_bet or optimal)
-    if quick:
-        legs_mode, same_game, sel = "require", False, set()
     if optimal and not (payout and payout > 1):
         return jsonify({"error": "optimal mode needs a payout target above 1x"}), 400
     ptok = (request.args.get("ptok") or "")[:64] or None
     prop_types = _prop_types()
+    if quick:
+        # moneylines only (the owner: "not extra other random props"), and no
+        # leg ceiling for the owner -- the games left on the tab are the limit
+        legs_mode, same_game, sel, prop_types = "require", False, set(), {"ML"}
+        if tiers.normalize(_tier()) == "owner":
+            import cfb_board
+            try:
+                legs = max(2, min(cfb_board.QUICK_MAX_LEGS, int(request.args.get("legs", 3))))
+            except ValueError:
+                legs = 3
     # Read off the request HERE: with a ptok, _build and _log run in a job
     # thread (_run_job), where Flask has no request -- reading the tab's
     # division inside them failed every college Build from the page with
