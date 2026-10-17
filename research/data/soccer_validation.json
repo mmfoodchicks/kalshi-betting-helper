@@ -1,0 +1,2359 @@
+{
+ "rule": "The soccer goals model, chosen on 2024 and tested on 2025 -- out of sample.\n\nWalk-forward by month: for every month, the model is fitted on every\nfinished match BEFORE the month (weights relative to its first day, exactly\nas production weights relative to today) and predicts every match IN the\nmonth. Nothing a prediction sees post-dates it.\n\nThe rule, written before any 2025 number was read:\n  1. On the 2024 months, pick (XI, KAPPA, RHO) from the grid below by the\n     lowest mean three-way log loss over every predicted match.\n  2. Freeze them. Score 2025 with them, once. The figures to quote are the\n     2025 ones; 2024's are the selection and are reported as such.\n  3. The model is worth showing as a probability if its 2025 log loss beats\n     the league base-rate benchmark (the decayed home/draw/away frequencies\n     of the match's own competition, from the same fitting window) by more\n     than two standard errors of the per-match difference. If it does not,\n     the tab shows the de-vigged Kalshi price alone and says so.\n\nBenchmarks: the league base rate above, and the global 2024 rate. No odds\nbenchmark: ESPN's historical results carry no line (the DraftKings line is\non upcoming matches only), so the market comparison is prospective -- the\nshadow bucket soccer_dk from the first day the board runs.\n\nThe owner's bet: NO on the underdog. Reported separately: the Brier score\nand calibration of P(the underdog does not win), over every match and over\nthe heavy-underdog subset (the model's own underdog at least five points\nunder its draw, the owner's Kalshi rule in model terms).\n\n",
+ "grid": {
+  "xi": [
+   0.003,
+   0.005,
+   0.008
+  ],
+  "kappa": [
+   3.0,
+   6.0,
+   12.0
+  ],
+  "rho": [
+   0.0,
+   -0.06,
+   -0.12
+  ]
+ },
+ "select_year": 2024,
+ "test_year": 2025,
+ "selection": {
+  "0.003|3.0|0.0": {
+   "n": 19737,
+   "logloss": 1.00037,
+   "logloss_base": 1.05737,
+   "logloss_global": 1.06841,
+   "rps": 0.20637,
+   "rps_base": 0.22795,
+   "delta_vs_base": -0.057,
+   "se": 0.00255,
+   "n_known": 19112,
+   "logloss_known": 1.00303,
+   "logloss_base_known": 1.06077,
+   "no_dog": {
+    "brier": 0.17847,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.667,
+      "hit": 0.668,
+      "n": 5644
+     },
+     "0.7": {
+      "pred": 0.7471,
+      "hit": 0.7425,
+      "n": 8357
+     },
+     "0.8": {
+      "pred": 0.8421,
+      "hit": 0.8402,
+      "n": 4555
+     },
+     "0.9": {
+      "pred": 0.9339,
+      "hit": 0.9306,
+      "n": 1181
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.13485,
+    "n": 5072,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6934,
+      "hit": 0.7241,
+      "n": 29
+     },
+     "0.7": {
+      "pred": 0.7645,
+      "hit": 0.7808,
+      "n": 1483
+     },
+     "0.8": {
+      "pred": 0.8476,
+      "hit": 0.8409,
+      "n": 2759
+     },
+     "0.9": {
+      "pred": 0.9262,
+      "hit": 0.9176,
+      "n": 801
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.003|3.0|-0.06": {
+   "n": 19737,
+   "logloss": 1.00067,
+   "logloss_base": 1.05737,
+   "logloss_global": 1.06841,
+   "rps": 0.20639,
+   "rps_base": 0.22795,
+   "delta_vs_base": -0.0567,
+   "se": 0.00258,
+   "n_known": 19112,
+   "logloss_known": 1.00318,
+   "logloss_base_known": 1.06077,
+   "no_dog": {
+    "brier": 0.17856,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6702,
+      "hit": 0.6677,
+      "n": 4963
+     },
+     "0.7": {
+      "pred": 0.7475,
+      "hit": 0.7332,
+      "n": 8587
+     },
+     "0.8": {
+      "pred": 0.8425,
+      "hit": 0.835,
+      "n": 4880
+     },
+     "0.9": {
+      "pred": 0.934,
+      "hit": 0.9304,
+      "n": 1307
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.14013,
+    "n": 7365,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6943,
+      "hit": 0.6774,
+      "n": 62
+     },
+     "0.7": {
+      "pred": 0.7641,
+      "hit": 0.7673,
+      "n": 2376
+     },
+     "0.8": {
+      "pred": 0.8458,
+      "hit": 0.837,
+      "n": 3840
+     },
+     "0.9": {
+      "pred": 0.9283,
+      "hit": 0.9236,
+      "n": 1087
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.003|3.0|-0.12": {
+   "n": 19737,
+   "logloss": 1.00194,
+   "logloss_base": 1.05737,
+   "logloss_global": 1.06841,
+   "rps": 0.20651,
+   "rps_base": 0.22795,
+   "delta_vs_base": -0.05542,
+   "se": 0.00262,
+   "n_known": 19112,
+   "logloss_known": 1.00431,
+   "logloss_base_known": 1.06077,
+   "no_dog": {
+    "brier": 0.17873,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.673,
+      "hit": 0.6662,
+      "n": 4233
+     },
+     "0.7": {
+      "pred": 0.7475,
+      "hit": 0.7248,
+      "n": 8795
+     },
+     "0.8": {
+      "pred": 0.8426,
+      "hit": 0.8295,
+      "n": 5255
+     },
+     "0.9": {
+      "pred": 0.9341,
+      "hit": 0.9264,
+      "n": 1454
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.15089,
+    "n": 9673,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6944,
+      "hit": 0.619,
+      "n": 84
+     },
+     "0.7": {
+      "pred": 0.7616,
+      "hit": 0.7392,
+      "n": 3554
+     },
+     "0.8": {
+      "pred": 0.8445,
+      "hit": 0.8303,
+      "n": 4719
+     },
+     "0.9": {
+      "pred": 0.9301,
+      "hit": 0.9217,
+      "n": 1316
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.003|6.0|0.0": {
+   "n": 19737,
+   "logloss": 1.0008,
+   "logloss_base": 1.05737,
+   "logloss_global": 1.06841,
+   "rps": 0.20654,
+   "rps_base": 0.22795,
+   "delta_vs_base": -0.05656,
+   "se": 0.00231,
+   "n_known": 19112,
+   "logloss_known": 1.00314,
+   "logloss_base_known": 1.06077,
+   "no_dog": {
+    "brier": 0.17896,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6669,
+      "hit": 0.6668,
+      "n": 6197
+     },
+     "0.7": {
+      "pred": 0.7464,
+      "hit": 0.7497,
+      "n": 8661
+     },
+     "0.8": {
+      "pred": 0.8405,
+      "hit": 0.8543,
+      "n": 4097
+     },
+     "0.9": {
+      "pred": 0.932,
+      "hit": 0.9514,
+      "n": 782
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.12939,
+    "n": 4116,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6947,
+      "hit": 0.68,
+      "n": 25
+     },
+     "0.7": {
+      "pred": 0.7657,
+      "hit": 0.7876,
+      "n": 1276
+     },
+     "0.8": {
+      "pred": 0.8468,
+      "hit": 0.853,
+      "n": 2300
+     },
+     "0.9": {
+      "pred": 0.9249,
+      "hit": 0.9437,
+      "n": 515
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.003|6.0|-0.06": {
+   "n": 19737,
+   "logloss": 1.00102,
+   "logloss_base": 1.05737,
+   "logloss_global": 1.06841,
+   "rps": 0.20658,
+   "rps_base": 0.22795,
+   "delta_vs_base": -0.05634,
+   "se": 0.00232,
+   "n_known": 19112,
+   "logloss_known": 1.00321,
+   "logloss_base_known": 1.06077,
+   "no_dog": {
+    "brier": 0.17894,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6703,
+      "hit": 0.6631,
+      "n": 5461
+     },
+     "0.7": {
+      "pred": 0.7467,
+      "hit": 0.7436,
+      "n": 8926
+     },
+     "0.8": {
+      "pred": 0.8406,
+      "hit": 0.8459,
+      "n": 4466
+     },
+     "0.9": {
+      "pred": 0.9317,
+      "hit": 0.9434,
+      "n": 884
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.13537,
+    "n": 6423,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6952,
+      "hit": 0.6296,
+      "n": 54
+     },
+     "0.7": {
+      "pred": 0.7645,
+      "hit": 0.7772,
+      "n": 2213
+     },
+     "0.8": {
+      "pred": 0.8448,
+      "hit": 0.8478,
+      "n": 3411
+     },
+     "0.9": {
+      "pred": 0.9266,
+      "hit": 0.9423,
+      "n": 745
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.003|6.0|-0.12": {
+   "n": 19737,
+   "logloss": 1.00222,
+   "logloss_base": 1.05737,
+   "logloss_global": 1.06841,
+   "rps": 0.2067,
+   "rps_base": 0.22795,
+   "delta_vs_base": -0.05515,
+   "se": 0.00236,
+   "n_known": 19112,
+   "logloss_known": 1.00425,
+   "logloss_base_known": 1.06077,
+   "no_dog": {
+    "brier": 0.17906,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.673,
+      "hit": 0.6564,
+      "n": 4653
+     },
+     "0.7": {
+      "pred": 0.7469,
+      "hit": 0.7352,
+      "n": 9266
+     },
+     "0.8": {
+      "pred": 0.8412,
+      "hit": 0.8426,
+      "n": 4823
+     },
+     "0.9": {
+      "pred": 0.9317,
+      "hit": 0.9427,
+      "n": 995
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.14499,
+    "n": 8814,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6946,
+      "hit": 0.6885,
+      "n": 61
+     },
+     "0.7": {
+      "pred": 0.7621,
+      "hit": 0.7541,
+      "n": 3498
+     },
+     "0.8": {
+      "pred": 0.8431,
+      "hit": 0.8435,
+      "n": 4339
+     },
+     "0.9": {
+      "pred": 0.9282,
+      "hit": 0.94,
+      "n": 916
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.003|12.0|0.0": {
+   "n": 19737,
+   "logloss": 1.00467,
+   "logloss_base": 1.05737,
+   "logloss_global": 1.06841,
+   "rps": 0.20773,
+   "rps_base": 0.22795,
+   "delta_vs_base": -0.05269,
+   "se": 0.002,
+   "n_known": 19112,
+   "logloss_known": 1.00654,
+   "logloss_base_known": 1.06077,
+   "no_dog": {
+    "brier": 0.18011,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6666,
+      "hit": 0.6685,
+      "n": 7001
+     },
+     "0.7": {
+      "pred": 0.7452,
+      "hit": 0.762,
+      "n": 9048
+     },
+     "0.8": {
+      "pred": 0.8372,
+      "hit": 0.8735,
+      "n": 3258
+     },
+     "0.9": {
+      "pred": 0.9273,
+      "hit": 0.9674,
+      "n": 430
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.12547,
+    "n": 3024,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6932,
+      "hit": 0.8235,
+      "n": 17
+     },
+     "0.7": {
+      "pred": 0.7668,
+      "hit": 0.7907,
+      "n": 1080
+     },
+     "0.8": {
+      "pred": 0.8432,
+      "hit": 0.8703,
+      "n": 1666
+     },
+     "0.9": {
+      "pred": 0.9211,
+      "hit": 0.9617,
+      "n": 261
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.003|12.0|-0.06": {
+   "n": 19737,
+   "logloss": 1.00487,
+   "logloss_base": 1.05737,
+   "logloss_global": 1.06841,
+   "rps": 0.20778,
+   "rps_base": 0.22795,
+   "delta_vs_base": -0.0525,
+   "se": 0.00201,
+   "n_known": 19112,
+   "logloss_known": 1.00657,
+   "logloss_base_known": 1.06077,
+   "no_dog": {
+    "brier": 0.17997,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6699,
+      "hit": 0.6616,
+      "n": 6176
+     },
+     "0.7": {
+      "pred": 0.7457,
+      "hit": 0.7559,
+      "n": 9431
+     },
+     "0.8": {
+      "pred": 0.8375,
+      "hit": 0.8658,
+      "n": 3650
+     },
+     "0.9": {
+      "pred": 0.9279,
+      "hit": 0.9625,
+      "n": 480
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.12965,
+    "n": 5093,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6949,
+      "hit": 0.6176,
+      "n": 34
+     },
+     "0.7": {
+      "pred": 0.7659,
+      "hit": 0.7857,
+      "n": 1960
+     },
+     "0.8": {
+      "pred": 0.8418,
+      "hit": 0.8676,
+      "n": 2681
+     },
+     "0.9": {
+      "pred": 0.9238,
+      "hit": 0.9617,
+      "n": 418
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.003|12.0|-0.12": {
+   "n": 19737,
+   "logloss": 1.00604,
+   "logloss_base": 1.05737,
+   "logloss_global": 1.06841,
+   "rps": 0.20792,
+   "rps_base": 0.22795,
+   "delta_vs_base": -0.05133,
+   "se": 0.00205,
+   "n_known": 19112,
+   "logloss_known": 1.00759,
+   "logloss_base_known": 1.06077,
+   "no_dog": {
+    "brier": 0.17994,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6733,
+      "hit": 0.6571,
+      "n": 5375
+     },
+     "0.7": {
+      "pred": 0.7463,
+      "hit": 0.7475,
+      "n": 9757
+     },
+     "0.8": {
+      "pred": 0.8376,
+      "hit": 0.8588,
+      "n": 4044
+     },
+     "0.9": {
+      "pred": 0.9274,
+      "hit": 0.959,
+      "n": 561
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.13901,
+    "n": 7494,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6936,
+      "hit": 0.7778,
+      "n": 54
+     },
+     "0.7": {
+      "pred": 0.7632,
+      "hit": 0.7743,
+      "n": 3314
+     },
+     "0.8": {
+      "pred": 0.8398,
+      "hit": 0.8581,
+      "n": 3594
+     },
+     "0.9": {
+      "pred": 0.925,
+      "hit": 0.9586,
+      "n": 532
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.005|3.0|0.0": {
+   "n": 19737,
+   "logloss": 1.00172,
+   "logloss_base": 1.05858,
+   "logloss_global": 1.06843,
+   "rps": 0.20678,
+   "rps_base": 0.22812,
+   "delta_vs_base": -0.05686,
+   "se": 0.00253,
+   "n_known": 19112,
+   "logloss_known": 1.00412,
+   "logloss_base_known": 1.06177,
+   "no_dog": {
+    "brier": 0.17873,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.667,
+      "hit": 0.6758,
+      "n": 5710
+     },
+     "0.7": {
+      "pred": 0.7471,
+      "hit": 0.7377,
+      "n": 8438
+     },
+     "0.8": {
+      "pred": 0.8417,
+      "hit": 0.8448,
+      "n": 4505
+     },
+     "0.9": {
+      "pred": 0.9319,
+      "hit": 0.9317,
+      "n": 1084
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.13762,
+    "n": 4930,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6936,
+      "hit": 0.6,
+      "n": 40
+     },
+     "0.7": {
+      "pred": 0.7642,
+      "hit": 0.7644,
+      "n": 1477
+     },
+     "0.8": {
+      "pred": 0.8469,
+      "hit": 0.8447,
+      "n": 2691
+     },
+     "0.9": {
+      "pred": 0.9241,
+      "hit": 0.9197,
+      "n": 722
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.005|3.0|-0.06": {
+   "n": 19737,
+   "logloss": 1.00205,
+   "logloss_base": 1.05858,
+   "logloss_global": 1.06843,
+   "rps": 0.20681,
+   "rps_base": 0.22812,
+   "delta_vs_base": -0.05653,
+   "se": 0.00255,
+   "n_known": 19112,
+   "logloss_known": 1.0043,
+   "logloss_base_known": 1.06177,
+   "no_dog": {
+    "brier": 0.1788,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6702,
+      "hit": 0.6738,
+      "n": 5019
+     },
+     "0.7": {
+      "pred": 0.7475,
+      "hit": 0.7309,
+      "n": 8658
+     },
+     "0.8": {
+      "pred": 0.842,
+      "hit": 0.8373,
+      "n": 4857
+     },
+     "0.9": {
+      "pred": 0.9322,
+      "hit": 0.9335,
+      "n": 1203
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.14297,
+    "n": 7231,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6942,
+      "hit": 0.6667,
+      "n": 51
+     },
+     "0.7": {
+      "pred": 0.7632,
+      "hit": 0.7532,
+      "n": 2407
+     },
+     "0.8": {
+      "pred": 0.8455,
+      "hit": 0.8375,
+      "n": 3772
+     },
+     "0.9": {
+      "pred": 0.9267,
+      "hit": 0.9271,
+      "n": 1001
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.005|3.0|-0.12": {
+   "n": 19737,
+   "logloss": 1.00335,
+   "logloss_base": 1.05858,
+   "logloss_global": 1.06843,
+   "rps": 0.20693,
+   "rps_base": 0.22812,
+   "delta_vs_base": -0.05523,
+   "se": 0.00259,
+   "n_known": 19112,
+   "logloss_known": 1.00544,
+   "logloss_base_known": 1.06177,
+   "no_dog": {
+    "brier": 0.17895,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6729,
+      "hit": 0.6748,
+      "n": 4280
+     },
+     "0.7": {
+      "pred": 0.7477,
+      "hit": 0.7238,
+      "n": 8928
+     },
+     "0.8": {
+      "pred": 0.8427,
+      "hit": 0.8289,
+      "n": 5197
+     },
+     "0.9": {
+      "pred": 0.9326,
+      "hit": 0.9324,
+      "n": 1332
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.152,
+    "n": 9565,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6942,
+      "hit": 0.6024,
+      "n": 83
+     },
+     "0.7": {
+      "pred": 0.7618,
+      "hit": 0.7405,
+      "n": 3638
+     },
+     "0.8": {
+      "pred": 0.8445,
+      "hit": 0.8275,
+      "n": 4633
+     },
+     "0.9": {
+      "pred": 0.9287,
+      "hit": 0.9282,
+      "n": 1211
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.005|6.0|0.0": {
+   "n": 19737,
+   "logloss": 1.00313,
+   "logloss_base": 1.05858,
+   "logloss_global": 1.06843,
+   "rps": 0.20725,
+   "rps_base": 0.22812,
+   "delta_vs_base": -0.05545,
+   "se": 0.00223,
+   "n_known": 19112,
+   "logloss_known": 1.005,
+   "logloss_base_known": 1.06177,
+   "no_dog": {
+    "brier": 0.17957,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6666,
+      "hit": 0.6677,
+      "n": 6373
+     },
+     "0.7": {
+      "pred": 0.7461,
+      "hit": 0.7514,
+      "n": 8843
+     },
+     "0.8": {
+      "pred": 0.8394,
+      "hit": 0.8609,
+      "n": 3881
+     },
+     "0.9": {
+      "pred": 0.93,
+      "hit": 0.9578,
+      "n": 640
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.12775,
+    "n": 3759,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6948,
+      "hit": 0.5652,
+      "n": 23
+     },
+     "0.7": {
+      "pred": 0.7658,
+      "hit": 0.7901,
+      "n": 1229
+     },
+     "0.8": {
+      "pred": 0.846,
+      "hit": 0.8604,
+      "n": 2099
+     },
+     "0.9": {
+      "pred": 0.9231,
+      "hit": 0.9485,
+      "n": 408
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.005|6.0|-0.06": {
+   "n": 19737,
+   "logloss": 1.00339,
+   "logloss_base": 1.05858,
+   "logloss_global": 1.06843,
+   "rps": 0.20729,
+   "rps_base": 0.22812,
+   "delta_vs_base": -0.0552,
+   "se": 0.00225,
+   "n_known": 19112,
+   "logloss_known": 1.00509,
+   "logloss_base_known": 1.06177,
+   "no_dog": {
+    "brier": 0.17953,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.67,
+      "hit": 0.665,
+      "n": 5636
+     },
+     "0.7": {
+      "pred": 0.7467,
+      "hit": 0.7438,
+      "n": 9146
+     },
+     "0.8": {
+      "pred": 0.84,
+      "hit": 0.8537,
+      "n": 4238
+     },
+     "0.9": {
+      "pred": 0.9302,
+      "hit": 0.9554,
+      "n": 717
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.13539,
+    "n": 6042,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6939,
+      "hit": 0.6596,
+      "n": 47
+     },
+     "0.7": {
+      "pred": 0.7645,
+      "hit": 0.7709,
+      "n": 2217
+     },
+     "0.8": {
+      "pred": 0.844,
+      "hit": 0.8563,
+      "n": 3181
+     },
+     "0.9": {
+      "pred": 0.9252,
+      "hit": 0.9514,
+      "n": 597
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.005|6.0|-0.12": {
+   "n": 19737,
+   "logloss": 1.00461,
+   "logloss_base": 1.05858,
+   "logloss_global": 1.06843,
+   "rps": 0.20742,
+   "rps_base": 0.22812,
+   "delta_vs_base": -0.05397,
+   "se": 0.00229,
+   "n_known": 19112,
+   "logloss_known": 1.00616,
+   "logloss_base_known": 1.06177,
+   "no_dog": {
+    "brier": 0.17958,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6728,
+      "hit": 0.6625,
+      "n": 4830
+     },
+     "0.7": {
+      "pred": 0.7471,
+      "hit": 0.7355,
+      "n": 9483
+     },
+     "0.8": {
+      "pred": 0.8407,
+      "hit": 0.8472,
+      "n": 4626
+     },
+     "0.9": {
+      "pred": 0.9306,
+      "hit": 0.9524,
+      "n": 798
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.14442,
+    "n": 8440,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6948,
+      "hit": 0.6176,
+      "n": 68
+     },
+     "0.7": {
+      "pred": 0.7625,
+      "hit": 0.7588,
+      "n": 3520
+     },
+     "0.8": {
+      "pred": 0.8427,
+      "hit": 0.8479,
+      "n": 4115
+     },
+     "0.9": {
+      "pred": 0.9274,
+      "hit": 0.9498,
+      "n": 737
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.005|12.0|0.0": {
+   "n": 19737,
+   "logloss": 1.00871,
+   "logloss_base": 1.05858,
+   "logloss_global": 1.06843,
+   "rps": 0.209,
+   "rps_base": 0.22812,
+   "delta_vs_base": -0.04987,
+   "se": 0.00189,
+   "n_known": 19112,
+   "logloss_known": 1.01,
+   "logloss_base_known": 1.06177,
+   "no_dog": {
+    "brier": 0.18146,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6663,
+      "hit": 0.6674,
+      "n": 7336
+     },
+     "0.7": {
+      "pred": 0.7441,
+      "hit": 0.7691,
+      "n": 9271
+     },
+     "0.8": {
+      "pred": 0.8355,
+      "hit": 0.877,
+      "n": 2845
+     },
+     "0.9": {
+      "pred": 0.9247,
+      "hit": 0.9649,
+      "n": 285
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.12565,
+    "n": 2556,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6945,
+      "hit": 0.7,
+      "n": 10
+     },
+     "0.7": {
+      "pred": 0.7661,
+      "hit": 0.799,
+      "n": 1035
+     },
+     "0.8": {
+      "pred": 0.8405,
+      "hit": 0.8751,
+      "n": 1345
+     },
+     "0.9": {
+      "pred": 0.9182,
+      "hit": 0.9639,
+      "n": 166
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.005|12.0|-0.06": {
+   "n": 19737,
+   "logloss": 1.00896,
+   "logloss_base": 1.05858,
+   "logloss_global": 1.06843,
+   "rps": 0.20906,
+   "rps_base": 0.22812,
+   "delta_vs_base": -0.04962,
+   "se": 0.0019,
+   "n_known": 19112,
+   "logloss_known": 1.01007,
+   "logloss_base_known": 1.06177,
+   "no_dog": {
+    "brier": 0.18127,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6695,
+      "hit": 0.6625,
+      "n": 6468
+     },
+     "0.7": {
+      "pred": 0.7449,
+      "hit": 0.7604,
+      "n": 9753
+     },
+     "0.8": {
+      "pred": 0.836,
+      "hit": 0.8714,
+      "n": 3189
+     },
+     "0.9": {
+      "pred": 0.9249,
+      "hit": 0.9664,
+      "n": 327
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.13107,
+    "n": 4472,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6958,
+      "hit": 0.7917,
+      "n": 24
+     },
+     "0.7": {
+      "pred": 0.7649,
+      "hit": 0.783,
+      "n": 1894
+     },
+     "0.8": {
+      "pred": 0.8402,
+      "hit": 0.8729,
+      "n": 2282
+     },
+     "0.9": {
+      "pred": 0.9214,
+      "hit": 0.9669,
+      "n": 272
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.005|12.0|-0.12": {
+   "n": 19737,
+   "logloss": 1.01018,
+   "logloss_base": 1.05858,
+   "logloss_global": 1.06843,
+   "rps": 0.20921,
+   "rps_base": 0.22812,
+   "delta_vs_base": -0.0484,
+   "se": 0.00194,
+   "n_known": 19112,
+   "logloss_known": 1.01113,
+   "logloss_base_known": 1.06177,
+   "no_dog": {
+    "brier": 0.18117,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6728,
+      "hit": 0.6517,
+      "n": 5628
+     },
+     "0.7": {
+      "pred": 0.7457,
+      "hit": 0.7558,
+      "n": 10150
+     },
+     "0.8": {
+      "pred": 0.8363,
+      "hit": 0.8639,
+      "n": 3578
+     },
+     "0.9": {
+      "pred": 0.9249,
+      "hit": 0.9606,
+      "n": 381
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.14088,
+    "n": 6894,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6941,
+      "hit": 0.6346,
+      "n": 52
+     },
+     "0.7": {
+      "pred": 0.7631,
+      "hit": 0.7776,
+      "n": 3337
+     },
+     "0.8": {
+      "pred": 0.8386,
+      "hit": 0.8624,
+      "n": 3140
+     },
+     "0.9": {
+      "pred": 0.9229,
+      "hit": 0.9589,
+      "n": 365
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.008|3.0|0.0": {
+   "n": 19737,
+   "logloss": 1.00662,
+   "logloss_base": 1.06116,
+   "logloss_global": 1.06844,
+   "rps": 0.20831,
+   "rps_base": 0.22848,
+   "delta_vs_base": -0.05454,
+   "se": 0.00252,
+   "n_known": 19112,
+   "logloss_known": 1.0083,
+   "logloss_base_known": 1.06383,
+   "no_dog": {
+    "brier": 0.18094,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.667,
+      "hit": 0.67,
+      "n": 5776
+     },
+     "0.7": {
+      "pred": 0.7466,
+      "hit": 0.7373,
+      "n": 8473
+     },
+     "0.8": {
+      "pred": 0.8414,
+      "hit": 0.8383,
+      "n": 4539
+     },
+     "0.9": {
+      "pred": 0.9315,
+      "hit": 0.9389,
+      "n": 949
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.14197,
+    "n": 4837,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6938,
+      "hit": 0.7297,
+      "n": 37
+     },
+     "0.7": {
+      "pred": 0.7648,
+      "hit": 0.7603,
+      "n": 1510
+     },
+     "0.8": {
+      "pred": 0.8467,
+      "hit": 0.8362,
+      "n": 2661
+     },
+     "0.9": {
+      "pred": 0.9243,
+      "hit": 0.9237,
+      "n": 629
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.008|3.0|-0.06": {
+   "n": 19737,
+   "logloss": 1.00708,
+   "logloss_base": 1.06116,
+   "logloss_global": 1.06844,
+   "rps": 0.20836,
+   "rps_base": 0.22848,
+   "delta_vs_base": -0.05408,
+   "se": 0.00255,
+   "n_known": 19112,
+   "logloss_known": 1.00859,
+   "logloss_base_known": 1.06383,
+   "no_dog": {
+    "brier": 0.18105,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6701,
+      "hit": 0.6648,
+      "n": 5066
+     },
+     "0.7": {
+      "pred": 0.747,
+      "hit": 0.7306,
+      "n": 8728
+     },
+     "0.8": {
+      "pred": 0.8418,
+      "hit": 0.8339,
+      "n": 4870
+     },
+     "0.9": {
+      "pred": 0.9313,
+      "hit": 0.9385,
+      "n": 1073
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.14723,
+    "n": 7121,
+    "calibration": {
+     "0.6": {
+      "pred": 0.694,
+      "hit": 0.5867,
+      "n": 75
+     },
+     "0.7": {
+      "pred": 0.7635,
+      "hit": 0.7489,
+      "n": 2457
+     },
+     "0.8": {
+      "pred": 0.8452,
+      "hit": 0.8322,
+      "n": 3695
+     },
+     "0.9": {
+      "pred": 0.9265,
+      "hit": 0.934,
+      "n": 894
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.008|3.0|-0.12": {
+   "n": 19737,
+   "logloss": 1.00851,
+   "logloss_base": 1.06116,
+   "logloss_global": 1.06844,
+   "rps": 0.20849,
+   "rps_base": 0.22848,
+   "delta_vs_base": -0.05265,
+   "se": 0.00259,
+   "n_known": 19112,
+   "logloss_known": 1.00986,
+   "logloss_base_known": 1.06383,
+   "no_dog": {
+    "brier": 0.18125,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6728,
+      "hit": 0.6626,
+      "n": 4330
+     },
+     "0.7": {
+      "pred": 0.7472,
+      "hit": 0.724,
+      "n": 8968
+     },
+     "0.8": {
+      "pred": 0.8419,
+      "hit": 0.8269,
+      "n": 5210
+     },
+     "0.9": {
+      "pred": 0.9309,
+      "hit": 0.93,
+      "n": 1229
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.15508,
+    "n": 9469,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6947,
+      "hit": 0.6602,
+      "n": 103
+     },
+     "0.7": {
+      "pred": 0.7606,
+      "hit": 0.734,
+      "n": 3665
+     },
+     "0.8": {
+      "pred": 0.8439,
+      "hit": 0.8264,
+      "n": 4584
+     },
+     "0.9": {
+      "pred": 0.9272,
+      "hit": 0.9257,
+      "n": 1117
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.008|6.0|0.0": {
+   "n": 19737,
+   "logloss": 1.00873,
+   "logloss_base": 1.06116,
+   "logloss_global": 1.06844,
+   "rps": 0.20905,
+   "rps_base": 0.22848,
+   "delta_vs_base": -0.05243,
+   "se": 0.00217,
+   "n_known": 19112,
+   "logloss_known": 1.00974,
+   "logloss_base_known": 1.06383,
+   "no_dog": {
+    "brier": 0.18151,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6665,
+      "hit": 0.6691,
+      "n": 6616
+     },
+     "0.7": {
+      "pred": 0.7452,
+      "hit": 0.7555,
+      "n": 8991
+     },
+     "0.8": {
+      "pred": 0.8378,
+      "hit": 0.8541,
+      "n": 3633
+     },
+     "0.9": {
+      "pred": 0.9277,
+      "hit": 0.9537,
+      "n": 497
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.13261,
+    "n": 3496,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6943,
+      "hit": 0.5556,
+      "n": 18
+     },
+     "0.7": {
+      "pred": 0.7654,
+      "hit": 0.7821,
+      "n": 1221
+     },
+     "0.8": {
+      "pred": 0.8437,
+      "hit": 0.8581,
+      "n": 1952
+     },
+     "0.9": {
+      "pred": 0.9211,
+      "hit": 0.9443,
+      "n": 305
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.008|6.0|-0.06": {
+   "n": 19737,
+   "logloss": 1.00911,
+   "logloss_base": 1.06116,
+   "logloss_global": 1.06844,
+   "rps": 0.2091,
+   "rps_base": 0.22848,
+   "delta_vs_base": -0.05205,
+   "se": 0.00218,
+   "n_known": 19112,
+   "logloss_known": 1.00994,
+   "logloss_base_known": 1.06383,
+   "no_dog": {
+    "brier": 0.18145,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6697,
+      "hit": 0.6671,
+      "n": 5825
+     },
+     "0.7": {
+      "pred": 0.7457,
+      "hit": 0.7455,
+      "n": 9328
+     },
+     "0.8": {
+      "pred": 0.8382,
+      "hit": 0.8501,
+      "n": 4017
+     },
+     "0.9": {
+      "pred": 0.9277,
+      "hit": 0.9559,
+      "n": 567
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.14076,
+    "n": 5645,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6928,
+      "hit": 0.7949,
+      "n": 39
+     },
+     "0.7": {
+      "pred": 0.7634,
+      "hit": 0.7666,
+      "n": 2185
+     },
+     "0.8": {
+      "pred": 0.8423,
+      "hit": 0.8481,
+      "n": 2955
+     },
+     "0.9": {
+      "pred": 0.9229,
+      "hit": 0.9506,
+      "n": 466
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.008|6.0|-0.12": {
+   "n": 19737,
+   "logloss": 1.01046,
+   "logloss_base": 1.06116,
+   "logloss_global": 1.06844,
+   "rps": 0.20925,
+   "rps_base": 0.22848,
+   "delta_vs_base": -0.05071,
+   "se": 0.00222,
+   "n_known": 19112,
+   "logloss_known": 1.01111,
+   "logloss_base_known": 1.06383,
+   "no_dog": {
+    "brier": 0.18149,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6729,
+      "hit": 0.6636,
+      "n": 5050
+     },
+     "0.7": {
+      "pred": 0.7465,
+      "hit": 0.7377,
+      "n": 9656
+     },
+     "0.8": {
+      "pred": 0.839,
+      "hit": 0.8456,
+      "n": 4385
+     },
+     "0.9": {
+      "pred": 0.9278,
+      "hit": 0.952,
+      "n": 646
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.14979,
+    "n": 8047,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6941,
+      "hit": 0.686,
+      "n": 86
+     },
+     "0.7": {
+      "pred": 0.7617,
+      "hit": 0.7499,
+      "n": 3523
+     },
+     "0.8": {
+      "pred": 0.8411,
+      "hit": 0.8442,
+      "n": 3845
+     },
+     "0.9": {
+      "pred": 0.9248,
+      "hit": 0.9494,
+      "n": 593
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.008|12.0|0.0": {
+   "n": 19737,
+   "logloss": 1.01565,
+   "logloss_base": 1.06116,
+   "logloss_global": 1.06844,
+   "rps": 0.21129,
+   "rps_base": 0.22848,
+   "delta_vs_base": -0.04551,
+   "se": 0.00178,
+   "n_known": 19112,
+   "logloss_known": 1.01614,
+   "logloss_base_known": 1.06383,
+   "no_dog": {
+    "brier": 0.18365,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6662,
+      "hit": 0.6768,
+      "n": 7776
+     },
+     "0.7": {
+      "pred": 0.743,
+      "hit": 0.7692,
+      "n": 9475
+     },
+     "0.8": {
+      "pred": 0.8333,
+      "hit": 0.8776,
+      "n": 2321
+     },
+     "0.9": {
+      "pred": 0.9229,
+      "hit": 0.9939,
+      "n": 165
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.12922,
+    "n": 2125,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6935,
+      "hit": 0.8182,
+      "n": 11
+     },
+     "0.7": {
+      "pred": 0.7654,
+      "hit": 0.7969,
+      "n": 975
+     },
+     "0.8": {
+      "pred": 0.8378,
+      "hit": 0.8746,
+      "n": 1045
+     },
+     "0.9": {
+      "pred": 0.9171,
+      "hit": 1.0,
+      "n": 94
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.008|12.0|-0.06": {
+   "n": 19737,
+   "logloss": 1.01603,
+   "logloss_base": 1.06116,
+   "logloss_global": 1.06844,
+   "rps": 0.21136,
+   "rps_base": 0.22848,
+   "delta_vs_base": -0.04513,
+   "se": 0.00179,
+   "n_known": 19112,
+   "logloss_known": 1.01633,
+   "logloss_base_known": 1.06383,
+   "no_dog": {
+    "brier": 0.1834,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6693,
+      "hit": 0.6726,
+      "n": 6823
+     },
+     "0.7": {
+      "pred": 0.7436,
+      "hit": 0.7616,
+      "n": 10058
+     },
+     "0.8": {
+      "pred": 0.8334,
+      "hit": 0.8686,
+      "n": 2657
+     },
+     "0.9": {
+      "pred": 0.9224,
+      "hit": 0.9799,
+      "n": 199
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.13554,
+    "n": 3879,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6945,
+      "hit": 0.7037,
+      "n": 27
+     },
+     "0.7": {
+      "pred": 0.7644,
+      "hit": 0.7857,
+      "n": 1857
+     },
+     "0.8": {
+      "pred": 0.8375,
+      "hit": 0.8699,
+      "n": 1821
+     },
+     "0.9": {
+      "pred": 0.9198,
+      "hit": 0.977,
+      "n": 174
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  },
+  "0.008|12.0|-0.12": {
+   "n": 19737,
+   "logloss": 1.01738,
+   "logloss_base": 1.06116,
+   "logloss_global": 1.06844,
+   "rps": 0.21153,
+   "rps_base": 0.22848,
+   "delta_vs_base": -0.04379,
+   "se": 0.00183,
+   "n_known": 19112,
+   "logloss_known": 1.0175,
+   "logloss_base_known": 1.06383,
+   "no_dog": {
+    "brier": 0.18325,
+    "n": 19737,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6724,
+      "hit": 0.6647,
+      "n": 5905
+     },
+     "0.7": {
+      "pred": 0.7444,
+      "hit": 0.7553,
+      "n": 10538
+     },
+     "0.8": {
+      "pred": 0.8338,
+      "hit": 0.8631,
+      "n": 3069
+     },
+     "0.9": {
+      "pred": 0.9233,
+      "hit": 0.9733,
+      "n": 225
+     }
+    }
+   },
+   "heavy": {
+    "brier": 0.14262,
+    "n": 6200,
+    "calibration": {
+     "0.6": {
+      "pred": 0.6942,
+      "hit": 0.75,
+      "n": 52
+     },
+     "0.7": {
+      "pred": 0.7628,
+      "hit": 0.7817,
+      "n": 3275
+     },
+     "0.8": {
+      "pred": 0.8359,
+      "hit": 0.8625,
+      "n": 2655
+     },
+     "0.9": {
+      "pred": 0.9217,
+      "hit": 0.9725,
+      "n": 218
+     }
+    },
+    "rule": "model underdog <= model draw - 0.05"
+   }
+  }
+ },
+ "chosen": {
+  "xi": 0.003,
+  "kappa": 3.0,
+  "rho": 0.0
+ },
+ "test": {
+  "n": 20277,
+  "logloss": 1.00236,
+  "logloss_base": 1.05425,
+  "logloss_global": 1.06606,
+  "rps": 0.20843,
+  "rps_base": 0.22844,
+  "delta_vs_base": -0.05189,
+  "se": 0.00253,
+  "n_known": 19836,
+  "logloss_known": 1.00441,
+  "logloss_base_known": 1.05639,
+  "no_dog": {
+   "brier": 0.1803,
+   "n": 20277,
+   "calibration": {
+    "0.5": {
+     "pred": 0.5948,
+     "hit": 0.0,
+     "n": 1
+    },
+    "0.6": {
+     "pred": 0.6671,
+     "hit": 0.6717,
+     "n": 6123
+    },
+    "0.7": {
+     "pred": 0.7465,
+     "hit": 0.7515,
+     "n": 8580
+    },
+    "0.8": {
+     "pred": 0.8415,
+     "hit": 0.8289,
+     "n": 4453
+    },
+    "0.9": {
+     "pred": 0.9326,
+     "hit": 0.9161,
+     "n": 1120
+    }
+   }
+  },
+  "heavy": {
+   "brier": 0.14494,
+   "n": 4908,
+   "calibration": {
+    "0.6": {
+     "pred": 0.6947,
+     "hit": 0.6364,
+     "n": 22
+    },
+    "0.7": {
+     "pred": 0.7655,
+     "hit": 0.7461,
+     "n": 1422
+    },
+    "0.8": {
+     "pred": 0.8468,
+     "hit": 0.831,
+     "n": 2686
+    },
+    "0.9": {
+     "pred": 0.9257,
+     "hit": 0.9126,
+     "n": 778
+    }
+   },
+   "rule": "model underdog <= model draw - 0.05"
+  }
+ },
+ "test_by_competition": {
+  "aus.1": {
+   "n": 175,
+   "logloss": 1.0535,
+   "base": 1.082
+  },
+  "eng.1": {
+   "n": 378,
+   "logloss": 0.9822,
+   "base": 1.0654
+  },
+  "eng.2": {
+   "n": 558,
+   "logloss": 1.0565,
+   "base": 1.0749
+  },
+  "eng.3": {
+   "n": 559,
+   "logloss": 1.0427,
+   "base": 1.0673
+  },
+  "eng.4": {
+   "n": 567,
+   "logloss": 1.0641,
+   "base": 1.0864
+  },
+  "ind.1": {
+   "n": 78,
+   "logloss": 1.0381,
+   "base": 1.0957
+  },
+  "sco.1": {
+   "n": 228,
+   "logloss": 1.0193,
+   "base": 1.0801
+  },
+  "caf.champions": {
+   "n": 54,
+   "logloss": 0.9637,
+   "base": 1.0503
+  },
+  "esp.1": {
+   "n": 370,
+   "logloss": 0.9598,
+   "base": 1.0682
+  },
+  "esp.copa_del_rey": {
+   "n": 122,
+   "logloss": 0.7913,
+   "base": 0.8412
+  },
+  "fra.1": {
+   "n": 314,
+   "logloss": 0.9651,
+   "base": 1.0391
+  },
+  "fra.2": {
+   "n": 315,
+   "logloss": 1.0719,
+   "base": 1.0876
+  },
+  "por.1": {
+   "n": 304,
+   "logloss": 0.9362,
+   "base": 1.0968
+  },
+  "tur.1": {
+   "n": 342,
+   "logloss": 0.9695,
+   "base": 1.0712
+  },
+  "fifa.friendly": {
+   "n": 267,
+   "logloss": 1.0417,
+   "base": 1.0413
+  },
+  "gre.1": {
+   "n": 228,
+   "logloss": 0.9298,
+   "base": 1.0568
+  },
+  "ita.1": {
+   "n": 368,
+   "logloss": 1.0027,
+   "base": 1.0916
+  },
+  "rsa.1": {
+   "n": 247,
+   "logloss": 1.0273,
+   "base": 1.0801
+  },
+  "caf.confed": {
+   "n": 52,
+   "logloss": 0.8799,
+   "base": 1.0014
+  },
+  "club.friendly": {
+   "n": 130,
+   "logloss": 0.9347,
+   "base": 1.0613
+  },
+  "esp.w.1": {
+   "n": 251,
+   "logloss": 0.9518,
+   "base": 1.0896
+  },
+  "eng.league_cup": {
+   "n": 73,
+   "logloss": 0.8441,
+   "base": 0.7188
+  },
+  "esp.2": {
+   "n": 447,
+   "logloss": 1.0587,
+   "base": 1.0747
+  },
+  "fra.w.1": {
+   "n": 135,
+   "logloss": 0.8242,
+   "base": 1.0678
+  },
+  "eng.fa": {
+   "n": 93,
+   "logloss": 0.7941,
+   "base": 0.7762
+  },
+  "ksa.1": {
+   "n": 288,
+   "logloss": 0.9405,
+   "base": 1.0602
+  },
+  "bel.1": {
+   "n": 313,
+   "logloss": 1.0365,
+   "base": 1.0928
+  },
+  "ger.1": {
+   "n": 306,
+   "logloss": 1.0207,
+   "base": 1.0916
+  },
+  "ned.1": {
+   "n": 308,
+   "logloss": 0.9923,
+   "base": 1.0726
+  },
+  "ned.2": {
+   "n": 389,
+   "logloss": 0.9953,
+   "base": 1.043
+  },
+  "mex.1": {
+   "n": 338,
+   "logloss": 0.9553,
+   "base": 1.0471
+  },
+  "mex.2": {
+   "n": 239,
+   "logloss": 0.9945,
+   "base": 1.0504
+  },
+  "ita.2": {
+   "n": 370,
+   "logloss": 1.0689,
+   "base": 1.0787
+  },
+  "por.taca.portugal": {
+   "n": 58,
+   "logloss": 0.7947,
+   "base": 0.775
+  },
+  "eng.w.1": {
+   "n": 138,
+   "logloss": 0.8756,
+   "base": 1.0449
+  },
+  "ger.2": {
+   "n": 306,
+   "logloss": 1.045,
+   "base": 1.0679
+  },
+  "sco.tennents": {
+   "n": 89,
+   "logloss": 0.9843,
+   "base": 0.7436
+  },
+  "ned.w.1": {
+   "n": 125,
+   "logloss": 0.7637,
+   "base": 1.0329
+  },
+  "uefa.champions": {
+   "n": 185,
+   "logloss": 0.9031,
+   "base": 1.0208
+  },
+  "uefa.europa": {
+   "n": 184,
+   "logloss": 0.9658,
+   "base": 1.0113
+  },
+  "arg.1": {
+   "n": 503,
+   "logloss": 1.0782,
+   "base": 1.0887
+  },
+  "col.1": {
+   "n": 451,
+   "logloss": 1.0179,
+   "base": 1.0667
+  },
+  "par.1": {
+   "n": 263,
+   "logloss": 1.0673,
+   "base": 1.1014
+  },
+  "ven.1": {
+   "n": 233,
+   "logloss": 0.9976,
+   "base": 1.0673
+  },
+  "uru.1": {
+   "n": 297,
+   "logloss": 1.0088,
+   "base": 1.0887
+  },
+  "afc.champions": {
+   "n": 115,
+   "logloss": 0.9414,
+   "base": 1.0216
+  },
+  "ger.dfb_pokal": {
+   "n": 50,
+   "logloss": 0.66,
+   "base": 0.6886
+  },
+  "concacaf.champions": {
+   "n": 51,
+   "logloss": 0.9217,
+   "base": 1.003
+  },
+  "conmebol.libertadores": {
+   "n": 148,
+   "logloss": 0.9638,
+   "base": 1.0536
+  },
+  "arg.2": {
+   "n": 632,
+   "logloss": 1.0352,
+   "base": 1.0507
+  },
+  "arg.3": {
+   "n": 433,
+   "logloss": 1.0831,
+   "base": 1.0885
+  },
+  "aut.1": {
+   "n": 201,
+   "logloss": 1.0609,
+   "base": 1.0836
+  },
+  "per.1": {
+   "n": 331,
+   "logloss": 0.9814,
+   "base": 1.0521
+  },
+  "uefa.europa.conf": {
+   "n": 146,
+   "logloss": 0.987,
+   "base": 1.039
+  },
+  "den.1": {
+   "n": 199,
+   "logloss": 1.0261,
+   "base": 1.0638
+  },
+  "jpn.1": {
+   "n": 380,
+   "logloss": 1.0457,
+   "base": 1.0744
+  },
+  "chi.1": {
+   "n": 240,
+   "logloss": 0.9998,
+   "base": 1.0352
+  },
+  "ecu.1": {
+   "n": 312,
+   "logloss": 1.0763,
+   "base": 1.0874
+  },
+  "bra.copa_do_brazil": {
+   "n": 98,
+   "logloss": 0.9067,
+   "base": 1.0519
+  },
+  "chn.1": {
+   "n": 240,
+   "logloss": 0.9447,
+   "base": 1.0629
+  },
+  "usa.1": {
+   "n": 534,
+   "logloss": 1.0369,
+   "base": 1.0668
+  },
+  "conmebol.sudamericana": {
+   "n": 143,
+   "logloss": 1.0257,
+   "base": 1.0701
+  },
+  "usa.usl.l1": {
+   "n": 214,
+   "logloss": 1.0814,
+   "base": 1.0755
+  },
+  "usa.usl.1": {
+   "n": 368,
+   "logloss": 1.0445,
+   "base": 1.0743
+  },
+  "usa.nwsl": {
+   "n": 186,
+   "logloss": 1.0489,
+   "base": 1.1176
+  },
+  "uefa.wchampions": {
+   "n": 67,
+   "logloss": 0.8265,
+   "base": 1.0501
+  },
+  "usa.open": {
+   "n": 64,
+   "logloss": 0.846,
+   "base": 0.6912
+  },
+  "bol.1": {
+   "n": 240,
+   "logloss": 0.9097,
+   "base": 0.9943
+  },
+  "bra.1": {
+   "n": 380,
+   "logloss": 0.9905,
+   "base": 1.0411
+  },
+  "nor.1": {
+   "n": 240,
+   "logloss": 0.9482,
+   "base": 1.0382
+  },
+  "swe.1": {
+   "n": 240,
+   "logloss": 1.0075,
+   "base": 1.0736
+  },
+  "bra.2": {
+   "n": 380,
+   "logloss": 1.049,
+   "base": 1.0657
+  },
+  "uefa.champions_qual": {
+   "n": 86,
+   "logloss": 0.9417,
+   "base": 1.0315
+  },
+  "uefa.europa.conf_qual": {
+   "n": 231,
+   "logloss": 1.0059,
+   "base": 1.0353
+  },
+  "uefa.europa_qual": {
+   "n": 71,
+   "logloss": 0.9374,
+   "base": 1.1046
+  },
+  "usa.ncaa.m.1": {
+   "n": 986,
+   "logloss": 1.0243,
+   "base": 1.0482
+  }
+ },
+ "shipped": {
+  "xi": 0.005,
+  "kappa": 6.0,
+  "rho": -0.1
+ },
+ "leagues": [
+  "afc.champions",
+  "arg.1",
+  "arg.2",
+  "arg.3",
+  "aus.1",
+  "aut.1",
+  "bel.1",
+  "bol.1",
+  "bra.1",
+  "bra.2",
+  "bra.copa_do_brazil",
+  "caf.champions",
+  "caf.confed",
+  "caf.nations",
+  "chi.1",
+  "chn.1",
+  "club.friendly",
+  "col.1",
+  "concacaf.champions",
+  "concacaf.leagues.cup",
+  "conmebol.libertadores",
+  "conmebol.sudamericana",
+  "den.1",
+  "ecu.1",
+  "eng.1",
+  "eng.2",
+  "eng.3",
+  "eng.4",
+  "eng.fa",
+  "eng.league_cup",
+  "eng.w.1",
+  "esp.1",
+  "esp.2",
+  "esp.copa_del_rey",
+  "esp.super_cup",
+  "esp.w.1",
+  "fifa.friendly",
+  "fifa.world",
+  "fra.1",
+  "fra.2",
+  "fra.coupe_de_france",
+  "fra.w.1",
+  "ger.1",
+  "ger.2",
+  "ger.dfb_pokal",
+  "gre.1",
+  "ind.1",
+  "ita.1",
+  "ita.2",
+  "ita.coppa_italia",
+  "jpn.1",
+  "ksa.1",
+  "mex.1",
+  "mex.2",
+  "ned.1",
+  "ned.2",
+  "ned.cup",
+  "ned.w.1",
+  "nor.1",
+  "par.1",
+  "per.1",
+  "por.1",
+  "por.taca.portugal",
+  "rsa.1",
+  "sco.1",
+  "sco.tennents",
+  "swe.1",
+  "tur.1",
+  "uefa.champions",
+  "uefa.champions_qual",
+  "uefa.europa",
+  "uefa.europa.conf",
+  "uefa.europa.conf_qual",
+  "uefa.europa_qual",
+  "uefa.nations",
+  "uefa.super_cup",
+  "uefa.wchampions",
+  "uru.1",
+  "usa.1",
+  "usa.ncaa.m.1",
+  "usa.nwsl",
+  "usa.open",
+  "usa.usl.1",
+  "usa.usl.l1",
+  "ven.1"
+ ],
+ "n_matches": 59861,
+ "ran": "2026-10-17T00:09:57.408152Z",
+ "seconds": 72
+}

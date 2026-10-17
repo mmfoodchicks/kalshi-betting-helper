@@ -60,6 +60,7 @@
     <button class="tab" data-tab="nfl">🏈 Football</button>
     <button class="tab" data-tab="nba">🏀 NBA</button>
     <button class="tab" data-tab="nhl">🏒 NHL</button>
+    <button class="tab" data-tab="soccer">⚽ Soccer</button>
     <button class="tab" data-tab="ufc">🥊 UFC</button>
     <button class="tab" data-tab="tennis">🎾 Tennis</button>
     <button class="tab" data-tab="lol">🎮 LoL</button>
@@ -479,6 +480,25 @@
       <div id="nhlResults" class="markets"><div class="empty">Loading…</div></div>
     </section>
    </div><!-- /tab-nhl -->
+
+   <div id="tab-soccer" class="hidden">
+    <section class="card">
+      <div class="row-between">
+        <h2>⚽ Soccer</h2>
+        <span class="small" id="soccerBuilt" style="color:var(--muted)"></span>
+      </div>
+      <p class="sub" style="margin:2px 0 8px"><b>Every soccer match Kalshi lists</b> (about eighty leagues), each a three-way market: home win, away win, tie, settled after 90 minutes plus stoppage. The bet this tab is built around is <b>NO on the underdog</b> - it pays on the favourite's win <i>and</i> on the tie. Each match is priced by a <b>goals model</b>: every team's attack and defence from two years of results weighted to the recent, a home advantage per league, the exact scoreline grid (Dixon-Coles). Leagues ESPN carries no results for show Kalshi's de-vigged price only. <b>Heavy underdogs</b> are the matches where the underdog's YES price sits at least 5¢ under the tie's.</p>
+      <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
+        <button class="track-mini" id="soccerAllBtn" type="button" onclick="soccerView('all')">All games</button>
+        <button class="track-mini" id="soccerHeavyBtn" type="button" onclick="soccerView('heavy')">Heavy underdogs only</button>
+        <select id="soccerLeague" style="width:auto" onchange="renderSoccer()"><option value="">every league</option></select>
+        <input id="soccerFind" type="text" placeholder="find a team" style="width:160px" oninput="renderSoccer()"/>
+        <label class="small" style="color:var(--muted)"><input type="checkbox" id="soccerModelOnly" onchange="renderSoccer()"/> modelled only</label>
+      </div>
+      <div id="soccerSummary" class="small"></div>
+      <div id="soccerResults" class="markets"><div class="empty">Loading…</div></div>
+    </section>
+   </div><!-- /tab-soccer -->
 
    <div id="tab-ufc" class="hidden">
     <section class="card">

@@ -196,6 +196,30 @@ data-only `sim-history` branch (which never deploys):
   (`research/reports/nba_deep_validation.md`: both models under-confident
   ~1.5x in logit, the deep one more compressed, the two correlating 0.9).
   Any change to K or the exponent is judged on 2026-27 games.
+- **Soccer** (2026-10-17, `soccer.py`): every Kalshi series tagged Soccer
+  ending in GAME (discovered from `/series`, ~80 leagues, ~900 open three-way
+  events in October) priced by a Dixon-Coles goals model fitted in pure
+  Python on two years of ESPN results (one call per league per calendar
+  year, `scoreboard?dates=YYYY&limit=1000`), every rating shrunk toward its
+  league's mean, the leagues tied together by their cross-league matches.
+  The owner's bet is NO on the underdog (pays on the favourite AND the tie),
+  so the card leads with that leg; "heavy underdogs" are the matches whose
+  underdog YES ask sits `HEAVY_GAP` (5c) or more under the tie's, in Kalshi's
+  own prices. **The EVENT ticker's two team codes are home then away** (638
+  of 640 ESPN-matched events); Kalshi's market titles are in no fixed order
+  and are never read for that. Home/away, kickoff and team ids come from
+  ESPN's all-leagues scoreboard (`soccer.match_event`: the mapped league on
+  the ticker's date +-1, token containment on the names, `_ALIAS` for
+  Kalshi's spellings); leagues ESPN does not carry (`ESPN_LEAGUE` None) show
+  the de-vigged price and say so. The fitter updates attack, defence and
+  home advantage in TURN (Gauss-Seidel) and re-centres the attacks each
+  sweep -- the simultaneous update oscillated (correlation 0.1 with the
+  synthetic truth, a home advantage of 3.3; the guard replays that pool).
+  Parameters chosen on 2024 and tested on 2025 by a rule written first
+  (`research/soccer_validation.py`, `research/reports/soccer_validation.md`).
+  Bucket `soccer` in predlog (all three outcomes vs Kalshi's de-vigged
+  price), DraftKings' de-vigged line (ESPN carries it on upcoming matches
+  only) in shadow bucket `soccer_dk`.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 

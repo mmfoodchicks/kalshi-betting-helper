@@ -3465,6 +3465,21 @@ def api_nhl_slate():
     return jsonify(data)
 
 
+@app.route("/api/soccer/board")
+def api_soccer_board():
+    """Every Kalshi soccer match priced by the goals model (soccer.board):
+    built in a background thread and shared on disk, like the NBA and NHL
+    slates; 502 while the first build runs."""
+    try:
+        import soccer
+        data = soccer.board()
+    except Exception as e:
+        return jsonify({"error": f"soccer board failed: {e}"}), 502
+    if not data:
+        return jsonify({"error": "pricing every Kalshi soccer match in the background - retry shortly"}), 502
+    return jsonify(data)
+
+
 @app.route("/api/nfl/slate")
 def api_nfl_slate():
     """Drive-engine NFL slate: per-game win probs vs live Kalshi moneylines

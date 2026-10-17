@@ -2598,6 +2598,7 @@ function setupTabs() {
       $("tab-combine").classList.toggle("hidden", tab !== "combine");
       $("tab-futures").classList.toggle("hidden", tab !== "futures");
       $("tab-ledger").classList.toggle("hidden", tab !== "ledger");
+      $("tab-soccer").classList.toggle("hidden", tab !== "soccer");
       if (tab === "bestbets" && !$("bbetsResults").dataset.loaded) {
         $("bbetsResults").dataset.loaded = "1";
         loadBestBets();
@@ -2610,6 +2611,7 @@ function setupTabs() {
       if (tab === "nfl") initNFL();
       if (tab === "nba") initNBA();
       if (tab === "nhl") initNHL();
+      if (tab === "soccer") initSoccer();
       if (tab === "ufc") initUFC();
       if (tab === "tennis") initTennis();
       if (tab === "lol") initLoL();
@@ -4153,6 +4155,115 @@ function renderNHL() {
   }
   $("nhlSummary").innerHTML = `<b>${d.n_games}</b> games · ${(d.n_sims || 0).toLocaleString()} sims/game · <i style="color:var(--muted)">${d.note}</i>`;
   $("nhlResults").innerHTML = d.games.map(nhlGameCard).join("");
+}
+
+// ---- Soccer: every Kalshi match, NO on the underdog ------------------------
+// The board is Kalshi-driven (every open three-way soccer event, ~900 in
+// October across ~80 leagues), so the tab has no date picker: the two
+// buttons are the owner's two views -- every match, or only the heavy
+// underdogs (underdog YES ask at least 5c under the tie's, in Kalshi's own
+// prices). The card leads with the leg the owner bets: NO on the underdog,
+// which pays on the favourite's win and on the tie.
+let _soccerData = null, _soccerView = "all";
+function initSoccer() {
+  if (!$("soccerResults").dataset.loaded) { $("soccerResults").dataset.loaded = "1"; loadSoccer(0); }
+}
+function soccerView(v) { _soccerView = v; renderSoccer(); }
+async function loadSoccer(attempt) {
+  attempt = attempt || 0;
+  const box = $("soccerResults");
+  if (!attempt) box.innerHTML = `<div class="empty">Pricing every Kalshi soccer match - eighty leagues read from Kalshi, two years of results from ESPN, the goals model fitted (~1 min cold, ~20s warm). Auto-refreshes.</div>`;
+  try {
+    const d = await (await fetch("/api/soccer/board")).json();
+    if (d.error) {
+      if (attempt < 40) { setTimeout(() => loadSoccer(attempt + 1), 6000); return; }
+      box.innerHTML = `<div class="empty">${escapeHtml(d.error)}</div>`;
+      return;
+    }
+    _soccerData = d;
+    const sel = $("soccerLeague");
+    if (sel && sel.options.length <= 1) {
+      sel.innerHTML = `<option value="">every league</option>` + (d.leagues || []).map((l) => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join("");
+    }
+    renderSoccer();
+  } catch (e) {
+    if (attempt < 40) { setTimeout(() => loadSoccer(attempt + 1), 6000); return; }
+    box.innerHTML = `<div class="empty">Soccer board unavailable.</div>`;
+  }
+}
+function _soccerKick(g) {
+  // Kalshi's ticker carries the Eastern date; ESPN the kickoff. Show the
+  // kickoff in the browser's local time when it is known, else the date.
+  if (g.kickoff) {
+    const t = new Date(g.kickoff);
+    return t.toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  }
+  return g.date || "";
+}
+function soccerGameCard(g) {
+  const pct = (v, dp) => (v == null ? "-" : (100 * v).toFixed(dp == null ? 0 : dp) + "%");
+  const m = g.model, f = g.fair, dk = g.dk, nd = g.no_dog || {};
+  const kx = (side) => (g[side] || {}).kalshi || {};
+  const dogName = g.dog ? (g[g.dog].name) : null;
+  const favName = g.dog ? (g[g.dog === "home" ? "away" : "home"].name) : null;
+  const e = g.espn || {};
+  const live = e.state === "in" ? `<span style="color:#e0566a">🔴 ${escapeHtml(e.detail || "live")} · ${escapeHtml(g.home.name)} ${e.home_score}–${e.away_score} ${escapeHtml(g.away.name)}</span> · ` : "";
+  const done = e.state === "post" ? `<b>Final: ${escapeHtml(g.home.name)} ${e.home_score}–${e.away_score} ${escapeHtml(g.away.name)}</b> · ` : "";
+  // the three-way line: model / Kalshi fair / DraftKings fair
+  const row3 = (lbl, p, title) => p ? `<div class="small" title="${escapeHtml(title || "")}"><span style="display:inline-block;width:92px;color:var(--muted)">${lbl}</span> ${escapeHtml(g.home.name)} <b>${pct(p.home)}</b> · tie <b>${pct(p.draw)}</b> · ${escapeHtml(g.away.name)} <b>${pct(p.away)}</b></div>` : "";
+  let lead;
+  if (!g.quoted) {
+    lead = `<div class="pick"><span style="color:var(--muted)">Kalshi has no two-sided quote on this match yet.</span></div>`;
+  } else if (m && nd.model_pct != null) {
+    const edge = nd.edge;
+    const cls = edge == null ? "" : (edge >= 0 ? "ev pos" : "ev neg");
+    lead = `<div class="pick">NO on <b>${escapeHtml(dogName)}</b> (the underdog): model <b>${nd.model_pct}%</b> it does not win${nd.fair_pct != null ? ` · Kalshi fair ${nd.fair_pct}%` : ""} · <span class="kmkt">NO ask <b>${nd.no_ask}¢</b></span>${edge != null ? ` <b class="${cls}" title="model % minus the NO ask minus Kalshi's taker fee (${nd.fee}¢)">${edge >= 0 ? "+" : ""}${edge}</b>` : ""}</div>`;
+  } else {
+    lead = `<div class="pick">NO on <b>${escapeHtml(dogName)}</b> (the underdog): <span class="kmkt">NO ask <b>${nd.no_ask != null ? nd.no_ask + "¢" : "-"}</b></span>${nd.fair_pct != null ? ` · Kalshi fair ${nd.fair_pct}%` : ""} <span class="small" style="color:var(--muted)">· no model: ${escapeHtml(g.why || "")}</span></div>`;
+  }
+  const prices = `<div class="small" style="margin-top:3px"><span style="display:inline-block;width:92px;color:var(--muted)">Kalshi YES ask</span> ${escapeHtml(g.home.name)} <b>${kx("home").yes_ask ?? "-"}¢</b> · tie <b>${kx("draw").yes_ask ?? "-"}¢</b> · ${escapeHtml(g.away.name)} <b>${kx("away").yes_ask ?? "-"}¢</b>${g.heavy ? ` <span class="chip" title="the underdog's YES ask is at least ${(_soccerData || {}).heavy_gap || 5}¢ under the tie's">🐶 heavy underdog</span>` : ""}</div>`;
+  const weak = (m && m.weak) ? `<div class="small" style="color:#e0a040;margin-top:2px">⚠️ cup tie across the tiers: on the 2025 test the model did no better than the league's base rate in this competition - read the price, not the edge.</div>` : "";
+  const scorelines = m ? `<div class="small" style="color:var(--muted);margin-top:2px">expected goals ${escapeHtml(g.home.name)} <b>${m.exp_home}</b> – <b>${m.exp_away}</b> ${escapeHtml(g.away.name)} · over 2.5 ${pct(m.over25)} · both score ${pct(m.btts)} · likeliest ${(m.scorelines || []).slice(0, 4).map((s) => `${s.score} (${s.pct}%)`).join(", ")}${(m.known && !(m.known.home && m.known.away)) ? ` · <i>${!m.known.home ? escapeHtml(g.home.name) : escapeHtml(g.away.name)} has no results in the fit: rated at the league's average</i>` : ""}</div>` : "";
+  return `<div class="bbgame nflcard">
+    <div class="top"><div>
+      <div class="matchup">${escapeHtml(g.home.name)} <span class="small" style="color:var(--muted)">v</span> ${escapeHtml(g.away.name)} <span class="small" style="color:var(--muted)">· ${escapeHtml(g.league)} · ${escapeHtml(_soccerKick(g))}</span></div>
+      ${done}${live}${lead}
+    </div></div>
+    ${row3("model", m ? { home: m.p_home, draw: m.p_draw, away: m.p_away } : null, "the goals model: attack and defence rates from two years of results, a home advantage per league, the exact scoreline grid")}
+    ${row3("Kalshi fair", f, "Kalshi's three YES prices with the overround stripped (bid-ask midpoints)")}
+    ${row3("DraftKings", dk, "DraftKings' three-way line as ESPN shows it, de-vigged - a sharper book's opinion, for reference")}
+    ${prices}
+    ${weak}
+    ${scorelines}
+  </div>`;
+}
+function renderSoccer() {
+  const d = _soccerData; if (!d) return;
+  const heavy = _soccerView === "heavy";
+  for (const [id, on] of [["soccerAllBtn", !heavy], ["soccerHeavyBtn", heavy]]) {
+    const b = $(id); if (b) b.style.fontWeight = on ? "bold" : "normal";
+  }
+  const lg = ($("soccerLeague") || {}).value || "";
+  const q = (($("soccerFind") || {}).value || "").trim().toLowerCase();
+  const modelOnly = !!(($("soccerModelOnly") || {}).checked);
+  let games = (d.games || []).filter((g) => (!heavy || g.heavy) && (!lg || g.league === lg)
+    && (!q || `${g.home.name} ${g.away.name} ${g.league}`.toLowerCase().includes(q)) && (!modelOnly || g.model));
+  // the heavy view ranks by the model's edge on NO-the-underdog where there is one
+  if (heavy) games = games.slice().sort((a, b) => (((b.no_dog || {}).edge ?? -999) - ((a.no_dog || {}).edge ?? -999)) || String(a.kickoff || a.date).localeCompare(String(b.kickoff || b.date)));
+  $("soccerBuilt").textContent = d.built_ts ? `built ${agoStr(Math.max(0, Date.now() / 1000 - d.built_ts))}` : "";
+  const fit = d.fit || {};
+  $("soccerSummary").innerHTML = `<b>${d.n_games}</b> matches on Kalshi · <b>${d.n_model}</b> modelled · <b>${d.n_heavy}</b> heavy underdogs · showing <b>${games.length}</b> · fit: ${(fit.teams || 0).toLocaleString()} teams from ${(fit.n || 0).toLocaleString()} results as of ${fit.asof || "-"} <span style="color:var(--muted)">(half-life ${Math.round(Math.log(2) / (fit.xi || 0.005))} days, ${fit.kappa} matches of shrinkage, ρ ${fit.rho})</span>${heavy ? ` · <i style="color:var(--muted)">ranked by the model's edge on NO-the-underdog; matches without a model sit at the bottom</i>` : ""}<div class="small" style="color:var(--muted);margin-top:2px" title="2025, out of sample, 20,277 matches: the model's chance that the underdog does not win, by bucket, against how often it did not">Calibration of the NO-the-underdog figure on 2025 (held out): ${((d.calibration || {}).heavy || []).map((c) => `said ${(100 * c.pred).toFixed(0)}% → happened ${(100 * c.hit).toFixed(0)}% (n ${c.n.toLocaleString()})`).join(" · ")} - it reads about a point and a half high at the top; the edge column does not correct for that.</div>`;
+  if (!games.length) {
+    $("soccerResults").innerHTML = `<div class="empty">${heavy ? "No heavy underdogs match the filter." : "No matches match the filter."}</div>`;
+    return;
+  }
+  // grouped by the Kalshi (Eastern) date
+  let html = "", day = null;
+  for (const g of games) {
+    if (!heavy && g.date !== day) { day = g.date; html += `<div class="small" style="margin:10px 0 4px;color:var(--muted)"><b>${escapeHtml(day)}</b></div>`; }
+    html += soccerGameCard(g);
+  }
+  $("soccerResults").innerHTML = html;
 }
 
 // ---- NFL Sleeper-seeded sim (Sim cards / Best ball / Pick 6) ---------------
