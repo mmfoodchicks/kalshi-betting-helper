@@ -1,0 +1,242 @@
+{
+ "rule": "The goals model against the closing market: does the model know anything\nthe market does not, and does leaning on the market make the board's figure\nmore accurate? Chosen on 2024, tested on 2025, confirmed on 2026. RESEARCH.\n\nNothing in the soccer stack had been tested against a market. Kalshi keeps\nno price history, so the market here is the sharpest public one, Pinnacle's\nCLOSING three-way price, from football-data.co.uk (results and closing odds\npublished free for this use; 27 leagues the model also rates, 98% of their 2024-26 matches joined to ESPN's). The live\nboard compares the model with Kalshi's PRE-GAME price, a thinner and earlier\nmarket than Pinnacle at the close; what this test says about the market's\nweight is therefore an upper bound for Kalshi's.\n\nTHE RULE (written before any number below was computed)\n  The model is the one soccer.py ships when this runs (soccer.fit with XI,\n  KAPPA, RHO and soccer.SHOTS_W; the weekly walk-forward in production's\n  window, research/soccer_shots_validation.py's construction), predicting\n  every match of the year.\n  The market: Pinnacle's closing price (PSCH/PSCD/PSCA), de-vigged by\n  normalising the implied probabilities; the average closing price\n  (AvgCH/D/A) where Pinnacle's is missing; a match with neither is dropped.\n  A football-data match is joined to ESPN's on the mapped league, the date\n  +-1 day and the same 90-minute score; two candidates are told apart by\n  the team names; no candidate, no row (the join rate is reported).\n  The blend is the logarithmic pool p ~ p_model^a * p_market^(1-a),\n  renormalised. Grid a in {0, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.7, 1}.\n  1. SELECT a on the joined 2024 matches: the lowest mean three-way log loss.\n  2. TEST on 2025, a frozen:\n     B1 (does the model add to the market?): the blend at a must beat the\n        market alone (a = 0) by more than two standard errors of the\n        per-match log-loss difference.\n     B2 (does the market add to the model?): the blend at a must beat the\n        model alone (a = 1) by more than two standard errors.\n  3. CONFIRM on 2026 (1 January to the data's last match): a test that\n     passed but goes the other way on 2026 by more than two standard errors\n     is void. 2026 cannot promote anything.\n  What ships: B2 passing makes the board's headline the pool of the model\n  and Kalshi's de-vigged pre-game price at the chosen a (the raw model kept\n  beside it, on the record and for the quick picks' disagreement rule); B2\n  failing leaves the headline the model's. B1 decides what the board says:\n  passing, that the model adds information the closing market lacks;\n  failing, that it adds none measurable, so its edges against Kalshi are the\n  gap between Kalshi and the sharp market at best.\n\n",
+ "data_last_day": "2026-10-17",
+ "join": {
+  "fd": 25298,
+  "joined": 24841,
+  "none": 406,
+  "ambiguous": 51
+ },
+ "shots_w": 0.25,
+ "seconds": 68,
+ "2024": {
+  "n": 8939,
+  "pinnacle": 8936,
+  "logloss": {
+   "0.0": 0.99002,
+   "0.05": 0.99043,
+   "0.1": 0.99091,
+   "0.15": 0.99148,
+   "0.2": 0.99212,
+   "0.3": 0.99365,
+   "0.4": 0.99551,
+   "0.5": 0.9977,
+   "0.7": 1.00307,
+   "1.0": 1.01368
+  },
+  "model_minus_market": {
+   "n": 8939,
+   "mean": 0.02366,
+   "se": 0.00186
+  }
+ },
+ "2025": {
+  "n": 9226,
+  "pinnacle": 8360,
+  "logloss": {
+   "0.0": 0.99542,
+   "0.05": 0.99566,
+   "0.1": 0.99598,
+   "0.15": 0.99637,
+   "0.2": 0.99683,
+   "0.3": 0.99798,
+   "0.4": 0.99943,
+   "0.5": 1.00118,
+   "0.7": 1.00561,
+   "1.0": 1.0146
+  },
+  "model_minus_market": {
+   "n": 9226,
+   "mean": 0.01919,
+   "se": 0.00175
+  }
+ },
+ "2026": {
+  "n": 6668,
+  "pinnacle": 159,
+  "logloss": {
+   "0.0": 1.00106,
+   "0.05": 1.00147,
+   "0.1": 1.00194,
+   "0.15": 1.00249,
+   "0.2": 1.0031,
+   "0.3": 1.00455,
+   "0.4": 1.00628,
+   "0.5": 1.00831,
+   "0.7": 1.01325,
+   "1.0": 1.02292
+  },
+  "model_minus_market": {
+   "n": 6668,
+   "mean": 0.02185,
+   "se": 0.00202
+  }
+ },
+ "decision": {
+  "chosen_a": 0.0,
+  "B1_test": {
+   "n": 9226,
+   "mean": 0.0,
+   "se": 0.0
+  },
+  "B1_passes": false,
+  "B1_confirm": {
+   "n": 6668,
+   "mean": 0.0,
+   "se": 0.0
+  },
+  "B1_void": false,
+  "B2_test": {
+   "n": 9226,
+   "mean": -0.01919,
+   "se": 0.00175
+  },
+  "B2_passes": true,
+  "B2_confirm": {
+   "n": 6668,
+   "mean": -0.02185,
+   "se": 0.00202
+  },
+  "B2_void": false,
+  "B1": false,
+  "B2": true,
+  "ship_market_weight": 1.0
+ },
+ "by_comp": {
+  "arg.1": {
+   "n": 943,
+   "mean": 0.01427,
+   "se": 0.00556
+  },
+  "aut.1": {
+   "n": 336,
+   "mean": 0.01981,
+   "se": 0.01093
+  },
+  "bel.1": {
+   "n": 532,
+   "mean": 0.02284,
+   "se": 0.00675
+  },
+  "bra.1": {
+   "n": 679,
+   "mean": 0.01461,
+   "se": 0.00656
+  },
+  "chn.1": {
+   "n": 455,
+   "mean": 0.02299,
+   "se": 0.00866
+  },
+  "den.1": {
+   "n": 342,
+   "mean": 0.0202,
+   "se": 0.0079
+  },
+  "eng.1": {
+   "n": 632,
+   "mean": 0.01662,
+   "se": 0.0063
+  },
+  "eng.2": {
+   "n": 939,
+   "mean": 0.0136,
+   "se": 0.00528
+  },
+  "eng.3": {
+   "n": 942,
+   "mean": 0.01664,
+   "se": 0.00512
+  },
+  "esp.1": {
+   "n": 647,
+   "mean": 0.02179,
+   "se": 0.00606
+  },
+  "esp.2": {
+   "n": 792,
+   "mean": 0.02085,
+   "se": 0.00684
+  },
+  "fra.1": {
+   "n": 529,
+   "mean": 0.01136,
+   "se": 0.00773
+  },
+  "fra.2": {
+   "n": 539,
+   "mean": 0.02472,
+   "se": 0.00724
+  },
+  "ger.1": {
+   "n": 522,
+   "mean": 0.0187,
+   "se": 0.00683
+  },
+  "ger.2": {
+   "n": 521,
+   "mean": 0.01827,
+   "se": 0.00746
+  },
+  "gre.1": {
+   "n": 393,
+   "mean": 0.0307,
+   "se": 0.00967
+  },
+  "ita.1": {
+   "n": 642,
+   "mean": 0.02648,
+   "se": 0.00628
+  },
+  "ita.2": {
+   "n": 620,
+   "mean": 0.03535,
+   "se": 0.00693
+  },
+  "jpn.1": {
+   "n": 470,
+   "mean": 0.01297,
+   "se": 0.00734
+  },
+  "mex.1": {
+   "n": 603,
+   "mean": 0.01732,
+   "se": 0.00637
+  },
+  "ned.1": {
+   "n": 532,
+   "mean": 0.01568,
+   "se": 0.00725
+  },
+  "nor.1": {
+   "n": 414,
+   "mean": 0.0269,
+   "se": 0.0081
+  },
+  "por.1": {
+   "n": 539,
+   "mean": 0.01831,
+   "se": 0.00637
+  },
+  "sco.1": {
+   "n": 388,
+   "mean": 0.01967,
+   "se": 0.00781
+  },
+  "swe.1": {
+   "n": 421,
+   "mean": 0.02547,
+   "se": 0.00892
+  },
+  "tur.1": {
+   "n": 551,
+   "mean": 0.03496,
+   "se": 0.00724
+  },
+  "usa.1": {
+   "n": 971,
+   "mean": 0.02113,
+   "se": 0.00517
+  }
+ }
+}

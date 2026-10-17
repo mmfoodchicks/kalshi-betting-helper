@@ -96,6 +96,43 @@ FORM_PARAM = 0.02     # A: the short fit's xi; B: N
 W_FORM = 0.0          # 2024 chose 0.1; 2025 did not confirm it (research/reports/soccer_form.md)
 W_H2H = 0.0           # 2024 chose 0
 FORM_PRIOR = 2.0      # expected goals of prior in every residual: two lucky games are not form
+# Shots as a rating input (research/soccer_shots_validation.py, rule written
+# first): the fit reads each side's PSEUDO-GOALS, (1 - SHOTS_W) goals +
+# SHOTS_W x, x = SHOTS_COEF[0] on-target + SHOTS_COEF[1] other shots (least
+# squares on 2023, scaled to 2023's goals; once shots on target are counted,
+# more off-target shots mean slightly FEWER goals -- teams chasing a game
+# shoot from distance). 0.25 chosen on 2024, beat goals alone on 2025
+# (-0.00169 +/- 0.00033 three-way log loss a match) and on 2026 (-0.00156 +/-
+# 0.00037), the BTTS figure unharmed. A match without shots (a quarter of
+# ESPN's; extra time, whose shots cover 120 minutes) enters at its goals.
+# Every prediction, the form panel and the BTTS base rate stay on real goals.
+SHOTS_W = 0.25
+SHOTS_COEF = (0.3773, -0.02771)
+# The model against the closing market (research/soccer_market_validation.py,
+# rule written first; Pinnacle's closing three-way price from
+# football-data.co.uk, 24,841 matches in 27 leagues joined to ESPN's). The
+# model lost to the market alone in EVERY league and every year -- 2025 by
+# 0.0192 +/- 0.0018 log loss a match, 2026 by 0.0219 +/- 0.0020 -- and every
+# weight on the model made the market's price worse (2024 chose 0 of a grid
+# down to 0.05). So the card's headline chance is the logarithmic pool of
+# the model and Kalshi's de-vigged price at MODEL_WEIGHT on the model: 0,
+# Kalshi's own price. Kalshi's pre-game book is thinner and earlier than
+# Pinnacle at the close, so its true weight may sit above 0; nothing
+# measured says so yet. The model's own figure stays on the card, on the
+# record (bucket "soccer", graded against Kalshi) and in the quick picks'
+# disagreement rule.
+MODEL_WEIGHT = 0.0
+
+
+def headline(model3, fair3, w=None):
+    """{"home", "draw", "away"}: the logarithmic pool of the model's three-way
+    probabilities and Kalshi's de-vigged ones, weight `w` (MODEL_WEIGHT) on
+    the model, renormalised."""
+    w = MODEL_WEIGHT if w is None else w
+    z = {k: math.exp(w * math.log(max(1e-12, model3[k])) + (1 - w) * math.log(max(1e-12, fair3[k])))
+         for k in ("home", "draw", "away")}
+    t = sum(z.values())
+    return {k: v / t for k, v in z.items()}
 _LAST = 8             # matches kept per team in the artifact (the card shows five)
 
 # Years of results behind the fit. With XI = 0.003 a result two years old
@@ -209,12 +246,25 @@ def _ninety(c, h, a, hg, ag):
     return None
 
 
-def parse_scoreboard(d, slug):
+def _stat(x, name):
+    for st in x.get("statistics") or []:
+        if st.get("name") == name:
+            try:
+                return float(st.get("displayValue"))
+            except (TypeError, ValueError):
+                return None
+    return None
+
+
+def parse_scoreboard(d, slug, shots=None):
     """(rows, names) from one ESPN scoreboard payload: rows are the finished
     matches as (date_ordinal, slug, home_id, away_id, home_goals_90,
     away_goals_90, neutral), names {team_id: short name}. Kalshi settles on
     90 minutes plus stoppage, so an extra-time result enters at its
-    90-minute score (_ninety) or not at all."""
+    90-minute score (_ninety) or not at all. `shots`, a dict, is filled with
+    {row[:4]: (home on target, away on target, home shots, away shots)} for
+    every row whose payload carries them (SHOTS_W) -- not for an extra-time
+    match, whose shots cover 120 minutes against a 90-minute score."""
     rows, names = [], {}
     for e in d.get("events") or []:
         c = (e.get("competitions") or [{}])[0]
@@ -235,14 +285,40 @@ def parse_scoreboard(d, slug):
             day = datetime.date.fromisoformat((e.get("date") or "")[:10]).toordinal()
         except (TypeError, ValueError):
             continue
-        if st.get("name") in _ESPN_EXTRA:
+        extra = st.get("name") in _ESPN_EXTRA
+        if extra:
             r = _ninety(c, h, a, hg, ag)
             if r is None:
                 continue
             hg, ag = r
-        rows.append((day, slug, str(h["team"]["id"]), str(a["team"]["id"]), hg, ag,
-                     bool(c.get("neutralSite")) or slug in _NEUTRAL))
+        row = (day, slug, str(h["team"]["id"]), str(a["team"]["id"]), hg, ag,
+               bool(c.get("neutralSite")) or slug in _NEUTRAL)
+        rows.append(row)
+        if shots is not None and not extra:
+            sh = (_stat(h, "shotsOnTarget"), _stat(a, "shotsOnTarget"), _stat(h, "totalShots"), _stat(a, "totalShots"))
+            if all(v is not None for v in sh) and sh[2] >= sh[0] and sh[3] >= sh[1]:
+                shots[row[:4]] = sh
     return rows, names
+
+
+def pseudo_rows(rows, shots, w=None, coef=None):
+    """The rows the FIT reads: each side's goals replaced by (1 - w) goals +
+    w x, x = coef[0] on target + coef[1] other shots, where the match has
+    shots (SHOTS_W, SHOTS_COEF); a row without them is unchanged."""
+    w = SHOTS_W if w is None else w
+    c_on, c_off = SHOTS_COEF if coef is None else coef
+    if not w or not shots:
+        return list(rows)
+    out = []
+    for r in rows:
+        sh = shots.get(r[:4])
+        if sh is None:
+            out.append(r)
+            continue
+        xh = c_on * sh[0] + c_off * (sh[2] - sh[0])
+        xa = c_on * sh[1] + c_off * (sh[3] - sh[1])
+        out.append(r[:4] + ((1 - w) * r[4] + w * xh, (1 - w) * r[5] + w * xa) + r[6:])
+    return out
 
 
 def results(slug, year):
@@ -256,15 +332,17 @@ def results(slug, year):
     return racing._cached(("soccer_results", slug, year), ttl, build) or ([], {})
 
 
-def history(slugs, asof=None, workers=2):
+def history(slugs, asof=None, workers=2, shots=None):
     """(rows, names): every finished match behind the fit -- the given
     leagues plus the link competitions, the last _FIT_YEARS calendar years --
-    and {team_id: short name}. A past year is read from the deep store
-    (refetched when missing or a week old: late corrections); the current
-    year is fetched every refit. Two fetches at a time: a year file is 4-6
-    MB of JSON and ~20 MB once parsed, and this runs in a child beside the
-    web workers. A league that fails is skipped (and ledgered), never the
-    build. Runs in the refit child only (refit_main)."""
+    and {team_id: short name}; `shots`, a dict, is filled as
+    parse_scoreboard fills it. A past year is read from the deep store
+    (refetched when missing or a week old: late corrections; a league stored
+    before shots were kept -- a (rows, names) pair -- is refetched once);
+    the current year is fetched every refit. Two fetches at a time: a year
+    file is 4-6 MB of JSON and ~20 MB once parsed, and this runs in a child
+    beside the web workers. A league that fails is skipped (and ledgered),
+    never the build. Runs in the refit child only (refit_main)."""
     import concurrent.futures as cf
     import deep_cache
     asof = asof or clock.today_et()
@@ -273,7 +351,9 @@ def history(slugs, asof=None, workers=2):
 
     def fetch(job):
         try:
-            return job, parse_scoreboard(_espn(f"{_SITE}/{job[0]}/scoreboard?dates={job[1]}&limit=1000"), job[0])
+            sh = {}
+            rows, nm = parse_scoreboard(_espn(f"{_SITE}/{job[0]}/scoreboard?dates={job[1]}&limit=1000"), job[0], shots=sh)
+            return job, (rows, nm, sh)
         except Exception as e:
             errlog.note("SOC-results", e, path=f"{job[0]}/{job[1]}")
             return job, None
@@ -282,7 +362,7 @@ def history(slugs, asof=None, workers=2):
         store, have = {}, {}
         if year < asof.year:
             have, _ts = deep_cache.load(f"soccer_rows_{year}")
-            have = have or {}
+            have = {k: v for k, v in (have or {}).items() if len(v) == 3}
             if (deep_cache.age(f"soccer_rows_{year}") or 1e9) > 7 * 24 * 3600:
                 have = {}
         jobs = [(slug, year) for slug in want if slug not in have]
@@ -292,9 +372,11 @@ def history(slugs, asof=None, workers=2):
                     have[slug] = got
         for slug in want:
             if slug in have:
-                rows, nm = have[slug]
+                rows, nm, sh = have[slug]
                 out.extend(tuple(r) for r in rows)
                 names.update(nm)
+                if shots is not None:
+                    shots.update(sh)
                 store[slug] = have[slug]
         if year < asof.year and jobs:
             try:
@@ -942,14 +1024,19 @@ def build_artifact(slugs, asof=None):
     blend, every team's last _LAST matches and every pair's meetings with
     the fit's expected goals, and the team names."""
     asof = asof or clock.today_et()
-    rows, names = history(slugs, asof)
+    shots = {}
+    rows, names = history(slugs, asof, shots=shots)
     t0 = time.time()
-    model = fit(rows, asof.toordinal())
-    short = (fit(rows, asof.toordinal(), xi=FORM_PARAM) if (FORM_KIND == "A" and W_FORM) else None)
+    # the fit reads pseudo-goals (SHOTS_W); the form panel, the meetings and
+    # the BTTS base rate read the real goals
+    fit_rows = pseudo_rows(rows, shots)
+    model = fit(fit_rows, asof.toordinal())
+    short = (fit(fit_rows, asof.toordinal(), xi=FORM_PARAM) if (FORM_KIND == "A" and W_FORM) else None)
     recent, meetings = _recent_and_meetings(rows, model)
     return {"asof": asof.isoformat(), "slugs": sorted(set(slugs)), "model": model, "short": short,
             "recent": recent, "meetings": meetings, "names": names,
             "btts_base": btts_rates(rows, asof.toordinal()),
+            "shots_w": SHOTS_W, "n_shots": sum(1 for r in rows if r[:4] in shots),
             "n_rows": len(rows), "fit_s": round(time.time() - t0, 1)}
 
 
@@ -1052,7 +1139,8 @@ def model_artifact(slugs):
     today = clock.today_et().isoformat()
     need = set(s for s in slugs if s)
     stale = (art is None or art.get("asof") != today or age > _ART_TTL
-             or not need <= set(art.get("slugs") or []) or "btts_base" not in art)
+             or not need <= set(art.get("slugs") or []) or "btts_base" not in art
+             or art.get("shots_w") != SHOTS_W)
     if stale and time.time() - _refit_try[0] > 1800:
         _refit_try[0] = time.time()
         if _refit_child(need):
@@ -1239,6 +1327,10 @@ def _build_board():
                     "form": {"kind": FORM_KIND, "param": FORM_PARAM, "weight": W_FORM}, "h2h_weight": W_H2H},
             "leagues": sorted({g["league"] for g in games}),
             "heavy_gap": HEAVY_GAP,
+            # what the headline chance rests on (research/soccer_market_validation.py)
+            "model_weight": MODEL_WEIGHT, "shots_w": SHOTS_W,
+            "market_test": {"leagues": 27, "matches": 24841, "worse_2025": 0.0192, "se_2025": 0.0018,
+                            "worse_2026": 0.0219, "se_2026": 0.0020},
             # the out-of-sample calibration of the leg the card leads with
             # (P the underdog does not win) on the heavy-underdog subset, 2025
             # and 2026 to date, weekly refits (research/reports/soccer_form.md):
@@ -1248,11 +1340,13 @@ def _build_board():
                             "heavy_2026": [{"pred": 0.765, "hit": 0.755, "n": 1314}, {"pred": 0.846, "hit": 0.837, "n": 2392},
                                            {"pred": 0.924, "hit": 0.936, "n": 612}]},
             "note": ("Every Kalshi soccer match. The model is a Dixon-Coles goals model: each "
-                     "team's attack and defence from two years of results weighted to the "
-                     "recent, a home advantage per competition, the exact scoreline grid. "
-                     "Recent form and head-to-head are shown on every card but carry no "
-                     "weight: neither improved held-out predictions. "
-                     "NO on the underdog pays on the favourite's win and the tie.")}
+                     "team's attack and defence from two years of results (goals, and a quarter "
+                     "weight on shots on target) weighted to the recent, a home advantage per "
+                     "competition, the exact scoreline grid. Against the closing market it lost "
+                     "in every league tested, so each card's headline chance is Kalshi's own "
+                     "de-vigged price and the model's figure sits beside it. Recent form and "
+                     "head-to-head are shown on every card but carry no weight: neither improved "
+                     "held-out predictions. NO on the underdog pays on the favourite's win and the tie.")}
 
 
 def _league_ids(slug):
@@ -1379,6 +1473,16 @@ def _game_row(ev, art, slug_ids, by_date, now=None, btts=None):
         row["model"] = None
         row["why"] = ("ESPN has no feed for this league" if not slug
                       else "could not find this match on ESPN's schedule")
+    # the headline chance (MODEL_WEIGHT): pre-game, the pool of the model and
+    # Kalshi's de-vigged price; with no readable book, the model's; with no
+    # model, Kalshi's. A live match keeps the pre-game blend's ingredients
+    # out of it (a live price carries the match), so its chance is the model's.
+    m3 = ({"home": row["model"]["p_home"], "draw": row["model"]["p_draw"], "away": row["model"]["p_away"]}
+          if row["model"] else None)
+    if m3 and row["fair"] and row["pregame"]:
+        row["chance"] = headline(m3, row["fair"])
+    else:
+        row["chance"] = m3 or row["fair"]
     if quoted and row["dog"]:
         dm = hm if row["dog"] == "home" else am
         no_ask = dm.get("no_ask")
@@ -1391,9 +1495,13 @@ def _game_row(ev, art, slug_ids, by_date, now=None, btts=None):
             if not row["pregame"]:
                 nd["live"] = True
             elif no_ask is not None and 0 < no_ask < 100:
+                # the edge is the HEADLINE's, not the model's: the model lost
+                # to the closing market in every league tested (MODEL_WEIGHT)
+                c_no = 1.0 - row["chance"][row["dog"]]
                 fee = kalshi.fee_for_market(dm.get("ticker"), no_ask)
+                nd["chance_pct"] = round(100 * c_no, 1)
                 nd["fee"] = round(fee, 2)
-                nd["edge"] = round(100 * p_no - no_ask - fee, 1)
+                nd["edge"] = round(100 * c_no - no_ask - fee, 1)
         row["no_dog"] = nd
     bm = (btts or {}).get(btts_ticker(ev))
     row["btts"] = btts_row(bm, row["model"], row["pregame"]) if bm else None
@@ -1449,13 +1557,16 @@ def quick_legs(row, eligible, now):
     hn, an = row["home"]["name"], row["away"]["name"]
     out, blocked = [], []
 
-    def add(mk, yes, p, kind, label, kalshi_p):
+    def add(mk, yes, p, kind, label, kalshi_p, chance=None):
+        """`p` the model's own chance (the tier rule's), `chance` the
+        headline's (the slip's combined chance and EV; MODEL_WEIGHT)."""
         ask, bid = (mk.get("yes_ask"), mk.get("yes_bid")) if yes else (mk.get("no_ask"), mk.get("no_bid"))
         if not mk.get("ticker") or not _book_ok(ask, bid):
             return
         tier, why = combo_engine.quick_tier(p, kalshi_p)
+        c = p if chance is None else chance
         leg = {"ticker": mk["ticker"], "side": "yes" if yes else "no", "kind": kind,
-               "label": label, "prob": p, "marg": p, "price_cents": ask, "tier": tier,
+               "label": label, "prob": c, "marg": c, "model_p": p, "price_cents": ask, "tier": tier,
                "kalshi_p": kalshi_p, "event": row["event"], "league": row["league"],
                "match": f"{hn} v {an}", "kickoff": row["kickoff"], "ko_ts": ko}
         if tier:
@@ -1464,6 +1575,7 @@ def quick_legs(row, eligible, now):
             blocked.append(leg)
     if row.get("readable") and (not eligible or row["event"] in eligible):
         fr = row.get("fair") or {}
+        ch = row.get("chance") or {}
         for side in ("home", "draw", "away"):
             mk = row[side]["kalshi"]
             p = m.get(f"p_{side}")
@@ -1475,8 +1587,10 @@ def quick_legs(row, eligible, now):
             else:
                 name, other = (hn, an) if side == "home" else (an, hn)
                 yl, nl = f"{name} to win", f"NO {name}: {other} wins or draw"
-            add(mk, True, p, side, yl, kp)
-            add(mk, False, 1.0 - p, "not_" + side, nl, None if kp is None else 1.0 - kp)
+            cs = ch.get(side)
+            add(mk, True, p, side, yl, kp, cs)
+            add(mk, False, 1.0 - p, "not_" + side, nl, None if kp is None else 1.0 - kp,
+                None if cs is None else 1.0 - cs)
     b = row.get("btts")
     if (b and b.get("readable") and b.get("model_pct") is not None
             and (not eligible or b["ticker"].rsplit("-", 1)[0] in eligible)):
@@ -1502,7 +1616,7 @@ def quick_combo(board_, n, day=None, now=None, eligible=None, use_btts=True):
     by_day, blocked = {}, {}
 
     def key(l):
-        return combo_engine.quick_order(l["prob"], l["kalshi_p"])
+        return combo_engine.quick_order(l["model_p"], l["kalshi_p"])
     for row in (board_ or {}).get("games") or []:
         legs, bl = quick_legs(row, eligible, now)
         if not use_btts:
@@ -1527,12 +1641,12 @@ def quick_combo(board_, n, day=None, now=None, eligible=None, use_btts=True):
                 break
     n_avail = sum(counts[d] for d in window)
     bl_win = sorted((l for d in (window or ([day] if day else days[:1])) for l in blocked.get(d, [])),
-                    key=lambda l: -abs(l["prob"] - l["kalshi_p"]))
+                    key=lambda l: -abs(l["model_p"] - l["kalshi_p"]))
     base = {"n": n, "today": today, "window": window, "days": counts,
             "eligibility_known": bool(eligible), "n_matches": n_avail,
             "rule": {"tiers": [list(t) for t in combo_engine.QUICK_TIERS], "max_gap": combo_engine.QUICK_MAX_GAP},
             "n_blocked": len(bl_win),
-            "blocked": [{"match": l["match"], "label": l["label"], "model_pct": round(100 * l["prob"], 1),
+            "blocked": [{"match": l["match"], "label": l["label"], "model_pct": round(100 * l["model_p"], 1),
                          "kalshi_pct": round(100 * l["kalshi_p"], 1)} for l in bl_win[:8]]}
     if n_avail < n:
         what = f"on {day}" if day else "in every listed day together"
@@ -1542,15 +1656,16 @@ def quick_combo(board_, n, day=None, now=None, eligible=None, use_btts=True):
     picked = [l for d in window[:-1] for l in by_day[d]]
     picked += sorted(by_day[window[-1]], key=key)[:n - len(picked)]
     picked.sort(key=lambda l: (l["ko_ts"], l["match"]))
-    gross = prob = kal = 1.0
+    gross = prob = kal = mod = 1.0
     for l in picked:
         gross *= l["price_cents"] / 100.0
         prob *= l["prob"]
         kal *= l["kalshi_p"]
+        mod *= l["model_p"]
     cost = combo_engine.combo_cost(gross)
     legs_out = [{"match": l["match"], "league": l["league"], "kickoff": l["kickoff"], "label": l["label"],
                  "kind": l["kind"], "ticker": l["ticker"], "side": l["side"], "ask": l["price_cents"],
-                 "tier": l["tier"], "model_pct": round(100 * l["prob"], 1),
+                 "tier": l["tier"], "model_pct": round(100 * l["model_p"], 1), "chance_pct": round(100 * l["prob"], 1),
                  "kalshi_pct": round(100 * l["kalshi_p"], 1)} for l in picked]
     item = {"groups": [{"legs": [{"ticker": l["ticker"]}]} for l in picked]}
     ev = prob / cost - 1.0
@@ -1558,6 +1673,7 @@ def quick_combo(board_, n, day=None, now=None, eligible=None, use_btts=True):
                 extended=bool(not day and window and window[-1] != today),
                 tiers={t: sum(1 for l in picked if l["tier"] == t) for _c, t in combo_engine.QUICK_TIERS},
                 prob_pct=round(100 * prob, 2), kalshi_prob_pct=round(100 * kal, 2),
+                model_prob_pct=round(100 * mod, 2), model_weight=MODEL_WEIGHT,
                 asks_x=round(1.0 / gross, 2), payout_x=round(1.0 / cost, 2),
                 cost_c=round(100 * cost, 2), ev_pct=round(100 * ev, 1),
                 kelly_pct=round(100 * combo_engine.kelly(prob, cost), 2),

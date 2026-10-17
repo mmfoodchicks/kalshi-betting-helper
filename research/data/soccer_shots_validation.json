@@ -1,0 +1,217 @@
+{
+ "rule": "Shots as a rating input -- a free stand-in for expected goals: chosen on\n2024, tested on 2025, confirmed on 2026, every match out of sample. RESEARCH.\n\nThe goals model rates teams on goals alone. Goals are a noisy count (a side\nthat outshoots its opponent 20-5 and loses 1-0 tells the fit it was the\nworse team); shots on target are a steadier measure of the same thing, and\nESPN's scoreboards carry them for three quarters of the matches the fit\nreads (soccer_rows with shots: 58,603 of 78,505, 2023-2026).\n\nTHE RULE (written before any number below was computed)\n  The model is the shipped one (soccer.fit with XI, KAPPA, RHO; the weekly\n  walk-forward in production's window, research/soccer_btts_validation.py's\n  construction: fitted on every match from 1 January of the year before the\n  week up to the week's first day, predicting every match in the week).\n  One change: every match the FIT sees enters at PSEUDO-GOALS, per side,\n      g' = (1 - w) g + w x,    x = C_ON * on_target + C_OFF * (shots - on_target)\n  (C_ON, C_OFF) the least-squares fit, through the origin, of a side's goals\n  on its shots on target and its other shots, over every 2023 match with\n  shots, then scaled together so x averages exactly the 2023 goals (a fit\n  through the origin need not, and a level gap would bias every scoring\n  rate the pseudo-goals fit predicts) -- 2023 is the warm-up year of the\n  2024 windows and is scored by none of the tests. A match without shots (no statistics, or extra time,\n  whose shots cover 120 minutes) enters at its goals. Every prediction is of\n  the real 90-minute result. Grid: w in {0, 0.25, 0.5, 0.75, 1}.\n  1. SELECT on the 2024 weeks: the w with the lowest mean three-way log loss.\n  2. TEST on 2025, once, w frozen: it ships only if it beats w = 0 by more\n     than two standard errors of the per-match log-loss difference.\n  3. CONFIRM on 2026 (1 January to the data's last week): a w that passed 2\n     but is worse than w = 0 on 2026 by more than two standard errors ships\n     at 0. 2026 cannot promote anything.\n  4. The both-teams-to-score figure ships with the model it was tested on\n     (soccer.BTTS_RECAL, fitted on the w = 0 model): a w that passed 2 and 3\n     but makes the recalibrated BTTS figure worse than w = 0 on 2025 by more\n     than two standard errors ships at 0.\n  Reported beside it: each year's log loss for every w, and the 2025/2026\n  differences on the matches where both sides had shots in the window.\n\n",
+ "data_last_day": "2026-10-17",
+ "n_rows": 78505,
+ "n_with_shots": 58603,
+ "coef": {
+  "on_target": 0.3773,
+  "off_target": -0.02771
+ },
+ "seconds": 364,
+ "2024": {
+  "n": 20055,
+  "logloss": {
+   "0.0": 1.00509,
+   "0.25": 1.0042,
+   "0.5": 1.00498,
+   "0.75": 1.00749,
+   "1.0": 1.01198
+  },
+  "btts_logloss": {
+   "0.0": 0.68438,
+   "0.25": 0.68403,
+   "0.5": 0.68393,
+   "0.75": 0.6841,
+   "1.0": 0.68459
+  },
+  "minus_w0": {
+   "0.25": {
+    "n": 20055,
+    "mean": -0.00088,
+    "se": 0.00028
+   },
+   "0.5": {
+    "n": 20055,
+    "mean": -0.0001,
+    "se": 0.00056
+   },
+   "0.75": {
+    "n": 20055,
+    "mean": 0.0024,
+    "se": 0.00084
+   },
+   "1.0": {
+    "n": 20055,
+    "mean": 0.0069,
+    "se": 0.00113
+   }
+  },
+  "minus_w0_known": {
+   "0.25": {
+    "n": 16023,
+    "mean": -0.00112,
+    "se": 0.00035
+   },
+   "0.5": {
+    "n": 16023,
+    "mean": -0.00024,
+    "se": 0.00069
+   },
+   "0.75": {
+    "n": 16023,
+    "mean": 0.0027,
+    "se": 0.00103
+   },
+   "1.0": {
+    "n": 16023,
+    "mean": 0.00799,
+    "se": 0.00139
+   }
+  }
+ },
+ "2025": {
+  "n": 20625,
+  "logloss": {
+   "0.0": 1.00901,
+   "0.25": 1.00732,
+   "0.5": 1.00806,
+   "0.75": 1.01191,
+   "1.0": 1.02147
+  },
+  "btts_logloss": {
+   "0.0": 0.68505,
+   "0.25": 0.68501,
+   "0.5": 0.68558,
+   "0.75": 0.68705,
+   "1.0": 0.69057
+  },
+  "minus_w0": {
+   "0.25": {
+    "n": 20625,
+    "mean": -0.00169,
+    "se": 0.00033
+   },
+   "0.5": {
+    "n": 20625,
+    "mean": -0.00095,
+    "se": 0.00067
+   },
+   "0.75": {
+    "n": 20625,
+    "mean": 0.0029,
+    "se": 0.00103
+   },
+   "1.0": {
+    "n": 20625,
+    "mean": 0.01246,
+    "se": 0.00151
+   }
+  },
+  "minus_w0_known": {
+   "0.25": {
+    "n": 17872,
+    "mean": -0.00207,
+    "se": 0.00038
+   },
+   "0.5": {
+    "n": 17872,
+    "mean": -0.00141,
+    "se": 0.00076
+   },
+   "0.75": {
+    "n": 17872,
+    "mean": 0.00271,
+    "se": 0.00118
+   },
+   "1.0": {
+    "n": 17872,
+    "mean": 0.01315,
+    "se": 0.00172
+   }
+  }
+ },
+ "2026": {
+  "n": 17675,
+  "logloss": {
+   "0.0": 1.01467,
+   "0.25": 1.01312,
+   "0.5": 1.01457,
+   "0.75": 1.02128,
+   "1.0": 1.0498
+  },
+  "btts_logloss": {
+   "0.0": 0.68461,
+   "0.25": 0.68421,
+   "0.5": 0.68471,
+   "0.75": 0.68698,
+   "1.0": 0.69786
+  },
+  "minus_w0": {
+   "0.25": {
+    "n": 17675,
+    "mean": -0.00156,
+    "se": 0.00037
+   },
+   "0.5": {
+    "n": 17675,
+    "mean": -0.00011,
+    "se": 0.00077
+   },
+   "0.75": {
+    "n": 17675,
+    "mean": 0.0066,
+    "se": 0.00128
+   },
+   "1.0": {
+    "n": 17675,
+    "mean": 0.03512,
+    "se": 0.00256
+   }
+  },
+  "minus_w0_known": {
+   "0.25": {
+    "n": 14877,
+    "mean": -0.00193,
+    "se": 0.00043
+   },
+   "0.5": {
+    "n": 14877,
+    "mean": -0.00044,
+    "se": 0.0009
+   },
+   "0.75": {
+    "n": 14877,
+    "mean": 0.007,
+    "se": 0.00149
+   },
+   "1.0": {
+    "n": 14877,
+    "mean": 0.039,
+    "se": 0.00298
+   }
+  }
+ },
+ "chosen": 0.25,
+ "decision": {
+  "chosen": 0.25,
+  "test": {
+   "n": 20625,
+   "mean": -0.00169,
+   "se": 0.00033
+  },
+  "test_passes": true,
+  "confirm": {
+   "n": 17675,
+   "mean": -0.00156,
+   "se": 0.00037
+  },
+  "confirm_vetoes": false,
+  "btts_test": {
+   "n": 20625,
+   "mean": -4e-05,
+   "se": 0.00016
+  },
+  "btts_vetoes": false,
+  "ship": 0.25
+ }
+}

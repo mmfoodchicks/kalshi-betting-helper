@@ -30,7 +30,9 @@ import re
 # 3: sd_tourney_nfl_<draft group> boards (dfs_tourney, PC-built).
 # 4: the deep store gains nfl_deep.pkl (nfl_deep_season.run_deep's aggregate)
 #    and nfl_pbp_<season>.pkl (nfl_pbp's compact play-by-play season store).
-SCHEMA = 4
+# 5: the deep store's soccer_rows_<year> entries carry each league's shots
+#    ((rows, names, shots), soccer.history) and soccer_model carries shots_w.
+SCHEMA = 5
 
 _NAME_RE = re.compile(r"^[\w.,@=+-]{1,140}\.pkl$")
 

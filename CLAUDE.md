@@ -241,7 +241,19 @@ data-only `sim-history` branch (which never deploys):
   are fetched by name off the GAME tickers (100 a call -- one call a series
   read 429), edged only off two-sided books within 10c, pre-game, bucket
   `soccer_btts`. The figure is flatter than Kalshi's (SD 6.1 vs 9.1) and is
-  untested against the market; the tab says so. **Data sources**: ESPN carries
+  untested against the market; the tab says so. **Accuracy pass**
+  (2026-10-17, `research/reports/soccer_accuracy.md`): the fit reads
+  pseudo-goals, a quarter weight on shots on target (`SHOTS_W` 0.25,
+  `SHOTS_COEF` from 2023; beat goals alone on 2025 AND 2026 held out; ESPN's
+  year files carry shots for ~75% of matches, kept beside the rows in the deep
+  store, `artifacts.SCHEMA` 5). Against Pinnacle's CLOSING price
+  (football-data.co.uk, 24,841 matches, 27 leagues) the model LOST in every
+  league and added nothing at any blend weight, so the card's headline chance
+  is the pool of model and Kalshi's de-vigged price at `MODEL_WEIGHT` 0 --
+  Kalshi's own; the edge reads the headline, the model's figure sits beside
+  it, the record (bucket `soccer`) and the quick picks' 15-point rule keep
+  the raw model. A weight above 0 is a change for the live record to earn
+  against Kalshi's pre-game price. **Data sources**: ESPN carries
   73% of Kalshi's matches; FotMob would carry ~96% but its terms forbid
   automated use and its robots.txt disallows /api/* -- not used.
 - **Quick combo** (2026-10-17): one number, the best slip of that many legs

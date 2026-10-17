@@ -10595,8 +10595,9 @@ try:
        and any(m == "dec" for m in _smp["method"]))
     ck("the board key moved with the payload shape (a cached old board has no samples) "
        "and the artifact schema was bumped in the same change",
-       # bumped again to 4 on 2026-10-16 for the NFL deep store (nfl_deep.pkl, nfl_pbp_<season>.pkl)
-       _us63.BOARD_NAME == "ufc_board2" and __import__("artifacts").SCHEMA == 4)
+       # bumped again to 4 on 2026-10-16 for the NFL deep store (nfl_deep.pkl, nfl_pbp_<season>.pkl),
+       # 5 on 2026-10-17 for the soccer rows' shots; the schema only moves forward
+       _us63.BOARD_NAME == "ufc_board2" and __import__("artifacts").SCHEMA >= 4)
     ck("both series share the bout key the fighter ticker carries",
        _uc63.event_key("KXUFCFIGHT-26SEP08PASBER-PAS") == "26SEP08PASBER"
        and _uc63.event_key("KXUFCROUNDS-26SEP08PASBER-3") == "26SEP08PASBER"
@@ -12908,7 +12909,7 @@ ck("the tournament is the PC's job: numpy is in requirements-pc.txt (pc_loop ins
    and '("showdown tourney", lambda: _task_showdown_tourney(url, tok))' in _pcw14
    and 'name = f"sd_tourney_nfl_{dg}"' in _pcw14 and "n_sims=60000" in _pcw14
    and "dfs_tourney.available()" in _pcw14
-   and __import__("artifacts").SCHEMA == 4,     # 3 at the time; 4 since the NFL deep store (2026-10-16)
+   and __import__("artifacts").SCHEMA >= 4,     # 3 at the time; 4 the NFL deep store (2026-10-16), 5 soccer shots
    "a one-core web worker must never be able to start a 200,000 x 60,000 job")
 _tt14 = _pcw14[_pcw14.index("def _task_showdown_tourney"):_pcw14.index("def main")]
 ck("a finished tournament board ships the moment it exists -- boards are synced before the first build and after each one, not only at the cycle's end",
@@ -18337,7 +18338,7 @@ _pwd_src_nd = _insp.getsource(_pw_nd._task_deep)
 ck("the PC runs the same deep NFL season (4,000 seasons, the same quality gate, the same payload under the same key) and the artifact schema moved to 4 for the two new deep-store pickles",
    '("nfl_deep", _nfl_deep)' in _pwd_src_nd and "nfl_deep_season.publishable(agg)" in _pwd_src_nd
    and 'deep_cache.save("nfl_deep", agg)' in _pwd_src_nd and "n_seasons=4000" in _pwd_src_nd
-   and _art_nd.SCHEMA == 4 and "nfl_deep.pkl" in _insp.getsource(_art_nd) and "nfl_pbp_<season>.pkl" in _insp.getsource(_art_nd))
+   and _art_nd.SCHEMA >= 4 and "nfl_deep.pkl" in _insp.getsource(_art_nd) and "nfl_pbp_<season>.pkl" in _insp.getsource(_art_nd))
 # ---- The 2026-10-16 review fixes (Opus review of f048760; every guard here
 # would have caught the bug it names -- each was measured on the shipped code).
 import collections as _col_nd2
@@ -19992,12 +19993,15 @@ _evh9["markets"] = {"TIE": dict(_ev9["markets"]["TIE"], yes_ask=24.0), "NEW": di
                     "CRY": dict(_ev9["markets"]["CRY"], yes_ask=15.0, yes_bid=13.0, no_ask=86.0)}
 _rowh9 = _soc9._game_row(_evh9, _fit9, _slug9, {"2026-10-25": _espn9}, now=_now9)
 ck("the heavy-underdog filter is the owner's rule in Kalshi's prices (underdog YES ask <= tie YES ask - 5): 15c under a 24c tie passes, 37c under 27c does not; "
-   "the card leads with NO on the underdog, whose model figure is the favourite's win plus the tie, and the edge nets the ask and the fee",
+   "the card leads with NO on the underdog, whose model figure is the favourite's win plus the tie, and the edge nets the ask and the fee "
+   "off the HEADLINE chance -- Kalshi's de-vigged price at MODEL_WEIGHT 0, the model having lost to the closing market",
    _row9["dog"] == "home" and _row9["heavy"] is False and _row9["dog_ask"] == 37.0 and _row9["tie_ask"] == 27.0
    and _rowh9["dog"] == "home" and _rowh9["heavy"] is True
    and _rowh9["no_dog"]["no_ask"] == 86.0 and _rowh9["no_dog"]["ticker"].endswith("-CRY")
    and abs(_rowh9["no_dog"]["model_pct"] - round(100 * (1 - _rowh9["model"]["p_home"]), 1)) < 1e-9
-   and abs(_rowh9["no_dog"]["edge"] - round(_rowh9["no_dog"]["model_pct"] - 86.0 - _rowh9["no_dog"]["fee"], 1)) < 1e-9
+   and _soc9.MODEL_WEIGHT == 0.0 and _rowh9["no_dog"]["chance_pct"] == _rowh9["no_dog"]["fair_pct"]
+   and abs(_rowh9["no_dog"]["edge"] - round(100 * (1 - _rowh9["chance"]["home"]) - 86.0
+                                            - __import__("kalshi").fee_for_market(_rowh9["no_dog"]["ticker"], 86.0), 1)) < 1e-9
    and _rowh9["no_dog"]["fair_pct"] == round(100 * (1 - _rowh9["fair"]["home"]), 1)
    and _soc9.HEAVY_GAP == 5.0, str((_row9.get("dog"), _row9.get("heavy"), _rowh9.get("heavy"), _rowh9.get("no_dog"))))
 _evf9 = dict(_ev9, home_code="NEW", away_code="CRY")          # a ticker whose order disagrees with ESPN
@@ -20186,17 +20190,22 @@ try:
     _soc9.model_artifact(["eng.1"])                       # within 30 minutes of the attempt: no second refit
     _soc9._refit_try[0] = 0.0
     _soc9._load_artifact = lambda: ({"asof": "2026-10-17", "slugs": ["eng.1"], "model": _fit9,
-                                     "btts_base": {"comp": {}, "global": 0.52}}, 100.0)
+                                     "btts_base": {"comp": {}, "global": 0.52}, "shots_w": _soc9.SHOTS_W}, 100.0)
     _soc9.model_artifact(["eng.1"])                       # fresh: nothing
     _soc9.model_artifact(["eng.1", "esp.1"])              # a league the board now needs: refit
     _soc9._refit_try[0] = 0.0
-    _soc9._load_artifact = lambda: ({"asof": "2026-10-17", "slugs": ["eng.1", "esp.1"], "model": _fit9}, 100.0)
+    _soc9._load_artifact = lambda: ({"asof": "2026-10-17", "slugs": ["eng.1", "esp.1"], "model": _fit9,
+                                     "shots_w": _soc9.SHOTS_W}, 100.0)
     _soc9.model_artifact(["eng.1"])                       # today's, but built before the BTTS rates were stored: refit
+    _soc9._refit_try[0] = 0.0
+    _soc9._load_artifact = lambda: ({"asof": "2026-10-17", "slugs": ["eng.1", "esp.1"], "model": _fit9,
+                                     "btts_base": {"comp": {}, "global": 0.52}, "shots_w": 0.0}, 100.0)
+    _soc9.model_artifact(["eng.1"])                       # today's, fitted at another shots weight: refit
 finally:
     (_soc9._load_artifact, _soc9._refit_child, _soc9._refit_try[0], _soc9.clock.today_et) = _keep9c
-ck("the artifact refits when it is from another day, misses a league the board needs, or predates the BTTS rates -- not when it is fresh, "
-   "and at most once in 30 minutes",
-   _calls9 == [["eng.1"], ["eng.1", "esp.1"], ["eng.1"]], str(_calls9))
+ck("the artifact refits when it is from another day, misses a league the board needs, predates the BTTS rates or was fitted at "
+   "another shots weight -- not when it is fresh, and at most once in 30 minutes",
+   _calls9 == [["eng.1"], ["eng.1", "esp.1"], ["eng.1"], ["eng.1"]], str(_calls9))
 # 4. Kalshi: an empty series is looked at again after an hour, not every build
 _keep9d = (_soc9.soccer_series, _soc9._fetch_series, dict(_soc9._empty_series))
 _fetched9 = []
@@ -20717,7 +20726,7 @@ ck("the recalibration's league input is the fit's own decayed BTTS rate per comp
    and abs(_pm12["btts"] - round(_soc12.btts_cal(_pm12["btts_raw"], 0.6), 3)) < 1e-9 and _pm12["btts_league"] == 0.6
    and _pm12g["btts_league"] == 0.5
    and '"btts_base": btts_rates(rows, asof.toordinal()),' in _insp.getsource(_soc12.build_artifact)
-   and 'or "btts_base" not in art)' in _insp.getsource(_soc12.model_artifact),
+   and 'or "btts_base" not in art' in _insp.getsource(_soc12.model_artifact),
    str((_br12["comp"], _exp12, _pm12["btts"], _pm12["btts_raw"])))
 ck("the BTTS markets come by name, a hundred tickers a call (one call a series read 429), and the tab shows them: Kalshi's YES and NO beside "
    "the model, a sort by Kalshi's own BTTS price and a has-a-market filter",
@@ -20779,6 +20788,8 @@ def _qrow13(ev, ko, ph, pd, pa, asks, btts=None, **kw):
            "fair": {"home": ph - 0.01, "draw": pd, "away": pa + 0.01},
            "model": {"p_home": ph, "p_draw": pd, "p_away": pa, "weak": False}, "btts": btts}
     row.update(kw)
+    # the headline chance, as _game_row sets it on a pre-game card (MODEL_WEIGHT)
+    row["chance"] = _soc13.headline({"home": ph, "draw": pd, "away": pa}, row["fair"])
     return row
 
 
@@ -20804,13 +20815,14 @@ _lg13, _bg13 = _soc13.quick_legs(_gap13, set(), _NOW13)
 ck("a soccer card offers only legs at 80%+ to both the model and Kalshi: here NO on the away side (the NO ask, the model's 1 - p, "
    "Kalshi's de-vigged 1 - p) and no draw; the 70% home win and the 62% both-teams-score are not offered; a 97%/96.5% leg is a lock",
    sorted(_byk13) == ["not_away", "not_draw"] and _byk13["not_away"]["tier"] == "80+"
-   and _byk13["not_away"]["price_cents"] == 91 and abs(_byk13["not_away"]["prob"] - 0.90) < 1e-12
+   and _byk13["not_away"]["price_cents"] == 91 and abs(_byk13["not_away"]["model_p"] - 0.90) < 1e-12
    and abs(_byk13["not_away"]["kalshi_p"] - 0.89) < 1e-12
+   and abs(_byk13["not_away"]["prob"] - 0.89) < 1e-9          # the slip's chance is the headline's: Kalshi's at weight 0
    and _byk13["not_away"]["side"] == "no" and _byk13["not_away"]["label"] == "NO AAAA: HAAA wins or draw"
    and _b13 == [] and [(l["kind"], l["tier"]) for l in _lk13] == [("home", "lock")], str((sorted(_byk13), _b13, _lk13)))
 ck("and a leg Kalshi rates 80%+ that the model puts 15+ points under is refused and reported, never offered (NO on the away "
    "side: model 70%, Kalshi 85%)",
-   _lg13 == [] and [(l["kind"], round(l["prob"], 2), round(l["kalshi_p"], 2)) for l in _bg13] == [("not_away", 0.70, 0.85)],
+   _lg13 == [] and [(l["kind"], round(l["model_p"], 2), round(l["kalshi_p"], 2)) for l in _bg13] == [("not_away", 0.70, 0.85)],
    str((_lg13, _bg13)))
 ck("and none from a match under way, one kicking off inside five minutes, a competition the model is flagged weak in, a book "
    "wider than 10c, or an event Kalshi's combo refuses; a dead eligibility feed (empty set = unknown) excludes nothing",
@@ -20869,17 +20881,19 @@ ck("the slip fills surest first (locks, then 90%+, then 80%+) and prefers today:
    and {l["tier"] for l in _t2["legs"]} == {"80+"},
    str((_ms13(_t2), _ms13(_t3), _ms13(_t2d), _ms13(_t3d), _t3d.get("tiers"), _t3d.get("blocked"))))
 _g13 = _t3d
-_gp13 = _kp13 = _pp13 = 1.0
+_gp13 = _kp13 = _pp13 = _cp13 = 1.0
 for _l in _g13["legs"]:
     _gp13 *= _l["ask"] / 100.0
     _kp13 *= _l["kalshi_pct"] / 100.0
     _pp13 *= _l["model_pct"] / 100.0
+    _cp13 *= _l["chance_pct"] / 100.0
 _cost13 = _ce13.combo_cost(_gp13)
-ck("the slip's money is Kalshi's: the asks multiplied, ONE combo fee on the basket, EV and Kelly off that cost, and Kalshi's own "
-   "chance (its de-vigged prices) beside the model's",
+ck("the slip's money is Kalshi's: the asks multiplied, ONE combo fee on the basket, EV and Kelly off that cost, the chance the "
+   "cards' headline (Kalshi's de-vigged prices at MODEL_WEIGHT 0) with the model's beside it",
    _g13["asks_x"] == round(1 / _gp13, 2) and _g13["payout_x"] == round(1 / _cost13, 2)
    and abs(_g13["ev_pct"] - round(100 * (_g13["prob_pct"] / 100 / _cost13 - 1), 1)) <= 0.15
-   and abs(_g13["kalshi_prob_pct"] - 100 * _kp13) < 0.2 and abs(_g13["prob_pct"] - 100 * _pp13) < 0.2
+   and abs(_g13["kalshi_prob_pct"] - 100 * _kp13) < 0.2 and abs(_g13["prob_pct"] - 100 * _cp13) < 0.2
+   and abs(_g13["model_prob_pct"] - 100 * _pp13) < 0.2 and abs(_g13["prob_pct"] - _g13["kalshi_prob_pct"]) < 0.2
    and _g13["ev_ok"] == (_g13["ev_pct"] >= 0) and _g13["cap_x"] == _ce13.MAX_PAYOUT_X,
    str((_g13.get("asks_x"), _g13.get("payout_x"), _g13.get("ev_pct"))))
 # the route answers off the board already built, never building one inline.
@@ -20910,7 +20924,7 @@ ck("the soccer tab has the box: a number of legs, the day menu (next up first), 
    "and the maker-quote caveat",
    'id="soccerQuickN"' in _htq13 and 'onclick="soccerQuick()"' in _htq13 and 'id="soccerQuickDay"' in _htq13
    and "soccerQuickObj" not in _htq13 and "soccerQuickObj" not in _jsq13
-   and "/api/soccer/combo?n=${n}&btts=${btts}" in _jsq13 and "Kalshi's own odds" in _jsq13
+   and "/api/soccer/combo?n=${n}&btts=${btts}" in _jsq13 and "chance all hit <b>" in _jsq13 and "the model says ${d.model_prob_pct" in _jsq13
    and "read the payout as a ceiling" in _jsq13 and "soccerQuickAll(${d.n_matches})" in _jsq13
    and "QUICK_TIER_LBL[l.tier]" in _jsq13 and "_quickBlockedHtml(d.n_blocked" in _jsq13
    and "15+ points apart" in _htq13)
@@ -21191,6 +21205,112 @@ ck("the college maker driven the page's way (a ptok, then polls) builds in the j
                          "types": {"ML"}}]
    and _logged14q == ["cfb_fcs"],
    str((_first14.status_code, _fin14.status_code if _fin14 is not None else None, _fj14.get("error"), _seen14q, _logged14q)))
+
+# ---------------------------------------------------------------------------
+# Model accuracy (2026-10-17; the owner: "Is there anyway to make the model
+# more accurate?" -- "Just do as you can"). Two held-out tests on soccer,
+# each by a rule written first: shots as a rating input (it earned 0.25),
+# and the model against the closing market (it lost in every league, so the
+# card's headline chance is Kalshi's de-vigged price).
+import json as _json_acc
+import soccer as _soc_acc
+import artifacts as _art_acc
+import deep_cache as _dc_acc
+_sv_acc = _json_acc.load(open(_os.path.join(_root, "research", "data", "soccer_shots_validation.json")))
+_mv_acc = _json_acc.load(open(_os.path.join(_root, "research", "data", "soccer_market_validation.json")))
+_svs_acc = open(_os.path.join(_root, "research", "soccer_shots_validation.py")).read()
+_mvs_acc = open(_os.path.join(_root, "research", "soccer_market_validation.py")).read()
+ck("shots: the rule was written first (select 2024, test 2025, confirm 2026, the BTTS figure unharmed) and its verdict is what "
+   "soccer.py ships -- 0.25 on 2024, beating goals alone on 2025 and 2026 -- with the conversion measured on 2023 alone",
+   "THE RULE (written before any number below was computed)" in _svs_acc
+   and _sv_acc["decision"]["ship"] == _soc_acc.SHOTS_W == 0.25 and _sv_acc["decision"]["test_passes"] is True
+   and _sv_acc["decision"]["confirm_vetoes"] is False and _sv_acc["decision"]["btts_vetoes"] is False
+   and _sv_acc["decision"]["test"]["mean"] < -2 * _sv_acc["decision"]["test"]["se"]
+   and (_sv_acc["coef"]["on_target"], _sv_acc["coef"]["off_target"]) == _soc_acc.SHOTS_COEF,
+   str((_sv_acc["decision"], _sv_acc["coef"])))
+ck("the market: the rule was written first (blend weight chosen on 2024, B1 'does the model add to the market', B2 'does the "
+   "market add to the model', confirmed on 2026); the model added nothing at any weight (B1 fails), the market beat the model "
+   "(B2 passes), so the headline's weight on the model is 0 -- every league worse than the market",
+   "THE RULE (written before any number below was computed)" in _mvs_acc
+   and _mv_acc["decision"]["chosen_a"] == 0.0 and _mv_acc["decision"]["B1"] is False and _mv_acc["decision"]["B2"] is True
+   and _mv_acc["decision"]["ship_market_weight"] == 1.0 and _soc_acc.MODEL_WEIGHT == 1.0 - _mv_acc["decision"]["ship_market_weight"]
+   and all(v["mean"] > 0 for v in _mv_acc["by_comp"].values()) and len(_mv_acc["by_comp"]) == 27
+   and _mv_acc["join"]["joined"] == 24841,
+   str((_mv_acc["decision"], _mv_acc["join"])))
+_m_acc = {"home": 0.5, "draw": 0.3, "away": 0.2}
+_f_acc = {"home": 0.4, "draw": 0.3, "away": 0.3}
+_h0, _h1, _hh = _soc_acc.headline(_m_acc, _f_acc, 0.0), _soc_acc.headline(_m_acc, _f_acc, 1.0), _soc_acc.headline(_m_acc, _f_acc, 0.5)
+_gm_acc = {k: (_m_acc[k] * _f_acc[k]) ** 0.5 for k in _m_acc}
+ck("the headline is the logarithmic pool of the model and Kalshi's de-vigged price: weight 0 is Kalshi's, 1 the model's, between "
+   "them the renormalised weighted geometric mean",
+   all(abs(_h0[k] - _f_acc[k]) < 1e-12 and abs(_h1[k] - _m_acc[k]) < 1e-12 for k in _m_acc)
+   and all(abs(_hh[k] - _gm_acc[k] / sum(_gm_acc.values())) < 1e-12 for k in _m_acc))
+ck("a pre-game card's chance is the headline (Kalshi's at weight 0); a live card's is the model's pre-game figure, never a blend "
+   "with a price that carries the match",
+   _rowh9["chance"] == _soc_acc.headline({"home": _rowh9["model"]["p_home"], "draw": _rowh9["model"]["p_draw"],
+                                        "away": _rowh9["model"]["p_away"]}, _rowh9["fair"])
+   and all(abs(_rowh9["chance"][k] - _rowh9["fair"][k]) < 1e-12 for k in ("home", "draw", "away"))
+   and _rowl9["chance"] == {"home": _rowl9["model"]["p_home"], "draw": _rowl9["model"]["p_draw"], "away": _rowl9["model"]["p_away"]})
+
+
+def _ev_acc(i, name, h, a, stats_h, stats_a, ids=("100", "200")):
+    def comp(side, tid, score, stats):
+        return {"homeAway": side, "score": str(score), "team": {"id": tid, "shortDisplayName": tid},
+                "statistics": [{"name": k, "displayValue": str(v)} for k, v in stats.items()]}
+    return {"id": str(i), "date": "2025-03-01T15:00Z", "competitions": [{
+        "status": {"type": {"state": "post", "name": name}}, "neutralSite": False,
+        "competitors": [comp("home", ids[0], h, stats_h), comp("away", ids[1], a, stats_a)]}]}
+
+
+_sh_acc = {}
+_pr_acc, _ = _soc_acc.parse_scoreboard({"events": [
+    _ev_acc(1, "STATUS_FULL_TIME", 2, 0, {"shotsOnTarget": 5, "totalShots": 12}, {"shotsOnTarget": 1, "totalShots": 6}),
+    _ev_acc(2, "STATUS_FULL_TIME", 1, 1, {"totalShots": 9}, {"shotsOnTarget": 3, "totalShots": 7}, ids=("300", "400"))]},
+    "eng.1", shots=_sh_acc)
+_ps_acc = _soc_acc.pseudo_rows(_pr_acc, _sh_acc)
+_xh_acc = 0.3773 * 5 - 0.02771 * 7
+_xa_acc = 0.3773 * 1 - 0.02771 * 5
+ck("the parser keeps both sides' shots beside a finished match's row (not for a match missing them), and the fit's pseudo-goals are "
+   "(1 - 0.25) goals + 0.25 x, x = 0.3773 on target - 0.02771 other shots; a match without shots enters at its goals",
+   _sh_acc == {_pr_acc[0][:4]: (5.0, 1.0, 12.0, 6.0)} and len(_pr_acc) == 2
+   and abs(_ps_acc[0][4] - (0.75 * 2 + 0.25 * _xh_acc)) < 1e-9 and abs(_ps_acc[0][5] - (0.25 * _xa_acc)) < 1e-9
+   and _ps_acc[1] == _pr_acc[1] and _soc_acc.pseudo_rows(_pr_acc, _sh_acc, w=0.0) == _pr_acc,
+   str((_sh_acc, _ps_acc)))
+# history: a year stored before shots were kept ((rows, names)) is fetched again, once, and stored with them
+_hk_acc = (_dc_acc.load, _dc_acc.age, _dc_acc.save, _soc_acc._espn)
+_saved_acc, _fetched_acc = {}, []
+try:
+    _dc_acc.load = lambda key: ({"eng.1": ([], {})}, 0) if key.startswith("soccer_rows_") else (None, None)
+    _dc_acc.age = lambda key: 60.0
+    _dc_acc.save = lambda key, val: _saved_acc.__setitem__(key, val)
+
+    def _espn_acc(url, timeout=40):
+        _fetched_acc.append(url)
+        return {"events": [_ev_acc(9, "STATUS_FULL_TIME", 1, 0, {"shotsOnTarget": 4, "totalShots": 9},
+                                 {"shotsOnTarget": 2, "totalShots": 5})]}
+    _soc_acc._espn = _espn_acc
+    _hs_acc = {}
+    _hr_acc, _hn_acc = _soc_acc.history(["eng.1"], asof=datetime.date(2025, 6, 1), shots=_hs_acc)
+finally:
+    _dc_acc.load, _dc_acc.age, _dc_acc.save, _soc_acc._espn = _hk_acc
+ck("history refetches a league whose stored year predates shots and stores it with them, filling the caller's shots map; the "
+   "artifact refits when SHOTS_W changes, the fit reads pseudo-goals and the form panel the real goals; the deep store's shape "
+   "moved, so artifacts.SCHEMA did too",
+   any("eng.1/scoreboard?dates=2024" in u for u in _fetched_acc)
+   and all(len(v) == 3 for v in _saved_acc.get("soccer_rows_2024", {}).values()) and "eng.1" in _saved_acc.get("soccer_rows_2024", {})
+   and len(_hs_acc) >= 1 and all(len(v) == 4 for v in _hs_acc.values())
+   and 'or art.get("shots_w") != SHOTS_W)' in _insp.getsource(_soc_acc.model_artifact)
+   and "fit_rows = pseudo_rows(rows, shots)" in _insp.getsource(_soc_acc.build_artifact)
+   and "recent, meetings = _recent_and_meetings(rows, model)" in _insp.getsource(_soc_acc.build_artifact)
+   and '"btts_base": btts_rates(rows, asof.toordinal()),' in _insp.getsource(_soc_acc.build_artifact)
+   and _art_acc.SCHEMA == 5 and "soccer_rows_<year>" in open(_os.path.join(_root, "artifacts.py")).read(),
+   str((_fetched_acc[:3], list(_saved_acc), _hs_acc)))
+_js_acc = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the soccer tab says what the headline rests on: the chance on every card is Kalshi's de-vigged price, the model's figure beside "
+   "it, the closing-market result in the summary",
+   "${marketNote}${bttsNote}" in _js_acc and "Tested against the closing market" in _js_acc
+   and "chance <b>${chance != null ? chance + \"%\" : \"-\"}</b> it does not win" in _js_acc
+   and '"market_test": {"leagues": 27, "matches": 24841' in open(_os.path.join(_root, "soccer.py")).read())
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
