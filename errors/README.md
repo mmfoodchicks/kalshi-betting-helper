@@ -2,7 +2,7 @@
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `DEEP-mlb_deep` | 321 | 10-16 08:27 | HTTPError: HTTP Error 400: Bad Request |
+| `DEEP-mlb_deep` | 308 | 10-16 08:27 | HTTPError: HTTP Error 400: Bad Request |
 | `KIDX-markets-fetch` | 21 | 10-15 22:50 | HTTPError: HTTP Error 429: Too Many Requests |
 | `KNFL-markets-fetch` | 14 | 10-16 14:10 | HTTPError: HTTP Error 429: Too Many Requests |
 | `MEM-high` | 12 | 10-17 03:00 | 1734/2048MB: 1244.6MB pid7 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 145.2MB pid8 /usr/local/bin/python3.11 /usr |
