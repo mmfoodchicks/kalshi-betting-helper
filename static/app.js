@@ -4193,6 +4193,8 @@ const _soccerKeys = {
   gap: (g) => (g.dog && g.tie_ask != null && ((g[g.dog] || {}).kalshi || {}).yes_ask != null
     ? g.tie_ask - g[g.dog].kalshi.yes_ask : null),
   draw: (g) => (g.model ? g.model.p_draw : null),
+  // both teams score: the model's scoreline grid, P(home >= 1 and away >= 1)
+  btts: (g) => (g.model && g.model.btts != null ? g.model.btts : null),
 };
 function _soccerOrder(games, key) {
   // the Kalshi (Eastern) date first, then the kickoff: a late kickoff is the
@@ -4303,7 +4305,8 @@ function renderSoccer() {
     && (!q || `${g.home.name} ${g.away.name} ${g.league}`.toLowerCase().includes(q)) && (!modelOnly || g.model));
   games = _soccerOrder(games, _soccerSortKey);
   const sortLbl = { kickoff: "kickoff", nodog: "the model's chance the underdog does not win", edge: "the model's edge on NO-the-underdog (pre-game only)",
-    noask: "the NO ask, cheapest first", gap: "how far the underdog's YES ask sits under the tie's", draw: "the model's tie chance", league: "league" }[_soccerSortKey] || "";
+    noask: "the NO ask, cheapest first", gap: "how far the underdog's YES ask sits under the tie's", draw: "the model's tie chance",
+    btts: "the model's chance both teams score", league: "league" }[_soccerSortKey] || "";
   $("soccerBuilt").textContent = d.built_ts ? `built ${agoStr(Math.max(0, Date.now() / 1000 - d.built_ts))}` : "";
   const fit = d.fit || {};
   $("soccerSummary").innerHTML = `<b>${d.n_games}</b> matches on Kalshi · <b>${d.n_model}</b> modelled · <b>${d.n_heavy}</b> heavy underdogs · showing <b>${games.length}</b> · fit: ${(fit.teams || 0).toLocaleString()} teams from ${(fit.n || 0).toLocaleString()} results as of ${fit.asof || "-"} <span style="color:var(--muted)">(half-life ${Math.round(Math.log(2) / (fit.xi || 0.005))} days, ${fit.kappa} matches of shrinkage, ρ ${fit.rho})</span>${_soccerSortKey !== "kickoff" ? ` · <i style="color:var(--muted)">ranked by ${sortLbl}; matches without that figure sit at the bottom</i>` : ""}<div class="small" style="color:var(--muted);margin-top:2px" title="held out, weekly refits: the model's chance that the underdog does not win on heavy-underdog matches, by bucket, against how often it did not">Calibration of the NO-the-underdog figure on held-out heavy underdogs - 2025: ${((d.calibration || {}).heavy || []).map((c) => `said ${(100 * c.pred).toFixed(1)}% → happened ${(100 * c.hit).toFixed(1)}% (n ${c.n.toLocaleString()})`).join(" · ")}; 2026 so far: ${((d.calibration || {}).heavy_2026 || []).map((c) => `${(100 * c.pred).toFixed(1)}% → ${(100 * c.hit).toFixed(1)}%`).join(" · ")}. It ran about a point and a half high in 2025 and within about a point in 2026; the edge column does not correct for that.</div>`;

@@ -1106,6 +1106,34 @@ def _build_board():
                      "NO on the underdog pays on the favourite's win and the tie.")}
 
 
+def _league_ids(slug):
+    """The league ids ESPN's all-leagues feed uses for one mapped league,
+    from that league's own scoreboard. None when the fetch failed."""
+    try:
+        d = _espn(f"{_SITE}/{slug}/scoreboard", timeout=20)
+    except Exception as e:
+        errlog.note("SOC-league-id", e, path=slug)
+        return None
+    ids = set()
+    for e in d.get("events") or []:
+        uid = e.get("uid") or ""
+        if "~l:" in uid:
+            ids.add(uid.split("~")[1][2:])
+    lg = (d.get("leagues") or [{}])[0]
+    if lg.get("id"):
+        ids.add(str(lg["id"]))
+    return ids or None
+
+
+# A mapped league missing from the join is looked up again after this long.
+# The join is cached for a day, and one failed fetch took the NWSL (7
+# matches) and the French women's league (6) off the model for the day
+# (2026-10-17): every match read "could not find this match on ESPN's
+# schedule". Only the missing leagues are re-fetched.
+_SLUG_RETRY = 3600
+_slug_retry_at = {}
+
+
 def _slug_ids(by_date):
     """{slug: {league ids}} for the mapped leagues, learned by looking each
     mapped league's own scoreboard up for one date it has a match on. ESPN's
@@ -1113,22 +1141,21 @@ def _slug_ids(by_date):
     the join is learned once a day and cached."""
     def build():
         out = {}
-        want = sorted(set(ESPN_LEAGUE.values()) - {None})
-        for slug in want:
-            try:
-                d = _espn(f"{_SITE}/{slug}/scoreboard", timeout=20)
-            except Exception as e:
-                errlog.note("SOC-league-id", e, path=slug)
-                continue
-            for e in d.get("events") or []:
-                uid = e.get("uid") or ""
-                if "~l:" in uid:
-                    out.setdefault(slug, set()).add(uid.split("~")[1][2:])
-            lg = (d.get("leagues") or [{}])[0]
-            if lg.get("id"):
-                out.setdefault(slug, set()).add(str(lg["id"]))
+        for slug in sorted(set(ESPN_LEAGUE.values()) - {None}):
+            ids = _league_ids(slug)
+            if ids:
+                out[slug] = ids
         return out or None
-    return racing._cached(("soccer_slug_ids",), 24 * 3600, build) or {}
+    got = racing._cached(("soccer_slug_ids",), 24 * 3600, build) or {}
+    now = time.time()
+    for slug in sorted(set(ESPN_LEAGUE.values()) - {None} - set(got)):
+        if now - _slug_retry_at.get(slug, 0) < _SLUG_RETRY:
+            continue
+        _slug_retry_at[slug] = now
+        ids = _league_ids(slug)
+        if ids:
+            got[slug] = ids              # the cached dict itself: every later build sees it
+    return got
 
 
 def _game_row(ev, art, slug_ids, by_date, now=None):

@@ -20041,7 +20041,8 @@ ck("the Soccer tab exists with its two views, a league filter and a team search;
 ck("the Soccer tab's sort menu (owner 2026-10-17): kickoff, the model's underdog-does-not-win %, the edge, the NO ask, the underdog's gap under the tie, "
    "the model's tie %, league; each view starts in its old order (All by kickoff, Heavy by edge), a match without the figure sits at the bottom, "
    "the edge read only from no_dog.edge (pre-game -- a live match has none), and the day headers drawn only in kickoff order",
-   all(f'<option value="{k}">' in _html9 for k in ("kickoff", "nodog", "edge", "noask", "gap", "draw", "league"))
+   all(f'<option value="{k}">' in _html9 for k in ("kickoff", "nodog", "edge", "noask", "gap", "draw", "btts", "league"))
+   and "btts: (g) => (g.model && g.model.btts != null ? g.model.btts : null)," in _js9
    and 'onchange="soccerSort(this.value)"' in _html9
    and '_soccerSortKey = v === "heavy" ? "edge" : "kickoff";' in _js9
    and "edge: (g) => (g.no_dog || {}).edge ?? null," in _js9
@@ -20615,6 +20616,43 @@ ck("and what the season figures are worth is printed beside them: the NHL's Cup 
    and _bt11["nba"]["test"]["score"]["tau"]["0.45"]["events"]["champ"] == 0.03482 and _bt11["nba"]["test"]["score"]["base_rate"]["champ"] == 0.03222
    and "0.0300 against the base rate's 0.0303" in _J11.SKILL["nhl"] and "0.0348 against 0.0322" in _J11.SKILL["nba"]
    and "${escapeHtml(d.skill)}" in _js11)
+
+# ---- 2026-10-17 a soccer league whose ESPN id lookup failed is looked up again within the hour ----
+import soccer as _soc12
+_calls12 = []
+_fail12 = {"usa.nwsl"}
+
+
+def _lids12(slug):
+    _calls12.append(slug)
+    return None if slug in _fail12 else {"id-" + slug}
+
+
+_keep12 = (_soc12._league_ids, _soc12.time.time, dict(_soc12._slug_retry_at))
+_now12 = [1.0e9]
+try:
+    _rc10._form_cache.pop(("soccer_slug_ids",), None)
+    _soc12._slug_retry_at.clear()
+    _soc12._league_ids = _lids12
+    _soc12.time.time = lambda: _now12[0]
+    _j1 = dict(_soc12._slug_ids({}))
+    _n1 = len(_calls12)
+    _now12[0] += 600                         # ten minutes on: not retried yet
+    _j2 = dict(_soc12._slug_ids({}))
+    _n2 = len(_calls12)
+    _fail12.clear()
+    _now12[0] += 3600                        # past the hour: only the missing league is fetched again
+    _j3 = dict(_soc12._slug_ids({}))
+    _n3 = len(_calls12)
+finally:
+    _soc12._league_ids, _soc12.time.time = _keep12[0], _keep12[1]
+    _soc12._slug_retry_at.clear()
+    _soc12._slug_retry_at.update(_keep12[2])
+    _rc10._form_cache.pop(("soccer_slug_ids",), None)
+ck("a mapped league whose ESPN id lookup failed is not left off the model for the day: it is fetched again after an hour, alone "
+   "(one failed fetch took the NWSL and the French women's league off the soccer board, 2026-10-17)",
+   "usa.nwsl" not in _j1 and "eng.1" in _j1 and _n2 == _n1 and "usa.nwsl" in _j3 and _n3 == _n2 + 1
+   and _calls12[-1] == "usa.nwsl" and _soc12._SLUG_RETRY == 3600, str((_n1, _n2, _n3, sorted(_j3)[:3])))
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
