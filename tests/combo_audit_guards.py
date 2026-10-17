@@ -19836,6 +19836,12 @@ import datetime as _dt_s9
 import math as _math_s9
 import random as _rnd_s9
 import soccer as _soc9
+import kalshi as _kal9
+import time as _tm_s9
+# hermetic: the cards' fee comes from the series' fee schedule, which is a
+# Kalshi call -- seed it (the standard quadratic curve) so no guard reaches out
+for _ser9 in ("KXEPLGAME", "KXJLEAGUEGAME"):
+    _kal9._series_cache[_ser9] = (_tm_s9.time(), {"fee_type": "quadratic", "fee_multiplier": 1.0}, 1e12)
 # The fitter: on a synthetic three-league season with known ratings it must
 # recover them. The first version updated attack, defence and home advantage
 # from one snapshot and oscillated: correlation 0.1 with the truth and a home
@@ -19959,11 +19965,12 @@ ck("Kalshi's spellings fold onto ESPN's: aliases, the 'Reg Time:' prefix, accent
    and _soc9.name_score("Lincoln", "LIC", {"name": "Millwall", "short": "Millwall", "abbr": "MIL"}) == 0.0)
 # the owner's filter and the leg the card leads with
 _slug9 = {"eng.1": {"700"}}
-_row9 = _soc9._game_row(_ev9, _fit9, _slug9, {"2026-10-25": _espn9})
+_now9 = 1792195200.0          # 2026-10-17 00:00 UTC: before every fixture's kickoff, forever
+_row9 = _soc9._game_row(_ev9, _fit9, _slug9, {"2026-10-25": _espn9}, now=_now9)
 _evh9 = {k: (dict(v) if isinstance(v, dict) else v) for k, v in _ev9.items()}
 _evh9["markets"] = {"TIE": dict(_ev9["markets"]["TIE"], yes_ask=24.0), "NEW": dict(_ev9["markets"]["NEW"], yes_ask=70.0, no_ask=31.0),
                     "CRY": dict(_ev9["markets"]["CRY"], yes_ask=15.0, yes_bid=13.0, no_ask=86.0)}
-_rowh9 = _soc9._game_row(_evh9, _fit9, _slug9, {"2026-10-25": _espn9})
+_rowh9 = _soc9._game_row(_evh9, _fit9, _slug9, {"2026-10-25": _espn9}, now=_now9)
 ck("the heavy-underdog filter is the owner's rule in Kalshi's prices (underdog YES ask <= tie YES ask - 5): 15c under a 24c tie passes, 37c under 27c does not; "
    "the card leads with NO on the underdog, whose model figure is the favourite's win plus the tie, and the edge nets the ask and the fee",
    _row9["dog"] == "home" and _row9["heavy"] is False and _row9["dog_ask"] == 37.0 and _row9["tie_ask"] == 27.0
@@ -19974,7 +19981,7 @@ ck("the heavy-underdog filter is the owner's rule in Kalshi's prices (underdog Y
    and _rowh9["no_dog"]["fair_pct"] == round(100 * (1 - _rowh9["fair"]["home"]), 1)
    and _soc9.HEAVY_GAP == 5.0, str((_row9.get("dog"), _row9.get("heavy"), _rowh9.get("heavy"), _rowh9.get("no_dog"))))
 _evf9 = dict(_ev9, home_code="NEW", away_code="CRY")          # a ticker whose order disagrees with ESPN
-_rowf9 = _soc9._game_row(_evf9, _fit9, _slug9, {"2026-10-25": _espn9})
+_rowf9 = _soc9._game_row(_evf9, _fit9, _slug9, {"2026-10-25": _espn9}, now=_now9)
 _espnt9 = [{"id": "9", "league_id": "750", "date": "2026-10-17T05:00Z", "neutral": False,
             "h": {"id": "91", "name": "Tokyo Verdy 1969", "short": "Tokyo Verdy", "abbr": "TKV"},
             "a": {"id": "92", "name": "FC Tokyo", "short": "FC Tokyo", "abbr": "TOK"}, "odds": None, "state": "pre", "detail": ""}]
@@ -19983,7 +19990,7 @@ _evt9 = {"event": "KXJLEAGUEGAME-26OCT17VERTOK", "series": "KXJLEAGUEGAME", "lea
          "markets": {"TIE": {"ticker": "KXJLEAGUEGAME-26OCT17VERTOK-TIE", "name": "Tie", "yes_bid": 24.0, "yes_ask": 26.0, "no_ask": 76.0},
                      "VER": {"ticker": "KXJLEAGUEGAME-26OCT17VERTOK-VER", "name": "Tokyo V", "yes_bid": 16.0, "yes_ask": 18.0, "no_ask": 84.0},
                      "TOK": {"ticker": "KXJLEAGUEGAME-26OCT17VERTOK-TOK", "name": "Tokyo", "yes_bid": 57.0, "yes_ask": 59.0, "no_ask": 43.0}}}
-_rowt9 = _soc9._game_row(_evt9, _fit9, {"jpn.1": {"750"}}, {"2026-10-17": _espnt9})
+_rowt9 = _soc9._game_row(_evt9, _fit9, {"jpn.1": {"750"}}, {"2026-10-17": _espnt9}, now=_now9)
 ck("when the ticker's order disagrees with ESPN by a clear margin the card and the model follow ESPN's home side (two of 640 events, neutral-ground cup ties); "
    "a one-letter name ('Tokyo V' v 'Tokyo') does not flip it",
    _rowf9["home"]["code"] == "CRY" and _rowf9["away"]["code"] == "NEW" and _rowf9["home"]["name"] == "Crystal Palace"
@@ -19993,8 +20000,8 @@ ck("when the ticker's order disagrees with ESPN by a clear margin the card and t
    str((_rowf9["home"], (_rowt9 or {}).get("home"), (_rowt9 or {}).get("espn"))))
 _evu9 = {k: (dict(v) if isinstance(v, dict) else v) for k, v in _ev9.items()}
 _evu9["markets"] = {"TIE": dict(_ev9["markets"]["TIE"], yes_ask=100.0), "NEW": dict(_ev9["markets"]["NEW"]), "CRY": dict(_ev9["markets"]["CRY"])}
-_rowu9 = _soc9._game_row(_evu9, _fit9, _slug9, {"2026-10-25": _espn9})
-_rown9 = _soc9._game_row(dict(_ev9, series="KXSERIECGAME"), _fit9, _slug9, {"2026-10-25": _espn9})
+_rowu9 = _soc9._game_row(_evu9, _fit9, _slug9, {"2026-10-25": _espn9}, now=_now9)
+_rown9 = _soc9._game_row(dict(_ev9, series="KXSERIECGAME"), _fit9, _slug9, {"2026-10-25": _espn9}, now=_now9)
 ck("an unquoted side leaves the match listed, un-filtered and without a leg; an unmapped league keeps the price and says there is no model",
    _rowu9["quoted"] is False and _rowu9["heavy"] is False and _rowu9["dog"] is None and "no_dog" not in _rowu9
    and _rown9["model"] is None and "no feed" in _rown9["why"] and _rown9["fair"] is not None and _rown9["no_dog"]["model_pct" if False else "no_ask"] == 66.0
@@ -20030,6 +20037,219 @@ ck("CLAUDE.md records the soccer stack: the ticker's home-first rule, the Gauss-
    "two team codes are home then away" in open(_os.path.join(_root, "CLAUDE.md")).read()
    and "Gauss-Seidel" in open(_os.path.join(_root, "CLAUDE.md")).read()
    and "soccer_dk" in open(_os.path.join(_root, "CLAUDE.md")).read())
+
+# ---- Soccer review (2026-10-17): extra time, the pre-game gate, the refit child, form and H2H ----
+# 1. A match that went to extra time enters at its 90-MINUTE score, rebuilt
+# from the goal minutes. The first version dropped them all (the cups lost
+# their draws, and the weak-cup list was the artifact); calling them all
+# draws would have been wrong on every second leg.
+def _gl9(minute, tid, og=False):
+    return {"scoringPlay": True, "shootout": False, "ownGoal": og,
+            "clock": {"displayValue": minute}, "team": {"id": tid}}
+
+
+_hx9 = {"homeAway": "home", "score": "3", "team": {"id": "148", "displayName": "PSV Eindhoven", "shortDisplayName": "PSV"}}
+_ax9 = {"homeAway": "away", "score": "1", "team": {"id": "111", "displayName": "Juventus", "shortDisplayName": "Juventus"}}
+_cleg9 = {"details": [_gl9("53'", "148"), _gl9("63'", "111"), _gl9("74'", "148"), _gl9("98'", "148"),
+                      {"scoringPlay": False, "clock": {"displayValue": "94'"}, "team": {"id": "111"}}]}
+_cfa9 = {"details": [_gl9("30'", "1"), _gl9("90'+3'", "2"), _gl9("105'", "2"), _gl9("115'", "2")]}
+_cog9 = {"details": [_gl9("20'", "148", og=True), _gl9("101'", "111")]}     # an own goal credited to the scorer's side
+ck("an extra-time result enters at its 90-minute score: a second leg 3-1 AET that was 2-1 at 90 stays a home win, "
+   "stoppage ('90'+3'') is regulation, an own goal is checked both ways, and events that do not add up drop the match",
+   _soc9._ninety(_cleg9, _hx9, _ax9, 3, 1) == (2, 1)
+   and _soc9._ninety(_cfa9, {"team": {"id": "1"}}, {"team": {"id": "2"}}, 1, 3) == (1, 1)
+   and _soc9._ninety(_cog9, _hx9, _ax9, 0, 2) == (0, 1)
+   and _soc9._ninety({"details": [_gl9("53'", "148")]}, _hx9, _ax9, 3, 1) is None
+   and _soc9._ninety({"details": [_gl9("53'", "999")]}, _hx9, _ax9, 1, 0) is None)
+
+
+def _evx9(eid, status, hs, as_, details, day="2025-02-18T20:00Z"):
+    return {"id": eid, "date": day, "competitions": [{"status": {"type": {"state": "post", "name": status}},
+            "neutralSite": False, "details": details,
+            "competitors": [dict(_hx9, score=str(hs)), dict(_ax9, score=str(as_))]}]}
+
+
+_ps9, _pn9 = _soc9.parse_scoreboard({"events": [
+    _evx9("1", "STATUS_FINAL_AET", 3, 1, _cleg9["details"]),
+    _evx9("2", "STATUS_FULL_TIME", 2, 2, []),
+    _evx9("3", "STATUS_FINAL_PEN", 1, 1, [_gl9("40'", "148")]),           # one goal listed for a 1-1: dropped
+    _evx9("4", "STATUS_POSTPONED", 0, 0, [])]}, "uefa.champions")
+ck("the parser keeps a full-time result as it stands, rebuilds the extra-time one, drops the one whose goals do not add up and the postponed one, and keeps the names",
+   [(r[4], r[5]) for r in _ps9] == [(2, 1), (2, 2)] and _pn9 == {"148": "PSV", "111": "Juventus"}
+   and all(r[1] == "uefa.champions" and r[2] == "148" for r in _ps9))
+# 2. The pre-game gate: an in-play match keeps its prices and the model's
+# pre-game figure, but shows no edge and is not logged -- its price carries
+# the match (CLAUDE.md, in-game information).
+_espn_live9 = [dict(_espn9[0], state="in", detail="62'")]
+_rowl9 = _soc9._game_row(_evh9, _fit9, _slug9, {"2026-10-25": _espn_live9}, now=_now9)
+_rowk9 = _soc9._game_row(_evh9, _fit9, _slug9, {"2026-10-25": _espn9}, now=1792972800.0)     # after the kickoff time
+ck("a match under way (ESPN 'in', or a kickoff already past) is not pre-game: the NO-the-underdog leg keeps the model figure and the ask but carries no edge",
+   _rowl9["pregame"] is False and _rowl9["no_dog"].get("live") is True and "edge" not in _rowl9["no_dog"]
+   and _rowl9["no_dog"]["model_pct"] == _rowh9["no_dog"]["model_pct"]
+   and _rowk9["pregame"] is False and "edge" not in _rowk9["no_dog"]
+   and _rowh9["pregame"] is True and "edge" in _rowh9["no_dog"])
+_keep9 = (_soc9.kalshi_events, _soc9.model_artifact, _soc9.upcoming, _soc9._slug_ids, _soc9.time.time)
+_logged9 = []
+import predlog as _pl9
+_keep9b = (_pl9.init_db, _pl9.log_many, _pl9.log_shadow)
+try:
+    # a second match the same day, matched on ESPN and UNDER WAY: priced, never logged
+    _evh9b = {"event": "KXEPLGAME-26OCT25HULBRE", "series": "KXEPLGAME", "league": "English Premier League Game",
+              "date": "2026-10-25", "home_code": "HUL", "away_code": "BRE",
+              "markets": {"TIE": {"ticker": "KXEPLGAME-26OCT25HULBRE-TIE", "name": "Tie", "yes_bid": 23.0, "yes_ask": 24.0, "no_ask": 77.0},
+                          "HUL": {"ticker": "KXEPLGAME-26OCT25HULBRE-HUL", "name": "Hull City", "yes_bid": 19.0, "yes_ask": 20.0, "no_ask": 81.0},
+                          "BRE": {"ticker": "KXEPLGAME-26OCT25HULBRE-BRE", "name": "Brentford", "yes_bid": 57.0, "yes_ask": 58.0, "no_ask": 43.0}}}
+    # and a third with no ESPN match at all: no model, nothing to log
+    _evh9c = dict(_evh9, event="KXEPLGAME-26NOV05XXXYYY", date="2026-11-05",
+                  markets={k: dict(v, ticker=v["ticker"].replace("26OCT25CRYNEW", "26NOV05XXXYYY")) for k, v in _evh9["markets"].items()})
+    _soc9.kalshi_events = lambda: {"KXEPLGAME-26OCT25CRYNEW": _evh9, "KXEPLGAME-26OCT25HULBRE": _evh9b,
+                                   "KXEPLGAME-26NOV05XXXYYY": _evh9c}
+    _soc9.model_artifact = lambda slugs: _soc9._wrap(_fit9)
+    _soc9.upcoming = lambda day: [_espn9[0], dict(_espn9[1], state="in")] if day == "2026-10-25" else []
+    _soc9._slug_ids = lambda by_date: _slug9
+    _soc9.time.time = lambda: _now9
+    _pl9.init_db = lambda: None
+    _pl9.log_many = lambda model, rows: _logged9.append((model, [r[0] for r in rows]))
+    _pl9.log_shadow = lambda model, rows: _logged9.append((model, [r[0] for r in rows]))
+    _b9 = _soc9._build_board()
+finally:
+    (_soc9.kalshi_events, _soc9.model_artifact, _soc9.upcoming, _soc9._slug_ids, _soc9.time.time) = _keep9
+    (_pl9.init_db, _pl9.log_many, _pl9.log_shadow) = _keep9b
+_bsrc9b = _insp.getsource(_soc9._build_board)
+_live9 = next(g for g in _b9["games"] if g["event"] == "KXEPLGAME-26OCT25HULBRE")
+ck("the board logs only pre-game matches to the record: the pre-game match's three outcomes are logged; the one under way is priced but not logged, and the unmatched one has nothing to log",
+   _b9["n_games"] == 3 and [m for m, _t in _logged9] == ["soccer", "soccer_dk"]
+   and all(sorted(t) == sorted(m["ticker"] for m in _evh9["markets"].values()) for _m, t in _logged9)
+   and _live9["model"] is not None and _live9["pregame"] is False
+   and _bsrc9b.index('if not row.get("pregame"):') < _bsrc9b.index('log_rows.append('),
+   str(_logged9))
+# 3. The fit and its ~200 ESPN year files run in a niced child under the
+# app's one-heavy-build gate; the board's thread only loads the artifact.
+_rc9 = _insp.getsource(_soc9._refit_child)
+ck("the soccer refit runs in a niced child under deep_cache.HEAVY_BUILD and lands in the deep store; the board never fetches results or fits in-process",
+   "os.nice(10)" in _rc9 and "soccer.refit_main(" in _rc9 and "deep_cache.HEAVY_BUILD.acquire(timeout=900)" in _rc9
+   and "deep_cache.HEAVY_BUILD.release()" in _rc9
+   and "deep_cache.save(_ART_KEY, art)" in _insp.getsource(_soc9.refit_main)
+   and "history(" not in _bsrc9b and " fit(" not in _bsrc9b and "model_artifact(slugs)" in _bsrc9b
+   and not hasattr(_soc9, "ratings"))
+_keep9c = (_soc9._load_artifact, _soc9._refit_child, _soc9._refit_try[0], _soc9.clock.today_et)
+_calls9 = []
+try:
+    _soc9.clock.today_et = lambda: _dt_s9.date(2026, 10, 17)
+    _soc9._refit_child = lambda slugs: (_calls9.append(sorted(slugs)), True)[1]
+    _soc9._refit_try[0] = 0.0
+    _soc9._load_artifact = lambda: ({"asof": "2026-10-16", "slugs": ["eng.1"], "model": _fit9}, 100.0)
+    _soc9.model_artifact(["eng.1"])                       # yesterday's artifact: refit
+    _soc9.model_artifact(["eng.1"])                       # within 30 minutes of the attempt: no second refit
+    _soc9._refit_try[0] = 0.0
+    _soc9._load_artifact = lambda: ({"asof": "2026-10-17", "slugs": ["eng.1"], "model": _fit9}, 100.0)
+    _soc9.model_artifact(["eng.1"])                       # fresh: nothing
+    _soc9.model_artifact(["eng.1", "esp.1"])              # a league the board now needs: refit
+finally:
+    (_soc9._load_artifact, _soc9._refit_child, _soc9._refit_try[0], _soc9.clock.today_et) = _keep9c
+ck("the artifact refits when it is from another day or misses a league the board needs, not when it is fresh, and at most once in 30 minutes",
+   _calls9 == [["eng.1"], ["eng.1", "esp.1"]], str(_calls9))
+# 4. Kalshi: an empty series is looked at again after an hour, not every build
+_keep9d = (_soc9.soccer_series, _soc9._fetch_series, dict(_soc9._empty_series))
+_fetched9 = []
+try:
+    _soc9.soccer_series = lambda: {"KXEMPTYGAME": "Empty", "KXEPLGAME": "EPL"}
+    _soc9._fetch_series = lambda ser: (_fetched9.append(ser), [] if ser == "KXEMPTYGAME" else [
+        {"event_ticker": "KXEPLGAME-26OCT25CRYNEW", "ticker": "KXEPLGAME-26OCT25CRYNEW-CRY", "yes_sub_title": "Crystal Palace"}])[1]
+    _soc9._empty_series.clear()
+    import racing as _rac9
+    for _ in range(2):
+        _rac9._form_cache.pop(("soccer_kalshi",), None)
+        _soc9.kalshi_events()
+finally:
+    _soc9.soccer_series, _soc9._fetch_series = _keep9d[0], _keep9d[1]
+    _soc9._empty_series.clear(); _soc9._empty_series.update(_keep9d[2])
+    _rac9._form_cache.pop(("soccer_kalshi",), None)
+ck("an empty Kalshi soccer series is fetched once an hour, not on every build (70 of 149 were empty on 2026-10-16)",
+   _fetched9.count("KXEMPTYGAME") == 1 and _fetched9.count("KXEPLGAME") == 2, str(_fetched9))
+# 4b. A placeholder book is listed, never read (260 of 1,014 on 2026-10-16:
+# 95c/95c/95c asks over 5c bids)
+_evp9 = {k: (dict(v) if isinstance(v, dict) else v) for k, v in _ev9.items()}
+_evp9["markets"] = {"TIE": dict(_ev9["markets"]["TIE"], yes_ask=95.0, yes_bid=5.0, no_ask=95.0),
+                    "NEW": dict(_ev9["markets"]["NEW"], yes_ask=95.0, yes_bid=5.0, no_ask=95.0),
+                    "CRY": dict(_ev9["markets"]["CRY"], yes_ask=94.0, yes_bid=5.0, no_ask=95.0)}
+_rowp9 = _soc9._game_row(_evp9, _fit9, _slug9, {"2026-10-25": _espn9}, now=_now9)
+ck("a placeholder Kalshi book (YES asks summing past 115c) is listed with the model but never read: no underdog, no heavy flag, no edge, no 'fair' price to log",
+   _rowp9["readable"] is False and _rowp9["quoted"] is False and _rowp9["book_sum"] == 284.0
+   and _rowp9["dog"] is None and _rowp9["heavy"] is False and "no_dog" not in _rowp9 and _rowp9["fair"] is None
+   and _rowp9["model"] is not None and _row9["readable"] is True and _row9["book_sum"] == 103.0
+   and _soc9.MAX_BOOK == 115.0)
+ck("NCAA soccer is no longer treated as a neutral ground (college sides play at home; ESPN's flag marks the exceptions)",
+   "usa.ncaa.m.1" not in _soc9._NEUTRAL and "fifa.world" in _soc9._NEUTRAL)
+# 5. Form and head-to-head: computed exactly as the validation computed
+# them, shown on every card, weighted only as far as the test allowed (0).
+_rec9 = {"T1": [(100, "L1", "T1", "X", 3, 0, 1.5, 1.0, False), (99, "L1", "Y", "T1", 2, 2, 1.2, 1.1, False)]}
+_fr9 = _soc9.form_residual(_rec9, "T1", 5)
+_mt9 = {("A1", "B1"): [(90, "L1", "A1", "B1", 3, 0, 1.4, 1.0, False), (80, "L1", "B1", "A1", 1, 2, 1.5, 1.1, False)]}
+_hr9 = _soc9.h2h_residual(_mt9, "A1", "B1")
+ck("the form residual is log((goals + 2) / (expected + 2)) for attack and log((expected conceded + 2) / (conceded + 2)) for defence over the last n; "
+   "the head-to-head residual is the same over every meeting, either venue",
+   abs(_fr9[0] - _math_s9.log((3 + 2 + 2) / (1.5 + 1.1 + 2))) < 1e-12
+   and abs(_fr9[1] - _math_s9.log((1.0 + 1.2 + 2) / (0 + 2 + 2))) < 1e-12
+   and abs(_hr9[0] - _math_s9.log((3 + 2 + 2) / (1.4 + 1.1 + 2))) < 1e-12
+   and abs(_hr9[1] - _math_s9.log((0 + 1 + 2) / (1.0 + 1.5 + 2))) < 1e-12 and _hr9[2] == 2
+   and _soc9.h2h_residual(_mt9, "B1", "A1")[0] == _hr9[1])
+_art9 = {"model": _fit9, "short": None, "names": {"L1T0": "Zero", "L1T1": "One", "L1T2": "Two"},
+         "recent": {"L1T0": [(_day9 + 390, "L1", "L1T0", "L1T2", 2, 0, 1.6, 1.0, False),
+                             (_day9 + 385, "L1", "L1T1", "L1T0", 1, 1, 1.3, 1.2, False)]},
+         "meetings": {("L1T0", "L1T1"): [(_day9 + 385, "L1", "L1T1", "L1T0", 1, 1, 1.3, 1.2, False)]}}
+_pm9 = _soc9.predict_match(_art9, "L1T0", "L1T1", "L1")
+_pb9 = _soc9.predict(_fit9, "L1T0", "L1T1", "L1")
+_keepw9 = (_soc9.W_FORM, _soc9.W_H2H, _soc9.FORM_KIND, _soc9.FORM_PARAM)
+try:
+    _soc9.W_H2H = 1.0
+    _pmh9 = _soc9.predict_match(_art9, "L1T0", "L1T1", "L1")
+    _soc9.FORM_KIND, _soc9.FORM_PARAM, _soc9.W_FORM, _soc9.W_H2H = "B", 5, 0.5, 0.0
+    _pmf9 = _soc9.predict_match(_art9, "L1T0", "L1T1", "L1")
+finally:
+    _soc9.W_FORM, _soc9.W_H2H, _soc9.FORM_KIND, _soc9.FORM_PARAM = _keepw9
+_r1_9 = _soc9.h2h_residual(_art9["meetings"], "L1T0", "L1T1")
+ck("at the shipped weights (0) the price is the base model's to the digit, and the card still carries both sides' last five (latest first, "
+   "W/D/L, venue, opponent) and the meetings; a non-zero weight moves the price the residual's way and the card says by how much",
+   (_pm9["p_home"], _pm9["p_draw"], _pm9["p_away"]) == (_pb9["p_home"], _pb9["p_draw"], _pb9["p_away"])
+   and _pm9["form"]["moved"] == {"home": 0.0, "draw": 0.0, "away": 0.0} and _pm9["h2h"]["moved"] == {"home": 0.0, "draw": 0.0, "away": 0.0}
+   and [(r["res"], r["venue"], r["opp"], r["gf"], r["ga"]) for r in _pm9["form"]["home"]] == [("W", "H", "Two", 2, 0), ("D", "A", "One", 1, 1)]
+   and _pm9["h2h"]["n"] == 1 and _pm9["h2h"]["meetings"][0]["home"] == "One"
+   and abs(_pmh9["exp_home"] - _pm9["exp_home"] * _math_s9.exp(_r1_9[0])) < 0.011
+   and abs(_pmh9["exp_away"] - _pm9["exp_away"] * _math_s9.exp(_r1_9[1])) < 0.011
+   and _pmh9["h2h"]["moved"]["draw"] > 0                  # both sides under their expectation in the meeting: fewer goals, more ties
+   and _pmf9["form"]["moved"]["home"] > 0 and _pmf9["form"]["r_home"] is not None,
+   str((_pm9["form"]["moved"], _pmh9["h2h"]["moved"], _pmf9["form"]["moved"])))
+# 6. The shipped weights, the weak list and the calibration on the card are
+# what the validation decided and measured -- read from its own output.
+_fv9 = _json_s9.load(open(_os.path.join(_root, "research", "data", "soccer_form_validation.json")))
+_pool9 = {}
+for _y9 in ("2024", "2025", "2026"):
+    for _c9, _v9 in _fv9["years"][_y9]["by_competition"].items():
+        _p9 = _pool9.setdefault(_c9, [0, 0.0, 0.0])
+        _p9[0] += _v9["n"]; _p9[1] += _v9["n"] * _v9["model"]; _p9[2] += _v9["n"] * _v9["base_rate"]
+_weak9 = {c for c, (n, m, b) in _pool9.items() if n >= 100 and m > b}
+ck("form and head-to-head ship at the weights the pre-registered test decided: 2024 chose a 35-day short fit at 0.1 and no head-to-head, "
+   "2025 did not confirm the form term (-0.00005 +/- 0.00015), so both are 0; every head-to-head weight made 2024 worse",
+   _fv9["chosen"]["form"] == ["A", 0.02, 0.1] and _fv9["chosen"]["h2h"] == 0.0
+   and _fv9["decision"]["ship_form"] == ["base", None, 0.0] and _fv9["decision"]["ship_h2h"] == 0.0
+   and _soc9.W_FORM == 0.0 and _soc9.W_H2H == 0.0 and (_soc9.FORM_KIND, _soc9.FORM_PARAM) == ("A", 0.02)
+   and _fv9["years"]["2025"]["form_vs_base"] == {"delta": -5e-05, "se": 0.00015}
+   and _fv9["selection"]["no form | h2h w=1.0"] - _fv9["selection"]["no form | h2h w=0.0"] > 0.039
+   and _fv9["selection"]["no form | h2h w=0.25"] > _fv9["selection"]["no form | h2h w=0.0"]
+   and "written before" in _fv9["rule"].lower(),
+   str(_fv9["decision"]))
+_bc9 = _insp.getsource(_soc9._build_board)
+_h25 = [(b["pred"], b["hit"], b["n"]) for b in _fv9["years"]["2025"]["calibration_base"]["heavy"]["buckets"] if b["n"] >= 100]
+_h26 = [(b["pred"], b["hit"], b["n"]) for b in _fv9["years"]["2026"]["calibration_base"]["heavy"]["buckets"] if b["n"] >= 100]
+ck("the weak-competition warning is the pooled 2024-2026 rule's output (the Scottish Cup alone), and the calibration the card prints is the validation's heavy-underdog table",
+   _weak9 == _soc9._WEAK_COMPS == {"sco.tennents"}
+   and all(f'{{"pred": {round(p, 3)}, "hit": {round(h, 3)}, "n": {n}}}' in _bc9 for p, h, n in _h25 + _h26)
+   and len(_h25) == 3 and len(_h26) == 3, str((_weak9, _h25, _h26)))
+_js9b = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the soccer card shows last-five form chips and the head-to-head meetings with the weight statement, and says why an in-play match has no edge",
+   "form (last 5)" in _js9b and "head-to-head" in _js9b and "did not improve the model on held-out matches, so it carries no weight" in _js9b
+   and "so no edge is shown against a live price" in _js9b and "${formHtml}" in _js9b and "${h2hHtml}" in _js9b)
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

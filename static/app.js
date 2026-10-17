@@ -4212,8 +4212,12 @@ function soccerGameCard(g) {
   // the three-way line: model / Kalshi fair / DraftKings fair
   const row3 = (lbl, p, title) => p ? `<div class="small" title="${escapeHtml(title || "")}"><span style="display:inline-block;width:92px;color:var(--muted)">${lbl}</span> ${escapeHtml(g.home.name)} <b>${pct(p.home)}</b> · tie <b>${pct(p.draw)}</b> · ${escapeHtml(g.away.name)} <b>${pct(p.away)}</b></div>` : "";
   let lead;
-  if (!g.quoted) {
+  if (!g.quoted && g.book_sum != null) {
+    lead = `<div class="pick"><span style="color:var(--muted)">Kalshi's book on this match is empty - the three YES asks add up to ${g.book_sum}¢ for outcomes of which exactly one happens - so there is no price to read and no underdog to pick yet.</span></div>`;
+  } else if (!g.quoted) {
     lead = `<div class="pick"><span style="color:var(--muted)">Kalshi has no two-sided quote on this match yet.</span></div>`;
+  } else if (m && nd.model_pct != null && nd.live) {
+    lead = `<div class="pick">NO on <b>${escapeHtml(dogName)}</b> (the underdog): model <b>${nd.model_pct}%</b> before kick-off · <span class="kmkt">NO ask now <b>${nd.no_ask}¢</b></span> <span class="small" style="color:var(--muted)">· under way or finished: the model knows nothing of the match in progress, so no edge is shown against a live price</span></div>`;
   } else if (m && nd.model_pct != null) {
     const edge = nd.edge;
     const cls = edge == null ? "" : (edge >= 0 ? "ev pos" : "ev neg");
@@ -4222,8 +4226,16 @@ function soccerGameCard(g) {
     lead = `<div class="pick">NO on <b>${escapeHtml(dogName)}</b> (the underdog): <span class="kmkt">NO ask <b>${nd.no_ask != null ? nd.no_ask + "¢" : "-"}</b></span>${nd.fair_pct != null ? ` · Kalshi fair ${nd.fair_pct}%` : ""} <span class="small" style="color:var(--muted)">· no model: ${escapeHtml(g.why || "")}</span></div>`;
   }
   const prices = `<div class="small" style="margin-top:3px"><span style="display:inline-block;width:92px;color:var(--muted)">Kalshi YES ask</span> ${escapeHtml(g.home.name)} <b>${kx("home").yes_ask ?? "-"}¢</b> · tie <b>${kx("draw").yes_ask ?? "-"}¢</b> · ${escapeHtml(g.away.name)} <b>${kx("away").yes_ask ?? "-"}¢</b>${g.heavy ? ` <span class="chip" title="the underdog's YES ask is at least ${(_soccerData || {}).heavy_gap || 5}¢ under the tie's">🐶 heavy underdog</span>` : ""}</div>`;
-  const weak = (m && m.weak) ? `<div class="small" style="color:#e0a040;margin-top:2px">⚠️ cup tie across the tiers: on the 2025 test the model did no better than the league's base rate in this competition - read the price, not the edge.</div>` : "";
+  const weak = (m && m.weak) ? `<div class="small" style="color:#e0a040;margin-top:2px">⚠️ on every held-out week of 2024-2026 the model did worse than this competition's own base rate - read the price, not the edge.</div>` : "";
   const scorelines = m ? `<div class="small" style="color:var(--muted);margin-top:2px">expected goals ${escapeHtml(g.home.name)} <b>${m.exp_home}</b> – <b>${m.exp_away}</b> ${escapeHtml(g.away.name)} · over 2.5 ${pct(m.over25)} · both score ${pct(m.btts)} · likeliest ${(m.scorelines || []).slice(0, 4).map((s) => `${s.score} (${s.pct}%)`).join(", ")}${(m.known && !(m.known.home && m.known.away)) ? ` · <i>${!m.known.home ? escapeHtml(g.home.name) : escapeHtml(g.away.name)} has no results in the fit: rated at the league's average</i>` : ""}</div>` : "";
+  // recent form and head-to-head: always shown; whether they move the
+  // number is the validation's call (soccer.W_FORM / W_H2H), said beside them
+  const fm = m && m.form, hh = m && m.h2h;
+  const fchip = (r) => `<span class="chip" title="${escapeHtml(r.date)} · ${escapeHtml(r.comp)}" style="color:${r.res === "W" ? "#4c4" : r.res === "L" ? "#e0566a" : "var(--muted)"}">${r.res} ${r.gf}-${r.ga} ${r.venue === "A" ? "@" : "v"} ${escapeHtml(r.opp)}</span>`;
+  const wtxt = (w, mv, what) => w ? `<span style="color:var(--muted)">in the model (weight ${w}): ${escapeHtml(g.home.name)} ${mv.home >= 0 ? "+" : ""}${mv.home} pts · tie ${mv.draw >= 0 ? "+" : ""}${mv.draw} · ${escapeHtml(g.away.name)} ${mv.away >= 0 ? "+" : ""}${mv.away}</span>`
+    : `<span style="color:var(--muted)" title="tested on 2025 out of sample by a rule written first; it did not earn a weight (research/reports/soccer_form.md)">for information - ${what} did not improve the model on held-out matches, so it carries no weight</span>`;
+  const formHtml = fm && (fm.home.length || fm.away.length) ? `<div class="small" style="margin-top:3px"><span style="display:inline-block;width:92px;color:var(--muted)">form (last 5)</span> ${escapeHtml(g.home.name)} ${fm.home.map(fchip).join(" ") || "-"}<br><span style="display:inline-block;width:92px"></span> ${escapeHtml(g.away.name)} ${fm.away.map(fchip).join(" ") || "-"}<br><span style="display:inline-block;width:92px"></span> ${wtxt(fm.weight, fm.moved, "recent form")}</div>` : "";
+  const h2hHtml = hh ? `<div class="small" style="margin-top:3px"><span style="display:inline-block;width:92px;color:var(--muted)">head-to-head</span> ${hh.n ? hh.meetings.map((x) => `<span class="chip" title="${escapeHtml(x.comp)}">${escapeHtml(x.date.slice(0, 7))} ${escapeHtml(x.home)} ${x.hg}-${x.ag} ${escapeHtml(x.away)}</span>`).join(" ") : `<span style="color:var(--muted)">no meeting since ${escapeHtml(String(new Date().getFullYear() - 1))}</span>`}${hh.n ? `<br><span style="display:inline-block;width:92px"></span> ${wtxt(hh.weight, hh.moved, "head-to-head")}` : ""}</div>` : "";
   return `<div class="bbgame nflcard">
     <div class="top"><div>
       <div class="matchup">${escapeHtml(g.home.name)} <span class="small" style="color:var(--muted)">v</span> ${escapeHtml(g.away.name)} <span class="small" style="color:var(--muted)">· ${escapeHtml(g.league)} · ${escapeHtml(_soccerKick(g))}</span></div>
@@ -4235,6 +4247,8 @@ function soccerGameCard(g) {
     ${prices}
     ${weak}
     ${scorelines}
+    ${formHtml}
+    ${h2hHtml}
   </div>`;
 }
 function renderSoccer() {
@@ -4252,7 +4266,7 @@ function renderSoccer() {
   if (heavy) games = games.slice().sort((a, b) => (((b.no_dog || {}).edge ?? -999) - ((a.no_dog || {}).edge ?? -999)) || String(a.kickoff || a.date).localeCompare(String(b.kickoff || b.date)));
   $("soccerBuilt").textContent = d.built_ts ? `built ${agoStr(Math.max(0, Date.now() / 1000 - d.built_ts))}` : "";
   const fit = d.fit || {};
-  $("soccerSummary").innerHTML = `<b>${d.n_games}</b> matches on Kalshi · <b>${d.n_model}</b> modelled · <b>${d.n_heavy}</b> heavy underdogs · showing <b>${games.length}</b> · fit: ${(fit.teams || 0).toLocaleString()} teams from ${(fit.n || 0).toLocaleString()} results as of ${fit.asof || "-"} <span style="color:var(--muted)">(half-life ${Math.round(Math.log(2) / (fit.xi || 0.005))} days, ${fit.kappa} matches of shrinkage, ρ ${fit.rho})</span>${heavy ? ` · <i style="color:var(--muted)">ranked by the model's edge on NO-the-underdog; matches without a model sit at the bottom</i>` : ""}<div class="small" style="color:var(--muted);margin-top:2px" title="2025, out of sample, 20,277 matches: the model's chance that the underdog does not win, by bucket, against how often it did not">Calibration of the NO-the-underdog figure on 2025 (held out): ${((d.calibration || {}).heavy || []).map((c) => `said ${(100 * c.pred).toFixed(0)}% → happened ${(100 * c.hit).toFixed(0)}% (n ${c.n.toLocaleString()})`).join(" · ")} - it reads about a point and a half high at the top; the edge column does not correct for that.</div>`;
+  $("soccerSummary").innerHTML = `<b>${d.n_games}</b> matches on Kalshi · <b>${d.n_model}</b> modelled · <b>${d.n_heavy}</b> heavy underdogs · showing <b>${games.length}</b> · fit: ${(fit.teams || 0).toLocaleString()} teams from ${(fit.n || 0).toLocaleString()} results as of ${fit.asof || "-"} <span style="color:var(--muted)">(half-life ${Math.round(Math.log(2) / (fit.xi || 0.005))} days, ${fit.kappa} matches of shrinkage, ρ ${fit.rho})</span>${heavy ? ` · <i style="color:var(--muted)">ranked by the model's edge on NO-the-underdog; matches without a model sit at the bottom</i>` : ""}<div class="small" style="color:var(--muted);margin-top:2px" title="held out, weekly refits: the model's chance that the underdog does not win on heavy-underdog matches, by bucket, against how often it did not">Calibration of the NO-the-underdog figure on held-out heavy underdogs - 2025: ${((d.calibration || {}).heavy || []).map((c) => `said ${(100 * c.pred).toFixed(1)}% → happened ${(100 * c.hit).toFixed(1)}% (n ${c.n.toLocaleString()})`).join(" · ")}; 2026 so far: ${((d.calibration || {}).heavy_2026 || []).map((c) => `${(100 * c.pred).toFixed(1)}% → ${(100 * c.hit).toFixed(1)}%`).join(" · ")}. It ran about a point and a half high in 2025 and within about a point in 2026; the edge column does not correct for that.</div>`;
   if (!games.length) {
     $("soccerResults").innerHTML = `<div class="empty">${heavy ? "No heavy underdogs match the filter." : "No matches match the filter."}</div>`;
     return;

@@ -1,0 +1,1741 @@
+{
+ "rule": "Recent form and head-to-head on top of the soccer goals model:\nchosen on 2024, tested on 2025, confirmed on 2026 -- every match out of sample.\n\nTHE RULE (written before any number below was computed)\n\nWalk-forward by WEEK (production refits every six hours; a monthly refit\nwould hand form a staler signal than the board will actually have). For\neach week starting d, every model is fitted on the matches in PRODUCTION'S\nwindow -- from 1 January of the year before d up to d (soccer._FIT_YEARS) --\nand predicts every match in [d, d + 7). The base model is the shipped one\n(soccer.XI, soccer.KAPPA, soccer.RHO), unchanged.\n\nTwo candidate FORM terms, both a shift of each side's log scoring rate:\n  A  a second, short-memory fit (half-life ln2/xi_s days) blended into the\n     long one: log lam += w * (log lam_short - log lam_long).\n  B  the last N matches' residual against the long fit (all competitions):\n     r_att = log((goals + 2) / (expected + 2)), r_def = log((expected\n     conceded + 2) / (conceded + 2)); log lam_home += w * (r_att(home) -\n     r_def(away)) and the same for the away side. The +2 is two expected\n     goals of prior, so a team with two lucky games is not a team in form.\nOne HEAD-TO-HEAD term: in the window's past meetings of the two teams (any\nvenue, any competition), each side's goals against its expected goals\nunder the current fit, r = log((goals + 2) / (expected + 2));\nlog lam_side += w_h * r_side.\n\nGrid: A xi_s in {0.01, 0.02, 0.04} (half-lives 69, 35, 17 days),\nB N in {5, 8}, form weight w in {0.1, 0.2, 0.3, 0.5}, and no form; H2H\nweight w_h in {0, 0.25, 0.5, 1.0}. 84 combinations.\n\n1. SELECT on the 2024 weeks: the combination with the lowest mean\n   three-way log loss over every predicted match.\n2. TEST on 2025, once, the chosen weights frozen:\n   - the form term ships at its chosen weight only if [chosen form, no\n     H2H] beats the base by more than two standard errors of the per-match\n     log-loss difference; otherwise it ships at 0;\n   - the H2H term ships at its chosen weight only if [chosen form, chosen\n     H2H] beats [chosen form, no H2H] by more than two standard errors;\n     otherwise 0. Each term earns its own place.\n3. CONFIRM on 2026 (1 January to the data's last week): a term that passed\n   2 but makes 2026 worse by more than two standard errors ships at 0, and\n   the report says so. 2026 cannot promote anything.\nWhatever ships at 0 is still SHOWN on the card -- the last five results and\nthe past meetings -- labelled as information the model gives no weight.\n\nAlso reported, for the record: the base model on all three years with the\nextra-time correction (soccer._ninety) and weekly refits, and the\ncalibration of P(the underdog does not win) for what ships.\n\n",
+ "n_matches": 78333,
+ "last_result": "2026-10-16",
+ "selection": {
+  "A short fit xi=0.02 w=0.1 | h2h w=0.0": 1.005054,
+  "A short fit xi=0.04 w=0.1 | h2h w=0.0": 1.005059,
+  "A short fit xi=0.01 w=0.1 | h2h w=0.0": 1.005104,
+  "no form | h2h w=0.0": 1.005136,
+  "A short fit xi=0.01 w=0.2 | h2h w=0.0": 1.005276,
+  "B last 8 w=0.1 | h2h w=0.0": 1.005459,
+  "A short fit xi=0.02 w=0.2 | h2h w=0.0": 1.00547,
+  "B last 5 w=0.1 | h2h w=0.0": 1.005649,
+  "A short fit xi=0.01 w=0.3 | h2h w=0.0": 1.005653,
+  "A short fit xi=0.04 w=0.2 | h2h w=0.0": 1.00576,
+  "A short fit xi=0.02 w=0.3 | h2h w=0.0": 1.006381,
+  "B last 8 w=0.2 | h2h w=0.0": 1.006756,
+  "A short fit xi=0.01 w=0.5 | h2h w=0.0": 1.00702,
+  "A short fit xi=0.04 w=0.3 | h2h w=0.0": 1.007235,
+  "B last 5 w=0.2 | h2h w=0.0": 1.007567,
+  "A short fit xi=0.02 w=0.1 | h2h w=0.25": 1.007617,
+  "A short fit xi=0.04 w=0.1 | h2h w=0.25": 1.007626,
+  "A short fit xi=0.01 w=0.1 | h2h w=0.25": 1.007718,
+  "A short fit xi=0.01 w=0.2 | h2h w=0.25": 1.007744,
+  "A short fit xi=0.02 w=0.2 | h2h w=0.25": 1.007834,
+  "no form | h2h w=0.25": 1.007896,
+  "B last 8 w=0.1 | h2h w=0.25": 1.007966,
+  "A short fit xi=0.01 w=0.3 | h2h w=0.25": 1.007974,
+  "A short fit xi=0.04 w=0.2 | h2h w=0.25": 1.008132,
+  "B last 5 w=0.1 | h2h w=0.25": 1.008156,
+  "A short fit xi=0.02 w=0.3 | h2h w=0.25": 1.008545,
+  "B last 8 w=0.3 | h2h w=0.0": 1.009003,
+  "B last 8 w=0.2 | h2h w=0.25": 1.009008,
+  "A short fit xi=0.01 w=0.5 | h2h w=0.25": 1.009045,
+  "A short fit xi=0.04 w=0.3 | h2h w=0.25": 1.009408,
+  "A short fit xi=0.02 w=0.5 | h2h w=0.0": 1.009686,
+  "B last 5 w=0.2 | h2h w=0.25": 1.009819,
+  "B last 5 w=0.3 | h2h w=0.0": 1.010848,
+  "B last 8 w=0.3 | h2h w=0.25": 1.010997,
+  "A short fit xi=0.02 w=0.5 | h2h w=0.25": 1.011444,
+  "A short fit xi=0.04 w=0.5 | h2h w=0.0": 1.012486,
+  "B last 5 w=0.3 | h2h w=0.25": 1.012841,
+  "A short fit xi=0.04 w=0.5 | h2h w=0.25": 1.014253,
+  "A short fit xi=0.02 w=0.1 | h2h w=0.5": 1.014977,
+  "A short fit xi=0.04 w=0.1 | h2h w=0.5": 1.014985,
+  "A short fit xi=0.02 w=0.2 | h2h w=0.5": 1.014992,
+  "A short fit xi=0.01 w=0.2 | h2h w=0.5": 1.015014,
+  "A short fit xi=0.01 w=0.3 | h2h w=0.5": 1.015099,
+  "A short fit xi=0.01 w=0.1 | h2h w=0.5": 1.015134,
+  "B last 8 w=0.1 | h2h w=0.5": 1.015264,
+  "A short fit xi=0.04 w=0.2 | h2h w=0.5": 1.015288,
+  "B last 5 w=0.1 | h2h w=0.5": 1.015444,
+  "no form | h2h w=0.5": 1.015458,
+  "A short fit xi=0.02 w=0.3 | h2h w=0.5": 1.015502,
+  "A short fit xi=0.01 w=0.5 | h2h w=0.5": 1.01588,
+  "B last 8 w=0.2 | h2h w=0.5": 1.016045,
+  "B last 8 w=0.5 | h2h w=0.0": 1.016276,
+  "A short fit xi=0.04 w=0.3 | h2h w=0.5": 1.016361,
+  "B last 5 w=0.2 | h2h w=0.5": 1.016837,
+  "B last 8 w=0.5 | h2h w=0.25": 1.017744,
+  "B last 8 w=0.3 | h2h w=0.5": 1.017777,
+  "A short fit xi=0.02 w=0.5 | h2h w=0.5": 1.018,
+  "B last 5 w=0.3 | h2h w=0.5": 1.019595,
+  "A short fit xi=0.04 w=0.5 | h2h w=0.5": 1.020801,
+  "B last 5 w=0.5 | h2h w=0.0": 1.021369,
+  "B last 5 w=0.5 | h2h w=0.25": 1.02283,
+  "B last 8 w=0.5 | h2h w=0.5": 1.024015,
+  "B last 5 w=0.5 | h2h w=0.5": 1.029062,
+  "A short fit xi=0.02 w=0.2 | h2h w=1.0": 1.043134,
+  "A short fit xi=0.01 w=0.3 | h2h w=1.0": 1.043196,
+  "A short fit xi=0.02 w=0.3 | h2h w=1.0": 1.043226,
+  "A short fit xi=0.01 w=0.5 | h2h w=1.0": 1.04339,
+  "A short fit xi=0.04 w=0.2 | h2h w=1.0": 1.043396,
+  "A short fit xi=0.01 w=0.2 | h2h w=1.0": 1.04341,
+  "A short fit xi=0.04 w=0.1 | h2h w=1.0": 1.043534,
+  "A short fit xi=0.02 w=0.1 | h2h w=1.0": 1.043544,
+  "B last 8 w=0.1 | h2h w=1.0": 1.04368,
+  "B last 5 w=0.1 | h2h w=1.0": 1.043805,
+  "A short fit xi=0.01 w=0.1 | h2h w=1.0": 1.043831,
+  "B last 8 w=0.2 | h2h w=1.0": 1.043901,
+  "A short fit xi=0.04 w=0.3 | h2h w=1.0": 1.044039,
+  "no form | h2h w=1.0": 1.04446,
+  "B last 5 w=0.2 | h2h w=1.0": 1.044597,
+  "A short fit xi=0.02 w=0.5 | h2h w=1.0": 1.044909,
+  "B last 8 w=0.3 | h2h w=1.0": 1.045095,
+  "B last 5 w=0.3 | h2h w=1.0": 1.046785,
+  "A short fit xi=0.04 w=0.5 | h2h w=1.0": 1.047649,
+  "B last 8 w=0.5 | h2h w=1.0": 1.050317,
+  "B last 5 w=0.5 | h2h w=1.0": 1.055198
+ },
+ "chosen": {
+  "form": [
+   "A",
+   0.02,
+   0.1
+  ],
+  "h2h": 0.0,
+  "label": "A short fit xi=0.02 w=0.1 | h2h w=0.0"
+ },
+ "years": {
+  "2024": {
+   "n": 20055,
+   "logloss_base": 1.00514,
+   "logloss_form": 1.00505,
+   "logloss_both": 1.00505,
+   "form_vs_base": {
+    "delta": -8e-05,
+    "se": 0.00016
+   },
+   "h2h_vs_form": {
+    "delta": 0.0,
+    "se": 0.0
+   },
+   "h2h_alone_vs_base": {
+    "delta": 0.0,
+    "se": 0.0
+   },
+   "share_with_meetings": 0.767,
+   "mean_meetings": 1.81,
+   "calibration_base": {
+    "all": {
+     "brier": 0.17639,
+     "n": 20055,
+     "buckets": [
+      {
+       "bucket": 0.6,
+       "pred": 0.6671,
+       "hit": 0.6779,
+       "n": 5721
+      },
+      {
+       "bucket": 0.7,
+       "pred": 0.7468,
+       "hit": 0.7435,
+       "n": 8476
+      },
+      {
+       "bucket": 0.8,
+       "pred": 0.842,
+       "hit": 0.844,
+       "n": 4673
+      },
+      {
+       "bucket": 0.9,
+       "pred": 0.9331,
+       "hit": 0.9367,
+       "n": 1185
+      }
+     ]
+    },
+    "heavy": {
+     "brier": 0.13399,
+     "n": 5204,
+     "buckets": [
+      {
+       "bucket": 0.6,
+       "pred": 0.6931,
+       "hit": 0.7931,
+       "n": 29
+      },
+      {
+       "bucket": 0.7,
+       "pred": 0.7638,
+       "hit": 0.7617,
+       "n": 1519
+      },
+      {
+       "bucket": 0.8,
+       "pred": 0.8474,
+       "hit": 0.847,
+       "n": 2836
+      },
+      {
+       "bucket": 0.9,
+       "pred": 0.9258,
+       "hit": 0.9293,
+       "n": 820
+      }
+     ]
+    }
+   },
+   "calibration_both": {
+    "all": {
+     "brier": 0.17634,
+     "n": 20055,
+     "buckets": [
+      {
+       "bucket": 0.6,
+       "pred": 0.6671,
+       "hit": 0.6776,
+       "n": 5748
+      },
+      {
+       "bucket": 0.7,
+       "pred": 0.7467,
+       "hit": 0.7445,
+       "n": 8612
+      },
+      {
+       "bucket": 0.8,
+       "pred": 0.8418,
+       "hit": 0.8486,
+       "n": 4603
+      },
+      {
+       "bucket": 0.9,
+       "pred": 0.9324,
+       "hit": 0.9368,
+       "n": 1092
+      }
+     ]
+    },
+    "heavy": {
+     "brier": 0.13261,
+     "n": 5137,
+     "buckets": [
+      {
+       "bucket": 0.6,
+       "pred": 0.694,
+       "hit": 0.8438,
+       "n": 32
+      },
+      {
+       "bucket": 0.7,
+       "pred": 0.7643,
+       "hit": 0.7657,
+       "n": 1558
+      },
+      {
+       "bucket": 0.8,
+       "pred": 0.8472,
+       "hit": 0.8533,
+       "n": 2794
+      },
+      {
+       "bucket": 0.9,
+       "pred": 0.9256,
+       "hit": 0.927,
+       "n": 753
+      }
+     ]
+    }
+   },
+   "by_competition": {
+    "afc.champions": {
+     "n": 97,
+     "model": 0.9698,
+     "base_rate": 1.0764
+    },
+    "arg.1": {
+     "n": 378,
+     "model": 1.0653,
+     "base_rate": 1.0598
+    },
+    "arg.2": {
+     "n": 745,
+     "model": 1.0597,
+     "base_rate": 1.0703
+    },
+    "arg.3": {
+     "n": 476,
+     "model": 1.0613,
+     "base_rate": 1.0884
+    },
+    "aus.1": {
+     "n": 170,
+     "model": 1.0712,
+     "base_rate": 1.1049
+    },
+    "aut.1": {
+     "n": 189,
+     "model": 1.0357,
+     "base_rate": 1.094
+    },
+    "bel.1": {
+     "n": 313,
+     "model": 1.0234,
+     "base_rate": 1.0687
+    },
+    "bol.1": {
+     "n": 317,
+     "model": 0.9795,
+     "base_rate": 1.0353
+    },
+    "bra.1": {
+     "n": 380,
+     "model": 1.0239,
+     "base_rate": 1.0603
+    },
+    "bra.2": {
+     "n": 380,
+     "model": 1.0181,
+     "base_rate": 1.0271
+    },
+    "bra.copa_do_brazil": {
+     "n": 118,
+     "model": 0.9672,
+     "base_rate": 1.0758
+    },
+    "caf.champions": {
+     "n": 55,
+     "model": 1.0157,
+     "base_rate": 1.1116
+    },
+    "caf.confed": {
+     "n": 54,
+     "model": 0.9609,
+     "base_rate": 1.0188
+    },
+    "caf.nations": {
+     "n": 52,
+     "model": 1.114,
+     "base_rate": 1.103
+    },
+    "chi.1": {
+     "n": 240,
+     "model": 1.0347,
+     "base_rate": 1.0608
+    },
+    "chn.1": {
+     "n": 240,
+     "model": 0.9366,
+     "base_rate": 1.0622
+    },
+    "club.friendly": {
+     "n": 191,
+     "model": 1.0847,
+     "base_rate": 1.1028
+    },
+    "col.1": {
+     "n": 432,
+     "model": 1.0387,
+     "base_rate": 1.0696
+    },
+    "concacaf.champions": {
+     "n": 51,
+     "model": 0.9207,
+     "base_rate": 1.1099
+    },
+    "concacaf.leagues.cup": {
+     "n": 77,
+     "model": 1.052,
+     "base_rate": 1.081
+    },
+    "conmebol.libertadores": {
+     "n": 155,
+     "model": 0.9498,
+     "base_rate": 1.017
+    },
+    "conmebol.sudamericana": {
+     "n": 157,
+     "model": 0.993,
+     "base_rate": 1.0947
+    },
+    "den.1": {
+     "n": 193,
+     "model": 1.013,
+     "base_rate": 1.0828
+    },
+    "ecu.1": {
+     "n": 242,
+     "model": 0.9998,
+     "base_rate": 1.0691
+    },
+    "eng.1": {
+     "n": 372,
+     "model": 0.9589,
+     "base_rate": 1.0876
+    },
+    "eng.2": {
+     "n": 541,
+     "model": 1.0467,
+     "base_rate": 1.072
+    },
+    "eng.3": {
+     "n": 537,
+     "model": 1.0159,
+     "base_rate": 1.0726
+    },
+    "eng.4": {
+     "n": 533,
+     "model": 1.0825,
+     "base_rate": 1.0826
+    },
+    "eng.fa": {
+     "n": 135,
+     "model": 0.9976,
+     "base_rate": 1.1055
+    },
+    "eng.league_cup": {
+     "n": 93,
+     "model": 0.8783,
+     "base_rate": 1.0437
+    },
+    "eng.w.1": {
+     "n": 132,
+     "model": 0.8073,
+     "base_rate": 1.0588
+    },
+    "esp.1": {
+     "n": 381,
+     "model": 0.982,
+     "base_rate": 1.0738
+    },
+    "esp.2": {
+     "n": 466,
+     "model": 1.0614,
+     "base_rate": 1.0689
+    },
+    "esp.copa_del_rey": {
+     "n": 122,
+     "model": 0.9114,
+     "base_rate": 1.0037
+    },
+    "esp.w.1": {
+     "n": 245,
+     "model": 0.8591,
+     "base_rate": 1.068
+    },
+    "fifa.friendly": {
+     "n": 293,
+     "model": 1.0266,
+     "base_rate": 1.0502
+    },
+    "fra.1": {
+     "n": 289,
+     "model": 1.0098,
+     "base_rate": 1.0771
+    },
+    "fra.2": {
+     "n": 334,
+     "model": 1.0571,
+     "base_rate": 1.0689
+    },
+    "fra.coupe_de_france": {
+     "n": 95,
+     "model": 0.862,
+     "base_rate": 1.0431
+    },
+    "fra.w.1": {
+     "n": 138,
+     "model": 0.8483,
+     "base_rate": 1.0389
+    },
+    "ger.1": {
+     "n": 298,
+     "model": 0.983,
+     "base_rate": 1.0853
+    },
+    "ger.2": {
+     "n": 168,
+     "model": 1.0794,
+     "base_rate": 1.1062
+    },
+    "ger.dfb_pokal": {
+     "n": 63,
+     "model": 0.8117,
+     "base_rate": 1.0667
+    },
+    "gre.1": {
+     "n": 247,
+     "model": 0.9601,
+     "base_rate": 1.0895
+    },
+    "ind.1": {
+     "n": 155,
+     "model": 0.9878,
+     "base_rate": 1.06
+    },
+    "ita.1": {
+     "n": 378,
+     "model": 0.987,
+     "base_rate": 1.0971
+    },
+    "ita.2": {
+     "n": 400,
+     "model": 1.0794,
+     "base_rate": 1.0934
+    },
+    "jpn.1": {
+     "n": 380,
+     "model": 1.0899,
+     "base_rate": 1.0939
+    },
+    "ksa.1": {
+     "n": 253,
+     "model": 0.9552,
+     "base_rate": 1.0844
+    },
+    "mex.1": {
+     "n": 340,
+     "model": 0.9956,
+     "base_rate": 1.0676
+    },
+    "mex.2": {
+     "n": 242,
+     "model": 1.0173,
+     "base_rate": 1.0798
+    },
+    "ned.1": {
+     "n": 317,
+     "model": 0.9188,
+     "base_rate": 1.0697
+    },
+    "ned.2": {
+     "n": 381,
+     "model": 1.0505,
+     "base_rate": 1.0851
+    },
+    "ned.cup": {
+     "n": 58,
+     "model": 0.8994,
+     "base_rate": 1.0424
+    },
+    "ned.w.1": {
+     "n": 132,
+     "model": 0.8559,
+     "base_rate": 1.0671
+    },
+    "nor.1": {
+     "n": 240,
+     "model": 1.0393,
+     "base_rate": 1.0899
+    },
+    "par.1": {
+     "n": 264,
+     "model": 1.0795,
+     "base_rate": 1.0995
+    },
+    "per.1": {
+     "n": 306,
+     "model": 0.9213,
+     "base_rate": 1.0238
+    },
+    "por.1": {
+     "n": 315,
+     "model": 0.9264,
+     "base_rate": 1.0745
+    },
+    "por.taca.portugal": {
+     "n": 65,
+     "model": 0.802,
+     "base_rate": 0.9988
+    },
+    "rsa.1": {
+     "n": 194,
+     "model": 1.0263,
+     "base_rate": 1.0843
+    },
+    "sco.1": {
+     "n": 164,
+     "model": 0.9264,
+     "base_rate": 1.0699
+    },
+    "sco.tennents": {
+     "n": 99,
+     "model": 1.0082,
+     "base_rate": 0.9934
+    },
+    "swe.1": {
+     "n": 240,
+     "model": 1.0448,
+     "base_rate": 1.0591
+    },
+    "tur.1": {
+     "n": 363,
+     "model": 0.9766,
+     "base_rate": 1.0719
+    },
+    "uefa.champions": {
+     "n": 137,
+     "model": 0.9061,
+     "base_rate": 1.0115
+    },
+    "uefa.champions_qual": {
+     "n": 90,
+     "model": 0.9619,
+     "base_rate": 1.048
+    },
+    "uefa.europa": {
+     "n": 153,
+     "model": 1.0017,
+     "base_rate": 1.078
+    },
+    "uefa.europa.conf": {
+     "n": 153,
+     "model": 1.0166,
+     "base_rate": 1.0729
+    },
+    "uefa.europa.conf_qual": {
+     "n": 256,
+     "model": 1.0043,
+     "base_rate": 1.0384
+    },
+    "uefa.europa_qual": {
+     "n": 80,
+     "model": 0.8641,
+     "base_rate": 1.0135
+    },
+    "uefa.nations": {
+     "n": 158,
+     "model": 0.9507,
+     "base_rate": 1.0868
+    },
+    "uefa.wchampions": {
+     "n": 78,
+     "model": 0.6476,
+     "base_rate": 0.9744
+    },
+    "uru.1": {
+     "n": 297,
+     "model": 1.027,
+     "base_rate": 1.0921
+    },
+    "usa.1": {
+     "n": 523,
+     "model": 1.0487,
+     "base_rate": 1.0737
+    },
+    "usa.ncaa.m.1": {
+     "n": 532,
+     "model": 0.9648,
+     "base_rate": 1.0319
+    },
+    "usa.nwsl": {
+     "n": 189,
+     "model": 0.9919,
+     "base_rate": 1.0355
+    },
+    "usa.open": {
+     "n": 95,
+     "model": 1.0286,
+     "base_rate": 1.1279
+    },
+    "usa.usl.1": {
+     "n": 423,
+     "model": 1.0386,
+     "base_rate": 1.0701
+    },
+    "usa.usl.l1": {
+     "n": 139,
+     "model": 1.0182,
+     "base_rate": 1.0849
+    },
+    "ven.1": {
+     "n": 232,
+     "model": 1.0438,
+     "base_rate": 1.0888
+    }
+   },
+   "logloss_base_rate": 1.06955
+  },
+  "2025": {
+   "n": 20625,
+   "logloss_base": 1.01008,
+   "logloss_form": 1.01003,
+   "logloss_both": 1.01003,
+   "form_vs_base": {
+    "delta": -5e-05,
+    "se": 0.00015
+   },
+   "h2h_vs_form": {
+    "delta": 0.0,
+    "se": 0.0
+   },
+   "h2h_alone_vs_base": {
+    "delta": 0.0,
+    "se": 0.0
+   },
+   "share_with_meetings": 0.755,
+   "mean_meetings": 1.77,
+   "calibration_base": {
+    "all": {
+     "brier": 0.17946,
+     "n": 20625,
+     "buckets": [
+      {
+       "bucket": 0.6,
+       "pred": 0.667,
+       "hit": 0.6671,
+       "n": 6056
+      },
+      {
+       "bucket": 0.7,
+       "pred": 0.7473,
+       "hit": 0.7544,
+       "n": 8682
+      },
+      {
+       "bucket": 0.8,
+       "pred": 0.8415,
+       "hit": 0.8254,
+       "n": 4684
+      },
+      {
+       "bucket": 0.9,
+       "pred": 0.9319,
+       "hit": 0.9227,
+       "n": 1203
+      }
+     ]
+    },
+    "heavy": {
+     "brier": 0.14425,
+     "n": 5443,
+     "buckets": [
+      {
+       "bucket": 0.6,
+       "pred": 0.6934,
+       "hit": 0.6207,
+       "n": 29
+      },
+      {
+       "bucket": 0.7,
+       "pred": 0.7646,
+       "hit": 0.7489,
+       "n": 1633
+      },
+      {
+       "bucket": 0.8,
+       "pred": 0.8466,
+       "hit": 0.8318,
+       "n": 2948
+      },
+      {
+       "bucket": 0.9,
+       "pred": 0.9267,
+       "hit": 0.9208,
+       "n": 833
+      }
+     ]
+    }
+   },
+   "calibration_both": {
+    "all": {
+     "brier": 0.17923,
+     "n": 20625,
+     "buckets": [
+      {
+       "bucket": 0.6,
+       "pred": 0.6668,
+       "hit": 0.6719,
+       "n": 6102
+      },
+      {
+       "bucket": 0.7,
+       "pred": 0.7471,
+       "hit": 0.7533,
+       "n": 8799
+      },
+      {
+       "bucket": 0.8,
+       "pred": 0.8412,
+       "hit": 0.8278,
+       "n": 4618
+      },
+      {
+       "bucket": 0.9,
+       "pred": 0.931,
+       "hit": 0.9322,
+       "n": 1106
+      }
+     ]
+    },
+    "heavy": {
+     "brier": 0.14301,
+     "n": 5366,
+     "buckets": [
+      {
+       "bucket": 0.6,
+       "pred": 0.694,
+       "hit": 0.7931,
+       "n": 29
+      },
+      {
+       "bucket": 0.7,
+       "pred": 0.7643,
+       "hit": 0.7492,
+       "n": 1655
+      },
+      {
+       "bucket": 0.8,
+       "pred": 0.8465,
+       "hit": 0.8332,
+       "n": 2908
+      },
+      {
+       "bucket": 0.9,
+       "pred": 0.9257,
+       "hit": 0.9315,
+       "n": 774
+      }
+     ]
+    }
+   },
+   "by_competition": {
+    "afc.champions": {
+     "n": 117,
+     "model": 0.9476,
+     "base_rate": 1.0306
+    },
+    "arg.1": {
+     "n": 510,
+     "model": 1.0797,
+     "base_rate": 1.0889
+    },
+    "arg.2": {
+     "n": 633,
+     "model": 1.037,
+     "base_rate": 1.0498
+    },
+    "arg.3": {
+     "n": 433,
+     "model": 1.0886,
+     "base_rate": 1.0894
+    },
+    "aus.1": {
+     "n": 175,
+     "model": 1.0515,
+     "base_rate": 1.0861
+    },
+    "aut.1": {
+     "n": 201,
+     "model": 1.0648,
+     "base_rate": 1.0839
+    },
+    "bel.1": {
+     "n": 313,
+     "model": 1.0328,
+     "base_rate": 1.0942
+    },
+    "bol.1": {
+     "n": 240,
+     "model": 0.899,
+     "base_rate": 0.9933
+    },
+    "bra.1": {
+     "n": 380,
+     "model": 0.9888,
+     "base_rate": 1.0407
+    },
+    "bra.2": {
+     "n": 380,
+     "model": 1.0516,
+     "base_rate": 1.0675
+    },
+    "bra.copa_do_brazil": {
+     "n": 116,
+     "model": 0.9912,
+     "base_rate": 1.0938
+    },
+    "caf.champions": {
+     "n": 54,
+     "model": 0.9731,
+     "base_rate": 1.0954
+    },
+    "caf.confed": {
+     "n": 54,
+     "model": 0.9033,
+     "base_rate": 1.0235
+    },
+    "chi.1": {
+     "n": 240,
+     "model": 0.9952,
+     "base_rate": 1.0331
+    },
+    "chn.1": {
+     "n": 240,
+     "model": 0.9454,
+     "base_rate": 1.0654
+    },
+    "club.friendly": {
+     "n": 135,
+     "model": 0.9641,
+     "base_rate": 1.0787
+    },
+    "col.1": {
+     "n": 451,
+     "model": 1.0183,
+     "base_rate": 1.0671
+    },
+    "concacaf.champions": {
+     "n": 51,
+     "model": 0.919,
+     "base_rate": 1.0049
+    },
+    "concacaf.leagues.cup": {
+     "n": 62,
+     "model": 1.0364,
+     "base_rate": 1.0756
+    },
+    "conmebol.libertadores": {
+     "n": 154,
+     "model": 0.9692,
+     "base_rate": 1.0542
+    },
+    "conmebol.sudamericana": {
+     "n": 156,
+     "model": 1.0478,
+     "base_rate": 1.0809
+    },
+    "den.1": {
+     "n": 199,
+     "model": 1.0267,
+     "base_rate": 1.066
+    },
+    "ecu.1": {
+     "n": 312,
+     "model": 1.0702,
+     "base_rate": 1.088
+    },
+    "eng.1": {
+     "n": 378,
+     "model": 0.9794,
+     "base_rate": 1.0667
+    },
+    "eng.2": {
+     "n": 559,
+     "model": 1.058,
+     "base_rate": 1.0756
+    },
+    "eng.3": {
+     "n": 560,
+     "model": 1.0417,
+     "base_rate": 1.0689
+    },
+    "eng.4": {
+     "n": 567,
+     "model": 1.0624,
+     "base_rate": 1.0868
+    },
+    "eng.fa": {
+     "n": 122,
+     "model": 0.9963,
+     "base_rate": 1.0894
+    },
+    "eng.league_cup": {
+     "n": 93,
+     "model": 0.981,
+     "base_rate": 1.0768
+    },
+    "eng.w.1": {
+     "n": 138,
+     "model": 0.8909,
+     "base_rate": 1.0485
+    },
+    "esp.1": {
+     "n": 370,
+     "model": 0.9532,
+     "base_rate": 1.0699
+    },
+    "esp.2": {
+     "n": 448,
+     "model": 1.0551,
+     "base_rate": 1.0731
+    },
+    "esp.copa_del_rey": {
+     "n": 151,
+     "model": 0.9568,
+     "base_rate": 1.0334
+    },
+    "esp.w.1": {
+     "n": 251,
+     "model": 0.9418,
+     "base_rate": 1.0901
+    },
+    "fifa.friendly": {
+     "n": 272,
+     "model": 1.0486,
+     "base_rate": 1.0499
+    },
+    "fra.1": {
+     "n": 314,
+     "model": 0.966,
+     "base_rate": 1.0389
+    },
+    "fra.2": {
+     "n": 315,
+     "model": 1.0786,
+     "base_rate": 1.0873
+    },
+    "fra.coupe_de_france": {
+     "n": 63,
+     "model": 0.9416,
+     "base_rate": 1.0609
+    },
+    "fra.w.1": {
+     "n": 135,
+     "model": 0.8254,
+     "base_rate": 1.0723
+    },
+    "ger.1": {
+     "n": 306,
+     "model": 1.0221,
+     "base_rate": 1.0897
+    },
+    "ger.2": {
+     "n": 306,
+     "model": 1.0552,
+     "base_rate": 1.0726
+    },
+    "ger.dfb_pokal": {
+     "n": 63,
+     "model": 0.8898,
+     "base_rate": 1.0439
+    },
+    "gre.1": {
+     "n": 228,
+     "model": 0.9357,
+     "base_rate": 1.0557
+    },
+    "ind.1": {
+     "n": 79,
+     "model": 1.0529,
+     "base_rate": 1.108
+    },
+    "ita.1": {
+     "n": 368,
+     "model": 1.0034,
+     "base_rate": 1.0925
+    },
+    "ita.2": {
+     "n": 370,
+     "model": 1.0728,
+     "base_rate": 1.0806
+    },
+    "jpn.1": {
+     "n": 380,
+     "model": 1.0468,
+     "base_rate": 1.0749
+    },
+    "ksa.1": {
+     "n": 288,
+     "model": 0.9434,
+     "base_rate": 1.0624
+    },
+    "mex.1": {
+     "n": 340,
+     "model": 0.9586,
+     "base_rate": 1.0479
+    },
+    "mex.2": {
+     "n": 239,
+     "model": 0.9949,
+     "base_rate": 1.0524
+    },
+    "ned.1": {
+     "n": 309,
+     "model": 0.9943,
+     "base_rate": 1.074
+    },
+    "ned.2": {
+     "n": 389,
+     "model": 0.9964,
+     "base_rate": 1.0424
+    },
+    "ned.cup": {
+     "n": 57,
+     "model": 0.9845,
+     "base_rate": 1.0853
+    },
+    "ned.w.1": {
+     "n": 125,
+     "model": 0.768,
+     "base_rate": 1.0335
+    },
+    "nor.1": {
+     "n": 240,
+     "model": 0.9461,
+     "base_rate": 1.0402
+    },
+    "par.1": {
+     "n": 263,
+     "model": 1.0721,
+     "base_rate": 1.1019
+    },
+    "per.1": {
+     "n": 332,
+     "model": 0.9902,
+     "base_rate": 1.0555
+    },
+    "por.1": {
+     "n": 304,
+     "model": 0.9458,
+     "base_rate": 1.0973
+    },
+    "por.taca.portugal": {
+     "n": 66,
+     "model": 0.9052,
+     "base_rate": 0.9989
+    },
+    "rsa.1": {
+     "n": 247,
+     "model": 1.0253,
+     "base_rate": 1.0822
+    },
+    "sco.1": {
+     "n": 228,
+     "model": 1.0126,
+     "base_rate": 1.0781
+    },
+    "sco.tennents": {
+     "n": 101,
+     "model": 1.052,
+     "base_rate": 0.9938
+    },
+    "swe.1": {
+     "n": 240,
+     "model": 1.0063,
+     "base_rate": 1.0744
+    },
+    "tur.1": {
+     "n": 342,
+     "model": 0.9597,
+     "base_rate": 1.0721
+    },
+    "uefa.champions": {
+     "n": 189,
+     "model": 0.9196,
+     "base_rate": 1.0239
+    },
+    "uefa.champions_qual": {
+     "n": 92,
+     "model": 0.9433,
+     "base_rate": 1.0576
+    },
+    "uefa.europa": {
+     "n": 189,
+     "model": 0.9729,
+     "base_rate": 1.0163
+    },
+    "uefa.europa.conf": {
+     "n": 153,
+     "model": 0.9818,
+     "base_rate": 1.0455
+    },
+    "uefa.europa.conf_qual": {
+     "n": 256,
+     "model": 1.0356,
+     "base_rate": 1.0556
+    },
+    "uefa.europa_qual": {
+     "n": 82,
+     "model": 1.0181,
+     "base_rate": 1.1162
+    },
+    "uefa.wchampions": {
+     "n": 67,
+     "model": 0.8113,
+     "base_rate": 1.0486
+    },
+    "uru.1": {
+     "n": 298,
+     "model": 1.0113,
+     "base_rate": 1.0902
+    },
+    "usa.1": {
+     "n": 541,
+     "model": 1.0449,
+     "base_rate": 1.0715
+    },
+    "usa.ncaa.m.1": {
+     "n": 986,
+     "model": 1.0105,
+     "base_rate": 1.0446
+    },
+    "usa.nwsl": {
+     "n": 189,
+     "model": 1.0568,
+     "base_rate": 1.1091
+    },
+    "usa.open": {
+     "n": 95,
+     "model": 1.0634,
+     "base_rate": 1.1043
+    },
+    "usa.usl.1": {
+     "n": 375,
+     "model": 1.049,
+     "base_rate": 1.0785
+    },
+    "usa.usl.l1": {
+     "n": 217,
+     "model": 1.0764,
+     "base_rate": 1.0793
+    },
+    "ven.1": {
+     "n": 233,
+     "model": 1.0111,
+     "base_rate": 1.0676
+    }
+   },
+   "logloss_base_rate": 1.06721
+  },
+  "2026": {
+   "n": 17503,
+   "logloss_base": 1.01582,
+   "logloss_form": 1.0157,
+   "logloss_both": 1.0157,
+   "form_vs_base": {
+    "delta": -0.00013,
+    "se": 0.00017
+   },
+   "h2h_vs_form": {
+    "delta": 0.0,
+    "se": 0.0
+   },
+   "h2h_alone_vs_base": {
+    "delta": 0.0,
+    "se": 0.0
+   },
+   "share_with_meetings": 0.724,
+   "mean_meetings": 1.58,
+   "calibration_base": {
+    "all": {
+     "brier": 0.18143,
+     "n": 17503,
+     "buckets": [
+      {
+       "bucket": 0.6,
+       "pred": 0.666,
+       "hit": 0.6756,
+       "n": 5361
+      },
+      {
+       "bucket": 0.7,
+       "pred": 0.7475,
+       "hit": 0.7427,
+       "n": 7413
+      },
+      {
+       "bucket": 0.8,
+       "pred": 0.8411,
+       "hit": 0.832,
+       "n": 3888
+      },
+      {
+       "bucket": 0.9,
+       "pred": 0.9304,
+       "hit": 0.9417,
+       "n": 841
+      }
+     ]
+    },
+    "heavy": {
+     "brier": 0.1403,
+     "n": 4343,
+     "buckets": [
+      {
+       "bucket": 0.6,
+       "pred": 0.6944,
+       "hit": 0.6,
+       "n": 25
+      },
+      {
+       "bucket": 0.7,
+       "pred": 0.7647,
+       "hit": 0.7549,
+       "n": 1314
+      },
+      {
+       "bucket": 0.8,
+       "pred": 0.8462,
+       "hit": 0.8374,
+       "n": 2392
+      },
+      {
+       "bucket": 0.9,
+       "pred": 0.9241,
+       "hit": 0.9363,
+       "n": 612
+      }
+     ]
+    }
+   },
+   "calibration_both": {
+    "all": {
+     "brier": 0.18182,
+     "n": 17503,
+     "buckets": [
+      {
+       "bucket": 0.6,
+       "pred": 0.6659,
+       "hit": 0.671,
+       "n": 5420
+      },
+      {
+       "bucket": 0.7,
+       "pred": 0.7473,
+       "hit": 0.7466,
+       "n": 7510
+      },
+      {
+       "bucket": 0.8,
+       "pred": 0.8409,
+       "hit": 0.8304,
+       "n": 3827
+      },
+      {
+       "bucket": 0.9,
+       "pred": 0.9302,
+       "hit": 0.9424,
+       "n": 746
+      }
+     ]
+    },
+    "heavy": {
+     "brier": 0.13843,
+     "n": 4257,
+     "buckets": [
+      {
+       "bucket": 0.6,
+       "pred": 0.6953,
+       "hit": 0.5833,
+       "n": 24
+      },
+      {
+       "bucket": 0.7,
+       "pred": 0.7646,
+       "hit": 0.7688,
+       "n": 1328
+      },
+      {
+       "bucket": 0.8,
+       "pred": 0.8462,
+       "hit": 0.8377,
+       "n": 2366
+      },
+      {
+       "bucket": 0.9,
+       "pred": 0.9246,
+       "hit": 0.9425,
+       "n": 539
+      }
+     ]
+    }
+   },
+   "by_competition": {
+    "afc.champions": {
+     "n": 75,
+     "model": 1.0089,
+     "base_rate": 1.1193
+    },
+    "arg.1": {
+     "n": 437,
+     "model": 1.06,
+     "base_rate": 1.0835
+    },
+    "arg.2": {
+     "n": 593,
+     "model": 1.0443,
+     "base_rate": 1.0488
+    },
+    "arg.3": {
+     "n": 429,
+     "model": 1.0721,
+     "base_rate": 1.0976
+    },
+    "aus.1": {
+     "n": 105,
+     "model": 1.149,
+     "base_rate": 1.1201
+    },
+    "aut.1": {
+     "n": 142,
+     "model": 1.0532,
+     "base_rate": 1.0695
+    },
+    "bel.1": {
+     "n": 225,
+     "model": 0.9874,
+     "base_rate": 1.0691
+    },
+    "bol.1": {
+     "n": 169,
+     "model": 0.9417,
+     "base_rate": 1.0598
+    },
+    "bra.1": {
+     "n": 299,
+     "model": 1.0226,
+     "base_rate": 1.0583
+    },
+    "bra.2": {
+     "n": 331,
+     "model": 1.0354,
+     "base_rate": 1.0756
+    },
+    "bra.copa_do_brazil": {
+     "n": 130,
+     "model": 0.9455,
+     "base_rate": 1.0494
+    },
+    "caf.champions": {
+     "n": 105,
+     "model": 1.0014,
+     "base_rate": 1.042
+    },
+    "caf.confed": {
+     "n": 94,
+     "model": 1.0209,
+     "base_rate": 1.0735
+    },
+    "chi.1": {
+     "n": 191,
+     "model": 1.0499,
+     "base_rate": 1.0575
+    },
+    "chn.1": {
+     "n": 217,
+     "model": 1.0605,
+     "base_rate": 1.0804
+    },
+    "club.friendly": {
+     "n": 761,
+     "model": 1.0764,
+     "base_rate": 1.0767
+    },
+    "col.1": {
+     "n": 332,
+     "model": 1.0303,
+     "base_rate": 1.0713
+    },
+    "concacaf.champions": {
+     "n": 51,
+     "model": 0.9034,
+     "base_rate": 1.0934
+    },
+    "concacaf.leagues.cup": {
+     "n": 62,
+     "model": 1.0443,
+     "base_rate": 0.9775
+    },
+    "conmebol.libertadores": {
+     "n": 152,
+     "model": 1.0357,
+     "base_rate": 1.0765
+    },
+    "conmebol.sudamericana": {
+     "n": 154,
+     "model": 1.0239,
+     "base_rate": 1.0724
+    },
+    "den.1": {
+     "n": 146,
+     "model": 1.0593,
+     "base_rate": 1.1009
+    },
+    "ecu.1": {
+     "n": 256,
+     "model": 1.011,
+     "base_rate": 1.0603
+    },
+    "eng.1": {
+     "n": 254,
+     "model": 1.067,
+     "base_rate": 1.1082
+    },
+    "eng.2": {
+     "n": 391,
+     "model": 1.049,
+     "base_rate": 1.0902
+    },
+    "eng.3": {
+     "n": 393,
+     "model": 1.0518,
+     "base_rate": 1.0883
+    },
+    "eng.4": {
+     "n": 395,
+     "model": 1.0471,
+     "base_rate": 1.0718
+    },
+    "eng.fa": {
+     "n": 63,
+     "model": 0.9439,
+     "base_rate": 1.0881
+    },
+    "eng.league_cup": {
+     "n": 81,
+     "model": 0.8777,
+     "base_rate": 1.0397
+    },
+    "eng.w.1": {
+     "n": 101,
+     "model": 0.8667,
+     "base_rate": 1.0374
+    },
+    "esp.1": {
+     "n": 288,
+     "model": 0.9923,
+     "base_rate": 1.0532
+    },
+    "esp.2": {
+     "n": 359,
+     "model": 1.0175,
+     "base_rate": 1.0588
+    },
+    "esp.w.1": {
+     "n": 176,
+     "model": 0.834,
+     "base_rate": 1.0404
+    },
+    "fifa.friendly": {
+     "n": 335,
+     "model": 1.044,
+     "base_rate": 1.0477
+    },
+    "fifa.world": {
+     "n": 104,
+     "model": 0.944,
+     "base_rate": 1.127
+    },
+    "fra.1": {
+     "n": 216,
+     "model": 1.0212,
+     "base_rate": 1.0889
+    },
+    "fra.2": {
+     "n": 230,
+     "model": 1.0679,
+     "base_rate": 1.1021
+    },
+    "fra.w.1": {
+     "n": 93,
+     "model": 0.8425,
+     "base_rate": 1.0736
+    },
+    "ger.1": {
+     "n": 217,
+     "model": 0.9722,
+     "base_rate": 1.0743
+    },
+    "ger.2": {
+     "n": 218,
+     "model": 1.076,
+     "base_rate": 1.0791
+    },
+    "gre.1": {
+     "n": 174,
+     "model": 1.0062,
+     "base_rate": 1.1012
+    },
+    "ind.1": {
+     "n": 98,
+     "model": 1.0321,
+     "base_rate": 1.0995
+    },
+    "ita.1": {
+     "n": 275,
+     "model": 0.9696,
+     "base_rate": 1.0788
+    },
+    "ita.2": {
+     "n": 271,
+     "model": 1.0327,
+     "base_rate": 1.073
+    },
+    "jpn.1": {
+     "n": 290,
+     "model": 1.0518,
+     "base_rate": 1.0874
+    },
+    "ksa.1": {
+     "n": 282,
+     "model": 0.9151,
+     "base_rate": 1.0738
+    },
+    "mex.1": {
+     "n": 264,
+     "model": 1.0587,
+     "base_rate": 1.0848
+    },
+    "mex.2": {
+     "n": 216,
+     "model": 1.0487,
+     "base_rate": 1.0209
+    },
+    "ned.1": {
+     "n": 230,
+     "model": 1.0082,
+     "base_rate": 1.0963
+    },
+    "ned.2": {
+     "n": 275,
+     "model": 1.0284,
+     "base_rate": 1.0547
+    },
+    "ned.cup": {
+     "n": 58,
+     "model": 0.9749,
+     "base_rate": 0.9108
+    },
+    "ned.w.1": {
+     "n": 106,
+     "model": 0.8633,
+     "base_rate": 1.003
+    },
+    "nor.1": {
+     "n": 176,
+     "model": 0.9621,
+     "base_rate": 1.0432
+    },
+    "par.1": {
+     "n": 217,
+     "model": 1.0398,
+     "base_rate": 1.0867
+    },
+    "per.1": {
+     "n": 254,
+     "model": 0.9943,
+     "base_rate": 1.0378
+    },
+    "por.1": {
+     "n": 235,
+     "model": 0.9392,
+     "base_rate": 1.0836
+    },
+    "por.taca.portugal": {
+     "n": 93,
+     "model": 1.1295,
+     "base_rate": 0.9895
+    },
+    "rsa.1": {
+     "n": 190,
+     "model": 0.9786,
+     "base_rate": 1.1066
+    },
+    "sco.1": {
+     "n": 160,
+     "model": 0.9658,
+     "base_rate": 1.0565
+    },
+    "sco.tennents": {
+     "n": 56,
+     "model": 1.0197,
+     "base_rate": 1.0684
+    },
+    "swe.1": {
+     "n": 185,
+     "model": 1.0349,
+     "base_rate": 1.0747
+    },
+    "tur.1": {
+     "n": 217,
+     "model": 1.0156,
+     "base_rate": 1.0638
+    },
+    "uefa.champions": {
+     "n": 117,
+     "model": 0.8865,
+     "base_rate": 0.9812
+    },
+    "uefa.champions_qual": {
+     "n": 90,
+     "model": 1.0343,
+     "base_rate": 1.0562
+    },
+    "uefa.europa": {
+     "n": 117,
+     "model": 0.9378,
+     "base_rate": 1.0252
+    },
+    "uefa.europa.conf": {
+     "n": 63,
+     "model": 0.9952,
+     "base_rate": 1.0329
+    },
+    "uefa.europa.conf_qual": {
+     "n": 258,
+     "model": 0.9969,
+     "base_rate": 1.0787
+    },
+    "uefa.europa_qual": {
+     "n": 80,
+     "model": 1.061,
+     "base_rate": 1.0463
+    },
+    "uefa.nations": {
+     "n": 108,
+     "model": 0.9582,
+     "base_rate": 1.1189
+    },
+    "uru.1": {
+     "n": 258,
+     "model": 1.0653,
+     "base_rate": 1.0889
+    },
+    "usa.1": {
+     "n": 436,
+     "model": 1.0459,
+     "base_rate": 1.064
+    },
+    "usa.ncaa.m.1": {
+     "n": 984,
+     "model": 0.9901,
+     "base_rate": 1.0312
+    },
+    "usa.nwsl": {
+     "n": 216,
+     "model": 1.0203,
+     "base_rate": 1.0475
+    },
+    "usa.open": {
+     "n": 78,
+     "model": 0.8794,
+     "base_rate": 1.0605
+    },
+    "usa.usl.1": {
+     "n": 349,
+     "model": 1.0431,
+     "base_rate": 1.0784
+    },
+    "usa.usl.l1": {
+     "n": 254,
+     "model": 1.012,
+     "base_rate": 1.0367
+    },
+    "ven.1": {
+     "n": 199,
+     "model": 0.9981,
+     "base_rate": 1.0822
+    }
+   },
+   "logloss_base_rate": 1.06732
+  }
+ },
+ "decision": {
+  "form_passes_test": false,
+  "h2h_passes_test": false,
+  "form_vetoed_by_confirm": false,
+  "h2h_vetoed_by_confirm": false,
+  "ship_form": [
+   "base",
+   null,
+   0.0
+  ],
+  "ship_h2h": 0.0
+ },
+ "seconds": 179
+}

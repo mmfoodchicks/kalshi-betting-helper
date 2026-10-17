@@ -219,7 +219,21 @@ data-only `sim-history` branch (which never deploys):
   (`research/soccer_validation.py`, `research/reports/soccer_validation.md`).
   Bucket `soccer` in predlog (all three outcomes vs Kalshi's de-vigged
   price), DraftKings' de-vigged line (ESPN carries it on upcoming matches
-  only) in shadow bucket `soccer_dk`.
+  only) in shadow bucket `soccer_dk` -- **pre-game matches only**
+  (`row["pregame"]`: ESPN "pre" and kickoff ahead); an in-play match shows
+  no edge. **Extra time**: a match that went to extra time or penalties
+  enters at its 90-minute score rebuilt from ESPN's goal minutes
+  (`soccer._ninety`; 197 of 1,264 were not level at 90 -- second legs), never
+  dropped (the first version's cup "weakness" was that artifact). **The fit
+  runs in a niced child** every six hours (`refit_main` under
+  `deep_cache.HEAVY_BUILD`, ~120 MB, ~200 ESPN year files; past years kept in
+  the deep store) and lands in the deep store as `soccer_model`; the board
+  thread only loads it. **Recent form and head-to-head carry weight 0**:
+  tested 2024/2025/2026 by a rule written first
+  (`research/soccer_form_validation.py`, `research/reports/soccer_form.md`),
+  form did not confirm and every head-to-head weight made predictions worse.
+  The card shows both as information; a weight is a change to judge on new
+  seasons, not to set by hand.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 

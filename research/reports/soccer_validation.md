@@ -1,5 +1,14 @@
 # The soccer goals model: chosen on 2024, tested on 2025
 
+> **Superseded in two places (2026-10-17, `soccer_form.md`).** This run, like
+> the first version of `soccer.results`, dropped every match that went to
+> extra time; they now enter at their 90-minute score, which moves the base
+> log loss (the cup draws are back) and removes six of the seven competitions
+> in "Where the model is weak" below -- that list was an artifact of the
+> dropped draws. The parameters chosen here are unchanged and still shipped;
+> the current numbers, the current weak list (the Scottish Cup alone) and the
+> current calibration are in `soccer_form.md`.
+
 `research/soccer_validation.py` → `research/data/soccer_validation.json`
 (the test) and `soccer_validation_wide.json` (a labelled second look).
 Run 2026-10-17 on 59,861 finished 90-minute matches from 85 ESPN

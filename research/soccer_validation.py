@@ -76,7 +76,7 @@ def load(cache):
                     out.append((day, slug, str(r["h"]["id"]), str(r["a"]["id"]), hg, ag,
                                 bool(r.get("neutral")) or slug in soccer._NEUTRAL))
             else:
-                out.extend(soccer.results(slug, y))
+                out.extend(soccer.results(slug, y)[0])     # (rows, names) since 2026-10-17
     out.sort()
     return out
 

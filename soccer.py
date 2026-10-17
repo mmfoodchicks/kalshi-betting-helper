@@ -33,7 +33,16 @@ that the underdog does NOT win beside Kalshi's NO price on the underdog.
             Dixon-Coles low-score correction RHO, not a Monte Carlo: the
             answer is the same every build. Parameters chosen on 2024 by a
             rule written first and tested on 2025 (research/soccer_validation.py,
-            research/reports/soccer_validation.md).
+            research/reports/soccer_validation.md). A match that went to
+            extra time enters at its 90-minute score (_ninety).
+  FORM/H2H  Tested on 2024/2025/2026 by a rule written first
+            (research/reports/soccer_form.md): neither recent form nor the
+            head-to-head record improved held-out predictions, so both carry
+            weight 0 (W_FORM, W_H2H) and the card SHOWS them -- each side's
+            last five, the past meetings -- as information.
+  WHERE     The fit and its ~200 ESPN year files run in a niced child every
+            six hours (refit_main, under deep_cache.HEAVY_BUILD) and land in
+            the deep store; the board's build thread only loads the result.
   RECORD    Every priced outcome logs its raw model probability to predlog
             bucket "soccer" against Kalshi's de-vigged price; DraftKings'
             de-vigged line, where ESPN shows one, logs to the shadow bucket
@@ -42,7 +51,6 @@ that the underdog does NOT win beside Kalshi's NO price on the underdog.
 import datetime
 import math
 import re
-import threading
 import time
 import unicodedata
 
@@ -61,6 +69,34 @@ HFA_KAPPA = 60.0      # a competition's home advantage leans on the global one w
 SWEEPS = 40           # fit sweeps: on two real seasons the largest rating moves 0.07 between 24 and 48, under 0.01 past 40
 MAX_GOALS = 10        # the scoreline grid; P(11+) is below 1e-5 at any fitted rate
 HEAVY_GAP = 5.0       # the owner's filter: underdog YES ask at least this far under the tie's
+# A Kalshi book is only READ when its three YES asks sum to this or less
+# (an overround of 15c). On 2026-10-16, 260 of 1,014 quoted soccer books were
+# placeholders -- typically 95c/95c/95c asks over 5c bids, no volume -- and the
+# first version read them: the "underdog" was whichever ask was a cent
+# lower (41 false heavy-underdog flags), edges were taken against a 95c NO
+# that no one was selling, and a 33/33/33 "fair" price went into the record as
+# the benchmark. The sums break cleanly: 739 books at 115c or less, 15
+# between 115c and 150c, the 260 above.
+MAX_BOOK = 115.0
+
+# ---- recent form and head-to-head ---------------------------------------------
+# research/soccer_form_validation.py, research/reports/soccer_form.md: the
+# rule was written before the run; each term ships at the weight 2024 chose
+# only if 2025 confirmed it on its own by two standard errors (and 2026 did
+# not contradict it). A weight of 0 still SHOWS the term on the card.
+# The 2026-10-17 run (58,183 predictions, weekly refits in production's
+# window): 2024 chose the short-memory blend (half-life 35 days) at 0.1 and NO
+# head-to-head; on 2025 the blend gained 0.00005 log loss per match against a
+# standard error of 0.00015, so it ships at 0. Every head-to-head weight made
+# 2024 worse (+0.0028 at 0.25, +0.0393 at 1.0), and the last-N-matches form
+# made it worse at every weight (+0.0003 to +0.016). The rating's own
+# 231-day half-life already carries what recent results say.
+FORM_KIND = "A"       # "A": a short-memory fit blended in; "B": the last N matches' residual
+FORM_PARAM = 0.02     # A: the short fit's xi; B: N
+W_FORM = 0.0          # 2024 chose 0.1; 2025 did not confirm it (research/reports/soccer_form.md)
+W_H2H = 0.0           # 2024 chose 0
+FORM_PRIOR = 2.0      # expected goals of prior in every residual: two lucky games are not form
+_LAST = 8             # matches kept per team in the artifact (the card shows five)
 
 # Years of results behind the fit. With XI = 0.003 a result two years old
 # weighs e^-2.2 = 11% of today's; the validation fitted on the same window.
@@ -113,19 +149,25 @@ _LINK_LEAGUES = ("uefa.champions", "uefa.europa", "uefa.europa.conf", "uefa.cham
                  "ger.dfb_pokal", "fra.coupe_de_france", "ned.cup", "por.taca.portugal",
                  "bra.copa_do_brazil", "usa.open", "sco.tennents",
                  "eng.4", "arg.3", "usa.usl.l1")
-# Competitions where the 2025 test found the model NO better than the league
-# base rate (research/reports/soccer_validation.md): knockout cups across
-# the tiers, where the side from the lower league is rated on its own
-# league's results and the tie is often played at a rotated strength. The
-# card says so; the price is still shown.
-_WEAK_COMPS = {"eng.fa", "eng.league_cup", "sco.tennents", "usa.open", "por.taca.portugal",
-               "fifa.friendly", "usa.usl.l1"}
+# Competitions where the model does worse than the league base rate, pooled
+# over every held-out week of 2024, 2025 and 2026 (n >= 100,
+# research/reports/soccer_form.md): only the Scottish Cup (+0.018 log loss
+# a match, 256 matches). The first version flagged seven cups off 2025 alone
+# -- an artifact of dropping the matches that went to extra time, which took
+# the cups' draws out of the benchmark as well as the fit. The card warns;
+# the price is still shown.
+_WEAK_COMPS = {"sco.tennents"}
 # Competitions whose home side is not at home: no home advantage is fitted or applied.
+# (NCAA men's soccer was on this list in the first version; college sides
+# play at home like anyone else, and ESPN's neutralSite flags the few that
+# do not.)
 _NEUTRAL = {"fifa.friendly", "club.friendly", "fifa.world", "caf.nations", "uefa.super_cup",
-            "esp.super_cup", "ita.super_cup", "usa.ncaa.m.1"}
+            "esp.super_cup", "ita.super_cup"}
 
 _SITE = "https://site.api.espn.com/apis/site/v2/sports/soccer"
-_ESPN_FINAL = {"STATUS_FULL_TIME", "STATUS_FINAL"}       # 90 minutes; AET/PEN results are cup extra time
+_ESPN_FINAL = {"STATUS_FULL_TIME", "STATUS_FINAL"}       # the score IS the 90-minute score
+_ESPN_EXTRA = {"STATUS_FINAL_AET", "STATUS_FINAL_PEN"}   # the score includes extra time
+_MINUTE_RE = re.compile(r"^(\d+)'")
 
 
 # ---- ESPN results ----------------------------------------------------------
@@ -133,65 +175,140 @@ def _espn(url, timeout=40):
     return racing._get_json(url, timeout=timeout)
 
 
+def _ninety(c, h, a, hg, ag):
+    """The 90-minute score of a match that went to extra time, rebuilt from
+    the goal events, or None when the events do not account for the final
+    score. A match that went to extra time was NOT always level at 90: a
+    second leg goes on when the AGGREGATE is level (PSV 3-1 Juventus AET,
+    2025, was 2-1 at 90), so the first version's choice -- drop every such
+    match -- took ~375 cup results a year out of the fit and the test, and
+    the other obvious choice -- call them all draws -- would have been wrong
+    on every second leg. ESPN writes stoppage as "90'+3'" and extra time as
+    "98'": regulation is a base minute of 90 or less. An own goal's `team`
+    is checked both ways against the final score."""
+    hid, aid = str(h["team"]["id"]), str(a["team"]["id"])
+    goals = []
+    for g in c.get("details") or []:
+        if not g.get("scoringPlay") or g.get("shootout"):
+            continue
+        m = _MINUTE_RE.match(str((g.get("clock") or {}).get("displayValue") or ""))
+        tid = str((g.get("team") or {}).get("id"))
+        if not m or tid not in (hid, aid):
+            return None
+        goals.append((int(m.group(1)), tid, bool(g.get("ownGoal"))))
+    for own_to_other in (False, True):
+        tot = {hid: 0, aid: 0}
+        reg = {hid: 0, aid: 0}
+        for minute, tid, og in goals:
+            to = (aid if tid == hid else hid) if (og and own_to_other) else tid
+            tot[to] += 1
+            if minute <= 90:
+                reg[to] += 1
+        if tot[hid] == hg and tot[aid] == ag:
+            return reg[hid], reg[aid]
+    return None
+
+
+def parse_scoreboard(d, slug):
+    """(rows, names) from one ESPN scoreboard payload: rows are the finished
+    matches as (date_ordinal, slug, home_id, away_id, home_goals_90,
+    away_goals_90, neutral), names {team_id: short name}. Kalshi settles on
+    90 minutes plus stoppage, so an extra-time result enters at its
+    90-minute score (_ninety) or not at all."""
+    rows, names = [], {}
+    for e in d.get("events") or []:
+        c = (e.get("competitions") or [{}])[0]
+        st = ((c.get("status") or {}).get("type") or {})
+        cs = c.get("competitors") or []
+        h = next((x for x in cs if x.get("homeAway") == "home"), None)
+        a = next((x for x in cs if x.get("homeAway") == "away"), None)
+        if not h or not a:
+            continue
+        for x in (h, a):
+            t = x.get("team") or {}
+            if t.get("id"):
+                names[str(t["id"])] = t.get("shortDisplayName") or t.get("displayName") or str(t["id"])
+        if st.get("state") != "post" or st.get("name") not in (_ESPN_FINAL | _ESPN_EXTRA):
+            continue
+        try:
+            hg, ag = int(h.get("score")), int(a.get("score"))
+            day = datetime.date.fromisoformat((e.get("date") or "")[:10]).toordinal()
+        except (TypeError, ValueError):
+            continue
+        if st.get("name") in _ESPN_EXTRA:
+            r = _ninety(c, h, a, hg, ag)
+            if r is None:
+                continue
+            hg, ag = r
+        rows.append((day, slug, str(h["team"]["id"]), str(a["team"]["id"]), hg, ag,
+                     bool(c.get("neutralSite")) or slug in _NEUTRAL))
+    return rows, names
+
+
 def results(slug, year):
-    """Finished matches of one ESPN league in one calendar year, as compact
-    tuples (date_ordinal, slug, home_id, away_id, home_goals, away_goals,
-    neutral). Cached 6h for the current year, a week for past years. Extra
-    time results are left out: Kalshi settles on 90 minutes."""
+    """(rows, names) for one ESPN league in one calendar year (parse_scoreboard).
+    Cached 6h for the current year, a week for past years."""
     cur = clock.today_et().year
 
     def build():
-        d = _espn(f"{_SITE}/{slug}/scoreboard?dates={year}&limit=1000")
-        out = []
-        for e in d.get("events") or []:
-            c = (e.get("competitions") or [{}])[0]
-            st = ((c.get("status") or {}).get("type") or {})
-            if st.get("state") != "post" or st.get("name") not in _ESPN_FINAL:
-                continue
-            cs = c.get("competitors") or []
-            h = next((x for x in cs if x.get("homeAway") == "home"), None)
-            a = next((x for x in cs if x.get("homeAway") == "away"), None)
-            if not h or not a:
-                continue
-            try:
-                hg, ag = int(h.get("score")), int(a.get("score"))
-                day = datetime.date.fromisoformat((e.get("date") or "")[:10]).toordinal()
-            except (TypeError, ValueError):
-                continue
-            out.append((day, slug, str(h["team"]["id"]), str(a["team"]["id"]), hg, ag,
-                        bool(c.get("neutralSite")) or slug in _NEUTRAL))
-        return out
+        return parse_scoreboard(_espn(f"{_SITE}/{slug}/scoreboard?dates={year}&limit=1000"), slug)
     ttl = 6 * 3600 if year >= cur else 7 * 24 * 3600
-    return racing._cached(("soccer_results", slug, year), ttl, build) or []
+    return racing._cached(("soccer_results", slug, year), ttl, build) or ([], {})
 
 
-def history(slugs, asof=None):
-    """Every finished match behind the fit: the given leagues plus the link
-    competitions, the last _FIT_YEARS calendar years. Fetched four at a
-    time; a league that fails is skipped (and ledgered), never the build."""
+def history(slugs, asof=None, workers=2):
+    """(rows, names): every finished match behind the fit -- the given
+    leagues plus the link competitions, the last _FIT_YEARS calendar years --
+    and {team_id: short name}. A past year is read from the deep store
+    (refetched when missing or a week old: late corrections); the current
+    year is fetched every refit. Two fetches at a time: a year file is 4-6
+    MB of JSON and ~20 MB once parsed, and this runs in a child beside the
+    web workers. A league that fails is skipped (and ledgered), never the
+    build. Runs in the refit child only (refit_main)."""
     import concurrent.futures as cf
+    import deep_cache
     asof = asof or clock.today_et()
     want = sorted(set(s for s in slugs if s) | set(_LINK_LEAGUES))
-    years = [asof.year - k for k in range(_FIT_YEARS)]
-    jobs = [(s, y) for s in want for y in years]
-    out = []
+    out, names = [], {}
 
-    def one(job):
+    def fetch(job):
         try:
-            return results(*job)
+            return job, parse_scoreboard(_espn(f"{_SITE}/{job[0]}/scoreboard?dates={job[1]}&limit=1000"), job[0])
         except Exception as e:
             errlog.note("SOC-results", e, path=f"{job[0]}/{job[1]}")
-            return []
-    with cf.ThreadPoolExecutor(max_workers=4) as ex:
-        for rows in ex.map(one, jobs):
-            out.extend(rows)
+            return job, None
+    for k in range(_FIT_YEARS):
+        year = asof.year - k
+        store, have = {}, {}
+        if year < asof.year:
+            have, _ts = deep_cache.load(f"soccer_rows_{year}")
+            have = have or {}
+            if (deep_cache.age(f"soccer_rows_{year}") or 1e9) > 7 * 24 * 3600:
+                have = {}
+        jobs = [(slug, year) for slug in want if slug not in have]
+        with cf.ThreadPoolExecutor(max_workers=workers) as ex:
+            for (slug, _y), got in ex.map(fetch, jobs):
+                if got is not None:
+                    have[slug] = got
+        for slug in want:
+            if slug in have:
+                rows, nm = have[slug]
+                out.extend(tuple(r) for r in rows)
+                names.update(nm)
+                store[slug] = have[slug]
+        if year < asof.year and jobs:
+            try:
+                deep_cache.save(f"soccer_rows_{year}", store)
+            except Exception as e:
+                errlog.note("SOC-rows-save", e)
     cutoff = asof.toordinal()
-    return [m for m in out if m[0] < cutoff]
+    return sorted(set(m for m in out if m[0] < cutoff)), names
 
 
 # ---- the Dixon-Coles fit (pure Python) -----------------------------------------
 def _empty():
-    return {"mu": 0.0, "att": {}, "dfn": {}, "hfa": {}, "hfa_global": 0.0, "league": {}, "n": 0}
+    return {"mu": 0.0, "att": {}, "dfn": {}, "hfa": {}, "hfa_global": 0.0, "league": {}, "n": 0,
+            "lmean": {"*": (0.0, 0.0)}}
 
 
 def fit(matches, asof_ord, xi=XI, kappa=KAPPA, hfa_kappa=HFA_KAPPA, sweeps=SWEEPS):
@@ -295,22 +412,37 @@ def fit(matches, asof_ord, xi=XI, kappa=KAPPA, hfa_kappa=HFA_KAPPA, sweeps=SWEEP
                 continue
             ex = HE[c] / n_c[c]
             hfa[c] = math.log((HG[c] + hfa_kappa * math.exp(hs) * ex) / (HE[c] + hfa_kappa * ex))
-    return {"mu": mu, "att": att, "dfn": dfn, "hfa": hfa, "hfa_global": hs,
-            "league": league, "n": len(rows)}
+    model = {"mu": mu, "att": att, "dfn": dfn, "hfa": hfa, "hfa_global": hs,
+             "league": league, "n": len(rows)}
+    model["lmean"] = league_means(model)
+    return model
+
+
+def league_means(model):
+    """{competition: (mean attack, mean defence)} plus "*" for everyone --
+    what an unknown team is rated at. Computed once per fit: rates() used to
+    rebuild the league index on every call, 2,454 teams for each of 650
+    matches a build."""
+    att, dfn = model["att"], model["dfn"]
+    acc = {}
+    for t, lg in model["league"].items():
+        s = acc.setdefault(lg, [0.0, 0.0, 0])
+        s[0] += att[t]; s[1] += dfn[t]; s[2] += 1
+    out = {lg: (v[0] / v[2], v[1] / v[2]) for lg, v in acc.items()}
+    out["*"] = ((sum(att.values()) / len(att), sum(dfn.values()) / len(dfn)) if att else (0.0, 0.0))
+    return out
 
 
 def rates(model, home, away, comp, neutral=False):
     """(lambda_home, lambda_away) for a match; an unknown team plays at its
     competition's -- failing that the global -- mean."""
-    att, dfn, league = model["att"], model["dfn"], model["league"]
-    la = {}
-    for t, lg in league.items():
-        la.setdefault(lg, []).append(t)
-    def mean(d, lg):
-        ts = la.get(lg) or []
-        return sum(d[t] for t in ts) / len(ts) if ts else (sum(d.values()) / len(d) if d else 0.0)
-    a_h = att.get(home, mean(att, comp)); d_h = dfn.get(home, mean(dfn, comp))
-    a_a = att.get(away, mean(att, comp)); d_a = dfn.get(away, mean(dfn, comp))
+    att, dfn = model["att"], model["dfn"]
+    lm = model.get("lmean")
+    if lm is None:
+        lm = model["lmean"] = league_means(model)
+    ma, md = lm.get(comp) or lm["*"]
+    a_h = att.get(home, ma); d_h = dfn.get(home, md)
+    a_a = att.get(away, ma); d_a = dfn.get(away, md)
     h = 0.0 if (neutral or comp in _NEUTRAL) else model["hfa"].get(comp, model.get("hfa_global", 0.0))
     return math.exp(model["mu"] + h + a_h - d_a), math.exp(model["mu"] + a_a - d_h)
 
@@ -400,6 +532,13 @@ def _fetch_series(series):
     return out
 
 
+# A series with no open markets is looked at again after an hour, not every
+# build: 70 of the 149 soccer GAME series were empty on 2026-10-16, and each
+# board build paid a Kalshi call for every one of them.
+_EMPTY_RECHECK = 3600
+_empty_series = {}
+
+
 def kalshi_events():
     """Every open soccer game event: {event_ticker: {series, date (the ET
     date in the ticker), home_code, away_code, markets: {code|'TIE':
@@ -409,12 +548,19 @@ def kalshi_events():
     def build():
         series = soccer_series()
         out = {}
+        now = time.time()
         for i, (ser, title) in enumerate(sorted(series.items())):
+            if now - _empty_series.get(ser, -1e18) < _EMPTY_RECHECK:
+                continue
             try:
                 ms = _fetch_series(ser)
             except Exception as e:
                 errlog.note("SOC-kalshi", e, path=ser)
                 continue
+            if not ms:
+                _empty_series[ser] = now
+                continue
+            _empty_series.pop(ser, None)
             for m in ms:
                 et = m.get("event_ticker") or ""
                 r = _EVT_RE.match(et)
@@ -659,22 +805,228 @@ def dk_fair(odds):
 
 # ---- the board ----------------------------------------------------------------
 _cache = {}
-_fit_lock = threading.Lock()
 
 
-def ratings(slugs):
-    """The fitted model for today's leagues, cached 6h."""
-    today = clock.today_et()
+def _recent_and_meetings(rows, model):
+    """({team: last _LAST matches, latest first}, {(lo, hi): every meeting,
+    latest first}) from the fit's own window, each match carrying the
+    current fit's expected goals at its venue: the residuals the form and
+    head-to-head terms read (exactly as research/soccer_form_validation.py
+    computes them)."""
+    recent, meetings = {}, {}
+    for m in reversed(rows):
+        day, comp, h, a, hg, ag, neu = m
+        lh, la = rates(model, h, a, comp, neu)
+        rec = (day, comp, h, a, hg, ag, round(lh, 4), round(la, 4), bool(neu))
+        for t in (h, a):
+            lst = recent.setdefault(t, [])
+            if len(lst) < _LAST:
+                lst.append(rec)
+        meetings.setdefault((min(h, a), max(h, a)), []).append(rec)
+    return recent, meetings
 
-    def build():
-        with _fit_lock:
-            hist = history(slugs, today)
-            t0 = time.time()
-            m = fit(hist, today.toordinal())
-            m["fit_s"] = round(time.time() - t0, 1)
-            m["asof"] = today.isoformat()
-            return m if m["n"] else None
-    return racing._cached(("soccer_fit", today.isoformat()), 6 * 3600, build)
+
+def form_residual(recent, team, n):
+    """(r_att, r_def) over the team's last n matches: log((goals + prior) /
+    (expected + prior)) and log((expected conceded + prior) / (conceded +
+    prior)). Positive is good on both."""
+    gf = ga = xf = xa = 0.0
+    for day, comp, h, a, hg, ag, lh, la, neu in (recent.get(team) or [])[:n]:
+        if h == team:
+            gf += hg; ga += ag; xf += lh; xa += la
+        else:
+            gf += ag; ga += hg; xf += la; xa += lh
+    return (math.log((gf + FORM_PRIOR) / (xf + FORM_PRIOR)),
+            math.log((xa + FORM_PRIOR) / (ga + FORM_PRIOR)))
+
+
+def h2h_residual(meetings, home, away):
+    """(r_home, r_away, n): each side's goals in the past meetings against
+    its expected goals under the current fit, log((goals + prior) /
+    (expected + prior)), any venue and competition in the window."""
+    gh = ga = xh = xa = 0.0
+    ms = meetings.get((min(home, away), max(home, away))) or []
+    for day, comp, h, a, hg, ag, lh, la, neu in ms:
+        if h == home:
+            gh += hg; ga += ag; xh += lh; xa += la
+        else:
+            gh += ag; ga += hg; xh += la; xa += lh
+    return (math.log((gh + FORM_PRIOR) / (xh + FORM_PRIOR)),
+            math.log((ga + FORM_PRIOR) / (xa + FORM_PRIOR)), len(ms))
+
+
+def build_artifact(slugs, asof=None):
+    """Everything the board prices with, refit every six hours in a child
+    (refit_main): the long fit, the short fit when the form term is the
+    blend, every team's last _LAST matches and every pair's meetings with
+    the fit's expected goals, and the team names."""
+    asof = asof or clock.today_et()
+    rows, names = history(slugs, asof)
+    t0 = time.time()
+    model = fit(rows, asof.toordinal())
+    short = (fit(rows, asof.toordinal(), xi=FORM_PARAM) if (FORM_KIND == "A" and W_FORM) else None)
+    recent, meetings = _recent_and_meetings(rows, model)
+    return {"asof": asof.isoformat(), "slugs": sorted(set(slugs)), "model": model, "short": short,
+            "recent": recent, "meetings": meetings, "names": names,
+            "n_rows": len(rows), "fit_s": round(time.time() - t0, 1)}
+
+
+def refit_main(params):
+    """The refit child's entry point: build and save the artifact. Niced,
+    out of the web worker -- ~200 ESPN year files and a fit is the kind of
+    work that took the instance down when it ran inline (CLAUDE.md)."""
+    import deep_cache
+    art = build_artifact(params.get("slugs") or [])
+    if art["model"]["n"]:
+        deep_cache.save(_ART_KEY, art)
+        return 0
+    return 1
+
+
+_ART_KEY = "soccer_model"
+_ART_TTL = 6 * 3600
+_art_mem = {"mtime": None, "art": None}
+_refit_try = [0.0]
+
+
+def _load_artifact():
+    import deep_cache
+    age = deep_cache.age(_ART_KEY)
+    if age is None:
+        return None, None
+    stamp = round(time.time() - age)
+    if _art_mem["mtime"] != stamp:
+        art, _ts = deep_cache.load(_ART_KEY)
+        _art_mem.update(mtime=stamp, art=art)
+    return _art_mem["art"], age
+
+
+def _refit_child(slugs):
+    """Run refit_main in a niced child under the app's one-heavy-build gate.
+    True when a fresh artifact was written."""
+    import deep_cache
+    import json as _json
+    import os
+    import subprocess
+    import sys
+    if not deep_cache.HEAVY_BUILD.acquire(timeout=900):
+        errlog.note("SOC-refit", msg="another heavy build held the gate for 15 min; refit skipped")
+        return False
+    try:
+        out = subprocess.run(
+            [sys.executable, "-c", "import os; os.nice(10)\n"
+             "import sys, json, soccer; sys.exit(soccer.refit_main(json.loads(sys.stdin.read())))"],
+            input=_json.dumps({"slugs": sorted(set(slugs))}).encode(),
+            cwd=os.path.dirname(os.path.abspath(__file__)), stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE, timeout=1200)
+        if out.returncode != 0:
+            errlog.note("SOC-refit", msg=f"child rc={out.returncode}: "
+                        + (out.stderr or b"").decode(errors="replace")[-300:])
+            return False
+        return True
+    except Exception as e:
+        errlog.note("SOC-refit", e)
+        return False
+    finally:
+        deep_cache.HEAVY_BUILD.release()
+
+
+def model_artifact(slugs):
+    """The artifact the board prices with: refit in a child when missing,
+    from a previous day, six hours old, or missing a league the board now
+    needs -- at most one attempt every 30 minutes. A failed refit keeps the
+    last good artifact (stale beats none); with none, the board shows the
+    price alone."""
+    art, age = _load_artifact()
+    today = clock.today_et().isoformat()
+    need = set(s for s in slugs if s)
+    stale = (art is None or art.get("asof") != today or age > _ART_TTL
+             or not need <= set(art.get("slugs") or []))
+    if stale and time.time() - _refit_try[0] > 1800:
+        _refit_try[0] = time.time()
+        if _refit_child(need):
+            art, age = _load_artifact()
+    return art
+
+
+def _wrap(model_or_art):
+    """An artifact, or a bare fit wrapped as one (no form, no meetings)."""
+    if model_or_art and "model" in model_or_art:
+        return model_or_art
+    return {"model": model_or_art or _empty(), "short": None, "recent": {}, "meetings": {}, "names": {}}
+
+
+def _probs(lh, la):
+    return outcome(grid(lh, la, RHO))
+
+
+def predict_match(art, home, away, comp, neutral=False):
+    """predict() plus the form and head-to-head terms at their shipped
+    weights, and what the card shows of both: each side's last five, the
+    past meetings, and how far each term moved the three outcomes."""
+    art = _wrap(art)
+    model = art["model"]
+    lh0, la0 = rates(model, home, away, comp, neutral)
+    llh, lla = math.log(lh0), math.log(la0)
+    base = _probs(lh0, la0)
+    recent, meetings, names = art.get("recent") or {}, art.get("meetings") or {}, art.get("names") or {}
+    # form
+    if FORM_KIND == "A":
+        sm = art.get("short")
+        if W_FORM and sm:
+            sh, sa = rates(sm, home, away, comp, neutral)
+            llh += W_FORM * (math.log(sh) - math.log(lh0))
+            lla += W_FORM * (math.log(sa) - math.log(la0))
+        fh = fa = None
+    else:
+        fh = form_residual(recent, home, FORM_PARAM)
+        fa = form_residual(recent, away, FORM_PARAM)
+        if W_FORM:
+            llh += W_FORM * (fh[0] - fa[1])
+            lla += W_FORM * (fa[0] - fh[1])
+    after_form = _probs(math.exp(llh), math.exp(lla))
+    # head-to-head
+    rh, ra, nm = h2h_residual(meetings, home, away)
+    if W_H2H and nm:
+        llh += W_H2H * rh
+        lla += W_H2H * ra
+    lh, la = math.exp(llh), math.exp(lla)
+    g = grid(lh, la, RHO)
+    ph, pd, pa = outcome(g)
+    top = sorted(g.items(), key=lambda kv: -kv[1])[:5]
+
+    def last5(team):
+        out = []
+        for day, c, h, a, hg, ag, xh, xa, neu in (recent.get(team) or [])[:5]:
+            home_side = h == team
+            gf, ga = (hg, ag) if home_side else (ag, hg)
+            out.append({"date": datetime.date.fromordinal(day).isoformat(), "comp": c,
+                        "opp": names.get(a if home_side else h, "?"), "venue": "N" if neu else ("H" if home_side else "A"),
+                        "gf": gf, "ga": ga, "res": "W" if gf > ga else "D" if gf == ga else "L"})
+        return out
+    mlist = []
+    for day, c, h, a, hg, ag, xh, xa, neu in (meetings.get((min(home, away), max(home, away))) or [])[:6]:
+        mlist.append({"date": datetime.date.fromordinal(day).isoformat(), "comp": c,
+                      "home": names.get(h, "?"), "away": names.get(a, "?"), "hg": hg, "ag": ag})
+
+    def moved(a_, b_):
+        return {"home": round(100 * (b_[0] - a_[0]), 1), "draw": round(100 * (b_[1] - a_[1]), 1),
+                "away": round(100 * (b_[2] - a_[2]), 1)}
+    return {"p_home": round(ph, 4), "p_draw": round(pd, 4), "p_away": round(pa, 4),
+            "exp_home": round(lh, 2), "exp_away": round(la, 2),
+            "over25": round(sum(p for (x, y), p in g.items() if x + y > 2.5), 3),
+            "btts": round(sum(p for (x, y), p in g.items() if x > 0 and y > 0), 3),
+            "scorelines": [{"score": f"{x}-{y}", "pct": round(100 * p, 1)} for (x, y), p in top],
+            "known": {"home": home in model["att"], "away": away in model["att"]},
+            "base": {"home": round(base[0], 4), "draw": round(base[1], 4), "away": round(base[2], 4)},
+            "form": {"weight": W_FORM, "kind": FORM_KIND, "n": FORM_PARAM if FORM_KIND == "B" else None,
+                     "home": last5(home), "away": last5(away),
+                     "r_home": [round(v, 3) for v in fh] if fh else None,
+                     "r_away": [round(v, 3) for v in fa] if fa else None,
+                     "moved": moved(base, after_form)},
+            "h2h": {"weight": W_H2H, "n": nm, "meetings": mlist,
+                    "r_home": round(rh, 3), "r_away": round(ra, 3),
+                    "moved": moved(after_form, (ph, pd, pa))}}
 
 
 def board():
@@ -688,7 +1040,8 @@ def _build_board():
     if not evs:
         return None
     slugs = sorted({ESPN_LEAGUE.get(e["series"]) for e in evs.values() if ESPN_LEAGUE.get(e["series"])})
-    model = ratings(slugs) or _empty()
+    art = model_artifact(slugs)
+    model = (art or {}).get("model") or _empty()
     dates = sorted({e["date"] for e in evs.values() if e.get("date")})
     by_date = {}
     for d in dates:
@@ -702,10 +1055,16 @@ def _build_board():
     slug_ids = _slug_ids(by_date)
     games, log_rows, dk_rows = [], [], []
     for ev in sorted(evs.values(), key=lambda e: (e.get("date") or "", e["event"])):
-        row = _game_row(ev, model, slug_ids, by_date)
+        row = _game_row(ev, art if art else model, slug_ids, by_date)
         if not row:
             continue
         games.append(row)
+        # Only a match that has not kicked off is logged: the price beside
+        # the prediction is the benchmark the record grades the model
+        # against, and a live price carries the match (CLAUDE.md: never let
+        # in-game information touch a number that claims to be pre-game).
+        if not row.get("pregame"):
+            continue
         for side in ("home", "draw", "away"):
             mk = row[side]["kalshi"]
             p = (row.get("model") or {}).get(f"p_{side}")
@@ -726,20 +1085,24 @@ def _build_board():
     n_heavy = sum(1 for g in games if g.get("heavy"))
     return {"built_ts": int(time.time()), "n_games": len(games), "n_model": n_model,
             "n_heavy": n_heavy, "games": games,
-            "fit": {"n": model.get("n"), "asof": model.get("asof"), "fit_s": model.get("fit_s"),
-                    "teams": len(model.get("att") or {}), "xi": XI, "kappa": KAPPA, "rho": RHO},
+            "fit": {"n": model.get("n"), "asof": (art or {}).get("asof"), "fit_s": (art or {}).get("fit_s"),
+                    "teams": len(model.get("att") or {}), "xi": XI, "kappa": KAPPA, "rho": RHO,
+                    "form": {"kind": FORM_KIND, "param": FORM_PARAM, "weight": W_FORM}, "h2h_weight": W_H2H},
             "leagues": sorted({g["league"] for g in games}),
             "heavy_gap": HEAVY_GAP,
-            # the 2025 out-of-sample calibration of the leg the card leads with
-            # (P the underdog does not win): read high by about a point and a
-            # half at the top, research/reports/soccer_validation.md
-            "calibration": {"no_dog": [{"pred": 0.667, "hit": 0.672, "n": 6123}, {"pred": 0.747, "hit": 0.751, "n": 8580},
-                                       {"pred": 0.842, "hit": 0.829, "n": 4453}, {"pred": 0.933, "hit": 0.916, "n": 1120}],
-                            "heavy": [{"pred": 0.765, "hit": 0.746, "n": 1422}, {"pred": 0.847, "hit": 0.831, "n": 2686},
-                                      {"pred": 0.926, "hit": 0.913, "n": 778}]},
+            # the out-of-sample calibration of the leg the card leads with
+            # (P the underdog does not win) on the heavy-underdog subset, 2025
+            # and 2026 to date, weekly refits (research/reports/soccer_form.md):
+            # about a point and a half high on 2025, under a point on 2026
+            "calibration": {"heavy": [{"pred": 0.765, "hit": 0.749, "n": 1633}, {"pred": 0.847, "hit": 0.832, "n": 2948},
+                                      {"pred": 0.927, "hit": 0.921, "n": 833}],
+                            "heavy_2026": [{"pred": 0.765, "hit": 0.755, "n": 1314}, {"pred": 0.846, "hit": 0.837, "n": 2392},
+                                           {"pred": 0.924, "hit": 0.936, "n": 612}]},
             "note": ("Every Kalshi soccer match. The model is a Dixon-Coles goals model: each "
                      "team's attack and defence from two years of results weighted to the "
                      "recent, a home advantage per competition, the exact scoreline grid. "
+                     "Recent form and head-to-head are shown on every card but carry no "
+                     "weight: neither improved held-out predictions. "
                      "NO on the underdog pays on the favourite's win and the tie.")}
 
 
@@ -768,7 +1131,11 @@ def _slug_ids(by_date):
     return racing._cached(("soccer_slug_ids",), 24 * 3600, build) or {}
 
 
-def _game_row(ev, model, slug_ids, by_date):
+def _game_row(ev, art, slug_ids, by_date, now=None):
+    """One card. `art` is the artifact (or a bare fit, wrapped). A match
+    ESPN shows as started or finished keeps its prices and the model's
+    pre-game figure but no edge: the model knows nothing of the match in
+    progress, and the live NO ask does."""
     mk = ev["markets"]
     hc, ac = ev.get("home_code"), ev.get("away_code")
     if not hc or not ac or "TIE" not in mk:
@@ -794,11 +1161,17 @@ def _game_row(ev, model, slug_ids, by_date):
            "espn": ({"id": e["id"], "home": e["h"]["name"], "away": e["a"]["name"],
                      "state": e["state"], "detail": e["detail"],
                      "home_score": e["h"].get("score"), "away_score": e["a"].get("score")} if e else None),
-           "fair": fair(mk, hc, ac), "dk": dk_fair(e["odds"]) if e else None}
+           "fair": None, "dk": dk_fair(e["odds"]) if e else None}
     # the underdog, by Kalshi's own ask (the owner's filter is in Kalshi terms)
     ha, aa, ta = hm.get("yes_ask"), am.get("yes_ask"), tm.get("yes_ask")
     quoted = all(v is not None and 0 < v < 100 for v in (ha, aa, ta))
-    row["quoted"] = quoted
+    row["book_sum"] = round(ha + aa + ta, 1) if quoted else None
+    readable = quoted and (ha + aa + ta) <= MAX_BOOK
+    row["readable"] = readable
+    if readable:
+        row["fair"] = fair(mk, hc, ac)
+    # a placeholder book is listed, never read: no underdog, no filter, no edge
+    row["quoted"] = quoted = readable
     if quoted:
         dog = "home" if ha < aa else "away"
         dog_ask = min(ha, aa)
@@ -809,8 +1182,16 @@ def _game_row(ev, model, slug_ids, by_date):
     else:
         row["dog"] = None
         row["heavy"] = False
+    now = time.time() if now is None else now
+    ko = None
+    if e and e.get("date"):
+        try:
+            ko = datetime.datetime.fromisoformat(e["date"].replace("Z", "+00:00")).timestamp()
+        except ValueError:
+            ko = None
+    row["pregame"] = bool(e and e.get("state") == "pre" and (ko is None or ko > now))
     if e and slug:
-        pred = predict(model, e["h"]["id"], e["a"]["id"], slug, neutral=e.get("neutral"))
+        pred = predict_match(art, e["h"]["id"], e["a"]["id"], slug, neutral=e.get("neutral"))
         pred["weak"] = slug in _WEAK_COMPS
         row["model"] = pred
     else:
@@ -826,7 +1207,9 @@ def _game_row(ev, model, slug_ids, by_date):
         if row["model"]:
             p_no = 1.0 - row["model"]["p_home" if row["dog"] == "home" else "p_away"]
             nd["model_pct"] = round(100 * p_no, 1)
-            if no_ask is not None and 0 < no_ask < 100:
+            if not row["pregame"]:
+                nd["live"] = True
+            elif no_ask is not None and 0 < no_ask < 100:
                 fee = kalshi.fee_for_market(dm.get("ticker"), no_ask)
                 nd["fee"] = round(fee, 2)
                 nd["edge"] = round(100 * p_no - no_ask - fee, 1)
