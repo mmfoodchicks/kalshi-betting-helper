@@ -1622,6 +1622,29 @@ def _register_deep_sims():
         import nba_deep_data
         return nba_deep_data.update(nba_deep_data.season_of(clock.today_et().isoformat()))
 
+    def run_pro_season(league):
+        """The NBA / NHL season through the real formats (pro_season_job):
+        the PC first, then one niced child under the heavy-build gate -- the
+        pair pricing is minutes of CPU, and nothing CPU-bound runs in a
+        gunicorn worker. A run whose schedule or ratings fail the quality
+        gate keeps the previous board. None outside the season window."""
+        def run():
+            import pro_sim
+            if not pro_sim.in_season(league):
+                return None
+            import jobs
+            import pro_season_job
+            key = f"{league}_season"
+            if _deep_pc_first(key):
+                return deep_cache.DEFERRED
+            with deep_cache.HEAVY_BUILD, jobs.timed(f"season:{league}"):
+                payload = pro_season_job.run_isolated(league)
+            if not pro_season_job.publishable(payload):
+                app.logger.warning("%s season run REJECTED: %s", league, (payload or {}).get("quality"))
+                return None
+            return payload
+        return run
+
     def run_model_trust():
         """Re-measure how far each sport's model may depart from the market, by
         replaying point-in-time history. Stores the fitted blend weights."""
@@ -1666,15 +1689,16 @@ def _register_deep_sims():
     deep_cache.register("nfl_deep", run_nfl_deep)
     deep_cache.register("nhl_deep", run_nhl_deep)
     deep_cache.register("nba_deep", run_nba_deep)
+    deep_cache.register("nba_season", run_pro_season("nba"))
+    deep_cache.register("nhl_season", run_pro_season("nhl"))
     deep_cache.register("cfb", run_cfb)
     deep_cache.register("model_trust", run_model_trust)
-    # Every pro-league season is played out game by game with its own engine
-    # (drive-level football, possession basketball, shot-event hockey). Each run
-    # returns None outside its own season window (pro_sim.SEASON_WINDOW) before
-    # fetching anything, so an out-of-season league costs a date comparison
-    # rather than a schedule pull and 4,000 simulated seasons.
-    for _lg in ("nfl", "nba", "nhl"):
-        deep_cache.register(_lg, run_pro(_lg))
+    # The NFL's roster-aware projection (pro_sim) still runs for /api/pro/nfl;
+    # it returns None outside its season window before fetching anything. The
+    # NBA and NHL are played through their real formats by nba_season /
+    # nhl_season above (pro_sim's 8-seed bracket had no play-in, no wildcards
+    # and its futures were matched to series Kalshi does not list).
+    deep_cache.register("nfl", run_pro("nfl"))
     # Restore the MLB deep run from disk so a restart doesn't lose it.
     _deep_refresh()
 
@@ -3208,15 +3232,93 @@ def api_racing_season(sport):
     return jsonify(data)
 
 
+# The latest NBA / NHL season runs, kept in-process behind the file's mtime
+# (the nightly saves in one worker or the PC uploads; every worker adopts it on
+# its next read), and the priced board for a minute.
+_pro_season = {}
+
+
+def _pro_season_payload(league):
+    import deep_cache
+    key = f"{league}_season"
+    try:
+        m = os.stat(deep_cache._path(key)).st_mtime
+    except OSError:
+        return None
+    hit = _pro_season.get(league)
+    if not hit or hit["mtime"] != m:
+        payload, _ts = deep_cache.load(key)
+        hit = {"mtime": m, "payload": payload if isinstance(payload, dict) and payload.get("n") else None,
+               "board": None, "board_at": 0}
+        _pro_season[league] = hit
+    return hit
+
+
+@app.route("/api/pro/season/<league>")
+def api_pro_season(league):
+    """NBA / NHL futures board (Featured tab): the season through the real
+    format, every Kalshi season market the run can price, YES and NO edges
+    net of the taker fee."""
+    import deep_cache
+    import pro_season_job
+    league = (league or "").lower()
+    if league not in ("nba", "nhl"):
+        return jsonify({"error": "unknown league"}), 404
+    hit = _pro_season_payload(league)
+    if not hit or not hit["payload"]:
+        st = deep_cache.status(f"{league}_season")
+        return jsonify({"error": f"The {league.upper()} season run has not finished yet - it runs nightly "
+                                 "(about ten minutes; the PC takes it when it is on).",
+                        "running": st.get("running")}), 202
+    if not hit["board"] or time.time() - hit["board_at"] > 60:
+        try:
+            hit["board"] = pro_season_job.futures_board(league, hit["payload"])
+            hit["board_at"] = time.time()
+        except Exception as e:
+            errlog.note("APP-pro-season-board", e)
+            return jsonify({"error": f"board failed: {e}"}), 502
+    b = dict(hit["board"])
+    b["age_sec"] = deep_cache.age(f"{league}_season")
+    return jsonify(b)
+
+
+@app.route("/api/pro/season/<league>/team")
+def api_pro_season_team(league):
+    import pro_season_job
+    league = (league or "").lower()
+    hit = _pro_season_payload(league) if league in ("nba", "nhl") else None
+    d = pro_season_job.team_detail(league, (hit or {}).get("payload"), request.args.get("abbr") or "")
+    return jsonify(d) if d else (jsonify({"error": "no simulated season for that team yet"}), 404)
+
+
+@app.route("/api/pro/season/<league>/status")
+def api_pro_season_status(league):
+    import deep_cache
+    league = (league or "").lower()
+    if league not in ("nba", "nhl"):
+        return jsonify({"error": "unknown league"}), 404
+    key = f"{league}_season"
+    st = deep_cache.status(key)
+    hit = _pro_season_payload(league)
+    _pp = deep_cache.pc_pending(key, max_age=_DEEP_PC_WAIT_S)
+    return jsonify({"running": st.get("running"), "ready": bool(hit and hit["payload"]),
+                    "age_sec": deep_cache.age(key), "last": deep_cache.run_state(key),
+                    "queued": key in deep_cache._json_read(deep_cache._RERUN_REQ),
+                    "pc_pending_s": round(time.time() - _pp) if _pp else None})
+
+
 @app.route("/api/pro/<league>")
 def api_pro_league(league):
-    """Roster-aware preseason futures projection (NFL now; NBA/NHL when their
-    schedules publish). Served from the weekly cache; live Kalshi prices + edges
-    attached per request. Returns a 'computing' status while a cold run warms up."""
+    """Roster-aware preseason futures projection for the NFL. The NBA and NHL
+    answer with their season board (/api/pro/season/<league>): the old
+    projection's cache would otherwise be served stale forever, and a cold
+    miss ran its 4,000 seasons inside a web worker."""
     import deep_cache
     import time as _t
     league = (league or "").lower()
-    if league not in ("nfl", "nba", "nhl"):
+    if league in ("nba", "nhl"):
+        return api_pro_season(league)
+    if league != "nfl":
         return jsonify({"error": "unknown league"}), 404
     data, ts = deep_cache.load(league)
     if data is None:
@@ -4338,7 +4440,8 @@ def api_model_trust():
 def api_sim_status():
     """Freshness + run state of each cached season sim."""
     import deep_cache
-    return jsonify({k: deep_cache.status(k) for k in ("mlb_deep", "f1", "nascar", "nfl_deep")})
+    return jsonify({k: deep_cache.status(k) for k in ("mlb_deep", "f1", "nascar", "nfl_deep",
+                                                      "nba_season", "nhl_season")})
 
 
 @app.route("/api/sim/rerun", methods=["POST"])
@@ -4352,7 +4455,8 @@ def api_sim_rerun():
     literal "I hit rerun now and nothing happens"."""
     import deep_cache
     key = {"mlb": "mlb_deep", "f1": "f1", "nascar": "nascar",
-           "nfl": "nfl", "nba": "nba", "nhl": "nhl", "nfl_deep": "nfl_deep"}.get(
+           "nfl": "nfl", "nba": "nba_season", "nhl": "nhl_season", "nfl_deep": "nfl_deep",
+           "nba_season": "nba_season", "nhl_season": "nhl_season"}.get(
         (request.args.get("sport") or "").lower())
     if not key:
         return jsonify({"error": "unknown sport"}), 400

@@ -213,17 +213,33 @@ for t in (50, 60, 70, 80):
                  and l.get("meets_target") is not False]
         print(f"    target {t}%: combined {c['combined_prob_pct']}% "
               f"legs {[l['prob_pct'] for l in c['legs']]}")
-# more legs can never raise the combined probability
+# more legs can never raise the combined probability -- where the builder
+# MAXIMISES it. A cross-game slip multiplies its legs, so it always holds
+# there. The one-game fallback (the same-game search, a World Series night)
+# has a target objective instead: among slips that clear the target it takes
+# the best payout, i.e. the LOWEST chance still at or above the target, so two
+# sizes that both clear 55% come out in either order (CI, 2026-10-17: 2 legs
+# 55.1%, 3 legs 55.3%, both correct). Its two laws: a bigger slip clearing
+# the target means the smaller one can too, and below the target an added
+# leg cannot raise the chance. A clean slip is preferred over a counteracting
+# one, so a size whose only slips are counteracting is a different pool.
 prev = None
 for n in (2, 3, 4, 5, 6):
     c = B.build_target_parlay(playable, n, 55)
     if not c:
         continue
     if prev is not None and c["n_legs"] > prev[0]:
-        ck(f"{prev[0]}->{c['n_legs']} legs: combined does not rise",
-           c["combined_prob_pct"] <= prev[1] + 1e-6,
-           f"{prev[1]} -> {c['combined_prob_pct']}")
-    prev = (c["n_legs"], c["combined_prob_pct"])
+        cp = c["combined_prob_pct"]
+        if c.get("same_game") and bool(c.get("counteracting")) != prev[2]:
+            ck(f"{prev[0]}->{c['n_legs']} legs: a clean and a counteracting same-game slip are different pools", True,
+               f"{prev[1]} -> {cp}")
+        elif c.get("same_game") and cp >= 55 - 1e-6:
+            ck(f"{prev[0]}->{c['n_legs']} legs: the bigger same-game slip clears the target, so the smaller one does",
+               prev[1] >= 55 - 1e-6, f"{prev[1]} -> {cp}")
+        else:
+            ck(f"{prev[0]}->{c['n_legs']} legs: combined does not rise", cp <= prev[1] + 1e-6,
+               f"{prev[1]} -> {cp}")
+    prev = (c["n_legs"], c["combined_prob_pct"], bool(c.get("counteracting")))
 # fair payout must move the opposite way from probability
 pairs = [(c["combined_prob_pct"], c["fair_payout_x"])
          for c in rows.values() if c]
@@ -7930,7 +7946,7 @@ ck("coherence + ump keep running on the server when the PC does the nightly",
 _pw23 = open(_os.path.join(_root, "pc_worker.py")).read()
 ck("the PC carries every offloadable nightly, with the exact server shapes",
    all(f'"{k}"' in _pw23 for k in ("mlb_deep", "f1", "nascar", "nfl_season",
-                                   "cfb", "nfl", "nba", "nhl"))
+                                   "cfb", "nfl", "nba_season", "nhl_season"))
    and '{"agg": agg, "season": season}' in _pw23
    and "career_frac" in _pw23,
    "mlb_deep is saved as the run_mlb wrapper and behind the same quality "
@@ -20348,6 +20364,257 @@ ck("last season as the prior: the rule chose on 2024-25 and the frozen 2025-26 t
    and "prior" not in _insp.getsource(_bk10.ratings).split('"""')[2]
    and "prior" not in _insp.getsource(_hk10.ratings).split('"""')[2]
    and "**not shipped**" in open(_os.path.join(_root, "research", "reports", "pro_prior.md")).read())
+
+# ---- 2026-10-17 the NBA / NHL seasons through their real formats ----
+print("=" * 72)
+print("NBA / NHL seasons: the formats and tiebreakers replayed on real seasons, the season job, the futures board")
+print("=" * 72)
+import math as _math10
+import random as _rnd11
+import pro_season as _PS11
+import pro_season_job as _J11
+import research.pro_format_check as _FC11
+_fx11 = {k: _json10.load(open(_os.path.join(_root, "research", "data", "fixtures", f"pro_season_{k}.json")))
+         for k in ("nhl_2023", "nba_2023", "nba_2024")}
+
+
+class _Boom11(_rnd11.Random):
+    def random(self):
+        raise RuntimeError("a real tie reached the coin flip")
+
+
+_rep11 = {k: _FC11.replay_fixture(v, _Boom11()) for k, v in _fx11.items()}
+ck("three real seasons replayed through pro_season give ESPN's final conference order place by place (the NBA's carried through "
+   "the real play-in) and the NHL's real first-round pairs -- and no real tie ever reached the coin flip",
+   all(not r[0] for r in _rep11.values()) and len(_fx11["nhl_2023"]["games"]) == 1312
+   and len(_fx11["nba_2023"]["games"]) == 1230 and len(_fx11["nba_2024"]["games"]) == 1230,
+   str({k: r[0] for k, r in _rep11.items()}))
+_T11 = _rep11["nhl_2023"][1]
+ck("NHL 2023-24: Washington and Detroit level on 91 points, Washington through on REGULATION wins (32 to 27) though Detroit had "
+   "more ROW (38 to 36) and more wins -- the order RW, ROW, W is what the fixture pins",
+   (_T11.pts["WSH"], _T11.pts["DET"], _T11.rw["WSH"], _T11.rw["DET"], _T11.row["DET"], _T11.row["WSH"]) == (91, 91, 32, 27, 38, 36)
+   and "WSH" in _rep11["nhl_2023"][2]["Eastern Conference"]["wc"] and "DET" not in _rep11["nhl_2023"][2]["Eastern Conference"]["wc"])
+_o11 = _PS11.nhl_order
+_PS11.nhl_order = lambda T, teams, rng: _PS11._sorted_with(teams, lambda t: (T.pct(t), T.pts[t], T.row[t], T.rw[t], T.w[t]),
+                                                          lambda g: _PS11._nhl_break(T, g, rng))
+_mut11 = _FC11.replay_fixture(_fx11["nhl_2023"])[0]
+_PS11.nhl_order = _o11
+_ob11 = _PS11._nba_break
+
+
+def _nodw11(T, grp, rng, dw, elig, oelig):
+    return _ob11(T, grp, rng, frozenset() if len(grp) > 2 else dw, elig, oelig)
+
+
+def _norestart11(T, grp, rng, dw, elig, oelig):
+    if len(grp) > 2:
+        return sorted(grp, key=lambda t: -_PS11._nba_wpct_among(T, t, grp))
+    return _ob11(T, grp, rng, dw, elig, oelig)
+
+
+_mutb11 = []
+for _f11 in (_nodw11, _norestart11):
+    _PS11._nba_break = _f11
+    _mutb11.append(len(_FC11.replay_fixture(_fx11["nba_2023"])[0]))
+    _PS11._nba_break = _ob11
+ck("and the fixtures would catch the rules being wrong: ROW before RW breaks NHL 2023-24; a three-way NBA tie without the "
+   "division-winner step, or without the restart, breaks NBA 2023-24 (Indiana / Orlando / Philadelphia at 47-35)",
+   len(_mut11) > 0 and all(m > 0 for m in _mutb11), str((_mut11, _mutb11)))
+_t11 = _PS11.Table("nhl", {"A": "E", "B": "E"}, {"A": "x", "B": "x"})
+_t11.add("A", "B", 3, 2, "OT")
+_t11.add("B", "A", 2, 1, "SO")
+ck("the head-to-head points table gives an overtime or shootout loser its point whichever side was at home (the first version "
+   "gave the away loser none)",
+   _t11.h2h[("B", "A")][1] == 1 + 2 and _t11.h2h[("A", "B")][1] == 2 + 1 and _t11.otl["A"] == 1 and _t11.otl["B"] == 1
+   and (_t11.rw["A"], _t11.row["A"], _t11.row["B"]) == (0, 1, 0))
+
+
+def _sb11(events):
+    return {"events": events}
+
+
+def _ev11(eid, date, home, away, hs, as_, period, stype=2, ctype="STD", done=True):
+    return {"id": eid, "date": date, "season": {"type": stype},
+            "competitions": [{"type": {"abbreviation": ctype},
+                              "status": {"period": period, "type": {"completed": done}},
+                              "competitors": [{"homeAway": "home", "team": {"abbreviation": home}, "score": str(hs)},
+                                              {"homeAway": "away", "team": {"abbreviation": away}, "score": str(as_)}]}]}
+
+
+_feed11 = {"202510": [_ev11("1", "2025-10-08T23:00Z", "A", "B", 3, 2, 4), _ev11("2", "2025-10-09T23:00Z", "B", "A", 4, 3, 5),
+                      _ev11("3", "2025-10-10T23:00Z", "A", "B", 0, 0, 0, done=False),
+                      _ev11("4", "2025-10-01T23:00Z", "A", "B", 5, 1, 3, stype=1)],
+           "202512": [_ev11("5", "2025-12-17T01:30Z", "A", "B", 124, 113, 4, ctype="CC")]}
+_g11 = _PS11.espn_games("nhl", 2026, get=lambda url, timeout=30: _sb11(_feed11.get(url.split("dates=")[1][:6], [])))
+ck("ESPN's monthly scoreboards: overtime from period 4, the shootout from period 5, the preseason and the NBA Cup final "
+   "(competition type CC, the one Cup game outside the standings) left out, an unplayed game kept as not final",
+   [(g["id"], g["kind"], g["final"]) for g in _g11] == [("1", "OT", True), ("2", "SO", True), ("3", "REG", False)],
+   str([(g["id"], g["kind"], g["final"]) for g in _g11]))
+_al11 = _fx11["nba_2024"]
+_tm11 = sorted(_al11["conf"])
+_base11 = _PS11.Table("nba", _al11["conf"], _al11["div"])
+_pairs11 = {(h, a): 0.55 for h in _tm11 for a in _tm11 if h != a}
+_rem11 = sorted(_pairs11)                          # every ordered pair once: 58 games a club
+_r0 = _PS11.simulate(_base11, _rem11, _pairs11, 300, seed=5)
+_r0b = _PS11.simulate(_base11, _rem11, _pairs11, 300, seed=5, noise=None)
+_rn = _PS11.simulate(_base11, _rem11, _pairs11, 300, seed=5, noise={t: 0.6 for t in _tm11})
+_sd11 = lambda r: (sum((w - 29) ** 2 * c for t in _tm11 for w, c in r["hist"][t].items()) / (30 * 300)) ** 0.5
+_sh11 = _PS11._shifted("nhl", (0.4, 0.12, 0.11, 0.32), 0.5)
+ck("the season Monte Carlo: no noise is the fixed-probability season to the draw, a per-season strength draw widens every club's "
+   "wins, and the NHL shift moves the win while keeping the shootout share and a full probability",
+   _r0["hist"] == _r0b["hist"] and _sd11(_rn) > 1.2 * _sd11(_r0)
+   and abs(_sh11[0] + _sh11[1] - 1 / (1 + _math10.exp(-(_math10.log(0.52 / 0.48) + 0.5)))) < 1e-9 and _sh11[3] == 0.32
+   and 0 < 1 - sum(_sh11[:3]) < 1, str((_sd11(_r0), _sd11(_rn), _sh11)))
+ck("the season's length: 84 games a club in the NHL from 2026-27 (ESPN's schedule: 1,344 games, 84 for all 32), 82 before and "
+   "in the NBA -- a schedule that is not that length fails the job's quality gate",
+   _J11.games_per_club("nhl", 2027) == 84 and _J11.games_per_club("nhl", 2026) == 82 and _J11.games_per_club("nba", 2027) == 82
+   and "if league == \"nhl\" and any(k != G for k in sched.values()):" in _insp.getsource(_J11.run))
+_conf11 = {"UTAH": "W", "WSH": "E", "GS": "W", "OKC": "W"}
+_mk11 = {"KXNBAWINS": [{"ticker": "KXNBAWINS-27UTA-60", "event": "KXNBAWINS-27UTA", "yes_ask": 12.0, "yes_bid": 8.0, "no_ask": 92.0},
+                       {"ticker": "KXNBAWINS-27OKC-65", "event": "KXNBAWINS-27OKC", "yes_ask": 99.0, "yes_bid": 0.0, "no_ask": 100.0}],
+         "KXNBASEEDOU": [{"ticker": "KXNBASEEDOU-27-WAS10", "event": "KXNBASEEDOU-27", "yes_ask": 57.0, "yes_bid": 56.0, "no_ask": 44.0}],
+         "KXNBASEED": [{"ticker": "KXNBASEED-27WEST8-GSW", "event": "KXNBASEED-27WEST8", "yes_ask": 17.0, "yes_bid": 14.0, "no_ask": 86.0}],
+         "KXNBARECORD": [{"ticker": "KXNBARECORD-27WORST-WAS", "event": "KXNBARECORD-27WORST", "yes_ask": 3.0, "yes_bid": 2.0, "no_ask": 98.0}],
+         "KXNBAMOSTWINS": [{"ticker": "KXNBAMOSTWINS-27-65", "event": "KXNBAMOSTWINS-27", "yes_ask": 31.0, "yes_bid": 22.0, "no_ask": 78.0}]}
+_osm11 = _J11._series_markets
+_J11._series_markets = lambda st: list(_mk11.get(st, []))
+try:
+    _px11 = _J11.prices("nba", _conf11)
+finally:
+    _J11._series_markets = _osm11
+_conf11h = {"UTA": "W"}
+_J11._series_markets = lambda st: [{"ticker": "KXNHL-27-UTA", "event": "KXNHL-27", "yes_ask": 4.0, "yes_bid": 3.0, "no_ask": 97.0}] if st == "KXNHL" else []
+try:
+    _pxh11 = _J11.prices("nhl", _conf11h)
+finally:
+    _J11._series_markets = _osm11
+ck("Kalshi's tickers name the club: the last segment (WINS in the event, SEEDOU before the seed), Kalshi's codes mapped to ESPN's "
+   "(WAS -> WSH, GSW -> GS, the NBA's UTA -> UTAH) only when the code is not itself a club this season (the NHL's Utah is UTA on both "
+   "in 2026-27), and a mid read only off a two-sided book within 10c (a 0c bid under 99c is no 49.5%)",
+   _px11["win_60"]["UTAH"]["mid"] == 10.0 and _px11["win_65"]["OKC"]["mid"] is None
+   and _px11["seedou_10"]["WSH"]["cents"] == 57.0 and _px11["seed_west_8"]["GS"]["cents"] == 17.0
+   and _px11["worst"]["WSH"]["cents"] == 3.0 and _px11["mostwins_65"]["any"]["cents"] == 31.0
+   and _pxh11["champ"]["UTA"]["cents"] == 4.0 and _pxh11["_unmatched"] == 0, str((_px11, _pxh11)))
+# a ladder off a known distribution: wins ~ N(50, 8), rungs every 5
+_lad11 = {L: 0.5 * _math10.erfc((L - 0.5 - 50) / (8 * 2 ** 0.5)) for L in range(20, 75, 5)}
+_mo11 = _J11.ladder_moments(_lad11)
+ck("a win-total ladder's centre and width come back from its rungs (a N(50, 8) ladder at every fifth win: median within half a "
+   "win, the IQR's SD within a win)", abs(_mo11[0] - 50) < 0.6 and abs(_mo11[1] - 8) < 1.0, str(_mo11))
+_bA = _PS11.Table("nba", _al11["conf"], _al11["div"])
+_lev11 = {t: (18.0 + 22.0 * i / 29, 6.0, 18.0 + 22.0 * i / 29) for i, t in enumerate(_tm11)}
+_offA, _sdA, _prA = _J11.anchor(dict(_pairs11), _bA, _rem11, {}, _lev11)
+_simA = _PS11.simulate(_bA, _rem11, _prA, 1500, seed=3, noise=_sdA)
+_ewA = {t: _simA["tally"][t]["w"] / 1500 for t in _tm11}
+ck("the NBA anchor: logit offsets and per-club strength SDs that give each club its ladder's centre back from the simulated "
+   "season itself, matched UNDER the strength draw (averaging over it pulls every club toward .500)",
+   max(abs(_ewA[t] - _lev11[t][0]) for t in _tm11) < 1.0 and all(0 < _sdA[t] <= 0.8 for t in _tm11),
+   str((max(abs(_ewA[t] - _lev11[t][0]) for t in _tm11), sorted(_sdA.values())[:3])))
+_pay11 = {"n": 100, "conf": {"A": "Eastern Conference", "B": "Eastern Conference"}, "div": {"A": "Atlantic Division", "B": "Atlantic Division"},
+          "names": {"A": "Alpha", "B": "Beta"}, "record": {"A": {"w": 1, "l": 0}, "B": {"w": 0, "l": 1}},
+          "tally": {"A": {"champ": 30, "w": 5000, "final": 40}, "B": {"champ": 10, "w": 3000}},
+          "seed_hist": {"A": {1: 60, 2: 40}, "B": {1: 40, 2: 50, 11: 10}}, "fseed_hist": {"B": {8: 20}},
+          "hist": {"A": {50: 50, 60: 50}, "B": {30: 100}}, "max_w": {60: 70, 50: 30}, "remaining": [], "model": {"model": "x"}}
+_bd11 = _J11.futures_board("nba", _pay11, {"champ": {"A": {"cents": 25.0, "no_cents": 77.0, "spread": 2.0, "ticker": None}},
+                                           "seedou_1": {}, "win_60": {}, "mostwins_55": {}, "seed_east_8": {}, "_unmatched": 0})
+_rows11 = {k: {r["abbr"]: r for r in v["teams"]} for k, v in _bd11["markets"].items()}
+_bdA11 = _J11.futures_board("nba", dict(_pay11, model={"model": "x", "anchor": {"offsets": {}, "market": {}}}),
+                            {"win_60": {"A": {"cents": 40.0, "no_cents": 62.0, "spread": 2.0, "ticker": None}},
+                             "champ": {"A": {"cents": 25.0, "no_cents": 77.0, "spread": 2.0, "ticker": None}}, "_unmatched": 0})
+_early11 = _J11.futures_board("nhl", dict(_pay11, record={"A": {"w": 3, "l": 3, "otl": 1}, "B": {"w": 4, "l": 2, "otl": 1}}),
+                              {"_unmatched": 0})
+_late11 = _J11.futures_board("nhl", dict(_pay11, record={"A": {"w": 6, "l": 5, "otl": 1}, "B": {"w": 7, "l": 4, "otl": 1}}),
+                             {"_unmatched": 0})
+ck("a board built before the median club has played the backtest's earliest-cut games (10) says the figures are untested there "
+   "and lean NO on favourites by construction (the NHL on 2026-10-17, 7 games: 80-87% playoff odds against Kalshi's 91-97%)",
+   _early11["early"] is True and "EARLY SEASON" in _early11["skill"] and "untested" in _early11["skill"]
+   and _late11["early"] is False and "EARLY SEASON" not in (_late11["skill"] or "") and _J11.EARLIEST_CUT_GAMES == 10)
+ck("on the anchored NBA board the win-total ladder -- the fit's own input -- is shown but never edged; every other market is",
+   all(r["edge"] is None and r["edge_no"] is None for r in _bdA11["markets"]["win_60"]["teams"])
+   and _bdA11["markets"]["win_60"]["fitted"] is True
+   and next(r for r in _bdA11["markets"]["champ"]["teams"] if r["abbr"] == "A")["edge"] is not None)
+ck("the board's figures are the run's tallies -- seed-or-better cumulative on the regular-season place, N+ wins on the season "
+   "histogram, the exact 8 seed on the post-play-in one, any-club N+ wins on the league's most -- and an edge is NET of Kalshi's "
+   "fee on each side",
+   _rows11["seedou_1"]["A"]["model_pct"] == 60.0 and _rows11["win_60"]["A"]["model_pct"] == 50.0
+   and _rows11["seed_east_8"]["B"]["model_pct"] == 20.0 and _rows11["mostwins_55"][None]["model_pct"] == 70.0
+   and _rows11["champ"]["A"]["edge"] == round(30.0 - 25.0 - __import__("kalshi").fee_for_market(None, 25.0), 1)
+   and _rows11["champ"]["A"]["edge_no"] == round(70.0 - 77.0 - __import__("kalshi").fee_for_market(None, 77.0), 1),
+   str({k: {a: (r["model_pct"], r["edge"], r["edge_no"]) for a, r in v.items()} for k, v in _rows11.items()}))
+_app11 = open(_os.path.join(_root, "app.py")).read()
+_pjs11 = _insp.getsource(_J11.run_isolated)
+ck("the season job: the PC first, else one niced child under the heavy-build gate, the quality gate before anything is "
+   "published; the old pro_sim NBA / NHL jobs are gone and their routes answer with the season board",
+   'deep_cache.register("nba_season", run_pro_season("nba"))' in _app11 and 'deep_cache.register("nhl_season", run_pro_season("nhl"))' in _app11
+   and 'if _deep_pc_first(key):' in _app11 and "payload = pro_season_job.run_isolated(league)" in _app11
+   and "with deep_cache.HEAVY_BUILD, jobs.timed(f\"season:{league}\"):" in _app11
+   and 'deep_cache.register("nfl", run_pro("nfl"))' in _app11 and 'for _lg in ("nfl", "nba", "nhl")' not in _app11
+   and "if league in (\"nba\", \"nhl\"):\n        return api_pro_season(league)" in _app11
+   and "os.nice(10)" in _pjs11 and "stdout=subprocess.DEVNULL" in _pjs11)
+import mfutures as _mf11
+ck("the cross-sport futures board reads the NBA / NHL season run's cached board, never a simulation in-process",
+   'deep_cache.load(f"{sport}_season")' in _insp.getsource(_mf11._collect_pro) and "import pro_sim" not in _insp.getsource(_mf11._collect_pro)
+   and ("nba", "playin") in _mf11._SERIES_FOR and ("nhl", "best") in _mf11._SERIES_FOR)
+_js11 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the Featured tab carries NBA and NHL: the board, the team view, the run's status, the rerun mapped to the season jobs",
+   "data-fsport=\"nba\"" in open(_os.path.join(_root, "templates", "index.html")).read()
+   and "fetch(`/api/pro/season/${sport}`" in _js11 and "/api/pro/season/${proLg}/team?abbr=" in _js11
+   and "/api/pro/season/${_featSport}/status" in _js11 and 'nba: "nba_season", nhl: "nhl_season"' in _js11
+   and '"nba": "nba_season", "nhl": "nhl_season"' in _app11)
+
+
+def _fake_ut11(url, timeout=12):
+    # ESPN 2026-10-17: /teams spells Utah's Mammoth UTAH; the standings, the
+    # scoreboard and the skater feed say UTA, under the same team id
+    if url.endswith("/teams"):
+        return {"sports": [{"leagues": [{"teams": [{"team": {"id": "129764", "abbreviation": "UTAH", "displayName": "Utah Mammoth",
+                                                             "location": "utah", "name": "mammoth"}},
+                                                   {"team": {"id": "6", "abbreviation": "EDM", "displayName": "Edmonton Oilers",
+                                                             "location": "edmonton", "name": "oilers"}}]}]}]}
+    if "/standings" in url:
+        return {"children": [{"standings": {"entries": [
+            {"team": {"id": tid, "abbreviation": ab},
+             "stats": [{"name": "wins", "value": 3}, {"name": "losses", "value": 2}, {"name": "gamesPlayed", "value": 6},
+                       {"name": "pointsFor", "value": 19}, {"name": "pointsAgainst", "value": 16}]}
+            for tid, ab in (("129764", "UTA"), ("6", "EDM"))]}}]}
+    return {}
+
+
+_ut_keys11 = [("nhl_ratings",), ("nhl_teams",)]
+try:
+    for _k in _ut_keys11:
+        _rc10._form_cache.pop(_k, None)
+    _rc10._get_json = _fake_ut11
+    _hut11 = _hk10.ratings()
+    _mut11b = _hk10._meta("UTA")
+finally:
+    _rc10._get_json = _orig10
+    for _k in _ut_keys11:
+        _rc10._form_cache.pop(_k, None)
+ck("the NHL board keys a club by the scoreboard's spelling, not /teams': Utah is UTA in the ratings (keyed UTAH, every Utah game "
+   "fell off the board and found no Kalshi line), and its /teams record is reached through the shared team id",
+   "UTA" in _hut11 and "UTAH" not in _hut11 and (_mut11b or {}).get("name") == "Utah Mammoth",
+   str((sorted(_hut11), _mut11b)))
+
+_bt11 = {lg: _json10.load(open(_os.path.join(_root, "research", "data", f"pro_season_backtest_{lg}.json"))) for lg in ("nba", "nhl")}
+import research.pro_season_backtest as _BT11
+_btsrc11 = _insp.getsource(_BT11)
+ck("the per-season strength uncertainty is the backtest's: chosen on 2024-25, kept on 2025-26 because it was no worse than none "
+   "(NBA 0.06068 vs 0.06340, NHL 0.06036 vs 0.06053), shipped as pro_season_job.TAU; sd = TAU x sqrt(K/(K+g)) with K the "
+   "board's own regression constant",
+   all(_bt11[lg]["chosen"] == _bt11[lg]["ship"] == _J11.TAU[lg] == 0.45 for lg in ("nba", "nhl"))
+   and _bt11["nba"]["test"]["score"]["tau"]["0.45"]["score"] == 0.06068 and _bt11["nba"]["test"]["score"]["tau"]["0"]["score"] == 0.0634
+   and _bt11["nhl"]["test"]["score"]["tau"]["0.45"]["score"] == 0.06036 and _bt11["nhl"]["test"]["score"]["tau"]["0"]["score"] == 0.06053
+   and "THE RULE (written before any number below was computed)" in _btsrc11
+   and "ship = chosen if c_ <= z_ else 0.0" in _btsrc11
+   and "tau * math.sqrt(K[league] / (K[league] + games_now[t]))" in _btsrc11
+   and "tau * math.sqrt(K_REG[league] / (K_REG[league] + base.gp(t)))" in _insp.getsource(_J11.run)
+   and _J11.K_REG == {"nba": 12.0, "nhl": 10.0} and _bk10.LEAGUES["nba"]["regress_g"] == 12.0 and _hk10._REGRESS_G == 10.0)
+ck("and what the season figures are worth is printed beside them: the NHL's Cup figure no better than the base rate (0.0300 vs "
+   "0.0303), the NBA model's champion figure worse (0.0348 vs 0.0322)",
+   _bt11["nhl"]["test"]["score"]["tau"]["0.45"]["events"]["champ"] == 0.02997 and _bt11["nhl"]["test"]["score"]["base_rate"]["champ"] == 0.03027
+   and _bt11["nba"]["test"]["score"]["tau"]["0.45"]["events"]["champ"] == 0.03482 and _bt11["nba"]["test"]["score"]["base_rate"]["champ"] == 0.03222
+   and "0.0300 against the base rate's 0.0303" in _J11.SKILL["nhl"] and "0.0348 against 0.0322" in _J11.SKILL["nba"]
+   and "${escapeHtml(d.skill)}" in _js11)
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

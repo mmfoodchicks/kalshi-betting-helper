@@ -112,7 +112,11 @@ def ratings():
             for e in grp.get("standings", {}).get("entries", []):
                 st = {s["name"]: s.get("value") for s in e.get("stats", [])}
                 tid = e["team"]["id"]
-                ab = (by_id.get(tid) or {}).get("abbr") or e["team"].get("abbreviation")
+                # the standings' own spelling, which the scoreboard shares: ESPN's
+                # /teams calls Utah's Mammoth UTAH while the standings, the
+                # scoreboard and the skater feed say UTA (2026-10-17), and keyed
+                # the /teams way every Utah game dropped off the board
+                ab = e["team"].get("abbreviation") or (by_id.get(tid) or {}).get("abbr")
                 w, l = int(st.get("wins") or 0), int(st.get("losses") or 0)
                 g = int(st.get("gamesPlayed") or 0)
                 gf = st.get("pointsFor") or 0            # ESPN generic name = goals
@@ -285,9 +289,20 @@ def _city_match(city, meta):
                            or (meta["nick"] and meta["nick"] in city))
 
 
-def game_markets(home_ab, away_ab):
+def _meta(ab):
+    """A club's /teams record by the scoreboard's abbreviation, through the
+    ESPN team id when the two spell it differently (Utah: UTA / UTAH)."""
     tmap = teams()
-    hm, am = tmap.get(home_ab), tmap.get(away_ab)
+    if ab in tmap:
+        return tmap[ab]
+    r = ratings().get(ab)
+    if r and r.get("id"):
+        return next((v for v in tmap.values() if v.get("id") == r["id"]), None)
+    return None
+
+
+def game_markets(home_ab, away_ab):
+    hm, am = _meta(home_ab), _meta(away_ab)
     if not hm or not am:
         return None
     for suf, e in _kalshi_index().items():

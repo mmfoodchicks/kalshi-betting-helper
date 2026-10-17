@@ -1,0 +1,185 @@
+[
+ {
+  "season": 2023,
+  "games": 1315,
+  "ok": true,
+  "fails": [],
+  "summary": {
+   "Eastern Conference": {
+    "div": {
+     "Atlantic Division": [
+      "FLA",
+      "BOS",
+      "TOR"
+     ],
+     "Metropolitan Division": [
+      "NYR",
+      "CAR",
+      "NYI"
+     ]
+    },
+    "wc": [
+     "TB",
+     "WSH"
+    ]
+   },
+   "Western Conference": {
+    "div": {
+     "Central Division": [
+      "DAL",
+      "WPG",
+      "COL"
+     ],
+     "Pacific Division": [
+      "VAN",
+      "EDM",
+      "LA"
+     ]
+    },
+    "wc": [
+     "NSH",
+     "VGK"
+    ]
+   }
+  },
+  "ties": [
+   [
+    "DET",
+    "WSH"
+   ],
+   [
+    "LA",
+    "NSH"
+   ],
+   [
+    "CGY",
+    "SEA"
+   ]
+  ]
+ },
+ {
+  "season": 2024,
+  "games": 1319,
+  "ok": true,
+  "fails": [],
+  "summary": {
+   "Eastern Conference": {
+    "div": {
+     "Atlantic Division": [
+      "TOR",
+      "TB",
+      "FLA"
+     ],
+     "Metropolitan Division": [
+      "WSH",
+      "CAR",
+      "NJ"
+     ]
+    },
+    "wc": [
+     "OTT",
+     "MTL"
+    ]
+   },
+   "Western Conference": {
+    "div": {
+     "Central Division": [
+      "WPG",
+      "DAL",
+      "COL"
+     ],
+     "Pacific Division": [
+      "VGK",
+      "LA",
+      "EDM"
+     ]
+    },
+    "wc": [
+     "MIN",
+     "STL"
+    ]
+   }
+  },
+  "ties": [
+   [
+    "MTL",
+    "NJ"
+   ],
+   [
+    "BOS",
+    "PHI"
+   ],
+   [
+    "CGY",
+    "STL"
+   ]
+  ]
+ },
+ {
+  "season": 2025,
+  "games": 1312,
+  "ok": true,
+  "fails": [],
+  "summary": {
+   "Eastern Conference": {
+    "div": {
+     "Atlantic Division": [
+      "BUF",
+      "TB",
+      "MTL"
+     ],
+     "Metropolitan Division": [
+      "CAR",
+      "PIT",
+      "PHI"
+     ]
+    },
+    "wc": [
+     "BOS",
+     "OTT"
+    ]
+   },
+   "Western Conference": {
+    "div": {
+     "Central Division": [
+      "COL",
+      "DAL",
+      "MIN"
+     ],
+     "Pacific Division": [
+      "VGK",
+      "EDM",
+      "ANA"
+     ]
+    },
+    "wc": [
+     "UTA",
+     "LA"
+    ]
+   }
+  },
+  "ties": [
+   [
+    "MTL",
+    "TB"
+   ],
+   [
+    "CBJ",
+    "DET"
+   ],
+   [
+    "PHI",
+    "PIT"
+   ],
+   [
+    "ANA",
+    "UTA"
+   ],
+   [
+    "NSH",
+    "SJ",
+    "STL"
+   ]
+  ]
+ }
+]

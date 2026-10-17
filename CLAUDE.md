@@ -234,6 +234,33 @@ data-only `sim-history` branch (which never deploys):
   form did not confirm and every head-to-head weight made predictions worse.
   The card shows both as information; a weight is a change to judge on new
   seasons, not to set by hand.
+- **The NBA / NHL seasons** (2026-10-17, `pro_season.py` rules + Monte
+  Carlo, `pro_season_job.py` the job and the board): NHL three per division +
+  two wildcards, the division bracket, points then RW, ROW, W, head-to-head,
+  goal difference; NBA top six, the 7-10 play-in, two-club and multi-club
+  tiebreakers with the restart. Replaying every real result of 2023-24 to
+  2025-26 reproduces ESPN's final conference order place by place and the
+  NHL's real first-round pairs (`research/pro_format_check.py`; three
+  committed fixtures replay offline in the guards). **ESPN's NBA
+  `playoffSeed` is POST-play-in** (the two clubs knocked out keep their
+  regular-season order). Results and schedule come from ESPN's MONTHLY
+  scoreboards (`espn_games`; a date range answers 400, a year stops at 1,000
+  events); the NBA Cup final (competition type CC) is the one Cup game outside
+  the standings. **The NHL plays 84 games a club from 2026-27**
+  (`games_per_club`). Each ordered pair is priced at the board's validated
+  probability (NBA production, calibrated; NHL 0.5 production + 0.5 deep
+  engine, whose games give the overtime/shootout split); 10,000 seasons from
+  the real standings in a niced child (`run_isolated`, HEAVY_BUILD, PC-first;
+  deep jobs `nba_season` / `nhl_season`). **The NBA's level is Kalshi's
+  win-total ladder** (median and IQR of books within 10c: a dead book's "mid"
+  read Portland 65+ wins at 49.5%), each club's strength SD from its ladder's
+  width; the NHL draws each club's strength every season with SD
+  TAU x sqrt(K/(K+g)), TAU chosen by `research/pro_season_backtest.py`. The
+  board prices the series Kalshi actually lists (`SERIES`; Kalshi's
+  WAS/GSW/NOP/NYK/SAS/UTA map to ESPN's codes only when the code is not
+  itself a club that season), edges net of fee on YES and NO. ESPN's bare
+  `/standings` serves the PRESEASON until opening night: both boards read
+  `seasontype=2`. Report: `research/reports/pro_seasons.md`.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 

@@ -442,6 +442,22 @@ def _task_deep(url, tok):
         done = model_trust.refresh(quick=False)
         print(f"[vigil-pc] deep model_trust: fitted {sorted(done)}")
 
+    def _season(league):
+        import pro_season_job
+        import pro_sim
+        if not pro_sim.in_season(league):
+            print(f"[vigil-pc] deep {league}_season: out of season - skipping")
+            return
+        t0 = time.time()
+        payload = pro_season_job.run(league, workers=max(1, (os.cpu_count() or 2) - 1),
+                                     n_deep=pro_season_job.DEEP_N_PC, log=print)
+        if not pro_season_job.publishable(payload):
+            print(f"[vigil-pc] deep {league}_season: REJECTED by the quality gate {payload.get('quality')} - "
+                  "the server keeps its own")
+            return
+        deep_cache.save(f"{league}_season", payload)
+        print(f"[vigil-pc] deep {league}_season: done in {(time.time()-t0)/60:.1f} min ({payload['n']} seasons)")
+
     def _plain(key, fn):
         ret = fn()
         if ret is not None:
@@ -470,8 +486,11 @@ def _task_deep(url, tok):
                 __import__("clock").today_et().isoformat()))))),
         ("cfb", lambda: _plain("cfb", lambda: __import__("cfb").run_season(n=4000))),
         ("nfl", lambda: _plain("nfl", lambda: __import__("pro_sim").project("nfl", 4000))),
-        ("nba", lambda: _plain("nba", lambda: __import__("pro_sim").project("nba", 4000))),
-        ("nhl", lambda: _plain("nhl", lambda: __import__("pro_sim").project("nhl", 4000))),
+        # the NBA / NHL seasons through their real formats: the same run as
+        # the server's nightly, the NHL deep pair pricing on every core at the
+        # card's own 300 games a pair (the server runs 150 in one child)
+        ("nba_season", lambda: _season("nba")),
+        ("nhl_season", lambda: _season("nhl")),
         ("model_trust", lambda: _mt()),
     ]
     for key, fn in jobs:

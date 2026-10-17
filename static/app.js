@@ -3455,6 +3455,8 @@ const _featIntro = {
   f1: `Deep F1 season sim - every remaining weekend we simulate qualifying (the grid/pole), the race, and sprints, award points, and roll the season forward. Title odds, projected points, expected wins/poles/podiums + constructors.`,
   nfl: `NFL season Monte Carlo - every remaining game simulated 4,000 times off roster-aware team projections → Super Bowl / conference / division / playoff odds and win totals vs Kalshi's futures. Click a team for its Sleeper-projected player stat lines (real stats blend in as the season plays).`,
   nascar: `Deep NASCAR Cup sim - pace + points from this season's races, then the full playoff bracket (Round of 16 → 12 → 8 → Championship 4). The winner-take-all finale keeps title odds flat, as in real NASCAR.`,
+  nba: `NBA season sim - every remaining game played through the real format: top six in, the 7-10 play-in, the bracket, the NBA's two-club and multi-club tiebreakers. Every Kalshi NBA season market: title, conference, division, playoffs, play-in, exact seeds, seed-or-better, best / worst record, win totals. The team level is Kalshi's own win-total ladder, so the edges are where its other markets disagree with it.`,
+  nhl: `NHL season sim - every remaining game played through the real format: three per division plus two wildcards, the division bracket, points, regulation wins and the rest of the NHL's tiebreakers, overtime and shootouts. Each game at the board's own blend of the production model and the deep engine. Every Kalshi NHL season market: Cup, conference, division, playoffs, Presidents' Trophy, worst record.`,
 };
 function setFeatSport(s) {
   _featSport = s;
@@ -3490,6 +3492,11 @@ async function loadFeatured(force) {
       if (stale()) return;
       if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
       _boardData = d; _featGenTime = d.age_sec != null ? _genTime(d.age_sec) : 0; renderFeatured(d);
+    } else if (sport === "nba" || sport === "nhl") {
+      const d = await (await fetch(`/api/pro/season/${sport}` + (bust ? "?" + bust : ""))).json();
+      if (stale()) return;
+      if (d.error) { box.innerHTML = `<div class="empty">${escapeHtml(d.error)}</div>`; watchFeatured(); return; }
+      _boardData = d; _featGenTime = d.age_sec != null ? _genTime(d.age_sec) : 0; renderFeatured(d);
     } else {
       const d = await (await fetch(`/api/racing/${sport}` + (bust ? "?" + bust : ""))).json();
       if (stale()) return;
@@ -3512,7 +3519,7 @@ function agoStr(sec) {
 async function rerunSim(sport, after) {
   await fetch(`/api/sim/rerun?sport=${sport}`, { method: "POST" });
   const tick = async () => {
-    const s = (await (await fetch("/api/sim/status")).json())[sport === "mlb" ? "mlb_deep" : sport];
+    const s = (await (await fetch("/api/sim/status")).json())[{ mlb: "mlb_deep", nba: "nba_season", nhl: "nhl_season" }[sport] || sport];
     if (s && s.running) { setTimeout(tick, 2500); return; }
     if (after) after();
   };
@@ -6242,6 +6249,23 @@ async function watchFeatured() {
           loadFeatured(); return;
         }
       }
+    } else if (_featSport === "nba" || _featSport === "nhl") {
+      // the season run: a bar is not worth it (one niced child, ~10 min);
+      // say queued / handed to the PC, and reload when a newer run lands
+      const s = await (await fetch(`/api/pro/season/${_featSport}/status`)).json();
+      if (s.running || s.queued) {
+        if (prog) prog.innerHTML = `<div class="small">⏳ <b>Season run ${s.running ? "running" : "queued"}</b> - every pair priced, then the seasons played; the board reloads here when it lands.</div>`;
+        delay = 10000;
+      } else if (s.pc_pending_s != null) {
+        if (prog) prog.innerHTML = `<div class="small">🖥️ <b>Season run handed to your PC</b> - requested ${agoStr(s.pc_pending_s)}; the board refreshes here when the upload lands.</div>`;
+        delay = 15000;
+      } else {
+        if (prog) prog.innerHTML = "";
+        const newGen = s.age_sec != null ? _genTime(s.age_sec) : 0;
+        if (s.ready && (!_boardData || _boardData.sport !== _featSport || newGen > _featGenTime + 20) && _featuredVisible()) {
+          loadFeatured(); return;
+        }
+      }
     } else {
       const key = _featSport;                          // "f1" | "nascar"
       const st = (await (await fetch("/api/sim/status")).json())[key] || {};
@@ -6256,6 +6280,36 @@ async function watchFeatured() {
 }
 
 function renderFeatured(d) {
+  if (d.sport === "nba" || d.sport === "nhl") {
+    const lg = d.sport.toUpperCase();
+    const q = d.quality || {};
+    $("featuredSummary").innerHTML =
+      `<div class="small" style="margin-bottom:6px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · ${d.n_games_left} games left${q.unscheduled ? ` + ${q.unscheduled} NBA Cup slots not yet on the schedule` : ""} · ${escapeHtml(d.note || "")}</div>
+       <div class="small" style="margin-bottom:6px;color:var(--muted)">Edge = our % minus Kalshi's ask minus its taker fee, on whichever side (YES or NO) is better; a market whose book is one-sided or wider than 10¢ is marked <i>thin</i>. ${d.anchored ? "Each club's season-to-season uncertainty is read off the width of its own win-total ladder." : `Each club's true strength is drawn fresh every simulated season (sd up to ${d.noise} in log-odds, shrinking as it plays) - the width the backtest chose.`}</div>
+       ${d.skill ? `<div class="small" style="margin-bottom:6px;color:#e0a040">⚠️ ${escapeHtml(d.skill)}</div>` : ""}
+       <div style="margin-bottom:8px"><span class="deepbadge">${lg} season · ${d.n_sims.toLocaleString()} seasons</span>
+         <span class="small" style="color:var(--muted);margin-left:6px">updated <b>${agoStr(d.age_sec)}</b> · reruns nightly</span>
+         <button class="track-mini" style="margin-left:6px" onclick="rerunSim('${d.sport}', loadFeatured)">↻ rerun now</button></div>
+       <div id="deepProg" style="margin-bottom:8px"></div>`;
+    const groupsP = {};
+    d.order.forEach((k) => { const m = d.markets[k]; (groupsP[m.group] = groupsP[m.group] || []).push([k, m.label + (m.listed ? "" : " (not listed)")]); });
+    const ogP = Object.entries(groupsP).map(([g, items]) =>
+      `<optgroup label="${g}">${items.map(([k, lbl]) => `<option value="${k}">${escapeHtml(lbl)}</option>`).join("")}</optgroup>`).join("");
+    const curP = (_featMarket && d.markets[_featMarket]) ? _featMarket : d.order[0];
+    _featMarket = curP;
+    $("featuredResults").innerHTML = `
+      <div class="futctl">
+        <label class="small">Market</label>
+        <select id="futMarket" onchange="_featMarket=this.value;renderFeaturedTable()">${ogP}</select>
+        <input id="futSearch" placeholder="🔍 search team…" oninput="renderFeaturedTable()" autocomplete="off"/>
+      </div>
+      <div class="small" style="margin:2px 0 6px;color:var(--muted)">Click a team for its simulated season: record, projection, seeds and every remaining game with its chance.</div>
+      <div id="futTeamDetail"></div>
+      <div id="futTable"></div>`;
+    $("futMarket").value = curP;
+    renderFeaturedTable();
+    return;
+  }
   if (d.sport === "nfl") {
     const deepN = d.engine === "deep";
     const engineNoteN = deepN
@@ -6348,6 +6402,7 @@ function renderFeaturedTable() {
     return r.best_book === book ? `<b>${c}¢</b>` : `${c}¢`;
   };
   const maxc = Math.max(1, ...m.teams.map((r) => r.count));
+  if (d.sport === "nba" || d.sport === "nhl") return renderProSeasonTable(d, m, rows, maxc);
   const head = `<div class="futrow futhead">
     <span class="fr-rank">#</span><span class="fr-team">Team</span>
     <span class="fr-count">Won (of ${d.n_sims.toLocaleString()} sims)</span>
@@ -6376,9 +6431,74 @@ function renderFeaturedTable() {
   $("futTable").innerHTML = mx + head + (body || `<div class="empty">No team matches “${q}”.</div>`);
 }
 
+// NBA / NHL season markets: the same seven columns, Poly's slot holding the
+// NO ask, the edge the better side's (both in the tooltip), thin books marked
+function renderProSeasonTable(d, m, rows, maxc) {
+  const c = (v) => (v == null ? "-" : `${v}¢`);
+  const head = `<div class="futrow futhead">
+    <span class="fr-rank">#</span><span class="fr-team">Team</span>
+    <span class="fr-count">Won (of ${d.n_sims.toLocaleString()} sims)</span>
+    <span class="fr-num">Our</span><span class="fr-num">YES</span><span class="fr-num">NO</span><span class="fr-num">Edge</span></div>`;
+  const body = rows.map((r, i) => {
+    const w = Math.round(100 * r.count / maxc);
+    const ey = r.edge, en = r.edge_no;
+    const best = (ey == null && en == null) ? null : ((en == null || (ey != null && ey >= en)) ? ["YES", ey] : ["NO", en]);
+    const ecls = !best ? "" : best[1] >= 0 ? "ev pos" : "ev neg";
+    const tip = `YES ${ey == null ? "-" : (ey >= 0 ? "+" : "") + ey} · NO ${en == null ? "-" : (en >= 0 ? "+" : "") + en} (net of Kalshi's fee)${r.spread != null ? ` · spread ${r.spread}¢` : ""}`;
+    const rec = r.abbr ? `${r.wins}-${r.losses}${d.sport === "nhl" ? `-${r.otl || 0}` : ""} · proj ${r.proj_wins}${r.proj_unit === "pts" ? " pts" : ""}` : "";
+    const click = r.abbr ? ` futrow-click" onclick="openTeamDetail('${r.abbr}')` : "";
+    return `<div class="futrow${click}">
+      <span class="fr-rank">${i + 1}</span>
+      <span class="fr-team"><b>${escapeHtml(r.team)}</b>${r.division ? ` <span class="divchip nl">${escapeHtml(r.division)}</span>` : ""}<span class="small"> ${rec}</span>${r.thin && r.kalshi_cents != null ? ` <span class="small" style="color:var(--muted)">thin</span>` : ""}</span>
+      <span class="fr-count"><span class="fr-bar" style="width:${w}%"></span><span class="fr-ct">${r.count.toLocaleString()} <span class="small">(${r.model_pct}%)</span></span></span>
+      <span class="fr-num"><b>${r.model_pct}%</b></span>
+      <span class="fr-num">${c(r.kalshi_cents)}</span>
+      <span class="fr-num">${c(r.no_cents)}</span>
+      <span class="fr-num ${ecls}" title="${tip}">${best ? `${best[1] >= 0 ? "+" : ""}${best[1]} <span class="small">${best[0]}</span>` : "-"}</span>
+    </div>`;
+  }).join("");
+  const one = { division: "One winner per division", pennant: "One champion per conference", champ: "One champion",
+                best: "One club has the best record", worst: "One club has the worst record", seed1: "One No. 1 seed per conference" }[_featMarket];
+  const mx = one ? `<div class="small" style="color:var(--muted);margin:2px 0 6px">⚠️ ${one} - two YES legs in this market can never both hit. Don't pair them in a slip.</div>` : "";
+  const nl = m.fitted ? `<div class="small" style="color:var(--muted);margin:2px 0 6px">The NBA board is fitted to this ladder (each club's centre and width), so its rows carry no edge: a gap here is the fit's shape, not a mispriced market.</div>`
+    : m.listed ? "" : `<div class="small" style="color:var(--muted);margin:2px 0 6px">Kalshi lists no market for this one right now - the model's figure alone.</div>`;
+  $("futTable").innerHTML = mx + nl + head + (body || `<div class="empty">No team matches.</div>`);
+}
+
+function renderProSeasonTeam(d) {
+  const r = d.record || {};
+  const p = d.p || {};
+  const nhl = d.league === "nhl";
+  const seeds = Object.entries(d.seeds || {}).filter(([, v]) => v >= 0.5).map(([k, v]) => `<span class="chip">#${k} <b>${v}%</b></span>`).join(" ");
+  const sched = (d.schedule || []).map((s) => `<tr><td>${s.date}</td><td>${s.home ? "vs" : "@"} ${s.opp}</td>
+      <td><b>${(100 * s.p_win).toFixed(1)}%</b></td>${nhl ? `<td style="color:var(--muted)">${s.p_ot != null ? (100 * s.p_ot).toFixed(0) + "%" : "-"}</td>` : ""}</tr>`).join("");
+  const lbl = { playoffs: "playoffs", playin: "play-in", div: "division", seed1: "No. 1 seed", best: nhl ? "Presidents' Trophy" : "best record",
+                worst: "worst record", r2: "second round", cf: "conference final", final: "the Final", champ: "champion" };
+  const chances = Object.entries(p).map(([k, v]) => `${lbl[k] || k} <b>${v}%</b>`).join(" · ");
+  const anc = d.anchor ? ` · Kalshi's ladder centre ${d.anchor.market_wins} wins` : "";
+  return `<div class="teamdetail">
+    <div class="teamdetailhead"><b>${escapeHtml(d.team)}</b> <span class="small">${r.w}-${r.l}${nhl ? `-${r.otl} · ${r.pts} pts` : ""} · projected <b>${d.proj}</b> ${nhl ? "points" : "wins"} · ${(d.n_sims || 0).toLocaleString()} simulated seasons${anc}</span>
+      <span class="tdclose" onclick="closeTeamDetail()">✕</span></div>
+    <div class="small" style="margin:4px 0">${chances}</div>
+    <div class="small" style="margin:2px 0 6px">conference place: ${seeds || "-"}</div>
+    <div class="tdtbls"><div><table class="seasontbl"><thead><tr><th>Date</th><th>Game</th><th>${d.abbr} win</th>${nhl ? "<th>Past regulation</th>" : ""}</tr></thead><tbody>${sched}</tbody></table></div></div></div>`;
+}
+
 async function openTeamDetail(abbr) {
   const box = $("futTeamDetail");
   if (!box) return;
+  const proLg = _boardData && (_boardData.sport === "nba" || _boardData.sport === "nhl") ? _boardData.sport : null;
+  if (proLg) {
+    box.innerHTML = `<div class="small" style="padding:8px">Loading ${abbr}'s simulated season…</div>`;
+    box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    try {
+      const d = await (await fetch(`/api/pro/season/${proLg}/team?abbr=${encodeURIComponent(abbr)}`)).json();
+      box.innerHTML = d.error ? `<div class="small" style="padding:8px">${escapeHtml(d.error)}</div>` : renderProSeasonTeam(d);
+    } catch (e) {
+      box.innerHTML = `<div class="small" style="padding:8px">Failed to load team.</div>`;
+    }
+    return;
+  }
   const nfl = _boardData && _boardData.sport === "nfl";
   box.innerHTML = `<div class="small" style="padding:8px">Loading ${abbr} ${nfl ? "player projections" : "simulated season"}…</div>`;
   box.scrollIntoView({ behavior: "smooth", block: "nearest" });

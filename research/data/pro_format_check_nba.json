@@ -1,0 +1,178 @@
+[
+ {
+  "season": 2023,
+  "games": 1231,
+  "ok": true,
+  "fails": [],
+  "summary": {
+   "Eastern Conference": {
+    "top6": [
+     "BOS",
+     "NY",
+     "MIL",
+     "CLE",
+     "ORL",
+     "IND"
+    ],
+    "playin": [
+     "PHI",
+     "MIA",
+     "CHI",
+     "ATL"
+    ]
+   },
+   "Western Conference": {
+    "top6": [
+     "OKC",
+     "DEN",
+     "MIN",
+     "LAC",
+     "DAL",
+     "PHX"
+    ],
+    "playin": [
+     "NO",
+     "LAL",
+     "SAC",
+     "GS"
+    ]
+   }
+  },
+  "ties": [
+   [
+    "IND",
+    "ORL",
+    "PHI"
+   ],
+   [
+    "DEN",
+    "OKC"
+   ],
+   [
+    "NO",
+    "PHX"
+   ],
+   [
+    "GS",
+    "SAC"
+   ]
+  ]
+ },
+ {
+  "season": 2024,
+  "games": 1233,
+  "ok": true,
+  "fails": [],
+  "summary": {
+   "Eastern Conference": {
+    "top6": [
+     "CLE",
+     "BOS",
+     "NY",
+     "IND",
+     "MIL",
+     "DET"
+    ],
+    "playin": [
+     "ORL",
+     "ATL",
+     "CHI",
+     "MIA"
+    ]
+   },
+   "Western Conference": {
+    "top6": [
+     "OKC",
+     "HOU",
+     "LAL",
+     "DEN",
+     "LAC",
+     "MIN"
+    ],
+    "playin": [
+     "GS",
+     "MEM",
+     "SAC",
+     "DAL"
+    ]
+   }
+  },
+  "ties": [
+   [
+    "DEN",
+    "LAC",
+    "LAL"
+   ],
+   [
+    "PHX",
+    "POR"
+   ],
+   [
+    "GS",
+    "MEM"
+   ]
+  ]
+ },
+ {
+  "season": 2025,
+  "games": 1234,
+  "ok": true,
+  "fails": [],
+  "summary": {
+   "Eastern Conference": {
+    "top6": [
+     "DET",
+     "BOS",
+     "NY",
+     "CLE",
+     "TOR",
+     "ATL"
+    ],
+    "playin": [
+     "PHI",
+     "ORL",
+     "CHA",
+     "MIA"
+    ]
+   },
+   "Western Conference": {
+    "top6": [
+     "OKC",
+     "SA",
+     "DEN",
+     "LAL",
+     "HOU",
+     "MIN"
+    ],
+    "playin": [
+     "PHX",
+     "POR",
+     "LAC",
+     "GS"
+    ]
+   }
+  },
+  "ties": [
+   [
+    "ORL",
+    "PHI"
+   ],
+   [
+    "ATL",
+    "TOR"
+   ],
+   [
+    "LAC",
+    "POR"
+   ],
+   [
+    "SAC",
+    "UTAH"
+   ],
+   [
+    "DAL",
+    "NO"
+   ]
+  ]
+ }
+]

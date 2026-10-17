@@ -61,6 +61,8 @@ _MARKET = {
     "division": "Division", "playoffs": "Make the playoffs",
     "cfp": "Make the playoff", "win_total": "Season win total",
     "price_level": "Price level", "temperature": "Global temperature",
+    "playin": "Make the play-in", "seed1": "No. 1 seed", "best": "Best record",
+    "worst": "Worst record",
 }
 
 # A disagreement past this is far more likely to be a mapping bug, a market that
@@ -112,6 +114,20 @@ _SERIES_FOR = {
     ("cfb", "champ"): ["KXNCAAF"],
     ("cfb", "cfp"): ["KXNCAAFPLAYOFF"],
 }
+# The NBA / NHL season markets the season board prices (pro_season_job.SERIES):
+# every key the board emits dates off its own series, and the tickers they
+# list are what the NO side reads its ask from.
+for _sp, _kinds in (("nba", {"champ": ["KXNBA"], "pennant": ["KXNBAEAST", "KXNBAWEST"],
+                             "division": ["KXNBAATLANTIC", "KXNBACENTRAL", "KXNBASOUTHEAST",
+                                          "KXNBANORTHWEST", "KXNBAPACIFIC", "KXNBASOUTHWEST"],
+                             "playoffs": ["KXNBAPLAYOFF"], "playin": ["KXNBAPLAYIN"],
+                             "seed1": ["KXNBAEAST1SEED", "KXNBAWEST1SEED"], "best": ["KXNBARECORD"],
+                             "worst": ["KXNBARECORD"], "win_total": ["KXNBAWINS"]}),
+                    ("nhl", {"champ": ["KXNHL"], "pennant": ["KXNHLEAST", "KXNHLWEST"],
+                             "division": ["KXNHLATLANTIC", "KXNHLMETROPOLITAN", "KXNHLCENTRAL", "KXNHLPACIFIC"],
+                             "playoffs": ["KXNHLPLAYOFF"], "best": ["KXNHLPRES"], "worst": ["KXNHLRECORDWORST"]})):
+    for _k, _v in _kinds.items():
+        _SERIES_FOR[(_sp, _k)] = _v
 
 
 def _close_days():
@@ -396,34 +412,21 @@ def _has_listed_futures(sport):
 
 
 def _collect_pro(sport, by_ticker, by_series, by_no):
-    """NBA / NHL off the shared projection engine + the futures price map."""
-    import pro_sim
-    import pro_prices
-    if not _has_listed_futures(sport):
-        return []                            # out of season: don't run the sim
-    proj = pro_sim.project(sport)
-    if not proj:
+    """NBA / NHL off the nightly season run through the real formats
+    (pro_season_job; deep key <sport>_season) and its futures board -- a
+    cached read, never a simulation here. The old path ran pro_sim's
+    projection and matched it to series Kalshi does not list."""
+    import deep_cache
+    import pro_season_job
+    payload, _ts = deep_cache.load(f"{sport}_season")
+    if not isinstance(payload, dict) or not payload.get("n"):
         return []
     try:
-        proj = pro_prices.attach(sport, proj) or proj
+        board = pro_season_job.futures_board(sport, payload)
     except Exception as _e:
         errlog.note("MFUT-collect_pro", _e)
-    out = []
-    fields = (("champ", "champ_pct", "Championship"),
-              ("conf", "conf_pct", "Conference"),
-              ("division", "division_pct", "Division"),
-              ("playoffs", "playoff_pct", "Make the playoffs"))
-    for key, pct_key, lbl in fields:
-        for t in proj.get("teams") or []:
-            pct = t.get(pct_key)
-            price = (t.get(f"{key}_cents") or t.get("kalshi_cents")
-                     if key == "champ" else t.get(f"{key}_cents"))
-            row = _row(sport, key, f"{t.get('team') or t.get('abbr')} - {lbl}",
-                       pct, price, {**t, "team": t.get("team") or t.get("abbr")},
-                       _days_for(sport, key, t.get(f"{key}_ticker"), by_ticker, by_series))
-            if row:
-                out.append(row)
-    return out
+        return []
+    return _collect_board(sport, board, by_ticker, by_series, by_no)
 
 
 def _collect_crypto():
