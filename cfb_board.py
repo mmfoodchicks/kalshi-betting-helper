@@ -609,11 +609,40 @@ def price_cands(cands, suffix, idx, blend=True):
     return cands
 
 
+def _combo_event(idx, suffix, kref):
+    """The Kalshi event a leg's market belongs to, None when it has no
+    ticker."""
+    tk, _close = kalshi_cfb.ticker_leg(idx, suffix, kref)
+    return tk.rsplit("-", 1)[0] if tk and "-" in tk else None
+
+
+def quick_window(games_bundles, kicks, n, now):
+    """The quick pick's games: the owner's next game day (Mountain time)
+    with a game still to play, and the days after it only while the window
+    holds fewer than `n` games. A game with no kickoff time is never in it.
+    (kept games_bundles, {"today", "window": [ISO dates], "days": {date:
+    games}, "extended"})."""
+    by_day = {}
+    for gb, ts in zip(games_bundles, kicks):
+        if ts:
+            by_day.setdefault(clock.mt_date(ts).isoformat(), []).append(gb)
+    days = sorted(by_day)
+    window = []
+    for d in days:
+        window.append(d)
+        if sum(len(by_day[x]) for x in window) >= n:
+            break
+    today = clock.mt_date(now).isoformat()
+    kept = [gb for d in window for gb in by_day[d]]
+    return kept, {"today": today, "window": window, "days": {d: len(by_day[d]) for d in days},
+                  "extended": bool(window) and window[-1] != today}
+
+
 def build_parlay(week=1, n_legs=3, target_pct=55, cap_pct=None, target_payout=0,
                  max_legs_per_game=3, max_total_legs=8, legs_mode="prefer",
                  payout_mode="off", conn="or", objective="balanced", types=None,
                  game_sel=None, max_bet=False, cap_x=None, abort_cb=None, div=None,
-                 payout_basis="fair"):
+                 payout_basis="fair", quick=False):
     """One parlay across the week's college games, priced against Kalshi --
     nfl_game_sim.build_parlay on the college slate, knob for knob.
     `payout_basis="market"` judges the payout target on what Kalshi pays
@@ -621,7 +650,14 @@ def build_parlay(week=1, n_legs=3, target_pct=55, cap_pct=None, target_payout=0,
 
     `div` scopes the pool to one division's tab ("fbs" or "fcs"): a slip
     built on the FCS board must not quietly take an FBS leg, and a buy game
-    belongs to both. Without it the whole college slate is in play."""
+    belongs to both. Without it the whole college slate is in play.
+
+    `quick` is the tab's quick pick: only legs Kalshi's combo accepts
+    (kalshi.combo_events; on 2026-10-17 all 3,962 legs with a ticker in the
+    week's 115 games were, but the list is the exchange's to change and
+    soccer's covers a fifth of its matches), and only the games of the
+    owner's next game day in Mountain time (quick_window), reaching a day
+    further only while that day holds fewer than `n_legs` games."""
     import combo_engine
     import mlb_sim
     floor = max(0.05, min(0.97, target_pct / 100.0))
@@ -650,12 +686,16 @@ def build_parlay(week=1, n_legs=3, target_pct=55, cap_pct=None, target_payout=0,
         idx = kalshi_cfb.index() or {}
     except Exception:
         idx = {}
+    elig = set()
+    if quick:
+        import kalshi
+        elig = kalshi.combo_events()
     sel_map = {}
     for tok in (game_sel or ()):
         base, _, team = str(tok).partition(":")
         if base:
             sel_map[base] = team or True
-    games_bundles = []
+    games_bundles, gb_kick = [], []
     for g in games:
         if abort_cb is not None and abort_cb():
             raise RuntimeError("superseded by a newer build")
@@ -678,6 +718,9 @@ def build_parlay(week=1, n_legs=3, target_pct=55, cap_pct=None, target_payout=0,
             cands = [c for c in cands if c.get("side_team") in want]
         if idx:
             cands = [c for c in cands if c.get("price_cents")]
+        if elig:
+            cands = [c for c in cands
+                     if _combo_event(idx, g.get("suffix"), c.get("kref")) in elig]
         cands = [c for c in cands if floor <= c["marg"] <= ceil]
         if len(cands) > 40:
             cands.sort(key=lambda c: (
@@ -694,6 +737,13 @@ def build_parlay(week=1, n_legs=3, target_pct=55, cap_pct=None, target_payout=0,
         bundles = mlb_sim.game_bundles(cands, g["n"], max_legs=depth)
         if bundles:
             games_bundles.append((g["label"], bundles, g.get("suffix") or g.get("pair")))
+            gb_kick.append(_iso_ts(g.get("date")))
+    window = None
+    if quick:
+        games_bundles, window = quick_window(games_bundles, gb_kick, n_legs, now)
+        window["eligibility_known"] = bool(elig)
+        if len(games_bundles) < n_legs:
+            return {"error_hint": "quick_short", "n_games_available": len(games_bundles)}
     if not games_bundles:
         return None
     if len(games_bundles) < 2 and max_legs_per_game <= 1:
@@ -733,6 +783,8 @@ def build_parlay(week=1, n_legs=3, target_pct=55, cap_pct=None, target_payout=0,
         item["payout_reached"] = meta.get("cap_reached")
         item["target_payout_x"] = None
     item["sport"] = "cfb"
+    if window is not None:
+        item["quick"] = window
     item["leg_floor_pct"] = round(floor * 100, 1)
     item["leg_cap_pct"] = round(ceil * 100, 1) if ceil < 1.0 else None
     item["excluded_started"] = n_started or None

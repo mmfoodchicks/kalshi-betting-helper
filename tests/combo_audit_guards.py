@@ -20725,6 +20725,237 @@ ck("and the tab says what the BTTS edge has NOT been tested against: the recalib
    '"btts_spread": btts_spread' in _insp.getsource(_soc12._build_board) and "if len(pairs) >= 30:" in _insp.getsource(_soc12._build_board)
    and "${bttsNote}" in _js11 and "It has <b>not</b> been tested against Kalshi's price" in _js11)
 
+# ---------------------------------------------------------------------------
+# The quick combo (2026-10-17; the owner: "a search button where I put in the
+# number I want and it picks me the best of that number for a combo slip,
+# defaulting to the next starting, preferably that day"). Soccer off the
+# board already built (soccer.quick_combo), college through the week's maker
+# (cfb_board.build_parlay(quick=True)). Both take only markets Kalshi's combo
+# accepts, one leg per match, the owner's today in MOUNTAIN time first.
+import itertools as _it13
+import types as _ty13
+import random as _rn13
+import soccer as _soc13
+import combo_engine as _ce13
+import clock as _clk13
+import kalshi as _k13
+import cfb_board as _cb13
+_NOW13 = datetime.datetime(2026, 10, 17, 15, 0, tzinfo=datetime.timezone.utc).timestamp()   # 09:00 MDT
+
+
+def _qrow13(ev, ko, ph, pd, pa, asks, btts=None, **kw):
+    """A board card; asks = {side: (yes_bid, yes_ask)}, NO the mirror."""
+    def mk(side, code):
+        yb, ya = asks[side]
+        return {"ticker": f"{ev}-{code}", "yes_bid": yb, "yes_ask": ya, "no_bid": 100 - ya, "no_ask": 100 - yb}
+    row = {"event": ev, "league": "Guard League", "kickoff": ko, "pregame": True, "readable": True,
+           "home": {"name": "H" + ev[-3:], "kalshi": mk("home", "H")},
+           "away": {"name": "A" + ev[-3:], "kalshi": mk("away", "A")},
+           "draw": {"kalshi": mk("draw", "TIE")},
+           "fair": {"home": ph - 0.01, "draw": pd, "away": pa + 0.01},
+           "model": {"p_home": ph, "p_draw": pd, "p_away": pa, "weak": False}, "btts": btts}
+    row.update(kw)
+    return row
+
+
+_asks13 = {"home": (66, 68), "draw": (21, 23), "away": (9, 11)}
+_bt13 = {"ticker": "KXGUARDBTTS-26OCT17AAA-BTTS", "readable": True, "model_pct": 62.0, "mid": 58.0,
+         "yes_bid": 57, "yes_ask": 59, "no_bid": 41, "no_ask": 43}
+_r13 = _qrow13("KXGUARDGAME-26OCT17AAA", "2026-10-17T20:00Z", 0.70, 0.20, 0.10, _asks13, btts=dict(_bt13))
+_all13 = {"KXGUARDGAME-26OCT17AAA", "KXGUARDBTTS-26OCT17AAA"}
+_l13 = _soc13.quick_legs(_r13, _all13, _NOW13)
+_byk13 = {l["kind"]: l for l in _l13}
+ck("a soccer card offers every combo leg at 50%+ on a readable book: YES on the likely side, NO on the others (the NO ask, the "
+   "model's 1 - p), YES both-teams-score; never a sub-50% leg",
+   sorted(_byk13) == ["btts", "home", "not_away", "not_draw"]
+   and _byk13["not_away"]["price_cents"] == 91 and abs(_byk13["not_away"]["prob"] - 0.90) < 1e-12
+   and _byk13["not_away"]["side"] == "no" and _byk13["not_away"]["label"] == "NO AAAA: HAAA wins or draw"
+   and _byk13["home"]["price_cents"] == 68 and _byk13["btts"]["price_cents"] == 59
+   and abs(_byk13["not_draw"]["kalshi_p"] - 0.80) < 1e-12 and abs(_byk13["btts"]["kalshi_p"] - 0.58) < 1e-12
+   and _soc13.QUICK_FLOOR == 0.5, str(sorted(_byk13)))
+ck("and none from a match under way, one kicking off inside five minutes, or a competition the model is flagged weak in",
+   _soc13.quick_legs(dict(_r13, pregame=False), _all13, _NOW13) == []
+   and _soc13.quick_legs(dict(_r13, kickoff="2026-10-17T15:02Z"), _all13, _NOW13) == []
+   and _soc13.quick_legs(dict(_r13, model=dict(_r13["model"], weak=True)), _all13, _NOW13) == []
+   and len(_soc13.quick_legs(dict(_r13, kickoff="2026-10-17T15:06Z"), _all13, _NOW13)) == 4)
+ck("only markets Kalshi's combo accepts: an ineligible GAME event leaves just its eligible BTTS leg, a book wider than 10c is not "
+   "offered, and a dead eligibility feed (empty set = unknown) excludes nothing",
+   [l["kind"] for l in _soc13.quick_legs(_r13, {"KXGUARDBTTS-26OCT17AAA"}, _NOW13)] == ["btts"]
+   and "home" not in [l["kind"] for l in _soc13.quick_legs(_qrow13("KXGUARDGAME-26OCT17AAA", "2026-10-17T20:00Z", 0.70, 0.20, 0.10,
+                                                                    dict(_asks13, home=(50, 68))), _all13, _NOW13)]
+   and len(_soc13.quick_legs(_r13, set(), _NOW13)) == 4)
+# Mountain time: 03:00Z on the 18th is 21:00 MDT on the 17th -- tonight to the owner
+_A13 = _qrow13("KXGUARDGAME-26OCT17AAA", "2026-10-17T20:00Z", 0.70, 0.20, 0.10, _asks13)
+_B13 = _qrow13("KXGUARDGAME-26OCT17BBB", "2026-10-18T03:00Z", 0.68, 0.20, 0.12, {"home": (64, 66), "draw": (21, 23), "away": (11, 13)})
+_C13 = _qrow13("KXGUARDGAME-26OCT18CCC", "2026-10-18T18:00Z", 0.72, 0.18, 0.10, {"home": (68, 70), "draw": (19, 21), "away": (9, 11)})
+_D13 = _qrow13("KXGUARDGAME-26OCT19DDD", "2026-10-19T18:00Z", 0.66, 0.22, 0.12, {"home": (62, 64), "draw": (22, 24), "away": (11, 13)})
+_bd13 = {"games": [_D13, _C13, _B13, _A13]}
+_ev13 = {r["event"] for r in _bd13["games"]}
+_q2 = _soc13.quick_combo(_bd13, 2, now=_NOW13, eligible=_ev13)
+_q3 = _soc13.quick_combo(_bd13, 3, now=_NOW13, eligible=_ev13)
+_q2d = _soc13.quick_combo(_bd13, 2, day="2026-10-18", now=_NOW13, eligible=_ev13)
+_q5 = _soc13.quick_combo(_bd13, 5, now=_NOW13, eligible=_ev13)
+ck("the default window is the owner's today in MOUNTAIN time (a 9 pm MDT kickoff is today though it is tomorrow in UTC and ET), "
+   "reaching into the next day only while today cannot fill N; a pinned day or too few matches says so",
+   _clk13.mt_date(_soc13._ko_ts("2026-10-18T03:00Z")) == datetime.date(2026, 10, 17)
+   and _q2.get("window") == ["2026-10-17"] and _q2.get("today") == "2026-10-17" and _q2.get("extended") is False
+   and sorted(l["match"] for l in _q2["legs"]) == ["HAAA v AAAA", "HBBB v ABBB"]
+   and _q3.get("window") == ["2026-10-17", "2026-10-18"] and _q3.get("extended") is True and len(_q3["legs"]) == 3
+   and _q2d.get("error") and "on 2026-10-18" in _q2d["error"] and _q2d.get("n_matches") == 1
+   and _q5.get("error") and _q5.get("n_matches") == 4
+   and _q2.get("days") == {"2026-10-17": 2, "2026-10-18": 1, "2026-10-19": 1},
+   str((_q2.get("window"), _q3.get("window"), _q2d.get("error"), _q5.get("error"))))
+# the chooser is exact: brute force over every n matches and every leg of each
+_rn13r = _rn13.Random(1017)
+_pool13 = []
+for _i in range(7):
+    _ph = _rn13r.uniform(0.45, 0.80)
+    _pd = _rn13r.uniform(0.15, 0.25)
+    _pa = max(0.02, 1 - _ph - _pd)
+    _pd = 1 - _ph - _pa
+    def _ask(p):
+        a = int(round(100 * min(0.97, max(0.03, p + _rn13r.uniform(-0.06, 0.06)))))
+        return (a - 2, a)
+    _pool13.append(_qrow13(f"KXGUARDGAME-26OCT17Q{_i:02d}", f"2026-10-17T{17 + _i % 5}:00Z", _ph, _pd, _pa,
+                           {"home": _ask(_ph), "draw": _ask(_pd), "away": _ask(_pa)}))
+_bp13 = {"games": _pool13}
+_evp13 = {r["event"] for r in _pool13}
+_legsp13 = [_soc13.quick_legs(r, _evp13, _NOW13) for r in _pool13]
+_bad13 = []
+for _n in (2, 3, 4):
+    _all = []
+    for _ms in _it13.combinations([l for l in _legsp13 if l], _n):
+        for _pick in _it13.product(*_ms):
+            _p = _c = 1.0
+            for _l in _pick:
+                _p *= _l["prob"]
+                _c *= _l["price_cents"] / 100.0
+            _c = _ce13.combo_cost(_c)
+            _all.append((_p, _p / _c - 1, sorted((_l["ticker"], _l["side"]) for _l in _pick)))
+    _ok = [a for a in _all if a[1] >= 0]
+    for _obj, _want in (("balanced", max(_ok or _all)), ("safe", max(_all))):
+        _got = _soc13.quick_combo(_bp13, _n, objective=_obj, now=_NOW13, eligible=_evp13)
+        if sorted((l["ticker"], l["side"]) for l in _got.get("legs") or []) != _want[2]:
+            _bad13.append((_n, _obj, _want, _got.get("legs")))
+ck("the slip it picks is the one brute force picks over every N matches and every leg of each: the likeliest not -EV after "
+   "Kalshi's one combo fee (balanced), or the likeliest at any price (safe)", not _bad13, str(_bad13)[:400])
+_g13 = _soc13.quick_combo(_bp13, 3, now=_NOW13, eligible=_evp13)
+_gp13 = 1.0
+_kp13 = 1.0
+_pp13 = 1.0
+for _l in _g13["legs"]:
+    _gp13 *= _l["ask"] / 100.0
+    _kp13 *= _l["kalshi_pct"] / 100.0
+    _pp13 *= _l["model_pct"] / 100.0
+_cost13 = _ce13.combo_cost(_gp13)
+ck("the slip's money is Kalshi's: the asks multiplied, ONE combo fee on the basket, EV and Kelly off that cost, and Kalshi's own "
+   "chance (its de-vigged prices) printed beside the model's; `value` is not offered (one model, no blend: its biggest EV is the "
+   "model's biggest disagreement -- four longshots at twice Kalshi's price on 2026-10-17)",
+   _g13["asks_x"] == round(1 / _gp13, 2) and _g13["payout_x"] == round(1 / _cost13, 2)
+   and abs(_g13["ev_pct"] - round(100 * (_g13["prob_pct"] / 100 / _cost13 - 1), 1)) <= 0.15
+   and abs(_g13["kalshi_prob_pct"] - 100 * _kp13) < 0.2 and abs(_g13["prob_pct"] - 100 * _pp13) < 0.2
+   and _soc13.quick_combo(_bp13, 3, objective="value", now=_NOW13, eligible=_evp13)["objective"] == "balanced"
+   and _soc13.QUICK_OBJECTIVES == ("balanced", "safe"),
+   str((_g13.get("asks_x"), _g13.get("payout_x"), _g13.get("ev_pct"))))
+# the route answers off the board already built, never building one inline
+_ob13, _oe13, _oq13 = _soc13.board, _k13.combo_events, _k13.combo_quoters
+try:
+    _soc13.board = lambda: _bp13
+    _k13.combo_events = lambda: _evp13
+    _k13.combo_quoters = lambda: {}
+    _c13 = __import__("app").app.test_client()
+    _rr13 = _c13.get("/api/soccer/combo?n=3&objective=safe&btts=0")
+    _rb13 = _c13.get("/api/soccer/combo?n=3&day=nope")
+    _soc13.board = lambda: None
+    _rn13b = _c13.get("/api/soccer/combo?n=3")
+finally:
+    _soc13.board, _k13.combo_events, _k13.combo_quoters = _ob13, _oe13, _oq13
+_rj13 = _rr13.get_json() or {}
+ck("/api/soccer/combo serves the pick off the cached board (a bad day is a 400, no board yet a 502 that the button retries)",
+   _rr13.status_code == 200 and _rj13.get("objective") == "safe" and _rj13.get("n") == 3 and len(_rj13.get("legs") or []) == 3
+   and _rb13.status_code == 400 and _rn13b.status_code == 502,
+   str((_rr13.status_code, _rb13.status_code, _rn13b.status_code)))
+_jsq13 = open(_os.path.join(_root, "static", "app.js")).read()
+_htq13 = open(_os.path.join(_root, "templates", "index.html")).read()
+ck("the soccer tab has the box: a number of legs, the day menu (next up first), the goal, BTTS on/off, and the slip with Kalshi's "
+   "column beside the model's and the maker-quote caveat",
+   'id="soccerQuickN"' in _htq13 and 'onclick="soccerQuick()"' in _htq13 and 'id="soccerQuickDay"' in _htq13
+   and "/api/soccer/combo?n=${n}&objective=${obj}&btts=${btts}" in _jsq13 and "Kalshi's own odds" in _jsq13
+   and "read the payout as a ceiling" in _jsq13)
+
+# College: the same button on the week's maker.
+_kq13 = [_cb13.quick_window([("g1",), ("g2",), ("g3",), ("g4",), ("g5",)],
+                            [_soc13._ko_ts(s) if s else None for s in
+                             ("2026-10-17T19:00Z", "2026-10-18T02:30Z", "2026-10-18T19:00Z", None, "2026-10-20T00:00Z")],
+                            n, _NOW13) for n in (2, 3, 4)]
+ck("college's window: the owner's next game day in Mountain time (20:30 MDT is today), then the next only while short; a game with "
+   "no kickoff time is never in it",
+   [g[0] for g in _kq13[0][0]] == ["g1", "g2"] and _kq13[0][1]["window"] == ["2026-10-17"] and _kq13[0][1]["extended"] is False
+   and [g[0] for g in _kq13[1][0]] == ["g1", "g2", "g3"] and _kq13[1][1]["extended"] is True
+   and [g[0] for g in _kq13[2][0]] == ["g1", "g2", "g3", "g5"]
+   and _kq13[2][1]["days"] == {"2026-10-17": 2, "2026-10-18": 1, "2026-10-19": 1},
+   str([k[1] for k in _kq13]))
+# end to end through build_parlay on a stubbed week: game 2 holds the best leg but its event is not combo-eligible
+_N13 = 200
+
+
+def _cg13(i, ko, p_home):
+    k = int(round(p_home * _N13))
+    hm = (1 << k) - 1
+    am = ((1 << _N13) - 1) ^ hm
+    sfx = f"26OCT17G{i}"
+
+    def c(team, mask, p):
+        return {"type": "ML", "label": f"{team} to win", "mask": mask, "marg": p, "group": "ML", "model_pct": None,
+                "kref": {"t": "ml", "team": team}, "side_team": team, "sim_avg": 0.0, "avg_unit": "pt margin"}
+    return {"label": f"A{i} @ H{i}", "suffix": sfx, "pair": f"A{i}@H{i}", "n": _N13, "date": ko, "state": "pre",
+            "division": "fbs", "home": f"H{i}", "away": f"A{i}", "kx_home": f"H{i}", "kx_away": f"A{i}",
+            "cands": [c(f"H{i}", hm, k / _N13), c(f"A{i}", am, 1 - k / _N13)]}
+
+
+_wk13 = [_cg13(1, "2026-10-17T19:00Z", 0.80), _cg13(2, "2026-10-17T20:00Z", 0.95),
+         _cg13(3, "2026-10-18T02:30Z", 0.75), _cg13(4, "2026-10-18T19:00Z", 0.85)]
+_sv13 = (_cb13._slate_sims, _cb13.price_cands, _cb13.kalshi_cfb.index, _cb13.kalshi_cfb.ticker_leg, _cb13._time, _k13.combo_events)
+try:
+    _cb13._slate_sims = lambda week: [dict(g, cands=[dict(c) for c in g["cands"]]) for g in _wk13]
+
+    def _pc13(cands, suffix, idx, blend=True):
+        for c in cands:
+            c["price_cents"] = int(round(100 * c["marg"])) - 3
+        return cands
+    _cb13.price_cands = _pc13
+    _cb13.kalshi_cfb.index = lambda: {"guard": 1}
+    _cb13.kalshi_cfb.ticker_leg = lambda idx, sfx, kref: (f"KXNCAAFGAME-{sfx}-{kref['team']}", None) if sfx and kref else (None, None)
+    _cb13._time = _ty13.SimpleNamespace(time=lambda: _NOW13)
+    _k13.combo_events = lambda: {f"KXNCAAFGAME-26OCT17G{i}" for i in (1, 3, 4)}
+    _kw13 = dict(week=7, target_pct=50, max_legs_per_game=1, max_total_legs=30, legs_mode="require", objective="safe")
+    _qa13 = _cb13.build_parlay(n_legs=2, quick=True, **_kw13)
+    _qb13 = _cb13.build_parlay(n_legs=3, quick=True, **_kw13)
+    _qc13 = _cb13.build_parlay(n_legs=4, quick=True, **_kw13)
+    _qd13 = _cb13.build_parlay(n_legs=2, **_kw13)
+finally:
+    (_cb13._slate_sims, _cb13.price_cands, _cb13.kalshi_cfb.index, _cb13.kalshi_cfb.ticker_leg, _cb13._time,
+     _k13.combo_events) = _sv13
+
+
+def _sfx13(it):
+    return sorted(g.get("suffix") for g in (it or {}).get("groups") or [])
+
+
+ck("college's quick pick never takes a leg Kalshi's combo refuses and stays on today's games until today runs short: the week's "
+   "best leg (game 2, ineligible) is skipped, two legs come from today (incl. 20:30 MDT), a third reaches tomorrow, a fourth is short",
+   _sfx13(_qa13) == ["26OCT17G1", "26OCT17G3"] and (_qa13.get("quick") or {}).get("window") == ["2026-10-17"]
+   and _sfx13(_qb13) == ["26OCT17G1", "26OCT17G3", "26OCT17G4"] and (_qb13.get("quick") or {}).get("extended") is True
+   and (_qc13 or {}).get("error_hint") == "quick_short" and (_qc13 or {}).get("n_games_available") == 3
+   and "26OCT17G2" in _sfx13(_qd13) and "quick" not in (_qd13 or {}),
+   str((_sfx13(_qa13), _sfx13(_qb13), _qc13 if not (_qc13 or {}).get("groups") else "built", _sfx13(_qd13))))
+_apq13 = open(_os.path.join(_root, "app.py")).read()
+ck("the route's quick flag fixes everything but the number (exactly N, one per game, no game picks), and the maker's box sends it",
+   'quick = request.args.get("quick") == "1" and not (max_bet or optimal)' in _apq13
+   and 'legs_mode, same_game, sel = "require", False, set()' in _apq13 and "div=_cfb_div(), quick=quick," in _apq13
+   and "&legs_mode=require&payout_mode=off&conn=or&same_game=0&quick=1" in _jsq13
+   and 'onclick="buildCFBCombo(false, false, true)"' in _jsq13 and 'd.hint === "quick_short"' in _jsq13)
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

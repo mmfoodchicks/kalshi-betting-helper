@@ -21,3 +21,14 @@ def today_et():
 def midnight_et_epoch():
     """Epoch of the most recent ET midnight (the nightly-job boundary)."""
     return now_et().replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+
+
+# The owner reads every time in Mountain time (CLAUDE.md), so "today" on a
+# slip the owner places is their calendar day, not the exchange's: an 8 pm
+# MT kickoff is tomorrow in ET and UTC and still tonight to the owner.
+MT = ZoneInfo("America/Denver")
+
+
+def mt_date(ts):
+    """The Mountain-time calendar date of an epoch."""
+    return _dt.datetime.fromtimestamp(ts, MT).date()

@@ -3582,6 +3582,34 @@ def api_soccer_board():
     return jsonify(data)
 
 
+@app.route("/api/soccer/combo")
+def api_soccer_combo():
+    """The quick pick: the best `n`-leg Kalshi combo off the soccer board
+    already built (soccer.quick_combo) -- one leg per match, combo-eligible
+    markets only, the owner's today in Mountain time first. `day` (ISO)
+    pins the window; `btts=0` leaves both-teams-to-score out."""
+    locked = _locked("mixed_parlay")
+    if locked:
+        return locked
+    n = tiers.cap_legs(_tier(), request.args.get("n", 4))
+    day = request.args.get("day") or None
+    if day:
+        try:
+            day = datetime.date.fromisoformat(day).isoformat()
+        except ValueError:
+            return jsonify({"error": "bad day"}), 400
+    try:
+        import soccer
+        data = soccer.board()
+        if not data:
+            return jsonify({"error": "pricing every Kalshi soccer match in the background - retry shortly"}), 502
+        return jsonify(soccer.quick_combo(data, n, request.args.get("objective", "balanced"), day=day,
+                                          use_btts=request.args.get("btts", "1") != "0"))
+    except Exception as e:
+        errlog.note("SOC-combo", e)
+        return jsonify({"error": f"soccer quick pick failed: {e}"}), 502
+
+
 @app.route("/api/nfl/slate")
 def api_nfl_slate():
     """Drive-engine NFL slate: per-game win probs vs live Kalshi moneylines
@@ -3757,6 +3785,11 @@ def api_cfb_parlay():
     sel = {t.strip() for t in (request.args.get("sel") or "").split(",") if t.strip()}
     max_bet = request.args.get("max_bet") == "1"
     optimal = request.args.get("optimal") == "1"
+    # the quick pick: exactly `legs` legs, one per game, combo-eligible
+    # markets only, the next game day in Mountain time (cfb_board.quick_window)
+    quick = request.args.get("quick") == "1" and not (max_bet or optimal)
+    if quick:
+        legs_mode, same_game, sel = "require", False, set()
     if optimal and not (payout and payout > 1):
         return jsonify({"error": "optimal mode needs a payout target above 1x"}), 400
     ptok = (request.args.get("ptok") or "")[:64] or None
@@ -3776,7 +3809,7 @@ def api_cfb_parlay():
                 conn=conn, objective="balanced" if _opt else objective,
                 payout_basis="market" if _opt else "fair",
                 types=prop_types, game_sel=sel or None, max_bet=_mb,
-                div=_cfb_div(),
+                div=_cfb_div(), quick=quick,
                 abort_cb=(None if not ptok else
                           (lambda: baseball.combo_slot_holder()
                            not in (None, ptok))))

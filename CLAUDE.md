@@ -244,6 +244,16 @@ data-only `sim-history` branch (which never deploys):
   untested against the market; the tab says so. **Data sources**: ESPN carries
   73% of Kalshi's matches; FotMob would carry ~96% but its terms forbid
   automated use and its robots.txt disallows /api/* -- not used.
+- **Quick combo** (2026-10-17): one number, the best slip of that many legs
+  for Kalshi's combo builder. Soccer: `soccer.quick_combo` off the cached
+  board (`/api/soccer/combo`); college: `cfb_board.build_parlay(quick=True)`.
+  Both take ONLY combo-eligible events (`kalshi.combo_events`; on 2026-10-17
+  189 of 957 soccer GAME events, every college leg), one leg per match, the
+  owner's today in **Mountain time** first (`clock.mt_date`; a 9 pm MDT
+  kickoff is tomorrow in UTC), the next day only while today is short. The
+  chooser is combo_engine's frontier + `choose`; soccer offers no `value`
+  objective (one model, no market blend: its max-EV slip was four longshots
+  at twice Kalshi's price).
 - **The NBA / NHL seasons** (2026-10-17, `pro_season.py` rules + Monte
   Carlo, `pro_season_job.py` the job and the board): NHL three per division +
   two wildcards, the division bracket, points then RW, ROW, W, head-to-head,
