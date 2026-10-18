@@ -22185,6 +22185,36 @@ ck("wired: the classic task picks its worlds from the slate's kickoff and the bo
    and "n_sims=60000" not in _cw_task
    and "build_nfl_showdown(dg, n_sims=60000, log=print)" in _insp.getsource(_pcw_cw._task_showdown_tourney))
 
+# ---- 2026-10-18 tonight's showdown board on games it never saw (research/sd_worlds.py) ----
+# The owner, before DAL @ GB: "I wanna test it for the packers game tonight."
+# Descriptive: picks on 60,000 games valued on 60,000 others. Pinned with its
+# definitions: "fresh" is block C, the lists sort the board's way, the field is
+# the board's whole weighted universe (run_vs_field(W[allowed], W, f, ...)).
+print("=" * 72)
+print("Tonight's showdown board on fresh games")
+print("=" * 72)
+import json as _json_sw
+_sw_src = open(_os.path.join(_root, "research", "sd_worlds.py")).read()
+_sw = _json_sw.load(open(_os.path.join(_root, "research", "data", "sd_worlds.json")))
+_sw_ratio = {l: _sw["lists"][l]["A"]["shown"] / _sw["lists"][l]["A"]["fresh"] for l in _sw["lists"]}
+ck("tonight's showdown check ran as written (the real run, 180,000 games in three 60,000 blocks, every pick valued on block "
+   "C, the field the whole weighted universe) and the board's figures held on fresh games: shown over fresh within 0.90-1.02 "
+   "for every list, the two independent 60,000-game picks sharing 14+ of 20, the portfolio's top-1% cover 55.7% picked and "
+   "55.2% fresh",
+   _sw["smoke"] is False and _sw["n_sims"] == 180000 and _sw["block"] == 60000 and _sw["dg"] == 154959
+   and "T.run_vs_field(Wc, W, f, np.ascontiguousarray(X[:, b * BLOCK:(b + 1) * BLOCK]), [grid]" in _sw_src
+   and '"fresh": float(C[key][p].mean())' in _sw_src
+   and 'order = np.lexsort((-m["ev"][ok], -np.round(m["money"][ok], 6)))' in _sw_src
+   and all(0.90 <= r <= 1.02 for r in _sw_ratio.values())
+   and all(_sw["lists"][l]["overlap_AB"] >= 14 for l in _sw["lists"])
+   and abs(_sw["portfolio"]["p_any_top1_A"][-1] - 0.557) < 0.001 and abs(_sw["portfolio"]["p_any_top1_C_all20"] - 0.552) < 0.001,
+   str(_sw_ratio))
+_sw_wf = open(_os.path.join(_root, ".github", "workflows", "error-log.yml")).read()
+ck("the snapshot workflow archives the served showdown boards beside the classic ones (up to six), so a showdown board can "
+   "be audited from sim-history before its lock",
+   "if b.get('kind') in ('classic', 'showdown')))\" | cut -d' ' -f1-6); do" in _sw_wf
+   and "if b.get('kind') == 'classic'))" not in _sw_wf)
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

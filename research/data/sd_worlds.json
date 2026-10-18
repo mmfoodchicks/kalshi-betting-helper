@@ -1,0 +1,687 @@
+{
+ "lists": {
+  "top_win": {
+   "A": {
+    "shown": 0.0006518073402087504,
+    "fresh": 0.0006826742431873779,
+    "picks": [
+     165554,
+     262038,
+     165556,
+     165558,
+     165323,
+     262040,
+     181826,
+     475959,
+     277686,
+     167851,
+     251662,
+     181121,
+     246176,
+     249005,
+     173655,
+     459403,
+     261911,
+     277517,
+     166351,
+     181841
+    ]
+   },
+   "B": {
+    "shown": 0.0006346591212414364,
+    "fresh": 0.0006739160682841036,
+    "picks": [
+     165554,
+     165556,
+     262038,
+     165323,
+     277686,
+     459403,
+     181826,
+     181841,
+     172666,
+     165558,
+     277517,
+     246176,
+     456208,
+     262040,
+     475959,
+     181121,
+     465766,
+     167851,
+     180400,
+     172102
+    ]
+   },
+   "AB": {
+    "shown": 0.0006363929434134287,
+    "fresh": 0.0006891397422458519,
+    "picks": [
+     165554,
+     165556,
+     262038,
+     165323,
+     181826,
+     277686,
+     165558,
+     262040,
+     459403,
+     181841,
+     475959,
+     246176,
+     167851,
+     277517,
+     172666,
+     456208,
+     181121,
+     251662,
+     166351,
+     465766
+    ]
+   },
+   "overlap_AB": 15,
+   "C_own_top20": 0.0006980956060416149,
+   "A_top5_names": [
+    [
+     "George Pickens (CPT)",
+     "Brandon Aubrey",
+     "Cowboys",
+     "Dak Prescott",
+     "Javonte Williams",
+     "Matthew Golden"
+    ],
+    [
+     "Javonte Williams (CPT)",
+     "Brandon Aubrey",
+     "Cowboys",
+     "George Pickens",
+     "Dak Prescott",
+     "MarShawn Lloyd"
+    ],
+    [
+     "George Pickens (CPT)",
+     "Brandon Aubrey",
+     "Cowboys",
+     "Dak Prescott",
+     "Javonte Williams",
+     "MarShawn Lloyd"
+    ],
+    [
+     "George Pickens (CPT)",
+     "Brandon Aubrey",
+     "Cowboys",
+     "Dak Prescott",
+     "Javonte Williams",
+     "Tucker Kraft"
+    ],
+    [
+     "George Pickens (CPT)",
+     "Brandon Aubrey",
+     "Cowboys",
+     "CeeDee Lamb",
+     "Dak Prescott",
+     "Tucker Kraft"
+    ]
+   ]
+  },
+  "top_top1": {
+   "A": {
+    "shown": 0.04527690373262665,
+    "fresh": 0.045770605160344605,
+    "picks": [
+     165554,
+     165323,
+     141434,
+     189396,
+     186923,
+     245335,
+     189398,
+     397180,
+     135290,
+     408904,
+     184772,
+     166897,
+     155009,
+     189797,
+     166916,
+     166914,
+     237104,
+     163546,
+     249005,
+     166351
+    ]
+   },
+   "B": {
+    "shown": 0.045602917115324854,
+    "fresh": 0.04571508912656966,
+    "picks": [
+     165554,
+     186923,
+     189396,
+     141434,
+     165323,
+     245335,
+     184772,
+     135290,
+     189398,
+     166914,
+     166351,
+     397180,
+     155009,
+     189797,
+     163546,
+     249005,
+     180400,
+     237104,
+     166897,
+     186769
+    ]
+   },
+   "AB": {
+    "shown": 0.04541498605546587,
+    "fresh": 0.045770605160344605,
+    "picks": [
+     165554,
+     186923,
+     141434,
+     189396,
+     165323,
+     245335,
+     189398,
+     397180,
+     184772,
+     135290,
+     166914,
+     155009,
+     166351,
+     189797,
+     163546,
+     166897,
+     249005,
+     408904,
+     237104,
+     166916
+    ]
+   },
+   "overlap_AB": 18,
+   "C_own_top20": 0.045844262972890584,
+   "A_top5_names": [
+    [
+     "George Pickens (CPT)",
+     "Brandon Aubrey",
+     "Cowboys",
+     "Dak Prescott",
+     "Javonte Williams",
+     "Matthew Golden"
+    ],
+    [
+     "George Pickens (CPT)",
+     "Brandon Aubrey",
+     "Cowboys",
+     "CeeDee Lamb",
+     "Dak Prescott",
+     "Tucker Kraft"
+    ],
+    [
+     "CeeDee Lamb (CPT)",
+     "Trey Smack",
+     "Ryan Flournoy",
+     "Dak Prescott",
+     "MarShawn Lloyd",
+     "Tucker Kraft"
+    ],
+    [
+     "George Pickens (CPT)",
+     "Dak Prescott",
+     "Tyler Goodson",
+     "Jordan Love",
+     "Matthew Golden",
+     "MarShawn Lloyd"
+    ],
+    [
+     "George Pickens (CPT)",
+     "Ryan Flournoy",
+     "Dak Prescott",
+     "Jordan Love",
+     "Tucker Kraft",
+     "Jake Ferguson"
+    ]
+   ]
+  },
+  "top_top01": {
+   "A": {
+    "shown": 0.011571755385040216,
+    "fresh": 0.011910864070340654,
+    "picks": [
+     165554,
+     165323,
+     262038,
+     165556,
+     165558,
+     262040,
+     181826,
+     459403,
+     166897,
+     277517,
+     246176,
+     134579,
+     181841,
+     277686,
+     181121,
+     163522,
+     141434,
+     245335,
+     263448,
+     172666
+    ]
+   },
+   "B": {
+    "shown": 0.01175064802102052,
+    "fresh": 0.011945201866414849,
+    "picks": [
+     165554,
+     165323,
+     165556,
+     262038,
+     262040,
+     166897,
+     181826,
+     246176,
+     180400,
+     165558,
+     459403,
+     245335,
+     277517,
+     181121,
+     172666,
+     246009,
+     134579,
+     263448,
+     184772,
+     166351
+    ]
+   },
+   "AB": {
+    "shown": 0.011628396509366905,
+    "fresh": 0.01195412533461335,
+    "picks": [
+     165554,
+     165323,
+     165556,
+     262038,
+     262040,
+     181826,
+     165558,
+     166897,
+     459403,
+     246176,
+     277517,
+     181121,
+     245335,
+     134579,
+     172666,
+     181841,
+     246009,
+     263448,
+     180400,
+     184772
+    ]
+   },
+   "overlap_AB": 16,
+   "C_own_top20": 0.012105844552111727,
+   "A_top5_names": [
+    [
+     "George Pickens (CPT)",
+     "Brandon Aubrey",
+     "Cowboys",
+     "Dak Prescott",
+     "Javonte Williams",
+     "Matthew Golden"
+    ],
+    [
+     "George Pickens (CPT)",
+     "Brandon Aubrey",
+     "Cowboys",
+     "CeeDee Lamb",
+     "Dak Prescott",
+     "Tucker Kraft"
+    ],
+    [
+     "Javonte Williams (CPT)",
+     "Brandon Aubrey",
+     "Cowboys",
+     "George Pickens",
+     "Dak Prescott",
+     "MarShawn Lloyd"
+    ],
+    [
+     "George Pickens (CPT)",
+     "Brandon Aubrey",
+     "Cowboys",
+     "Dak Prescott",
+     "Javonte Williams",
+     "MarShawn Lloyd"
+    ],
+    [
+     "George Pickens (CPT)",
+     "Brandon Aubrey",
+     "Cowboys",
+     "Dak Prescott",
+     "Javonte Williams",
+     "Tucker Kraft"
+    ]
+   ]
+  },
+  "top_money": {
+   "A": {
+    "shown": 0.36571112267168127,
+    "fresh": 0.36559603444182576,
+    "picks": [
+     155009,
+     237344,
+     249440,
+     377133,
+     249547,
+     328174,
+     408904,
+     333786,
+     157518,
+     333818,
+     157477,
+     345763,
+     136512,
+     141677,
+     345798,
+     142088,
+     136114,
+     333711,
+     136510,
+     352134
+    ]
+   },
+   "B": {
+    "shown": 0.3647161725670594,
+    "fresh": 0.36560923426976466,
+    "picks": [
+     155009,
+     237344,
+     249440,
+     377133,
+     249547,
+     328174,
+     157518,
+     333786,
+     408904,
+     333818,
+     157477,
+     136512,
+     345763,
+     142088,
+     345798,
+     333711,
+     150256,
+     352134,
+     141677,
+     136510
+    ]
+   },
+   "AB": {
+    "shown": 0.36510552489057985,
+    "fresh": 0.36559603444182576,
+    "picks": [
+     155009,
+     237344,
+     249440,
+     377133,
+     249547,
+     328174,
+     408904,
+     333786,
+     157518,
+     333818,
+     157477,
+     136512,
+     345763,
+     142088,
+     345798,
+     141677,
+     333711,
+     136510,
+     352134,
+     136114
+    ]
+   },
+   "overlap_AB": 19,
+   "C_own_top20": 0.36570232905571487,
+   "A_top5_names": [
+    [
+     "CeeDee Lamb (CPT)",
+     "Ryan Flournoy",
+     "Dak Prescott",
+     "Tyler Goodson",
+     "Jordan Love",
+     "Matthew Golden"
+    ],
+    [
+     "Dak Prescott (CPT)",
+     "Trey Smack",
+     "CeeDee Lamb",
+     "Tyler Goodson",
+     "Jordan Love",
+     "Matthew Golden"
+    ],
+    [
+     "Dak Prescott (CPT)",
+     "CeeDee Lamb",
+     "Ryan Flournoy",
+     "Tyler Goodson",
+     "Jordan Love",
+     "Matthew Golden"
+    ],
+    [
+     "Christian Watson (CPT)",
+     "CeeDee Lamb",
+     "Ryan Flournoy",
+     "Dak Prescott",
+     "Tyler Goodson",
+     "Jordan Love"
+    ],
+    [
+     "Dak Prescott (CPT)",
+     "CeeDee Lamb",
+     "Ryan Flournoy",
+     "Jordan Love",
+     "Pierre Strong Jr.",
+     "Tucker Kraft"
+    ]
+   ]
+  },
+  "top_ev": {
+   "A": {
+    "shown": 273.04345720982775,
+    "fresh": 283.4562486870301,
+    "picks": [
+     165554,
+     165323,
+     262038,
+     165558,
+     262040,
+     165556,
+     181826,
+     277686,
+     475959,
+     167851,
+     251662,
+     277517,
+     459403,
+     246176,
+     261911,
+     249005,
+     181121,
+     173655,
+     181841,
+     134588
+    ]
+   },
+   "B": {
+    "shown": 268.2165494154501,
+    "fresh": 273.13756498537606,
+    "picks": [
+     165554,
+     165323,
+     165556,
+     262038,
+     459403,
+     277686,
+     181826,
+     277517,
+     181841,
+     246176,
+     172666,
+     165558,
+     262040,
+     245335,
+     456208,
+     246009,
+     181121,
+     184772,
+     134579,
+     134588
+    ]
+   },
+   "AB": {
+    "shown": 266.62794757530963,
+    "fresh": 282.91550070383545,
+    "picks": [
+     165554,
+     165323,
+     262038,
+     165556,
+     277686,
+     165558,
+     459403,
+     262040,
+     181826,
+     277517,
+     246176,
+     181841,
+     475959,
+     181121,
+     172666,
+     167851,
+     456208,
+     245335,
+     134588,
+     251662
+    ]
+   },
+   "overlap_AB": 14,
+   "C_own_top20": 291.006492508213,
+   "A_top5_names": [
+    [
+     "George Pickens (CPT)",
+     "Brandon Aubrey",
+     "Cowboys",
+     "Dak Prescott",
+     "Javonte Williams",
+     "Matthew Golden"
+    ],
+    [
+     "George Pickens (CPT)",
+     "Brandon Aubrey",
+     "Cowboys",
+     "CeeDee Lamb",
+     "Dak Prescott",
+     "Tucker Kraft"
+    ],
+    [
+     "Javonte Williams (CPT)",
+     "Brandon Aubrey",
+     "Cowboys",
+     "George Pickens",
+     "Dak Prescott",
+     "MarShawn Lloyd"
+    ],
+    [
+     "George Pickens (CPT)",
+     "Brandon Aubrey",
+     "Cowboys",
+     "Dak Prescott",
+     "Javonte Williams",
+     "Tucker Kraft"
+    ],
+    [
+     "Javonte Williams (CPT)",
+     "Brandon Aubrey",
+     "Cowboys",
+     "George Pickens",
+     "Dak Prescott",
+     "Tucker Kraft"
+    ]
+   ]
+  }
+ },
+ "portfolio": {
+  "p_any_top1_A": [
+   0.047818011390285936,
+   0.09533171239998366,
+   0.1384678096333815,
+   0.17665010996555805,
+   0.21405705813364526,
+   0.24999796783029712,
+   0.2849422942293729,
+   0.31629990770384925,
+   0.34531090478075205,
+   0.3733602095199156,
+   0.3979214573540206,
+   0.4204256040575933,
+   0.44049360467583815,
+   0.45995802666573377,
+   0.47844668752082337,
+   0.4960551173282228,
+   0.5129769823051074,
+   0.5287288456472872,
+   0.5434453090908093,
+   0.5569832486574089
+  ],
+  "p_any_top1_C_all20": 0.5523678918926302,
+  "picks": [
+   165554,
+   141434,
+   408904,
+   186923,
+   363142,
+   377133,
+   136482,
+   398934,
+   365718,
+   157518,
+   478420,
+   409458,
+   334713,
+   261955,
+   383262,
+   135290,
+   394690,
+   285274,
+   157477,
+   397862
+  ]
+ },
+ "smoke": false,
+ "dg": 154959,
+ "n_sims": 180000,
+ "block": 60000,
+ "seed": 7,
+ "lineups_legal": 780492,
+ "lineups_allowed": 26282,
+ "timing": {
+  "capture_s": 105.9,
+  "block_A_s": 240.2,
+  "block_B_s": 229.8,
+  "block_C_s": 231.5,
+  "portfolio_s": 387.9,
+  "total_s": 1195.4
+ },
+ "built_utc": "2026-10-18T21:51:32Z"
+}

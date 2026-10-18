@@ -183,6 +183,14 @@ data-only `sim-history` branch (which never deploys):
   proven. First place and EV picked ~11-12% better on fresh worlds (z 1.5, 1.95),
   and a 1.2M field bought nothing. The board's own top first-place and EV figures
   read 3-4x high in-sample (40k), 2-3x (160k); `money_gate` says so.
+  **Showdown** (`research/sd_worlds.py`, DAL @ GB 2026-10-18, descriptive): at
+  60,000 games the board's top-20 figures HELD on fresh games (shown/fresh
+  0.92-1.00), two independent draws shared 14-19 of 20 and 120,000 bought
+  nothing visible -- its field is the whole weighted universe, so the classic
+  tail inflation does not arise. Its scoring pass scores all ~780k legal
+  lineups where only the ~26k we may enter are listed: scoring those alone
+  against the full field is ~3.7x faster (the `opt_worlds` column, best of ALL
+  lineups, would need its own pass) -- not shipped yet.
 - **The NHL deep stack** (2026-10-16): `nhl_pbp.py` turns the league's own
   feed (api-web.nhle.com -- strength states, shooter and goalie, shot type and
   location; ESPN has no strength states) into fourteen-int event records and
