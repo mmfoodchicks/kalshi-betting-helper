@@ -22215,6 +22215,55 @@ ck("the snapshot workflow archives the served showdown boards beside the classic
    "if b.get('kind') in ('classic', 'showdown')))\" | cut -d' ' -f1-6); do" in _sw_wf
    and "if b.get('kind') == 'classic'))" not in _sw_wf)
 
+# ---- 2026-10-18 the ownership-driven field FAILED; the optimizer lead (research/cl_own.py, cl_own_w7.py) ----
+# The owner: "Let's get it." The per-position pull field was fit on week 1 and
+# tested on week 6 by a rule hashed first; it lost on the top 40. Pinned with its
+# definitions, and the lead it left -- each player's share of the simulated
+# Sundays' best lineups (opt_pct) -- recomputed here from the committed inputs,
+# so the two weeks' numbers cannot drift from what the data says.
+print("=" * 72)
+print("The ownership-driven field (failed) and the optimizer lead")
+print("=" * 72)
+import hashlib as _hl_ow
+import json as _json_ow
+_ow_src = open(_os.path.join(_root, "research", "cl_own.py")).read()
+_ow = _json_ow.load(open(_os.path.join(_root, "research", "data", "cl_own.json")))
+ck("the ownership-driven field ran as written (the harness hashed before the fit, the real run, fit on week 1 only, "
+   "tested at 300,000 lineups on week 6, MAE against real any-slot ownership) and FAILED: top-40 MAE 8.95 against the "
+   "served field's 8.29, all-player gain +2.2% where 25% was needed -- nothing ships",
+   _hl_ow.sha256(open(_os.path.join(_root, "research", "cl_own.py"), "rb").read()).hexdigest()
+   == "9f7eb12a382b606d0cb793f94ca74ab594719e78cb066acaec8eb9d03d46723d"
+   and _ow.get("smoke") is False and _ow["verdict"]["ships"] is False
+   and abs(_ow["weeks"]["w6"]["mae_top40"]["fitted"] - 8.95) < 0.01 and abs(_ow["weeks"]["w6"]["mae_top40"]["served"] - 8.29) < 0.01
+   and abs(_ow["verdict"]["gain_all"] - 0.022) < 0.002 and _ow["verdict"]["gain_top40"] < 0
+   and "SHIP_GAIN, BOOT, BOOT_SEED = 0.25, 2000, 7" in _ow_src and "FIT_N, TEST_N, FIT_SEED, TEST_SEED = 30000, 300000" in _ow_src)
+_ow_b1 = _json_ow.load(open(_os.path.join(_root, "research", "data", "dk_classic", "served_board_151307.json")))
+_ow_b1 = _ow_b1.get("board", _ow_b1)
+_ow_r1 = _json_ow.load(open(_os.path.join(_root, "research", "data", "cl_field.json")))["empirical"]["ownership_any_slot_pct"]
+_ow_w6 = _json_ow.load(open(_os.path.join(_root, "research", "data", "cl_own_w6.json")))
+
+
+def _ow_mae(players, real):
+    R = [float(real.get(p["name"], 0.0)) for p in players]
+    top = sorted(range(len(players)), key=lambda i: -R[i])[:40]
+    out = {}
+    for k in ("field_pct", "opt_pct"):
+        X = [float(p.get(k) or 0.0) for p in players]
+        out[k] = (sum(abs(X[i] - R[i]) for i in range(len(R))) / len(R), sum(abs(X[i] - R[i]) for i in top) / 40)
+    return out
+_ow_m1, _ow_m6 = _ow_mae(_ow_b1["players"], _ow_r1), _ow_mae(_ow_w6["players"], _ow_w6["real_ownership_any_slot_pct"])
+ck("the lead, recomputed from the committed inputs: the board's share of the simulated Sundays' best lineups (opt_pct) is "
+   "closer to real ownership than the field model's own (field_pct) on both weeks read -- week 1 1.83 vs 2.16 (all) and "
+   "5.02 vs 5.89 (top 40), week 6 2.62 vs 3.42 and 6.27 vs 8.29 -- and the week-7 test that decides it was written "
+   "before week 7 was played",
+   abs(_ow_m1["opt_pct"][0] - 1.83) < 0.01 and abs(_ow_m1["field_pct"][0] - 2.16) < 0.01
+   and abs(_ow_m1["opt_pct"][1] - 5.02) < 0.01 and abs(_ow_m1["field_pct"][1] - 5.89) < 0.01
+   and abs(_ow_m6["opt_pct"][0] - 2.62) < 0.01 and abs(_ow_m6["field_pct"][0] - 3.42) < 0.01
+   and abs(_ow_m6["opt_pct"][1] - 6.27) < 0.01 and abs(_ow_m6["field_pct"][1] - 8.29) < 0.01
+   and "opt_pct WINS week 7 when it beats field_pct on both metrics" in open(_os.path.join(_root, "research", "cl_own_w7.py")).read()
+   and _ow_w6["meta"]["export_committed"] is False,
+   str((_ow_m1, _ow_m6)))
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

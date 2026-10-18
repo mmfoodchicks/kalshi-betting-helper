@@ -1,0 +1,1466 @@
+{
+ "sampler": {
+  "base": "dfs_tourney.classic_sample",
+  "base_sha256": "987d30db002cf1692e6bbbec664e9499d97ca37448761b0337ddd86b0c7afd5e",
+  "substitutions": [
+   {
+    "from": "                cols = (pc == 1) | (pc == 2)\n                room = need[\"FLEX\"] > 0",
+    "to": "                cols = (pc == 1) | (pc == 2) | (pc == 3)\n                room = need[\"FLEX\"] > 0"
+   },
+   {
+    "from": "        rel[\"FLEX\"] = np.minimum(nxt[\"RB\"], nxt[\"WR\"])",
+    "to": "        rel[\"FLEX\"] = np.minimum(np.minimum(nxt[\"RB\"], nxt[\"WR\"]), nxt[\"TE\"])"
+   },
+   {
+    "from": "            if kind in (\"RB\", \"WR\"):\n                room = room | (need[\"FLEX\"] > 0)",
+    "to": "            if kind in (\"RB\", \"WR\", \"TE\"):\n                room = room | (need[\"FLEX\"] > 0)"
+   }
+  ],
+  "variant_sha256": "1f4f2d4d67b6e4dcf8648f34a088407e7aa9703189b96bfce86d11e11ea086bf"
+ },
+ "inputs": {
+  "fit_n": 30000,
+  "test_n": 300000,
+  "fit_seed": 20261018,
+  "test_seed": 20261019,
+  "max_evals": 600,
+  "start": [
+   0.2,
+   0.2,
+   0.2,
+   0.2,
+   0.2,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "fit": {
+  "theta": {
+   "a": {
+    "QB": 0.21377296155015044,
+    "RB": 0.318294272643142,
+    "WR": 0.25613796817484535,
+    "TE": 0.19126966121780853,
+    "DST": 1.0994862413255582
+   },
+   "b": {
+    "QB": -0.306354442010986,
+    "RB": -0.6556430832894613,
+    "WR": -0.16382325765966527,
+    "TE": 0.4313130663819945,
+    "DST": -0.038845035019391315
+   }
+  },
+  "loss": 2203.5626114233332,
+  "evaluations": 491,
+  "trace_tail": [
+   [
+    0.21377,
+    0.31829,
+    0.25614,
+    0.19127,
+    1.09949,
+    -0.30635,
+    -0.65565,
+    -0.16382,
+    0.43131,
+    -0.03885,
+    2203.563
+   ],
+   [
+    0.21377,
+    0.31829,
+    0.25614,
+    0.19127,
+    1.09949,
+    -0.30636,
+    -0.65565,
+    -0.16382,
+    0.43131,
+    -0.03885,
+    2203.587
+   ],
+   [
+    0.21377,
+    0.31829,
+    0.25614,
+    0.19127,
+    1.09949,
+    -0.30636,
+    -0.65564,
+    -0.16382,
+    0.4313,
+    -0.03884,
+    2203.587
+   ],
+   [
+    0.21377,
+    0.31829,
+    0.25614,
+    0.19127,
+    1.09949,
+    -0.30636,
+    -0.65564,
+    -0.16382,
+    0.43131,
+    -0.03885,
+    2203.587
+   ],
+   [
+    0.21377,
+    0.31829,
+    0.25614,
+    0.19127,
+    1.09948,
+    -0.30635,
+    -0.65564,
+    -0.16382,
+    0.43131,
+    -0.03885,
+    2203.563
+   ],
+   [
+    0.21377,
+    0.31829,
+    0.25614,
+    0.19127,
+    1.09949,
+    -0.30635,
+    -0.65564,
+    -0.16382,
+    0.43131,
+    -0.03885,
+    2203.563
+   ],
+   [
+    0.21377,
+    0.31829,
+    0.25614,
+    0.19127,
+    1.09949,
+    -0.30636,
+    -0.65564,
+    -0.16382,
+    0.43131,
+    -0.03885,
+    2203.563
+   ],
+   [
+    0.21377,
+    0.31829,
+    0.25614,
+    0.19127,
+    1.09949,
+    -0.30635,
+    -0.65564,
+    -0.16382,
+    0.43131,
+    -0.03885,
+    2203.563
+   ],
+   [
+    0.21377,
+    0.31829,
+    0.25614,
+    0.19127,
+    1.09949,
+    -0.30636,
+    -0.65564,
+    -0.16382,
+    0.43131,
+    -0.03884,
+    2203.587
+   ],
+   [
+    0.21377,
+    0.31829,
+    0.25614,
+    0.19127,
+    1.09949,
+    -0.30635,
+    -0.65564,
+    -0.16382,
+    0.43131,
+    -0.03885,
+    2203.587
+   ],
+   [
+    0.21377,
+    0.31829,
+    0.25614,
+    0.19127,
+    1.09949,
+    -0.30636,
+    -0.65564,
+    -0.16382,
+    0.43131,
+    -0.03885,
+    2203.563
+   ],
+   [
+    0.21377,
+    0.31829,
+    0.25614,
+    0.19127,
+    1.09949,
+    -0.30636,
+    -0.65565,
+    -0.16382,
+    0.43131,
+    -0.03884,
+    2203.587
+   ],
+   [
+    0.21377,
+    0.31829,
+    0.25614,
+    0.19127,
+    1.09949,
+    -0.30636,
+    -0.65565,
+    -0.16382,
+    0.43131,
+    -0.03884,
+    2203.587
+   ],
+   [
+    0.21377,
+    0.31829,
+    0.25614,
+    0.19127,
+    1.09949,
+    -0.30636,
+    -0.65564,
+    -0.16382,
+    0.43131,
+    -0.03885,
+    2203.587
+   ],
+   [
+    0.21377,
+    0.31829,
+    0.25614,
+    0.19127,
+    1.09949,
+    -0.30636,
+    -0.65564,
+    -0.16382,
+    0.43131,
+    -0.03885,
+    2203.563
+   ],
+   [
+    0.21377,
+    0.31829,
+    0.25614,
+    0.19127,
+    1.09949,
+    -0.30636,
+    -0.65564,
+    -0.16382,
+    0.43131,
+    -0.03884,
+    2203.563
+   ],
+   [
+    0.21377,
+    0.31829,
+    0.25614,
+    0.19127,
+    1.09948,
+    -0.30635,
+    -0.65564,
+    -0.16382,
+    0.43131,
+    -0.03885,
+    2203.563
+   ],
+   [
+    0.21377,
+    0.31829,
+    0.25614,
+    0.19127,
+    1.09948,
+    -0.30636,
+    -0.65564,
+    -0.16382,
+    0.43131,
+    -0.03885,
+    2203.563
+   ],
+   [
+    0.21377,
+    0.31829,
+    0.25614,
+    0.19127,
+    1.09948,
+    -0.30635,
+    -0.65564,
+    -0.16382,
+    0.43131,
+    -0.03885,
+    2203.563
+   ],
+   [
+    0.21377,
+    0.31829,
+    0.25614,
+    0.19127,
+    1.09949,
+    -0.30636,
+    -0.65564,
+    -0.16382,
+    0.43131,
+    -0.03884,
+    2203.563
+   ]
+  ]
+ },
+ "weeks": {
+  "w1": {
+   "mae_all": {
+    "fitted": 1.8132431944444447,
+    "served": 2.1594570833333337
+   },
+   "mae_top40": {
+    "fitted": 5.152230833333333,
+    "served": 5.8903575
+   },
+   "shape_fitted": {
+    "salary_mean": 48480.744333333336,
+    "at_cap_pct": 20.067,
+    "stack_pct": [
+     17.5,
+     49.08,
+     28.69,
+     4.73
+    ],
+    "bring_back_pct": 35.05,
+    "te_at_flex_pct": 45.458999999999996,
+    "top_copy_share_pct": 0.001
+   },
+   "players": [
+    {
+     "name": "Jahmyr Gibbs",
+     "pos": "RB",
+     "salary": 8000,
+     "proj": 22.1,
+     "real": 42.82,
+     "fitted": 39.04,
+     "served": 39.4
+    },
+    {
+     "name": "Ja'Marr Chase",
+     "pos": "WR",
+     "salary": 7800,
+     "proj": 20.4,
+     "real": 30.17,
+     "fitted": 26.52,
+     "served": 29.4
+    },
+    {
+     "name": "Michael Mayer",
+     "pos": "TE",
+     "salary": 2900,
+     "proj": 8.5,
+     "real": 27.51,
+     "fitted": 5.71,
+     "served": 1.6
+    },
+    {
+     "name": "Chris Olave",
+     "pos": "WR",
+     "salary": 6700,
+     "proj": 16.1,
+     "real": 24.81,
+     "fitted": 11.33,
+     "served": 11.9
+    },
+    {
+     "name": "Saquon Barkley",
+     "pos": "RB",
+     "salary": 6900,
+     "proj": 16.3,
+     "real": 21.07,
+     "fitted": 9.25,
+     "served": 9.7
+    },
+    {
+     "name": "Omarion Hampton",
+     "pos": "RB",
+     "salary": 6800,
+     "proj": 16.0,
+     "real": 19.88,
+     "fitted": 8.36,
+     "served": 9.1
+    },
+    {
+     "name": "De'Von Achane",
+     "pos": "RB",
+     "salary": 7000,
+     "proj": 16.6,
+     "real": 18.41,
+     "fitted": 10.11,
+     "served": 10.7
+    },
+    {
+     "name": "Amon-Ra St. Brown",
+     "pos": "WR",
+     "salary": 7500,
+     "proj": 20.2,
+     "real": 17.84,
+     "fitted": 23.26,
+     "served": 23.8
+    },
+    {
+     "name": "Jaguars",
+     "pos": "DST",
+     "salary": 3400,
+     "proj": 9.1,
+     "real": 17.83,
+     "fitted": 10.87,
+     "served": 2.3
+    },
+    {
+     "name": "Garrett Wilson",
+     "pos": "WR",
+     "salary": 5800,
+     "proj": 14.8,
+     "real": 15.84,
+     "fitted": 8.53,
+     "served": 7.2
+    },
+    {
+     "name": "Ladd McConkey",
+     "pos": "WR",
+     "salary": 5900,
+     "proj": 13.2,
+     "real": 15.05,
+     "fitted": 6.69,
+     "served": 6.8
+    },
+    {
+     "name": "Bijan Robinson",
+     "pos": "RB",
+     "salary": 7700,
+     "proj": 19.2,
+     "real": 14.49,
+     "fitted": 20.11,
+     "served": 21.9
+    },
+    {
+     "name": "Jonathan Taylor",
+     "pos": "RB",
+     "salary": 7300,
+     "proj": 19.0,
+     "real": 13.53,
+     "fitted": 17.96,
+     "served": 18.5
+    },
+    {
+     "name": "Juwan Johnson",
+     "pos": "TE",
+     "salary": 3700,
+     "proj": 10.4,
+     "real": 13.13,
+     "fitted": 6.35,
+     "served": 2.9
+    },
+    {
+     "name": "Bucky Irving",
+     "pos": "RB",
+     "salary": 5700,
+     "proj": 14.7,
+     "real": 12.93,
+     "fitted": 5.08,
+     "served": 5.2
+    },
+    {
+     "name": "Colston Loveland",
+     "pos": "TE",
+     "salary": 5300,
+     "proj": 13.8,
+     "real": 12.9,
+     "fitted": 8.86,
+     "served": 9.9
+    },
+    {
+     "name": "Quentin Johnston",
+     "pos": "WR",
+     "salary": 4700,
+     "proj": 11.0,
+     "real": 12.71,
+     "fitted": 4.17,
+     "served": 4.0
+    },
+    {
+     "name": "Tetairoa McMillan",
+     "pos": "WR",
+     "salary": 6100,
+     "proj": 14.9,
+     "real": 12.64,
+     "fitted": 8.66,
+     "served": 8.3
+    },
+    {
+     "name": "Justin Jefferson",
+     "pos": "WR",
+     "salary": 7300,
+     "proj": 17.5,
+     "real": 12.59,
+     "fitted": 14.33,
+     "served": 14.9
+    },
+    {
+     "name": "Jets",
+     "pos": "DST",
+     "salary": 2500,
+     "proj": 7.8,
+     "real": 12.49,
+     "fitted": 10.52,
+     "served": 5.1
+    },
+    {
+     "name": "DeVonta Smith",
+     "pos": "WR",
+     "salary": 6600,
+     "proj": 15.7,
+     "real": 11.39,
+     "fitted": 12.55,
+     "served": 14.7
+    },
+    {
+     "name": "Zay Flowers",
+     "pos": "WR",
+     "salary": 6400,
+     "proj": 15.6,
+     "real": 11.37,
+     "fitted": 11.24,
+     "served": 12.8
+    },
+    {
+     "name": "Joe Burrow",
+     "pos": "QB",
+     "salary": 6900,
+     "proj": 20.9,
+     "real": 11.28,
+     "fitted": 8.79,
+     "served": 11.4
+    },
+    {
+     "name": "Chase Brown",
+     "pos": "RB",
+     "salary": 7100,
+     "proj": 17.1,
+     "real": 11.14,
+     "fitted": 11.49,
+     "served": 12.1
+    },
+    {
+     "name": "Tee Higgins",
+     "pos": "WR",
+     "salary": 6300,
+     "proj": 16.1,
+     "real": 10.94,
+     "fitted": 11.25,
+     "served": 11.4
+    },
+    {
+     "name": "Steelers",
+     "pos": "DST",
+     "salary": 3300,
+     "proj": 9.2,
+     "real": 10.88,
+     "fitted": 12.92,
+     "served": 2.4
+    },
+    {
+     "name": "Tre Tucker",
+     "pos": "WR",
+     "salary": 4000,
+     "proj": 10.5,
+     "real": 10.35,
+     "fitted": 3.69,
+     "served": 3.9
+    },
+    {
+     "name": "Justin Herbert",
+     "pos": "QB",
+     "salary": 6100,
+     "proj": 17.5,
+     "real": 10.21,
+     "fitted": 4.37,
+     "served": 4.4
+    },
+    {
+     "name": "Dallas Goedert",
+     "pos": "TE",
+     "salary": 4100,
+     "proj": 9.9,
+     "real": 10.1,
+     "fitted": 6.06,
+     "served": 4.1
+    },
+    {
+     "name": "Luther Burden III",
+     "pos": "WR",
+     "salary": 5500,
+     "proj": 13.1,
+     "real": 10.09,
+     "fitted": 6.13,
+     "served": 6.0
+    },
+    {
+     "name": "D'Andre Swift",
+     "pos": "RB",
+     "salary": 6100,
+     "proj": 13.4,
+     "real": 9.76,
+     "fitted": 4.24,
+     "served": 4.4
+    },
+    {
+     "name": "Ashton Jeanty",
+     "pos": "RB",
+     "salary": 6600,
+     "proj": 16.0,
+     "real": 9.73,
+     "fitted": 8.13,
+     "served": 8.4
+    },
+    {
+     "name": "Chris Godwin Jr.",
+     "pos": "WR",
+     "salary": 5200,
+     "proj": 11.8,
+     "real": 9.53,
+     "fitted": 5.52,
+     "served": 5.7
+    },
+    {
+     "name": "Derrick Henry",
+     "pos": "RB",
+     "salary": 6700,
+     "proj": 15.3,
+     "real": 9.3,
+     "fitted": 7.17,
+     "served": 7.6
+    },
+    {
+     "name": "Devaughn Vele",
+     "pos": "WR",
+     "salary": 3500,
+     "proj": 9.8,
+     "real": 8.98,
+     "fitted": 2.94,
+     "served": 4.0
+    },
+    {
+     "name": "Tyler Shough",
+     "pos": "QB",
+     "salary": 5600,
+     "proj": 18.1,
+     "real": 8.9,
+     "fitted": 4.48,
+     "served": 4.0
+    },
+    {
+     "name": "Travis Etienne Jr.",
+     "pos": "RB",
+     "salary": 5900,
+     "proj": 16.5,
+     "real": 8.77,
+     "fitted": 7.73,
+     "served": 7.6
+    },
+    {
+     "name": "Parker Washington",
+     "pos": "WR",
+     "salary": 5600,
+     "proj": 12.2,
+     "real": 8.57,
+     "fitted": 5.49,
+     "served": 5.3
+    },
+    {
+     "name": "Jameson Williams",
+     "pos": "WR",
+     "salary": 6000,
+     "proj": 14.2,
+     "real": 7.57,
+     "fitted": 6.54,
+     "served": 6.4
+    },
+    {
+     "name": "Jalen Coker",
+     "pos": "WR",
+     "salary": 4600,
+     "proj": 11.9,
+     "real": 7.46,
+     "fitted": 4.56,
+     "served": 4.0
+    },
+    {
+     "name": "Browns",
+     "pos": "DST",
+     "salary": 2100,
+     "proj": 5.1,
+     "real": 7.41,
+     "fitted": 9.84,
+     "served": 14.5
+    },
+    {
+     "name": "Emeka Egbuka",
+     "pos": "WR",
+     "salary": 6200,
+     "proj": 12.9,
+     "real": 7.17,
+     "fitted": 7.08,
+     "served": 8.5
+    },
+    {
+     "name": "Jared Goff",
+     "pos": "QB",
+     "salary": 6000,
+     "proj": 19.0,
+     "real": 7.12,
+     "fitted": 5.53,
+     "served": 5.6
+    },
+    {
+     "name": "Sam LaPorta",
+     "pos": "TE",
+     "salary": 4400,
+     "proj": 13.8,
+     "real": 7.04,
+     "fitted": 9.9,
+     "served": 6.1
+    },
+    {
+     "name": "Breece Hall",
+     "pos": "RB",
+     "salary": 6200,
+     "proj": 15.6,
+     "real": 6.98,
+     "fitted": 6.95,
+     "served": 6.9
+    },
+    {
+     "name": "Kyler Murray",
+     "pos": "QB",
+     "salary": 5500,
+     "proj": 18.1,
+     "real": 6.97,
+     "fitted": 4.43,
+     "served": 4.0
+    },
+    {
+     "name": "Jalen Hurts",
+     "pos": "QB",
+     "salary": 6600,
+     "proj": 20.8,
+     "real": 6.58,
+     "fitted": 8.17,
+     "served": 10.1
+    },
+    {
+     "name": "MarShawn Lloyd",
+     "pos": "RB",
+     "salary": 4800,
+     "proj": 9.5,
+     "real": 6.44,
+     "fitted": 1.53,
+     "served": 1.7
+    },
+    {
+     "name": "Baker Mayfield",
+     "pos": "QB",
+     "salary": 5900,
+     "proj": 18.9,
+     "real": 6.25,
+     "fitted": 5.35,
+     "served": 5.3
+    },
+    {
+     "name": "Lamar Jackson",
+     "pos": "QB",
+     "salary": 6800,
+     "proj": 19.6,
+     "real": 6.09,
+     "fitted": 6.92,
+     "served": 8.6
+    },
+    {
+     "name": "David Montgomery",
+     "pos": "RB",
+     "salary": 6000,
+     "proj": 15.2,
+     "real": 5.84,
+     "fitted": 5.96,
+     "served": 6.0
+    },
+    {
+     "name": "Mark Andrews",
+     "pos": "TE",
+     "salary": 3900,
+     "proj": 10.3,
+     "real": 5.77,
+     "fitted": 6.55,
+     "served": 4.1
+    },
+    {
+     "name": "Raiders",
+     "pos": "DST",
+     "salary": 2900,
+     "proj": 8.5,
+     "real": 5.63,
+     "fitted": 8.6,
+     "served": 2.8
+    },
+    {
+     "name": "Nico Collins",
+     "pos": "WR",
+     "salary": 7000,
+     "proj": 16.4,
+     "real": 5.63,
+     "fitted": 11.5,
+     "served": 12.5
+    },
+    {
+     "name": "Chargers",
+     "pos": "DST",
+     "salary": 3500,
+     "proj": 8.2,
+     "real": 5.51,
+     "fitted": 4.0,
+     "served": 1.8
+    },
+    {
+     "name": "Eagles",
+     "pos": "DST",
+     "salary": 3200,
+     "proj": 8.8,
+     "real": 5.24,
+     "fitted": 8.62,
+     "served": 2.3
+    },
+    {
+     "name": "Tyler Warren",
+     "pos": "TE",
+     "salary": 4900,
+     "proj": 13.8,
+     "real": 5.18,
+     "fitted": 9.1,
+     "served": 7.7
+    },
+    {
+     "name": "Caleb Williams",
+     "pos": "QB",
+     "salary": 6300,
+     "proj": 18.3,
+     "real": 5.16,
+     "fitted": 5.29,
+     "served": 5.5
+    },
+    {
+     "name": "Trevor Lawrence",
+     "pos": "QB",
+     "salary": 5800,
+     "proj": 18.6,
+     "real": 4.96,
+     "fitted": 5.05,
+     "served": 4.8
+    },
+    {
+     "name": "Trey McBride",
+     "pos": "TE",
+     "salary": 6800,
+     "proj": 14.2,
+     "real": 4.85,
+     "fitted": 6.41,
+     "served": 15.7
+    }
+   ]
+  },
+  "w6": {
+   "mae_all": {
+    "fitted": 3.3477362244897964,
+    "served": 3.421725
+   },
+   "mae_top40": {
+    "fitted": 8.952031666666667,
+    "served": 8.285214999999999
+   },
+   "shape_fitted": {
+    "salary_mean": 49443.87766666667,
+    "at_cap_pct": 37.05566666666667,
+    "stack_pct": [
+     17.44,
+     49.07,
+     28.8,
+     4.7
+    ],
+    "bring_back_pct": 35.21,
+    "te_at_flex_pct": 68.29333333333332,
+    "top_copy_share_pct": 0.0023333333333333335
+   },
+   "players": [
+    {
+     "name": "Puka Nacua",
+     "pos": "WR",
+     "salary": 8100,
+     "proj": 22.6,
+     "real": 41.68,
+     "fitted": 34.84,
+     "served": 27.9
+    },
+    {
+     "name": "Isaiah Likely",
+     "pos": "TE",
+     "salary": 4800,
+     "proj": 13.6,
+     "real": 35.14,
+     "fitted": 7.78,
+     "served": 5.0
+    },
+    {
+     "name": "Panthers",
+     "pos": "DST",
+     "salary": 2500,
+     "proj": 8.6,
+     "real": 31.77,
+     "fitted": 20.75,
+     "served": 6.5
+    },
+    {
+     "name": "Drake London",
+     "pos": "WR",
+     "salary": 7000,
+     "proj": 18.2,
+     "real": 27.08,
+     "fitted": 15.25,
+     "served": 13.6
+    },
+    {
+     "name": "Kyren Williams",
+     "pos": "RB",
+     "salary": 6800,
+     "proj": 21.1,
+     "real": 25.13,
+     "fitted": 16.84,
+     "served": 17.0
+    },
+    {
+     "name": "Bijan Robinson",
+     "pos": "RB",
+     "salary": 8700,
+     "proj": 25.1,
+     "real": 24.27,
+     "fitted": 55.08,
+     "served": 38.9
+    },
+    {
+     "name": "Malik Nabers",
+     "pos": "WR",
+     "salary": 6500,
+     "proj": 14.9,
+     "real": 24.03,
+     "fitted": 7.91,
+     "served": 8.5
+    },
+    {
+     "name": "Kenneth Walker III",
+     "pos": "RB",
+     "salary": 8500,
+     "proj": 22.8,
+     "real": 23.26,
+     "fitted": 34.38,
+     "served": 27.3
+    },
+    {
+     "name": "Xavier Worthy",
+     "pos": "WR",
+     "salary": 4600,
+     "proj": 10.6,
+     "real": 21.27,
+     "fitted": 5.63,
+     "served": 6.3
+    },
+    {
+     "name": "Germie Bernard",
+     "pos": "WR",
+     "salary": 4000,
+     "proj": 10.1,
+     "real": 21.16,
+     "fitted": 5.11,
+     "served": 5.6
+    },
+    {
+     "name": "Brock Bowers",
+     "pos": "TE",
+     "salary": 7500,
+     "proj": 16.9,
+     "real": 19.45,
+     "fitted": 14.07,
+     "served": 14.6
+    },
+    {
+     "name": "Chuba Hubbard",
+     "pos": "RB",
+     "salary": 6300,
+     "proj": 16.0,
+     "real": 18.24,
+     "fitted": 5.16,
+     "served": 7.3
+    },
+    {
+     "name": "James Cook III",
+     "pos": "RB",
+     "salary": 7400,
+     "proj": 16.9,
+     "real": 17.67,
+     "fitted": 7.66,
+     "served": 9.6
+    },
+    {
+     "name": "Matthew Stafford",
+     "pos": "QB",
+     "salary": 6400,
+     "proj": 21.5,
+     "real": 16.1,
+     "fitted": 10.89,
+     "served": 10.9
+    },
+    {
+     "name": "Ashton Jeanty",
+     "pos": "RB",
+     "salary": 6500,
+     "proj": 15.7,
+     "real": 15.3,
+     "fitted": 4.99,
+     "served": 7.1
+    },
+    {
+     "name": "Jonathan Taylor",
+     "pos": "RB",
+     "salary": 8000,
+     "proj": 22.7,
+     "real": 15.13,
+     "fitted": 30.95,
+     "served": 25.2
+    },
+    {
+     "name": "Tyler Higbee",
+     "pos": "TE",
+     "salary": 3400,
+     "proj": 9.4,
+     "real": 14.86,
+     "fitted": 5.56,
+     "served": 2.3
+    },
+    {
+     "name": "Josh Allen",
+     "pos": "QB",
+     "salary": 7500,
+     "proj": 25.0,
+     "real": 14.49,
+     "fitted": 23.28,
+     "served": 23.6
+    },
+    {
+     "name": "Luther Burden III",
+     "pos": "WR",
+     "salary": 5400,
+     "proj": 11.5,
+     "real": 14.47,
+     "fitted": 5.31,
+     "served": 5.9
+    },
+    {
+     "name": "Rhamondre Stevenson",
+     "pos": "RB",
+     "salary": 6000,
+     "proj": 14.9,
+     "real": 13.91,
+     "fitted": 3.86,
+     "served": 6.0
+    },
+    {
+     "name": "Jalen Coker",
+     "pos": "WR",
+     "salary": 5900,
+     "proj": 12.8,
+     "real": 13.0,
+     "fitted": 6.29,
+     "served": 6.8
+    },
+    {
+     "name": "Tre Tucker",
+     "pos": "WR",
+     "salary": 4700,
+     "proj": 9.1,
+     "real": 12.6,
+     "fitted": 3.53,
+     "served": 5.6
+    },
+    {
+     "name": "Tyler Allgeier",
+     "pos": "RB",
+     "salary": 4800,
+     "proj": 13.3,
+     "real": 12.4,
+     "fitted": 2.17,
+     "served": 4.5
+    },
+    {
+     "name": "Davante Adams",
+     "pos": "WR",
+     "salary": 6600,
+     "proj": 16.6,
+     "real": 12.0,
+     "fitted": 12.21,
+     "served": 12.1
+    },
+    {
+     "name": "Keenan Allen",
+     "pos": "WR",
+     "salary": 4300,
+     "proj": 9.3,
+     "real": 11.86,
+     "fitted": 3.92,
+     "served": 4.5
+    },
+    {
+     "name": "Dallas Goedert",
+     "pos": "TE",
+     "salary": 3900,
+     "proj": 10.4,
+     "real": 11.78,
+     "fitted": 5.25,
+     "served": 2.6
+    },
+    {
+     "name": "Braelon Allen",
+     "pos": "RB",
+     "salary": 5700,
+     "proj": 13.3,
+     "real": 10.88,
+     "fitted": 2.59,
+     "served": 4.6
+    },
+    {
+     "name": "D'Andre Swift",
+     "pos": "RB",
+     "salary": 6700,
+     "proj": 15.1,
+     "real": 10.12,
+     "fitted": 4.58,
+     "served": 6.5
+    },
+    {
+     "name": "Rome Odunze",
+     "pos": "WR",
+     "salary": 4900,
+     "proj": 9.7,
+     "real": 9.99,
+     "fitted": 3.92,
+     "served": 4.6
+    },
+    {
+     "name": "Jameis Winston",
+     "pos": "QB",
+     "salary": 5100,
+     "proj": 13.4,
+     "real": 9.99,
+     "fitted": 2.4,
+     "served": 2.4
+    },
+    {
+     "name": "Kirk Cousins",
+     "pos": "QB",
+     "salary": 5400,
+     "proj": 17.7,
+     "real": 9.86,
+     "fitted": 4.9,
+     "served": 5.0
+    },
+    {
+     "name": "Jets",
+     "pos": "DST",
+     "salary": 2200,
+     "proj": 4.7,
+     "real": 9.07,
+     "fitted": 8.46,
+     "served": 8.9
+    },
+    {
+     "name": "Dameon Pierce",
+     "pos": "RB",
+     "salary": 5100,
+     "proj": 10.8,
+     "real": 8.82,
+     "fitted": 1.5,
+     "served": 2.9
+    },
+    {
+     "name": "Browns",
+     "pos": "DST",
+     "salary": 2500,
+     "proj": 6.3,
+     "real": 8.17,
+     "fitted": 1.8,
+     "served": 4.6
+    },
+    {
+     "name": "Denzel Boston",
+     "pos": "WR",
+     "salary": 5500,
+     "proj": 11.0,
+     "real": 7.96,
+     "fitted": 4.22,
+     "served": 5.0
+    },
+    {
+     "name": "Dalton Kincaid",
+     "pos": "TE",
+     "salary": 5100,
+     "proj": 10.7,
+     "real": 7.79,
+     "fitted": 11.06,
+     "served": 8.3
+    },
+    {
+     "name": "Chris Olave",
+     "pos": "WR",
+     "salary": 7600,
+     "proj": 17.4,
+     "real": 7.74,
+     "fitted": 12.63,
+     "served": 12.7
+    },
+    {
+     "name": "Carnell Tate",
+     "pos": "WR",
+     "salary": 5000,
+     "proj": 12.8,
+     "real": 7.74,
+     "fitted": 7.1,
+     "served": 6.8
+    },
+    {
+     "name": "Caleb Williams",
+     "pos": "QB",
+     "salary": 6200,
+     "proj": 15.9,
+     "real": 7.51,
+     "fitted": 4.23,
+     "served": 4.3
+    },
+    {
+     "name": "Bryce Young",
+     "pos": "QB",
+     "salary": 5700,
+     "proj": 16.9,
+     "real": 7.26,
+     "fitted": 4.66,
+     "served": 4.6
+    },
+    {
+     "name": "Tetairoa McMillan",
+     "pos": "WR",
+     "salary": 7300,
+     "proj": 13.2,
+     "real": 7.13,
+     "fitted": 6.01,
+     "served": 7.4
+    },
+    {
+     "name": "Colston Loveland",
+     "pos": "TE",
+     "salary": 4300,
+     "proj": 9.5,
+     "real": 6.91,
+     "fitted": 4.09,
+     "served": 3.0
+    },
+    {
+     "name": "Wan'Dale Robinson",
+     "pos": "WR",
+     "salary": 4500,
+     "proj": 11.0,
+     "real": 6.61,
+     "fitted": 5.51,
+     "served": 5.5
+    },
+    {
+     "name": "KC Concepcion Jr.",
+     "pos": "WR",
+     "salary": 4200,
+     "proj": 9.7,
+     "real": 6.21,
+     "fitted": 4.25,
+     "served": 4.5
+    },
+    {
+     "name": "Cam Skattebo",
+     "pos": "RB",
+     "salary": 5800,
+     "proj": 10.1,
+     "real": 6.19,
+     "fitted": 1.36,
+     "served": 2.7
+    },
+    {
+     "name": "Devaughn Vele",
+     "pos": "WR",
+     "salary": 5100,
+     "proj": 10.6,
+     "real": 6.0,
+     "fitted": 4.09,
+     "served": 4.7
+    },
+    {
+     "name": "Chiefs",
+     "pos": "DST",
+     "salary": 3600,
+     "proj": 9.0,
+     "real": 5.93,
+     "fitted": 4.47,
+     "served": 2.4
+    },
+    {
+     "name": "Steelers",
+     "pos": "DST",
+     "salary": 3300,
+     "proj": 8.2,
+     "real": 5.8,
+     "fitted": 2.66,
+     "served": 2.4
+    },
+    {
+     "name": "Harold Fannin Jr.",
+     "pos": "TE",
+     "salary": 4100,
+     "proj": 11.2,
+     "real": 5.79,
+     "fitted": 5.99,
+     "served": 3.3
+    },
+    {
+     "name": "Travis Kelce",
+     "pos": "TE",
+     "salary": 5500,
+     "proj": 13.8,
+     "real": 5.78,
+     "fitted": 9.37,
+     "served": 8.1
+    },
+    {
+     "name": "Tanner McKee",
+     "pos": "QB",
+     "salary": 4000,
+     "proj": 11.9,
+     "real": 5.63,
+     "fitted": 1.58,
+     "served": 1.5
+    },
+    {
+     "name": "Juwan Johnson",
+     "pos": "TE",
+     "salary": 4500,
+     "proj": 11.0,
+     "real": 5.58,
+     "fitted": 4.76,
+     "served": 3.3
+    },
+    {
+     "name": "Patriots",
+     "pos": "DST",
+     "salary": 3500,
+     "proj": 8.8,
+     "real": 5.06,
+     "fitted": 3.97,
+     "served": 2.3
+    },
+    {
+     "name": "Tyler Shough",
+     "pos": "QB",
+     "salary": 5600,
+     "proj": 17.0,
+     "real": 5.03,
+     "fitted": 4.59,
+     "served": 4.6
+    },
+    {
+     "name": "Buccaneers",
+     "pos": "DST",
+     "salary": 2600,
+     "proj": 7.3,
+     "real": 5.0,
+     "fitted": 3.93,
+     "served": 4.3
+    },
+    {
+     "name": "Ravens",
+     "pos": "DST",
+     "salary": 3200,
+     "proj": 8.6,
+     "real": 4.94,
+     "fitted": 4.87,
+     "served": 2.8
+    },
+    {
+     "name": "Michael Penix Jr.",
+     "pos": "QB",
+     "salary": 5000,
+     "proj": 14.6,
+     "real": 4.89,
+     "fitted": 2.88,
+     "served": 2.8
+    },
+    {
+     "name": "Garrett Wilson",
+     "pos": "WR",
+     "salary": 6800,
+     "proj": 15.5,
+     "real": 4.89,
+     "fitted": 9.93,
+     "served": 10.1
+    },
+    {
+     "name": "Josh Downs",
+     "pos": "WR",
+     "salary": 5800,
+     "proj": 11.8,
+     "real": 4.78,
+     "fitted": 5.13,
+     "served": 5.8
+    },
+    {
+     "name": "Keon Coleman",
+     "pos": "WR",
+     "salary": 4900,
+     "proj": 8.1,
+     "real": 4.72,
+     "fitted": 4.89,
+     "served": 6.4
+    }
+   ],
+   "boot_top40_served_minus_fitted": {
+    "lo": -1.9452868750000014,
+    "hi": 0.5912710416666662,
+    "mean": -0.6725046375000001
+   }
+  }
+ },
+ "verdict": {
+  "gain_all": 0.021623238428045366,
+  "gain_top40": -0.08048272334111628,
+  "ships": false
+ },
+ "smoke": false,
+ "timing_s": 481.5
+}

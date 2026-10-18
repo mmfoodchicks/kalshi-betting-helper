@@ -191,6 +191,15 @@ data-only `sim-history` branch (which never deploys):
   lineups where only the ~26k we may enter are listed: scoring those alone
   against the full field is ~3.7x faster (the `opt_worlds` column, best of ALL
   lineups, would need its own pass) -- not shipped yet.
+  **Ownership** (`research/cl_own.py`, 2026-10-18, rule hashed first): a
+  per-position pull on projection and value (TE allowed at FLEX), fit on
+  week 1, FAILED on week 6 (top-40 MAE 8.95 vs the served field's 8.29) -- the
+  public paid up at RB in week 1 and chased value in week 6, and no pull
+  fixes the real field's salary-to-cap (50% at $50,000 both weeks). The lead:
+  each player's share of the simulated Sundays' best lineups (`opt_pct`, on
+  every board) beat `field_pct` on BOTH weeks read (top 40: 5.02 vs 5.89,
+  6.27 vs 8.29) -- the public drafts like an optimizer. It is a hypothesis
+  until `research/cl_own_w7.py` (written before week 7) reads week 7.
 - **The NHL deep stack** (2026-10-16): `nhl_pbp.py` turns the league's own
   feed (api-web.nhle.com -- strength states, shooter and goalie, shot type and
   location; ESPN has no strength states) into fourteen-int event records and
