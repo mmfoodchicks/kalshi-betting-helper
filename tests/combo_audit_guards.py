@@ -13083,7 +13083,9 @@ ck("the PC builds the Sunday main slate against its seven-figure contests, check
    and 'return "the DraftKings pool changed"' in _pcw16 and 'return "queued from the tab"' in _pcw16
    and 'return (f"status changed: {detail}" if changed else None), status_key' in _pcw16
    and "3 * 3600" not in _pcw16
-   and "min_pool=_CL_MIN_POOL, n_sims=60000" in _pcw16
+   # repinned 2026-10-18: the worlds come from _cl_sims (180,000, or 60,000
+   # when kickoff is nearer than a full build; research/cl_worlds.py)
+   and "min_pool=_CL_MIN_POOL, n_sims=n_sims" in _pcw16
    and 'sl.get("contest_type") != 21 or (sl.get("games") or 0) < 10 or sl.get("tag")' in _pcw16,
    "owner: nightly for status changes only, Sunday before the games, only the Sunday ones over $1M")
 import pc_worker as _pcw16m
@@ -22107,6 +22109,81 @@ ck("the standings drop folder arrives with a git pull and its README, while ever
    "pc-standings/*" in _fa_gi and "!pc-standings/README.txt" in _fa_gi
    and _os.path.exists(_os.path.join(_root, "pc-standings", "README.txt"))
    and "os.makedirs(drop_dir, exist_ok=True)" in _insp.getsource(__import__("dk_standings").intake))
+
+# ---- 2026-10-18 more simulations: what each dial buys (research/cl_worlds.py) ----
+# The owner: "can we add a lot more simulations?" The rule was committed and
+# hashed before the run (e94df87). These pin the result WITH its definitions:
+# the reference is the pooled variant (index 4) of 80,000 fresh worlds, the
+# money list sorts the board's way, and both readings of W4's money gain stay
+# visible -- the rule's letter (its four replicates share their worlds, so its
+# own spread reads 0) and the conservative one (production's spread for both).
+print("=" * 72)
+print("More simulations: the worlds test and the PC's world count")
+print("=" * 72)
+import hashlib as _hl_cw
+import json as _json_cw
+_cw_src_path = _os.path.join(_root, "research", "cl_worlds.py")
+_cw_src = open(_cw_src_path).read()
+_cw = _json_cw.load(open(_os.path.join(_root, "research", "data", "cl_worlds.json")))
+_cw_P, _cw_W4 = _cw["configs"]["P"]["lists"]["top_money"], _cw["configs"]["W4"]["lists"]["top_money"]
+_cw_z_letter = _cw["verdict"]["top_money"]["W4"]["diff"] / _cw["verdict"]["top_money"]["W4"]["se"]
+_cw_z_cons = (_cw_W4["ref_mean"] - _cw_P["ref_mean"]) / ((_cw_P["ref_sd"] ** 2 / 4 + _cw_P["ref_sd"] ** 2 / 4) ** 0.5)
+ck("the worlds test ran as written: the harness is the file hashed before the run, the real run (not the smoke), its "
+   "variant scorer equal to run_vs_field, the cuts 40k pre-screen / 4 x 40k selection / 80k reference over 300,000 worlds, "
+   "the reference the POOLED 1.2M variant, and the money list sorted the board's way (money, ties by EV)",
+   _hl_cw.sha256(open(_cw_src_path, "rb").read()).hexdigest() == "ceb61f7380bd54750160afc904396a7130dc4c22c30e7297e809c4003e85a781"
+   and _cw["smoke"] is False and _cw["check_max_diff"] == 0.0
+   and _cw["inputs"]["n_sims"] == 300000 and _cw["inputs"]["prescreen"] == 40000 and _cw["inputs"]["block"] == 40000
+   and _cw["inputs"]["blocks"] == 4 and _cw["inputs"]["reference"] == 80000 and _cw["inputs"]["field"] == 300000
+   and "ref = metrics(ra[4], ra2[4], REF)" in _cw_src
+   and 'order = np.lexsort((-m["ev"][ok], -np.round(m["money"][ok], 6)))' in _cw_src)
+ck("the worlds test's verdict, both readings: by the rule's letter 160,000 worlds x 300,000 (W4) is the pick, on the money "
+   "list by a hundredth of a point (55.313% -> 55.323%, z 2.08, its four shared-world replicates identical); with "
+   "production's spread for both it is 1.47 SE and nothing is proven. No bigger-field configuration beats production on "
+   "any list",
+   _cw["recommendation"] == "W4" and all(sorted(pk) == sorted(_cw_W4["picks"][0]) for pk in _cw_W4["picks"])
+   and _cw_W4["ref_sd"] < 1e-12
+   and abs(_cw_W4["ref_mean"] - _cw_P["ref_mean"] - 9.69e-05) < 2e-06 and 2.0 < _cw_z_letter < 2.2 and 1.4 < _cw_z_cons < 1.55
+   and not any(_cw["verdict"][l][c]["beats"] for l in _cw["verdict"] for c in ("F4", "W2F4", "W4F4"))
+   and not any(_cw["verdict"][l]["W4"]["beats"] for l in ("top_top1", "top_top01", "top_win", "top_ev")),
+   f"z letter {_cw_z_letter:.2f}, conservative {_cw_z_cons:.2f}")
+_cw_inf = {c: {l: (sum(_cw["configs"][c]["lists"][l]["selected_values"]) / len(_cw["configs"][c]["lists"][l]["selected_values"]))
+               / _cw["configs"][c]["lists"][l]["ref_mean"] for l in ("top_win", "top_ev")} for c in ("P", "W4")}
+import dfs_tourney as _T_cw
+_cw_gate = _T_cw.money_gate(300000, 832342)["why"]
+ck("the board says what the test measured about its own first-place and EV figures: shown against fresh worlds and a "
+   "1.2M field they read ~4x and ~3x high at 40,000 worlds, ~2.7x and ~2.2x at 160,000 -- 'a quarter ... a third' and "
+   "'a third and under half', in the gate's text with the report named",
+   3.6 < _cw_inf["P"]["top_win"] < 4.4 and 2.8 < _cw_inf["P"]["top_ev"] < 3.4
+   and 2.4 < _cw_inf["W4"]["top_win"] < 3.0 and 2.0 < _cw_inf["W4"]["top_ev"] < 2.4
+   and "selection-inflated" in _cw_gate and "about a quarter of its shown first-place rate and the EV list about a third at 40,000" in _cw_gate
+   and "a third and under half at 160,000 (research/reports/cl_worlds.md)" in _cw_gate,
+   str(_cw_inf))
+import pc_worker as _pcw_cw
+_cw_quick = {"sims": 60000, "timings": {"sims_s": 198.0, "score_s": 349.0, "portfolio_s": 102.0, "total_s": 778.0}}
+_cw_full = {"sims": 180000, "timings": {"total_s": 2400.0}}
+_cw_est_q = _pcw_cw._cl_full_estimate(_cw_quick)
+_cw_now = 1_800_000_000.0
+ck("the PC builds classic boards at 180,000 worlds (20,000 generate, 160,000 score) and falls back to the old 60,000 when "
+   "kickoff is nearer than a full build takes plus ten minutes: a quick board's stages scale (sims x3, scoring and "
+   "portfolio x4, the rest fixed: 778 s -> 2,527 s), a full board's own time is used as is, no timed board reads 45 min, "
+   "and no kickoff means the full count",
+   _pcw_cw._CL_SIMS_FULL == 180000 and _pcw_cw._CL_SIMS_QUICK == 60000
+   and abs(_cw_est_q - (129.0 + 3 * 198.0 + 4 * 451.0)) < 1e-6
+   and _pcw_cw._cl_full_estimate(_cw_full) == 2400.0 and _pcw_cw._cl_full_estimate(None) == 2700.0
+   and _pcw_cw._cl_sims(_cw_now + _cw_est_q + 601, _cw_quick, now=_cw_now) == 180000
+   and _pcw_cw._cl_sims(_cw_now + _cw_est_q + 599, _cw_quick, now=_cw_now) == 60000
+   and _pcw_cw._cl_sims(_cw_now + 2400 + 700, _cw_full, now=_cw_now) == 180000
+   and _pcw_cw._cl_sims(_cw_now + 1800, _cw_full, now=_cw_now) == 60000
+   and _pcw_cw._cl_sims(None, None) == 180000,
+   str(_cw_est_q))
+_cw_task = _insp.getsource(_pcw_cw._task_classic_tourney)
+ck("wired: the classic task picks its worlds from the slate's kickoff and the board on disk and logs the count; the "
+   "showdown boards stay at 60,000 (the test did not cover them)",
+   'n_sims = _cl_sims(_dt_ts(sl.get("starts")), board)' in _cw_task
+   and "build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=n_sims, log=print)" in _cw_task
+   and "n_sims=60000" not in _cw_task
+   and "build_nfl_showdown(dg, n_sims=60000, log=print)" in _insp.getsource(_pcw_cw._task_showdown_tourney))
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

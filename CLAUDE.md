@@ -173,7 +173,16 @@ data-only `sim-history` branch (which never deploys):
   blocks over one pool for the whole stage (`FieldSampler`): the same sample on
   any process count, but a different sample than the single call drew -- the
   one way a seeded board differs from the old code's. Any pool that will not
-  start reruns serially, ledgered `TOURN-pool`.
+  start reruns serially, ledgered `TOURN-pool`. The PC's first such build: 778 s
+  (week 6, two contests; the old code 3,409 s). **Worlds**
+  (`research/cl_worlds.py`, rule committed first; `research/reports/cl_worlds.md`):
+  the PC builds at 180,000 (160,000 score), or the old 60,000 when kickoff is
+  nearer than a full build plus ten minutes (`pc_worker._cl_sims`). By the rule's
+  letter 160k won on the money list by a hundredth of a point, on replicates that
+  share their worlds; with production's spread it is 1.47 SE and nothing is
+  proven. First place and EV picked ~11-12% better on fresh worlds (z 1.5, 1.95),
+  and a 1.2M field bought nothing. The board's own top first-place and EV figures
+  read 3-4x high in-sample (40k), 2-3x (160k); `money_gate` says so.
 - **The NHL deep stack** (2026-10-16): `nhl_pbp.py` turns the league's own
   feed (api-web.nhle.com -- strength states, shooter and goalie, shot type and
   location; ESPN has no strength states) into fourteen-int event records and

@@ -578,7 +578,10 @@ def money_gate(field_n, contest_C):
            "three million draws it runs about 5% light at the median with one lineup 2.8 standard "
            "errors low, so the undercount is neither resolved nor bounded and this link stays shut. "
            "Resolution and duplication are what keep these columns experimental. Rank on top 1% "
-           "and top 0.1%.")
+           "and top 0.1%. The lists' own first-place and EV figures are selection-inflated too: "
+           "valued on fresh worlds against a 1.2M-lineup field, week 1's top-20 win list held about "
+           "a quarter of its shown first-place rate and the EV list about a third at 40,000 "
+           "worlds, a third and under half at 160,000 (research/reports/cl_worlds.md).")
     return {"columns": ["win_pct", "win_any_pct", "ev", "ev_notie", "roi_pct"],
             "authoritative": ok,
             "links": {"sample_resolves_the_contest": bool(resolves),

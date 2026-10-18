@@ -513,6 +513,17 @@ _SD_MIN_POOL = 500_000
 # do not want it to EVERY showdown, only pivotal ones like Monday, Sunday and
 # Thursday." The tab's Build button queues any slate regardless.
 _CL_MIN_POOL = 1_000_000
+# Classic worlds (research/cl_worlds.py, rule written first, 2026-10-18):
+# picking with 160,000 evaluation worlds instead of 40,000 did better on
+# fresh worlds and a fresh field on every list. The gain was tiny on the
+# primary lists (top 1% 7.368% -> 7.373%, money 55.31% -> 55.32%) and ~11-12%
+# on the noisy ones (first place, EV), and a 1.2M-lineup field bought
+# nothing. The full build is ~3x the old one, so a build that would land
+# after kickoff runs the old 60,000 instead: on 2026-10-18 the 60k build,
+# pressed at 10:48 MT, landed at 11:01, a minute after lock.
+_CL_SIMS_FULL = 180000          # 20,000 generate the candidates, 160,000 score them
+_CL_SIMS_QUICK = 60000          # 20,000 + 40,000: the board before 2026-10-18
+_CL_FULL_GUESS_S = 2700         # no timed board to scale from yet
 # The Sunday main slate builds against every contest with a seven-figure
 # pool (the $5, $100 and $4,444 Millionaires share one board). Owner: "as a
 # rule only list and do Sunday ones that are over 1 Mil in pool."
@@ -746,6 +757,35 @@ def _pool_sig(slate):
     return dfs_tourney.pool_sig(slate["csv"])
 
 
+
+def _cl_full_estimate(board):
+    """Seconds a full-world classic build takes on this PC: the last board's
+    own time when it was a full build, else its stages scaled -- the sims by
+    the worlds simulated (3x), the scoring and portfolio passes by the worlds
+    scored (4x), the rest (best lineups on the 20,000 generation worlds, the
+    field, the candidates) unchanged."""
+    t = (board or {}).get("timings") or {}
+    sims = (board or {}).get("sims")
+    if not t.get("total_s"):
+        return float(_CL_FULL_GUESS_S)
+    if sims == _CL_SIMS_FULL:
+        return float(t["total_s"])
+    if sims != _CL_SIMS_QUICK:
+        return float(_CL_FULL_GUESS_S)
+    grow = t.get("sims_s", 0.0) + t.get("score_s", 0.0) + t.get("portfolio_s", 0.0)
+    fixed = float(t["total_s"]) - grow
+    return fixed + 3.0 * t.get("sims_s", 0.0) + 4.0 * (t.get("score_s", 0.0) + t.get("portfolio_s", 0.0))
+
+
+def _cl_sims(start_ts, board, now=None):
+    """Worlds for this classic build: the full count unless the slate's first
+    kickoff is nearer than a full build takes plus ten minutes, when the old
+    count runs so the board still lands before lock."""
+    if start_ts is None:
+        return _CL_SIMS_FULL
+    now = time.time() if now is None else now
+    return _CL_SIMS_FULL if start_ts - now > _cl_full_estimate(board) + 600 else _CL_SIMS_QUICK
+
 def _task_classic_tourney(url, tok):
     """The classic-slate tournament (dfs_tourney.build_nfl_classic) for the
     Sunday main slate against its seven-figure contests, plus any classic
@@ -795,7 +835,9 @@ def _task_classic_tourney(url, tok):
         print(f"[vigil-pc] classic tourney {dg} ({sl.get('games')} games): building - {why}...")
         t0 = time.time()
         try:
-            art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=60000, log=print)
+            n_sims = _cl_sims(_dt_ts(sl.get("starts")), board)
+            print(f"[vigil-pc] classic tourney {dg}: {n_sims:,} worlds")
+            art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=n_sims, log=print)
         except Exception as e:
             # the window is NOT consumed: a failed build is retried next cycle
             print(f"[vigil-pc] classic tourney {dg}: failed ({type(e).__name__}: {e})")
