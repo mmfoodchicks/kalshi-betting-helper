@@ -291,6 +291,31 @@ def log_build(sport, req, res, auto_slate=None, csv_text=""):
     return n
 
 
+def log_lineups(sport, event_key, event_date, week, dg, contest, objective, mode, lineups, note=None):
+    """Log lineups that did not come through a build request -- the PC's
+    tournament board, captured at lock (dfs_hindsight.capture_tourney).
+    `lineups` is [(players, total_salary, total_proj)]. Same table and key
+    scheme as log_build, so each lineup goes in once however often the
+    capture runs; graded by grade_due like any other."""
+    _ensure()
+    contest = contest or {}
+    n = 0
+    with store._lock, store._conn() as c:
+        for ix, (players, sal, proj) in enumerate(lineups):
+            names = sorted(f"{p['name']}{'*' if p.get('captain') else ''}" for p in players)
+            key = hashlib.sha1(f"{sport}|{event_key}|{objective}|{contest.get('id')}|{'|'.join(names)}".encode()).hexdigest()[:20]
+            cur = c.execute(
+                "INSERT OR IGNORE INTO dfs_builds (ts, sport, event_key, event_date, week, "
+                "draft_group_id, contest_id, contest_size, entry_fee, objective, mode, lineup_ix, "
+                "players, total_salary, total_proj, big, big_reason, key, note) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?)",
+                (int(time.time()), sport, event_key, event_date, week, dg, contest.get("id"),
+                 contest.get("max_entries"), contest.get("entry_fee"), objective, mode, ix,
+                 json.dumps(players), sal, proj, "tournament board at lock", key, note))
+            n += cur.rowcount or 0
+    return n
+
+
 def _knobs_of(req, res):
     """(sample, sims) a build ran under: the opponent field the contest sim
     actually drew (what the builder clamped the box to), else the box; the
@@ -758,8 +783,11 @@ def _graded_pairs(sport):
     """[(event_key, group, proj, actual)] over every graded lineup's players."""
     _ensure()
     with store._lock, store._conn() as c:
+        # the tournament board's lineups are graded and shown, but they carry
+        # the board's projections, not the builder's: the builder's
+        # correction is fitted on the builder's own lines only
         rows = c.execute("SELECT event_key, event_date, players, actual_players, backtest FROM dfs_builds "
-                         "WHERE graded=1 AND sport=?", (sport,)).fetchall()
+                         "WHERE graded=1 AND sport=? AND objective NOT LIKE 'tourney:%'", (sport,)).fetchall()
     seen, pairs, ev_info = set(), [], {}
     for r in rows:
         players = {p["name"]: p for p in json.loads(r["players"] or "[]")}
@@ -1019,9 +1047,19 @@ def report():
             "gate": {"min_events": _MIN_EVENTS, "loo_share": _GATE_SHARE, "shrink_events": _SHRINK_K},
             "sample_used": {sp: int(sorted(v)[len(v) // 2]) for sp, v in used.items()},
             "sample_noise": sample_noise(), "sample_reco": sample_reco_table(),
+            "hindsight": _hindsight_rows(),
             "sample_rule": {"win_cv": _SAMPLE_WIN_CV, "cash_cv": _SAMPLE_CASH_CV,
                             "roi_cv": _SAMPLE_ROI_CV, "win_floor": _SAMPLE_WIN_FLOOR},
             "n_logged": len(rows)}
+
+
+def _hindsight_rows():
+    try:
+        import dfs_hindsight
+        return dfs_hindsight.report()
+    except Exception as e:
+        errlog.note("DFSLB-report-hind", e)
+        return []
 
 
 def tick():
@@ -1037,4 +1075,13 @@ def tick():
             ingest_seed()
         except Exception as e:
             errlog.note("DFSLB-seed", e)
-    return grade_due()
+    n = grade_due()
+    # football's second half: the boards' lineups captured at lock, then one
+    # settled slate's hindsight (the best lineup on the real points, where
+    # ours finished, which projections missed, the ESPN cross-check)
+    try:
+        import dfs_hindsight
+        dfs_hindsight.tick()
+    except Exception as e:
+        errlog.note("DFSLB-hindsight", e)
+    return n

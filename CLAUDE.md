@@ -339,6 +339,17 @@ data-only `sim-history` branch (which never deploys):
   and the server only reads them (`/api/dfs/fields`, the tab's Real fields
   card). `research/field_refit.py` decides the CL_* field constants on week
   7+ Sunday GPPs (fit 3, test 2); until then nothing changes a board.
+  **Football hindsight** (`dfs_hindsight.py`, run from `dfslog.tick` after
+  grading): the tournament boards' top lineups are logged at lock
+  (objective `tourney:<list>`, kept OUT of the builder's correction fit);
+  each settled classic draft group then gets, once, the best lineup on the
+  real points (the sheet's own optimizer, so the sheet's rules -- not
+  necessarily DK's true optimum; 1.1 s measured on week 1's 746-player pool),
+  every logged lineup's share of it and its finish in the real field (the
+  standings summary's rank knots), Sleeper's pre-kickoff projection vs the
+  box stat by stat, and an ESPN box-score cross-check (dfs_actuals sport
+  `nfl_hindsight`). Week 1, checked: best 292.1 against the Millionaire's
+  273.98 winner; the board's top lineup 205.4, about 12,107th of 832,342.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 

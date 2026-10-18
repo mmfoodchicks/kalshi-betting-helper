@@ -148,11 +148,22 @@ def summarize(parsed, pool=None, detail=None, cid=None, sha=None):
     with_lu = [e for e in E if e["lineup"]]
     kind = ("showdown" if with_lu and any(s == "CPT" for s, _ in with_lu[0]["lineup"]) else "classic")
     pts = sorted((e["points"] for e in E), reverse=True)
+    # rank/points knots, geometric in rank, so any score can be placed in the
+    # field afterwards (dfs_hindsight.finish): 1, 2, 5, 10, 20, 50, ... and
+    # the last entry
+    ranks, k = [], 1
+    while k < len(pts):
+        for m in (1, 2, 5):
+            if m * k < len(pts):
+                ranks.append(m * k)
+        k *= 10
+    ranks = sorted(set(ranks + ([len(pts)] if pts else [])))
     out = {"contest_id": cid, "sha256": sha, "kind": kind, "entries": n, "with_lineup": len(with_lu),
            "malformed": parsed["malformed"],
            "points": {"first": pts[0] if pts else None,
                       "top_0_1pct": _q(pts, 0.001), "top_1pct": _q(pts, 0.01), "top_10pct": _q(pts, 0.10),
-                      "median": _q(pts, 0.5)}}
+                      "median": _q(pts, 0.5)},
+           "rank_points": [[r, pts[r - 1]] for r in ranks]}
     if detail:
         out["contest"] = {k: detail.get(k) for k in ("name", "entry_fee", "prize_pool", "first_prize",
                                                        "places_paid", "max_entries", "draft_group_id", "starts")}
@@ -285,6 +296,7 @@ def intake(drop_dir=None, detail_fn=None, players_fn=None, log=print):
             summ = summarize(parsed, pool=pool, detail=detail, cid=cid, sha=sha)
             deep_cache.save(KEY.format(cid=cid), summ)
             index[str(cid)] = {"sha256": sha, "name": (detail or {}).get("name"), "kind": summ["kind"],
+                               "draft_group_id": (detail or {}).get("draft_group_id"),
                                "entries": summ["entries"], "starts": (detail or {}).get("starts"),
                                "first": summ["points"]["first"], "cash_line": summ["points"].get("cash_line"),
                                "file": fn, "size": st.st_size, "mtime": int(st.st_mtime)}

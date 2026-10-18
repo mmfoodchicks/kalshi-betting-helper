@@ -21736,6 +21736,220 @@ ck("the exports stay on the PC: pc-standings/ is gitignored, the worker's cycle 
    and '<div id="dfsFields"></div>' in open(_os.path.join(_root, "templates", "index.html")).read()
    and int(_swre.search(r"vigil-shell-v(\d+)", open(_os.path.join(_root, "static", "sw.js")).read()).group(1)) >= 130)
 
+# ---- 2026-10-18 the football look-back's second half (dfs_hindsight) ------------
+# The owner: take every player's real yards and touchdowns, score them with
+# DraftKings' rules, grade the builder, and make the top lineup from that.
+print("=" * 72)
+print("Football hindsight: the best lineup on the real points, the board graded, misses")
+print("=" * 72)
+import itertools as _it_h
+import json as _json_h
+import pickle as _pk_h
+import shutil as _sh_h
+import tempfile as _tf_h
+import dfs_hindsight as _dh
+import dfslog as _dl_h
+import store as _st_h
+import nfl_dfs as _nd_h
+
+_h_dir = _tf_h.mkdtemp(prefix="vigil-hind-")
+_h_db0 = _st_h.DB_PATH
+_st_h.DB_PATH = _os.path.join(_h_dir, "h.db")
+try:
+    _st_h.init_db()
+    _dl_h._ensure()
+    # (1) the board's lineups, captured at lock
+    _h_lu = [{"slot": s, "name": n, "pos": p, "team": t, "salary": 5000, "proj": 10.0}
+             for s, n, p, t in (("QB", "Q One", "QB", "AAA"), ("RB", "R One", "RB", "AAA"), ("RB", "R Two", "RB", "BBB"),
+                                ("WR", "W One", "WR", "AAA"), ("WR", "W Two", "WR", "BBB"), ("WR", "W Three", "WR", "CCC"),
+                                ("TE", "T One", "TE", "CCC"), ("FLEX", "W Four", "WR", "DDD"), ("DST", "Eees", "DST", "EEE"))]
+    _h_row = {"lineup": _h_lu, "salary": 45000, "proj": 90.0}
+    _h_boards = {
+        "cl_tourney_nfl_9001": {"kind": "classic", "sport": "nfl", "draft_group_id": 9001, "slate": {"week": 7},
+                                "built_ts": 1, "mins_before_lock": 25,
+                                "results": {"1": {"contest": {"id": 1, "starts": "2026-10-25T17:00:00.0000000Z",
+                                                              "max_entries": 1000, "entry_fee": 5.0},
+                                                  "top_win": [_h_row], "top_money": [_h_row], "top_top1": []}}},
+        "sd_tourney_nfl_9002": {"kind": "showdown", "sport": "nfl", "draft_group_id": 9002, "slate": {"week": 7},
+                                "contest": {"id": 2, "starts": "2026-10-27T00:15:00.0000000Z"},
+                                "top_win": [{"lineup": [dict(_h_lu[0], slot="CPT")] + [dict(x, slot="FLEX") for x in _h_lu[1:6]],
+                                             "proj": 70.0, "salary": 40000}]}}
+    for _k, _v in _h_boards.items():
+        open(_os.path.join(_h_dir, _k + ".pkl"), "wb").write(_pk_h.dumps(_v))
+    _h_now = _nd_h.iso_ts("2026-10-25T18:00:00Z")                       # after the Sunday lock, before Monday's
+    _h_get = lambda name, max_age: (_h_boards.get(name), 0.0)
+    _h_n1 = _dh.capture_tourney(_h_dir, now=_h_now, get=_h_get)
+    _h_n2 = _dh.capture_tourney(_h_dir, now=_h_now, get=_h_get)
+    with _st_h._lock, _st_h._conn() as _c:
+        _h_rows = [dict(r) for r in _c.execute("SELECT * FROM dfs_builds ORDER BY id")]
+    ck("the tournament board's top lineups are logged once its contest has started -- the board then on disk is the last "
+       "one built before lock -- one row per list and contest, never twice however often the capture runs; a showdown "
+       "whose contest has not started is left for later",
+       _h_n1 == 2 and _h_n2 == 0 and len(_h_rows) == 2
+       and {r["objective"] for r in _h_rows} == {"tourney:top_win", "tourney:top_money"}
+       and all(r["event_key"] == "nfl:2026:w7" and r["draft_group_id"] == 9001 and r["contest_id"] == 1
+               and r["mode"] == "classic" and r["total_proj"] == 90.0 and r["event_date"] == "2026-10-25" for r in _h_rows)
+       and "25 min before lock" in (_h_rows[0]["note"] or ""),
+       str([(r["objective"], r["event_key"], r["mode"]) for r in _h_rows]))
+    # the builder's correction is fitted on the builder's lines only
+    with _st_h._lock, _st_h._conn() as _c:
+        _c.execute("UPDATE dfs_builds SET graded=1, actual=100, actual_players=? ",
+                   (_json_h.dumps([[p["name"], 10.0, 11.0] for p in _h_lu]),))
+        _c.execute("INSERT INTO dfs_builds (ts, sport, event_key, event_date, week, objective, mode, players, graded, "
+                   "actual, actual_players, key, big) VALUES (1,'nfl','nfl:2026:w7','2026-10-25',7,'ceiling','',?,1,90,?,'k1',1)",
+                   (_json_h.dumps([{"name": "Z Zed", "pos": "WR"}]), _json_h.dumps([["Z Zed", 10.0, 12.0]])))
+    _h_pairs = _dl_h._graded_pairs("nfl")
+    ck("the board's lineups are graded and shown but carry the board's projections, not the builder's, so the builder's "
+       "gated correction never fits on them",
+       [(x[1], x[2], x[3]) for x in _h_pairs] == [("WR", 10.0, 12.0)],
+       str(_h_pairs))
+
+    # (2) the best lineup on the real points: the sheet's optimizer, checked against brute force
+    _h_pool = []
+    _h_spec = (("QB", ("QA", 6500, 20), ("QB2", 5000, 24)),
+               ("RB", ("RA", 7000, 25), ("RB2", 4500, 12), ("RC", 6000, 9), ("RD", 3000, 15)),
+               ("WR", ("WA", 8000, 30), ("WB", 5000, 14), ("WC", 4000, 16), ("WD", 6500, 11), ("WE", 3000, 7)),
+               ("TE", ("TA", 5500, 12), ("TB", 2500, 9)),
+               ("DST", ("DA", 3000, 8), ("DB", 2000, 5)))
+    _h_teams = iter(("T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12", "T13", "T14", "T15"))
+    _h_act = {}
+    for _pos, *_ps in _h_spec:
+        for _nm, _sal, _pts in _ps:
+            _tm = next(_h_teams)
+            _h_pool.append({"name": _nm, "pos": _pos, "team": _tm, "salary": _sal, "game": f"{_tm}@ZZ{_tm}"})
+            _h_act[_dl_h._norm(_nm)] = float(_pts)
+    _h_act[f"dst:{'t14'}"] = 8.0
+    _h_act.pop(_dl_h._norm("DA"))
+    _h_act.pop(_dl_h._norm("DB"))
+    _h_act["dst:t15"] = 5.0
+    _h_pool.append({"name": "Nobody Played", "pos": "WR", "team": "T99", "salary": 3000, "game": "T99@ZZT99"})
+    _h_players, _h_unknown = _dh.real_pool(_h_pool, _h_act)
+    _h_pts, _h_best, _h_secs = _dh.best_lineup(_h_players)
+    _h_by = {p["name"]: p for p in _h_players}
+    _h_brute = 0.0
+    for _q in [p for p in _h_players if p["pos"] == "QB"]:
+        for _rb in _it_h.combinations([p for p in _h_players if p["pos"] == "RB"], 2):
+            for _wr in _it_h.combinations([p for p in _h_players if p["pos"] == "WR"], 3):
+                for _te in [p for p in _h_players if p["pos"] == "TE"]:
+                    for _d in [p for p in _h_players if p["pos"] == "DST"]:
+                        _used = {_q["name"], _te["name"], _d["name"]} | {x["name"] for x in _rb + _wr}
+                        for _fx in [p for p in _h_players if p["pos"] in ("RB", "WR") and p["name"] not in _used]:
+                            _lu = [_q, _te, _d, _fx, *_rb, *_wr]
+                            if sum(x["salary"] for x in _lu) <= 50000:
+                                _h_brute = max(_h_brute, sum(x["proj"] for x in _lu))
+    ck("the best lineup on the real points is the sheet's own optimizer with the real points as the projection: equal to "
+       "brute force on a small slate under the cap, the defense scored by its team, and a pool name the box scores do not "
+       "know counted as unknown (zero, as DraftKings scores a player who did not play), never silently dropped",
+       _h_pts == _h_brute and _h_by["DA"]["proj"] == 8.0 and _h_unknown == ["Nobody Played"]
+       and len(_h_best) == 9 and sum(p["salary"] for p in _h_best) <= 50000,
+       str((_h_pts, _h_brute, _h_unknown)))
+
+    # (3) where a score would have finished
+    _h_field = {"entries": 1000, "points": {"cash_line": 150.0},
+                "rank_points": [[1, 250.0], [2, 240.0], [5, 230.0], [10, 220.0], [100, 180.0], [1000, 60.0]]}
+    _h_f1, _h_f2, _h_f3 = _dh.finish(260.0, _h_field), _dh.finish(200.0, _h_field), _dh.finish(100.0, _h_field)
+    ck("a score is placed in the real field between the export's rank/points knots (first place above the winner), and "
+       "the cash line says whether it would have paid",
+       _h_f1["rank"] == 1 and _h_f1["cashed"] is True and _h_f2["rank"] == 55 and _h_f2["top_pct"] == 5.5
+       and _h_f2["cashed"] is True and _h_f3["cashed"] is False and _h_f3["rank"] > 100
+       and _dh.finish(200.0, None) is None,
+       str((_h_f1, _h_f2, _h_f3)))
+
+    # (4) which projections missed, and the ESPN cross-check
+    _h_proj = {"a b": {"pos": "WR", "stats": {"pts_ppr": 12.0, "rec_yd": 60.0, "rec": 5.0}},
+               "c d": {"pos": "WR", "stats": {"pts_ppr": 9.0, "rec_yd": 40.0, "rec": 4.0}},
+               "e f": {"pos": "WR", "stats": {"pts_ppr": 3.0, "rec_yd": 20.0}},          # under 5 PPR: out
+               "g h": {"pos": "WR", "stats": {"pts_ppr": 10.0, "rec_yd": 50.0}}}        # did not play: out
+    _h_stats = [{"player": {"first_name": "A", "last_name": "B"}, "stats": {"gp": 1, "rec_yd": 90.0, "rec": 7}},
+                {"player": {"first_name": "C", "last_name": "D"}, "stats": {"gp": 1, "rec_yd": 30.0, "rec": 4}},
+                {"player": {"first_name": "E", "last_name": "F"}, "stats": {"gp": 1, "rec_yd": 0.0}},
+                {"player": {"first_name": "G", "last_name": "H"}, "stats": {"gp": 0}}]
+    _h_m = {(m["pos"], m["stat"]): m for m in _dh.misses(_h_proj, _h_stats)}
+    _h_sum = {"boxscore": {"players": [{"team": {"abbreviation": "AAA"}, "statistics": [
+        {"name": "receiving", "keys": ["receptions", "receivingYards", "receivingTouchdowns"],
+         "athletes": [{"athlete": {"displayName": "A B"}, "stats": ["7", "90", "1"]},
+                      {"athlete": {"displayName": "C D"}, "stats": ["4", "30", "0"]}]},
+        {"name": "rushing", "keys": ["rushingAttempts", "rushingYards", "rushingTouchdowns"],
+         "athletes": [{"athlete": {"displayName": "A B"}, "stats": ["1", "12", "0"]}]},
+        {"name": "interceptions", "keys": ["interceptions"], "athletes": [{"athlete": {"displayName": "C D"}, "stats": ["1"]}]}]}]}}
+    _h_box = _dh.espn_box(_h_sum)
+    _h_bad, _h_n = _dh.cross_check(["A B", "C D", "Q Q"], {"a b": 7 + 9.0 + 6 + 1.2, "c d": 10.0}, _h_box)
+    ck("the misses are Sleeper's pre-kickoff projection against the real box, stat by stat and position by position, over "
+       "the players projected for 5+ PPR who played; ESPN's box is read by its stat keys (a defensive category is not a "
+       "passer's) and a player the two feeds score differently is listed",
+       _h_m[("WR", "rec_yd")] == {"pos": "WR", "stat": "rec_yd", "n": 2, "proj": 50.0, "real": 60.0, "bias": 10.0, "mae": 20.0}
+       and _h_m[("WR", "rec")]["bias"] == 1.0
+       and _h_box["a b"] == {"rec": 7.0, "rec_yd": 90.0, "rec_td": 1.0, "rush_yd": 12.0, "rush_td": 0.0}
+       and "pass_int" not in _h_box["c d"]
+       and _h_n == 2 and [b["name"] for b in _h_bad] == ["C D"] and _h_bad[0]["espn"] == 7.0,
+       str((_h_m, _h_box, _h_bad)))
+
+    # (5) one slate end to end, stored once, shown on the card
+    _h_logged = [{"objective": "ceiling", "actual": 150.0, "total_proj": 120.0,
+                  "players": _json_h.dumps([{"name": "QA"}, {"name": "RA"}])},
+                 {"objective": "ceiling", "actual": 150.0, "total_proj": 120.0,
+                  "players": _json_h.dumps([{"name": "RA"}, {"name": "QA"}])},           # the same roster again
+                 {"objective": "tourney:top_win", "actual": 120.0, "total_proj": 110.0,
+                  "players": _json_h.dumps([{"name": "WA"}])}]
+    _h_res = _dh.hindsight("nfl:2026:w7", 9001, pool_rows=_h_pool, actuals=_h_act, stats_rows=_h_stats,
+                           projections=_h_proj, espn=_h_box, fields=[dict(_h_field, contest_id=77, contest={"name": "GPP"})],
+                           lineups=_h_logged)
+    ck("a slate's hindsight carries the best lineup and where it would have placed, each logged lineup once with its share "
+       "of the best and its finish, the real field, the misses and the cross-check, and names the sheet's rules",
+       _h_res["best"]["points"] == _h_pts == 156.0 and _h_res["best"]["finish"] == _dh.finish(156.0, _h_field)
+       and _h_res["best"]["finish"]["rank"] == 280
+       and [o["objective"] for o in _h_res["ours"]] == ["ceiling", "tourney:top_win"]
+       and _h_res["ours"][0]["pct_of_best"] == round(100 * 150.0 / _h_pts, 1)
+       and _h_res["ours"][0]["finish"]["cashed"] is True and _h_res["ours"][1]["finish"]["cashed"] is False
+       and _h_res["field"]["contest_id"] == 77 and _h_res["n_unknown"] == 1
+       and _h_res["misses"] and "no tight end at FLEX" in _h_res["rules"]
+       and _h_res["cross"]["tolerance"] == _dh.CROSS_TOL,
+       str({k: _h_res.get(k) for k in ("best", "ours")})[:300])
+    import clock as _clk_h
+    _h_o = (_dh.hindsight, _dh.capture_tourney, _clk_h.today_et)
+    _h_calls = []
+    _h_pool_n = [0]
+    _dh.hindsight = lambda ek, dg: (_h_calls.append((ek, dg)), dict(_h_res, event_key=ek, pool=_h_pool_n[0]))[1]
+    _dh.capture_tourney = lambda: 0
+    try:
+        _h_due0 = _dh.due()
+        _clk_h.today_et = lambda: datetime.date(2026, 10, 27)          # two days on: DraftKings served nothing
+        _h_t0 = _dh.tick()
+        _h_pool_n[0] = 16
+        _h_t1 = _dh.tick()
+        _h_t2 = _dh.tick()
+        _h_rep = _dl_h.report()
+        with _st_h._lock, _st_h._conn() as _c:
+            _c.execute("DELETE FROM dfs_actuals WHERE sport='nfl_hindsight'")
+        _h_pool_n[0] = 0
+        _clk_h.today_et = lambda: datetime.date(2026, 10, 30)          # five days on: stored as having no pool
+        _h_t3 = _dh.tick()
+        with _st_h._lock, _st_h._conn() as _c:
+            _h_gone = _json_h.loads(_c.execute("SELECT payload FROM dfs_actuals WHERE sport='nfl_hindsight'").fetchone()["payload"])
+    finally:
+        _dh.hindsight, _dh.capture_tourney, _clk_h.today_et = _h_o
+    ck("the recorder computes each settled classic slate once (stored under nfl_hindsight) and the look-back's report "
+       "carries it; a slate DraftKings served no pool for is retried, and only after four days stored as having none, "
+       "so it is never retried forever",
+       _h_due0 == [("nfl:2026:w7", 9001, "2026-10-25")] and _h_t0 == 0 and _h_t1 == 1 and _h_t2 == 0
+       and _h_calls[:2] == [("nfl:2026:w7", 9001)] * 2 and len(_h_rep["hindsight"]) == 1
+       and _h_rep["hindsight"][0]["best"]["points"] == _h_pts
+       and _h_t3 == 1 and "no longer served" in _h_gone.get("why", "") and _dh.due() == [],
+       str((_h_due0, _h_t0, _h_t1, _h_t2, _h_t3, _h_calls)))
+finally:
+    _st_h.DB_PATH = _h_db0
+    _sh_h.rmtree(_h_dir, ignore_errors=True)
+_h_js = open(_os.path.join(_root, "static", "app.js")).read()
+ck("wired: the look-back's tick runs the hindsight behind its own ledger code after grading, the card draws the best "
+   "lineup, the board's graded lineups with their finish, the misses and the cross-check, and the standings summary "
+   "carries the rank knots and the draft group the hindsight joins on",
+   "dfs_hindsight.tick()" in _insp.getsource(_dl_h.tick) and 'errlog.note("DFSLB-hindsight", e)' in _insp.getsource(_dl_h.tick)
+   and "Best lineup on the real points" in _h_js and "ESPN cross-check" in _h_js
+   and '"tourney:top_win": "Board: top win%"' in _h_js and "would have finished" in _h_js
+   and '"rank_points": [[r, pts[r - 1]] for r in ranks]' in _insp.getsource(__import__("dk_standings").summarize)
+   and '"draft_group_id": (detail or {}).get("draft_group_id"),' in _insp.getsource(__import__("dk_standings").intake)
+   and int(_swre.search(r"vigil-shell-v(\d+)", open(_os.path.join(_root, "static", "sw.js")).read()).group(1)) >= 131)
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

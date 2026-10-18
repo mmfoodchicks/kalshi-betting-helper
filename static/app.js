@@ -8543,7 +8543,8 @@ async function loadDfsLookback() {
     const d = await (await fetch("/api/dfs/lookback")).json();
     if (d.error) { box.textContent = d.error; return; }
     const rows = d.rows || [];
-    const objName = { projection: "Cash (max projection)", ceiling: "GPP (max ceiling)", leverage: "GPP leverage", confidence: "Most confident", median: "Cash (median)" };
+    const objName = { projection: "Cash (max projection)", ceiling: "GPP (max ceiling)", leverage: "GPP leverage", confidence: "Most confident", median: "Cash (median)",
+                      "tourney:top_win": "Board: top win%", "tourney:top_money": "Board: top money%", "tourney:top_top1": "Board: top-1%" };
     let html = "";
     if (!rows.length) {
       html += `<div>No graded lineups yet. ${d.n_logged ? `<b>${d.n_logged}</b> logged and waiting for their events to finish.` : "Build a lineup for a big event and it is logged automatically."}</div>`;
@@ -8586,6 +8587,27 @@ async function loadDfsLookback() {
     if (pk.length) html += `<div style="margin-top:4px">Waiting on results: ${pk.map((sp) => `${sp.toUpperCase()} ${pend[sp].lineups} lineup${pend[sp].lineups === 1 ? "" : "s"} over ${pend[sp].events} event${pend[sp].events === 1 ? "" : "s"}`).join(" · ")}</div>`;
     const ng = d.not_graded || {};
     html += `<div style="margin-top:4px;color:var(--muted)">Logged but not graded yet: ${Object.keys(ng).map((sp) => `<b>${sp.toUpperCase()}</b> (${escapeHtml(ng[sp])})`).join("; ")}.</div>`;
+    // Football hindsight (dfs_hindsight): the best lineup on the real
+    // points, how close ours came, where it would have finished, which
+    // projections missed, and the ESPN cross-check.
+    for (const h of (d.hindsight || []).slice(0, 3)) {
+      const b = h.best || {};
+      const fin = (f) => f ? ` · would have finished <b>${f.rank.toLocaleString()}</b> of ${f.of.toLocaleString()} (top ${f.top_pct}%)${f.cashed === true ? " · cashed" : f.cashed === false ? " · out of the money" : ""}` : "";
+      html += `<div class="matchup-card" style="margin-top:8px"><div><b>🏈 ${escapeHtml(h.event_key || "")}</b> · draft group ${h.draft_group_id}${h.field ? ` · real field: ${escapeHtml(h.field.name || "")} (${(h.field.entries || 0).toLocaleString()} entries, 1st ${h.field.first ?? "-"}${h.field.cash_line != null ? `, cash line ${h.field.cash_line}` : ""})` : ""}</div>`;
+      if (b.lineup) html += `<div style="margin-top:4px">Best lineup on the real points: <b>${b.points}</b> ($${(b.salary || 0).toLocaleString()})${fin(b.finish)} - ${b.lineup.map((p) => `${escapeHtml(p.name)} ${p.points}`).join(", ")} <span style="color:var(--muted)">(${escapeHtml(h.rules || "")})</span></div>`;
+      if ((h.ours || []).length) {
+        html += `<div class="scroller" style="overflow-x:auto;margin-top:4px"><table class="small" style="border-collapse:collapse;min-width:100%"><thead><tr><th style="text-align:left">lineup</th><th>proj</th><th>actual</th><th>% of best</th><th style="text-align:left">finish</th></tr></thead><tbody>`;
+        for (const o of h.ours.slice(0, 12)) {
+          const f = o.finish;
+          html += `<tr><td>${objName[o.objective] || escapeHtml(o.objective)}</td><td style="text-align:right">${o.proj ?? "-"}</td><td style="text-align:right"><b>${o.actual ?? "-"}</b></td><td style="text-align:right">${o.pct_of_best ?? "-"}%</td><td>${f ? `${f.rank.toLocaleString()} of ${f.of.toLocaleString()} (top ${f.top_pct}%)${f.cashed === true ? " · cashed" : f.cashed === false ? " · no cash" : ""}` : "-"}</td></tr>`;
+        }
+        html += `</tbody></table></div>`;
+      }
+      const miss = (h.misses || []).filter((m) => ["pass_yd", "rush_yd", "rec_yd", "rec"].includes(m.stat) && m.n >= 5);
+      if (miss.length) html += `<div style="margin-top:4px">Projection misses (${escapeHtml(h.misses_source || "")}): ${miss.map((m) => `${m.pos} ${m.stat.replace("_", " ")} ${m.bias > 0 ? "+" : ""}${m.bias} (MAE ${m.mae}, n ${m.n})`).join(" · ")}</div>`;
+      const cx = h.cross || {};
+      html += `<div style="margin-top:4px;color:var(--muted)">ESPN cross-check: ${cx.compared || 0} players scored by both feeds, ${(cx.disagree || []).length ? `${cx.disagree.length} disagree: ${cx.disagree.slice(0, 6).map((x) => `${escapeHtml(x.name)} ${x.sleeper} vs ${x.espn}`).join(", ")} (two-point conversions are not in ESPN's box)` : "all agree"}.${h.n_unknown ? ` ${h.n_unknown} pool players had no box score (did not play, or a name the feed spells differently).` : ""}</div></div>`;
+    }
     // The sample check: the same lineup against opponent fields of each size,
     // several seeds each, at three entry counts - how much win% / ROI swing
     // with the sample. The coach's per-sport sample is the smallest that
