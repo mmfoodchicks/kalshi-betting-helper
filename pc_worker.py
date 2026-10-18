@@ -921,6 +921,18 @@ def _task_showdown_tourney(url, tok):
         _ship_boards(url, tok)
 
 
+def _task_standings():
+    """The owner's DraftKings standings exports (pc-standings/, gitignored):
+    each new one summarized once into the deep store (dk_standings) -- the
+    real field, ownership and score lines the DFS tab shows beside the
+    model's -- and shipped by the cycle's deep sync. Nothing new is a stat per
+    file."""
+    import dk_standings
+    wrote = dk_standings.intake()
+    if wrote:
+        print(f"[vigil-pc] standings: {len(wrote)} contest(s) summarized")
+
+
 def _ship_boards(url, tok):
     """Upload the boards store now (every board fresher than the server's,
     the tournament included); a failure is printed and the cycle's own
@@ -972,7 +984,8 @@ def _cycle(url, tok):
     for label, fn in (("boards", _task_boards),
                       ("showdown tourney", lambda: _task_showdown_tourney(url, tok)),
                       ("classic tourney", lambda: _task_classic_tourney(url, tok)),
-                      ("deep nightly", lambda: _task_deep(url, tok))):
+                      ("deep nightly", lambda: _task_deep(url, tok)),
+                      ("standings", _task_standings)):
         _yield_point(label)
         try:
             fn()

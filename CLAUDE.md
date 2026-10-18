@@ -330,7 +330,15 @@ data-only `sim-history` branch (which never deploys):
   stadium forecast per game, FROZEN from five minutes before kickoff
   (deep store `nfl_props_<season>_wNN`); `research/nfl_prop_anchor.py`
   chooses a blend on weeks 6-7 and tests it on 8-10 -- until it passes,
-  nothing reads the props.
+  nothing reads the props. **The real fields** (`dk_standings.py`): the
+  owner drops DraftKings standings exports into `pc-standings/` on the PC
+  (gitignored: 170 MB each, and they name every entrant);
+  `pc_worker._task_standings` summarizes each once under `cl_field`'s
+  definitions (reproduced exactly on week 1's 832,342 entries) into the
+  deep store (`dk_field_<cid>`, `dk_field_index`), the deep sync ships them,
+  and the server only reads them (`/api/dfs/fields`, the tab's Real fields
+  card). `research/field_refit.py` decides the CL_* field constants on week
+  7+ Sunday GPPs (fit 3, test 2); until then nothing changes a board.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 

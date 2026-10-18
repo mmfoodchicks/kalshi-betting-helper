@@ -2398,6 +2398,23 @@ def api_nfl_props_log():
         return jsonify({"error": f"props log export failed: {e}"}), 502
 
 
+@app.route("/api/dfs/fields")
+def api_dfs_fields():
+    """The real fields: every DraftKings standings export the owner dropped on
+    the PC, summarized there (dk_standings) and shipped through the deep
+    store. ?cid=<contest> returns one summary. Reads the deep store only --
+    the exports themselves never reach the server."""
+    try:
+        import dk_standings
+        cid = request.args.get("cid")
+        if cid:
+            s, ts = dk_standings.summary(int(cid))
+            return jsonify({"summary": s, "ts": ts} if s else {"summary": None, "why": "no summary for that contest"})
+        return jsonify(dk_standings.listing())
+    except Exception as e:
+        return jsonify({"error": f"fields failed: {e}", "contests": []}), 502
+
+
 @app.route("/api/dfs/lookback/seed", methods=["POST"])
 def api_dfs_lookback_seed():
     """The PC's door for backtested events (dfs_backtest rows): inserted as

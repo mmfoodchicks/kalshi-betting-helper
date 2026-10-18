@@ -21601,6 +21601,141 @@ finally:
     _dc_uw.CACHE_DIR = _uw_cache0
     _sh_uw.rmtree(_uw_dir, ignore_errors=True)
 
+# ---- 2026-10-18 the real field: DraftKings standings exports, read on the PC ----
+print("=" * 72)
+print("The real field: contest standings intake (dk_standings)")
+print("=" * 72)
+import io as _io_st
+import shutil as _sh_st
+import tempfile as _tf_st
+import zipfile as _zf_st
+import deep_cache as _dc_st
+import dk_standings as _ds_st
+from research import field_refit as _fr_st
+
+_st_pool = {
+    "Alan Quade": {"pos": "QB", "team": "KC", "opp": "BUF", "salary": 7000, "game": "BUF @ KC"},
+    "Bob Reyes": {"pos": "RB", "team": "KC", "opp": "BUF", "salary": 6000, "game": "BUF @ KC"},
+    "Cal Reed": {"pos": "RB", "team": "BUF", "opp": "KC", "salary": 5000, "game": "BUF @ KC"},
+    "Dan Wolfe": {"pos": "WR", "team": "KC", "opp": "BUF", "salary": 6500, "game": "BUF @ KC"},
+    "Ed Wynn": {"pos": "WR", "team": "KC", "opp": "BUF", "salary": 5500, "game": "BUF @ KC"},
+    "Fred Ward": {"pos": "WR", "team": "BUF", "opp": "KC", "salary": 5000, "game": "BUF @ KC"},
+    "Gus Tate": {"pos": "TE", "team": "BUF", "opp": "KC", "salary": 4000, "game": "BUF @ KC"},
+    "Hal West": {"pos": "WR", "team": "BUF", "opp": "KC", "salary": 4000, "game": "BUF @ KC"},
+    "Bills": {"pos": "DST", "team": "BUF", "opp": "KC", "salary": 3000, "game": "BUF @ KC"},
+    "Chiefs": {"pos": "DST", "team": "KC", "opp": "BUF", "salary": 2500, "game": "BUF @ KC"}}
+_st_l1 = "QB Alan Quade RB Bob Reyes RB Cal Reed WR Dan Wolfe WR Ed Wynn WR Fred Ward TE Gus Tate FLEX Hal West DST Bills"   # 2-stack, bring-back, DST vs own QB
+_st_l2 = "QB Alan Quade RB Bob Reyes RB Cal Reed WR Fred Ward WR Hal West WR Dan Wolfe TE Gus Tate FLEX Ed Wynn DST Chiefs"  # same players but the defense
+_st_hdr = "Rank,EntryId,EntryName,TimeRemaining,Points,Lineup,,Player,Roster Position,%Drafted,FPTS\n"
+_st_rows = [f'1,11,alpha (1/150),0,150.5,{_st_l1},,Alan Quade,QB,100.00%,25.1',
+            f'2,12,beta,0,140.0,{_st_l2},,Bills,DST,66.67%,9.0',
+            f'3,13,gamma (3/150),0,140.0,{_st_l1},,,,,',
+            '4,14,delta,0,0,,,,,,']
+_st_text = _st_hdr + "\n".join(_st_rows) + "\n"
+_st_parsed = _ds_st.parse(_st_text)
+_st_sum = _ds_st.summarize(_st_parsed, pool=_st_pool, detail={"name": "Test GPP", "places_paid": 2, "draft_group_id": 7},
+                           cid=555, sha="x")
+_st_sd = _ds_st.parse_lineup("CPT Alan Quade FLEX Dan Wolfe FLEX Cal Reed FLEX Gus Tate FLEX Bills FLEX Hal West")
+ck("a standings export reads under the sampler's own definitions: lineups resolve classic or showdown, a blank row counts in "
+   "the entries but not the field, the max-entry user is read off his name, and a stack is the quarterback's WR/TE "
+   "teammates (a back not counted), a bring-back a WR/TE from his opponent, the defense against its own quarterback, the "
+   "salary spent",
+   len(_st_parsed["entries"]) == 4 and _st_parsed["malformed"] == 0 and _st_parsed["entries"][3]["lineup"] is None
+   and _st_parsed["entries"][0]["user"] == "alpha" and _st_parsed["entries"][0]["user_entries"] == 150
+   and _st_parsed["dk_own"][("Alan Quade", "QB")] == 1.0 and _st_parsed["fpts"]["Bills"] == 9.0
+   and [s for s, _ in _st_sd] == ["CPT", "FLEX", "FLEX", "FLEX", "FLEX", "FLEX"]
+   and _st_sum["kind"] == "classic" and _st_sum["entries"] == 4 and _st_sum["with_lineup"] == 3
+   and _st_sum["shape"]["stack_pct"] == [0.0, 0.0, 100.0, 0.0]
+   and _st_sum["shape"]["bring_back_pct"] == 100.0 and abs(_st_sum["shape"]["dst_vs_own_qb_pct"] - 66.667) < 1e-9
+   and _st_sum["shape"]["salary_mean"] == round((46000 * 2 + 45500) / 3, 1)
+   and _st_sum["max_entry_users_pct"] == 50.0,
+   str(_st_sum.get("shape")))
+ck("the summary carries the score lines (first place, the cash line at the contest's last paid place), the any-slot "
+   "ownership beside DraftKings' own per-position column, the duplicate picture (distinct-entry collision, the sampler's "
+   "statistic) and the model's constants to read against",
+   _st_sum["points"]["first"] == 150.5 and _st_sum["points"]["cash_line"] == 140.0
+   and _st_sum["ownership"][0]["name"] in ("Alan Quade", "Bob Reyes") and _st_sum["ownership"][0]["pct"] == 100.0
+   and next(o for o in _st_sum["ownership"] if o["name"] == "Alan Quade")["dk_pct"] == {"QB": 100.0}
+   and next(o for o in _st_sum["ownership"] if o["name"] == "Bills")["pct"] == 66.67
+   and _st_sum["duplicates"]["distinct_lineups"] == 2 and _st_sum["duplicates"]["max_copies"] == 2
+   and abs(_st_sum["duplicates"]["distinct_pair_collision"] - 2 / 6) < 1e-12
+   and _st_sum["model"]["dst_vs_own_qb"] == __import__("dfs_tourney").CL_DST_VS_OWN_QB
+   and _st_sum["contest"]["name"] == "Test GPP",
+   str((_st_sum["points"], _st_sum["duplicates"])))
+_st_dir = _tf_st.mkdtemp(prefix="vigil-st-")
+_st_drop = _os.path.join(_st_dir, "drop")
+_os.makedirs(_st_drop)
+_st_cache0 = _dc_st.CACHE_DIR
+_dc_st.CACHE_DIR = _os.path.join(_st_dir, "deep")
+try:
+    _st_buf = _io_st.BytesIO()
+    with _zf_st.ZipFile(_st_buf, "w") as _z:
+        _z.writestr("contest-standings-555.csv", "﻿" + _st_text)
+    open(_os.path.join(_st_drop, "contest-standings-555.zip"), "wb").write(_st_buf.getvalue())
+    open(_os.path.join(_st_drop, "contest-standings-777.csv"), "w").write("not,a,standings,file\n")
+    open(_os.path.join(_st_drop, "notes.txt"), "w").write("ignored")
+    _st_calls = []
+
+    def _st_detail(cid):
+        _st_calls.append(cid)
+        return {"name": f"GPP {cid}", "places_paid": 2, "draft_group_id": 7, "starts": "2026-10-25T17:00:00Z"}
+
+    def _st_players(dg):
+        return [{"name": k, "salary": v["salary"], "position": v["pos"], "team": v["team"], "game": v["game"].replace(" ", "")}
+                for k, v in _st_pool.items()]
+    _st_logs = []
+    _st_w1 = _ds_st.intake(_st_drop, detail_fn=_st_detail, players_fn=_st_players, log=_st_logs.append)
+    _st_w2 = _ds_st.intake(_st_drop, detail_fn=_st_detail, players_fn=_st_players, log=_st_logs.append)
+    _st_list = _ds_st.listing()
+    _st_s, _ = _ds_st.summary(555)
+    ck("the PC's intake reads DraftKings' zip (BOM and all) once, summarizes it with the contest's own pool and payout table, "
+       "and files it under dk_field_<contest> with an index row; a file it cannot read is ledgered once and skipped, a "
+       "second pass reads nothing again (by name, size and mtime, then sha256), and the server lists from the index alone",
+       _st_w1 == [555] and _st_w2 == [] and _st_calls == [555]
+       and _st_s["shape"]["stack_pct"] == [0.0, 0.0, 100.0, 0.0] and _st_s["points"]["cash_line"] == 140.0
+       and [r["contest_id"] for r in _st_list["contests"]] == [555] and _st_list["contests"][0]["entries"] == 4
+       and sum(1 for x in _st_logs if "777" in x and "unreadable" in x) == 1
+       and 'errlog.note("STAND-intake", e, path=fn)' in _insp.getsource(_ds_st.intake),
+       str((_st_w1, _st_w2, _st_logs)))
+finally:
+    _dc_st.CACHE_DIR = _st_cache0
+    _sh_st.rmtree(_st_dir, ignore_errors=True)
+_st_v = lambda m, sd, b, d, s: {"max_own": m, "stack_dist": sd, "bring_back": b, "dst_vs_own_qb": d, "salary_used": s}
+_st_cur = _st_v(0.38, [0.174, 0.49, 0.289, 0.047], 0.35, 0.08, 49400.0)
+_st_fit = [_st_v(0.40, [0.19, 0.53, 0.26, 0.02], 0.32, 0.005, 49850.0)] * 3
+_st_dec = _fr_st.decide(_st_fit, [_st_v(0.41, [0.19, 0.53, 0.26, 0.02], 0.31, 0.006, 49800.0),
+                                  _st_v(0.36, [0.19, 0.53, 0.26, 0.02], 0.33, 0.004, 49900.0)], _st_cur)
+_st_idx = [{"contest_id": 1, "kind": "classic", "entries": 900000, "starts": "2026-10-25T17:00Z"},
+           {"contest_id": 2, "kind": "classic", "entries": 100000, "starts": "2026-10-25T17:00Z"},
+           {"contest_id": 3, "kind": "classic", "entries": 40000, "starts": "2026-11-01T17:00Z"},
+           {"contest_id": 4, "kind": "showdown", "entries": 300000, "starts": "2026-11-01T17:00Z"},
+           {"contest_id": 5, "kind": "classic", "entries": 800000, "starts": "2026-10-18T17:00Z"}]
+ck("the field-refit rule was written before any export after week 1 was read: Sunday classic GPPs of 50,000+ entries from "
+   "week 7, the largest per day; fit each constant on three, ship it only if it beats the current one on BOTH of the next two "
+   "(a constant one test contest prefers the old value for stays)",
+   "written 2026-10-18 13:55 UTC" in _fr_st.__doc__ and _fr_st.MIN_ENTRIES == 50000 and (_fr_st.N_FIT, _fr_st.N_TEST) == (3, 2)
+   and [r["contest_id"] for r in _fr_st.eligible(_st_idx)] == [1]
+   and _st_dec["dst_vs_own_qb"]["ship"] and _st_dec["bring_back"]["ship"] and _st_dec["salary_used"]["ship"]
+   and _st_dec["stack_dist"]["ship"] and not _st_dec["max_own"]["ship"]
+   and not any(v["ship"] for v in _fr_st.decide(_st_fit, _st_fit[:1], _st_cur).values()),
+   str({k: v["ship"] for k, v in _st_dec.items()}))
+_st_pcw = open(_os.path.join(_root, "pc_worker.py")).read()
+_st_app = open(_os.path.join(_root, "app.py")).read()
+_st_route = _st_app[_st_app.index('@app.route("/api/dfs/fields")'):][:900]
+_st_js = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the exports stay on the PC: pc-standings/ is gitignored, the worker's cycle runs the intake and ships the summaries "
+   "with the deep sync, the server's route reads the deep store only, the summaries carry no entrant's name, and the DFS "
+   "tab lists the real fields with the model's numbers beside them",
+   "pc-standings/" in open(_os.path.join(_root, ".gitignore")).read()
+   and '("standings", _task_standings)' in _st_pcw and "dk_standings.intake()" in _st_pcw
+   and "dk_standings.summary(int(cid))" in _st_route and "dk_standings.listing()" in _st_route
+   and "read_text" not in _st_route and "intake" not in _st_route
+   and not any("user" in t for t in _st_sum["top_lineups"])
+   and "async function loadDfsFields()" in _st_js and 'fetch("/api/dfs/fields")' in _st_js
+   and "loadDfsFields();" in _st_js[_st_js.index("async function loadDfsTourney("):][:400]
+   and '<div id="dfsFields"></div>' in open(_os.path.join(_root, "templates", "index.html")).read()
+   and int(_swre.search(r"vigil-shell-v(\d+)", open(_os.path.join(_root, "static", "sw.js")).read()).group(1)) >= 130)
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

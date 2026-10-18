@@ -8807,11 +8807,54 @@ async function loadNflWeather() {
     box.innerHTML = "";
   }
 }
+// The real fields: the owner's DraftKings standings exports, summarized on
+// the PC (dk_standings) -- what the public actually played, beside the
+// numbers the tournament board's field model assumes.
+async function loadDfsFields() {
+  const box = $("dfsFields");
+  if (!box) return;
+  if ((($("dfsSport") || {}).value || "") !== "nfl") { box.innerHTML = ""; return; }
+  let d;
+  try { d = await (await fetch("/api/dfs/fields")).json(); } catch (e) { box.innerHTML = ""; return; }
+  const rows = d.contests || [];
+  const how = `Download a contest's standings from DraftKings once it locks (the contest page's export) and drop the .zip into <b>pc-standings/</b> beside Vigil on the PC; it is read once and shows here.`;
+  const list = rows.length ? `<div class="scroller" style="overflow-x:auto"><table class="small" style="border-collapse:collapse;min-width:100%"><thead><tr><th style="text-align:left">contest</th><th>entries</th><th>1st</th><th>cash line</th></tr></thead><tbody>${rows.map((r) => `<tr><td><a href="#" onclick="loadDfsField(${r.contest_id});return false">${escapeHtml(r.name || String(r.contest_id))}</a> <span style="color:var(--faint)">${escapeHtml(r.kind || "")}</span></td><td style="text-align:right">${(r.entries || 0).toLocaleString()}</td><td style="text-align:right">${r.first ?? "-"}</td><td style="text-align:right">${r.cash_line ?? "-"}</td></tr>`).join("")}</tbody></table></div>` : `<div>No exports yet.</div>`;
+  box.innerHTML = `<details class="matchup-card" style="margin-top:10px"><summary class="small">🧾 Real fields · ${rows.length} DraftKings standings export${rows.length === 1 ? "" : "s"}</summary>
+    <p class="sub" style="margin:4px 0;font-size:0.78rem">${how} Read under the field model's own definitions; nothing here changes a board (a refit of the model's constants has its own rule, research/field_refit.py).</p>${list}<div id="dfsFieldOne"></div></details>`;
+}
+async function loadDfsField(cid) {
+  const box = $("dfsFieldOne");
+  if (!box) return;
+  box.innerHTML = "loading…";
+  let d;
+  try { d = await (await fetch(`/api/dfs/fields?cid=${encodeURIComponent(cid)}`)).json(); } catch (e) { box.textContent = "unavailable"; return; }
+  const s = d.summary;
+  if (!s) { box.textContent = d.why || "no summary"; return; }
+  const p = s.points || {}, sh = s.shape || {}, m = s.model || {}, du = s.duplicates || {};
+  const pc = (x) => (x == null ? "-" : `${x}%`);
+  let shape = "";
+  if (s.kind === "classic" && sh.stack_pct) {
+    const md = (m.stack_dist || []).map((x) => Math.round(x * 1000) / 10);
+    shape = `<table class="small" style="border-collapse:collapse;margin-top:6px"><thead><tr><th style="text-align:left"></th><th>real</th><th>model</th></tr></thead><tbody>
+      <tr><td>QB stacks (0 / 1 / 2 / 3+ WR-TE)</td><td>${sh.stack_pct.join(" / ")}%</td><td>${md.join(" / ")}%</td></tr>
+      <tr><td>bring-back (WR/TE from the QB's opponent)</td><td>${pc(sh.bring_back_pct)}</td><td>${pc(Math.round((m.bring_back || 0) * 1000) / 10)}</td></tr>
+      <tr><td>defense against its own QB</td><td>${pc(sh.dst_vs_own_qb_pct)}</td><td>${pc(Math.round((m.dst_vs_own_qb || 0) * 1000) / 10)}</td></tr>
+      <tr><td>salary spent (mean)</td><td>$${Math.round(sh.salary_mean || 0).toLocaleString()}</td><td>$${Math.round(m.salary_used || 0).toLocaleString()}</td></tr>
+      <tr><td>most-owned player</td><td>${pc((s.ownership || [{}])[0].pct)}</td><td>${pc(Math.round((m.max_own || 0) * 1000) / 10)}</td></tr>
+      <tr><td>two random entries identical</td><td>${du.distinct_pair_collision != null ? du.distinct_pair_collision.toExponential(1) : "-"}</td><td>${m.collision != null ? Number(m.collision).toExponential(1) : "-"}</td></tr></tbody></table>`;
+  } else if (sh.team_split_pct) {
+    shape = `<div style="margin-top:6px">team splits: ${Object.entries(sh.team_split_pct).map(([k, v]) => `${escapeHtml(k)} ${v}%`).join(" · ")}</div>`;
+  }
+  const own = (s.ownership || []).slice(0, 20).map((o) => `<tr><td>${escapeHtml(o.name)}</td><td>${escapeHtml(o.pos || "")} ${escapeHtml(o.team || "")}</td><td style="text-align:right">${o.salary ? "$" + o.salary.toLocaleString() : ""}</td><td style="text-align:right"><b>${o.pct}%</b>${o.cpt_pct != null ? ` <span style="color:var(--muted)">(CPT ${o.cpt_pct}%)</span>` : ""}</td><td style="text-align:right">${o.fpts ?? ""}</td></tr>`).join("");
+  box.innerHTML = `<div class="small" style="margin-top:8px"><b>${escapeHtml(((s.contest || {}).name) || String(s.contest_id))}</b> · ${(s.entries || 0).toLocaleString()} entries · 1st <b>${p.first ?? "-"}</b> · top 1% ${p.top_1pct ?? "-"} · cash line ${p.cash_line ?? "-"} · median ${p.median ?? "-"} · ${du.distinct_lineups != null ? du.distinct_lineups.toLocaleString() : "-"} distinct lineups (most copied: ${du.max_copies ?? "-"}) · ${s.max_entry_users_pct}% of entries from 150-max players</div>${shape}
+    <div class="scroller" style="overflow-x:auto;margin-top:6px"><table class="small" style="border-collapse:collapse;min-width:100%"><thead><tr><th style="text-align:left">most owned</th><th></th><th>salary</th><th>owned</th><th>DK pts</th></tr></thead><tbody>${own}</tbody></table></div>`;
+}
 async function loadDfsTourney(dg, force) {
   const bx = _dfsTourneyBoxes();
   if (!bx) return;
   const sp = ($("dfsSport") || {}).value;
   loadNflWeather();
+  loadDfsFields();
   if (sp !== "nfl") { bx.main.innerHTML = ""; bx.files.innerHTML = ""; _dfsTourneyDg = null; _dfsTourneyData = null; return; }
   loadDfsTourneyList();
   if (!dg) { bx.main.innerHTML = ""; _dfsTourneyDg = null; _dfsTourneyData = null; return; }

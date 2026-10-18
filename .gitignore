@@ -14,6 +14,9 @@ predlog.db
 vigil-pc.cfg
 pc-simcache/
 pc-deepcache/
+# the owner's DraftKings standings exports (dk_standings reads them on the PC;
+# 170 MB each, and they name every entrant)
+pc-standings/
 *.db-wal
 *.db-shm
 *.sqlite3
