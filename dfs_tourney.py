@@ -77,7 +77,10 @@ VERSION = 3                              # 3: every leaf a plain Python value (n
 # steady candidates (safe_lineups) in the pool it ranks. The other lists'
 # figures mean what they meant, but the pool grew, so a board built under 8
 # is rebuilt rather than served without the list the owner asked for.
-ENGINE = 9
+# 10: the optimizer field (FIELD_MODEL, 2026-10-18): each player's field
+# ownership steered to 0.9 x his best-lineup share + 0.1 x the calibrated
+# field's, the candidates drawn with the same pulls. Every list moves.
+ENGINE = 10
 # Showdown carries its OWN semantic version. The two engines change for
 # different reasons -- a classic field-model fix has nothing to say about a
 # single-game board -- and each build is expensive enough (an hour for
@@ -2210,12 +2213,28 @@ def _sample_init(players):
     _PAR["players"] = players
 
 
+def _pulled(players, pulls):
+    """The players with each one's pull as the sampler's projection: under
+    beta 1 and kappa 0 the pull IS the logit classic_sample draws by."""
+    return [dict(p, proj=float(u)) for p, u in zip(players, pulls)]
+
+
 def _sample_block(job, players=None):
-    """One block of classic_sample from its own seed: (rows, receipt)."""
-    seed, n, beta, kappa, kw = job
+    """One block of classic_sample from its own seed: (rows, receipt). A
+    sixth element, a tuple of per-player pulls (steer_field), stands in for
+    the projections; a worker builds the pulled pool once per pull vector."""
+    seed, n, beta, kappa, kw = job[:5]
+    pulls = job[5] if len(job) > 5 else None
+    base = _PAR["players"] if players is None else players
+    if pulls is not None:
+        if players is None:
+            if _PAR.get("pulls") != pulls:
+                _PAR["pulls"], _PAR["pulled"] = pulls, _pulled(base, pulls)
+            base = _PAR["pulled"]
+        else:
+            base = _pulled(base, pulls)
     rep = {}
-    idx = classic_sample(_PAR["players"] if players is None else players, n, np.random.default_rng(seed),
-                         beta, kappa, report=rep, **kw)
+    idx = classic_sample(base, n, np.random.default_rng(seed), beta, kappa, report=rep, **kw)
     return idx, rep
 
 
@@ -2245,10 +2264,11 @@ class FieldSampler:
             except Exception as e:
                 errlog.note("TOURN-pool", e)
 
-    def __call__(self, n, rng, beta, kappa, report=None, **kw):
+    def __call__(self, n, rng, beta, kappa, report=None, pulls=None, **kw):
         n = int(n)
         seed = int(rng.integers(1 << 62))
-        jobs = [((seed, b), min(_SAMPLE_BLOCK, n - a), float(beta), float(kappa), kw)
+        extra = () if pulls is None else (tuple(float(u) for u in pulls),)
+        jobs = [((seed, b), min(_SAMPLE_BLOCK, n - a), float(beta), float(kappa), kw) + extra
                 for b, a in enumerate(range(0, n, _SAMPLE_BLOCK))]
         parts = None
         if self.ex is not None and len(jobs) > 1:
@@ -2278,6 +2298,51 @@ class FieldSampler:
             except Exception as e:
                 errlog.note("TOURN-pool", e)
             self.ex = None
+
+# The optimizer field (2026-10-18). On three real Millionaires each player's
+# share of the simulated Sundays' exact best lineups (opt_pct) sat closer to
+# his real ownership than the calibrated field's own share did -- top-40 MAE
+# 5.02 vs 5.89 (week 1), 5.57 vs 6.62 (week 2, the week NOT read to find it,
+# rule research/cl_own_w2.py written first), 6.27 vs 8.29 (week 6): the public
+# drafts like optimizer users. The field is the same sampler (the QB, the
+# stack and bring-back rates, the cap-aware fill), steered so each player's
+# ownership lands on 0.9 x his best-lineup share + 0.1 x the calibrated
+# field's own (a casual tail: every player the public might still play keeps
+# some; 0.1 scored best of 0-1 on weeks 1, 2 and 6 -- top-40 5.60 against
+# 5.62 at 0, a sweep over weeks already read, so week 7 decides:
+# research/cl_own_w7b.py). "softmax" is the calibrated field alone, the board
+# before 2026-10-18.
+FIELD_MODEL = "optimizer"
+OPT_FIELD_ALPHA = 0.1
+OPT_FIELD_N = 40000          # lineups a steering pass draws
+OPT_FIELD_ITERS = 10
+OPT_FIELD_DAMP = 0.8
+
+
+def steer_field(draw, players, rng, beta, kappa, targets, n=OPT_FIELD_N, iters=OPT_FIELD_ITERS,
+                damp=OPT_FIELD_DAMP):
+    """Per-player pulls for `draw` (a FieldSampler over `players`) so its
+    field owns each player at `targets` (percent, any slot): start from the
+    calibrated pulls beta x (proj - kappa x salary/1000) and move each pull
+    by damp x log(target / achieved) after every pass of `n` lineups. The
+    sampler's structure (one QB, the stack and bring-back draws, the cap)
+    caps what any pull can reach, so the trace of the MAE to the targets is
+    returned beside the pulls and the board stamps it."""
+    proj = np.asarray([float(p.get("proj") or 0.0) for p in players])
+    sal = np.asarray([float(p["salary"]) for p in players])
+    u = beta * (proj - kappa * sal / 1000.0)
+    t = np.maximum(np.asarray(targets, dtype=np.float64), 0.0)
+    eps = 0.01                          # a hundredth of a point keeps the log finite at zero
+    trace = []
+    for _ in range(max(0, int(iters))):
+        idx = draw(int(n), rng, 1.0, 0.0, pulls=u)
+        if not len(idx):
+            break
+        a = 100.0 * np.bincount(idx.ravel(), minlength=len(players)) / len(idx)
+        trace.append(round(float(np.abs(a - t).mean()), 4))
+        u = u + damp * (np.log(t + eps) - np.log(a + eps))
+    return u, {"alpha": OPT_FIELD_ALPHA, "n": int(n), "iters": int(iters), "damp": float(damp),
+               "mae_to_targets_by_pass": trace}
 
 def _iso_ts(v):
     """DraftKings' start time as epoch seconds, or None. Lives in nfl_dfs now
@@ -2823,13 +2888,26 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     draw = FieldSampler(ents, _workers(workers))
     try:
         beta, kappa, max_own, mean_sal, coll, top_share = calibrate_field(ents, rng, n=int(cal_n), sample=draw)
+        # the optimizer field: the calibrated pulls steered onto the targets
+        pulls, steer, casual_pct, fb, fk = None, None, None, beta, kappa
+        if FIELD_MODEL == "optimizer" and n_opt:
+            casual_idx = draw(OPT_FIELD_N, rng, beta, kappa)
+            casual_pct = 100.0 * np.bincount(casual_idx.ravel(), minlength=P) / max(1, len(casual_idx))
+            own_targets = ((1.0 - OPT_FIELD_ALPHA) * 100.0 * opt_player / n_opt + OPT_FIELD_ALPHA * casual_pct)
+            u_f, steer = steer_field(draw, ents, rng, beta, kappa, own_targets)
+            pulls, fb, fk = u_f, 1.0, 0.0
         rep_f = {}
-        idx_f = draw(int(field_n), rng, beta, kappa, report=rep_f)
+        idx_f = draw(int(field_n), rng, fb, fk, report=rep_f, pulls=pulls)
         check_completion(rep_f, "field")
         M = len(idx_f)
         Wf = lineup_matrix(idx_f, P)
         wf = np.full(M, 1.0 / M)
         field_pct = 100.0 * Wf.mean(axis=0)
+        if steer is not None:
+            # the receipts describe the field the board scores against, not the casual pulls'
+            steer["mae_to_targets_final"] = round(float(np.abs(field_pct - own_targets).mean()), 4)
+            max_own, mean_sal = float(field_pct.max()) / 100.0, float(sal[idx_f].sum(axis=1).mean())
+            coll, top_share = _collision(idx_f), _dup_share(idx_f)
         rows_f = np.sort(idx_f, axis=1)
         _uf, first_f, counts_f = np.unique(rows_f, axis=0, return_index=True, return_counts=True)
         f_count = {tuple(rows_f[i].tolist()): int(k) for i, k in zip(first_f, counts_f)}
@@ -2843,7 +2921,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
         # --- our candidates: every world's optimal (allowed or not) + rule-abiding draws ---
         idx_o = _slot_rows(list(opt_count.keys()), pos)
         rep_c = {}
-        idx_c = draw(int(cand_n), rng, beta, kappa, rules=True, exclude=fo, report=rep_c)
+        idx_c = draw(int(cand_n), rng, fb, fk, rules=True, exclude=fo, report=rep_c, pulls=pulls)
     finally:
         draw.close()
     check_completion(rep_c, "candidate draws")
@@ -2944,6 +3022,9 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                             "field_only": bool(e.get("_field_only")),
                             "proj": e["proj"], "floor": e.get("floor"), "ceiling": e.get("ceiling"),
                             "field_pct": round(float(field_pct[i]), 1),
+                            # the calibrated field's own share, beside the steered one, so
+                            # week 7 can judge the two on the same board (cl_own_w7b.py)
+                            **({"casual_pct": round(float(casual_pct[i]), 2)} if casual_pct is not None else {}),
                             "opt_pct": round(100.0 * float(opt_player[i]) / n_opt, 2)})
     players_out.sort(key=lambda p: -p["opt_pct"])
     pivotal = {e["name"] for e in sorted(ents, key=lambda e: -e["proj"])[:60]}
@@ -3007,7 +3088,14 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                             "note": ("the field is a sample of the public's builds: stack rates from "
                                      "Establish The Run's Milly Maker record, sharpness set so the "
                                      f"most-owned player sits at {100 * CL_FIELD_MAX_OWN:.0f}%. Dollar "
-                                     "figures assume the sim is the truth; read the ranks.")},
+                                     "figures assume the sim is the truth; read the ranks."
+                                     + (" Each player's ownership is then steered to 90% of his share of "
+                                        "the simulated Sundays' best lineups plus 10% of that calibrated "
+                                        "share: on three real Millionaires the public drafted closer to "
+                                        "the best-lineup share than to the calibrated one."
+                                        if steer is not None else "")),
+                            "model": FIELD_MODEL if steer is not None else "softmax",
+                            "steer": steer},
             "rules": list(CL_RULES),
             "results": results,
             "players": players_out,

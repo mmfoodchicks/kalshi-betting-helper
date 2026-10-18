@@ -73,3 +73,48 @@ before that slate was played:
 After week 7's games, download the Millionaire's standings and drop the zip in
 `pc-standings`, or send it here. The served board for that slate is archived
 by the snapshot workflow at lock.
+
+## Week 2 confirmed the lead, and the field shipped (later the same evening)
+
+The owner then sent **week 2's** Millionaire export (contest 195648007, the
+$3M of 2026-09-20, 172,692 lineups, final). Week 2 had not been read to find
+the lead. `research/cl_own_w2.py` (sha256 `5f940094…`) was hashed before week
+2's ownership was computed; the file had been opened only for its contest id,
+row count and time remaining.
+
+| week 2 | all players | top 40 |
+|---|---|---|
+| served field (`field_pct`) | 2.38 | 6.62 |
+| optimal-lineup share (`opt_pct`) | **2.05** | **5.57** |
+
+So the board's field is now the **optimizer field** (`dfs_tourney.FIELD_MODEL
+= "optimizer"`, ENGINE 10).
+
+- **Sampler:** the same one. Its per-player pulls are steered (`steer_field`,
+  ten passes of 40,000 lineups) until each player's ownership sits at
+  0.9 x his best-lineup share + 0.1 x a fresh draw of the calibrated field.
+- **Casual share (0.1):** a sweep over weeks 1, 2 and 6 scored 0, 0.1, 0.2,
+  0.3, 0.5 and 1 (all-player plus top-40 MAE, summed). 0.1 was best and 1,
+  the calibrated field alone, was worst. Weeks 1 and 6 were already read, so
+  this choice is in-sample.
+- **Candidates:** drawn with the same pulls as the field.
+
+The production sampler drew the steered field on each week's served board
+(`research/data/cl_own_steer.json`):
+
+| | all / top 40 | at the $50k cap | top copy share |
+|---|---|---|---|
+| week 1: steered vs served | 1.86 / 5.14 vs 2.16 / 5.89 | 47.3% | 0.004% |
+| week 2: steered vs served | 2.09 / 5.64 vs 2.38 / 6.62 | 43.7% | 0.001% |
+| week 6: steered vs served | 2.66 / 6.27 vs 3.42 / 8.29 | 43.5% | 0.003% |
+
+The real field put about 50% of its lineups at the cap. Its duplicates are
+still about 100x more common than the steered field's (pair collision
+1.3e-06 to 3.9e-06 real, against 1.7e-08 to 2.9e-08). The real field's tight
+end at FLEX (21-40%) is not drawn either.
+
+**Week 7 keeps it or reverts it** (`research/cl_own_w7b.py`, sha256
+`de53ebe4…`, written before week 7 and before the field shipped). Every board
+now stamps `casual_pct`, the calibrated field it replaced, beside `field_pct`.
+If the steered share does not beat the casual share on week 7's top 40,
+`FIELD_MODEL` goes back to `"softmax"`.

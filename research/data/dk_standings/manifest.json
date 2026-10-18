@@ -67,6 +67,33 @@
    "rows_excluding_header": 88235,
    "zip_sha256": "b179bb68ca9441622d23ea644929ab10788b8204d57bcaee3bac2dd3e6bf1669"
   },
+  "contest-standings-195648007.csv.gz": {
+   "committed": false,
+   "contest_detail_at_freeze": {
+    "draft_group_id": 153428,
+    "entry_fee": 20.0,
+    "first_prize": 1000000.0,
+    "max_entries": 176470,
+    "name": "NFL $3M Fantasy Football Millionaire [$1M to 1st]",
+    "places_paid": 38825,
+    "prize_pool": 3000000.0,
+    "starts": "2026-09-20T17:00:00.0000000Z",
+    "state": "Upcoming"
+   },
+   "contest_id": 195648007,
+   "csv_bytes": 35167961,
+   "csv_mtime_in_zip": "2026-09-21 00:03:48",
+   "csv_sha256": "497e9e538af765ba5d5a50797d21c61280a92bbbc2b714fccd46d93b8110bc57",
+   "frozen_utc": "2026-10-18 23:22:33 UTC",
+   "gz_bytes": 5983091,
+   "gz_sha256": "40bf8c709442891139615821ebb9aea1418018606b31e231c446d13eb8e1dc96",
+   "kind": "classic",
+   "note": "week-2 held-out contest for slot-allocation v1: frozen after the game, scored by research.cl_week2 postgame against the pre-lock input receipt",
+   "prospective": true,
+   "rows_excluding_header": 172761,
+   "why_not_committed": "6.0 MB gzipped against a small repository Render clones on every deploy; the bytes stay with the owner's zip and are pinned here by hash",
+   "zip_sha256": "1b8337c4bf88580d000ec79a42a0ed3b6c2918d9bfa210cb5543a731df074f4e"
+  },
   "contest-standings-195677825.csv.gz": {
    "committed": true,
    "contest_detail_at_freeze": {

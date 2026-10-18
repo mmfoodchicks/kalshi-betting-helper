@@ -1,0 +1,15 @@
+{
+ "export_sha256": "1b8337c4bf88580d000ec79a42a0ed3b6c2918d9bfa210cb5543a731df074f4e",
+ "entries_with_lineup": 172692,
+ "draft_group_id": 153428,
+ "board_built_ts": 1789856108,
+ "mae_all": {
+  "field_pct": 2.3760272000484615,
+  "opt_pct": 2.04648036076679
+ },
+ "mae_top40": {
+  "field_pct": 6.619263428531721,
+  "opt_pct": 5.569937588307507
+ },
+ "opt_wins": true
+}

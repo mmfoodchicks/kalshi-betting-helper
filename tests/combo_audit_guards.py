@@ -13392,8 +13392,10 @@ if _dt14.available():
        "candidate construction must see only generation-world simulation outputs")
 ck("the board stamps its engine semantics, the field's targets and achieved receipts, and names its experimental columns; the PC rebuilds a classic board built by an older engine",
    # 7 since the engine model (2026-10-16); the version comment says why
-   # (8 its passing anchor, 9 the money list, the same day)
-   _dt14.ENGINE == 9 and "# 7: the worlds are the engine model's" in _dts1
+   # (8 its passing anchor, 9 the money list, the same day; 10 the optimizer
+   # field, 2026-10-18)
+   _dt14.ENGINE == 10 and "# 7: the worlds are the engine model's" in _dts1
+   and "# 10: the optimizer field (FIELD_MODEL, 2026-10-18)" in _dts1
    and "# 8: the engine's passing volume anchored" in _dts1
    and '# 9: "best chance to win money" (2026-10-16)' in _dts1 and '"engine": ENGINE, "kind": "classic"' in _dts1
    and '"achieved": achieved,' in _dts1 and '"targets": {"max_own": CL_FIELD_MAX_OWN' in _dts1
@@ -13435,7 +13437,9 @@ ck("candidate construction, the field, the ranking and the portfolio are finishe
 ck("the sampler's completion receipt is stamped on the field and on the candidate draws, a short field fails the build through check_completion, and the board carries the simulator stamp and the probe count",
    # repinned 2026-10-18: the field is drawn through the build's FieldSampler
    # (classic_sample in seeded blocks over every core), receipt merged
-   'idx_f = draw(int(field_n), rng, beta, kappa, report=rep_f)' in _build2
+   # repinned again 2026-10-18: the optimizer field passes its pulls (fb, fk
+   # are beta 1, kappa 0 when steered, the calibrated pair otherwise)
+   'idx_f = draw(int(field_n), rng, fb, fk, report=rep_f, pulls=pulls)' in _build2
    and 'check_completion(rep_f, "field")' in _build2 and 'check_completion(rep_c, "candidate draws")' in _build2
    and '"completion": rep_f,' in _build2 and '"candidate_draws": rep_c,' in _build2
    and '"simulator": simulator_stamp(model, int(n_sims), seed, preseason),' in _build2
@@ -14452,7 +14456,7 @@ ck("and the showdown engine moved, so every board built under the old scorer is 
    and _pw_s1._expected_engine("showdown") == _dt14.SD_ENGINE
    and _pw_s1._rebuild_reason(_sdb(engine=2), "AAA", None, {}, 1, None)[0] == "engine updated"
    and _pw_s1._rebuild_reason(_sdb(engine=4), "AAA", None, {}, 1, None)[0] == "engine updated"
-   and _dt14.ENGINE == 9,          # classic's own reasons: the engine model, its anchor, the money list
+   and _dt14.ENGINE == 10,         # classic's own reasons: the engine model, its anchor, the money list, the optimizer field
    "showdown's numbers mean something new; classic's do not")
 ck("and it stamps itself differently, so a board built with it could never be mistaken for a production one",
    _sim2.sim_stamp(n=1, discrete=True)["model"].endswith("-discrete")
@@ -15021,8 +15025,8 @@ ck("and the tab says it too, under the number, rather than leaving it to read as
    "any top 1% (in-sample)" in _js_s1
    and "these worlds also chose the lineups" in _js_s1
    and "basis.measured_optimism_pct.worst" in _js_s1)
-ck("no board was invalidated for the label, because no number changed (the versions moved later -- 3 -> 4 -> 5 -> 6 and 6 -> 7 -> 8 -> 9, for the engine model, its passing anchor and the money list -- and say so)",
-   _dt14.SD_ENGINE == 6 and _dt14.ENGINE == 9
+ck("no board was invalidated for the label, because no number changed (the versions moved later -- 3 -> 4 -> 5 -> 6 and 6 -> 7 -> 8 -> 9 -> 10, for the engine model, its passing anchor, the money list and classic's optimizer field -- and say so)",
+   _dt14.SD_ENGINE == 6 and _dt14.ENGINE == 10
    and "# 5: the engine's passing volume anchored" in open(_os.path.join(_root, "dfs_tourney.py")).read()
    and "# 8: the engine's passing volume anchored" in open(_os.path.join(_root, "dfs_tourney.py")).read()
    and "# 4: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read()
@@ -22101,7 +22105,7 @@ ck("the classic and showdown builds hand every core to the best-lineup solve, th
    and "chunk_for(max(K, M) * w, chunk)" in _insp.getsource(_T_fa.run_vs_field)
    and "draw = FieldSampler(ents, _workers(workers))" in _fa_src
    and "calibrate_field(ents, rng, n=int(cal_n), sample=draw)" in _fa_src
-   and "idx_c = draw(int(cand_n), rng, beta, kappa, rules=True, exclude=fo, report=rep_c)" in _fa_src
+   and "idx_c = draw(int(cand_n), rng, fb, fk, rules=True, exclude=fo, report=rep_c, pulls=pulls)" in _fa_src
    and _fa_src.index("draw.close()") > _fa_src.index("idx_c = draw(") and "    finally:\n        draw.close()" in _fa_src)
 _fa_gi = open(_os.path.join(_root, ".gitignore")).read()
 ck("the standings drop folder arrives with a git pull and its README, while every export dropped in it stays ignored; "
@@ -22263,6 +22267,110 @@ ck("the lead, recomputed from the committed inputs: the board's share of the sim
    and "opt_pct WINS week 7 when it beats field_pct on both metrics" in open(_os.path.join(_root, "research", "cl_own_w7.py")).read()
    and _ow_w6["meta"]["export_committed"] is False,
    str((_ow_m1, _ow_m6)))
+
+# ---- 2026-10-18 the optimizer field (dfs_tourney.FIELD_MODEL, research/cl_own_w2.py, cl_own_w7b.py) ----
+# The public drafts like optimizer users: each player's share of the simulated
+# Sundays' best lineups sat closer to his real ownership than the calibrated
+# field on weeks 1, 2 and 6 -- week 2 the one not read to find it, by a rule
+# written first. The field is the same sampler steered onto 0.9 x that share
+# + 0.1 x the calibrated one; week 7 keeps or reverts it by a rule written
+# before week 7.
+print("=" * 72)
+print("The optimizer field: steered ownership, its evidence, its week-7 rule")
+print("=" * 72)
+import hashlib as _hl_of
+import json as _json_of
+_of_w2 = _json_of.load(open(_os.path.join(_root, "research", "data", "cl_own_w2.json")))
+ck("week 2 -- the week not read to find the lead, its rule hashed before its ownership was computed -- confirmed it: the "
+   "best-lineup share beat the calibrated field's on all players (2.05 vs 2.38) and on the top 40 (5.57 vs 6.62)",
+   _hl_of.sha256(open(_os.path.join(_root, "research", "cl_own_w2.py"), "rb").read()).hexdigest()
+   == "5f9400941a8283e06c5a5599e006966b870316c0e541be917dbcb20dfd5158d1"
+   and _of_w2["opt_wins"] is True and _of_w2["draft_group_id"] == 153428 and _of_w2["entries_with_lineup"] == 172692
+   and abs(_of_w2["mae_all"]["opt_pct"] - 2.046) < 0.002 and abs(_of_w2["mae_all"]["field_pct"] - 2.376) < 0.002
+   and abs(_of_w2["mae_top40"]["opt_pct"] - 5.570) < 0.002 and abs(_of_w2["mae_top40"]["field_pct"] - 6.619) < 0.002)
+# the casual share, recomputed from the committed inputs: 0.1 is the sweep's best of 0, 0.1, 0.2, 0.3, 0.5, 1
+_of_b2 = _json_of.load(open(_os.path.join(_root, "research", "data", "cl_week2", "served_board_153428.json")))
+_of_b2 = _of_b2.get("board", _of_b2)
+_of_weeks = [(_ow_b1["players"], _ow_r1), (_of_b2["players"],
+             _json_of.load(open(_os.path.join(_root, "research", "data", "cl_own_w2_real.json")))["real_ownership_any_slot_pct"]),
+             (_ow_w6["players"], _ow_w6["real_ownership_any_slot_pct"])]
+
+
+def _of_score(alpha):
+    tot = 0.0
+    for players, real in _of_weeks:
+        R = [float(real.get(p["name"], 0.0)) for p in players]
+        M = [(1 - alpha) * float(p.get("opt_pct") or 0) + alpha * float(p.get("field_pct") or 0) for p in players]
+        top = sorted(range(len(R)), key=lambda i: -R[i])[:40]
+        tot += sum(abs(M[i] - R[i]) for i in range(len(R))) / len(R) + sum(abs(M[i] - R[i]) for i in top) / 40
+    return tot
+_of_alphas = {a: _of_score(a) for a in (0.0, 0.1, 0.2, 0.3, 0.5, 1.0)}
+ck("the casual share is the sweep's best on the three weeks' committed ownership (all-player plus top-40 MAE summed): 0.1 "
+   "of 0, 0.1, 0.2, 0.3, 0.5 and 1 -- and 1, the calibrated field alone, is the worst",
+   min(_of_alphas, key=_of_alphas.get) == 0.1 and max(_of_alphas, key=_of_alphas.get) == 1.0
+   and _dt14.OPT_FIELD_ALPHA == 0.1 if _dt14.available() else min(_of_alphas, key=_of_alphas.get) == 0.1,
+   str({k: round(v, 3) for k, v in _of_alphas.items()}))
+_of_st = _json_of.load(open(_os.path.join(_root, "research", "data", "cl_own_steer.json")))
+_of_srv = {"w1": (2.16, 5.89), "w2": (2.38, 6.62), "w6": (3.42, 8.29)}
+ck("the steered field itself, drawn through the production sampler on each week's served board, beats the served field "
+   "on all players and the top 40 every week (week 1 1.86/5.14, week 2 2.09/5.64, week 6 2.66/6.27), lands within 0.3 "
+   "points of its targets in ten passes and puts 43-48% of its lineups at the $50,000 cap",
+   all(_of_st[w]["steered"][0] < _of_srv[w][0] and _of_st[w]["steered"][1] < _of_srv[w][1] for w in _of_srv)
+   and all(_of_st[w]["served"] == list(_of_srv[w]) for w in _of_srv)
+   and all(_of_st[w]["steer_trace"][-1] < 0.3 and len(_of_st[w]["steer_trace"]) == 10 for w in _of_srv)
+   and all(43.0 <= _of_st[w]["at_cap_pct"] <= 48.0 for w in _of_srv),
+   str({w: (_of_st[w]["steered"], _of_st[w]["at_cap_pct"]) for w in _of_srv}))
+_of_7b = open(_os.path.join(_root, "research", "cl_own_w7b.py")).read()
+ck("the week-7 rule that keeps or reverts the field was written before week 7 and before the field shipped: KEEP only when "
+   "the steered share beats the calibrated share it replaced on the top 40, on the board's own two stamped columns",
+   _hl_of.sha256(open(_os.path.join(_root, "research", "cl_own_w7b.py"), "rb").read()).hexdigest()
+   == "de53ebe402c0b6bcc98eea6c14391ca5b7a80c8c9e512da711dd33fab1dfa6f6"
+   and 'res["keep"] = bool(res["mae_top40"]["field_pct"] < res["mae_top40"]["casual_pct"])' in _of_7b
+   and 'FIELD_MODEL goes back to "softmax"' in _of_7b)
+if _dt14.available():
+    import numpy as _np_of
+    # the sampler's pulls: absent, the old draw exactly; present, the same rows on any process count
+    _of_s1, _of_s2 = _dt14.FieldSampler(_pl16, 1), _dt14.FieldSampler(_pl16, 2)
+    try:
+        _of_a = _of_s1(3000, _np_of.random.default_rng(41), 0.3, 0.0)
+        _of_b = _of_s1(3000, _np_of.random.default_rng(41), 0.3, 0.0, pulls=None)
+        # through float32 first, as classic_sample casts the projection before it scales it
+        _of_u = [0.3 * float(_np_of.float32(p["proj"])) for p in _pl16]
+        _of_c = _of_s1(3000, _np_of.random.default_rng(41), 1.0, 0.0, pulls=_of_u)
+        _of_hot = list(_of_u)
+        _of_qb = [i for i, p in enumerate(_pl16) if p["pos"] == "QB"][3]
+        _of_hot[_of_qb] += 6.0
+        _of_d1 = _of_s1(3000, _np_of.random.default_rng(42), 1.0, 0.0, pulls=_of_hot)
+        _of_d2 = _of_s2(3000, _np_of.random.default_rng(42), 1.0, 0.0, pulls=_of_hot)
+        _of_tg = 0.8 * (100.0 * _np_of.bincount(_of_a.ravel(), minlength=len(_pl16)) / len(_of_a)) + 2.0
+        _of_tg *= 900.0 / _of_tg.sum()
+        _of_uu, _of_rec = _dt14.steer_field(_of_s2, _pl16, _np_of.random.default_rng(43), 0.3, 0.0, _of_tg, n=3000, iters=8)
+    finally:
+        _of_s1.close()
+        _of_s2.close()
+    ck("the field sampler takes per-player pulls: without them it draws exactly the old rows; a pull equal to the old "
+       "logit (beta x proj) draws the same rows as beta itself; raising one quarterback's pull makes him the most-owned "
+       "quarterback; and pulled draws are the same rows on one process or two",
+       bool(_np_of.array_equal(_of_a, _of_b)) and bool(_np_of.array_equal(_of_a, _of_c))
+       and bool(_np_of.array_equal(_of_d1, _of_d2))
+       and int(_np_of.bincount(_of_d1[:, 0], minlength=len(_pl16)).argmax()) == _of_qb)
+    ck("steering walks the field onto its targets: the MAE to the targets falls by more than half from the first pass to "
+       "the last, and the stamp carries the casual share, the pass size and the trace",
+       len(_of_rec["mae_to_targets_by_pass"]) == 8 and _of_rec["mae_to_targets_by_pass"][-1] < 0.5 * _of_rec["mae_to_targets_by_pass"][0]
+       and _of_rec["alpha"] == _dt14.OPT_FIELD_ALPHA and _of_rec["n"] == 3000,
+       str(_of_rec["mae_to_targets_by_pass"]))
+_of_build = _insp.getsource(_dt14.build_nfl_classic)
+ck("wired: the classic build steers its field when FIELD_MODEL is 'optimizer' (targets 0.9 x the best-lineup share + 0.1 x "
+   "a fresh draw of the calibrated field), draws the field AND the candidates with the same pulls, stamps casual_pct "
+   "beside field_pct for week 7, and names the model and the steering on the board",
+   _dt14.FIELD_MODEL == "optimizer"
+   and 'if FIELD_MODEL == "optimizer" and n_opt:' in _of_build
+   and "own_targets = ((1.0 - OPT_FIELD_ALPHA) * 100.0 * opt_player / n_opt + OPT_FIELD_ALPHA * casual_pct)" in _of_build
+   and "u_f, steer = steer_field(draw, ents, rng, beta, kappa, own_targets)" in _of_build
+   and "idx_f = draw(int(field_n), rng, fb, fk, report=rep_f, pulls=pulls)" in _of_build
+   and "idx_c = draw(int(cand_n), rng, fb, fk, rules=True, exclude=fo, report=rep_c, pulls=pulls)" in _of_build
+   and '**({"casual_pct": round(float(casual_pct[i]), 2)} if casual_pct is not None else {}),' in _of_build
+   and '"model": FIELD_MODEL if steer is not None else "softmax",' in _of_build and '"steer": steer},' in _of_build)
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

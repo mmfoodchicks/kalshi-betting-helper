@@ -198,8 +198,20 @@ data-only `sim-history` branch (which never deploys):
   fixes the real field's salary-to-cap (50% at $50,000 both weeks). The lead:
   each player's share of the simulated Sundays' best lineups (`opt_pct`, on
   every board) beat `field_pct` on BOTH weeks read (top 40: 5.02 vs 5.89,
-  6.27 vs 8.29) -- the public drafts like an optimizer. It is a hypothesis
-  until `research/cl_own_w7.py` (written before week 7) reads week 7.
+  6.27 vs 8.29) -- the public drafts like an optimizer. **Week 2** (the
+  owner's export, the one week NOT read to find it, `research/cl_own_w2.py`
+  hashed first) confirmed it: 5.57 vs 6.62. So the board's field is now the
+  **optimizer field** (`FIELD_MODEL`, ENGINE 10): the same sampler, its pulls
+  steered (`steer_field`, ten passes of 40,000) until each player's ownership
+  sits at 0.9 x his best-lineup share + 0.1 x a fresh draw of the calibrated
+  field (`OPT_FIELD_ALPHA`, a sweep over weeks 1, 2, 6); field AND candidates
+  drawn with the pulls (`FieldSampler(..., pulls=)`, blocks unchanged). On the
+  three served boards the steered field drew 1.86/5.14, 2.09/5.64, 2.66/6.27
+  (all / top-40 MAE) against 2.16/5.89, 2.38/6.62, 3.42/8.29, with 43-48% of
+  lineups at the cap; duplicates are still ~100x too rare. Every board stamps
+  `casual_pct` (the calibrated field it replaced) beside `field_pct`;
+  `research/cl_own_w7b.py` (written before week 7) KEEPS the field only if it
+  beats `casual_pct` on week 7's top 40, else `FIELD_MODEL = "softmax"`.
 - **The NHL deep stack** (2026-10-16): `nhl_pbp.py` turns the league's own
   feed (api-web.nhle.com -- strength states, shooter and goalie, shot type and
   location; ESPN has no strength states) into fourteen-int event records and
