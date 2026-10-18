@@ -15,8 +15,10 @@ vigil-pc.cfg
 pc-simcache/
 pc-deepcache/
 # the owner's DraftKings standings exports (dk_standings reads them on the PC;
-# 170 MB each, and they name every entrant)
-pc-standings/
+# 170 MB each, and they name every entrant). Only the folder's README is
+# tracked, so a git pull creates the folder with its instructions.
+pc-standings/*
+!pc-standings/README.txt
 *.db-wal
 *.db-shm
 *.sqlite3

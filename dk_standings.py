@@ -262,7 +262,10 @@ def intake(drop_dir=None, detail_fn=None, players_fn=None, log=print):
     skipped; the rest still land."""
     import deep_cache
     drop_dir = drop_dir or DROP_DIR
-    if not os.path.isdir(drop_dir):
+    try:
+        os.makedirs(drop_dir, exist_ok=True)      # the folder exists for the owner to drop into
+    except OSError as e:
+        errlog.note("STAND-dir", e, path=drop_dir)
         return []
     if detail_fn is None or players_fn is None:
         import dk

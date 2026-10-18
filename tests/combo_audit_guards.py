@@ -13373,7 +13373,8 @@ ck("generation and evaluation worlds are disjoint and cover the run: 60,000 at 2
    and "X[keep][:, gen.start:gen.stop], sal[keep]" in _dts1
    and "Xe = np.ascontiguousarray(X[:, ev.start:ev.stop])" in _dts1
    and "Wc, Wf, wf, Xe, grids, chunk=ch," in _dts1
-   and "ports = portfolio_vs_field(Wc, Wf, wf, Xe, grids, cand, k_port, chunk=ch)" in _dts1
+   # repinned 2026-10-18: the portfolio pass takes workers (every core); the worlds are the same Xe
+   and "ports = portfolio_vs_field(Wc, Wf, wf, Xe, grids, cand, k_port, chunk=ch," in _dts1
    and '"eval_worlds": int(len(ev))' in _dts1,
    "a candidate found because it won world j was being paid for world j: first place 1.9x for optimal-world lineups, measured")
 if _dt14.available():
@@ -13430,7 +13431,9 @@ ck("candidate construction, the field, the ranking and the portfolio are finishe
    and _build2.index("results = {}") < _build2.index("probe_rows(probes, ents"),
    "probes are diagnostic passengers: they must not enter generation, filtering, calibration, ranking or the cover")
 ck("the sampler's completion receipt is stamped on the field and on the candidate draws, a short field fails the build through check_completion, and the board carries the simulator stamp and the probe count",
-   'idx_f = classic_sample(ents, int(field_n), rng, beta, kappa, report=rep_f)' in _build2
+   # repinned 2026-10-18: the field is drawn through the build's FieldSampler
+   # (classic_sample in seeded blocks over every core), receipt merged
+   'idx_f = draw(int(field_n), rng, beta, kappa, report=rep_f)' in _build2
    and 'check_completion(rep_f, "field")' in _build2 and 'check_completion(rep_c, "candidate draws")' in _build2
    and '"completion": rep_f,' in _build2 and '"candidate_draws": rep_c,' in _build2
    and '"simulator": simulator_stamp(model, int(n_sims), seed, preseason),' in _build2
@@ -14721,13 +14724,15 @@ _s4_src = open(_os.path.join(_root, "dfs_tourney.py")).read()
 _s4_sd = _s4_src[_s4_src.index("def build_nfl_showdown("):_s4_src.index("# ---- classic (nine slots)")]
 ck("the showdown board's reported portfolio coverage is IN-SAMPLE: one world set feeds the shortlist, the greedy cover and the reported number, with no held-out split anywhere",
    'cand = ok[np.argsort(-res["top1"][ok])][:int(candidates)]' in _s4_sd
-   and "chosen, p_any = portfolio(W, X, f, grid, cand, kmax, chunk=chunk)" in _s4_sd
+   # repinned 2026-10-18: the cover runs on every core; the same worlds feed it
+   and "chosen, p_any = portfolio(W, X, f, grid, cand, kmax, chunk=chunk, workers=_workers(workers))" in _s4_sd
    and '"p_any_top1_pct": round(100.0 * p_any[kk - 1], 1)' in _s4_sd
    and "fold" not in _s4_sd.lower(),
    "S4.2 adds the cross-fit; until then this is what the number means")
 ck("and the selection objective is top 1%, not top 0.1%: the greedy's rank argument is defaulted, never passed, so the tail objective has never driven a served board",
-   'def portfolio_vs_field(Wc, Wf, wf, X, grids, cand_idx, k, chunk=500, rank="top1"):' in _s4_src
-   and "return portfolio_vs_field(W, W, f, X, [grid], cand_idx, k, chunk=chunk)[0]" in _s4_src
+   # repinned 2026-10-18: both signatures gained workers; the rank default is untouched
+   'def portfolio_vs_field(Wc, Wf, wf, X, grids, cand_idx, k, chunk=500, rank="top1", workers=1):' in _s4_src
+   and "return portfolio_vs_field(W, W, f, X, [grid], cand_idx, k, chunk=chunk, workers=workers)[0]" in _s4_src
    and "rank=" not in _s4_sd,
    "S4 asks whether it should be; it has not been tested before")
 
@@ -14977,7 +14982,7 @@ import inspect as _insp_s4
 ck("and PRODUCTION DID NOT CHANGE: the greedy still defaults to top 1%, no caller passes a rank, and S4 touched no production module at all",
    _insp_s4.signature(_dt14.portfolio_vs_field).parameters["rank"].default == "top1"
    and "rank=" not in _s4_sd
-   and "return portfolio_vs_field(W, W, f, X, [grid], cand_idx, k, chunk=chunk)[0]" in _s4_src,
+   and "return portfolio_vs_field(W, W, f, X, [grid], cand_idx, k, chunk=chunk, workers=workers)[0]" in _s4_src,
    "an objective change would have to be written, not inherited")
 # Assert the ABSENCE of money by naming the exact symbols, not by searching for
 # the letters "ev": the first version of this guard did that and matched "every",
@@ -21949,6 +21954,159 @@ ck("wired: the look-back's tick runs the hindsight behind its own ledger code af
    and '"rank_points": [[r, pts[r - 1]] for r in ranks]' in _insp.getsource(__import__("dk_standings").summarize)
    and '"draft_group_id": (detail or {}).get("draft_group_id"),' in _insp.getsource(__import__("dk_standings").intake)
    and int(_swre.search(r"vigil-shell-v(\d+)", open(_os.path.join(_root, "static", "sw.js")).read()).group(1)) >= 131)
+
+# ---- 2026-10-18 the classic board on every core --------------------------------
+# The owner: "I would absolutely love for this thing to power through it all."
+# The classic build spent ~40 of its ~45 minutes on one core. The best-lineup
+# solve now drops, world by world, the players who cannot be in that world's
+# best lineup and runs the worlds over processes; the scoring and portfolio
+# passes split their worlds over processes that map the lineup matrices from
+# shared memory; the field and the candidate draws run classic_sample (its
+# source untouched) in seeded blocks over every core. The solve, the scoring
+# and the portfolio give the old answers: the guards hold each new path to the
+# old path on DraftKings' 0.02-point score lattice. The field is the same
+# distribution sampled in blocks -- a different sample than the single call
+# drew, the same one on any number of processes.
+print("=" * 72)
+print("The classic board on every core: pruned best lineups, parallel scoring")
+print("=" * 72)
+import dfs_tourney as _T_fa
+
+if _T_fa.available():
+    import numpy as _np_fa
+    _fa_rng = _np_fa.random.default_rng(11)
+    _fa_pos = ["QB"] * 6 + ["RB"] * 12 + ["WR"] * 16 + ["TE"] * 6 + ["DST"] * 6
+    _fa_sal = [int(v) for v in _fa_rng.integers(30, 90, size=len(_fa_pos)) * 100]
+    _fa_X = (_np_fa.round(_fa_rng.gamma(2.0, 6.0, size=(len(_fa_pos), 96)) * 5) / 5).astype(_np_fa.float32)
+    _fa_X[3, :] = _fa_X[2, :]                       # an exact tie at quarterback, in every world
+    _fa_L0, _fa_v0 = _T_fa.optimal_lineups(_fa_X, _fa_sal, _fa_pos, chunk=64, prune=False)
+    _fa_L1, _fa_v1 = _T_fa.optimal_lineups(_fa_X, _fa_sal, _fa_pos)
+    _fa_L2, _fa_v2 = _T_fa.optimal_lineups(_fa_X, _fa_sal, _fa_pos, workers=2)
+    ck("the pruned best-lineup solve returns exactly the original batched solve's lineups and values, world by world, "
+       "ties included, on one core and on two processes",
+       _fa_L0 == _fa_L1 == _fa_L2 and bool(_np_fa.array_equal(_fa_v0, _fa_v1)) and bool(_np_fa.array_equal(_fa_v0, _fa_v2))
+       and sum(1 for lu in _fa_L0 if lu) == 96,
+       str(sum(a != b for a, b in zip(_fa_L0, _fa_L1))))
+    _fa_g = _T_fa._dominance_masks(["QB", "QB", "QB", "WR", "WR", "WR", "WR", "WR"], _np_fa.asarray([60, 50, 60, 40, 40, 40, 40, 40]))
+    _fa_s = _T_fa._survivors(_np_fa.asarray([20.0, 25.0, 20.0, 9.0, 10.0, 11.0, 12.0, 13.0], dtype=_np_fa.float32), _fa_g)
+    ck("a player is dropped from a world only when as many others of his position as a lineup can hold score STRICTLY "
+       "more for no more salary: the dearer of two tied quarterbacks stays (a tie is not domination), a receiver four "
+       "cheaper receivers outscore goes",
+       list(_fa_s) == [1, 4, 5, 6, 7] and _T_fa._CL_MAXPOS == {"QB": 1, "RB": 3, "WR": 4, "TE": 1, "DST": 1},
+       str(list(_fa_s)))
+    # scoring and portfolio: serial against two processes, on the score lattice
+    _fa_P, _fa_K, _fa_M, _fa_N = 40, 300, 900, 64
+    _fa_Wc = _T_fa.lineup_matrix(_fa_rng.integers(0, _fa_P, size=(_fa_K, 9)).astype(_np_fa.int32), _fa_P)
+    _fa_Wf = _T_fa.lineup_matrix(_fa_rng.integers(0, _fa_P, size=(_fa_M, 9)).astype(_np_fa.int32), _fa_P)
+    _fa_Xs = (_np_fa.round(_fa_rng.gamma(2.0, 5.0, size=(_fa_P, _fa_N)) * 50) / 50).astype(_np_fa.float32)
+    _fa_grid = _T_fa.payout_grid(_fa_M, [{"from": 1, "to": 1, "prize": 100.0}, {"from": 2, "to": 90, "prize": 4.0}],
+                                 2.0, 90, n=600, n_tie=40)
+    _fa_wf = _np_fa.full(_fa_M, 1.0 / _fa_M)
+    _fa_r1, _fa_o1, _ = _T_fa.run_vs_field(_fa_Wc, _fa_Wf, _fa_wf, _fa_Xs, [_fa_grid, _fa_grid])
+    _fa_r2, _fa_o2, _ = _T_fa.run_vs_field(_fa_Wc, _fa_Wf, _fa_wf, _fa_Xs, [_fa_grid, _fa_grid], workers=2)
+    _fa_d = max(float(_np_fa.abs(_fa_r1[g][k] - _fa_r2[g][k]).max()) for g in range(2) for k in _fa_r1[g])
+    _fa_c = _np_fa.arange(25)
+    _fa_p1 = _T_fa.portfolio_vs_field(_fa_Wc, _fa_Wf, _fa_wf, _fa_Xs, [_fa_grid], _fa_c, 5)
+    _fa_p2 = _T_fa.portfolio_vs_field(_fa_Wc, _fa_Wf, _fa_wf, _fa_Xs, [_fa_grid], _fa_c, 5, workers=2)
+    ck("the scoring pass split over processes returns the serial pass's numbers (only the order of the per-range sums "
+       "differs) and the same per-candidate best counts; the portfolio picks the same entries with the same coverage",
+       _fa_d < 1e-12 and bool(_np_fa.array_equal(_fa_o1, _fa_o2))
+       and _fa_p1[0][0] == _fa_p2[0][0] and max(abs(a - b) for a, b in zip(_fa_p1[0][1], _fa_p2[0][1])) < 1e-12,
+       f"max diff {_fa_d}")
+    # a pool that will not start: the whole map reruns serially, ledgered; shared blocks never outlive the map
+    import concurrent.futures as _cf_fa
+    _fa_pool0 = _cf_fa.ProcessPoolExecutor
+
+    def _fa_nopool(*a, **k):
+        raise OSError("no processes here")
+    _cf_fa.ProcessPoolExecutor = _fa_nopool
+    try:
+        _fa_r3, _fa_o3, _ = _T_fa.run_vs_field(_fa_Wc, _fa_Wf, _fa_wf, _fa_Xs, [_fa_grid, _fa_grid], workers=2)
+    finally:
+        _cf_fa.ProcessPoolExecutor = _fa_pool0
+    _fa_sh = _T_fa._SharedArrays({"a": _np_fa.arange(5.0)})
+    _fa_name = _fa_sh.spec["a"][0]
+    _fa_sh.close()
+    try:
+        from multiprocessing import shared_memory as _shm_fa
+        _shm_fa.SharedMemory(name=_fa_name)
+        _fa_gone = False
+    except FileNotFoundError:
+        _fa_gone = True
+    ck("a process pool that will not start costs speed, never the board: the pass reruns serially with the same numbers "
+       "and the failure is ledgered; shared-memory blocks are unlinked when the pass ends",
+       bool(_np_fa.array_equal(_fa_o1, _fa_o3)) and max(float(_np_fa.abs(_fa_r1[0][k] - _fa_r3[0][k]).max()) for k in _fa_r1[0]) < 1e-12
+       and 'errlog.note("TOURN-pool", e)' in _insp.getsource(_T_fa._par_map) and _fa_gone and not _T_fa._PAR)
+    # the field sampler: seeded blocks, the same rows and receipt on any process count
+    _fa_ex = _np_fa.zeros(len(_pl16), dtype=bool)
+    _fa_ex[[i for i, p in enumerate(_pl16) if p["pos"] == "WR"][:2]] = True
+    _fa_s1, _fa_s2 = _T_fa.FieldSampler(_pl16, 1), _T_fa.FieldSampler(_pl16, 2)
+    try:
+        _fa_q1, _fa_q2 = {}, {}
+        _fa_i1 = _fa_s1(2500, _np_fa.random.default_rng(31), 0.3, -1.0, report=_fa_q1, rules=True, exclude=_fa_ex)
+        _fa_i2 = _fa_s2(2500, _np_fa.random.default_rng(31), 0.3, -1.0, report=_fa_q2, rules=True, exclude=_fa_ex)
+        _fa_i3 = _fa_s2(2500, _np_fa.random.default_rng(32), 0.3, -1.0, rules=True, exclude=_fa_ex)
+    finally:
+        _fa_s1.close()
+        _fa_s2.close()
+    _fa_q0 = {}
+    _T_fa.classic_sample(_pl16, 2500, _np_fa.random.default_rng(31), 0.3, -1.0, report=_fa_q0, rules=True, exclude=_fa_ex)
+    ck("the field sampler draws classic_sample in fixed seeded blocks: the same rows and the same merged receipt on one "
+       "process and on two (the sample depends on the seed, never on the process count), another seed draws other rows, "
+       "the receipt has the single call's fields and counts, and the excluded players never appear",
+       _T_fa._SAMPLE_BLOCK == 1000 and _fa_i1.shape == (2500, 9) and bool(_np_fa.array_equal(_fa_i1, _fa_i2))
+       and _fa_q1 == _fa_q2 and sorted(_fa_q1) == sorted(_fa_q0) and _fa_q1["requested"] == _fa_q0["requested"] == 2500
+       and _fa_q1["completed"] == _fa_q0["completed"] and not bool(_np_fa.array_equal(_fa_i1, _fa_i3))
+       and not bool(_fa_ex[_fa_i1].any()), str((_fa_q1, _fa_q0)))
+    # the blocks sample the single call's distribution: one draw of 20,000 against four of 5,000 blocks' worth
+    _fa_sb = _T_fa.FieldSampler(_pl16, 1)
+    _fa_fb = _T_fa.field_stats(_fa_sb(20000, _np_fa.random.default_rng(33), 0.3, 0.0), _pl16)
+    _fa_f0 = _T_fa.field_stats(_T_fa.classic_sample(_pl16, 20000, _np_fa.random.default_rng(34), 0.3, 0.0), _pl16)
+    _fa_own_b = _np_fa.bincount(_fa_sb(20000, _np_fa.random.default_rng(35), 0.3, 0.0).ravel(), minlength=len(_pl16)) / 20000
+    _fa_own_0 = _np_fa.bincount(_T_fa.classic_sample(_pl16, 20000, _np_fa.random.default_rng(36), 0.3, 0.0).ravel(),
+                                minlength=len(_pl16)) / 20000
+    ck("a field drawn in blocks is the single call's field sampled differently: on 20,000 lineups each the top ownership, "
+       "the mean salary, the bring-back share and the stack counts agree within sampling noise, and no player's ownership "
+       "differs by more than 1.5 points",
+       abs(_fa_fb["max_own"] - _fa_f0["max_own"]) < 0.015 and abs(_fa_fb["mean_salary"] - _fa_f0["mean_salary"]) < 60
+       and abs(_fa_fb["bring_back"] - _fa_f0["bring_back"]) < 0.015
+       and max(abs(a - b) for a, b in zip(_fa_fb["stack_dist"], _fa_f0["stack_dist"])) < 0.015
+       and float(_np_fa.abs(_fa_own_b - _fa_own_0).max()) < 0.015,
+       str((_fa_fb, _fa_f0, float(_np_fa.abs(_fa_own_b - _fa_own_0).max()))))
+    # a pool that will not start: the sampler is serial from then on, the same rows, ledgered
+    _cf_fa.ProcessPoolExecutor = _fa_nopool
+    try:
+        _fa_s4 = _T_fa.FieldSampler(_pl16, 4)
+        _fa_i4 = _fa_s4(2500, _np_fa.random.default_rng(31), 0.3, -1.0, rules=True, exclude=_fa_ex)
+        _fa_s4.close()
+    finally:
+        _cf_fa.ProcessPoolExecutor = _fa_pool0
+    _fa_cal = _insp.getsource(_T_fa.calibrate_field)
+    ck("a sampler whose pool will not start draws the same rows serially (ledgered as TOURN-pool); the calibration draws "
+       "through the sampler it is handed and through classic_sample itself without one, the research harnesses' path",
+       _fa_s4.ex is None and bool(_np_fa.array_equal(_fa_i1, _fa_i4))
+       and 'errlog.note("TOURN-pool", e)' in _insp.getsource(_T_fa.FieldSampler.__init__)
+       and "idx = sample(n, rng, beta, kappa, exclude=exclude)" in _fa_cal
+       and "idx = classic_sample(players, n, rng, beta, kappa, exclude=exclude)" in _fa_cal)
+_fa_src = _insp.getsource(_T_fa.build_nfl_classic)
+ck("the classic and showdown builds hand every core to the best-lineup solve, the scoring pass and the portfolio, and the "
+   "classic build its field and candidate draws through one sampler whose pool is shut in a finally; each scoring "
+   "process gets one BLAS thread and 1/workers of the chunk memory",
+   "chunk=64, workers=_workers(workers)," in _fa_src and "chunk=ch, workers=_workers(workers)," in _fa_src
+   and "workers=_workers(workers)) if len(cand) else []" in _fa_src
+   and "workers=_workers(workers)," in _insp.getsource(_T_fa.build_nfl_showdown)
+   and 'os.environ[k] = "1"' in _insp.getsource(_T_fa._pool_env_one_thread)
+   and "chunk_for(max(K, M) * w, chunk)" in _insp.getsource(_T_fa.run_vs_field)
+   and "draw = FieldSampler(ents, _workers(workers))" in _fa_src
+   and "calibrate_field(ents, rng, n=int(cal_n), sample=draw)" in _fa_src
+   and "idx_c = draw(int(cand_n), rng, beta, kappa, rules=True, exclude=fo, report=rep_c)" in _fa_src
+   and _fa_src.index("draw.close()") > _fa_src.index("idx_c = draw(") and "    finally:\n        draw.close()" in _fa_src)
+_fa_gi = open(_os.path.join(_root, ".gitignore")).read()
+ck("the standings drop folder arrives with a git pull and its README, while every export dropped in it stays ignored; "
+   "the PC worker makes the folder if it is missing",
+   "pc-standings/*" in _fa_gi and "!pc-standings/README.txt" in _fa_gi
+   and _os.path.exists(_os.path.join(_root, "pc-standings", "README.txt"))
+   and "os.makedirs(drop_dir, exist_ok=True)" in _insp.getsource(__import__("dk_standings").intake))
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

@@ -157,6 +157,23 @@ data-only `sim-history` branch (which never deploys):
   local search (fills, every stack team polished by 1-2 swaps, kicks, a defense
   switch) measured exact against an integer program on four week-6 slates and
   against brute force on 180 two-game pools; the old fills ran 3-6% short.
+- **The classic board on every core** (2026-10-18, `dfs_tourney`). The
+  week-6 build took 45 minutes on the PC, ~40 of them on one core (best
+  lineups 1,268 s, scoring 774, field 262, portfolio 158). The best lineup of
+  each world is now solved alone over the players who can be in it
+  (`_survivors`: a player goes when as many of his position as a lineup holds
+  outscore him STRICTLY for no more salary -- exact, 9x on one core), in
+  blocks over processes (`pool_map`); the scoring and portfolio passes split
+  their worlds over processes that map the lineup matrices from shared memory
+  (`_par_map`, one BLAS thread each, the chunk memory divided by the process
+  count). Those three give the old answers, held to the old paths by guards on
+  DraftKings' 0.02-point lattice (continuous test data flips a payout bucket on
+  summation order). The field and candidate draws run `classic_sample` UNTOUCHED
+  (research/cl_slot.py and cl_week2.py hash its source) in seeded 1,000-row
+  blocks over one pool for the whole stage (`FieldSampler`): the same sample on
+  any process count, but a different sample than the single call drew -- the
+  one way a seeded board differs from the old code's. Any pool that will not
+  start reruns serially, ledgered `TOURN-pool`.
 - **The NHL deep stack** (2026-10-16): `nhl_pbp.py` turns the league's own
   feed (api-web.nhle.com -- strength states, shooter and goalie, shot type and
   location; ESPN has no strength states) into fourteen-int event records and

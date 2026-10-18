@@ -835,7 +835,155 @@ def _world_tables(b, f, F_grid, E_log=None, nE=0):
     return iF, iF * nE + iE
 
 
-def run_vs_field(Wc, Wf, wf, X, grids, chunk=500, progress=None):
+# ---- the scoring passes on every core ------------------------------------------
+# A scoring pass is a loop over worlds, and every world is independent, so a
+# pass splits into world ranges that sum. The per-world work (score buckets,
+# the field's tables, the payout gathers) holds numpy's lock often enough
+# that threads bought only 1.5x on 4 cores (measured), so ranges go to
+# processes. The matrices they read -- every candidate and field lineup as
+# 0/1 weights, ~0.8 GB on a 300,000-lineup field -- are placed in shared
+# memory ONCE and mapped by every process, never copied per worker. Serial
+# and parallel run the same range function (_score_range), so they differ
+# only in the order the per-range sums are added.
+_PAR = {}
+
+
+class _SharedArrays:
+    """numpy arrays copied once into shared memory; `spec` is what a worker
+    needs to map them. close() releases and unlinks."""
+
+    def __init__(self, arrays):
+        from multiprocessing import shared_memory
+        self.blocks, self.spec = [], {}
+        for k, a in arrays.items():
+            a = np.ascontiguousarray(a)
+            shm = shared_memory.SharedMemory(create=True, size=max(1, a.nbytes))
+            np.ndarray(a.shape, a.dtype, buffer=shm.buf)[...] = a
+            self.blocks.append(shm)
+            self.spec[k] = (shm.name, a.shape, a.dtype.str)
+
+    def close(self):
+        for shm in self.blocks:
+            try:
+                shm.close()
+                shm.unlink()
+            except Exception as e:
+                errlog.note("TOURN-shm", e)
+        self.blocks = []
+
+
+def _par_init(spec, extra):
+    """Process-pool initializer: map the shared arrays, keep the small ones.
+    The parent created the blocks and unlinks them; a child shares the
+    parent's resource tracker (spawn and fork alike), so it neither tracks
+    nor unregisters them -- unregistering from a child removed the parent's
+    entry and the parent's unlink then tripped the tracker (seen in test)."""
+    from multiprocessing import shared_memory
+    _PAR.clear()
+    for k, (name, shape, dt) in spec.items():
+        shm = shared_memory.SharedMemory(name=name)
+        _PAR["_shm_" + k] = shm
+        _PAR[k] = np.ndarray(shape, np.dtype(dt), buffer=shm.buf)
+    _PAR.update(extra)
+
+
+def _pool_env_one_thread():
+    """Each worker of a scoring pool does its own matrix products, so its
+    BLAS gets one thread (fourteen processes each spawning fourteen threads
+    would thrash). The variables are read when a child imports numpy; the
+    parent's BLAS, already loaded, keeps its threads. Returns the previous
+    values to restore."""
+    import os
+    keys = ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS")
+    old = {k: os.environ.get(k) for k in keys}
+    for k in keys:
+        os.environ[k] = "1"
+    return old
+
+
+def _pool_env_restore(old):
+    import os
+    for k, v in old.items():
+        if v is None:
+            os.environ.pop(k, None)
+        else:
+            os.environ[k] = v
+
+
+def _par_map(fn, jobs, workers, arrays, extra, progress=None):
+    """fn over jobs with `arrays` in shared memory and `extra` beside them:
+    serial in-process for one worker (the same function, the arrays as they
+    are), else a process pool. A pool that will not start is ledgered and the
+    whole map reruns serially."""
+    if workers and workers > 1 and len(jobs) > 1:
+        sh = None
+        old = _pool_env_one_thread()
+        try:
+            import concurrent.futures as cf
+            sh = _SharedArrays(arrays)
+            out = []
+            with cf.ProcessPoolExecutor(max_workers=min(int(workers), len(jobs)),
+                                        initializer=_par_init, initargs=(sh.spec, extra)) as ex:
+                for r in ex.map(fn, jobs):
+                    out.append(r)
+                    if progress:
+                        progress(len(out))
+            return out
+        except Exception as e:
+            errlog.note("TOURN-pool", e)
+        finally:
+            _pool_env_restore(old)
+            if sh is not None:
+                sh.close()
+    _PAR.clear()
+    _PAR.update(arrays)
+    _PAR.update(extra)
+    try:
+        out = []
+        for j in jobs:
+            out.append(fn(j))
+            if progress:
+                progress(len(out))
+        return out
+    finally:
+        _PAR.clear()
+
+
+def _range_jobs(N, workers, chunk, per=3):
+    """World ranges for a pass: a few per worker so a slow core (the PC's
+    efficiency cores) does not hold the pass up; each range walks its worlds
+    `chunk` at a time."""
+    n_jobs = max(1, min(N, int(workers or 1) * per)) if (workers or 1) > 1 else 1
+    size = -(-N // n_jobs)
+    return [(a, min(N, a + size), chunk) for a in range(0, N, size)]
+
+
+def _score_range(job):
+    """One world range of run_vs_field: (acc, acc2, opt) summed over it."""
+    a, b, chunk = job
+    WcT, X, wf = _PAR["WcT"], _PAR["X"], _PAR["wf"]
+    same = "WfT" not in _PAR
+    WfT = WcT if same else _PAR["WfT"]
+    G, G2, F_grid, E_log, nE = _PAR["G"], _PAR["G2"], _PAR["F_grid"], _PAR["E_log"], _PAR["nE"]
+    K = WcT.shape[1]
+    acc = np.zeros((K, G.shape[1]), dtype=np.float64)
+    acc2 = np.zeros((K, G2.shape[1]), dtype=np.float64)
+    opt = np.zeros(K, dtype=np.int64)
+    for start in range(a, b, chunk):
+        Xc = np.ascontiguousarray(X[:, start:min(b, start + chunk)].T)   # (c, P)
+        Sc = Xc @ WcT                                                    # (c, K)
+        opt += np.bincount(np.argmax(Sc, axis=1), minlength=K)
+        Bc = _buckets(Sc)
+        Bf = Bc if same else _buckets(Xc @ WfT)
+        for j in range(Bc.shape[0]):
+            iF, iFE = _world_tables(Bf[j], wf, F_grid, E_log, nE)
+            bj = Bc[j]
+            acc += G[iF][bj]
+            acc2 += G2[iFE][bj]
+    return acc, acc2, opt
+
+
+def run_vs_field(Wc, Wf, wf, X, grids, chunk=500, progress=None, workers=1):
     """Score candidates against a field in every world. Wc (K, P) candidate
     lineup weights, Wf (M, P) the field's lineups with probability wf (M,)
     summing to one (showdown: every legal lineup and the field model;
@@ -848,33 +996,28 @@ def run_vs_field(Wc, Wf, wf, X, grids, chunk=500, progress=None):
 
     World-major: each chunk's scores come out as (worlds, lineups) so a
     world is a contiguous row -- the (lineups, worlds) layout paid 25x on
-    the per-world pass (9.9s vs 0.4s a chunk, measured)."""
+    the per-world pass (9.9s vs 0.4s a chunk, measured). `workers` > 1
+    splits the worlds over processes (see _par_map); each process holds
+    1/workers of the chunk memory budget."""
     K, M, N = Wc.shape[0], Wf.shape[0], X.shape[1]
-    F_grid = grids[0]["F"]
-    E_log = np.log(np.maximum(grids[0]["E"], 1e-300))
     G = _grid_table(grids)
     G2, nE = _tie_table(grids)
-    acc = np.zeros((K, G.shape[1]), dtype=np.float64)
-    acc2 = np.zeros((K, G2.shape[1]), dtype=np.float64)
-    opt = np.zeros(K, dtype=np.int64)
     same = Wc is Wf
-    WcT = np.ascontiguousarray(Wc.T)
-    WfT = WcT if same else np.ascontiguousarray(Wf.T)
-    chunk = chunk_for(max(K, M), chunk)
+    w = max(1, int(workers or 1))
+    ch = chunk_for(max(K, M) * w, chunk)
+    arrays = {"WcT": np.ascontiguousarray(Wc.T, dtype=np.float32),
+              "X": np.ascontiguousarray(X, dtype=np.float32), "wf": np.asarray(wf, dtype=np.float64)}
+    if not same:
+        arrays["WfT"] = np.ascontiguousarray(Wf.T, dtype=np.float32)
+    extra = {"G": G, "G2": G2, "F_grid": grids[0]["F"],
+             "E_log": np.log(np.maximum(grids[0]["E"], 1e-300)), "nE": nE}
+    jobs = _range_jobs(N, w, ch)
     t0 = time.time()
-    for start in range(0, N, chunk):
-        Xc = np.ascontiguousarray(X[:, start:start + chunk].T)   # (c, P)
-        Sc = Xc @ WcT                                             # (c, K)
-        opt += np.bincount(np.argmax(Sc, axis=1), minlength=K)
-        Bc = _buckets(Sc)
-        Bf = Bc if same else _buckets(Xc @ WfT)
-        for j in range(Bc.shape[0]):
-            iF, iFE = _world_tables(Bf[j], wf, F_grid, E_log, nE)
-            bj = Bc[j]
-            acc += G[iF][bj]
-            acc2 += G2[iFE][bj]
-        if progress:
-            progress(min(N, start + chunk), N, time.time() - t0)
+    parts = _par_map(_score_range, jobs, w, arrays, extra,
+                     progress=(lambda k: progress(jobs[k - 1][1], N, time.time() - t0)) if progress else None)
+    acc = sum(p[0] for p in parts)
+    acc2 = sum(p[1] for p in parts)
+    opt = sum(p[2] for p in parts)
     out = []
     nc = len(_GRID_COLS)
     for gi in range(len(grids)):
@@ -886,11 +1029,11 @@ def run_vs_field(Wc, Wf, wf, X, grids, chunk=500, progress=None):
     return out, opt, N
 
 
-def run(W, X, f, grid, chunk=500, progress=None):
+def run(W, X, f, grid, chunk=500, progress=None, workers=1):
     """Showdown form: every legal lineup is both the candidate set and the
     field. Returns per-lineup means over worlds: win, top1, top01, cash, ev
     (fees not yet netted), plus the hindsight-optimal tallies."""
-    res, opt, N = run_vs_field(W, W, f, X, [grid], chunk=chunk, progress=progress)
+    res, opt, N = run_vs_field(W, W, f, X, [grid], chunk=chunk, progress=progress, workers=workers)
     r = res[0]
     return {"win": r["win"], "win_sole": r["win_sole"], "top1": r["top1"], "top01": r["top01"],
             "cash": r["cash"], "money": r["money"], "ev": r["ev"], "ev_notie": r["ev_notie"],
@@ -940,7 +1083,7 @@ def greedy_cover(P, k):
     return chosen, p_any
 
 
-def portfolio_vs_field(Wc, Wf, wf, X, grids, cand_idx, k, chunk=500, rank="top1"):
+def portfolio_vs_field(Wc, Wf, wf, X, grids, cand_idx, k, chunk=500, rank="top1", workers=1):
     """Greedy cover over candidate lineups, per contest: each pick adds the
     most `rank` probability (top1 or top01) in the worlds the picks so far
     leave uncovered. Returns, per contest, (chosen candidate positions best
@@ -970,33 +1113,46 @@ def portfolio_vs_field(Wc, Wf, wf, X, grids, cand_idx, k, chunk=500, rank="top1"
     if not len(cand_idx):
         return [([], []) for _ in grids]
     K, M, N = Wc.shape[0], Wf.shape[0], X.shape[1]
-    F_grid = grids[0]["F"]
-    same = Wc is Wf
-    WfT = np.ascontiguousarray(Wf.T)
-    WkT = np.ascontiguousarray(Wc[cand_idx].T)
-    chunk = chunk_for(max(K, M), chunk)
+    w = max(1, int(workers or 1))
+    ch = chunk_for(max(K, M) * w, chunk)
     # per-world make-it probability for every candidate and contest,
     # (contests, K', N) float32, built once; the field pass is repeated (a
     # second matmul and bucket count) rather than kept from the scoring
     # pass: 60,000 worlds x 4,001 buckets would be a gigabyte of tables.
-    P = np.zeros((len(grids), len(cand_idx), N), dtype=np.float32)
-    tabs = [g[rank] for g in grids]
-    for start in range(0, N, chunk):
-        Xc = np.ascontiguousarray(X[:, start:start + chunk].T)
+    # World ranges fill their own columns (_make_it_range), on `workers`
+    # processes like run_vs_field.
+    arrays = {"WfT": np.ascontiguousarray(Wf.T, dtype=np.float32),
+              "WkT": np.ascontiguousarray(Wc[cand_idx].T, dtype=np.float32),
+              "X": np.ascontiguousarray(X, dtype=np.float32), "wf": np.asarray(wf, dtype=np.float64)}
+    extra = {"F_grid": grids[0]["F"], "tabs": [g[rank] for g in grids]}
+    jobs = _range_jobs(N, w, ch)
+    parts = _par_map(_make_it_range, jobs, w, arrays, extra)
+    P = np.concatenate(parts, axis=2) if parts else np.zeros((len(grids), len(cand_idx), 0), dtype=np.float32)
+    return [greedy_cover(P[gi], k) for gi in range(len(grids))]
+
+
+def _make_it_range(job):
+    """One world range of portfolio_vs_field: (contests, K', worlds) make-it
+    probabilities."""
+    a, b, chunk = job
+    WfT, WkT, X, wf, F_grid, tabs = (_PAR["WfT"], _PAR["WkT"], _PAR["X"], _PAR["wf"],
+                                     _PAR["F_grid"], _PAR["tabs"])
+    out = np.zeros((len(tabs), WkT.shape[1], b - a), dtype=np.float32)
+    for start in range(a, b, chunk):
+        Xc = np.ascontiguousarray(X[:, start:min(b, start + chunk)].T)
         Bf = _buckets(Xc @ WfT)
         Bk = _buckets(Xc @ WkT)
         for j in range(Bf.shape[0]):
             pos = _world_tables(Bf[j], wf, F_grid)
             for gi, tab in enumerate(tabs):
-                P[gi, :, start + j] = tab[pos][Bk[j]]
-    del same
-    return [greedy_cover(P[gi], k) for gi in range(len(grids))]
+                out[gi, :, start - a + j] = tab[pos][Bk[j]]
+    return out
 
 
-def portfolio(W, X, f, grid, cand_idx, k, chunk=500):
+def portfolio(W, X, f, grid, cand_idx, k, chunk=500, workers=1):
     """Showdown form of portfolio_vs_field: one contest, the field is every
     legal lineup. Returns (chosen, p_any per prefix)."""
-    return portfolio_vs_field(W, W, f, X, [grid], cand_idx, k, chunk=chunk)[0]
+    return portfolio_vs_field(W, W, f, X, [grid], cand_idx, k, chunk=chunk, workers=workers)[0]
 
 
 # ---- NFL showdown adapter ----------------------------------------------------
@@ -1137,10 +1293,8 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
         f"{chunk} worlds a chunk...")
     grid = payout_grid(C, contest.get("payouts") or [], float(contest.get("entry_fee") or 1.0),
                        int(contest.get("places_paid") or max(1, C // 5)))
-    every = max(chunk, (N // 6 // chunk) * chunk)
-    res = run(W, X, f, grid, chunk=chunk,
-              progress=lambda done, n, dt: log(f"[tourney]   {done:,}/{n:,} worlds, {dt:.0f}s")
-              if done % every == 0 or done == n else None)
+    res = run(W, X, f, grid, chunk=chunk, workers=_workers(workers),
+              progress=lambda done, n, dt: log(f"[tourney]   {done:,}/{n:,} worlds, {dt:.0f}s"))
     t3 = time.time()
     fee = float(contest.get("entry_fee") or 1.0)
     copies = C * f                                         # expected duplicates in the field
@@ -1189,7 +1343,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     kmax = max(portfolio_sizes)
     log(f"[tourney] scored ({t3 - t2:.0f}s); covering worlds with a portfolio of {kmax} "
         f"from the {len(cand):,} strongest...")
-    chosen, p_any = portfolio(W, X, f, grid, cand, kmax, chunk=chunk)
+    chosen, p_any = portfolio(W, X, f, grid, cand, kmax, chunk=chunk, workers=_workers(workers))
     ports = {}
     for k in portfolio_sizes:
         kk = min(k, len(chosen))
@@ -1409,24 +1563,53 @@ def _cl_transitions():
     return out
 
 
-def optimal_lineups(X, sal, pos, cap=50000, chunk=64, progress=None):
-    """The best legal nine-man lineup of EVERY world: an exact 0/1 knapsack
-    over players with the roster counts as state, vectorized across a chunk
-    of worlds, backpointers kept per chunk and walked back per world. X (P,
-    N) points, sal (P,) dollars, pos (P,) position strings. Returns (one
-    sorted tuple of player indices per world -- empty when no legal lineup
-    exists -- and the values (N,)). Measured: 3.6s per 64 worlds on a
-    160-player pool here; the PC does the 20,000 worlds it is asked for in
-    a coffee break."""
+# At most this many of a position fit a classic lineup (the FLEX takes a
+# back or a receiver). A player beaten in one world by this many others of
+# his position who score STRICTLY more for no more salary is in no best
+# lineup of that world: a lineup holding him leaves one of them out, and
+# swapping that one in scores more for no more money. So the solver drops
+# him for that world and returns exactly what the full solve returns --
+# ties included, because a partial lineup through a player in no optimal
+# lineup can never block a tied optimal one (it would complete to an
+# optimum holding him). Measured on week 1's real pool, the production
+# solver pool of 160 players: ~46 survive a world, the per-world solve runs
+# 5 ms against the batched solve's 46, and every value and lineup of 256
+# worlds came back identical (guarded the same way).
+_CL_MAXPOS = {"QB": 1, "RB": 3, "WR": 4, "TE": 1, "DST": 1}
+_OPT_BLOCK = 256             # worlds a process solves per job
+
+
+def _dominance_masks(pos, s100):
+    """Per position: (player indices, [i, j] = j costs no more than i, the
+    position's lineup maximum)."""
+    out = []
+    for p, m in _CL_MAXPOS.items():
+        ii = np.asarray([i for i in range(len(pos)) if pos[i] == p], dtype=np.int64)
+        if len(ii):
+            s = np.asarray(s100)[ii]
+            out.append((ii, (s[None, :] <= s[:, None]) & ~np.eye(len(ii), dtype=bool), m))
+    return out
+
+
+def _survivors(x, groups):
+    """The players who can be in one world's best lineup (x: that world's
+    points by player), ascending."""
+    keep = []
+    for ii, cheaper, m in groups:
+        xs = x[ii]
+        n_better = ((xs[None, :] > xs[:, None]) & cheaper).sum(axis=1)
+        keep.append(ii[n_better < m])
+    return np.sort(np.concatenate(keep)) if keep else np.zeros(0, dtype=np.int64)
+
+
+def _optimal_block(X, s100, pos, CAP, chunk, trans, pred, progress=None, t0=None, done0=0, total=None):
+    """The batched exact solve (the original solver, unchanged): every world
+    of X at once, `chunk` worlds a pass. Returns (lineups, values)."""
     P, N = X.shape
-    s100 = np.asarray([int(v) // 100 for v in sal], dtype=np.int64)
-    CAP = int(cap) // 100
-    trans = _cl_transitions()
-    pred = {p: dict(zip(to.tolist(), fr.tolist())) for p, (fr, to) in trans.items()}
     NEG = -1.0e6
     lineups, values = [], np.full(N, NEG, dtype=np.float64)
     take = None
-    t0 = time.time()
+    t0 = time.time() if t0 is None else t0
     for start in range(0, N, chunk):
         Xc = np.ascontiguousarray(X[:, start:start + chunk], dtype=np.float32)
         c = Xc.shape[1]
@@ -1466,7 +1649,77 @@ def optimal_lineups(X, sal, pos, cap=50000, chunk=64, progress=None):
             lineups.append(tuple(sorted(picks)) if ok else ())
             values[start + j] = float(vals[j]) if ok else NEG
         if progress:
-            progress(min(N, start + chunk), N, time.time() - t0)
+            progress(min(total or N, done0 + start + chunk), total or N, time.time() - t0)
+    return lineups, values
+
+
+def _optimal_pruned(job):
+    """One block of worlds, each solved alone over its survivors (a process
+    pool job; also the serial path). job = (X block (P, n), s100, pos, CAP)."""
+    X, s100, pos, CAP = job
+    trans = _cl_transitions()
+    pred = {p: dict(zip(to.tolist(), fr.tolist())) for p, (fr, to) in trans.items()}
+    groups = _dominance_masks(pos, s100)
+    lineups, values = [], np.full(X.shape[1], -1.0e6, dtype=np.float64)
+    for w in range(X.shape[1]):
+        ii = _survivors(X[:, w], groups)
+        Ls, vs = _optimal_block(X[ii, w:w + 1], s100[ii], [pos[i] for i in ii], CAP, 1, trans, pred)
+        lineups.append(tuple(sorted(int(ii[j]) for j in Ls[0])) if Ls[0] else ())
+        values[w] = vs[0]
+    return lineups, values
+
+
+def pool_map(fn, jobs, workers, progress=None):
+    """[fn(job) for job in jobs], in order, over `workers` processes; serial
+    for one worker, one job, or a pool that will not start (ledgered, and the
+    whole map then reruns serially -- never half of each). `progress(i)` after
+    each finished job."""
+    if workers and workers > 1 and len(jobs) > 1:
+        try:
+            import concurrent.futures as cf
+            out = []
+            with cf.ProcessPoolExecutor(max_workers=min(int(workers), len(jobs))) as ex:
+                for r in ex.map(fn, jobs):
+                    out.append(r)
+                    if progress:
+                        progress(len(out))
+            return out
+        except Exception as e:
+            errlog.note("TOURN-pool", e)
+    out = []
+    for j in jobs:
+        out.append(fn(j))
+        if progress:
+            progress(len(out))
+    return out
+
+
+def optimal_lineups(X, sal, pos, cap=50000, chunk=64, progress=None, workers=1, prune=True):
+    """The best legal nine-man lineup of EVERY world: an exact 0/1 knapsack
+    over players with the roster counts as state, backpointers walked back
+    per world. X (P, N) points, sal (P,) dollars, pos (P,) position strings.
+    Returns (one sorted tuple of player indices per world -- empty when no
+    legal lineup exists -- and the values (N,)).
+
+    `prune` (the default) solves each world alone over the players who can
+    be in its best lineup (_survivors) -- identical answers, 9x faster on one
+    core -- in blocks of _OPT_BLOCK worlds spread over `workers` processes.
+    prune=False is the original batched solve, `chunk` worlds a pass, kept
+    as the reference the guard compares against."""
+    P, N = X.shape
+    s100 = np.asarray([int(v) // 100 for v in sal], dtype=np.int64)
+    CAP = int(cap) // 100
+    t0 = time.time()
+    if not prune:
+        trans = _cl_transitions()
+        pred = {p: dict(zip(to.tolist(), fr.tolist())) for p, (fr, to) in trans.items()}
+        return _optimal_block(X, s100, list(pos), CAP, chunk, trans, pred, progress=progress, t0=t0)
+    jobs = [(np.ascontiguousarray(X[:, a:a + _OPT_BLOCK], dtype=np.float32), s100, list(pos), CAP)
+            for a in range(0, N, _OPT_BLOCK)]
+    parts = pool_map(_optimal_pruned, jobs, workers,
+                     progress=(lambda k: progress(min(N, k * _OPT_BLOCK), N, time.time() - t0)) if progress else None)
+    lineups = [lu for ls, _v in parts for lu in ls]
+    values = np.concatenate([v for _l, v in parts]) if parts else np.zeros(0)
     return lineups, values
 
 
@@ -1847,7 +2100,7 @@ def field_stats(idx, players):
 
 
 def calibrate_field(players, rng, n=40000, max_own=CL_FIELD_MAX_OWN, salary_used=CL_SALARY_USED,
-                    exclude=None, rounds=4, own_tol=0.01, salary_tol=100.0):
+                    exclude=None, rounds=4, own_tol=0.01, salary_tol=100.0, sample=None):
     """(beta, kappa) for classic_sample: kappa (points per $1,000) so the
     mean salary spent lands on `salary_used`, beta so the most-owned player
     holds `max_own` of the sample; the two bisections alternated until both
@@ -1868,12 +2121,19 @@ def calibrate_field(players, rng, n=40000, max_own=CL_FIELD_MAX_OWN, salary_used
     and the usual case, one or two rounds, costs about what it did. When the
     two targets cannot both be met on a pool, a pattern search (at most 12
     more draws) lands the least combined miss instead of leaving the whole
-    miss on whichever target the last bisection did not touch."""
+    miss on whichever target the last bisection did not touch.
+
+    `sample`, a FieldSampler over these players, draws in classic_sample's
+    place: the build passes one, so the ~90 draws (89 on week 1's pool, 224
+    s on one core) run over every core."""
     sal = np.asarray([int(p["salary"]) for p in players])
     P = len(players)
 
     def draw(beta, kappa):
-        idx = classic_sample(players, n, rng, beta, kappa, exclude=exclude)
+        if sample is None:
+            idx = classic_sample(players, n, rng, beta, kappa, exclude=exclude)
+        else:
+            idx = sample(n, rng, beta, kappa, exclude=exclude)
         if not len(idx):
             return idx, 0.0, 0.0
         own = np.bincount(idx.ravel(), minlength=P) / len(idx)
@@ -1938,6 +2198,83 @@ def calibrate_field(players, rng, n=40000, max_own=CL_FIELD_MAX_OWN, salary_used
         _m, beta, kappa, idx, mean, own = best
     return beta, kappa, own, mean, _collision(idx), _dup_share(idx)
 
+
+
+_SAMPLE_BLOCK = 1000         # rows a job draws: fixed, so the sample never depends on the process count
+
+
+def _sample_init(players):
+    _PAR["players"] = players
+
+
+def _sample_block(job, players=None):
+    """One block of classic_sample from its own seed: (rows, receipt)."""
+    seed, n, beta, kappa, kw = job
+    rep = {}
+    idx = classic_sample(_PAR["players"] if players is None else players, n, np.random.default_rng(seed),
+                         beta, kappa, report=rep, **kw)
+    return idx, rep
+
+
+class FieldSampler:
+    """classic_sample over processes, for the classic build's field stage.
+    Each call takes ONE seed from `rng` and draws its rows in blocks of
+    _SAMPLE_BLOCK, block b from default_rng((seed, b)), so a seeded build
+    draws the same field on one process or twenty. classic_sample draws
+    every row on its own, so the blocks together are a sample of the same
+    lineup distribution the single call draws -- a different sample of it,
+    not a different field. Blocks of 1,000 cost no more per row than one
+    call of 20,000 (121 against 142 us a row on week 1's pool, measured).
+
+    The pool lives across the calibration's ~90 draws: a pool a draw would
+    pay a Windows spawn each. A pool that will not start or fails is
+    ledgered (TOURN-pool) and the sampler goes serial from then on, the same
+    blocks in turn. classic_sample's own source is untouched on purpose: the
+    frozen research harnesses (research/cl_slot.py, cl_week2.py) hash it."""
+
+    def __init__(self, players, workers=1):
+        self.players, self.ex = players, None
+        if int(workers or 1) > 1:
+            try:
+                import concurrent.futures as cf
+                self.ex = cf.ProcessPoolExecutor(max_workers=int(workers), initializer=_sample_init,
+                                                 initargs=(players,))
+            except Exception as e:
+                errlog.note("TOURN-pool", e)
+
+    def __call__(self, n, rng, beta, kappa, report=None, **kw):
+        n = int(n)
+        seed = int(rng.integers(1 << 62))
+        jobs = [((seed, b), min(_SAMPLE_BLOCK, n - a), float(beta), float(kappa), kw)
+                for b, a in enumerate(range(0, n, _SAMPLE_BLOCK))]
+        parts = None
+        if self.ex is not None and len(jobs) > 1:
+            try:
+                parts = list(self.ex.map(_sample_block, jobs))
+            except Exception as e:
+                errlog.note("TOURN-pool", e)
+                self.close()
+        if parts is None:
+            parts = [_sample_block(j, self.players) for j in jobs]
+        idx = (np.concatenate([i for i, _r in parts], axis=0) if parts
+               else np.zeros((0, 9), dtype=np.int32))
+        if report is not None:
+            unfilled = {}
+            for _i, r in parts:
+                for k, v in r.get("unfilled_by_slot", {}).items():
+                    unfilled[k] = unfilled.get(k, 0) + v
+            report.update({k: sum(r.get(k, 0) for _i, r in parts)
+                           for k in ("requested", "completed", "rejected", "no_qb", "over_cap")})
+            report["unfilled_by_slot"] = {k: unfilled[k] for k in _SLOT_LABELS if k in unfilled}
+        return idx
+
+    def close(self):
+        if self.ex is not None:
+            try:
+                self.ex.shutdown(wait=True, cancel_futures=True)
+            except Exception as e:
+                errlog.note("TOURN-pool", e)
+            self.ex = None
 
 def _iso_ts(v):
     """DraftKings' start time as epoch seconds, or None. Lives in nfl_dfs now
@@ -2464,7 +2801,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     n_opt = len(gen)
     every = max(1, (n_opt // 4 // 64) * 64)
     opt_L, opt_v = optimal_lineups(
-        X[keep][:, gen.start:gen.stop], sal[keep], [pos[i] for i in keep], chunk=64,
+        X[keep][:, gen.start:gen.stop], sal[keep], [pos[i] for i in keep], chunk=64, workers=_workers(workers),
         progress=lambda done, n, dt: log(f"[tourney]   {done:,}/{n:,} worlds solved, {dt:.0f}s")
         if done % every == 0 or done == n else None)
     opt_L = [tuple(int(keep[i]) for i in L) for L in opt_L]
@@ -2479,29 +2816,33 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     t2 = time.time()
     log(f"[tourney] classic {dg}: {len(opt_count):,} distinct optimal lineups over {n_opt:,} worlds "
         f"({t2 - t1:.0f}s); calibrating the field...")
-    # --- the field ---
-    beta, kappa, max_own, mean_sal, coll, top_share = calibrate_field(ents, rng, n=int(cal_n))
-    rep_f = {}
-    idx_f = classic_sample(ents, int(field_n), rng, beta, kappa, report=rep_f)
-    check_completion(rep_f, "field")
-    M = len(idx_f)
-    Wf = lineup_matrix(idx_f, P)
-    wf = np.full(M, 1.0 / M)
-    field_pct = 100.0 * Wf.mean(axis=0)
-    rows_f = np.sort(idx_f, axis=1)
-    _uf, first_f, counts_f = np.unique(rows_f, axis=0, return_index=True, return_counts=True)
-    f_count = {tuple(rows_f[i].tolist()): int(k) for i, k in zip(first_f, counts_f)}
-    achieved = field_stats(idx_f, ents)
-    t3 = time.time()
-    log(f"[tourney] classic {dg}: field of {M:,} (beta {beta:.3f}, kappa {kappa:.3f}; achieved: top ownership "
-        f"{100 * achieved['max_own']:.1f}% of {100 * CL_FIELD_MAX_OWN:.0f}%, mean salary ${achieved['mean_salary']:,.0f} "
-        f"of ${CL_SALARY_USED:,.0f}, bring-back {100 * achieved['bring_back']:.1f}% of {100 * CL_BRING_BACK:.0f}%, "
-        f"defense vs own QB {100 * achieved['dst_vs_own_qb']:.2f}% ({100 * CL_DST_VS_OWN_QB:.0f}% of the field does not avoid it); "
-        f"collision {coll:.2e}, top build {100 * top_share:.3f}%) ({t3 - t2:.0f}s); our candidates...")
-    # --- our candidates: every world's optimal (allowed or not) + rule-abiding draws ---
-    idx_o = _slot_rows(list(opt_count.keys()), pos)
-    rep_c = {}
-    idx_c = classic_sample(ents, int(cand_n), rng, beta, kappa, rules=True, exclude=fo, report=rep_c)
+    # --- the field --- (every draw of it, and the candidates', on every core)
+    draw = FieldSampler(ents, _workers(workers))
+    try:
+        beta, kappa, max_own, mean_sal, coll, top_share = calibrate_field(ents, rng, n=int(cal_n), sample=draw)
+        rep_f = {}
+        idx_f = draw(int(field_n), rng, beta, kappa, report=rep_f)
+        check_completion(rep_f, "field")
+        M = len(idx_f)
+        Wf = lineup_matrix(idx_f, P)
+        wf = np.full(M, 1.0 / M)
+        field_pct = 100.0 * Wf.mean(axis=0)
+        rows_f = np.sort(idx_f, axis=1)
+        _uf, first_f, counts_f = np.unique(rows_f, axis=0, return_index=True, return_counts=True)
+        f_count = {tuple(rows_f[i].tolist()): int(k) for i, k in zip(first_f, counts_f)}
+        achieved = field_stats(idx_f, ents)
+        t3 = time.time()
+        log(f"[tourney] classic {dg}: field of {M:,} (beta {beta:.3f}, kappa {kappa:.3f}; achieved: top ownership "
+            f"{100 * achieved['max_own']:.1f}% of {100 * CL_FIELD_MAX_OWN:.0f}%, mean salary ${achieved['mean_salary']:,.0f} "
+            f"of ${CL_SALARY_USED:,.0f}, bring-back {100 * achieved['bring_back']:.1f}% of {100 * CL_BRING_BACK:.0f}%, "
+            f"defense vs own QB {100 * achieved['dst_vs_own_qb']:.2f}% ({100 * CL_DST_VS_OWN_QB:.0f}% of the field does not avoid it); "
+            f"collision {coll:.2e}, top build {100 * top_share:.3f}%) ({t3 - t2:.0f}s); our candidates...")
+        # --- our candidates: every world's optimal (allowed or not) + rule-abiding draws ---
+        idx_o = _slot_rows(list(opt_count.keys()), pos)
+        rep_c = {}
+        idx_c = draw(int(cand_n), rng, beta, kappa, rules=True, exclude=fo, report=rep_c)
+    finally:
+        draw.close()
     check_completion(rep_c, "candidate draws")
     idx_c = idx_c[classic_allowed(idx_c, ents)]
     # the public's three most common builds ride along (allowed or not) so
@@ -2529,17 +2870,16 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
         "scoring against the field in every world...")
     ch = chunk_for(max(K, M), chunk)
     Xe = np.ascontiguousarray(X[:, ev.start:ev.stop])      # the evaluation worlds only (world_split)
-    every = max(ch, (len(ev) // 6 // ch) * ch)
     res, opt_c, _n = run_vs_field(
-        Wc, Wf, wf, Xe, grids, chunk=ch,
-        progress=lambda done, n, dt: log(f"[tourney]   {done:,}/{n:,} worlds, {dt:.0f}s")
-        if done % every == 0 or done == n else None)
+        Wc, Wf, wf, Xe, grids, chunk=ch, workers=_workers(workers),
+        progress=lambda done, n, dt: log(f"[tourney]   {done:,}/{n:,} worlds, {dt:.0f}s"))
     t5 = time.time()
     ok = np.where(allowed)[0]
     cand = ok[np.argsort(-res[0]["top1"][ok])][:int(candidates)] if len(ok) else ok
     log(f"[tourney] classic {dg}: scored ({t5 - t4:.0f}s); portfolios of {k_port} per contest from "
         f"the {len(cand):,} strongest...")
-    ports = portfolio_vs_field(Wc, Wf, wf, Xe, grids, cand, k_port, chunk=ch) if len(cand) else []
+    ports = portfolio_vs_field(Wc, Wf, wf, Xe, grids, cand, k_port, chunk=ch,
+                               workers=_workers(workers)) if len(cand) else []
     t6 = time.time()
 
     def row(i, gi, rank_by):
