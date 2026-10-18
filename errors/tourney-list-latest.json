@@ -1,24 +1,8 @@
 {
  "boards": [
   {
-   "age_s": 1633,
-   "built_ts": 1792267640,
-   "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (WAS @ SF)",
-   "dg": 154960,
-   "entries": 88235,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "SF vs WAS",
-   "starts": "2026-10-20T00:15:00.0000000Z",
-   "teams": [
-    "SF",
-    "WAS"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 3549,
-   "built_ts": 1792265724,
+   "age_s": 21299,
+   "built_ts": 1792276407,
    "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st, $100K Leaderboard Eligible]",
    "dg": 154941,
    "entries": 161764,
@@ -31,8 +15,8 @@
    "worlds": 60000
   },
   {
-   "age_s": 71602,
-   "built_ts": 1792197669,
+   "age_s": 23975,
+   "built_ts": 1792273389,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (DAL @ GB)",
    "dg": 154959,
    "entries": 78431,
@@ -43,6 +27,22 @@
    "teams": [
     "DAL",
     "GB"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 30066,
+   "built_ts": 1792267640,
+   "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (WAS @ SF)",
+   "dg": 154960,
+   "entries": 88235,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "SF vs WAS",
+   "starts": "2026-10-20T00:15:00.0000000Z",
+   "teams": [
+    "SF",
+    "WAS"
    ],
    "worlds": 60000
   }
