@@ -6785,7 +6785,7 @@
 "name": "Bo Melton",
 "stats": {
 "rec": {
-"mean": 1.04,
+"mean": 1.08,
 "rungs": [
 [
 1.5,
@@ -6793,7 +6793,7 @@
 ],
 [
 2.5,
-0.085
+0.115
 ],
 [
 3.5,
@@ -6853,7 +6853,7 @@
 "name": "Brevyn Spann-Ford",
 "stats": {
 "rec": {
-"mean": 0.8,
+"mean": 0.82,
 "rungs": [
 [
 0.5,
@@ -6861,7 +6861,11 @@
 ],
 [
 1.5,
-0.195
+0.205
+],
+[
+2.5,
+0.055
 ]
 ]
 },
@@ -6905,7 +6909,7 @@
 "rungs": [
 [
 0.5,
-0.055
+0.065
 ]
 ]
 }
@@ -6927,7 +6931,7 @@
 ],
 [
 5.5,
-0.595
+0.615
 ],
 [
 6.5,
@@ -6935,7 +6939,7 @@
 ],
 [
 7.5,
-0.315
+0.32
 ],
 [
 8.5,
@@ -6960,7 +6964,7 @@
 ]
 },
 "rec_yd": {
-"mean": 87.33,
+"mean": 87.13,
 "rungs": [
 [
 39.5,
@@ -6980,7 +6984,7 @@
 ],
 [
 79.5,
-0.515
+0.525
 ],
 [
 89.5,
@@ -6988,7 +6992,7 @@
 ],
 [
 99.5,
-0.33
+0.335
 ],
 [
 109.5,
@@ -7000,7 +7004,7 @@
 ],
 [
 129.5,
-0.16
+0.155
 ],
 [
 139.5,
@@ -7012,7 +7016,7 @@
 ],
 [
 169.5,
-0.05
+0.045
 ]
 ]
 },
@@ -7042,6 +7046,10 @@
 "mean": 3.98,
 "rungs": [
 [
+2.5,
+0.855
+],
+[
 3.5,
 0.715
 ],
@@ -7051,7 +7059,7 @@
 ],
 [
 5.5,
-0.395
+0.38
 ],
 [
 6.5,
@@ -7062,13 +7070,17 @@
 0.145
 ],
 [
+9.5,
+0.05
+],
+[
 10.5,
 0.035
 ]
 ]
 },
 "rec_yd": {
-"mean": 84.05,
+"mean": 84.16,
 "rungs": [
 [
 39.5,
@@ -7096,7 +7108,7 @@
 ],
 [
 99.5,
-0.295
+0.305
 ],
 [
 109.5,
@@ -7257,7 +7269,7 @@
 ],
 [
 5.5,
-0.405
+0.415
 ],
 [
 6.5,
@@ -7266,6 +7278,10 @@
 [
 7.5,
 0.165
+],
+[
+8.5,
+0.095
 ],
 [
 9.5,
@@ -7278,7 +7294,7 @@
 ]
 },
 "rec_yd": {
-"mean": 75.83,
+"mean": 75.99,
 "rungs": [
 [
 39.5,
@@ -7286,7 +7302,7 @@
 ],
 [
 49.5,
-0.675
+0.685
 ],
 [
 59.5,
@@ -7302,7 +7318,7 @@
 ],
 [
 89.5,
-0.305
+0.31
 ],
 [
 99.5,
@@ -7367,11 +7383,11 @@
 ],
 [
 2.5,
-0.62
+0.615
 ],
 [
 3.5,
-0.42
+0.425
 ],
 [
 4.5,
@@ -7473,7 +7489,7 @@
 ]
 },
 "rush_yd": {
-"mean": 73.46,
+"mean": 73.5,
 "rungs": [
 [
 39.5,
@@ -7497,7 +7513,7 @@
 ],
 [
 89.5,
-0.28
+0.285
 ],
 [
 99.5,
@@ -7574,7 +7590,7 @@
 ],
 [
 3.5,
-0.045
+0.04
 ]
 ]
 },
@@ -7606,15 +7622,15 @@
 "name": "Jordan Love",
 "stats": {
 "pass_yd": {
-"mean": 279.19,
+"mean": 278.8,
 "rungs": [
 [
 174.5,
-0.92
+0.915
 ],
 [
 199.5,
-0.865
+0.855
 ],
 [
 224.5,
@@ -7630,7 +7646,7 @@
 ],
 [
 299.5,
-0.37
+0.365
 ],
 [
 324.5,
@@ -7638,7 +7654,7 @@
 ],
 [
 349.5,
-0.155
+0.16
 ],
 [
 374.5,
@@ -7730,16 +7746,16 @@
 ],
 [
 2.5,
-0.065
+0.07
 ],
 [
 3.5,
-0.025
+0.03
 ]
 ]
 },
 "rec_yd": {
-"mean": 14.93,
+"mean": 14.77,
 "rungs": [
 [
 14.5,
@@ -7755,7 +7771,7 @@
 ],
 [
 49.5,
-0.05
+0.045
 ]
 ]
 },
@@ -7827,16 +7843,20 @@
 ]
 },
 "rec_yd": {
-"mean": 15.38,
+"mean": 17.43,
 "rungs": [
 [
 14.5,
 0.415
+],
+[
+49.5,
+0.05
 ]
 ]
 },
 "rush_yd": {
-"mean": 48.54,
+"mean": 48.62,
 "rungs": [
 [
 19.5,
@@ -7848,11 +7868,11 @@
 ],
 [
 29.5,
-0.675
+0.685
 ],
 [
 39.5,
-0.53
+0.535
 ],
 [
 49.5,
@@ -7881,7 +7901,7 @@
 ]
 },
 "td": {
-"mean": 0.74,
+"mean": 0.72,
 "rungs": [
 [
 0.5,
@@ -7889,7 +7909,7 @@
 ],
 [
 1.5,
-0.165
+0.155
 ],
 [
 2.5,
@@ -7932,7 +7952,7 @@
 ]
 },
 "rec_yd": {
-"mean": 74.13,
+"mean": 74.42,
 "rungs": [
 [
 39.5,
@@ -7944,11 +7964,11 @@
 ],
 [
 59.5,
-0.56
+0.565
 ],
 [
 64.5,
-0.525
+0.53
 ],
 [
 69.5,
@@ -7976,7 +7996,7 @@
 ],
 [
 129.5,
-0.085
+0.095
 ],
 [
 139.5,
@@ -8037,7 +8057,7 @@
 ]
 },
 "rush_yd": {
-"mean": 23.41,
+"mean": 22.74,
 "rungs": [
 [
 9.5,
@@ -8049,19 +8069,19 @@
 ],
 [
 19.5,
-0.435
+0.425
 ],
 [
 24.5,
-0.345
+0.325
 ],
 [
 29.5,
-0.255
+0.245
 ],
 [
 39.5,
-0.155
+0.135
 ],
 [
 59.5,
@@ -8088,15 +8108,15 @@
 "name": "Ryan Flournoy",
 "stats": {
 "rec": {
-"mean": 3.16,
+"mean": 3.2,
 "rungs": [
 [
 1.5,
-0.795
+0.805
 ],
 [
 2.5,
-0.595
+0.605
 ],
 [
 3.5,
@@ -8113,11 +8133,11 @@
 ]
 },
 "rec_yd": {
-"mean": 38.29,
+"mean": 38.38,
 "rungs": [
 [
 14.5,
-0.755
+0.765
 ],
 [
 24.5,
@@ -8146,7 +8166,7 @@
 ]
 },
 "td": {
-"mean": 0.24,
+"mean": 0.22,
 "rungs": [
 [
 0.5,
@@ -8154,7 +8174,7 @@
 ],
 [
 1.5,
-0.025
+0.015
 ]
 ]
 }
@@ -8183,13 +8203,17 @@
 0.465
 ],
 [
+5.5,
+0.305
+],
+[
 7.5,
 0.1
 ]
 ]
 },
 "rec_yd": {
-"mean": 57.53,
+"mean": 56.24,
 "rungs": [
 [
 24.5,
@@ -8209,7 +8233,7 @@
 ],
 [
 69.5,
-0.285
+0.295
 ],
 [
 79.5,
@@ -8222,6 +8246,14 @@
 [
 99.5,
 0.105
+],
+[
+109.5,
+0.07
+],
+[
+119.5,
+0.05
 ]
 ]
 },
@@ -8244,7 +8276,7 @@
 "name": "Tyler Goodson",
 "stats": {
 "rush_yd": {
-"mean": 14.43,
+"mean": 14.72,
 "rungs": [
 [
 9.5,
@@ -8255,8 +8287,12 @@
 0.325
 ],
 [
+19.5,
+0.225
+],
+[
 29.5,
-0.105
+0.115
 ],
 [
 39.5,
@@ -8280,7 +8316,7 @@
 "DAL",
 "GB"
 ],
-"ts": 1792356936
+"ts": 1792360581
 },
 "26OCT18LACKC": {
 "espn_id": "401873006",
@@ -14734,7 +14770,7 @@
 "name": "Austin Ekeler",
 "stats": {
 "rush_yd": {
-"mean": 27.8,
+"mean": 27.78,
 "rungs": [
 [
 9.5,
@@ -14742,11 +14778,11 @@
 ],
 [
 14.5,
-0.585
+0.59
 ],
 [
 19.5,
-0.495
+0.49
 ],
 [
 29.5,
@@ -14813,15 +14849,15 @@
 "name": "Brock Purdy",
 "stats": {
 "pass_yd": {
-"mean": 252.08,
+"mean": 251.67,
 "rungs": [
 [
 174.5,
-0.86
+0.855
 ],
 [
 199.5,
-0.765
+0.755
 ],
 [
 224.5,
@@ -14850,7 +14886,7 @@
 ]
 },
 "rush_yd": {
-"mean": 24.79,
+"mean": 24.86,
 "rungs": [
 [
 9.5,
@@ -14870,7 +14906,7 @@
 ],
 [
 29.5,
-0.29
+0.295
 ],
 [
 49.5,
@@ -14910,7 +14946,7 @@
 ]
 },
 "rec_yd": {
-"mean": 29.7,
+"mean": 30.15,
 "rungs": [
 [
 14.5,
@@ -14918,11 +14954,23 @@
 ],
 [
 24.5,
-0.505
+0.51
 ],
 [
 39.5,
 0.27
+],
+[
+49.5,
+0.16
+],
+[
+59.5,
+0.1
+],
+[
+69.5,
+0.065
 ],
 [
 79.5,
@@ -14953,7 +15001,7 @@
 ],
 [
 4.5,
-0.495
+0.485
 ],
 [
 6.5,
@@ -14966,7 +15014,7 @@
 ]
 },
 "rec_yd": {
-"mean": 43.91,
+"mean": 44.04,
 "rungs": [
 [
 14.5,
@@ -14978,7 +15026,7 @@
 ],
 [
 39.5,
-0.48
+0.485
 ],
 [
 49.5,
@@ -14986,7 +15034,7 @@
 ],
 [
 59.5,
-0.235
+0.24
 ],
 [
 79.5,
@@ -14999,7 +15047,7 @@
 ]
 },
 "rush_yd": {
-"mean": 67.56,
+"mean": 66.95,
 "rungs": [
 [
 39.5,
@@ -15011,11 +15059,11 @@
 ],
 [
 59.5,
-0.52
+0.515
 ],
 [
 69.5,
-0.39
+0.395
 ],
 [
 79.5,
@@ -15023,7 +15071,7 @@
 ],
 [
 89.5,
-0.21
+0.205
 ],
 [
 99.5,
@@ -15032,6 +15080,10 @@
 [
 109.5,
 0.105
+],
+[
+119.5,
+0.065
 ]
 ]
 },
@@ -15080,7 +15132,7 @@
 "rungs": [
 [
 4.5,
-0.605
+0.615
 ],
 [
 5.5,
@@ -15092,7 +15144,7 @@
 ],
 [
 7.5,
-0.21
+0.205
 ],
 [
 8.5,
@@ -15101,11 +15153,11 @@
 ]
 },
 "rec_yd": {
-"mean": 72.45,
+"mean": 72.49,
 "rungs": [
 [
 39.5,
-0.755
+0.76
 ],
 [
 49.5,
@@ -15113,7 +15165,7 @@
 ],
 [
 59.5,
-0.57
+0.575
 ],
 [
 64.5,
@@ -15125,7 +15177,7 @@
 ],
 [
 79.5,
-0.365
+0.36
 ],
 [
 89.5,
@@ -15190,11 +15242,11 @@
 "name": "Jayden Daniels",
 "stats": {
 "pass_yd": {
-"mean": 208.83,
+"mean": 208.18,
 "rungs": [
 [
 124.5,
-0.875
+0.865
 ],
 [
 149.5,
@@ -15218,7 +15270,7 @@
 ],
 [
 274.5,
-0.17
+0.16
 ],
 [
 299.5,
@@ -15231,11 +15283,11 @@
 ]
 },
 "rush_yd": {
-"mean": 41.9,
+"mean": 42.74,
 "rungs": [
 [
 14.5,
-0.83
+0.885
 ],
 [
 29.5,
@@ -15251,7 +15303,11 @@
 ],
 [
 59.5,
-0.185
+0.205
+],
+[
+69.5,
+0.135
 ],
 [
 89.5,
@@ -15264,7 +15320,7 @@
 "rungs": [
 [
 0.5,
-0.265
+0.27
 ],
 [
 1.5,
@@ -15306,11 +15362,11 @@
 "name": "Kaelon Black",
 "stats": {
 "rush_yd": {
-"mean": 30.39,
+"mean": 30.37,
 "rungs": [
 [
 9.5,
-0.805
+0.81
 ],
 [
 14.5,
@@ -15389,7 +15445,7 @@
 "name": "Mike Evans",
 "stats": {
 "rec_yd": {
-"mean": 78.53,
+"mean": 78.97,
 "rungs": [
 [
 39.5,
@@ -15397,7 +15453,7 @@
 ],
 [
 49.5,
-0.695
+0.7
 ],
 [
 59.5,
@@ -15417,7 +15473,7 @@
 ],
 [
 119.5,
-0.12
+0.125
 ]
 ]
 },
@@ -15482,11 +15538,11 @@
 ]
 },
 "rush_yd": {
-"mean": 61.36,
+"mean": 61.67,
 "rungs": [
 [
 9.5,
-0.905
+0.9
 ],
 [
 14.5,
@@ -15510,7 +15566,7 @@
 ],
 [
 49.5,
-0.445
+0.455
 ],
 [
 59.5,
@@ -15541,15 +15597,15 @@
 "name": "Terry McLaurin",
 "stats": {
 "rec_yd": {
-"mean": 51.39,
+"mean": 52.19,
 "rungs": [
 [
 14.5,
-0.825
+0.835
 ],
 [
 39.5,
-0.545
+0.555
 ],
 [
 44.5,
@@ -15561,11 +15617,11 @@
 ],
 [
 79.5,
-0.17
+0.185
 ],
 [
 89.5,
-0.125
+0.13
 ],
 [
 99.5,
@@ -15603,7 +15659,7 @@
 "SF",
 "WSH"
 ],
-"ts": 1792356936
+"ts": 1792360581
 }
 },
 "season": 2026,
@@ -15775,7 +15831,7 @@
 "pos": "WR",
 "stats": {},
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "anthony tyus": {
 "name": "Anthony Tyus",
@@ -15789,7 +15845,7 @@
 "pos": "WR",
 "stats": {
 "pts_ppr": 6.02,
-"rec": 2.19,
+"rec": 2.2,
 "rec_td": 0.23,
 "rec_tgt": 3.59,
 "rec_yd": 23.69,
@@ -15798,7 +15854,7 @@
 "rush_yd": 0.45
 },
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "antwane wells": {
 "name": "Antwane Wells",
@@ -15842,7 +15898,7 @@
 "pos": "QB",
 "stats": {},
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "audric estime": {
 "name": "Audric Estime",
@@ -15868,13 +15924,13 @@
 "rec": 1.2,
 "rec_td": 0.07,
 "rec_tgt": 1.53,
-"rec_yd": 8.72,
+"rec_yd": 8.73,
 "rush_att": 6.63,
 "rush_td": 0.28,
 "rush_yd": 26.06
 },
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "austin hooper": {
 "name": "Austin Hooper",
@@ -15961,7 +16017,7 @@
 "rec_yd": 3.66
 },
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "ben skowronek": {
 "name": "Ben Skowronek",
@@ -16040,17 +16096,17 @@
 "name": "Bo Melton",
 "pos": "WR",
 "stats": {
-"pts_ppr": 2.99,
-"rec": 0.92,
+"pts_ppr": 2.87,
+"rec": 0.89,
 "rec_td": 0.09,
-"rec_tgt": 1.89,
-"rec_yd": 13.7,
-"rush_att": 0.17,
+"rec_tgt": 1.83,
+"rec_yd": 13.28,
+"rush_att": 0.18,
 "rush_td": 0.01,
-"rush_yd": 1.0
+"rush_yd": 1.04
 },
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "braelon allen": {
 "name": "Braelon Allen",
@@ -16076,17 +16132,17 @@
 "rec": 1.69,
 "rec_td": 0.2,
 "rec_tgt": 3.25,
-"rec_yd": 30.21
+"rec_yd": 30.22
 },
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "brandon aiyuk": {
 "name": "Brandon Aiyuk",
 "pos": "WR",
 "stats": {},
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "brandon johnson": {
 "name": "Brandon Johnson",
@@ -16142,7 +16198,7 @@
 "pos": "TE",
 "stats": {},
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "breece hall": {
 "name": "Breece Hall",
@@ -16183,13 +16239,13 @@
 "pos": "TE",
 "stats": {
 "pts_ppr": 1.29,
-"rec": 0.55,
-"rec_td": 0.03,
-"rec_tgt": 0.77,
-"rec_yd": 5.39
+"rec": 0.54,
+"rec_td": 0.04,
+"rec_tgt": 0.75,
+"rec_yd": 5.22
 },
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "brian robinson": {
 "name": "Brian Robinson",
@@ -16256,21 +16312,21 @@
 "stats": {
 "pass_att": 29.55,
 "pass_td": 2.17,
-"pass_yd": 276.55,
+"pass_yd": 276.59,
 "pts_ppr": 22.62,
 "rush_att": 4.22,
 "rush_td": 0.2,
-"rush_yd": 23.29
+"rush_yd": 23.28
 },
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "bronson kaufusi": {
 "name": "Bronson Kaufusi",
 "pos": "TE",
 "stats": {},
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "bryce lance": {
 "name": "Bryce Lance",
@@ -16440,7 +16496,7 @@
 "pos": "WR",
 "stats": {},
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "cameron dorner": {
 "name": "Cameron Dorner",
@@ -16559,17 +16615,17 @@
 "name": "CeeDee Lamb",
 "pos": "WR",
 "stats": {
-"pts_ppr": 20.24,
-"rec": 7.02,
-"rec_td": 0.56,
-"rec_tgt": 9.86,
-"rec_yd": 95.65,
-"rush_att": 0.39,
-"rush_td": 0.01,
-"rush_yd": 1.9
+"pts_ppr": 20.39,
+"rec": 6.81,
+"rec_td": 0.67,
+"rec_tgt": 9.56,
+"rec_yd": 92.69,
+"rush_att": 0.4,
+"rush_td": 0.02,
+"rush_yd": 1.99
 },
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "chandler brayboy": {
 "name": "Chandler Brayboy",
@@ -16628,10 +16684,10 @@
 "rec": 3.21,
 "rec_td": 0.3,
 "rec_tgt": 4.71,
-"rec_yd": 27.4
+"rec_yd": 27.41
 },
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "chimere dike": {
 "name": "Chimere Dike",
@@ -16668,7 +16724,7 @@
 "pos": "RB",
 "stats": {},
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "chris collier": {
 "name": "Chris Collier",
@@ -16741,39 +16797,39 @@
 "pos": "WR",
 "stats": {},
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "christian mccaffrey": {
 "name": "Christian McCaffrey",
 "pos": "RB",
 "stats": {
-"pts_ppr": 20.94,
+"pts_ppr": 20.93,
 "rec": 3.69,
 "rec_td": 0.24,
 "rec_tgt": 4.43,
-"rec_yd": 31.74,
-"rush_att": 15.97,
+"rec_yd": 31.75,
+"rush_att": 15.96,
 "rush_td": 0.85,
-"rush_yd": 75.28
+"rush_yd": 75.26
 },
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "christian watson": {
 "name": "Christian Watson",
 "pos": "WR",
 "stats": {
-"pts_ppr": 18.56,
-"rec": 4.82,
-"rec_td": 0.87,
-"rec_tgt": 7.54,
-"rec_yd": 83.8,
+"pts_ppr": 17.62,
+"rec": 4.67,
+"rec_td": 0.78,
+"rec_tgt": 7.31,
+"rec_yd": 81.19,
 "rush_att": 0.1,
 "rush_td": 0.0,
-"rush_yd": 0.57
+"rush_yd": 0.59
 },
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "chuba hubbard": {
 "name": "Chuba Hubbard",
@@ -16879,7 +16935,7 @@
 "pos": "WR",
 "stats": {},
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "colson yankoff": {
 "name": "Colson Yankoff",
@@ -16892,7 +16948,7 @@
 "rec_yd": 2.52
 },
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "colston loveland": {
 "name": "Colston Loveland",
@@ -16961,7 +17017,7 @@
 "pos": "RB",
 "stats": {},
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "cyrus allen": {
 "name": "Cyrus Allen",
@@ -17003,16 +17059,16 @@
 "name": "Dak Prescott",
 "pos": "QB",
 "stats": {
-"pass_att": 37.22,
-"pass_td": 1.69,
-"pass_yd": 270.1,
-"pts_ppr": 18.78,
-"rush_att": 2.91,
-"rush_td": 0.08,
-"rush_yd": 13.45
+"pass_att": 36.07,
+"pass_td": 2.0,
+"pass_yd": 261.75,
+"pts_ppr": 19.95,
+"rush_att": 3.04,
+"rush_td": 0.11,
+"rush_yd": 14.08
 },
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "dalen cambre": {
 "name": "Dalen Cambre",
@@ -17068,7 +17124,7 @@
 "pos": "RB",
 "stats": {},
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "dan villari": {
 "name": "Dan Villari",
@@ -17272,7 +17328,7 @@
 "pos": "WR",
 "stats": {},
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "deamonte trayanum": {
 "name": "DeaMonte Trayanum",
@@ -17309,14 +17365,14 @@
 "pos": "WR",
 "stats": {},
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "deebo samuel": {
 "name": "Deebo Samuel",
 "pos": "WR",
 "stats": {},
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "deion burks": {
 "name": "Deion Burks",
@@ -17336,7 +17392,7 @@
 "pos": "WR",
 "stats": {},
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "demario douglas": {
 "name": "DeMario Douglas",
@@ -17468,7 +17524,7 @@
 "pos": "RB",
 "stats": {},
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "devin singletary": {
 "name": "Devin Singletary",
@@ -17541,7 +17597,7 @@
 "pos": "TE",
 "stats": {},
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "dj uiagalelei": {
 "name": "DJ Uiagalelei",
@@ -17601,7 +17657,7 @@
 "pos": "TE",
 "stats": {},
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "drake london": {
 "name": "Drake London",
@@ -17675,7 +17731,7 @@
 "rush_yd": 0.07
 },
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "dylan drummond": {
 "name": "Dylan Drummond",
@@ -17844,17 +17900,17 @@
 "name": "Emari Demercado",
 "pos": "RB",
 "stats": {
-"pts_ppr": 0.7,
+"pts_ppr": 0.74,
 "rec": 0.17,
 "rec_td": 0.01,
 "rec_tgt": 0.22,
-"rec_yd": 1.16,
-"rush_att": 0.5,
+"rec_yd": 1.12,
+"rush_att": 0.53,
 "rush_td": 0.02,
-"rush_yd": 2.74
+"rush_yd": 2.87
 },
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "emeka egbuka": {
 "name": "Emeka Egbuka",
@@ -18038,29 +18094,29 @@
 "pos": "TE",
 "stats": {
 "pts_ppr": 15.12,
-"rec": 4.77,
+"rec": 4.78,
 "rec_td": 0.6,
 "rec_tgt": 6.07,
-"rec_yd": 66.99
+"rec_yd": 67.0
 },
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "george pickens": {
 "name": "George Pickens",
 "pos": "WR",
 "stats": {
-"pts_ppr": 13.57,
-"rec": 4.84,
-"rec_td": 0.31,
-"rec_tgt": 7.58,
-"rec_yd": 68.63,
+"pts_ppr": 13.56,
+"rec": 4.69,
+"rec_td": 0.37,
+"rec_tgt": 7.35,
+"rec_yd": 66.51,
 "rush_att": 0.05,
 "rush_td": 0.0,
-"rush_yd": 0.22
+"rush_yd": 0.23
 },
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "germie bernard": {
 "name": "Germie Bernard",
@@ -18217,17 +18273,17 @@
 "name": "Hunter Luepke",
 "pos": "FB",
 "stats": {
-"pts_ppr": 1.0,
-"rec": 0.32,
+"pts_ppr": 1.04,
+"rec": 0.31,
 "rec_td": 0.02,
-"rec_tgt": 0.39,
-"rec_yd": 2.6,
-"rush_att": 0.58,
+"rec_tgt": 0.38,
+"rec_yd": 2.52,
+"rush_att": 0.61,
 "rush_td": 0.02,
-"rush_yd": 2.32
+"rush_yd": 2.43
 },
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "ian thomas": {
 "name": "Ian Thomas",
@@ -18261,14 +18317,14 @@
 "pos": "RB",
 "stats": {},
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "isaac nauta": {
 "name": "Isaac Nauta",
 "pos": "TE",
 "stats": {},
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "isaiah bond": {
 "name": "Isaiah Bond",
@@ -18327,7 +18383,7 @@
 "pos": "WR",
 "stats": {},
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "isaiah williams": {
 "name": "Isaiah Williams",
@@ -18350,14 +18406,14 @@
 "pos": "RB",
 "stats": {},
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "ito smith": {
 "name": "Ito Smith",
 "pos": "RB",
 "stats": {},
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "j j mccarthy": {
 "name": "J.J. McCarthy",
@@ -18378,14 +18434,14 @@
 "name": "J. Michael Sturdivant",
 "pos": "WR",
 "stats": {
-"pts_ppr": 2.48,
-"rec": 0.99,
+"pts_ppr": 2.37,
+"rec": 0.96,
 "rec_td": 0.07,
-"rec_tgt": 1.37,
-"rec_yd": 10.43
+"rec_tgt": 1.33,
+"rec_yd": 10.1
 },
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "ja kobi lane": {
 "name": "Ja'Kobi Lane",
@@ -18440,7 +18496,7 @@
 "pos": "TE",
 "stats": {},
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "jack strand": {
 "name": "Jack Strand",
@@ -18461,7 +18517,7 @@
 "pos": "TE",
 "stats": {},
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "jackson hawes": {
 "name": "Jackson Hawes",
@@ -18483,11 +18539,11 @@
 "pts_ppr": 5.67,
 "rec": 1.88,
 "rec_td": 0.18,
-"rec_tgt": 2.95,
-"rec_yd": 26.9
+"rec_tgt": 2.96,
+"rec_yd": 26.91
 },
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "jacoby brissett": {
 "name": "Jacoby Brissett",
@@ -18509,14 +18565,14 @@
 "pos": "RB",
 "stats": {},
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "jaden bradley": {
 "name": "Jaden Bradley",
 "pos": "WR",
 "stats": {},
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "jahan dotson": {
 "name": "Jahan Dotson",
@@ -18571,14 +18627,14 @@
 "name": "Jake Ferguson",
 "pos": "TE",
 "stats": {
-"pts_ppr": 9.01,
-"rec": 3.63,
-"rec_td": 0.37,
-"rec_tgt": 4.84,
-"rec_yd": 31.1
+"pts_ppr": 9.22,
+"rec": 3.52,
+"rec_td": 0.44,
+"rec_tgt": 4.69,
+"rec_yd": 30.14
 },
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "jake haener": {
 "name": "Jake Haener",
@@ -18592,7 +18648,7 @@
 "pos": "TE",
 "stats": {},
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "jaleel mclaughlin": {
 "name": "Jaleel McLaughlin",
@@ -18792,7 +18848,7 @@
 "pos": "TE",
 "stats": {},
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "jameson geers": {
 "name": "Jameson Geers",
@@ -18833,17 +18889,17 @@
 "name": "Javonte Williams",
 "pos": "RB",
 "stats": {
-"pts_ppr": 17.14,
-"rec": 2.82,
-"rec_td": 0.18,
-"rec_tgt": 3.35,
-"rec_yd": 14.85,
-"rush_att": 16.03,
-"rush_td": 0.92,
-"rush_yd": 62.48
+"pts_ppr": 19.06,
+"rec": 2.73,
+"rec_td": 0.21,
+"rec_tgt": 3.25,
+"rec_yd": 14.39,
+"rush_att": 16.78,
+"rush_td": 1.18,
+"rush_yd": 65.41
 },
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "jaxson dart": {
 "name": "Jaxson Dart",
@@ -18856,23 +18912,23 @@
 "name": "Jayden Daniels",
 "pos": "QB",
 "stats": {
-"pass_att": 30.64,
+"pass_att": 30.65,
 "pass_td": 1.1,
-"pass_yd": 174.3,
+"pass_yd": 174.34,
 "pts_ppr": 17.39,
 "rush_att": 7.52,
 "rush_td": 0.37,
-"rush_yd": 42.56
+"rush_yd": 42.55
 },
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "jayden reed": {
 "name": "Jayden Reed",
 "pos": "WR",
 "stats": {},
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "jaydn ott": {
 "name": "Jaydn Ott",
@@ -18918,7 +18974,7 @@
 "pos": "WR",
 "stats": {},
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "jeff caldwell": {
 "name": "Jeff Caldwell",
@@ -18968,7 +19024,7 @@
 "rush_yd": 4.4
 },
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "jeremy ruckert": {
 "name": "Jeremy Ruckert",
@@ -19059,7 +19115,7 @@
 "rec_yd": 6.85
 },
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "john fitzpatrick": {
 "name": "John FitzPatrick",
@@ -19115,14 +19171,14 @@
 "name": "Jonathan Mingo",
 "pos": "WR",
 "stats": {
-"pts_ppr": 0.32,
+"pts_ppr": 0.33,
 "rec": 0.11,
 "rec_td": 0.01,
-"rec_tgt": 0.26,
-"rec_yd": 1.51
+"rec_tgt": 0.25,
+"rec_yd": 1.46
 },
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "jonathan taylor": {
 "name": "Jonathan Taylor",
@@ -19158,27 +19214,27 @@
 "name": "Jonnu Smith",
 "pos": "TE",
 "stats": {
-"pts_ppr": 3.29,
-"rec": 1.32,
-"rec_td": 0.09,
-"rec_tgt": 1.71,
-"rec_yd": 14.47
+"pts_ppr": 3.15,
+"rec": 1.28,
+"rec_td": 0.08,
+"rec_tgt": 1.66,
+"rec_yd": 14.02
 },
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "jordan hudson": {
 "name": "Jordan Hudson",
 "pos": "WR",
 "stats": {},
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "jordan james": {
 "name": "Jordan James",
 "pos": "RB",
 "stats": {
-"pts_ppr": 0.68,
+"pts_ppr": 0.67,
 "rec": 0.05,
 "rec_td": 0.0,
 "rec_tgt": 0.06,
@@ -19188,22 +19244,22 @@
 "rush_yd": 4.24
 },
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "jordan love": {
 "name": "Jordan Love",
 "pos": "QB",
 "stats": {
-"pass_att": 34.29,
-"pass_td": 2.18,
-"pass_yd": 279.13,
-"pts_ppr": 20.81,
-"rush_att": 2.47,
+"pass_att": 33.22,
+"pass_td": 1.95,
+"pass_yd": 270.44,
+"pts_ppr": 19.64,
+"rush_att": 2.56,
 "rush_td": 0.07,
-"rush_yd": 12.58
+"rush_yd": 13.03
 },
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "jordan waters": {
 "name": "Jordan Waters",
@@ -19223,7 +19279,7 @@
 "rec_yd": 13.02
 },
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "jordan whittington": {
 "name": "Jordan Whittington",
@@ -19297,20 +19353,20 @@
 "pos": "RB",
 "stats": {},
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "josh whyle": {
 "name": "Josh Whyle",
 "pos": "TE",
 "stats": {
-"pts_ppr": 0.66,
-"rec": 0.29,
+"pts_ppr": 0.63,
+"rec": 0.28,
 "rec_td": 0.02,
-"rec_tgt": 0.34,
-"rec_yd": 2.54
+"rec_tgt": 0.33,
+"rec_yd": 2.46
 },
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "josh williams": {
 "name": "Josh Williams",
@@ -19483,26 +19539,26 @@
 "rec_yd": 6.46,
 "rush_att": 7.43,
 "rush_td": 0.14,
-"rush_yd": 31.86
+"rush_yd": 31.85
 },
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "kaleb johnson": {
 "name": "Kaleb Johnson",
 "pos": "RB",
 "stats": {
 "pts_ppr": 4.33,
-"rec": 0.45,
-"rec_td": 0.04,
-"rec_tgt": 0.69,
-"rec_yd": 4.31,
-"rush_att": 5.83,
+"rec": 0.43,
+"rec_td": 0.03,
+"rec_tgt": 0.66,
+"rec_yd": 4.18,
+"rush_att": 6.04,
 "rush_td": 0.14,
-"rush_yd": 24.07
+"rush_yd": 24.94
 },
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "kalel mullings": {
 "name": "Kalel Mullings",
@@ -19547,17 +19603,17 @@
 "name": "KaVontae Turpin",
 "pos": "WR",
 "stats": {
-"pts_ppr": 2.45,
-"rec": 0.7,
-"rec_td": 0.06,
-"rec_tgt": 1.15,
-"rec_yd": 9.5,
-"rush_att": 0.52,
+"pts_ppr": 2.52,
+"rec": 0.68,
+"rec_td": 0.07,
+"rec_tgt": 1.11,
+"rec_yd": 9.2,
+"rush_att": 0.54,
 "rush_td": 0.03,
-"rush_yd": 2.8
+"rush_yd": 2.93
 },
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "kc concepcion": {
 "name": "KC Concepcion",
@@ -19609,7 +19665,7 @@
 "pos": "QB",
 "stats": {},
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "keenan allen": {
 "name": "Keenan Allen",
@@ -19759,7 +19815,7 @@
 "pos": "RB",
 "stats": {},
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "kevin austin": {
 "name": "Kevin Austin",
@@ -19773,7 +19829,7 @@
 "pos": "TE",
 "stats": {},
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "khalil herbert": {
 "name": "Khalil Herbert",
@@ -19861,7 +19917,7 @@
 "pos": "QB",
 "stats": {},
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "kyle allen": {
 "name": "Kyle Allen",
@@ -19891,7 +19947,7 @@
 "rush_yd": 0.77
 },
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "kyle monangai": {
 "name": "Kyle Monangai",
@@ -20064,7 +20120,7 @@
 "rec_yd": 13.04
 },
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "luke grimm": {
 "name": "Luke Grimm",
@@ -20084,27 +20140,27 @@
 "rec_yd": 0.71
 },
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "luke musgrave": {
 "name": "Luke Musgrave",
 "pos": "TE",
 "stats": {},
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "luke schoonmaker": {
 "name": "Luke Schoonmaker",
 "pos": "TE",
 "stats": {
 "pts_ppr": 1.37,
-"rec": 0.61,
-"rec_td": 0.03,
-"rec_tgt": 0.76,
-"rec_yd": 5.62
+"rec": 0.6,
+"rec_td": 0.04,
+"rec_tgt": 0.74,
+"rec_yd": 5.45
 },
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "luther burden": {
 "name": "Luther Burden",
@@ -20127,7 +20183,7 @@
 "pos": "QB",
 "stats": {},
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "mack hollins": {
 "name": "Mack Hollins",
@@ -20202,7 +20258,7 @@
 "pos": "RB",
 "stats": {},
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "malik heath": {
 "name": "Malik Heath",
@@ -20245,14 +20301,14 @@
 "pos": "WR",
 "stats": {},
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "marcus mariota": {
 "name": "Marcus Mariota",
 "pos": "QB",
 "stats": {},
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "mark andrews": {
 "name": "Mark Andrews",
@@ -20275,7 +20331,7 @@
 "pos": "TE",
 "stats": {},
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "marquez valdes scantling": {
 "name": "Marquez Valdes-Scantling",
@@ -20295,17 +20351,17 @@
 "name": "MarShawn Lloyd",
 "pos": "RB",
 "stats": {
-"pts_ppr": 12.1,
-"rec": 1.95,
-"rec_td": 0.13,
-"rec_tgt": 2.5,
-"rec_yd": 16.61,
-"rush_att": 11.71,
-"rush_td": 0.4,
-"rush_yd": 53.05
+"pts_ppr": 12.0,
+"rec": 1.89,
+"rec_td": 0.12,
+"rec_tgt": 2.42,
+"rec_yd": 16.09,
+"rush_att": 12.14,
+"rush_td": 0.39,
+"rush_yd": 54.96
 },
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "mason rudolph": {
 "name": "Mason Rudolph",
@@ -20366,17 +20422,17 @@
 "name": "Matthew Golden",
 "pos": "WR",
 "stats": {
-"pts_ppr": 15.68,
-"rec": 4.98,
-"rec_td": 0.46,
-"rec_tgt": 8.57,
-"rec_yd": 77.97,
+"pts_ppr": 15.0,
+"rec": 4.83,
+"rec_td": 0.41,
+"rec_tgt": 8.3,
+"rec_yd": 75.55,
 "rush_att": 0.2,
 "rush_td": 0.01,
-"rush_yd": 0.97
+"rush_yd": 1.01
 },
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "matthew stafford": {
 "name": "Matthew Stafford",
@@ -20476,7 +20532,7 @@
 "pos": "TE",
 "stats": {},
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "michael wilson": {
 "name": "Michael Wilson",
@@ -20502,10 +20558,10 @@
 "rec": 4.5,
 "rec_td": 0.65,
 "rec_tgt": 7.05,
-"rec_yd": 81.19
+"rec_yd": 81.21
 },
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "mike washington": {
 "name": "Mike Washington",
@@ -20612,7 +20668,7 @@
 "pos": "WR",
 "stats": {},
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "nick muse": {
 "name": "Nick Muse",
@@ -20887,24 +20943,24 @@
 "name": "Pierre Strong",
 "pos": "RB",
 "stats": {
-"pts_ppr": 5.09,
-"rec": 1.05,
+"pts_ppr": 5.02,
+"rec": 1.02,
 "rec_td": 0.07,
-"rec_tgt": 1.37,
-"rec_yd": 9.35,
-"rush_att": 3.65,
+"rec_tgt": 1.33,
+"rec_yd": 9.06,
+"rush_att": 3.78,
 "rush_td": 0.12,
-"rush_yd": 19.13
+"rush_yd": 19.82
 },
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "princeton fant": {
 "name": "Princeton Fant",
 "pos": "TE",
 "stats": {},
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "puka nacua": {
 "name": "Puka Nacua",
@@ -20957,7 +21013,7 @@
 "pos": "WR",
 "stats": {},
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "quinshon judkins": {
 "name": "Quinshon Judkins",
@@ -20973,14 +21029,14 @@
 "pts_ppr": 10.98,
 "rec": 2.43,
 "rec_td": 0.16,
-"rec_tgt": 2.6,
-"rec_yd": 13.35,
+"rec_tgt": 2.61,
+"rec_yd": 13.36,
 "rush_att": 11.69,
 "rush_td": 0.28,
-"rush_yd": 46.23
+"rush_yd": 46.22
 },
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "raheim sanders": {
 "name": "Raheim Sanders",
@@ -21085,7 +21141,7 @@
 "pos": "WR",
 "stats": {},
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "rico dowdle": {
 "name": "Rico Dowdle",
@@ -21216,17 +21272,17 @@
 "name": "Ryan Flournoy",
 "pos": "WR",
 "stats": {
-"pts_ppr": 8.06,
-"rec": 3.27,
-"rec_td": 0.2,
-"rec_tgt": 5.14,
-"rec_yd": 35.88,
+"pts_ppr": 8.07,
+"rec": 3.17,
+"rec_td": 0.23,
+"rec_tgt": 4.98,
+"rec_yd": 34.77,
 "rush_att": 0.05,
 "rush_td": 0.0,
-"rush_yd": 0.23
+"rush_yd": 0.24
 },
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "salvon ahmed": {
 "name": "Salvon Ahmed",
@@ -21240,14 +21296,14 @@
 "pos": "QB",
 "stats": {},
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "sam howell": {
 "name": "Sam Howell",
 "pos": "QB",
 "stats": {},
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "sam roush": {
 "name": "Sam Roush",
@@ -21273,17 +21329,17 @@
 "name": "Savion Williams",
 "pos": "WR",
 "stats": {
-"pts_ppr": 2.14,
-"rec": 0.8,
+"pts_ppr": 2.05,
+"rec": 0.78,
 "rec_td": 0.06,
-"rec_tgt": 0.96,
-"rec_yd": 8.02,
-"rush_att": 0.27,
+"rec_tgt": 0.93,
+"rec_yd": 7.77,
+"rush_att": 0.28,
 "rush_td": 0.01,
-"rush_yd": 1.17
+"rush_yd": 1.21
 },
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "scotty miller": {
 "name": "Scotty Miller",
@@ -21362,7 +21418,7 @@
 "pos": "RB",
 "stats": {},
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "skylar thompson": {
 "name": "Skylar Thompson",
@@ -21392,7 +21448,7 @@
 "pos": "WR",
 "stats": {},
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "spencer rattler": {
 "name": "Spencer Rattler",
@@ -21409,10 +21465,10 @@
 "rec": 3.25,
 "rec_td": 0.44,
 "rec_tgt": 5.21,
-"rec_yd": 36.0
+"rec_yd": 36.01
 },
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "stephen carlson": {
 "name": "Stephen Carlson",
@@ -21534,7 +21590,7 @@
 "pos": "TE",
 "stats": {},
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "terrance ferguson": {
 "name": "Terrance Ferguson",
@@ -21550,14 +21606,14 @@
 "pts_ppr": 11.84,
 "rec": 4.06,
 "rec_td": 0.37,
-"rec_tgt": 7.35,
-"rec_yd": 55.39,
+"rec_tgt": 7.36,
+"rec_yd": 55.41,
 "rush_att": 0.05,
 "rush_td": 0.0,
 "rush_yd": 0.22
 },
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "tetairoa mcmillan": {
 "name": "Tetairoa McMillan",
@@ -21637,7 +21693,7 @@
 "pos": "TE",
 "stats": {},
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "tim patrick": {
 "name": "Tim Patrick",
@@ -21858,7 +21914,7 @@
 "rush_yd": 0.95
 },
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "treyton welch": {
 "name": "Treyton Welch",
@@ -21884,14 +21940,14 @@
 "name": "Tucker Kraft",
 "pos": "TE",
 "stats": {
-"pts_ppr": 13.2,
-"rec": 4.8,
-"rec_td": 0.44,
-"rec_tgt": 6.48,
-"rec_yd": 57.67
+"pts_ppr": 12.6,
+"rec": 4.65,
+"rec_td": 0.39,
+"rec_tgt": 6.28,
+"rec_yd": 55.87
 },
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "tutu atwell": {
 "name": "Tutu Atwell",
@@ -21986,17 +22042,17 @@
 "name": "Tyler Goodson",
 "pos": "RB",
 "stats": {
-"pts_ppr": 2.92,
-"rec": 0.63,
-"rec_td": 0.03,
-"rec_tgt": 0.78,
-"rec_yd": 3.64,
-"rush_att": 2.99,
-"rush_td": 0.08,
-"rush_yd": 12.68
+"pts_ppr": 3.12,
+"rec": 0.62,
+"rec_td": 0.04,
+"rec_tgt": 0.76,
+"rec_yd": 3.53,
+"rush_att": 3.13,
+"rush_td": 0.1,
+"rush_yd": 13.27
 },
 "team": "DAL",
-"ts": 1792356936
+"ts": 1792360581
 },
 "tyler higbee": {
 "name": "Tyler Higbee",
@@ -22081,7 +22137,7 @@
 "pos": "QB",
 "stats": {},
 "team": "GB",
-"ts": 1792356936
+"ts": 1792360581
 },
 "tyrone tracy": {
 "name": "Tyrone Tracy",
@@ -22111,7 +22167,7 @@
 "pos": "WR",
 "stats": {},
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "vinny anthony": {
 "name": "Vinny Anthony",
@@ -22141,14 +22197,14 @@
 "pos": "RB",
 "stats": {},
 "team": "WSH",
-"ts": 1792356936
+"ts": 1792360581
 },
 "wesley grimes": {
 "name": "Wesley Grimes",
 "pos": "WR",
 "stats": {},
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "will howard": {
 "name": "Will Howard",
@@ -22182,7 +22238,7 @@
 "pos": "WR",
 "stats": {},
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "will shipley": {
 "name": "Will Shipley",
@@ -22224,7 +22280,7 @@
 "pos": "WR",
 "stats": {},
 "team": "SF",
-"ts": 1792356936
+"ts": 1792360581
 },
 "xavier worthy": {
 "name": "Xavier Worthy",
@@ -22504,7 +22560,7 @@
 "home": "GB",
 "kickoff": 1792369200,
 "label": "DAL @ GB",
-"ts": 1792356936,
+"ts": 1792360581,
 "venue": "Lambeau Field",
 "wx": {
 "precip_pct": 0,
@@ -22522,7 +22578,7 @@
 "home": "SF",
 "kickoff": 1792455300,
 "label": "WSH @ SF",
-"ts": 1792356936,
+"ts": 1792360581,
 "venue": "Levi's Stadium",
 "wx": {
 "precip_pct": 0,
