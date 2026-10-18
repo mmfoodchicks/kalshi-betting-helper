@@ -2,16 +2,16 @@
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `DEEP-mlb_deep` | 244 | 10-16 08:27 | HTTPError: HTTP Error 400: Bad Request |
+| `DEEP-mlb_deep` | 241 | 10-16 08:27 | HTTPError: HTTP Error 400: Bad Request |
 | `KIDX-markets-fetch` | 21 | 10-15 22:50 | HTTPError: HTTP Error 429: Too Many Requests |
+| `MEM-high` | 17 | 10-18 16:36 | 1651/2048MB: 871.8MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 411.7MB pid8 /usr/local/bin/python3.11 /usr/ |
 | `KNFL-markets-fetch` | 16 | 10-17 14:29 | HTTPError: HTTP Error 429: Too Many Requests |
-| `MEM-high` | 14 | 10-18 15:08 | 1867/2048MB: 1436.2MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 138.7MB pid7 /usr/local/bin/python3.11 /usr |
 | `SIM-child` | 4 | 10-15 07:59 | TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', 'import os; os.nice(10)\nimport sys, baseball; sys.stdout.b |
+| `KAL-candles` | 3 | 10-18 16:00 | HTTPError: HTTP Error 429: Too Many Requests |
 | `UFCC-rounds` | 3 | 10-17 00:59 | HTTPError: HTTP Error 429: Too Many Requests |
 | `CFB-COMBO-build` | 2 | 10-17 15:05 | RuntimeError: Working outside of request context.
 
 This typically means that you attempted to use functionality that nee |
-| `KAL-candles` | 2 | 10-17 01:29 | HTTPError: HTTP Error 429: Too Many Requests |
 | `PRO-nfl_qb_map` | 1 | 10-13 04:09 | HTTPError: HTTP Error 503: Backend fetch failed |
 | `SS-winner_markets` | 1 | 10-14 04:14 | HTTPError: HTTP Error 429: Too Many Requests |
 | `UFCC-fights` | 1 | 10-17 19:34 | HTTPError: HTTP Error 429: Too Many Requests |

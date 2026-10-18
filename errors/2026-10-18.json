@@ -2,6 +2,50 @@
  "errors": [
   {
    "code": "MEM-high",
+   "id": 1753,
+   "last_ts": 1792341385.319765,
+   "msg": "1651/2048MB: 871.8MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 411.7MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 129.6MB pid7 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 25.0MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
+   "n": 1,
+   "path": null,
+   "pid": 7,
+   "tb": "",
+   "ts": 1792341385.319765
+  },
+  {
+   "code": "MEM-high",
+   "id": 1752,
+   "last_ts": 1792341283.6805074,
+   "msg": "2047/2048MB: 1344.6MB pid7 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 373.1MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 166.3MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 24.7MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
+   "n": 1,
+   "path": null,
+   "pid": 7,
+   "tb": "",
+   "ts": 1792341283.6805074
+  },
+  {
+   "code": "MEM-high",
+   "id": 1751,
+   "last_ts": 1792340192.2446544,
+   "msg": "2044/2048MB: 1533.4MB pid77 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 232.7MB pid94 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 215.4MB pid84 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 24.9MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
+   "n": 1,
+   "path": null,
+   "pid": 84,
+   "tb": "",
+   "ts": 1792340192.2446544
+  },
+  {
+   "code": "KAL-candles",
+   "id": 1750,
+   "last_ts": 1792339206.802666,
+   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "n": 1,
+   "path": null,
+   "pid": 77,
+   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi.py\", line 254, in build\n    d = _get_json(f\"{BASE}/series/{series}/markets/{ticker}/candlesticks\"\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
+   "ts": 1792339206.802666
+  },
+  {
+   "code": "MEM-high",
    "id": 1749,
    "last_ts": 1792336088.2549126,
    "msg": "1867/2048MB: 1436.2MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 138.7MB pid7 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 86.9MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 25.0MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
@@ -3013,39 +3057,17 @@
    "pid": 104886,
    "tb": "Traceback (most recent call last):\n  File \"/app/deep_cache.py\", line 281, in _worker\n    payload = job[\"run\"]()\n              ^^^^^^^^^^^^\n  File \"/app/app.py\", line 1467, in run_mlb\n    agg = deep_season.run_deep(season, n_seasons=4000, workers=workers,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/deep_season.py\", line 623, in run_deep\n    games = season_sim._remaining_games(season)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/season_sim.py\", line 80, in _remaining_games\n    data = baseball._get(\n           ^^^^^^^^^^^^^^\n  File \"/app/baseball.py\", line 209, in _get\n    return kalshi._get_json(url)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n",
    "ts": 1791739482.3738468
-  },
-  {
-   "code": "DEEP-mlb_deep",
-   "id": 1475,
-   "last_ts": 1791737657.0675414,
-   "msg": "HTTPError: HTTP Error 400: Bad Request",
-   "n": 2,
-   "path": null,
-   "pid": 104886,
-   "tb": "Traceback (most recent call last):\n  File \"/app/deep_cache.py\", line 281, in _worker\n    payload = job[\"run\"]()\n              ^^^^^^^^^^^^\n  File \"/app/app.py\", line 1467, in run_mlb\n    agg = deep_season.run_deep(season, n_seasons=4000, workers=workers,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/deep_season.py\", line 623, in run_deep\n    games = season_sim._remaining_games(season)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/season_sim.py\", line 80, in _remaining_games\n    data = baseball._get(\n           ^^^^^^^^^^^^^^\n  File \"/app/baseball.py\", line 209, in _get\n    return kalshi._get_json(url)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n",
-   "ts": 1791737292.7869081
-  },
-  {
-   "code": "DEEP-mlb_deep",
-   "id": 1474,
-   "last_ts": 1791735467.7131858,
-   "msg": "HTTPError: HTTP Error 400: Bad Request",
-   "n": 1,
-   "path": null,
-   "pid": 104649,
-   "tb": "Traceback (most recent call last):\n  File \"/app/deep_cache.py\", line 281, in _worker\n    payload = job[\"run\"]()\n              ^^^^^^^^^^^^\n  File \"/app/app.py\", line 1467, in run_mlb\n    agg = deep_season.run_deep(season, n_seasons=4000, workers=workers,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/deep_season.py\", line 623, in run_deep\n    games = season_sim._remaining_games(season)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/season_sim.py\", line 80, in _remaining_games\n    data = baseball._get(\n           ^^^^^^^^^^^^^^\n  File \"/app/baseball.py\", line 209, in _get\n    return kalshi._get_json(url)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n",
-   "ts": 1791735467.7131858
   }
  ],
- "generated_at": 1792338615.838022,
+ "generated_at": 1792343210.0427804,
  "summary": [
   {
    "code": "DEEP-mlb_deep",
-   "first_ts": 1791735467.7131858,
+   "first_ts": 1791739482.3738468,
    "last_msg": "HTTPError: HTTP Error 400: Bad Request",
    "last_ts": 1792139265.3349197,
-   "n": 244,
-   "variants": 223
+   "n": 241,
+   "variants": 221
   },
   {
    "code": "KIDX-markets-fetch",
@@ -3056,6 +3078,14 @@
    "variants": 14
   },
   {
+   "code": "MEM-high",
+   "first_ts": 1792178744.4248831,
+   "last_msg": "1651/2048MB: 871.8MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 411.7MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 129.6MB pid7 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 25.0MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
+   "last_ts": 1792341385.319765,
+   "n": 17,
+   "variants": 17
+  },
+  {
    "code": "KNFL-markets-fetch",
    "first_ts": 1791800612.3049777,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
@@ -3064,20 +3094,20 @@
    "variants": 12
   },
   {
-   "code": "MEM-high",
-   "first_ts": 1792178744.4248831,
-   "last_msg": "1867/2048MB: 1436.2MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 138.7MB pid7 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 86.9MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 25.0MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
-   "last_ts": 1792336088.2549126,
-   "n": 14,
-   "variants": 14
-  },
-  {
    "code": "SIM-child",
    "first_ts": 1791829188.0993059,
    "last_msg": "TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', 'import os; os.nice(10)\\nimport sys, baseball; sys.stdout.buffer.write(baseball._game_sim_blob(sys.stdin.buffer.read()))']' timed out after 900 seconds",
    "last_ts": 1792051176.0584657,
    "n": 4,
    "variants": 4
+  },
+  {
+   "code": "KAL-candles",
+   "first_ts": 1792101226.7876618,
+   "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "last_ts": 1792339206.802666,
+   "n": 3,
+   "variants": 3
   },
   {
    "code": "UFCC-rounds",
@@ -3094,14 +3124,6 @@
    "last_ts": 1792249503.954421,
    "n": 2,
    "variants": 1
-  },
-  {
-   "code": "KAL-candles",
-   "first_ts": 1792101226.7876618,
-   "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "last_ts": 1792200562.3859959,
-   "n": 2,
-   "variants": 2
   },
   {
    "code": "PRO-nfl_qb_map",
