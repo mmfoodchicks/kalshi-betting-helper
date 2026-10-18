@@ -609,6 +609,7 @@ def sim_stamp(n=None, seed=None, ctx=None):
     """What a board built on these worlds records."""
     import nfl_deep_sim as E
     import nfl_game_sim
+    import nfl_usage
     from nfl_dfs_csim import PARAMS
     T = (ctx or {}).get("T") or E.tables()
     return {"model": SIM_MODEL, "version": SIM_MODEL_VERSION, "projections": "sleeper-weekly (usage shares), "
@@ -617,6 +618,7 @@ def sim_stamp(n=None, seed=None, ctx=None):
             "anchor": {"n": ANCHOR_N, "iters": ANCHOR_ITERS},
             "engine": {"form_sd": E._FORM_SD, "hfa_yds": E._HFA_YDS, "env_sd": ENV_SD,
                        "kickoff_era": getattr(T, "kickoff_era", None)},
+            "usage": nfl_usage.stamp(),
             "passing_volume": {"att_weight": ATT_WEIGHT,
                                "target": "(1 - w) x the engine's own attempts + w x Sleeper's projected team attempts"},
             "validation": "research/reports/nfl_dfs_engine.md (2025 blind, rules pre-registered)",

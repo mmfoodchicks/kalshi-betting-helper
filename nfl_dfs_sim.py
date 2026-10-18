@@ -95,6 +95,7 @@ def weekly_games(season, week):
             errlog.note("NFLDFS-sleeper-fetch", _e)
             return None
         games = {}
+        pairs = []                          # (Sleeper player id, the row) for nfl_usage
         for r in rows:
             st = r.get("stats") or {}
             pts = st.get("pts_ppr")
@@ -118,10 +119,11 @@ def weekly_games(season, week):
                      "pass_cmp": st.get("pass_cmp", 0.0) or 0.0,
                      "rec_tgt": st.get("rec_tgt", 0.0) or 0.0,
                      "rush_att": st.get("rush_att", 0.0) or 0.0}
-            games.setdefault(gid, {"players": [], "label": None})["players"].append({
-                "name": f"{p.get('first_name', '')} {p.get('last_name', '')}".strip(),
-                "pos": p.get("position"), "team": r.get("team"), "opp": r.get("opponent"),
-                "means": means, "proj_pts": round(pts, 2)})
+            row = {"name": f"{p.get('first_name', '')} {p.get('last_name', '')}".strip(),
+                   "pos": p.get("position"), "team": r.get("team"), "opp": r.get("opponent"),
+                   "means": means, "proj_pts": round(pts, 2)}
+            games.setdefault(gid, {"players": [], "label": None})["players"].append(row)
+            pairs.append((r.get("player_id"), row))
         for gid, g in games.items():
             teams = []
             for pl in g["players"]:
@@ -129,6 +131,17 @@ def weekly_games(season, week):
                     teams.append(pl["team"])
             g["teams"] = teams
             g["label"] = f"{teams[1]} @ {teams[0]}" if len(teams) >= 2 else (teams[0] if teams else "?")
+        # Recent usage: each player's share of his team's targets and carries
+        # leans 30% toward what he has actually been getting (nfl_usage; the
+        # pre-registered test, research/reports/nfl_usage.md). Team totals
+        # stay Sleeper's. Any failure leaves Sleeper's lines, in the ledger.
+        try:
+            import nfl_usage
+            usage = nfl_usage.apply(pairs, int(season), int(week))
+            for g in games.values():
+                g["usage"] = usage
+        except Exception as _e:
+            errlog.note("USAGE-weekly", _e)
         _orient(games, season, week)
         # Stage 2C: every player also carries `recon`, his line with the
         # team's passing books balanced (nfl_recon), and every game a
@@ -326,6 +339,7 @@ def sim_stamp(n=None, preseason=False, discrete=False):
     constants, generated a board's worlds. The game loop draws from the
     module RNG unseeded, so a build is reproducible in distribution, not
     draw for draw; the stamp says so rather than implying otherwise."""
+    import nfl_usage
     return {"model": (SIM_MODEL + "-discrete" if discrete else SIM_MODEL),
             "version": SIM_MODEL_VERSION,
             "discrete_version": (DISCRETE_VERSION if discrete else 0),
@@ -350,6 +364,7 @@ def sim_stamp(n=None, preseason=False, discrete=False):
                        "mean solved so the level lands on the projection"
                        if discrete else
                        "extra points and field goals off the offense, then rescaled to the projection"),
+            "usage": (None if preseason else nfl_usage.stamp()),
             "seed": None, "n": (int(n) if n else None), "preseason": bool(preseason)}
 
 

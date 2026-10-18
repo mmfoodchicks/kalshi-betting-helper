@@ -172,6 +172,23 @@ jobs:
               fi
             done
           fi
+          # The NFL prop log (nfl_props_log): Kalshi's player-prop ladders,
+          # Sleeper's projections and the kickoff forecasts, each game frozen
+          # five minutes before its kickoff -- the data the prop-anchor test
+          # (research/nfl_prop_anchor.py) and the wind-only weather test read.
+          # The latest week and the one before, so a week's final state lands
+          # before ESPN's scoreboard rolls over. Best-effort.
+          mkdir -p props
+          for back in 0 1; do
+            curl -sS -o /tmp/props.json --max-time 60 "${AUTH[@]}" \
+                 "$APP_URL/api/nfl/props_log?back=$back" || true
+            python3 - <<'PY' || true
+          import json
+          d = json.load(open("/tmp/props.json"))
+          if d.get("key") and d.get("payload"):
+              json.dump(d["payload"], open(f"props/{d['key']}.json", "w"), indent=0, sort_keys=True)
+          PY
+          done
           echo "changed=1" >> "$GITHUB_OUTPUT"
 
       - name: Commit
@@ -180,6 +197,7 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A "$ERRORS_DIR"
+          [ -d props ] && git add -A props
           [ -f README.md ] && git add README.md
           if git diff --cached --quiet; then
             echo "Ledger unchanged since the last snapshot."

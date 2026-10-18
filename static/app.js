@@ -8778,10 +8778,40 @@ function _dfsTourneyBoxes() {
   if (!$("dfsTourneyMain")) box.innerHTML = `<div id="dfsTourneyMain"></div><div id="dfsTourneyFiles"></div>`;
   return { main: $("dfsTourneyMain"), files: $("dfsTourneyFiles") };
 }
+// Game-day weather (NFL): the recorder's logged kickoff forecasts. Shown for
+// information; a held-out test found no weather adjustment that beat
+// Sleeper's own lines, so no number on the tab reads them.
+async function loadNflWeather() {
+  const box = $("dfsWeather");
+  if (!box) return;
+  if ((($("dfsSport") || {}).value || "") !== "nfl") { box.innerHTML = ""; return; }
+  try {
+    const d = await (await fetch("/api/nfl/weather")).json();
+    const games = d.games || [];
+    if (!games.length) { box.innerHTML = ""; return; }
+    const mt = (t) => t ? new Date(t * 1000).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit", timeZone: "America/Denver" }) + " MT" : "";
+    const rows = games.map((g) => {
+      const w = g.wx || {};
+      let cond;
+      if (!g.wx) cond = `<span style="color:var(--faint)">stadium not in the table</span>`;
+      else if (w.roof === "dome") cond = "roof (no weather on the field)";
+      else if (w.roof === "retractable") cond = "retractable roof (closed in bad weather)";
+      else cond = `${w.wind_mph ?? "?"} mph${w.wind_dir ? " " + escapeHtml(w.wind_dir) : ""} · ${w.temp_f ?? "?"}°F · ${w.precip_pct ?? 0}% precip${w.summary ? " · " + escapeHtml(w.summary) : ""}`;
+      const fl = (g.flags || []).length ? ` <b style="color:#e0a656">⚑ ${escapeHtml(g.flags.join(", "))}</b>` : "";
+      return `<tr><td>${escapeHtml(g.label || "")}</td><td>${mt(g.kickoff)}</td><td>${cond}${fl}</td><td style="color:var(--faint)">${escapeHtml(w.source || "")} ${agoStr(Math.max(0, Date.now() / 1000 - (g.ts || 0)))}</td></tr>`;
+    }).join("");
+    box.innerHTML = `<details class="matchup-card" style="margin-top:10px"><summary class="small">🌬️ Game-day weather · week ${escapeHtml(String(d.week || ""))} kickoff forecasts</summary>
+      <p class="sub" style="margin:4px 0;font-size:0.78rem">${escapeHtml(d.note || "")} ⚑ marks what the test looked for: wind over 10 mph, a 50%+ chance of rain or snow, under 40°F. A forecast stops updating five minutes before kickoff.</p>
+      <div class="scroller" style="overflow-x:auto"><table class="small" style="border-collapse:collapse;min-width:100%"><thead><tr><th style="text-align:left">game</th><th style="text-align:left">kickoff</th><th style="text-align:left">forecast</th><th style="text-align:left">as of</th></tr></thead><tbody>${rows}</tbody></table></div></details>`;
+  } catch (e) {
+    box.innerHTML = "";
+  }
+}
 async function loadDfsTourney(dg, force) {
   const bx = _dfsTourneyBoxes();
   if (!bx) return;
   const sp = ($("dfsSport") || {}).value;
+  loadNflWeather();
   if (sp !== "nfl") { bx.main.innerHTML = ""; bx.files.innerHTML = ""; _dfsTourneyDg = null; _dfsTourneyData = null; return; }
   loadDfsTourneyList();
   if (!dg) { bx.main.innerHTML = ""; _dfsTourneyDg = null; _dfsTourneyData = null; return; }

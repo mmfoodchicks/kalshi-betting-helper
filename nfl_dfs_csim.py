@@ -101,11 +101,13 @@ def sim_stamp(n=None, seed=None, params=None, preseason=False):
     seasons), the reconciliation stamp, the seed, and the fact that no
     marginal is pinned to anything."""
     import nfl_recon
+    import nfl_usage
     P = params if params is not None else PARAMS
     return {"model": SIM_MODEL, "version": SIM_MODEL_VERSION, "projections": "sleeper-weekly, reconciled (nfl_recon)",
             "params": dict(P["params"]), "params_fitted": bool(P["fitted"]), "params_hash": P["hash"][:16],
             "params_fit": {k: P["meta"].get(k) for k in ("train_seasons", "commit", "base_seed", "built")} if P["fitted"] else None,
             "reconciliation": nfl_recon.recon_stamp(),
+            "usage": (None if preseason else nfl_usage.stamp()),
             "touchdowns": "team Poisson on volume and efficiency, allocated among the men who caught (carried) the ball",
             "receiving_noise": "shared game, team volume, team accuracy and team efficiency days; noisy target shares; per-player big-play noise",
             "marginals": "not pinned: each player's mean is what the model produces from the reconciled line",

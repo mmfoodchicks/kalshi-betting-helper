@@ -10801,7 +10801,8 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid], null, null," in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v128' in open(_os.path.join(_root, "static", "sw.js")).read())
+   # the shell only moves forward (v129: the DFS tab's weather panel)
+   and int(_swre.search(r"vigil-shell-v(\d+)", open(_os.path.join(_root, "static", "sw.js")).read()).group(1)) >= 128)
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
@@ -12005,7 +12006,7 @@ ck("wired: the racing route passes the sample box, the NFL and MLB contest sims 
    and '$("dfsSport").addEventListener("change", dfsRecommend)' in _jslb2
    and "dfsRecommend(true)" in _jslb2 and "_dfsMeasuredSample(sport, entries)" in _jslb2
    and "Sample check" in _jslb2 and "d.sample_reco || null" in _jslb2
-   and 'vigil-shell-v128' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and int(_swre.search(r"vigil-shell-v(\d+)", open(_os.path.join(_root, "static", "sw.js")).read()).group(1)) >= 128)
 ck("wired: every builder applies the correction, every big build is logged from the "
    "route, the recorder grades on its cadence, the two routes exist, the tab shows "
    "the record and can grade on demand",
@@ -12597,7 +12598,7 @@ ck("the NFL game grid maps the week board's own games -- every name it reads is 
    "JS-error ledger 2026-09-09 13:37 ET: Uncaught ReferenceError: mine is not defined @ app.js:3754")
 ck("the shared preset card says when a top-N recipe came up short, and the shell moved for the new tab",
    "it.short_slate" in _js11[_js11.index("function _presetSectionHtml("):][:4000]
-   and 'vigil-shell-v128' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and int(_swre.search(r"vigil-shell-v(\d+)", open(_os.path.join(_root, "static", "sw.js")).read()).group(1)) >= 128)
 
 # ---------------------------------------------------------------------------
 # The rungs pay what KALSHI pays. The owner, 2026-09-09: a 200x rung's slip
@@ -12698,7 +12699,7 @@ ck("the UI never calls a product of asks 'Kalshi pays' again, warns on stacks, n
    and "no maker is quoting" in _js12 and "built to pay <b>${it.target_payout_x}×</b> on Kalshi" in _js12
    and "_presetSectionHtml(p, rec, builtTs, firstStart, quoting)" in _js12
    and _js12.count("(d.quoting || {})[pid]") == 3
-   and 'vigil-shell-v128' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and int(_swre.search(r"vigil-shell-v(\d+)", open(_os.path.join(_root, "static", "sw.js")).read()).group(1)) >= 128)
 
 # ---------------------------------------------------------------------------
 # The showdown builder on the 2026 opener (NE @ SEA, DK's $2.25M Millionaire,
@@ -12890,7 +12891,7 @@ ck("the tab draws every entry with its captain, depth tags and contest line, lis
    and "rules:" in _js13 and "showdown && sport === \"nfl\"" in _js13
    and 'dfsApplyReco(\'${obj}\',${sample},${lineups || 0})' in _js13
    and '$("dfsLineups").value = lineups' in _js13
-   and 'vigil-shell-v128' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and int(_swre.search(r"vigil-shell-v(\d+)", open(_os.path.join(_root, "static", "sw.js")).read()).group(1)) >= 128)
 
 
 # ---- the DFS tournament engine (dfs_tourney): built on the PC, served here --
@@ -13410,7 +13411,7 @@ ck("the tab labels the experimental columns from the board (experimental win, ex
    and "experimental win</th>" in _js_s1 and "experimental EV</th>" in _js_s1
    and '"Best by experimental EV"' in _js_s1 and '"Best by experimental first place"' in _js_s1
    and "<b>Experimental win, EV and ROI</b>" in _js_s1 and "are held out)" in _js_s1
-   and 'vigil-shell-v128' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and int(_swre.search(r"vigil-shell-v(\d+)", open(_os.path.join(_root, "static", "sw.js")).read()).group(1)) >= 128)
 
 # ---- Stage 2A: the sampler's completion invariant, probe lineups, the simulator stamp ----
 # 2026-09-10. The floors are a lower-bound heuristic, not a proof, so the
@@ -13493,7 +13494,7 @@ _js2 = open(_os.path.join(_root, "static", "app.js")).read()
 ck("the tab shows the probes as passengers with legality, both tail columns and their ranks, the score quantiles and the experimental first-place figures",
    "probes: rs.probes || []" in _js2 and "<b>Probes</b>" in _js2 and "they never enter the candidates or the portfolio" in _js2
    and "(fails a cap of four)" in _js2 and "experimental win ${pct(p.win_pct, 3)}" in _js2
-   and 'vigil-shell-v128' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and int(_swre.search(r"vigil-shell-v(\d+)", open(_os.path.join(_root, "static", "sw.js")).read()).group(1)) >= 128)
 
 # ---- Stage 2B: the historical evidence base is what it says it is ----------
 # 2026-09-10. The constrained simulator is fitted to 2022-2024 and judged on
@@ -13885,7 +13886,7 @@ ck("the board's rows carry the outright win, the share-of-first win, the tie-awa
    and _js3.count("ev_dup") == 2                              # only the engine-4 fallback and its comment
    and "${money(evOf(r))}" in _js3 and "ignoring ties" in _js3
    and "r.ev != null) ? r.ev : (r || {}).ev_dup" in _js3      # an engine-4 board stays readable through the swap
-   and 'vigil-shell-v128' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and int(_swre.search(r"vigil-shell-v(\d+)", open(_os.path.join(_root, "static", "sw.js")).read()).group(1)) >= 128)
 
 # The receiving back as a stack partner: the knob exists, is off, and the
 # rule text says so. Stage 4B decides it against the fitted simulator; the
@@ -21311,6 +21312,294 @@ ck("the soccer tab says what the headline rests on: the chance on every card is 
    "${marketNote}${bttsNote}" in _js_acc and "Tested against the closing market" in _js_acc
    and "chance <b>${chance != null ? chance + \"%\" : \"-\"}</b> it does not win" in _js_acc
    and '"market_test": {"leagues": 27, "matches": 24841' in open(_os.path.join(_root, "soccer.py")).read())
+
+# ---- 2026-10-18 DFS information: props log, usage, weather -----------------------
+# The owner asked what else could make the lineups better ("go for it"). Four
+# sources, each with its rule written before any number: Kalshi's player props
+# logged until kickoff (the anchor test reads weeks 6-10), recent usage
+# (shipped: targets and carries at 0.3), weather (failed; shown as
+# information, a wind-only rule waits on 2026 weeks 6-18).
+print("=" * 72)
+print("DFS information: the prop log, recent usage, game-day weather")
+print("=" * 72)
+import json as _json_uw
+import shutil as _sh_uw
+import tempfile as _tf_uw
+import time as _time_uw
+import deep_cache as _dc_uw
+import nfl_props_log as _npl_uw
+import nfl_usage as _nu_uw
+import nfl_weather as _nw_uw
+from research import nfl_usage_validation as _nuv_uw
+from research import nfl_weather_validation as _nwv_uw
+from research import nfl_prop_anchor as _npa_uw
+
+_uw_dir = _tf_uw.mkdtemp(prefix="vigil-uw-")
+_uw_cache0 = _dc_uw.CACHE_DIR
+_dc_uw.CACHE_DIR = _uw_dir
+try:
+    # (1) the prop log: rewritten while a game is ahead of its kickoff, frozen from five minutes before it
+    _uw_now = 1_800_000_000.0
+
+    def _uw_ev(i, home, away, ko, state, venue):
+        return {"id": str(i), "date": None, "_ko": ko, "competitions": [{
+            "status": {"type": {"state": state}}, "venue": {"fullName": venue},
+            "competitors": [{"homeAway": "home", "team": {"abbreviation": home}},
+                            {"homeAway": "away", "team": {"abbreviation": away}}]}]}
+    _uw_payload = {"season": {"year": 2026}, "week": {"number": 7}, "events": [
+        _uw_ev(1, "KC", "LAC", _uw_now + 7200, "pre", "Arrowhead Stadium"),
+        _uw_ev(2, "GB", "DAL", _uw_now + 120, "pre", "Lambeau Field"),       # inside LEAD_S: frozen
+        _uw_ev(3, "SF", "SEA", _uw_now - 600, "in", "Levi's Stadium")]}      # in play: frozen
+    import kalshi as _k_uw
+    _uw_pt0 = _k_uw._parse_time
+    _uw_kos = {str(e["id"]): e["_ko"] for e in _uw_payload["events"]}
+    for _e in _uw_payload["events"]:
+        _e["date"] = f"ko:{_e['id']}"
+    _k_uw._parse_time = lambda s: _uw_kos.get(str(s).split(":")[-1]) if str(s or "").startswith("ko:") else _uw_pt0(s)
+    _uw_index = {"LACKC": {"pair": frozenset(("KC", "LAC"))}, "DALGB": {"pair": frozenset(("GB", "DAL"))},
+                 "SEASF": {"pair": frozenset(("SF", "SEA"))}}
+    _uw_lad_calls = []
+
+    def _uw_lad(suffix):
+        _uw_lad_calls.append(suffix)
+        return {("rec_yd", "rashee rice"): {"name": "Rashee Rice", "rungs": [(49.5, 0.62), (69.5, 0.38), (89.5, 0.2)]}}
+    _uw_sleeper = [{"team": "KC", "player": {"first_name": "Rashee", "last_name": "Rice", "position": "WR"},
+                    "stats": {"rec_yd": 71.0, "rec": 5.6, "rec_tgt": 8.1, "pts_ppr": 15.2, "kick_pts": 9.0}},
+                   {"team": "GB", "player": {"first_name": "Jordan", "last_name": "Love", "position": "QB"},
+                    "stats": {"pass_yd": 250.0}}]
+    _uw_fc = []
+
+    def _uw_forecast(g):
+        _uw_fc.append(g["id"])
+        return {"venue": g.get("venue"), "roof": "outdoors", "wind_mph": 14.0, "temp_f": 61, "precip_pct": 10}
+    try:
+        _uw_s1 = _npl_uw.snapshot(now=_uw_now, payload=_uw_payload, index=_uw_index, ladders=_uw_lad,
+                                  sleeper=_uw_sleeper, forecast=_uw_forecast)
+        _uw_st1, _ = _dc_uw.load(_npl_uw.KEY.format(season=2026, week=7))
+        _uw_g1 = _json_uw.loads(_json_uw.dumps(_uw_st1, default=list))
+        # an hour later, after every kickoff: nothing written is rewritten
+        _uw_s2 = _npl_uw.snapshot(now=_uw_now + 3 * 3600, payload=_uw_payload, index=_uw_index,
+                                  ladders=lambda s: {("rec_yd", "rashee rice"): {"name": "Rashee Rice", "rungs": [(49.5, 0.99)]}},
+                                  sleeper=[dict(_uw_sleeper[0], stats={"rec_yd": 5.0})], forecast=_uw_forecast)
+        _uw_st2, _ = _dc_uw.load(_npl_uw.KEY.format(season=2026, week=7))
+        _uw_latest, _ = _dc_uw.load(_npl_uw.LATEST)
+    finally:
+        _k_uw._parse_time = _uw_pt0
+    _uw_rice = ((_uw_st1["games"].get("LACKC") or {}).get("players") or {}).get("rashee rice") or {}
+    ck("the prop log writes only the game still ahead of its kickoff: its ladders with each one's implied mean, the "
+       "projection Sleeper had for every player of its two teams (no other team), and its stadium's forecast; the game "
+       "inside five minutes and the game in play are frozen -- a live price carries the game and never stands in for a "
+       "pre-game one",
+       _uw_s1["updated"] == 1 and _uw_s1["frozen"] == 2 and _uw_lad_calls == ["LACKC"]
+       and set(_uw_st1["games"]) == {"LACKC"} and _uw_rice["stats"]["rec_yd"]["mean"] is not None
+       and set(_uw_st1["sleeper"]) == {"rashee rice"} and "kick_pts" not in _uw_st1["sleeper"]["rashee rice"]["stats"]
+       and _uw_st1["sleeper"]["rashee rice"]["stats"]["rec_yd"] == 71.0
+       and set(_uw_st1["weather"]) == {"1"} and _uw_fc == ["1"]
+       and _uw_st1["weather"]["1"]["label"] == "LAC @ KC" and _uw_st1["weather"]["1"]["wx"]["wind_mph"] == 14.0,
+       str(_uw_s1))
+    ck("after kickoff a second pass rewrites nothing -- props, Sleeper's projection and the forecast stay the last pre-game "
+       "ones -- and the pointer the weather route reads names the week",
+       _uw_s2["updated"] == 0 and _uw_s2["weather"] == 0 and _uw_fc == ["1"]
+       and _json_uw.loads(_json_uw.dumps(_uw_st2, default=list)) == _uw_g1
+       and _uw_latest == _npl_uw.KEY.format(season=2026, week=7),
+       str(_uw_s2))
+    _uw_exp, _uw_exp1 = _npl_uw.export(), _npl_uw.export(1)
+    _uw_wf = open(_os.path.join(_root, ".github", "workflows", "error-log.yml")).read()
+    _uw_app0 = open(_os.path.join(_root, "app.py")).read()
+    ck("the prop log leaves the server the way the error ledger does: the export names the latest logged week and its "
+       "payload (nothing for a week never logged), the route reads only the deep store, and the 6-hourly workflow commits "
+       "the latest week and the one before under props/ on sim-history",
+       _uw_exp["key"] == "nfl_props_2026_w07" and set(_uw_exp["payload"]["games"]) == {"LACKC"} and _uw_exp1 is None
+       and "nfl_props_log.export(back)" in _uw_app0[_uw_app0.index('@app.route("/api/nfl/props_log")'):][:700]
+       and '"$APP_URL/api/nfl/props_log?back=$back"' in _uw_wf and '[ -d props ] && git add -A props' in _uw_wf,
+       str((_uw_exp or {}).get("key")))
+    ck("the prop log is the recorder's: one pass every half hour, behind its own ledger code, and a failed pass is "
+       "ledgered, never raised into the loop",
+       "nfl_props_log.tick()" in open(_os.path.join(_root, "mlb_recorder.py")).read()
+       and 'errlog.note("MREC-nflprops", _e)' in open(_os.path.join(_root, "mlb_recorder.py")).read()
+       and _npl_uw.EVERY_S == 1800 and _npl_uw.LEAD_S == 300
+       and 'errlog.note("NFLPROPS-snapshot", e)' in _insp.getsource(_npl_uw.tick)
+       and 'errlog.note("NFLPROPS-weather", e)' in _insp.getsource(_npl_uw._weather))
+
+    # (2) the prop-anchor rule: written before week 6 had an outcome, decided as written
+    _uw_rule = _npa_uw.__doc__
+    _uw_good = [("rec_yd", 50.0, 70.0, 70.0 + (i % 3 - 1)) for i in range(60)]     # the market right, Sleeper 20 short
+    _uw_bad = [("rec_yd", 50.0, 70.0, 50.0 + (i % 3 - 1)) for i in range(60)]      # Sleeper right
+    _uw_dec_g = _npa_uw.decide(_uw_good, _uw_good)
+    _uw_dec_b = _npa_uw.decide(_uw_good, _uw_bad)
+    ck("the prop-anchor rule was written 2026-10-18 13:21 UTC, before week 6's first kickoff: weights chosen on weeks 6-7, "
+       "tested on 8-10 against Sleeper alone by two standard errors; a stat whose market is right ships at the chosen "
+       "weight and one whose test fails ships at 0",
+       "written 2026-10-18 13:21 UTC" in _uw_rule and _npa_uw.SELECT_WEEKS == (6, 7) and _npa_uw.TEST_WEEKS == (8, 9, 10)
+       and _npa_uw.GRID == (0.0, 0.25, 0.5, 0.75, 1.0)
+       and _uw_dec_g["rec_yd"]["chosen"] == 1.0 and _uw_dec_g["rec_yd"]["ship"] == 1.0
+       and _uw_dec_b["rec_yd"]["chosen"] == 1.0 and _uw_dec_b["rec_yd"]["ship"] == 0.0
+       and _uw_dec_g["pass_yd"]["ship"] == 0.0,
+       str({k: v.get("ship") for k, v in _uw_dec_g.items()}))
+
+    # (3) recent usage: the verdict, the shipped constants, and production reproducing the harness
+    _uw_uv = _json_uw.load(open(_os.path.join(_root, "research", "data", "nfl_usage_validation.json")))
+    _uw_t, _uw_c = _uw_uv["components"]["tgt"]["decision"], _uw_uv["components"]["car"]["decision"]
+    ck("the usage test's artifact is this harness's (its rule is the docstring), and its verdict is the shipped "
+       "constants: target share over 6 games at 0.3 (2025 -0.004869 +/- 0.001117 per team-game against Sleeper "
+       "alone, 4.4 SE) and carry share over 3 at 0.3 (2025 -0.003177 +/- 0.001459); 2026 vetoed neither; air yards "
+       "(WOPR) was chosen for nothing",
+       _uw_uv["rule"] == _nuv_uw.__doc__.split("Usage:")[0]
+       and _uw_t["chosen"] == {"kind": "TS", "n": _nu_uw.TGT_N, "w": _nu_uw.TGT_W} and _uw_t["ship"] == _nu_uw.TGT_W == 0.3
+       and _uw_c["chosen"] == {"kind": "CS", "n": _nu_uw.CAR_N, "w": _nu_uw.CAR_W} and _uw_c["ship"] == _nu_uw.CAR_W == 0.3
+       and _uw_t["test"] == {"n": 544, "mean": -0.004869, "se": 0.001117} and _uw_t["test_passed"]
+       and _uw_c["test"] == {"n": 544, "mean": -0.003177, "se": 0.001459} and _uw_c["test_passed"]
+       and not _uw_t["confirm_vetoed"] and not _uw_c["confirm_vetoed"]
+       and _nu_uw.MIN_G == _nuv_uw.MIN_G and _nu_uw.FLOOR == _nuv_uw.FLOOR,
+       str((_uw_t, _uw_c))[:300])
+    # one team, three receivers: A and B have history, C (new) has none
+    _uw_hist = {w: {"pl": {"a": ["T", 9.0, 0.0], "b": ["T", 3.0, 0.0]}, "tot": {"T": [20.0, 0.0]}} for w in (1, 2, 3, 4, 5)}
+    _uw_hist[4]["pl"]["c"] = ["X", 6.0, 0.0]      # c's two games were for another team: not this team's history
+    _uw_hist[5]["pl"]["c"] = ["X", 6.0, 0.0]
+
+    def _uw_team():
+        return [(pid, {"team": "T", "proj_pts": 12.0,
+                       "means": {"rec_tgt": t, "rec": t * 0.6, "rec_yd": t * 7.0, "rec_td": t * 0.05,
+                                 "rush_att": 0.0, "rush_yd": 0.0, "rush_td": 0.0}})
+                for pid, t in (("a", 5.0), ("b", 5.0), ("c", 4.0))]
+    _uw_pairs = _uw_team()
+    _uw_before = _json_uw.loads(_json_uw.dumps(_uw_pairs))
+    _uw_sum = _nu_uw.adjust(_uw_pairs, _uw_hist)
+    _uw_s = [5 / 14, 5 / 14, 4 / 14]
+    _uw_q = [(1 - 0.3) * s + 0.3 * t for s, t in zip(_uw_s, _nuv_uw.allocation(_uw_s, [45.0 / 100, 15.0 / 100, None]))]
+    _uw_new = [p["means"]["rec_tgt"] for _pid, p in _uw_pairs]
+    _uw_f = [n / b[1]["means"]["rec_tgt"] for n, b in zip(_uw_new, _uw_before)]
+    ck("production's usage step is the harness's allocation: players with two games for THIS team split the share Sleeper "
+       "gives them by their recent share (a game for another team does not count), a player without keeps Sleeper's, the "
+       "team's projected targets are unchanged, and each player's receptions, yards and touchdowns move by his target factor",
+       all(abs(n / 14.0 - q) < 1e-12 for n, q in zip(_uw_new, _uw_q))
+       and abs(sum(_uw_new) - 14.0) < 1e-12 and abs(_uw_new[2] - 4.0) < 1e-12
+       and all(abs(p["means"][k] - b[1]["means"][k] * f) < 1e-9
+               for (_pid, p), b, f in zip(_uw_pairs, _uw_before, _uw_f) for k in ("rec", "rec_yd", "rec_td"))
+       and _uw_sum["players_moved"] == 2,
+       str((_uw_new, _uw_q)))
+    _uw_ppr = [(p["proj_pts"] - b[1]["proj_pts"]) for (_pid, p), b in zip(_uw_pairs, _uw_before)]
+    _uw_ppr_want = [(f - 1) * (b[1]["means"]["rec"] + 0.1 * b[1]["means"]["rec_yd"] + 6 * b[1]["means"]["rec_td"])
+                    for b, f in zip(_uw_before, _uw_f)]
+    ck("a moved player's proj_pts moves by his lines' PPR change (the legacy simulator pins its mean to proj_pts, so a "
+       "share change that left it would be undone)",
+       all(abs(x - y) < 0.006 for x, y in zip(_uw_ppr, _uw_ppr_want)) and abs(_uw_ppr[2]) < 1e-9,
+       str((_uw_ppr, _uw_ppr_want)))
+    _uw_calls = []
+
+    def _uw_fetch_fail(url):
+        _uw_calls.append(url)
+        raise OSError("down")
+    _uw_p2 = _uw_team()
+    _uw_b2 = _json_uw.loads(_json_uw.dumps(_uw_p2))
+    _uw_r_w2 = _nu_uw.apply(_uw_p2, 2026, 2, fetch=_uw_fetch_fail)
+    _uw_r_w6 = _nu_uw.apply(_uw_p2, 2026, 6, fetch=_uw_fetch_fail)
+    _uw_n0 = len(_uw_calls)
+    _uw_r_fail = _nu_uw.apply(_uw_p2, 2026, 9, fetch=_uw_fetch_fail)
+    ck("usage changes nothing and fetches nothing in weeks 1-2 or before it shipped (2026 week 7: week 6's slate was built "
+       "and locked on Sleeper's lines); a week of history that cannot be read leaves every line Sleeper's, never a partial "
+       "history",
+       _uw_r_w2 is None and _uw_r_w6 is None and _uw_n0 == 0 and _nu_uw.FIRST == (2026, 7)
+       and _uw_r_fail is None and len(_uw_calls) == 1
+       and _json_uw.loads(_json_uw.dumps(_uw_p2)) == _uw_b2,
+       str((_uw_r_w2, _uw_r_w6, _uw_r_fail, _uw_calls)))
+    # caching: a week two or more back is read once; the last one refreshes after six hours
+    _uw_got = []
+
+    def _uw_fetch(url):
+        _uw_got.append(int(url.split("/2026/")[1].split("?")[0]))
+        return [{"player_id": "a", "team": "T", "stats": {"gp": 1, "rec_tgt": 5, "rush_att": 1}},
+                {"player_id": "z", "team": "T", "stats": {"rec_tgt": 2}}]
+    _uw_h1 = _nu_uw.history(2026, 5, fetch=_uw_fetch, now=1000.0)
+    _uw_got_first = list(_uw_got)
+    _uw_h2 = _nu_uw.history(2026, 5, fetch=_uw_fetch, now=2000.0)
+    _uw_h3 = _nu_uw.history(2026, 5, fetch=_uw_fetch, now=_time_uw.time() + 7 * 3600)
+    ck("the trailing games are Sleeper's own box scores, kept a week at a time: the team total counts every row, a player "
+       "only where he played; a final week is fetched once, the last week again after six hours",
+       _uw_got_first == [1, 2, 3, 4] and _uw_got[4:] == [4]
+       and _uw_h1[1] == {"pl": {"a": ["T", 5.0, 1.0]}, "tot": {"T": [7.0, 1.0]}} and set(_uw_h2) == {1, 2, 3, 4}
+       and _uw_h3 is not None,
+       str(_uw_got))
+    _uw_wg = _insp.getsource(__import__("nfl_dfs_sim").weekly_games)
+    ck("the weekly Sleeper lines take the usage step before the home side is set and before the reconciliation, so the "
+       "legacy board, the constrained model and the engine all deal the same shares; a failure is ledgered and leaves "
+       "Sleeper's lines; every DFS stamp names the weights",
+       "nfl_usage.apply(pairs, int(season), int(week))" in _uw_wg and 'errlog.note("USAGE-weekly", _e)' in _uw_wg
+       and _uw_wg.index("nfl_usage.apply(") < _uw_wg.index("_orient(games, season, week)")
+       < _uw_wg.index("nfl_recon.reconcile_games(games)")
+       and "pairs.append((r.get(\"player_id\"), row))" in _uw_wg
+       and __import__("nfl_dfs_sim").sim_stamp(n=1)["usage"] == _nu_uw.stamp()
+       and __import__("nfl_dfs_sim").sim_stamp(n=1, preseason=True)["usage"] is None
+       and __import__("nfl_dfs_csim").sim_stamp(n=1)["usage"] == _nu_uw.stamp()
+       and '"usage": nfl_usage.stamp(),' in _insp.getsource(__import__("nfl_dfs_engine").sim_stamp)
+       and _nu_uw.stamp()["targets"] == {"weight": 0.3, "games": 6} and _nu_uw.stamp()["carries"] == {"weight": 0.3, "games": 3})
+
+    # (4) weather: the verdict, the module, the route and the card
+    _uw_wv = _json_uw.load(open(_os.path.join(_root, "research", "data", "nfl_weather_validation.json")))
+    ck("the weather test's artifact is this harness's, and nothing passed: no team line (passing or rushing attempts or "
+       "yards) and no field-goal term beat Sleeper's own lines on 2025 by two standard errors, so no projection reads the "
+       "weather",
+       _uw_wv["rule"] == _nwv_uw.__doc__.split("Usage:")[0]
+       and set(_uw_wv["team"]) == {"pass_att", "pass_yd", "rush_att", "rush_yd"}
+       and not any(v["ship"] for v in _uw_wv["team"].values()) and _uw_wv["fg"]["ship"] is False
+       and _uw_wv["team"]["pass_yd"]["test"] == {"n": 132, "mean": -0.001438, "se": 0.00606}
+       and _uw_wv["fg"]["test"] == {"n": 218, "mean": 0.003983, "se": 0.005351}
+       and not any("nfl_weather" in open(_os.path.join(_root, f)).read()
+                   for f in ("nfl_dfs_sim.py", "nfl_dfs_csim.py", "nfl_dfs_engine.py", "nfl_game_sim.py", "dfs_tourney.py")),
+       str({k: v["test"] for k, v in _uw_wv["team"].items()}))
+    from research import nfl_weather_stage2 as _nw2_uw
+    ck("wind alone waits on games not yet played: its rule was written after stage 1 failed, fits 2022-2025, reads 2026 "
+       "weeks 6-18 once, needs 30 windy team-games, and ships only if the gamebook wind beats Sleeper by two standard "
+       "errors AND the frozen pre-game forecast's wind does too",
+       "written 2026-10-18 13:41 UTC" in _nw2_uw.__doc__ and _nw2_uw.FIT == (2022, 2023, 2024, 2025)
+       and _nw2_uw.TEST_SEASON == 2026 and _nw2_uw.TEST_WEEKS == tuple(range(6, 19)) and _nw2_uw.MIN_UNITS == 30
+       and _nw2_uw.OUTCOMES == ("pass_att", "pass_yd")
+       and "fc[\"mean\"] < 0" in _insp.getsource(_nw2_uw.main))
+    _uw_wx_calls = []
+
+    def _uw_wx(lat, lon, when):
+        _uw_wx_calls.append((lat, lon, when))
+        return {"temp_f": 38, "wind_mph": 11.0, "precip_pct": 50, "summary": "Rain", "source": "NOAA"}
+    _uw_dome = _nw_uw.forecast({"venue": "U.S. Bank Stadium", "kickoff": 5.0}, fetch=_uw_wx)
+    _uw_retr = _nw_uw.forecast({"venue": "AT&T Stadium", "kickoff": 5.0}, fetch=_uw_wx)
+    _uw_open = _nw_uw.forecast({"venue": "Levi's Stadium", "kickoff": 5.0}, fetch=_uw_wx)
+    _uw_none = _nw_uw.forecast({"venue": "Somewhere Park", "kickoff": 5.0}, fetch=_uw_wx)
+    ck("the stadium table reads ESPN's venue names (punctuation folded): a dome and a retractable roof get no field weather "
+       "and no fetch, an open-air stadium gets the forecast for its kickoff hour at its coordinates, an untabled venue "
+       "nothing; the card flags what the test looked for (wind over 10 mph, a 50%+ chance, under 40F)",
+       _uw_dome == {"venue": "U.S. Bank Stadium", "roof": "dome"} and _uw_retr["roof"] == "retractable"
+       and _uw_wx_calls == [(37.40, -121.97, 5.0)] and _uw_open["wind_mph"] == 11.0 and _uw_none is None
+       and _nw_uw.flags(_uw_open) == ["wind 11 mph", "50% precipitation", "38F"]
+       and _nw_uw.flags(dict(_uw_open, wind_mph=10.0, precip_pct=49, temp_f=40)) == []
+       and _nw_uw.flags(_uw_dome) == [] and len({v[2] for v in _nw_uw.VENUES.values()} - {"outdoors", "dome", "retractable"}) == 0
+       and _nw_uw.FORECAST_AHEAD_S == 72 * 3600,
+       str((_uw_dome, _uw_retr, _uw_open, _uw_wx_calls)))
+    import weather as _wmod_uw
+    _uw_gw0 = _wmod_uw.get_weather
+    _wmod_uw.get_weather = lambda *a, **k: (_ for _ in ()).throw(AssertionError("a request fetched a forecast"))
+    try:
+        _uw_board = _nw_uw.board()
+    finally:
+        _wmod_uw.get_weather = _uw_gw0
+    _uw_app = open(_os.path.join(_root, "app.py")).read()
+    _uw_route = _uw_app[_uw_app.index('@app.route("/api/nfl/weather")'):][:700]
+    ck("the weather route reads the logged week and never fetches: the board comes off the deep store (here, the week the "
+       "prop log just wrote) soonest first with its flags and the note that no projection reads it",
+       _uw_board["week"] == 7 and [g["label"] for g in _uw_board["games"]] == ["LAC @ KC"]
+       and _uw_board["games"][0]["flags"] == ["wind 14 mph"] and "Information only" in _uw_board["note"]
+       and "nfl_weather.board()" in _uw_route and "get_weather" not in _uw_route,
+       str(_uw_board)[:300])
+    _uw_js = open(_os.path.join(_root, "static", "app.js")).read()
+    ck("the DFS tab shows the forecasts for NFL only, kickoffs in Mountain time, under a note that they are information; the "
+       "shell version moved so phones load it",
+       "async function loadNflWeather()" in _uw_js and 'fetch("/api/nfl/weather")' in _uw_js
+       and 'timeZone: "America/Denver"' in _uw_js[_uw_js.index("async function loadNflWeather()"):][:2000]
+       and "loadNflWeather();" in _uw_js[_uw_js.index("async function loadDfsTourney("):][:400]
+       and '<div id="dfsWeather"></div>' in open(_os.path.join(_root, "templates", "index.html")).read()
+       and int(_swre.search(r"vigil-shell-v(\d+)", open(_os.path.join(_root, "static", "sw.js")).read()).group(1)) >= 129)
+finally:
+    _dc_uw.CACHE_DIR = _uw_cache0
+    _sh_uw.rmtree(_uw_dir, ignore_errors=True)
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

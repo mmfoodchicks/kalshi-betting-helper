@@ -307,6 +307,30 @@ data-only `sim-history` branch (which never deploys):
   itself a club that season), edges net of fee on YES and NO. ESPN's bare
   `/standings` serves the PRESEASON until opening night: both boards read
   `seasontype=2`. Report: `research/reports/pro_seasons.md`.
+- **DFS information sources** (2026-10-18; each rule written before its
+  numbers). **Recent usage SHIPPED** (`nfl_usage.py`, from 2026 week 7):
+  inside `nfl_dfs_sim.weekly_games`, before `nfl_recon`, each team's
+  targets and carries are re-split q = 0.7 Sleeper's share + 0.3 the trailing
+  allocation (target share over 6 games, carry share over 3, from Sleeper's
+  own box scores in the deep store; players with two games for THIS team
+  split the share Sleeper gives them, the rest keep Sleeper's). Team totals
+  never move; catch rate and per-touch figures stay Sleeper's; `proj_pts`
+  moves by the PPR change (the legacy sim pins to it). 2025 test: targets
+  -0.0049 +/- 0.0011, carries -0.0032 +/- 0.0015 per team-game in log loss;
+  air yards (WOPR) lost to plain share (`research/reports/nfl_usage.md`,
+  which also covers the absent-lead-back case). **Weather FAILED** stage 1
+  (wind, rain, cold vs Sleeper's team lines and the FG curve, 2025): the
+  forecasts (`nfl_weather.py`: stadium table by ESPN venue name, baseball's
+  `weather.get_weather`) show on the DFS tab as information only
+  (`/api/nfl/weather` reads the log, never fetches); a wind-only stage 2
+  (`research/nfl_weather_stage2.py`) is read once after 2026 week 18 and
+  needs the frozen pre-game forecast to agree (`research/reports/nfl_weather.md`).
+  **Kalshi's player props** are logged by `nfl_props_log` (the recorder,
+  every 30 min): ladders, implied means, Sleeper's projection and the
+  stadium forecast per game, FROZEN from five minutes before kickoff
+  (deep store `nfl_props_<season>_wNN`); `research/nfl_prop_anchor.py`
+  chooses a blend on weeks 6-7 and tests it on 8-10 -- until it passes,
+  nothing reads the props.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 

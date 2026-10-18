@@ -2372,6 +2372,32 @@ def api_dfs_lookback():
         return jsonify({"error": f"lookback failed: {e}"}), 502
 
 
+@app.route("/api/nfl/weather")
+def api_nfl_weather():
+    """This week's NFL kickoff forecasts as the recorder logged them
+    (nfl_props_log via nfl_weather): information on the DFS tab, read by no
+    projection (research/reports/nfl_weather.md). Reads the deep store; never
+    fetches a forecast inside a request."""
+    try:
+        import nfl_weather
+        return jsonify(nfl_weather.board())
+    except Exception as e:
+        return jsonify({"error": f"weather failed: {e}", "games": []}), 502
+
+
+@app.route("/api/nfl/props_log")
+def api_nfl_props_log():
+    """One week of the NFL prop log (nfl_props_log.export; ?back=1 for the
+    week before the latest) for the error-log workflow to commit to
+    sim-history. Reads the deep store only."""
+    try:
+        import nfl_props_log
+        back = max(0, min(3, int(request.args.get("back") or 0)))
+        return jsonify(nfl_props_log.export(back) or {"key": None})
+    except Exception as e:
+        return jsonify({"error": f"props log export failed: {e}"}), 502
+
+
 @app.route("/api/dfs/lookback/seed", methods=["POST"])
 def api_dfs_lookback_seed():
     """The PC's door for backtested events (dfs_backtest rows): inserted as

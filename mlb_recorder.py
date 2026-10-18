@@ -267,6 +267,14 @@ def _loop():
             dfslog.tick()
         except Exception as _e:
             errlog.note("MREC-dfslb", _e)
+        # Kalshi's NFL player props and Sleeper's projections, kept for every
+        # game until its kickoff (the prop-anchor test's data; one pass every
+        # half hour, frozen at kickoff). Own code.
+        try:
+            import nfl_props_log
+            nfl_props_log.tick()
+        except Exception as _e:
+            errlog.note("MREC-nflprops", _e)
         time.sleep(SAMPLE_INTERVAL)
 
 

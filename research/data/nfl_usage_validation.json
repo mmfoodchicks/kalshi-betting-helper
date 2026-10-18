@@ -1,0 +1,290 @@
+{
+ "rule": "Should the DFS deal lean on what each player has actually been getting?\nRESEARCH; the rule below was written 2026-10-18 13:30 UTC, before any number\nin this file was computed.\n\nThe DFS engine shares a team's targets and carries among its players by\nSleeper's projected lines (nfl_dfs_engine.deal_team: a receiver's base is his\nprojected targets, a rusher's his projected carries; the app's lineup sheet\nreads the same lines). Sleeper's projections already look at usage, so the\nquestion is whether a player's RECENT share of his team's targets and carries\n-- the most-quoted usage signal there is, and the one nflverse publishes with\nair yards beside it -- carries anything Sleeper's line does not.\n\nTHE RULE (written before any number below was computed)\n  Data: research/data/player_weeks_*.csv.gz (Sleeper's weekly projection and\n  box score per player; 2022-2025 and 2026 weeks 1-5) and nflverse's\n  stats_player_week_<season>.csv (release \"stats_player\", for air yards).\n  Regular season only.\n  Units: one per (season, week, team) for TARGETS and one for CARRIES. The\n  set is the team's players with a positive projection of that component\n  (proj_rec_tgt, proj_rush_att) who played (act_gp > 0 -- active at kickoff;\n  the engine's pool drops a player DraftKings lists OUT). A unit needs two\n  players in the set and a positive actual total within it.\n  Sleeper's share s_i = proj_i / sum of proj over the set.\n  Trailing share r_i: the player's share of the TEAM's total over his last N\n  games this season for this team before this week (games with act_gp > 0),\n  as a ratio of sums. The team totals are every row of that team in that game\n  (Sleeper's actuals). For WOPR candidates r_i is 1.5 x his target share +\n  0.7 x his air-yards share over the same games, from nflverse (joined by\n  season, week, team -- nflverse's LA is the Rams -- and kalshi_nfl._norm of\n  the name). Floored at 0.005. A player with fewer than MIN_G (2) such games,\n  or not joined, has no trailing share.\n  Trailing allocation t: players with a trailing share split the total share\n  Sleeper gives THEM in proportion to r; players without one keep s. So t\n  sums to one and only redistributes among the players with a history.\n  Candidate: q = (1 - w) s + w t.\n  Candidates: targets -- TS3, TS6 (target share over 3 or 6 games), WOPR3,\n  WOPR6; carries -- CS3, CS6. w in GRID.\n  Loss per unit: the multinomial log loss of the realised counts,\n  -sum_i a_i log q_i / sum_i a_i (the engine deals by a multinomial on q).\n  1. SELECT on 2024, per component: the (candidate, w) with the lowest mean\n     unit loss (ties to the smaller w).\n  2. TEST on 2025, frozen: the paired per-unit difference against w = 0\n     (Sleeper alone). The component passes only if the mean difference is\n     below zero by more than two standard errors.\n  3. CONFIRM on 2026 (weeks the table holds): the mean difference must not be\n     above zero by more than two standard errors. Fewer than 50 units reads as\n     unreadable and does not block.\n  2025 is a fair test here: the engine's 2025 test measured lineups and\n  points, nothing in the stack has read a trailing share, and no candidate's\n  parameter is chosen anywhere but 2024.\n  What a passing component changes: before nfl_recon reconciles a team, each\n  player's projected count for that component (targets, or carries) moves to\n  q_i x the set's projected total, and the components that hang off it move\n  by the same factor (receptions, receiving yards and touchdowns for\n  targets -- his catch rate, yards per catch and touchdowns per catch stay\n  Sleeper's; rushing yards and touchdowns for carries). Team totals stay\n  Sleeper's, so the engine's anchors do not move; only who gets the ball.\n  Production reads the trailing games from Sleeper's weekly box scores\n  (the feed dfslog grades from) and, for WOPR, nflverse's season file.\n  Reported beside it: the mean loss for every candidate and w on all three\n  years, the unit counts, and the nflverse join rate.\n\n",
+ "components": {
+  "tgt": {
+   "decision": {
+    "chosen": {
+     "kind": "TS",
+     "n": 6,
+     "w": 0.3
+    },
+    "test": {
+     "n": 544,
+     "mean": -0.004869,
+     "se": 0.001117
+    },
+    "confirm": {
+     "n": 158,
+     "mean": 0.000334,
+     "se": 0.001859
+    },
+    "test_passed": true,
+    "confirm_readable": true,
+    "confirm_vetoed": false,
+    "ship": 0.3
+   },
+   "units": {
+    "2024": 544,
+    "2025": 544,
+    "2026": 158
+   },
+   "mean_loss": {
+    "2024": {
+     "TS3": {
+      "0": 1.995512,
+      "0.1": 1.992278,
+      "0.2": 1.990701,
+      "0.3": 1.990501,
+      "0.4": 1.99158,
+      "0.5": 1.993939,
+      "0.6": 1.997654,
+      "0.8": 2.009987,
+      "1": 2.033471
+     },
+     "TS6": {
+      "0": 1.995512,
+      "0.1": 1.992426,
+      "0.2": 1.990672,
+      "0.3": 1.990019,
+      "0.4": 1.990376,
+      "0.5": 1.991732,
+      "0.6": 1.994132,
+      "0.8": 2.002631,
+      "1": 2.019165
+     },
+     "WOPR3": {
+      "0": 1.995512,
+      "0.1": 1.9936,
+      "0.2": 1.992939,
+      "0.3": 1.993422,
+      "0.4": 1.995028,
+      "0.5": 1.997793,
+      "0.6": 2.001814,
+      "0.8": 2.014455,
+      "1": 2.038275
+     },
+     "WOPR6": {
+      "0": 1.995512,
+      "0.1": 1.994511,
+      "0.2": 1.994264,
+      "0.3": 1.994744,
+      "0.4": 1.995955,
+      "0.5": 1.997931,
+      "0.6": 2.000734,
+      "0.8": 2.009336,
+      "1": 2.025069
+     }
+    },
+    "2025": {
+     "TS3": {
+      "0": 2.023182,
+      "0.1": 2.02034,
+      "0.2": 2.01938,
+      "0.3": 2.019826,
+      "0.4": 2.021536,
+      "0.5": 2.024482,
+      "0.6": 2.028716,
+      "0.8": 2.041718,
+      "1": 2.064395
+     },
+     "TS6": {
+      "0": 2.023182,
+      "0.1": 2.020032,
+      "0.2": 2.018581,
+      "0.3": 2.018314,
+      "0.4": 2.019086,
+      "0.5": 2.020859,
+      "0.6": 2.023659,
+      "0.8": 2.032796,
+      "1": 2.049218
+     },
+     "WOPR3": {
+      "0": 2.023182,
+      "0.1": 2.022296,
+      "0.2": 2.02286,
+      "0.3": 2.024617,
+      "0.4": 2.027507,
+      "0.5": 2.031556,
+      "0.6": 2.036856,
+      "0.8": 2.052046,
+      "1": 2.077989
+     },
+     "WOPR6": {
+      "0": 2.023182,
+      "0.1": 2.022671,
+      "0.2": 2.023106,
+      "0.3": 2.024342,
+      "0.4": 2.026349,
+      "0.5": 2.029146,
+      "0.6": 2.032787,
+      "0.8": 2.043082,
+      "1": 2.05999
+     }
+    },
+    "2026": {
+     "TS3": {
+      "0": 2.06782,
+      "0.1": 2.06689,
+      "0.2": 2.067132,
+      "0.3": 2.068266,
+      "0.4": 2.070222,
+      "0.5": 2.072998,
+      "0.6": 2.076645,
+      "0.8": 2.08705,
+      "1": 2.103875
+     },
+     "TS6": {
+      "0": 2.06782,
+      "0.1": 2.066918,
+      "0.2": 2.067111,
+      "0.3": 2.068153,
+      "0.4": 2.069986,
+      "0.5": 2.072615,
+      "0.6": 2.076094,
+      "0.8": 2.086112,
+      "1": 2.102613
+     },
+     "WOPR3": {
+      "0": 2.06782,
+      "0.1": 2.067817,
+      "0.2": 2.068799,
+      "0.3": 2.070603,
+      "0.4": 2.0732,
+      "0.5": 2.076618,
+      "0.6": 2.08093,
+      "0.8": 2.092876,
+      "1": 2.112806
+     },
+     "WOPR6": {
+      "0": 2.06782,
+      "0.1": 2.067685,
+      "0.2": 2.068479,
+      "0.3": 2.070047,
+      "0.4": 2.072359,
+      "0.5": 2.075437,
+      "0.6": 2.079341,
+      "0.8": 2.090174,
+      "1": 2.108096
+     }
+    }
+   },
+   "wopr_join": {
+    "2024": {
+     "tried": 9264,
+     "joined": 6630
+    },
+    "2025": {
+     "tried": 9434,
+     "joined": 6964
+    },
+    "2026": {
+     "tried": 1850,
+     "joined": 1411
+    }
+   }
+  },
+  "car": {
+   "decision": {
+    "chosen": {
+     "kind": "CS",
+     "n": 3,
+     "w": 0.3
+    },
+    "test": {
+     "n": 544,
+     "mean": -0.003177,
+     "se": 0.001459
+    },
+    "confirm": {
+     "n": 158,
+     "mean": -0.002578,
+     "se": 0.002
+    },
+    "test_passed": true,
+    "confirm_readable": true,
+    "confirm_vetoed": false,
+    "ship": 0.3
+   },
+   "units": {
+    "2024": 544,
+    "2025": 544,
+    "2026": 158
+   },
+   "mean_loss": {
+    "2024": {
+     "CS3": {
+      "0": 1.185003,
+      "0.1": 1.179712,
+      "0.2": 1.17748,
+      "0.3": 1.17708,
+      "0.4": 1.178144,
+      "0.5": 1.180545,
+      "0.6": 1.184288,
+      "0.8": 1.196514,
+      "1": 1.220981
+     },
+     "CS6": {
+      "0": 1.185003,
+      "0.1": 1.180301,
+      "0.2": 1.178145,
+      "0.3": 1.177631,
+      "0.4": 1.178467,
+      "0.5": 1.180546,
+      "0.6": 1.183875,
+      "0.8": 1.194921,
+      "1": 1.216726
+     }
+    },
+    "2025": {
+     "CS3": {
+      "0": 1.169864,
+      "0.1": 1.167285,
+      "0.2": 1.166389,
+      "0.3": 1.166687,
+      "0.4": 1.168027,
+      "0.5": 1.170376,
+      "0.6": 1.173778,
+      "0.8": 1.184386,
+      "1": 1.204158
+     },
+     "CS6": {
+      "0": 1.169864,
+      "0.1": 1.166664,
+      "0.2": 1.165312,
+      "0.3": 1.165199,
+      "0.4": 1.166126,
+      "0.5": 1.168023,
+      "0.6": 1.170897,
+      "0.8": 1.179987,
+      "1": 1.196319
+     }
+    },
+    "2026": {
+     "CS3": {
+      "0": 1.136885,
+      "0.1": 1.135211,
+      "0.2": 1.134425,
+      "0.3": 1.134308,
+      "0.4": 1.134792,
+      "0.5": 1.135863,
+      "0.6": 1.137538,
+      "0.8": 1.142946,
+      "1": 1.15222
+     },
+     "CS6": {
+      "0": 1.136885,
+      "0.1": 1.13525,
+      "0.2": 1.134518,
+      "0.3": 1.134466,
+      "0.4": 1.135028,
+      "0.5": 1.136185,
+      "0.6": 1.137958,
+      "0.8": 1.143599,
+      "1": 1.153207
+     }
+    }
+   },
+   "wopr_join": null
+  }
+ }
+}

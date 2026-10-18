@@ -1,0 +1,206 @@
+{
+ "rule": "Does game-day weather move a team's passing, rushing and kicking away from\nwhat Sleeper projected? RESEARCH; the rule below was written 2026-10-18 13:30\nUTC, before any number in this file was computed.\n\nThe DFS engine's points come from the market's total (which prices the\nweather already), its passing volume from Sleeper's projected attempts\n(ATT_WEIGHT 1) and its kicks from the deep engine's distance curve, and the\napp's lineup sheet reads Sleeper's lines directly. Nothing in the stack reads\nthe weather. If Sleeper's lines do not move enough for wind, rain or cold, the\nsplit of a fixed total between passing, rushing and kicking is wrong on those\ndays -- the thing a DFS lineup is built from.\n\nTHE RULE (written before any number below was computed)\n  Data: research/data/player_weeks_*.csv.gz (Sleeper's projection and box\n  score per player, 2022-2025 and 2026 weeks 1-5) and nflverse's\n  play_by_play_<season>.csv.gz (the game's roof, temperature, wind and\n  weather text as the gamebook records them at kickoff, and every field\n  goal). Regular season only.\n  Weather features of a game whose roof is \"outdoors\" or \"open\" (a dome or a\n  closed roof has none, and is outside both the fit and the test): wind and\n  temperature from nflverse's columns, else parsed from the weather text\n  (\"Wind: SW 13 mph\", \"calm\" = 0; \"Temp: 51\"); a game with either missing is\n  left out. x = (wind_x, precip, cold_x) with wind_x = max(0, wind - 10) mph,\n  precip = the text names rain, snow, showers, drizzle, sleet or flurries and\n  not \"chance\" or \"possible\", cold_x = max(0, 40 - temp) / 10.\n  A. Team lines. One unit per outdoor (season, week, team) for each of\n     pass_att, pass_yd, rush_att, rush_yd: r = log(actual / projected), both\n     the team's sums over its rows (actual over every row Sleeper scored;\n     projected over every row it projected), both positive. Fit by least\n     squares on 2022-2024: r = a + b . x. Per unit\n     d = (r - a - b . x)^2 - (r - a)^2 (the intercept is Sleeper's general\n     bias, kept out of the comparison so the test is the weather's alone).\n  B. Field goals. One unit per attempt (blocked = missed), z = (distance -\n     40) / 10. Base: logit p = c0 + c1 z + c2 z^2, fitted on every 2022-2024\n     attempt. Weather: base + k1 wind_x + k2 wind_x z + k3 precip + k4\n     cold_x, every term fitted jointly on the same attempts (indoor x = 0).\n     Per unit d = the weather model's log loss minus the base model's.\n  1. TEST on 2025, frozen, over units with some x non-zero: an outcome passes\n     only if the mean d is below zero by more than two standard errors.\n  2. CONFIRM on 2026 (the weeks the data holds), the same units: the mean d\n     must not be above zero by more than two standard errors. Fewer than 30\n     units reads as unreadable and does not block.\n  2025 is a fair test: nothing in the stack has read the weather, and every\n  coefficient comes from 2022-2024.\n  The gamebook's conditions are what happened at kickoff; production would\n  read a forecast (weather.get_weather, the module the baseball board uses),\n  which is noisier, so a passing effect is an upper bound on what a forecast\n  delivers.\n  What a passing outcome changes: A -- the team's Sleeper line for that\n  outcome is multiplied by exp(b . x) at the forecast's features (precip = a\n  50%+ chance; a retractable roof counts as closed), every player's share of\n  it scaled by the same factor (pass_att: the quarterback's attempts and\n  completions and every receiver's targets and receptions; pass_yd: the\n  quarterback's passing yards and every receiver's receiving yards; rush_att\n  and rush_yd: each rusher's carries or rushing yards), before nfl_recon\n  reconciles the team; the engine reads its attempts anchor from those\n  lines. B -- the DFS engine's field-goal logit gains k . x at each kick's\n  distance (a game weather argument to play_game, off for every other\n  caller, as ENV_SD is).\n  Reported beside it: every coefficient, the unit counts, the mean d and its\n  standard error on both years, and the mean r of the units by wind band.\n\n",
+ "games": {
+  "2022": {
+   "all": 271,
+   "outdoor_read": 187
+  },
+  "2023": {
+   "all": 272,
+   "outdoor_read": 188
+  },
+  "2024": {
+   "all": 272,
+   "outdoor_read": 178
+  },
+  "2025": {
+   "all": 272,
+   "outdoor_read": 179
+  },
+  "2026": {
+   "all": 80,
+   "outdoor_read": 56
+  }
+ },
+ "team": {
+  "pass_att": {
+   "a": 0.00467,
+   "b": {
+    "wind_x": -0.00204,
+    "precip": -0.0541,
+    "cold_x": -0.02616
+   },
+   "n_fit": 1105,
+   "test": {
+    "n": 132,
+    "mean": -0.001727,
+    "se": 0.001753
+   },
+   "confirm": {
+    "n": 32,
+    "mean": 0.003775,
+    "se": 0.003299
+   },
+   "test_passed": false,
+   "confirm_readable": true,
+   "confirm_vetoed": false,
+   "ship": false,
+   "mean_r_by_wind": {
+    "calm": {
+     "n": 1171,
+     "mean": -0.0032
+    },
+    "15+": {
+     "n": 84,
+     "mean": -0.0625
+    },
+    "10-15": {
+     "n": 317,
+     "mean": -0.0166
+    }
+   }
+  },
+  "pass_yd": {
+   "a": -0.00398,
+   "b": {
+    "wind_x": -0.00655,
+    "precip": -0.19427,
+    "cold_x": -0.0348
+   },
+   "n_fit": 1105,
+   "test": {
+    "n": 132,
+    "mean": -0.001438,
+    "se": 0.00606
+   },
+   "confirm": {
+    "n": 32,
+    "mean": -0.009165,
+    "se": 0.014513
+   },
+   "test_passed": false,
+   "confirm_readable": true,
+   "confirm_vetoed": false,
+   "ship": false,
+   "mean_r_by_wind": {
+    "calm": {
+     "n": 1171,
+     "mean": -0.0234
+    },
+    "15+": {
+     "n": 84,
+     "mean": -0.1526
+    },
+    "10-15": {
+     "n": 317,
+     "mean": -0.067
+    }
+   }
+  },
+  "rush_att": {
+   "a": 0.00583,
+   "b": {
+    "wind_x": -0.00034,
+    "precip": 0.02751,
+    "cold_x": 0.00122
+   },
+   "n_fit": 1106,
+   "test": {
+    "n": 132,
+    "mean": 0.000371,
+    "se": 0.000476
+   },
+   "confirm": {
+    "n": 32,
+    "mean": 0.000334,
+    "se": 0.001755
+   },
+   "test_passed": false,
+   "confirm_readable": true,
+   "confirm_vetoed": false,
+   "ship": false,
+   "mean_r_by_wind": {
+    "calm": {
+     "n": 1172,
+     "mean": -0.0048
+    },
+    "15+": {
+     "n": 84,
+     "mean": 0.015
+    },
+    "10-15": {
+     "n": 318,
+     "mean": 0.0146
+    }
+   }
+  },
+  "rush_yd": {
+   "a": -0.03707,
+   "b": {
+    "wind_x": -0.00422,
+    "precip": 0.02961,
+    "cold_x": 0.0054
+   },
+   "n_fit": 1106,
+   "test": {
+    "n": 132,
+    "mean": 0.00234,
+    "se": 0.001616
+   },
+   "confirm": {
+    "n": 32,
+    "mean": 0.001414,
+    "se": 0.002664
+   },
+   "test_passed": false,
+   "confirm_readable": true,
+   "confirm_vetoed": false,
+   "ship": false,
+   "mean_r_by_wind": {
+    "calm": {
+     "n": 1172,
+     "mean": -0.0615
+    },
+    "15+": {
+     "n": 84,
+     "mean": -0.0218
+    },
+    "10-15": {
+     "n": 318,
+     "mean": -0.057
+    }
+   }
+  }
+ },
+ "fg": {
+  "base": [
+   1.96089,
+   -1.11042,
+   0.13873
+  ],
+  "weather": {
+   "c0": 2.02887,
+   "c1": -1.12383,
+   "c2": 0.13843,
+   "wind_x": -0.0505,
+   "wind_x_z": 0.0015,
+   "precip": -0.12146,
+   "cold_x": -0.22648
+  },
+  "n_fit": 3237,
+  "test": {
+   "n": 218,
+   "mean": 0.003983,
+   "se": 0.005351
+  },
+  "confirm": {
+   "n": 69,
+   "mean": 0.001968,
+   "se": 0.002825
+  },
+  "test_passed": false,
+  "confirm_readable": true,
+  "confirm_vetoed": false,
+  "ship": false
+ }
+}
