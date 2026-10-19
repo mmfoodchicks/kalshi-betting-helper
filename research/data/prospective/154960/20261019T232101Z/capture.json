@@ -1,0 +1,41 @@
+{
+ "biggest_gpp_detailed": {
+  "id": 196786690,
+  "max_entries": 88235,
+  "name": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (WAS @ SF)",
+  "prize_pool": 1500000.0
+ },
+ "capture_stamp": "20261019T232101Z",
+ "captured_utc": "2026-10-19 23:21:11 UTC",
+ "contests_detailed": [
+  "196774494",
+  "196786672",
+  "196786685",
+  "196786688",
+  "196786689",
+  "196786690",
+  "196786691",
+  "196786694",
+  "196786710",
+  "196789200",
+  "196789428",
+  "196789430",
+  "196936049"
+ ],
+ "draft_group": 154960,
+ "files": {
+  "contests_154960.json": "b7d8d571cbc707d3b4592cd99644c2d164237727fdbc64116c49195a229f38b9",
+  "manifest.json": "6e71210e028f67ab1356e04cd4ac2a4d9bedff3d24d19edce26a5d01ee24262b",
+  "players_2026_6.json": "b8d0efbb64f515f7432c2f5fd8eed958e0d15c28a5329df44f4f823406197a8c",
+  "proj_2026_6.json": "b7757354076cd8a6765768730e5d49db0620fdc2223acb29805afe33ad7a2f42",
+  "proj_2026_6_def.json": "68a5bc34d94e513ea4b1d92208d36004366bafef92f6b123aeb1e3134a02bd9f",
+  "proj_2026_6_k.json": "680231defe3d9d958b696013d596732a464ef313518179db4fc9782356ff22b0",
+  "slate_154960.json": "ed2f3010dbe5297aecf76adc564c773c5f17738f8411b7543d454f2c11b11c80"
+ },
+ "hours_to_lock": 0.897,
+ "lock_utc": "2026-10-20 00:15:00 UTC",
+ "note": "MNF WAS @ SF, near-lock capture after the inactives (~T-55m); the primary under the S7 rules",
+ "pre_lock": true,
+ "slate_identity": "SF/WAS 2026-10-20",
+ "week": 6
+}
