@@ -351,6 +351,19 @@ data-only `sim-history` branch (which never deploys):
   build and `index()` keeps the last good one (one 429 had rebuilt the
   college index from 400 of 552 moneyline markets, the weekend's 76 games
   cut).
+- **The NFL combo maker** (audited 2026-10-19,
+  `research/reports/nfl_combo_audit.md`). A same-game stack is costed at its
+  asks TIMES its correlation (`combo_engine.stack_lift`, every sport's maker):
+  the product of the asks paid a stack for correlation Kalshi's maker prices
+  himself, and Monday night's default slip read +25.9% EV with every leg under
+  its ask (-11.6% priced). NFL pools hold only legs Kalshi lists while its
+  index answers, as baseball's, college's and UFC's do. The drive sim's trims
+  (`_TD_CAL`, `_FG_CAL`, `_PROJ_BIAS`) are IN-SEASON constants now: 2025's
+  Sleeper ran hot (TDs 0.957x), 2026's does not (1.056x), and the 2025 trims
+  left the sim 2.2 points under the real totals and 2.55 under Kalshi's;
+  refit by `research/nfl_trim.py` (rule first, report `nfl_trim.md`) -- re-run
+  it every few weeks. The preseason path keeps the 2025 trims its own
+  constants were measured through (`_TD_CAL_PRE`, `_FG_CAL_PRE`).
 - **The NBA / NHL seasons** (2026-10-17, `pro_season.py` rules + Monte
   Carlo, `pro_season_job.py` the job and the board): NHL three per division +
   two wildcards, the division bracket, points then RW, ROW, W, head-to-head,

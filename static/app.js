@@ -1868,8 +1868,13 @@ function kalshiPayout(m) {
   const net = m.kalshi_payout_net_x != null
     ? ` <span class="small" style="color:var(--muted)" title="after Kalshi's one fee on the combo's price (0.07 × P × (1−P) per contract)">(${m.kalshi_payout_net_x}× after the combo fee)</span>` : "";
   const stacked = (m.groups || []).some((g) => (g.size || (g.legs || []).length) > 1) || m.same_game === true;
+  // The EV on a stacked slip is figured on the quote a maker pricing the
+  // correlation as our sim does would give (combo_engine.stack_lift) -- the
+  // most generous a real quote gets, so a real one lands at or under it.
+  const est = (stacked && m.market_payout_x != null && m.kalshi_payout_x != null && m.market_payout_x < m.kalshi_payout_x)
+    ? ` <b>~${m.market_payout_x}×</b> once the correlation is priced (EV is figured on that)` : "";
   const warn = stacked
-    ? ` <span class="small" style="color:#e0566a" title="Kalshi quotes a combo through a market maker who prices same-game correlation himself; the product of the asks overstates what a stack pays">⚠️ stacked: expect a quote well under this</span>` : "";
+    ? ` <span class="small" style="color:#e0566a" title="Kalshi quotes a combo through a market maker who prices same-game correlation himself; the product of the asks overstates what a stack pays">⚠️ stacked: expect a quote well under this${est}</span>` : "";
   return `<span>Legs multiply to <b>${m.kalshi_payout_x}×</b> at the asks${net}${partial}${warn}</span>`;
 }
 

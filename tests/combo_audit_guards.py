@@ -12155,9 +12155,10 @@ for _i9, _p9 in enumerate(_allp9):
         _m9 = sum(_L9[_i9][_k9]) / _N9
         if abs(_m9 / (_p9[_k9] * _b9) - 1.0) > 1e-6:
             _pin_ok9 = False
-ck("every regular-season player line is pinned to Sleeper's projection times the measured 2025 bias",
-   _pin_ok9 and _ng9._PROJ_BIAS == {"pass_yd": 0.975, "rush_yd": 0.972, "rec_yd": 0.931, "rec": 0.972},
-   "the dealt volume ran +5% on passing stats before the pin; Sleeper itself runs 3-7% hot")
+ck("every regular-season player line is pinned to Sleeper's projection times the measured bias -- 2026's now "
+   "(research/nfl_trim.py; 2025's 0.975/0.972/0.931/0.972 assumed an optimism 2026's Sleeper does not have)",
+   _pin_ok9 and _ng9._PROJ_BIAS == {"pass_yd": 1.011, "rush_yd": 0.922, "rec_yd": 0.986, "rec": 1.025},
+   "the dealt volume ran +5% on passing stats before the pin")
 def _cv9(key, floor):
     # pooled sim/mean over every player above the floor, as the fit was
     pooled = []
@@ -12186,8 +12187,12 @@ ck("a team's yards FOLLOW its points (the sim had them anti-correlated at -0.25;
 ck("the pin and the coupling stay off the preseason path (its level is the market's ladder)",
    "if not shock:" in _insp9.getsource(_ng9.simulate_game)
    and "couple_p = couple_r = 1.0" in _insp9.getsource(_ng9.simulate_game))
-ck("the engine's level is the measured one: 0.969 x (offence + DST), touchdowns trimmed harder than field goals",
-   _ng9._TD_CAL < 0.92 < 1.0 < _ng9._FG_CAL and 0.93 <= _ng9._ENGINE_BIAS <= 0.97)
+ck("the engine's level is the measured one -- 2026's (TDs 1.056x, points 1.010x the projection: _TD_CAL 0.992, "
+   "_FG_CAL 1.073) -- and the preseason path keeps the 2025 trims its _ENGINE_BIAS was measured through",
+   (_ng9._TD_CAL, _ng9._FG_CAL) == (0.992, 1.073) and (_ng9._TD_CAL_PRE, _ng9._FG_CAL_PRE) == (0.880, 1.21)
+   and 0.93 <= _ng9._ENGINE_BIAS <= 0.97
+   and "(_TD_CAL_PRE, _FG_CAL_PRE) if prof.get(\"preseason\")" in _insp9.getsource(_ng9._rates)
+   and '"exp": exp, "preseason": True}' in _insp9.getsource(_ng9.profile_from_points))
 ck("the SGP legs the board shows come from a sim that was handed the ladders",
    "ladders=lad" in _bb9)
 
@@ -12454,7 +12459,7 @@ ck("the NFL maker grew the knobs the recipes need -- sides, a post-pricing per-l
    and _bf11.index("price_cands(cands, g[\"suffix\"])") < _bf11.index("if leg_ok is not None:")
    and 'and (sides is None or c.get("side", "yes") in sides)' in _bf11
    and 'targets["payout_basis"] = "market"' in _insp11.getsource(_ng11.build_parlay)
-   and "frontier_cache[_fkey] = (games_bundles, states, n_started, _kick)" in _insp11.getsource(_ng11.build_parlay))
+   and "frontier_cache[_fkey] = (games_bundles, states, n_started, _kick, _pinfo)" in _insp11.getsource(_ng11.build_parlay))
 ck("the NFL pool carries the NO side of every spread and player leg (the 80% spread on a coin-flip "
    "game is a fade), and the cache name moved so an older YES-only pool is never served",
    "cands.extend(_ms._no_candidates(cands, n))" in _bm11
@@ -22539,6 +22544,131 @@ ck("tonight's slate is captured for the S7 prospective test BEFORE lock (11.1 h 
    "its biggest GPP), so its export can score the frozen field family after the game",
    _sdd_cap["pre_lock"] is True and _sdd_cap["hours_to_lock"] > 11 and _sdd_cap["lock_utc"] == "2026-10-20 00:15:00 UTC"
    and _sdd_cap["biggest_gpp_detailed"]["id"] == 196786690 and _sdd_cap["draft_group"] == 154960)
+
+# ---- 2026-10-19 the NFL combo maker audit: stacks priced, unlisted legs out, the week, the 2026 trims ----
+# The owner: "take a look at the nfl combo maker and model please, ensure that's
+# accurate and working well." Found on the live slates (research/reports/nfl_combo_audit.md):
+# a same-game stack's correlation counted as edge (Monday night's default slip
+# read +25.9% EV with every leg under its ask); legs Kalshi does not list on a
+# Kalshi slip; Tuesday's tab on the finished week; and 2025's Sleeper trims
+# leaving the sim's totals 2-3 points under both the 2026 results and Kalshi.
+print("=" * 72)
+print("The NFL combo maker audit")
+print("=" * 72)
+import combo_engine as _ce_au
+import nfl_game_sim as _ng_au
+_au_leg = lambda m, c: {"marg": m, "price_cents": c, "fillable": True}
+_au_stack = {"size": 2, "prob": 0.72, "legs": [_au_leg(0.8, 80), _au_leg(0.8, 80)]}
+_au_fight = {"size": 2, "prob": 0.60, "legs": [_au_leg(0.8, 80), _au_leg(0.8, 80)]}
+_au_st = [s for s in _ce_au.frontier([("g", [_au_stack], "g")], max_total_legs=2, net=False) if s["legs"] == 2]
+_au_x = [s for s in _ce_au.frontier([("g", [{"size": 1, "prob": 0.8, "legs": [_au_leg(0.8, 80)]}], "g"),
+                                     ("h", [{"size": 1, "prob": 0.8, "legs": [_au_leg(0.8, 80)]}], "h")],
+                                    max_total_legs=2, net=False) if s["legs"] == 2]
+ck("a same-game stack is costed at its asks TIMES its correlation (joint / product of marginals): two 80% legs at "
+   "80c hitting together 72% of the time cost 0.72, EV 0 -- not 0.64 and +12.5% EV for their own correlation; "
+   "negative correlation is never credited, and one leg a game is untouched",
+   abs(_ce_au.stack_lift(_au_stack) - 1.125) < 1e-12 and _ce_au.stack_lift(_au_fight) == 1.0
+   and len(_au_st) == 1 and abs(_au_st[0]["cost"] - 0.72) < 1e-9 and abs(_au_st[0]["ev"]) < 1e-9
+   and len(_au_x) == 1 and abs(_au_x[0]["cost"] - 0.64) < 1e-9
+   and "c *= stack_lift(b)" in _insp.getsource(_ce_au.frontier) and "if nl0 > 1:" in _insp.getsource(_ce_au.frontier),
+   str([(s["cost"], s["ev"]) for s in _au_st + _au_x]))
+_js_au = open(_os.path.join(_root, "static", "app.js")).read()
+ck("a stacked slip says what the correlation-priced quote is and that its EV is figured on it",
+   "once the correlation is priced (EV is figured on that)" in _js_au)
+# the pool: only legs Kalshi lists, while its index answers
+_au_n = 64
+
+
+def _au_cand(lab, ones, px):
+    return {"type": "Total", "label": lab, "mask": (1 << ones) - 1, "marg": ones / _au_n, "group": lab,
+            "kref": {"t": "total", "n": 40, "over": True}, "side": "yes", "side_team": None, "_px": px}
+
+
+_au_games = [{"label": f"A{i} @ B{i}", "suffix": f"S{i}", "pair": f"A{i}@B{i}", "state": "pre",
+              "date": "2099-01-01T00:00Z", "n": _au_n,
+              "cands": [_au_cand(f"g{i}a", 50, 70), _au_cand(f"g{i}b", 46, None), _au_cand(f"g{i}c", 44, 60)]}
+             for i in range(2)]
+
+
+def _au_price(cands, suffix, blend=True):
+    for c in cands:
+        c["price_cents"], c["fillable"] = c.get("_px"), True
+    return cands
+
+
+_au_orig = (_ng_au._slate_sims, _ng_au.price_cands, _ng_au.kalshi_index)
+try:
+    _ng_au._slate_sims = lambda week, pre, n: [dict(g, cands=[dict(c) for c in g["cands"]]) for g in _au_games]
+    _ng_au.price_cands = _au_price
+    _ng_au.kalshi_index = lambda: {"S0": {}, "S1": {}}
+    _au_up = _ng_au._build_frontier(7, False, _au_n, 0.55, 1.0, 2, 3, 4, "prefer", "off", None, None, False,
+                                    None, None, None)
+    _ng_au.kalshi_index = lambda: {}
+    _au_dn = _ng_au._build_frontier(7, False, _au_n, 0.55, 1.0, 2, 3, 4, "prefer", "off", None, None, False,
+                                    None, None, None)
+finally:
+    _ng_au._slate_sims, _ng_au.price_cands, _ng_au.kalshi_index = _au_orig
+_au_legs = lambda gb: [l for _lab, bs, _s in gb for b in bs for l in b["legs"]]
+ck("the NFL pool holds only the legs Kalshi lists while its index answers (the rule baseball, college and UFC keep) "
+   "and counts the rest; an empty index keeps the model-only pool and says so",
+   _au_up[4] == {"priced_ok": True, "excluded_unpriced": 2}
+   and _au_legs(_au_up[0]) and all(l.get("price_cents") for l in _au_legs(_au_up[0]))
+   and _au_dn[4] == {"priced_ok": False, "excluded_unpriced": 0}
+   and any(not l.get("price_cents") for l in _au_legs(_au_dn[0]))
+   and 'item["excluded_unpriced"] = _pinfo.get("excluded_unpriced") or None' in _insp.getsource(_ng_au.build_parlay)
+   and 'item["pricing_unavailable"] = not _pinfo.get("priced_ok")' in _insp.getsource(_ng_au.build_parlay),
+   str((_au_up[4], _au_dn[4])))
+ck("a failed Kalshi read while pricing NFL legs is ledgered, not swallowed",
+   '"NFLG-price-idx"' in _insp.getsource(_ng_au.price_cands) and '"NFLG-price-leg"' in _insp.getsource(_ng_au.price_cands))
+# the week: an ET date, not the UTC string's
+import clock as _ck_au
+import nfl_live as _nl_au
+import datetime as _dt_au
+_au_sch = {1: [{"home": "SF", "away": "WSH", "date": "2026-10-20T00:15Z"}],
+           2: [{"home": "CHI", "away": "NE", "date": "2026-10-23T00:15Z"}]}
+_au_o = (_nl_au.schedule, _ck_au.today_et)
+try:
+    _nl_au.schedule = lambda week, season, seasontype=2: list(_au_sch.get(week, []))
+    _ck_au.today_et = lambda: _dt_au.date(2026, 10, 20)
+    _au_tue = _ng_au.current_week(False)
+    _ck_au.today_et = lambda: _dt_au.date(2026, 10, 19)
+    _au_mon = _ng_au.current_week(False)
+finally:
+    _nl_au.schedule, _ck_au.today_et = _au_o
+ck("the tab's week reads each kickoff's EASTERN date: Monday night (00:15Z Tuesday) is Monday's, so on Tuesday the "
+   "tab opens on the next week, not the finished one",
+   _au_mon == 1 and _au_tue == 2 and _ng_au._et_day("2026-10-20T00:15Z") == "2026-10-19",
+   str((_au_mon, _au_tue)))
+# the 2026 trims, pinned to the harness that fitted them and the rule it kept
+import hashlib as _hl_au
+_au_tr = _json_sdd.load(open(_os.path.join(_root, "research", "data", "nfl_trim_2026.json")))
+_au_t25 = _json_sdd.load(open(_os.path.join(_root, "research", "data", "nfl_trim_2025_table.json")))
+_au_trs = open(_os.path.join(_root, "research", "nfl_trim.py")).read()
+ck("the 2026 trims came from research/nfl_trim.py as hashed before it ran, by its rule (Kalshi's week-7 total "
+   "gap -2.55 -> -0.26 over 8 games, within 1.5 and closer), the module carrying exactly what it fitted: TDs "
+   "1.056x and points 1.010x the projection on 2026 weeks 1-6, the 2025 table on the same definition beside it",
+   _hl_au.sha256(open(_os.path.join(_root, "research", "nfl_trim.py"), "rb").read()).hexdigest()
+   == "d1a7df337a5ec58d93b2870f4363dd45500c95b543f3821989ab0bc1ed17f4bc"
+   and _au_tr["ships"] is True and len(_au_tr["vs_kalshi"]["games"]) == 8
+   and abs(_au_tr["vs_kalshi"]["mean_gap_before"] + 2.545) < 0.001 and abs(_au_tr["vs_kalshi"]["mean_gap_after"] + 0.264) < 0.001
+   and "ships = bool(both) and abs(gap_a) <= SHIP_GAP and abs(gap_a) < abs(gap_b)" in _au_trs
+   and "FIT_N, SEED, SHIP_GAP = 2000, 11, 1.5" in _au_trs
+   and 'FLOORS = (("pass_yd", 150.0), ("rush_yd", 25.0), ("rec_yd", 25.0), ("rec", 2.5))' in _au_trs
+   and abs(_au_tr["table"]["td"] - 1.0558) < 0.0001 and abs(_au_tr["points"]["ratio"] - 1.0097) < 0.0001
+   and _au_tr["points"]["games"] == 92 and _au_tr["table"]["team_games"] == 184
+   and (_au_tr["refit"]["_TD_CAL"], _au_tr["refit"]["_FG_CAL"]) == (_ng_au._TD_CAL, _ng_au._FG_CAL)
+   and _au_tr["refit"]["_PROJ_BIAS"] == _ng_au._PROJ_BIAS
+   and _au_tr["shipped"]["_TD_CAL"] == _ng_au._TD_CAL_PRE and _au_tr["shipped"]["_FG_CAL"] == _ng_au._FG_CAL_PRE
+   and _au_t25["players"]["pass_yd"]["n"] == 543 and abs(_au_t25["players"]["pass_yd"]["ratio"] - 0.974) < 0.001
+   and abs(_au_t25["td"] - 0.957) < 0.001,
+   str((_au_tr["refit"], _au_tr["vs_kalshi"]["mean_gap_after"])))
+_au_pre = _ng_au.profile_from_points("AAA", "AAA", 21.0, True)
+ck("an exhibition's synthetic profile rates on the 2025 trims its constants were measured through; a regular-season "
+   "profile on 2026's",
+   _au_pre.get("preseason") is True
+   and abs(_ng_au._rates(_au_pre, True)[0] / _ng_au._rates(dict(_au_pre, preseason=False), True)[0]
+           - _ng_au._TD_CAL_PRE / _ng_au._TD_CAL) < 1e-9,
+   str((_ng_au._rates(_au_pre, True), _ng_au._rates(dict(_au_pre, preseason=False), True))))
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

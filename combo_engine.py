@@ -26,7 +26,9 @@ they measurably are not. Day-level clustering of MLB outcomes over 2023-25
 no shared "hot day" to exploit or defend against, so the product across games is
 right and this module leaves it alone. Correlation WITHIN a game is real, large,
 and already handled upstream by reading joint hit-rates off the sim masks
-(mlb_sim.game_bundles).
+(mlb_sim.game_bundles) -- and it is PRICED here, not counted as edge: Kalshi's
+market maker quotes a same-game stack on its correlation, so a stack costs its
+asks times its correlation (stack_lift).
 
 Fees are charged on the way in, per leg, because that is how Kalshi charges them:
 a 5-leg slip pays five taker fees, and a parlay that looks +2% gross can be -3%
@@ -632,6 +634,33 @@ def dp_legs(n_legs, legs_mode, max_total_legs, payout_mode="off"):
     return max(2, min(allowed, _MAX_DP_LEGS, want))
 
 
+def stack_lift(bundle):
+    """How much more often a same-game bundle's legs hit TOGETHER than apart:
+    its joint over the product of its legs' marginals, floored at 1.
+
+    A Kalshi combo is quoted by a market maker who prices same-game
+    correlation himself (QUOTE_ROOM; measured 2026-09-08 at 133x against
+    asks that multiplied to ~1,600x). Costing a stack at the product of its
+    asks therefore paid the slip for its own correlation: 2026-10-19, the
+    default 4-leg Monday-night slip (Daniels 125+ pass yds, McCaffrey 15+
+    rec yds and 3+ catches, over 41.5) read +25.9% EV at 1.80x with every
+    leg's own number UNDER its ask -- a 70% joint against 46.9%
+    independent, all of the edge correlation. frontier multiplies the
+    stack's cost by this, i.e. assumes the maker sees the correlation
+    exactly as the sim does: the most generous quote a maker could give,
+    never a better one, so a stack is +EV only when its legs beat their
+    asks. Negatively correlated legs (lift < 1) are not credited: a maker
+    need not pass that on, and game_bundles keeps counteracting pairs out."""
+    ind = 1.0
+    for leg in bundle.get("legs") or []:
+        m = leg.get("marg")
+        if not m or not (0 < m < 1):
+            return 1.0
+        ind *= m
+    p = bundle.get("prob") or 0.0
+    return max(1.0, p / ind) if p > 0 else 1.0
+
+
 def frontier(games_bundles, max_total_legs=8, net=True, ceiling=None):
     """Every efficient (legs, cost) combination and the likeliest slip at each.
     `net` charges the exchange's ONE combo fee on each state's basket price
@@ -661,6 +690,12 @@ def frontier(games_bundles, max_total_legs=8, net=True, ceiling=None):
             c, bpr, btt = bundle_cost(b["legs"], net=False)
             if c is None or c <= 0:
                 continue
+            # ...and a same-game stack at its asks TIMES its correlation, the
+            # price a maker who sees the correlation as the sim does would
+            # quote (stack_lift). Without it every stack carried its own
+            # correlation as edge.
+            if nl0 > 1:
+                c *= stack_lift(b)
             priced.append((nl0, math.log(p), math.log(c), bpr, btt, b))
         if not priced:
             continue

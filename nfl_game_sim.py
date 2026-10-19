@@ -69,8 +69,24 @@ _HFA_SCORE = 1.05
 # the anytime-TD market. _TD_CAL is set so the engine's realized touchdowns
 # are 0.939x the projection, _FG_CAL so the points then land on the level
 # above (both fitted on the same sixteen-game slate at 2,000 sims).
-_TD_CAL = 0.880
-_FG_CAL = 1.21
+#
+# REFIT FOR 2026 (2026-10-19, research/nfl_trim.py, report nfl_trim.md). The
+# optimism above was 2025's and it did not carry over: on 2026 weeks 1-6
+# Sleeper's touchdowns ran 1.056x (184 team-games) and its points 1.010x
+# (92 games, ESPN finals 46.24 against 45.80 projected, +0.44 +/- 1.42), so
+# the 2025 trims left the sim 2.21 +/- 1.39 points a game under the real
+# totals and under Kalshi's de-vigged total on every week-7 game whose median
+# both cross (-2.55 a game, 8 of 8). Refit by the same two steps on the
+# week-7 slate (TDs at 1.056x, then points at 1.010x): -0.26 a game against
+# Kalshi after, which is what the rule written first asked for (within 1.5,
+# and closer). The 2025 values stay as the preseason path's
+# (_TD_CAL_PRE/_FG_CAL_PRE), because its _ENGINE_BIAS, _ENGINE_HFA_PTS and
+# _EDGE_KEEP were measured through them. Re-run the harness as the season
+# goes: a season's optimism is now known to change sign year to year.
+_TD_CAL = 0.992
+_FG_CAL = 1.073
+_TD_CAL_PRE = 0.880
+_FG_CAL_PRE = 1.21
 _SHORT_FIELD = 1.35       # scoring-rate boost on the drive after a takeaway
 _XP_MAKE = 0.945
 _TWO_PT = 0.06            # share of TDs that go for 2 (converts ~48%)
@@ -114,7 +130,13 @@ _YPC_LSD = 0.44           # yards per catch, on top of the catches
 # simulated team game for the correlation; the pin keeps that from moving the
 # mean: before it the dealt volume ran +5% on passing stats (11.1 possessions
 # realized against the 10.7 nominal, plus the hurry-up's extra drive).
-_PROJ_BIAS = {"pass_yd": 0.975, "rush_yd": 0.972, "rec_yd": 0.931, "rec": 0.972}
+# The column above is 2025's; the pin now carries 2026's (weeks 1-6,
+# research/nfl_trim.py, the prop-sized players: passing >= 150 projected,
+# rushing and receiving >= 25, receptions >= 2.5; that definition gives 2025
+# 0.974 / 0.958 / 0.939 / 0.981): passing 1.011 (n 183), rushing 0.922
+# (302), receiving yards 0.986 (621), receptions 1.025 (624). Each is +/-
+# 2-4% on its own; all four moved the way the touchdowns and the points did.
+_PROJ_BIAS = {"pass_yd": 1.011, "rush_yd": 0.922, "rec_yd": 0.986, "rec": 1.025}
 # YARDS FOLLOW POINTS. Real team-games (2025, n=544): corr(points, total
 # yards) = +0.63, elasticity d ln(yards)/d ln(points) = 0.35. The engine's
 # dealt yards were driven by possessions and the game script alone -- the
@@ -199,8 +221,11 @@ def _rates(prof, home, def_mult=1.0):
     e = prof["exp"]
     tds = e["pass_td"] + e["rush_td"]
     hfa = _HFA_SCORE if home else 1.0 / _HFA_SCORE
-    p_td = max(0.04, min(0.55, tds / _DRIVES * hfa * _TD_CAL * def_mult))
-    p_fg = max(0.02, min(0.40, e["fgm"] / _DRIVES * hfa * _FG_CAL * def_mult))
+    # an exhibition's synthetic profile keeps the trims its constants were
+    # measured through (see _TD_CAL)
+    td_cal, fg_cal = (_TD_CAL_PRE, _FG_CAL_PRE) if prof.get("preseason") else (_TD_CAL, _FG_CAL)
+    p_td = max(0.04, min(0.55, tds / _DRIVES * hfa * td_cal * def_mult))
+    p_fg = max(0.02, min(0.40, e["fgm"] / _DRIVES * hfa * fg_cal * def_mult))
     # Takeaways belong to the DEFENCE forcing them, so a good defence raises the
     # offence's turnover rate — the multiplier goes the other way here.
     p_to = max(0.02, min(0.30, (e["pass_int"] + e["fum_lost"]) / _DRIVES / def_mult))
@@ -695,6 +720,23 @@ def _season():
     return t.year if t.month >= 3 else t.year - 1
 
 
+def _et_day(iso):
+    """ESPN's kickoff ('2026-10-20T00:15Z', UTC) as its EASTERN calendar date,
+    'YYYY-MM-DD'. current_week compared the string's own [:10] -- the UTC date
+    -- against today in ET, so every night game read a day late: Monday
+    night's 8:15 pm ET kickoff is 00:15Z Tuesday, and all of Tuesday the tab
+    opened on the finished week (2026-10-20: week 6, every game played, the
+    combo maker answering "all started" while week 7's Thursday game was
+    listed)."""
+    import clock
+    import datetime as _dt
+    d = iso or ""
+    try:
+        return _dt.datetime.fromisoformat(d.replace("Z", "+00:00")).astimezone(clock.ET).date().isoformat()
+    except ValueError:
+        return d[:10]
+
+
 def current_week(preseason=False):
     """The week the NFL tab should open on: the first whose games are not all in
     the past (ET). The tab used to default to week 1 forever, which is right for
@@ -725,7 +767,7 @@ def current_week(preseason=False):
                         first_bad = wk
                 else:
                     _t2.sleep(0.5)
-        if sch and any((g.get("date") or "")[:10] >= today for g in sch):
+        if sch and any(_et_day(g.get("date")) >= today for g in sch):
             # An EARLIER week that failed to answer cannot be ruled out, and it
             # wins over this later confirmed one: its board build re-fetches
             # the schedule (usually recovered by then), and being one week
@@ -815,7 +857,7 @@ def profile_from_points(abbr, name, points, home, roster=None, props=None):
         except Exception:
             players = []
     return {"abbr": abbr, "name": name, "home": home, "players": players,
-            "exp": exp}
+            "exp": exp, "preseason": True}
 
 
 def _anchor(players, props, exp):
@@ -1305,7 +1347,8 @@ def price_cands(cands, suffix, blend=True):
     try:
         import kalshi_nfl
         idx = kalshi_nfl.index()
-    except Exception:
+    except Exception as e:
+        errlog.note("NFLG-price-idx", e)
         idx = {}
     quotes = {}
     for c in cands:
@@ -1314,7 +1357,8 @@ def price_cands(cands, suffix, blend=True):
             try:
                 px = kalshi_nfl.price_leg(idx, suffix, c.get("kref"))
                 q = kalshi_nfl.quote_leg(idx, suffix, c.get("kref"))
-            except Exception:
+            except Exception as e:
+                errlog.note("NFLG-price-leg", e, path=str(suffix))
                 px, q = None, None
         c["price_cents"] = px
         # The full quote, not None. Passing None here marked every NFL leg
@@ -1392,16 +1436,16 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
                  leg_ok is None)
     _hit = frontier_cache.get(_fkey) if frontier_cache is not None else None
     if _hit is not None:
-        games_bundles, states, n_started, _kick = _hit
+        games_bundles, states, n_started, _kick, _pinfo = _hit
         if isinstance(games_bundles, dict):
             return dict(games_bundles)                 # a cached error_hint
     else:
-        games_bundles, states, n_started, _kick = _build_frontier(
+        games_bundles, states, n_started, _kick, _pinfo = _build_frontier(
             week, preseason, n_sims, floor, ceil, n_legs, max_legs_per_game,
             max_total_legs, legs_mode, payout_mode, types, game_sel, max_bet,
             abort_cb, sides, leg_ok)
         if frontier_cache is not None:
-            frontier_cache[_fkey] = (games_bundles, states, n_started, _kick)
+            frontier_cache[_fkey] = (games_bundles, states, n_started, _kick, _pinfo)
         if isinstance(games_bundles, dict):
             return games_bundles                       # an error_hint
     if not games_bundles:
@@ -1452,6 +1496,8 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
     item["leg_cap_pct"] = round(ceil * 100, 1) if ceil < 1.0 else None
     item["preseason"] = bool(preseason)
     item["excluded_started"] = n_started or None
+    item["excluded_unpriced"] = _pinfo.get("excluded_unpriced") or None
+    item["pricing_unavailable"] = not _pinfo.get("priced_ok")
     item["cost_x"] = round(best["cost"], 4)
     item["market_payout_x"] = round(best["payout"], 2) if best["payout"] else None
     item["ev_pct"] = round(best["ev"] * 100, 1) if best["ev"] is not None else None
@@ -1491,9 +1537,11 @@ def _build_frontier(week, preseason, n_sims, floor, ceil, n_legs, max_legs_per_g
                     abort_cb, sides, leg_ok):
     """The expensive half of build_parlay: the slate's sims, priced and
     banded, bundled per game and swept into the frontier. Returns
-    (games_bundles, states, n_started, kickoffs) -- or (error_hint dict,
-    None, n_started, {}) when nothing can be built -- so the chooser can be
-    run many times over one frontier (build_parlay's frontier_cache)."""
+    (games_bundles, states, n_started, kickoffs, pricing) -- or (error_hint
+    dict, None, n_started, {}, pricing) when nothing can be built -- so the
+    chooser can be run many times over one frontier (build_parlay's
+    frontier_cache). `pricing` is {"priced_ok", "excluded_unpriced"}: whether
+    Kalshi's index answered, and how many legs it does not list."""
     import combo_engine
     import mlb_sim
     import time as _t5
@@ -1503,7 +1551,13 @@ def _build_frontier(week, preseason, n_sims, floor, ceil, n_legs, max_legs_per_g
     n_started = sum(1 for g in games if game_started(g, _now))
     games = [g for g in games if not game_started(g, _now)]
     if not games:
-        return {"error_hint": "all_started", "n_started": n_started}, None, n_started, {}
+        return {"error_hint": "all_started", "n_started": n_started}, None, n_started, {}, {}
+    try:
+        _idx_up = bool(kalshi_index())
+    except Exception as e:
+        errlog.note("NFLG-parlay-index", e)
+        _idx_up = False
+    pinfo = {"priced_ok": _idx_up, "excluded_unpriced": 0}
     # Grid selection: "base" keeps the whole game, "base:TEAM" keeps one club's
     # legs only -- exactly baseball's semantics. `base` may be the Kalshi suffix
     # or the AWY@HOM pair, because a game with no market yet has no suffix but
@@ -1537,6 +1591,18 @@ def _build_frontier(week, preseason, n_sims, floor, ceil, n_legs, max_legs_per_g
         # ask (the locked recipes keep only the rung they are about).
         if leg_ok is not None:
             cands = [c for c in cands if leg_ok(c)]
+        # ONLY LEGS KALSHI LISTS, the rule baseball, college and UFC already
+        # keep: a leg with no market cannot go in Kalshi's combo builder, and
+        # this maker used to keep them at fair value (EV-neutral), so a slip
+        # could carry a row nobody can place. 2026-10-19, week 7, the default
+        # 4-leg slip under an 80% cap held "NO - Kenyon Sadiq anytime TD", no
+        # market, beside three priced legs. Only while the index answers: an
+        # empty index (a throttled window) keeps the model-only pool and the
+        # slip says so (pricing_unavailable).
+        if pinfo["priced_ok"]:
+            n_all = len(cands)
+            cands = [c for c in cands if c.get("price_cents")]
+            pinfo["excluded_unpriced"] += n_all - len(cands)
         if team_only:
             # One club selected: keep that club's legs. Totals and other
             # game-level legs drop with the other side, matching baseball.
@@ -1569,12 +1635,12 @@ def _build_frontier(week, preseason, n_sims, floor, ceil, n_legs, max_legs_per_g
         if bundles:
             games_bundles.append((g["label"], bundles, g["suffix"]))
     if not games_bundles:
-        return None, None, n_started, {}
+        return None, None, n_started, {}, pinfo
     # One leg per game on a one-game board cannot reach two legs, and that is a
     # sentence the caller should be able to say rather than shrug at.
     if len(games_bundles) < 2 and max_legs_per_game <= 1:
         return ({"error_hint": "single_game_no_stack",
-                 "n_games_available": len(games_bundles)}, None, n_started, {})
+                 "n_games_available": len(games_bundles)}, None, n_started, {}, pinfo)
     # Demand-driven DP depth, same as baseball: the NFL ladder is the widest
     # board here (~24 bundles a game across 16 games), so paying for leg counts
     # nobody asked for is exactly where this used to hang.
@@ -1583,7 +1649,7 @@ def _build_frontier(week, preseason, n_sims, floor, ceil, n_legs, max_legs_per_g
         payout_mode="require" if max_bet else payout_mode)
     states = combo_engine.frontier(games_bundles, max_total_legs=_dp, net=True)
     _kick = {g["suffix"]: _iso_ts(g.get("date")) for g in games if g.get("suffix")}
-    return games_bundles, states, n_started, _kick
+    return games_bundles, states, n_started, _kick, pinfo
 
 
 _SIMS_TTL = 1800
