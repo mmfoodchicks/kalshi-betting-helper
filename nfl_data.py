@@ -108,7 +108,10 @@ def week_teams(season, week):
                 continue
             t = team(ab, opp)
             row = {"name": (p.get("first_name", "") + " " + p.get("last_name", "")).strip(),
-                   "pos": p.get("position")}
+                   "pos": p.get("position"),
+                   # who he is and Sleeper's injury tag, for the combo maker's
+                   # availability check (nfl_game_sim.availability)
+                   "pid": str(r.get("player_id") or ""), "injury": p.get("injury_status")}
             for k in _STATS:
                 v = st.get(k) or 0.0
                 t["exp"][k] += v

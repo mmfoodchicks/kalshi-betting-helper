@@ -6558,7 +6558,7 @@ ck("game selection accepts the AWY@HOM pair as well as the Kalshi suffix",
    'sel_map.get(g.get("pair")' in _bp_src,
    "a game with no market yet has no suffix but is still pickable")
 ck("the per-game pool is capped before bundling",
-   "cands[:40]" in _bp_src,
+   "cands = _cap_pool(cands, 40)" in _bp_src,
    "Kalshi books two dozen spreads and nineteen totals a side; C(100+,4) "
    "mask-ANDs hung a Build click for minutes")
 ck("the parlay sims are cached on the shared store",
@@ -22596,10 +22596,13 @@ def _au_price(cands, suffix, blend=True):
     return cands
 
 
-_au_orig = (_ng_au._slate_sims, _ng_au.price_cands, _ng_au.kalshi_index)
+import nfl_data as _nd_au
+_au_orig = (_ng_au._slate_sims, _ng_au.price_cands, _ng_au.kalshi_index, _ng_au.availability, _nd_au.week_teams)
 try:
     _ng_au._slate_sims = lambda week, pre, n: [dict(g, cands=[dict(c) for c in g["cands"]]) for g in _au_games]
     _ng_au.price_cands = _au_price
+    _ng_au.availability = lambda *a, **k: {}          # hermetic: no Sleeper read in a guard
+    _nd_au.week_teams = lambda season, week: {}
     _ng_au.kalshi_index = lambda: {"S0": {}, "S1": {}}
     _au_up = _ng_au._build_frontier(7, False, _au_n, 0.55, 1.0, 2, 3, 4, "prefer", "off", None, None, False,
                                     None, None, None)
@@ -22607,13 +22610,13 @@ try:
     _au_dn = _ng_au._build_frontier(7, False, _au_n, 0.55, 1.0, 2, 3, 4, "prefer", "off", None, None, False,
                                     None, None, None)
 finally:
-    _ng_au._slate_sims, _ng_au.price_cands, _ng_au.kalshi_index = _au_orig
+    _ng_au._slate_sims, _ng_au.price_cands, _ng_au.kalshi_index, _ng_au.availability, _nd_au.week_teams = _au_orig
 _au_legs = lambda gb: [l for _lab, bs, _s in gb for b in bs for l in b["legs"]]
 ck("the NFL pool holds only the legs Kalshi lists while its index answers (the rule baseball, college and UFC keep) "
    "and counts the rest; an empty index keeps the model-only pool and says so",
-   _au_up[4] == {"priced_ok": True, "excluded_unpriced": 2}
+   {k: _au_up[4][k] for k in ("priced_ok", "excluded_unpriced")} == {"priced_ok": True, "excluded_unpriced": 2}
    and _au_legs(_au_up[0]) and all(l.get("price_cents") for l in _au_legs(_au_up[0]))
-   and _au_dn[4] == {"priced_ok": False, "excluded_unpriced": 0}
+   and {k: _au_dn[4][k] for k in ("priced_ok", "excluded_unpriced")} == {"priced_ok": False, "excluded_unpriced": 0}
    and any(not l.get("price_cents") for l in _au_legs(_au_dn[0]))
    and 'item["excluded_unpriced"] = _pinfo.get("excluded_unpriced") or None' in _insp.getsource(_ng_au.build_parlay)
    and 'item["pricing_unavailable"] = not _pinfo.get("priced_ok")' in _insp.getsource(_ng_au.build_parlay),
@@ -22669,6 +22672,156 @@ ck("an exhibition's synthetic profile rates on the 2025 trims its constants were
    and abs(_ng_au._rates(_au_pre, True)[0] / _ng_au._rates(dict(_au_pre, preseason=False), True)[0]
            - _ng_au._TD_CAL_PRE / _ng_au._TD_CAL) < 1e-9,
    str((_ng_au._rates(_au_pre, True), _ng_au._rates(dict(_au_pre, preseason=False), True))))
+
+# ---- 2026-10-19 the accuracy batch: the leg cap, who may not play, the model beside the market, the drift alarm ----
+# The owner: "Just do the ones you think are the best" (research/reports/nfl_accuracy_gaps.md).
+print("=" * 72)
+print("The NFL accuracy batch")
+print("=" * 72)
+# (1) the capped pool keeps the liquid legs over the band, never the biggest gap
+_ab_c = ([{"label": f"f{i}", "type": "Total", "marg": 0.55 + 0.4 * i / 59, "fillable": True, "market_quality": 0.95,
+           "price_cents": 10.0 if i % 2 else round(100 * (0.55 + 0.4 * i / 59))} for i in range(60)]
+         + [{"label": f"u{i}", "type": "Total", "marg": 0.9, "fillable": False, "market_quality": 0.95,
+             "price_cents": 10.0} for i in range(20)])
+_ab_p = _ng_au._cap_pool(list(_ab_c), 40)
+_ab_bf = _insp.getsource(_ng_au._build_frontier)
+ck("a capped game pool keeps forty of its liquid legs spread over the band -- likeliest to longest, half of them "
+   "far off their price and half on it -- never the unfillable ones, never ordered by the model-vs-price gap",
+   len(_ab_p) == 40 and all(c["fillable"] for c in _ab_p)
+   and min(c["marg"] for c in _ab_p) < 0.57 and max(c["marg"] for c in _ab_p) > 0.93
+   and 15 <= sum(1 for c in _ab_p if c["price_cents"] == 10.0) <= 25
+   and "cands = _cap_pool(cands, 40)" in _ab_bf and "-abs((c.get(\"marg\")" not in _ab_bf,
+   str(sorted(round(c["marg"], 2) for c in _ab_p)[:5]))
+# (2) who may not play
+_ab_teams = {
+    "BAL": {"players": [{"name": "Q One", "pos": "QB", "pid": "1", "injury": "Out", "pass_yd": 250.0, "rush_yd": 40.0, "rec_yd": 0.0},
+                        {"name": "Q Two", "pos": "QB", "pid": "2", "injury": None, "pass_yd": 0.0, "rush_yd": 0.0, "rec_yd": 0.0},
+                        {"name": "R One", "pos": "RB", "pid": "3", "injury": None, "pass_yd": 0.0, "rush_yd": 70.0, "rec_yd": 10.0}]},
+    "WSH": {"players": [{"name": "R Two", "pos": "RB", "pid": "4", "injury": "Questionable", "pass_yd": 0.0, "rush_yd": 60.0, "rec_yd": 15.0},
+                        {"name": "R Three", "pos": "RB", "pid": "5", "injury": "Questionable", "pass_yd": 0.0, "rush_yd": 50.0, "rec_yd": 10.0},
+                        {"name": "W One", "pos": "WR", "pid": "6", "injury": "Out", "pass_yd": 0.0, "rush_yd": 0.0, "rec_yd": 20.0},
+                        {"name": "W Two", "pos": "WR", "pid": "7", "injury": None, "pass_yd": 0.0, "rush_yd": 0.0, "rec_yd": 60.0}]}}
+# last week: BAL's starter sat (the backup played), WSH's R Two sat and R Three played -- the box in Sleeper's codes
+_ab_hist = {5: {"pl": {"2": ["BAL", 0, 0], "3": ["BAL", 2, 15], "5": ["WAS", 1, 12], "7": ["WAS", 7, 0]}, "tot": {}}}
+_ab_av = _ng_au.availability(2026, 6, teams=_ab_teams, hist=_ab_hist)
+ck("a player is in doubt when Sleeper still counts him as a real part of the plan AND he carries an out-type tag, or "
+   "a Questionable one after missing his team's last game (read in Sleeper's own team codes): the Out quarterback and "
+   "the Questionable back who sat are; the Questionable back who played, the Out receiver projected for 20 yards and "
+   "the untagged are not",
+   {t: sorted(f["name"] for f in fl) for t, fl in _ab_av.items()} == {"BAL": ["Q One"], "WSH": ["R Two"]}
+   and _ab_av["BAL"][0]["missed_last"] is True and _ab_av["WSH"][0]["why"] == "Questionable after missing the last game",
+   str(_ab_av))
+
+
+def _ab_leg(typ, team, player=None):
+    return {"type": typ, "label": f"{typ} {team} {player}", "side_team": team,
+            "kref": ({"t": "prop", "player": player} if player else {"t": typ.lower(), "team": team})}
+
+
+_ab_pos = {(t, p["name"]): p["pos"] for t, tt in _ab_teams.items() for p in tt["players"]}
+_ab_legs = [_ab_leg("ML", "BAL"), _ab_leg("Total", None), _ab_leg("Pass Yds", "BAL", "Q One"),
+            _ab_leg("Rush Yds", "BAL", "R One"), _ab_leg("Rush Yds", "WSH", "R Three"), _ab_leg("Rec Yds", "WSH", "W Two")]
+_ab_qb = _ng_au._avail_scope([dict(c) for c in _ab_legs], {"BAL": _ab_av["BAL"]}, _ab_pos)
+_ab_rb = _ng_au._avail_scope([dict(c) for c in _ab_legs], {"WSH": _ab_av["WSH"]}, _ab_pos)
+_ab_m = lambda legs: sorted(c["label"] for c in legs if c.get("market_only"))
+ck("a quarterback in doubt: his own legs leave, and the game's moneyline, spreads and totals and his team's player "
+   "legs take Kalshi's number; a back in doubt: only his team's backs do, the game's lines and the receivers stay "
+   "the model's",
+   [c["label"] for c in _ab_qb if "Q One" in c["label"]] == []
+   and _ab_m(_ab_qb) == ["ML BAL None", "Rush Yds BAL R One", "Total None None"]
+   and _ab_m(_ab_rb) == ["Rush Yds WSH R Three"] and len(_ab_rb) == len(_ab_legs),
+   str((_ab_m(_ab_qb), _ab_m(_ab_rb))))
+import kalshi_nfl as _kn_ab
+_ab_o = (_kn_ab.index, _kn_ab.price_leg, _kn_ab.quote_leg)
+try:
+    _kn_ab.index = lambda: {"S": {}}
+    _kn_ab.price_leg = lambda idx, s, k: 62.0
+    _kn_ab.quote_leg = lambda idx, s, k: {"ask": 62.0, "bid": 60.0, "mid": 61.0, "spread": 2.0, "size": 500.0, "vol": 900.0, "oi": 100.0}
+    _ab_pc = _ng_au.price_cands([{"type": "ML", "marg": 0.75, "market_only": True, "kref": {"t": "ml"}},
+                                 {"type": "ML", "marg": 0.75, "kref": {"t": "ml"}}], "S")
+finally:
+    _kn_ab.index, _kn_ab.price_leg, _kn_ab.quote_leg = _ab_o
+ck("a market-only leg prices at Kalshi's mid with model weight 0, the model's own figure kept beside it; the same "
+   "leg without the flag still blends",
+   abs(_ab_pc[0]["marg"] - 0.61) < 1e-9 and _ab_pc[0]["model_weight"] == 0.0 and _ab_pc[0]["marg_model"] == 0.75
+   and 0.61 < _ab_pc[1]["marg"] < 0.75,
+   str([(c["marg"], c.get("model_weight")) for c in _ab_pc]))
+ck("the maker reads availability once a build (never in the preseason), applies it before pricing, and the slip names "
+   "the players in doubt in its own games; the slip shows them",
+   "avail = availability(_season(), week, teams=_teams)" in _ab_bf and "if not preseason:" in _ab_bf
+   and _ab_bf.index("cands = _avail_scope(cands, doubt, apos)") < _ab_bf.index("price_cands(cands, g[\"suffix\"])")
+   and "item[\"availability\"] = [f for grp in item.get(\"groups\") or []" in _insp.getsource(_ng_au.build_parlay)
+   and "⚠ May not play:" in open(_os.path.join(_root, "static", "app.js")).read()
+   and '"pid": str(r.get("player_id") or ""), "injury": p.get("injury_status")' in open(_os.path.join(_root, "nfl_data.py")).read())
+# (3) the model beside the market, first and last, frozen with the game; (4) the drift alarm
+import nfl_props_log as _npl_ab
+import deep_cache as _dc_ab
+import kalshi as _k_ab
+import tempfile as _tf_ab
+import shutil as _sh_ab
+_ab_dir = _tf_ab.mkdtemp(prefix="vigil-ab-")
+_ab_c0 = _dc_ab.CACHE_DIR
+_dc_ab.CACHE_DIR = _ab_dir
+_ab_now = 1_800_000_000.0
+_ab_codes = [("KC", "LAC"), ("GB", "DAL"), ("SF", "SEA"), ("BUF", "MIA"), ("DET", "CHI")]
+_ab_kos = {str(i): _ab_now + 7200 for i in range(len(_ab_codes))}
+_ab_payload = {"season": {"year": 2026}, "week": {"number": 7}, "events": [
+    {"id": str(i), "date": f"ko:{i}", "competitions": [{"status": {"type": {"state": "pre"}}, "venue": {"fullName": "X"},
+                                                        "competitors": [{"homeAway": "home", "team": {"abbreviation": h}},
+                                                                        {"homeAway": "away", "team": {"abbreviation": a}}]}]}
+    for i, (h, a) in enumerate(_ab_codes)]}
+_ab_q = {"ask": 51.0, "bid": 49.0, "mid": 50.0, "spread": 2.0, "size": 500.0, "vol": 900.0, "oi": 100.0}
+_ab_idx = {f"S{i}": {"pair": frozenset((h, a)), "q": {("total", 40 + j, True): dict(_ab_q) for j in range(8)}}
+           for i, (h, a) in enumerate(_ab_codes)}
+
+
+def _ab_sims(p):
+    return [{"suffix": f"S{i}", "n": 100, "cands": [{"type": "Total", "side": "yes", "marg": p,
+                                                      "kref": {"t": "total", "n": 40 + j, "over": True}} for j in range(8)]
+             + [{"type": "Total", "side": "yes", "marg": 0.3, "kref": {"t": "total", "n": 40, "over": False}}]}
+            for i in range(len(_ab_codes))]
+
+
+_ab_notes = []
+_ab_pt0 = _k_ab._parse_time
+import errlog as _el_ab
+_ab_note0 = _el_ab.note
+try:
+    _k_ab._parse_time = lambda s: _ab_kos.get(str(s).split(":")[-1]) if str(s or "").startswith("ko:") else _ab_pt0(s)
+    _el_ab.note = lambda code, exc=None, msg="", path=None: _ab_notes.append((code, msg, path))
+    _ab_s1 = _npl_ab.snapshot(now=_ab_now, payload=_ab_payload, index=_ab_idx, ladders=lambda s: {}, sleeper=[],
+                              forecast=lambda g: {}, sims=_ab_sims(0.60))
+    _ab_s2 = _npl_ab.snapshot(now=_ab_now + 1800, payload=_ab_payload, index=_ab_idx, ladders=lambda s: {}, sleeper=[],
+                              forecast=lambda g: {}, sims=_ab_sims(0.55))
+    _ab_st2, _ = _dc_ab.load(_npl_ab.KEY.format(season=2026, week=7))
+    _ab_s3 = _npl_ab.snapshot(now=_ab_now + 3 * 3600, payload=_ab_payload, index=_ab_idx, ladders=lambda s: {}, sleeper=[],
+                              forecast=lambda g: {}, sims=_ab_sims(0.99))
+    _ab_st3, _ = _dc_ab.load(_npl_ab.KEY.format(season=2026, week=7))
+    _ab_one = _npl_ab.drift({"model": {"S0": _ab_st2["model"]["S0"]}}, _ab_now + 1800)
+finally:
+    _k_ab._parse_time = _ab_pt0
+    _el_ab.note = _ab_note0
+    _dc_ab.CACHE_DIR = _ab_c0
+    _sh_ab.rmtree(_ab_dir, ignore_errors=True)
+_ab_r = _ab_st2["model"]["S0"]["rungs"]["total|41"]
+ck("every live game's priced legs are logged with the model's figure and Kalshi's mid, the first sighting kept and the "
+   "last pass refreshed; the under (the over's NO) is not logged twice; a game past its freeze keeps its last pre-game "
+   "pass -- the close",
+   _ab_s1["model_rungs"] == 40 and _ab_s2["model_rungs"] == 40 and _ab_s3["model_rungs"] == 0
+   and _ab_r["first"][1:] == [0.6, 0.5] and _ab_r["last"][1:] == [0.55, 0.5] and _ab_r["last"][0] == round(_ab_now + 1800)
+   and len(_ab_st2["model"]["S0"]["rungs"]) == 8
+   and _ab_st3["model"] == _ab_st2["model"],
+   str((_ab_s1, _ab_s2, _ab_s3)))
+ck("the drift alarm ledgers NFL-DRIFT when a leg type sits one-sided off Kalshi by 4 points or more across 4+ games "
+   "and 30+ rungs (the totals here: +10 then +5 over 5 games and 40 rungs), and one game alone never rings it",
+   [n for n in _ab_notes if n[0] == "NFL-DRIFT"] and all(n[2] == "Total" for n in _ab_notes if n[0] == "NFL-DRIFT")
+   and len([n for n in _ab_notes if n[0] == "NFL-DRIFT"]) == 2
+   and abs(_ab_st2["drift"]["by_type"]["Total"]["gap"] - 0.05) < 1e-9 and _ab_st2["drift"]["by_type"]["Total"]["games"] == 5
+   and _ab_one["by_type"]["Total"]["games"] == 1
+   and (_npl_ab.DRIFT_GAP, _npl_ab.DRIFT_N, _npl_ab.DRIFT_GAMES) == (0.04, 30, 4),
+   str(_ab_notes))
+ck("the logger reads the slate sim from the shared store and never runs one (no CPU-bound work in a web worker)",
+   "_slate_sims" not in _insp.getsource(_npl_ab) and "boardshare.get(f\"nfl_parlay_sims5_" in _insp.getsource(_npl_ab._cached_sims))
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

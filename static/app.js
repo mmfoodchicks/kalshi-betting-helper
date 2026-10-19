@@ -1955,6 +1955,10 @@ function renderMixed(m) {
     ? `<span style="color:#e0566a" title="The Kalshi price index came back empty, so no leg on the slate could be priced. Rather than build nothing, the maker fell back to model-only legs - check each one is actually listed before you place it.">⚠ no Kalshi prices, model-only legs</span>`
     : m.excluded_unpriced
     ? `<span style="color:var(--muted)" title="Legs the model liked but Kalshi doesn't list (or hasn't posted yet) are excluded - a slip you can't place isn't a slip. Pools widen as lines post near game time.">${m.excluded_unpriced.toLocaleString()} unlisted legs excluded</span>` : "";
+  // Players who may not play (nfl_game_sim.availability): their own legs are
+  // left out, and a quarterback in doubt puts his game's lines at Kalshi's price.
+  const availNote = (m.availability && m.availability.length)
+    ? `<div class="small" style="margin-top:4px;color:var(--muted)" title="Sleeper's mid-week projection still counts these players; the market prices the doubt. Their own legs are left out, the legs their absence moves use Kalshi's number, and a quarterback in doubt puts his whole game at Kalshi's number.">⚠ May not play: ${m.availability.map((f) => `${f.name} (${f.team} ${f.pos}, ${f.why})`).join("; ")}. Their legs are left out; ${m.availability.some((f) => f.pos === "QB") ? "a quarterback in doubt puts his game at Kalshi's price" : "their teammates at the same position use Kalshi's price"}.</div>` : "";
   // Name what was honoured and what was impossible. "Couldn't satisfy your
   // target(s)" was true but useless: with a required leg count AND a required
   // payout it never said which one broke, and the builder used to quietly drop
@@ -2022,6 +2026,7 @@ function renderMixed(m) {
     ${hardWarn}
     ${evWarn}
     ${unpriced}
+    ${availNote}
     ${alts}
     <div class="small" style="margin-top:4px">Naive independent guess: <b>${m.indep_prob_pct}%</b> (${m.indep_payout_x}×). Same-game legs use simulated joint odds; different games multiply. <i>Fair payout is no-vig (1÷our probability) - Kalshi's actual combo pays a bit less (their margin); a much bigger gap means we disagree with the market on a leg.</i></div>
   </div>`;

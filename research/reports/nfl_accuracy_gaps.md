@@ -7,39 +7,44 @@ how it would be judged.*
 
 ## Ranked
 
-### 1. The team level does not know who is out (mid-week)
+### 1. The team level does not know who may not play (mid-week)
 
 `nfl_data.week_teams` sums every Sleeper projection into the team's expected
-production. Sleeper keeps a full projection on a player who has been ruled
-out until shortly before kickoff, and projects nobody in his place. Week 7,
-read on Monday:
+production, and Sleeper's early-week projection assumes everyone plays. Read
+on Monday for week 7:
 
-| team | projected PPR on Out/IR/Doubtful players | who |
+| team | projected PPR on Out/IR/Doubtful-tagged players | who |
 |---|---|---|
-| BAL | 34% | Lamar Jackson (QB, Out, 272 pass yds projected; Tyler Huntley projected 0) |
+| BAL | 34% | Lamar Jackson (QB, 272 pass yds projected; Tyler Huntley projected 0) |
 | MIN | 34% | Hockenson, Mason, Addison |
 | CLE | 23% | Judkins, Sampson |
 | NYJ | 22% | Breece Hall, Mitchell |
-| TB | 18% | Baker Mayfield (QB, Out, "supposed to practice Wednesday") |
+| TB | 18% | Baker Mayfield (QB) |
 | PHI / KC / IND / HOU | 15-17% | Barkley / Rice / Warren / Montgomery |
 
-ESPN's injury feed (`site.api.espn.com/.../nfl/injuries`) agrees on every one
-of these, with a return date of the game day. So on Monday the model has
-Baltimore playing at Lamar Jackson's level, and the week-7 moneyline it
-offers (BAL 59%, Kalshi 57.5%; TB 43%, Kalshi 37.5%) is priced off a
-quarterback who is not playing.
+**Corrected 2026-10-19 (evening).** The first version of this item read
+those tags as "out for week 7". They are not: a Monday tag is last week's
+game status, and ESPN gives 56 of its Out players a return date of this
+Sunday. What the record does show is a projection that keeps assuming a
+return. Lamar Jackson missed weeks 5 and 6, and Huntley was Sleeper's
+projected starter at kickoff both weeks and the real one. Mayfield missed
+weeks 5-6 with Jalon Daniels starting both. Each was back at a full
+projection on Monday. Mayfield's had moved to Daniels again by Monday
+evening. Whether either plays in week 7 is not known on Monday, and the
+model was not "priced off a quarterback who is not playing". It was priced
+as if the doubt did not exist, which the market does not do.
 
-Sleeper does fix this by kickoff: in weeks 4 and 5 no player projected at
+Sleeper does settle it by kickoff: in weeks 4 and 5 no player projected at
 8+ PPR sat out. So the damage is to slips built Tuesday through Saturday,
 which is when the owner builds them.
 
-**The change:** read ESPN's injury feed into the slate build. For a game whose
-team has an Out/Doubtful quarterback or more than ~15% of its projected points
-on Out players, hand the team-level legs (moneyline, spread, total) to the
-market (model weight 0) and say why on the slip; drop the player legs of the
-players themselves. A replacement-level model for the backup is a later,
-separate change. **Judge:** on 2026 weeks 8-12, the moneyline log loss of the
-flagged games with and without the hand-off, against the real results.
+**Shipped (see the end):** a player Sleeper still counts as a real part of
+the plan who carries an out-type tag, or a Questionable one after missing
+his last game, is in doubt. His legs leave the pool. When he is a
+quarterback, his game's moneyline, spreads and totals and his team's player
+legs take Kalshi's number. Otherwise only his position group's legs on his
+team do. **Judge:** the graded rung log (item 2), weeks 8-12: the flagged
+legs' log loss at the market's number against the model's.
 
 Note on settlement: Kalshi's standard player markets settle at the pre-game
 fair price if the player never takes a snap, so a prop on an inactive is
@@ -170,3 +175,33 @@ Needs the odds API's key in the server's environment (the variable `odds_api.py`
   determined?](https://help.kalshi.com/en/articles/13823836-how-are-prices-determined)
 - Kalshi API `/series/<ticker>`: fee_type and fee_multiplier per series
   (read 2026-10-19).
+
+## Shipped 2026-10-19 (evening)
+
+- **Item 6, the leg cap** (`nfl_game_sim._cap_pool`). The cap now keeps the
+  most liquid legs, spread evenly over the probability band, and nothing on
+  the gap. On Monday night's fully posted game the old cap's 40 were all
+  props (none of the game's 21 spreads or 16 totals) at a 2.8c mean gap.
+  The new 40 hold every leg type at 1.1c, against 1.2c for the whole pool.
+  This item was understated above: it was measured Monday, before week 7's
+  props posted, and on game day the cap binds on every game.
+- **Item 1, who may not play** (`nfl_game_sim.availability`,
+  `_avail_scope`), corrected as above. Read for week 7 on Monday evening: 13
+  players in doubt on 11 teams. The one quarterback is Lamar Jackson, so the
+  Bengals-Ravens game is the only one fully at Kalshi's number. The slip
+  names the players in doubt in its own games.
+- **Item 2, the model beside the market** (`nfl_props_log._model_rungs`).
+  Every priced leg the slate sim prices (props, totals, spreads,
+  moneylines) gets the sim's figure and Kalshi's de-vigged mid, on the first
+  pass that sees it and on every pass until the game freezes, so the frozen
+  "last" is the close. On Monday night's game that is 229 legs. The sim is
+  read from the shared store, never run in the logger. The export to
+  `sim-history` carries it, and grading is a research step once weeks 7-10
+  have played.
+- **A drift alarm** (`nfl_props_log.drift`), not in the list above. Each
+  pass ledgers `NFL-DRIFT` when a leg type sits 4+ points one way off
+  Kalshi's mid across 4+ games and 30+ legs. The totals bias the 2025
+  trims carried would have rung it in week 1.
+
+Not shipped, by the owner's choice: a link to the owner's own Kalshi account.
+

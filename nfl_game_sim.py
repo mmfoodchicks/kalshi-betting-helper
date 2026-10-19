@@ -1367,6 +1367,15 @@ def price_cands(cands, suffix, blend=True):
         quotes[id(c)] = q
     if blend:
         combo_engine.blend_candidates(cands, quotes, sport="nfl")
+    # A leg whose game has a player in doubt (availability) takes the
+    # market's number outright: the model priced a team that may not take
+    # the field. Its own figure stays as marg_model.
+    for c in cands:
+        if c.get("market_only"):
+            ref, _qual = combo_engine.market_reference(quotes.get(id(c)))
+            if ref is not None and 0 < ref < 1:
+                c.setdefault("marg_model", c.get("marg"))
+                c["marg"], c["model_weight"] = ref, 0.0
     return cands
 
 
@@ -1497,6 +1506,9 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
     item["preseason"] = bool(preseason)
     item["excluded_started"] = n_started or None
     item["excluded_unpriced"] = _pinfo.get("excluded_unpriced") or None
+    _av = _pinfo.get("availability") or {}
+    item["availability"] = [f for grp in item.get("groups") or []
+                            for f in _av.get(grp.get("suffix"), [])] or None
     item["pricing_unavailable"] = not _pinfo.get("priced_ok")
     item["cost_x"] = round(best["cost"], 4)
     item["market_payout_x"] = round(best["payout"], 2) if best["payout"] else None
@@ -1532,6 +1544,130 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
     return item
 
 
+# WHO MAY NOT PLAY. Sleeper's early-week projection assumes everyone plays:
+# read 2026-10-19 for week 7, Lamar Jackson (missed weeks 5 and 6, Tyler
+# Huntley the projected and real starter both weeks) was back at 272 passing
+# yards with Huntley at 0, and Baker Mayfield (missed weeks 5-6) at 207;
+# nine teams carried 15-34% of their projected points on players tagged
+# Out/IR/Doubtful. By kickoff Sleeper settles it (weeks 4-5: no player
+# projected for 8+ PPR sat out), but the owner builds slips mid-week. The
+# market prices that doubt and the model does not. His own legs are left
+# out, and the legs his absence would move take Kalshi's number (model weight
+# 0): when he is a QUARTERBACK, the game's moneyline, spreads and totals and
+# every leg of his team's players; otherwise only his position group's legs
+# on his team (backs for a back; receivers and tight ends for either) -- a
+# missing back's carries go to the next back, so the team's level barely
+# moves while the backup's line is wrong, and only a quarterback change moves
+# a game line by points rather than fractions of one (the scope is that
+# convention, not a measurement; the graded rung log judges it). A player
+# is in doubt when Sleeper still projects him as a real part of the plan
+# (a quarterback >= 100 passing yards, anyone else >= 40 rushing + receiving)
+# AND he carries an out-type tag, or a Questionable tag after missing his
+# team's last game. The tag clears, or Sleeper moves the projection to the
+# backup, and the game is the model's again.
+_AVAIL_OUT = frozenset(("Out", "Doubtful", "IR", "PUP", "Sus", "NA", "DNR"))
+_AVAIL_GROUP = {"QB": "QB", "RB": "RB", "WR": "REC", "TE": "REC"}
+_AVAIL_QB_YDS = 100.0
+_AVAIL_SKILL_YDS = 40.0
+
+
+def availability(season, week, teams=None, hist=None):
+    """{team: [{"name", "pos", "injury", "missed_last", "why"}]} for the week's
+    players in doubt (see above). `teams` (nfl_data.week_teams) and `hist`
+    (nfl_usage.history) are for tests; production reads both, and a history
+    that cannot be read leaves only the out-type tags."""
+    import nfl_data
+    if teams is None:
+        teams = nfl_data.week_teams(str(season), week) or {}
+    if hist is None and int(week) > 1:
+        try:
+            import nfl_usage
+            hist = nfl_usage.history(int(season), int(week)) or {}
+        except Exception as e:
+            errlog.note("NFLG-avail-hist", e)
+            hist = {}
+    hist = hist or {}
+    out = {}
+    for ab, t in (teams or {}).items():
+        # the box keeps Sleeper's own team codes (WAS, JAC, LA); compare canon
+        played = [w for w in sorted(hist, reverse=True)
+                  if any(nfl_data._canon(v[0]) == ab for v in (hist[w].get("pl") or {}).values())]
+        last = hist[played[0]]["pl"] if played else None
+        for p in t.get("players") or []:
+            tag = p.get("injury")
+            if not tag:
+                continue
+            big = (p.get("pass_yd") or 0) >= _AVAIL_QB_YDS if p.get("pos") == "QB" \
+                else (p.get("rush_yd") or 0) + (p.get("rec_yd") or 0) >= _AVAIL_SKILL_YDS
+            if not big:
+                continue
+            missed = None if last is None else (p.get("pid") or "") not in last
+            if tag in _AVAIL_OUT:
+                why = f"tagged {tag}"
+            elif tag == "Questionable" and missed:
+                why = "Questionable after missing the last game"
+            else:
+                continue
+            out.setdefault(nfl_data._canon(ab), []).append(
+                {"name": p.get("name"), "pos": p.get("pos"), "injury": tag, "missed_last": missed, "why": why})
+    return out
+
+
+def _avail_scope(cands, doubt, pos):
+    """Apply the availability rule (see _AVAIL_OUT) to one game's legs in
+    place: returns the legs kept, the in-doubt players' own legs gone, the
+    legs their absence would move marked market_only. `doubt` is
+    {team: [flags]} for the game's clubs, `pos` {(team, name): position}."""
+    gone = {f["name"] for fl in doubt.values() for f in fl}
+    qb = {tm for tm, fl in doubt.items() if any(f.get("pos") == "QB" for f in fl)}
+    groups = {(tm, _AVAIL_GROUP.get(f.get("pos"))) for tm, fl in doubt.items() for f in fl}
+    kept = []
+    for c in cands:
+        pl = (c.get("kref") or {}).get("player")
+        if pl in gone:
+            continue
+        tm = _canon_team(c.get("side_team"))
+        if qb and c["type"] in ("ML", "Spread", "Total"):
+            c["market_only"] = True
+        elif pl and (tm in qb or (tm, _AVAIL_GROUP.get(pos.get((tm, pl)))) in groups):
+            c["market_only"] = True
+        kept.append(c)
+    return kept
+
+
+def _canon_team(ab):
+    import nfl_data
+    return nfl_data._canon(ab) if ab else ab
+
+
+def _pair_teams(g):
+    """The two clubs of a slate game, in nfl_data's codes."""
+    return [_canon_team(x) for x in str(g.get("pair") or "").split("@") if x]
+
+
+def _cap_pool(cands, k):
+    """The `k` legs a capped game pool keeps: the most liquid (fillable, then
+    market quality to a tenth), and among those an even spread over the
+    probability band, likeliest to longest.
+
+    The cap used to keep the biggest model-vs-price gap first -- the selection
+    the blend's own note calls the winner's curse: the legs where the model
+    is most wrong are the ones it disagrees with most. Measured 2026-10-19 on
+    Monday night's fully posted game (the cap binds on every game once the
+    props post, i.e. on game day): the kept legs carried a 2.8c mean gap
+    against 0.9c for the 137 dropped, and none of the game's 21 spreads or 16
+    totals survived. This keeps nothing on the gap."""
+    def liq(c):
+        return (not c.get("fillable", False), -round(c.get("market_quality") or 0.0, 1))
+    ranked = sorted(cands, key=liq)
+    cut = liq(ranked[k - 1])
+    pool = sorted((c for c in ranked if liq(c) <= cut), key=lambda c: -(c.get("marg") or 0.0))
+    if len(pool) > k:
+        step = len(pool) / float(k)
+        pool = [pool[int(i * step)] for i in range(k)]
+    return pool
+
+
 def _build_frontier(week, preseason, n_sims, floor, ceil, n_legs, max_legs_per_game,
                     max_total_legs, legs_mode, payout_mode, types, game_sel, max_bet,
                     abort_cb, sides, leg_ok):
@@ -1557,7 +1693,17 @@ def _build_frontier(week, preseason, n_sims, floor, ceil, n_legs, max_legs_per_g
     except Exception as e:
         errlog.note("NFLG-parlay-index", e)
         _idx_up = False
-    pinfo = {"priced_ok": _idx_up, "excluded_unpriced": 0}
+    pinfo = {"priced_ok": _idx_up, "excluded_unpriced": 0, "availability": {}}
+    avail, apos = {}, {}
+    if not preseason:
+        try:
+            import nfl_data
+            _teams = nfl_data.week_teams(str(_season()), week) or {}
+            avail = availability(_season(), week, teams=_teams)
+            apos = {(nfl_data._canon(ab), p.get("name")): p.get("pos")
+                    for ab, t in _teams.items() for p in t.get("players") or []}
+        except Exception as e:
+            errlog.note("NFLG-avail", e)
     # Grid selection: "base" keeps the whole game, "base:TEAM" keeps one club's
     # legs only -- exactly baseball's semantics. `base` may be the Kalshi suffix
     # or the AWY@HOM pair, because a game with no market yet has no suffix but
@@ -1586,6 +1732,13 @@ def _build_frontier(week, preseason, n_sims, floor, ceil, n_legs, max_legs_per_g
                  and (sides is None or c.get("side", "yes") in sides)]
         if not cands:
             continue
+        # Players in doubt (availability): their own legs out, the legs their
+        # absence would move at Kalshi's number (_avail_scope).
+        doubt = {tm: avail[tm] for tm in _pair_teams(g) if tm in avail}
+        if doubt:
+            cands = _avail_scope(cands, doubt, apos)
+            pinfo["availability"][g["suffix"] or g.get("pair")] = [
+                dict(f, team=tm) for tm, fl in doubt.items() for f in fl]
         price_cands(cands, g["suffix"])
         # A caller-supplied per-leg rule, after pricing so it can read the
         # ask (the locked recipes keep only the rung they are about).
@@ -1611,16 +1764,11 @@ def _build_frontier(week, preseason, n_sims, floor, ceil, n_legs, max_legs_per_g
         # The NFL ladder is WIDE -- Kalshi books two dozen spreads and nineteen
         # totals a side -- and same-game bundling is combinatorial in the
         # per-game pool: an uncapped pool put C(100+,4) mask-ANDs inside one
-        # Build click and hung it for minutes. Keep the most bettable forty:
-        # priced legs first, then the biggest model-vs-price gap, then the
-        # likeliest. MLB never needed this cap because its ladders are a
-        # quarter the width.
+        # Build click and hung it for minutes. MLB never needed this cap
+        # because its ladders are a quarter the width. Which forty: see
+        # _cap_pool (the most liquid, spread evenly over the band).
         if len(cands) > 40:
-            cands.sort(key=lambda c: (
-                c.get("price_cents") is None,
-                -abs((c.get("marg") or 0) * 100 - (c.get("price_cents") or 50.0)),
-                -(c.get("marg") or 0)))
-            cands = cands[:40]
+            cands = _cap_pool(cands, 40)
         # Same optimism bound as baseball: a max bet multiplies prices, so a leg
         # the model likes far more than the market can carry the slip alone.
         if max_bet:

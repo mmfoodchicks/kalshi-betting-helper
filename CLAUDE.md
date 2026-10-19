@@ -363,7 +363,19 @@ data-only `sim-history` branch (which never deploys):
   left the sim 2.2 points under the real totals and 2.55 under Kalshi's;
   refit by `research/nfl_trim.py` (rule first, report `nfl_trim.md`) -- re-run
   it every few weeks. The preseason path keeps the 2025 trims its own
-  constants were measured through (`_TD_CAL_PRE`, `_FG_CAL_PRE`).
+  constants were measured through (`_TD_CAL_PRE`, `_FG_CAL_PRE`). **The
+  accuracy batch** (2026-10-19 evening, `research/reports/nfl_accuracy_gaps.md`):
+  a capped game pool keeps its most liquid legs spread over the band, never
+  the biggest model-vs-price gap (`_cap_pool`); a player Sleeper still counts
+  who carries an out-type tag, or Questionable after missing his last game,
+  is in doubt (`availability`) -- his legs leave, and a quarterback's game
+  (else his position group) takes Kalshi's number. A Monday tag is LAST
+  week's status (ESPN dates 56 Out players back for the coming Sunday), so it
+  marks doubt, never "out". `nfl_props_log` now keeps the model's figure
+  beside Kalshi's mid on every priced leg, first sighting and close
+  (`_model_rungs`, read from the shared slate sim, never run there), and
+  ledgers `NFL-DRIFT` when a leg type sits 4+ points one way across 4+
+  games (`drift`) -- the record totals, spreads and props never had.
 - **The NBA / NHL seasons** (2026-10-17, `pro_season.py` rules + Monte
   Carlo, `pro_season_job.py` the job and the board): NHL three per division +
   two wildcards, the division bracket, points then RW, ROW, W, head-to-head,

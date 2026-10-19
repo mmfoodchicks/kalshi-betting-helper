@@ -60,7 +60,7 @@ def espn_games(payload):
     return season, week, out
 
 
-def snapshot(now=None, payload=None, index=None, ladders=None, sleeper=None, forecast=None):
+def snapshot(now=None, payload=None, index=None, ladders=None, sleeper=None, forecast=None, sims=None):
     """One logging pass: every game still ahead of its kickoff gets its props
     rewritten, every player of its two teams his Sleeper projection, and,
     inside nfl_weather.FORECAST_AHEAD_S, its stadium's kickoff forecast;
@@ -126,11 +126,135 @@ def snapshot(now=None, payload=None, index=None, ladders=None, sleeper=None, for
         store["games"][suffix] = {"ts": round(now), "kickoff": g["kickoff"], "espn_id": g.get("id"),
                                   "teams": sorted(e["pair"]), "players": players}
         updated += 1
-    if updated or live or wx_n:
+    md = _model_rungs(store, games, idx, now, int(season), int(week), sims)
+    if updated or live or wx_n or md:
         deep_cache.save(key, store)
         deep_cache.save(LATEST, key)
     return {"key": key, "updated": updated, "frozen": frozen, "games": len(store["games"]),
-            "sleeper": len(store["sleeper"]), "weather": wx_n}
+            "sleeper": len(store["sleeper"]), "weather": wx_n, "model_rungs": md}
+
+
+# THE MODEL BESIDE THE MARKET, for the record nothing but the moneyline had
+# (research/reports/nfl_accuracy_gaps.md, 2026-10-19). Every leg the combo
+# maker's slate sim prices that Kalshi books with a believable quote gets the
+# sim's own probability and Kalshi's de-vigged mid, twice: "first" the pass
+# that first saw it, "last" every pass until the game freezes (LEAD_S), so
+# the frozen "last" is the pre-game close. Graded later against the box and
+# the final, it fits a blend weight per leg type the way calibrate does for
+# baseball, and first-vs-last says whether the market moves toward the
+# model (the model knowing something) or away. The sim is READ from the
+# shared store (the PC's warm, or the tab's last build), never run here: no
+# CPU-bound work in a gunicorn process. Totals keep the OVER side only and
+# the moneyline both clubs (the drift below reads the home side).
+SIM_NS = (4000, 3000)          # the PC's warm (pc_worker) first, then the tab's default
+SIM_MAX_AGE = 3600             # an older slate sim is skipped, not logged as the model
+
+
+def _rung_key(kref):
+    t = kref.get("t")
+    if t == "prop":
+        return f"prop|{kref.get('stat')}|{kref.get('player')}|{kref.get('line')}"
+    if t == "total":
+        return f"total|{kref.get('n')}" if kref.get("over") else None
+    if t == "spread":
+        return f"spread|{kref.get('team')}|{kref.get('by')}" + ("|no" if kref.get("no") else "")
+    if t == "ml":
+        return f"ml|{kref.get('team')}" + ("|no" if kref.get("no") else "")
+    return None
+
+
+def _cached_sims(season, week):
+    import boardshare
+    for n in SIM_NS:
+        got, _age = boardshare.get(f"nfl_parlay_sims5_{season}_w{week}_0_{n}", SIM_MAX_AGE)
+        if got:
+            return got
+    return None
+
+
+def _model_rungs(store, games, idx, now, season, week, sims=None):
+    """Write the model-and-market rungs for every game still ahead of its
+    freeze, and the drift over them. Returns how many rungs were written."""
+    import combo_engine
+    import kalshi_nfl
+    if sims is None:
+        sims = _cached_sims(season, week)
+    if not sims or not idx:
+        return 0
+    mstore = store.setdefault("model", {})
+    n = 0
+    for g in sims:
+        suf = g.get("suffix")
+        e = (idx or {}).get(suf)
+        gm = games.get((e or {}).get("pair")) if e else None
+        if not gm or gm.get("state") != "pre" or not gm.get("kickoff") or gm["kickoff"] - now < LEAD_S:
+            continue                                   # frozen: its "last" is the close
+        rec = mstore.setdefault(suf, {"rungs": {}})
+        rec.update({"ts": round(now), "kickoff": gm["kickoff"], "sims_n": g.get("n"), "home": gm.get("home")})
+        for c in g.get("cands") or []:
+            kref = c.get("kref") or {}
+            k = _rung_key(kref) if c.get("side", "yes") == "yes" else None
+            if not k:
+                continue
+            q = kalshi_nfl.quote_leg(idx, suf, kref)
+            if not kalshi_nfl.believable(q):
+                continue
+            mid, qual = combo_engine.market_reference(q)
+            p = c.get("marg")
+            if mid is None or p is None:
+                continue
+            row = [round(now), round(float(p), 4), round(float(mid), 4)]
+            r = rec["rungs"].setdefault(k, {"type": c.get("type"), "first": row})
+            r["last"], r["qual"] = row, round(float(qual), 3)
+            n += 1
+    if n:
+        store["drift"] = drift(store, now)
+    return n
+
+
+# THE DRIFT ALARM. The 2025 trims left the sim's totals 2-3 points under the
+# real ones for six weeks of 2026 before an audit stumbled on it (2026-10-19,
+# research/reports/nfl_trim.md); nothing was watching. Each pass now takes the
+# mean signed gap, model minus Kalshi's mid, per leg type over the live
+# games' rungs with a believable, liquid quote (quality >= DRIFT_QUAL), and
+# ledgers NFL-DRIFT when it is one-sided by DRIFT_GAP or more across at
+# least DRIFT_GAMES games and DRIFT_N rungs. 4 points is under the over-side
+# gap the totals carried (2.6 to 10.3 points a game, 12 of 14 games) and over
+# what one game's prop gaps averaged after the refit (3 to 6 points, one
+# game -- the games floor is what keeps one game from ringing it). The
+# moneyline is read on the home side only (the two clubs' rungs cancel).
+DRIFT_GAP, DRIFT_N, DRIFT_GAMES, DRIFT_QUAL = 0.04, 30, 4, 0.5
+
+
+def drift(store, now):
+    """{"ts", "by_type": {type: {"n", "games", "gap"}}} over this pass's live
+    rungs, ledgering NFL-DRIFT for each one-sided type (see above)."""
+    import kalshi_nfl
+    by = {}
+    for suf, rec in (store.get("model") or {}).items():
+        if rec.get("ts") != round(now):
+            continue                                  # frozen games read nothing new
+        home = kalshi_nfl._canon(rec.get("home") or "")
+        for k, r in (rec.get("rungs") or {}).items():
+            if r.get("qual", 0) < DRIFT_QUAL or (r.get("last") or [None])[0] != round(now):
+                continue
+            t = r.get("type")
+            if t == "ML":
+                parts = k.split("|")
+                if len(parts) != 2 or kalshi_nfl._canon(parts[1]) != home:
+                    continue
+            b = by.setdefault(t, {"n": 0, "sum": 0.0, "games": set()})
+            b["n"] += 1
+            b["sum"] += r["last"][1] - r["last"][2]
+            b["games"].add(suf)
+    out = {"ts": round(now), "by_type": {}}
+    for t, b in by.items():
+        gap = b["sum"] / b["n"]
+        out["by_type"][t] = {"n": b["n"], "games": len(b["games"]), "gap": round(gap, 4)}
+        if b["n"] >= DRIFT_N and len(b["games"]) >= DRIFT_GAMES and abs(gap) >= DRIFT_GAP:
+            errlog.note("NFL-DRIFT", msg=(f"{t}: the model sits {100 * gap:+.1f} points off Kalshi's mid "
+                                          f"over {b['n']} rungs in {len(b['games'])} games"), path=t)
+    return out
 
 
 def _weather(store, games, now, forecast=None):
