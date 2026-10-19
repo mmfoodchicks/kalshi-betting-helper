@@ -1,0 +1,780 @@
+{
+ "contest": {
+  "draft_group_id": 154959,
+  "entry_fee": 15.0,
+  "first_prize": 250000.0,
+  "max_entries": 78431,
+  "name": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (DAL @ GB)",
+  "places_paid": 17255,
+  "prize_pool": 1000000.0,
+  "starts": "2026-10-19T00:20:00.0000000Z"
+ },
+ "contest_id": 196786588,
+ "duplicates": {
+  "distinct_lineups": 12627,
+  "distinct_pair_collision": 0.000505106654547457,
+  "entries_in_duplicated_lineups_pct": 93.49,
+  "max_copies": 314
+ },
+ "entries": 78431,
+ "final": true,
+ "kind": "showdown",
+ "malformed": 0,
+ "max_entry_users_pct": 27.73,
+ "ownership": [
+  {
+   "cpt_pct": 13.55,
+   "dk_pct": {
+    "CPT": 13.51,
+    "FLEX": 60.98
+   },
+   "fpts": 31.86,
+   "name": "Jordan Love",
+   "pct": 74.72,
+   "pos": "QB",
+   "salary": 9400,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 17.37,
+   "dk_pct": {
+    "CPT": 17.31,
+    "FLEX": 40.15
+   },
+   "fpts": 14.1,
+   "name": "Christian Watson",
+   "pct": 57.64,
+   "pos": "WR",
+   "salary": 9000,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 5.83,
+   "dk_pct": {
+    "CPT": 5.81,
+    "FLEX": 44.77
+   },
+   "fpts": 19.53,
+   "name": "Dak Prescott",
+   "pct": 50.73,
+   "pos": "QB",
+   "salary": 10400,
+   "team": "DAL"
+  },
+  {
+   "cpt_pct": 11.63,
+   "dk_pct": {
+    "CPT": 11.59,
+    "FLEX": 37.43
+   },
+   "fpts": 19.5,
+   "name": "Javonte Williams",
+   "pct": 49.18,
+   "pos": "RB",
+   "salary": 9600,
+   "team": "DAL"
+  },
+  {
+   "cpt_pct": 12.74,
+   "dk_pct": {
+    "CPT": 12.71,
+    "FLEX": 35.87
+   },
+   "fpts": 38.1,
+   "name": "Matthew Golden",
+   "pct": 48.72,
+   "pos": "WR",
+   "salary": 8000,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 11.17,
+   "dk_pct": {
+    "CPT": 11.14,
+    "FLEX": 35.93
+   },
+   "fpts": 24.0,
+   "name": "CeeDee Lamb",
+   "pct": 47.21,
+   "pos": "WR",
+   "salary": 10800,
+   "team": "DAL"
+  },
+  {
+   "cpt_pct": 7.55,
+   "dk_pct": {
+    "CPT": 7.53,
+    "FLEX": 29.28
+   },
+   "fpts": 19.95,
+   "name": "George Pickens",
+   "pct": 36.92,
+   "pos": "WR",
+   "salary": 8800,
+   "team": "DAL"
+  },
+  {
+   "cpt_pct": 6.38,
+   "dk_pct": {
+    "CPT": 6.36,
+    "FLEX": 29.32
+   },
+   "fpts": 13.05,
+   "name": "Tucker Kraft",
+   "pct": 35.79,
+   "pos": "TE",
+   "salary": 6800,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 1.97,
+   "dk_pct": {
+    "CPT": 1.96,
+    "FLEX": 24.53
+   },
+   "fpts": 25.5,
+   "name": "Ryan Flournoy",
+   "pct": 26.57,
+   "pos": "WR",
+   "salary": 4400,
+   "team": "DAL"
+  },
+  {
+   "cpt_pct": 4.79,
+   "dk_pct": {
+    "CPT": 4.77,
+    "FLEX": 20.93
+   },
+   "fpts": 1.5,
+   "name": "MarShawn Lloyd",
+   "pct": 25.78,
+   "pos": "RB",
+   "salary": 7400,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 1.08,
+   "dk_pct": {
+    "CPT": 1.08,
+    "FLEX": 22.59
+   },
+   "fpts": 1.5,
+   "name": "Brandon Aubrey",
+   "pct": 23.74,
+   "pos": "K",
+   "salary": 5200,
+   "team": "DAL"
+  },
+  {
+   "cpt_pct": 0.96,
+   "dk_pct": {
+    "CPT": 0.96,
+    "FLEX": 20.76
+   },
+   "fpts": 17.55,
+   "name": "Pierre Strong Jr.",
+   "pct": 21.79,
+   "pos": "RB",
+   "salary": 3000,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 1.45,
+   "dk_pct": {
+    "CPT": 1.45,
+    "FLEX": 16.04
+   },
+   "fpts": 4.95,
+   "name": "Jake Ferguson",
+   "pct": 17.54,
+   "pos": "TE",
+   "salary": 5600,
+   "team": "DAL"
+  },
+  {
+   "cpt_pct": 0.34,
+   "dk_pct": {
+    "CPT": 0.34,
+    "FLEX": 16.67
+   },
+   "fpts": 18.0,
+   "name": "Trey Smack",
+   "pct": 17.07,
+   "pos": "K",
+   "salary": 4800,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 0.71,
+   "dk_pct": {
+    "CPT": 0.71,
+    "FLEX": 9.49
+   },
+   "fpts": 12.15,
+   "name": "Savion Williams",
+   "pct": 10.23,
+   "pos": "WR",
+   "salary": 200,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 0.8,
+   "dk_pct": {
+    "CPT": 0.79,
+    "FLEX": 8.39
+   },
+   "fpts": 13.5,
+   "name": "Packers",
+   "pct": 9.21,
+   "pos": "DST",
+   "salary": 4000,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 0.28,
+   "dk_pct": {
+    "CPT": 0.28,
+    "FLEX": 8.26
+   },
+   "fpts": 0.0,
+   "name": "KaVontae Turpin",
+   "pct": 8.56,
+   "pos": "WR",
+   "salary": 2000,
+   "team": "DAL"
+  },
+  {
+   "cpt_pct": 0.28,
+   "dk_pct": {
+    "CPT": 0.28,
+    "FLEX": 6.3
+   },
+   "fpts": 0.0,
+   "name": "Bo Melton",
+   "pct": 6.59,
+   "pos": "WR",
+   "salary": 2800,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 0.37,
+   "dk_pct": {
+    "CPT": 0.37,
+    "FLEX": 5.9
+   },
+   "fpts": 7.5,
+   "name": "Cowboys",
+   "pct": 6.29,
+   "pos": "DST",
+   "salary": 3600,
+   "team": "DAL"
+  },
+  {
+   "cpt_pct": 0.14,
+   "dk_pct": {
+    "CPT": 0.14,
+    "FLEX": 4.86
+   },
+   "fpts": 0.0,
+   "name": "Jonnu Smith",
+   "pct": 5.02,
+   "pos": "TE",
+   "salary": 1600,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 0.07,
+   "dk_pct": {
+    "CPT": 0.07,
+    "FLEX": 4.11
+   },
+   "fpts": 11.25,
+   "name": "Brevyn Spann-Ford",
+   "pct": 4.18,
+   "pos": "TE",
+   "salary": 600,
+   "team": "DAL"
+  },
+  {
+   "cpt_pct": 0.13,
+   "dk_pct": {
+    "CPT": 0.13,
+    "FLEX": 3.37
+   },
+   "fpts": 2.85,
+   "name": "Tyler Goodson",
+   "pct": 3.5,
+   "pos": "RB",
+   "salary": 1400,
+   "team": "DAL"
+  },
+  {
+   "cpt_pct": 0.16,
+   "dk_pct": {
+    "CPT": 0.16,
+    "FLEX": 3.26
+   },
+   "fpts": -0.3,
+   "name": "Kaleb Johnson",
+   "pct": 3.42,
+   "pos": "RB",
+   "salary": 3400,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 0.09,
+   "dk_pct": {
+    "CPT": 0.09,
+    "FLEX": 2.01
+   },
+   "fpts": 0.0,
+   "name": "J. Michael Sturdivant",
+   "pct": 2.11,
+   "pos": "WR",
+   "salary": 1000,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 0.03,
+   "dk_pct": {
+    "CPT": 0.03,
+    "FLEX": 2.04
+   },
+   "fpts": 0.0,
+   "name": "Jonathan Mingo",
+   "pct": 2.08,
+   "pos": "WR",
+   "salary": 800,
+   "team": "DAL"
+  },
+  {
+   "cpt_pct": 0.04,
+   "dk_pct": {
+    "CPT": 0.04,
+    "FLEX": 1.78
+   },
+   "fpts": 0.0,
+   "name": "Luke Schoonmaker",
+   "pct": 1.82,
+   "pos": "TE",
+   "salary": 1200,
+   "team": "DAL"
+  },
+  {
+   "cpt_pct": 0.04,
+   "dk_pct": {
+    "CPT": 0.04,
+    "FLEX": 1.65
+   },
+   "fpts": 5.85,
+   "name": "Hunter Luepke",
+   "pct": 1.69,
+   "pos": "RB",
+   "salary": 400,
+   "team": "DAL"
+  },
+  {
+   "cpt_pct": 0.02,
+   "dk_pct": {
+    "CPT": 0.02,
+    "FLEX": 1.09
+   },
+   "fpts": 0.0,
+   "name": "Mark Redman",
+   "pct": 1.12,
+   "pos": "TE",
+   "salary": 200,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 0.01,
+   "dk_pct": {
+    "CPT": 0.01,
+    "FLEX": 0.37
+   },
+   "fpts": 0.0,
+   "name": "Josh Whyle",
+   "pct": 0.37,
+   "pos": "TE",
+   "salary": 200,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 0.01,
+   "dk_pct": {
+    "CPT": 0.01,
+    "FLEX": 0.09
+   },
+   "fpts": 0.0,
+   "name": "Coleman Owen",
+   "pct": 0.1,
+   "pos": "WR",
+   "salary": 200,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "FLEX": 0.08
+   },
+   "fpts": 0.0,
+   "name": "Lenny Krieg",
+   "pct": 0.08,
+   "pos": "K",
+   "salary": 4800,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "FLEX": 0.05
+   },
+   "fpts": 0.0,
+   "name": "Emari Demercado",
+   "pct": 0.05,
+   "pos": "RB",
+   "salary": 200,
+   "team": "DAL"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "FLEX": 0.02
+   },
+   "fpts": 0.0,
+   "name": "Damon Bankston",
+   "pct": 0.02,
+   "pos": "RB",
+   "salary": 200,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "CPT": 0.0,
+    "FLEX": 0.02
+   },
+   "fpts": 0.0,
+   "name": "Tyrod Taylor",
+   "pct": 0.02,
+   "pos": "QB",
+   "salary": 6000,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 0.01,
+   "dk_pct": {
+    "CPT": 0.01,
+    "FLEX": 0.01
+   },
+   "fpts": 0.0,
+   "name": "Sam Howell",
+   "pct": 0.02,
+   "pos": "QB",
+   "salary": 6000,
+   "team": "DAL"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "FLEX": 0.01
+   },
+   "fpts": 0.0,
+   "name": "Israel Abanikanda",
+   "pct": 0.01,
+   "pos": "RB",
+   "salary": 200,
+   "team": "DAL"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "CPT": 0.0,
+    "FLEX": 0.01
+   },
+   "fpts": 0.0,
+   "name": "Kedon Slovis",
+   "pct": 0.01,
+   "pos": "QB",
+   "salary": 6000,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "CPT": 0.0,
+    "FLEX": 0.01
+   },
+   "fpts": 0.0,
+   "name": "Josh Jacobs",
+   "pct": 0.01,
+   "pos": "RB",
+   "salary": 8400,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "FLEX": 0.01
+   },
+   "fpts": 0.0,
+   "name": "Skyy Moore",
+   "pct": 0.01,
+   "pos": "WR",
+   "salary": 2400,
+   "team": "GB"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "CPT": 0.0,
+    "FLEX": 0.01
+   },
+   "fpts": 0.0,
+   "name": "Isaiah Neyor",
+   "pct": 0.01,
+   "pos": "WR",
+   "salary": 200,
+   "team": "GB"
+  }
+ ],
+ "points": {
+  "cash_line": 93.68,
+  "first": 117.33999,
+  "median": 81.84,
+  "top_0_1pct": 117.06,
+  "top_10pct": 100.36,
+  "top_1pct": 112.34
+ },
+ "rank_points": [
+  [
+   1,
+   117.33999
+  ],
+  [
+   2,
+   117.33999
+  ],
+  [
+   5,
+   117.06
+  ],
+  [
+   10,
+   117.06
+  ],
+  [
+   20,
+   117.06
+  ],
+  [
+   50,
+   117.06
+  ],
+  [
+   100,
+   117.06
+  ],
+  [
+   200,
+   117.06
+  ],
+  [
+   500,
+   114.659996
+  ],
+  [
+   1000,
+   111.36
+  ],
+  [
+   2000,
+   108.38
+  ],
+  [
+   5000,
+   103.060005
+  ],
+  [
+   10000,
+   98.96001
+  ],
+  [
+   20000,
+   92.04
+  ],
+  [
+   50000,
+   76.34
+  ],
+  [
+   78431,
+   0.0
+  ]
+ ],
+ "sha256": "41db4790b2c69049ee8c0363fd8572cb66b4a2111018d3b877afd9982bc60f37",
+ "shape": {
+  "resolved": 78189,
+  "salary_mean": 49265.5,
+  "salary_median": 49600.0,
+  "team_split_pct": {
+   "3-3": 37.83,
+   "4-2": 48.05,
+   "5-1": 14.12
+  },
+  "unresolved": 0
+ },
+ "top_lineups": [
+  {
+   "lineup": [
+    [
+     "CPT",
+     "Matthew Golden"
+    ],
+    [
+     "FLEX",
+     "CeeDee Lamb"
+    ],
+    [
+     "FLEX",
+     "Jordan Love"
+    ],
+    [
+     "FLEX",
+     "George Pickens"
+    ],
+    [
+     "FLEX",
+     "Ryan Flournoy"
+    ],
+    [
+     "FLEX",
+     "Pierre Strong Jr."
+    ]
+   ],
+   "points": 117.33999,
+   "rank": 1
+  },
+  {
+   "lineup": [
+    [
+     "CPT",
+     "Matthew Golden"
+    ],
+    [
+     "FLEX",
+     "CeeDee Lamb"
+    ],
+    [
+     "FLEX",
+     "Jordan Love"
+    ],
+    [
+     "FLEX",
+     "George Pickens"
+    ],
+    [
+     "FLEX",
+     "Ryan Flournoy"
+    ],
+    [
+     "FLEX",
+     "Pierre Strong Jr."
+    ]
+   ],
+   "points": 117.33999,
+   "rank": 1
+  },
+  {
+   "lineup": [
+    [
+     "CPT",
+     "Matthew Golden"
+    ],
+    [
+     "FLEX",
+     "CeeDee Lamb"
+    ],
+    [
+     "FLEX",
+     "Dak Prescott"
+    ],
+    [
+     "FLEX",
+     "Jordan Love"
+    ],
+    [
+     "FLEX",
+     "Ryan Flournoy"
+    ],
+    [
+     "FLEX",
+     "Pierre Strong Jr."
+    ]
+   ],
+   "points": 117.06,
+   "rank": 3
+  },
+  {
+   "lineup": [
+    [
+     "CPT",
+     "Matthew Golden"
+    ],
+    [
+     "FLEX",
+     "CeeDee Lamb"
+    ],
+    [
+     "FLEX",
+     "Dak Prescott"
+    ],
+    [
+     "FLEX",
+     "Jordan Love"
+    ],
+    [
+     "FLEX",
+     "Ryan Flournoy"
+    ],
+    [
+     "FLEX",
+     "Pierre Strong Jr."
+    ]
+   ],
+   "points": 117.06,
+   "rank": 3
+  },
+  {
+   "lineup": [
+    [
+     "CPT",
+     "Matthew Golden"
+    ],
+    [
+     "FLEX",
+     "CeeDee Lamb"
+    ],
+    [
+     "FLEX",
+     "Dak Prescott"
+    ],
+    [
+     "FLEX",
+     "Jordan Love"
+    ],
+    [
+     "FLEX",
+     "Ryan Flournoy"
+    ],
+    [
+     "FLEX",
+     "Pierre Strong Jr."
+    ]
+   ],
+   "points": 117.06,
+   "rank": 3
+  }
+ ],
+ "with_lineup": 78189
+}

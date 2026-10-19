@@ -402,6 +402,12 @@ data-only `sim-history` branch (which never deploys):
   and the server only reads them (`/api/dfs/fields`, the tab's Real fields
   card). `research/field_refit.py` decides the CL_* field constants on week
   7+ Sunday GPPs (fit 3, test 2); until then nothing changes a board.
+  **From away** (2026-10-19): an export the owner sends to a session is
+  summarized there exactly as intake does and only the SUMMARY is committed
+  (`research/data/dk_fields/`, `final` in it). `dk_standings.listing`/`summary`
+  read those beside the deep store, a committed summary winning, and a
+  look-back stored before its field arrived is recomputed once
+  (`dfs_hindsight.due`). The export itself never enters git.
   **Football hindsight** (`dfs_hindsight.py`, run from `dfslog.tick` after
   grading): the tournament boards' top lineups are logged at lock
   (objective `tourney:<list>`, kept OUT of the builder's correction fit);

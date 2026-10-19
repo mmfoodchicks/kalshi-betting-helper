@@ -21678,6 +21678,10 @@ _st_drop = _os.path.join(_st_dir, "drop")
 _os.makedirs(_st_drop)
 _st_cache0 = _dc_st.CACHE_DIR
 _dc_st.CACHE_DIR = _os.path.join(_st_dir, "deep")
+# the committed summaries (research/data/dk_fields, 2026-10-19) are read beside
+# the deep store; this guard is about the PC's intake and its index alone
+_st_committed0 = _ds_st.COMMITTED_DIR
+_ds_st.COMMITTED_DIR = _os.path.join(_st_dir, "committed")
 try:
     _st_buf = _io_st.BytesIO()
     with _zf_st.ZipFile(_st_buf, "w") as _z:
@@ -21710,6 +21714,7 @@ try:
        str((_st_w1, _st_w2, _st_logs)))
 finally:
     _dc_st.CACHE_DIR = _st_cache0
+    _ds_st.COMMITTED_DIR = _st_committed0
     _sh_st.rmtree(_st_dir, ignore_errors=True)
 _st_v = lambda m, sd, b, d, s: {"max_own": m, "stack_dist": sd, "bring_back": b, "dst_vs_own_qb": d, "salary_used": s}
 _st_cur = _st_v(0.38, [0.174, 0.49, 0.289, 0.047], 0.35, 0.08, 49400.0)
@@ -22396,6 +22401,79 @@ ck("slot-allocation v1 passed its frozen week-2 test on a clean tree: both co-pr
    and "transferred on this slate" in open(_os.path.join(_root, "research", "reports", "cl_week2.md")).read()
    and not _os.path.exists(_os.path.join(_root, "research", "data", "dk_standings", "contest-standings-195648007.csv.gz")),
    str(_w2p_d)[:300])
+
+# ---- 2026-10-19 standings summarized off the PC and committed (dk_standings.COMMITTED_DIR) ----
+# The owner, away from the PC: "make sure you're adding them to that folder for
+# me cause I'm not home". Nothing here can reach the PC's folder, and an export
+# never goes to git (it names every entrant). The export is summarized exactly
+# as intake does and only the SUMMARY is committed; server and PC read it
+# beside the deep store, and a look-back stored before its field arrived is
+# computed once more when it does.
+print("=" * 72)
+print("Standings summaries committed from away")
+print("=" * 72)
+import json as _json_cs
+import dk_standings as _ds_cs
+_cs_idx = _json_cs.load(open(_os.path.join(_root, "research", "data", "dk_fields", "index.json")))
+_cs_sums = {cid: _json_cs.load(open(_os.path.join(_root, "research", "data", "dk_fields", f"dk_field_{cid}.json")))
+            for cid in _cs_idx}
+_cs_blob = " ".join(_json_cs.dumps(v) for v in _cs_sums.values())
+ck("the committed summaries are the two final exports the owner sent from away -- the week-6 Millionaire (classic, "
+   "158,904 entries, first 210.5) and the Sunday-night DAL @ GB Showdown (78,431 entries) -- final (no time remaining), "
+   "carrying no entrant field at all, their sha256 the export's, and no export beside them in git",
+   set(_cs_idx) == {"196653900", "196786588"}
+   and _cs_sums["196653900"]["kind"] == "classic" and _cs_sums["196653900"]["entries"] == 158904
+   and abs(_cs_sums["196653900"]["points"]["first"] - 210.5) < 0.01
+   and _cs_sums["196786588"]["kind"] == "showdown" and _cs_sums["196786588"]["entries"] == 78431
+   and all(v["final"] is True and _cs_idx[k]["sha256"] == v["sha256"] for k, v in _cs_sums.items())
+   and '"user"' not in _cs_blob and "user_entries" not in _cs_blob
+   and not any(f.endswith((".csv", ".zip", ".gz")) for f in _os.listdir(_os.path.join(_root, "research", "data", "dk_fields"))))
+import deep_cache as _dc_cs
+_cs_load0 = _dc_cs.load
+_dc_cs.load = lambda key: (({"196653900": {"name": "deep copy", "draft_group_id": 154941, "starts": "2026-10-18"},
+                             "555": {"name": "only in the deep store", "draft_group_id": 1, "starts": "2026-10-01"}}, 7)
+                           if key == _ds_cs.INDEX else (({"contest_id": 555, "from": "deep"}, 9) if key == "dk_field_555"
+                                                        else ({"from": "deep, mid-game"}, 9)))
+try:
+    _cs_list = _ds_cs.listing()["contests"]
+    _cs_s1, _cs_t1 = _ds_cs.summary(196653900)
+    _cs_s2, _cs_t2 = _ds_cs.summary(555)
+finally:
+    _dc_cs.load = _cs_load0
+ck("listing merges the deep store's index with the committed one, one row a contest, the committed row winning; a "
+   "committed summary wins over the deep store's for the same contest (it was made from the FINAL export on purpose), "
+   "and a contest only in the deep store still reads from it",
+   sorted(r["contest_id"] for r in _cs_list) == [555, 196653900, 196786588]
+   and next(r for r in _cs_list if r["contest_id"] == 196653900)["name"].startswith("NFL $2.75M")
+   and (_cs_s1 or {}).get("entries") == 158904 and (_cs_s2 or {}).get("from") == "deep",
+   str([(r["contest_id"], r.get("name")) for r in _cs_list]))
+import dfs_hindsight as _dh_cs
+import store as _st_cs
+import tempfile as _tf_cs
+import shutil as _sh_cs
+_cs_dir = _tf_cs.mkdtemp(prefix="vigil-cs-guard-")
+_cs_db0 = _st_cs.DB_PATH
+_st_cs.DB_PATH = _os.path.join(_cs_dir, "cs.db")
+try:
+    import dfslog as _dl_cs
+    _dl_cs._ensure()
+    with _st_cs._lock, _st_cs._conn() as _c:
+        _c.execute("INSERT INTO dfs_builds (ts, sport, event_key, event_date, week, objective, mode, players, graded, "
+                   "actual, key, big, draft_group_id) VALUES (1,'nfl','nfl:2026:w6','2026-10-18',6,'ceiling','classic','[]',1,150,'k',1,154941)")
+        _c.execute("INSERT INTO dfs_actuals (sport, event_key, payload, ts) VALUES ('nfl_hindsight','nfl:2026:w6:154941',?,1)",
+                   (_json_cs.dumps({"best": {"points": 250.0}, "ours": []}),))
+    _cs_due1 = _dh_cs.due()
+    with _st_cs._lock, _st_cs._conn() as _c:
+        _c.execute("UPDATE dfs_actuals SET payload=? WHERE sport='nfl_hindsight'",
+                   (_json_cs.dumps({"best": {"points": 250.0}, "ours": [], "field": {"contest_id": 196653900}}),))
+    _cs_due2 = _dh_cs.due()
+finally:
+    _st_cs.DB_PATH = _cs_db0
+    _sh_cs.rmtree(_cs_dir, ignore_errors=True)
+ck("a look-back stored before its contest's standings were read is due ONCE more when a summary for its draft group "
+   "arrives (week 6's export came the morning after), and never again once its row carries the field",
+   _cs_due1 == [("nfl:2026:w6", 154941, "2026-10-18")] and _cs_due2 == [],
+   str((_cs_due1, _cs_due2)))
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

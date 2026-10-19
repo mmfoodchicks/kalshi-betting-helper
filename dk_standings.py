@@ -318,16 +318,52 @@ def intake(drop_dir=None, detail_fn=None, players_fn=None, log=print):
     return wrote
 
 
+# Summaries made OFF the PC and committed: the owner sends an export from
+# away (2026-10-19, "I'm not home"), it is summarized here exactly as intake
+# does (the same parse, pool and detail calls), and only the summary -- no
+# entrant name -- goes into git. The export itself never does. Both the
+# server and the PC read these beside the deep store; a committed summary
+# wins over a deep-store one for the same contest, because it is made from
+# the FINAL export on purpose ("final" in it), while a file dropped on the PC
+# may be a mid-game download.
+COMMITTED_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "research", "data", "dk_fields")
+
+
+def _committed_index():
+    try:
+        import json
+        with open(os.path.join(COMMITTED_DIR, "index.json")) as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+    except (OSError, ValueError) as e:
+        errlog.note("STAND-committed", e)
+        return {}
+
+
 def listing():
-    """The server's list of summarized contests, newest start first."""
+    """The server's list of summarized contests, newest start first: the
+    deep store's (the PC's intake) and the committed ones, one row a contest."""
     import deep_cache
     index, ts = deep_cache.load(INDEX)
-    rows = [dict(v, contest_id=int(k)) for k, v in (index or {}).items()]
+    merged = dict(index or {})
+    merged.update(_committed_index())
+    rows = [dict(v, contest_id=int(k)) for k, v in merged.items()]
     rows.sort(key=lambda r: str(r.get("starts") or ""), reverse=True)
     return {"contests": rows, "ts": ts}
 
 
 def summary(cid):
+    """(summary, ts) for one contest: the committed summary when there is
+    one, else the deep store's."""
+    import json
+    path = os.path.join(COMMITTED_DIR, f"dk_field_{int(cid)}.json")
+    if os.path.exists(path):
+        try:
+            with open(path) as f:
+                return json.load(f), int(os.path.getmtime(path))
+        except (OSError, ValueError) as e:
+            errlog.note("STAND-committed", e, path=path)
     import deep_cache
     s, ts = deep_cache.load(KEY.format(cid=int(cid)))
     return s, ts

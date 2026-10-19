@@ -1,0 +1,817 @@
+{
+ "contest": {
+  "draft_group_id": 154941,
+  "entry_fee": 20.0,
+  "first_prize": 1000000.0,
+  "max_entries": 161764,
+  "name": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st, $100K Leaderboard Eligible]",
+  "places_paid": 37425,
+  "prize_pool": 2750000.0,
+  "starts": "2026-10-18T17:00:00.0000000Z"
+ },
+ "contest_id": 196653900,
+ "duplicates": {
+  "distinct_lineups": 150173,
+  "distinct_pair_collision": 3.870942275175661e-06,
+  "entries_in_duplicated_lineups_pct": 8.42,
+  "max_copies": 150
+ },
+ "entries": 158904,
+ "final": true,
+ "kind": "classic",
+ "malformed": 0,
+ "max_entry_users_pct": 17.37,
+ "model": {
+  "bring_back": 0.35,
+  "collision": 1.2e-07,
+  "dst_vs_own_qb": 0.08,
+  "max_own": 0.38,
+  "salary_used": 49400.0,
+  "stack_dist": [
+   0.174,
+   0.49,
+   0.289,
+   0.047
+  ]
+ },
+ "ownership": [
+  {
+   "dk_pct": {
+    "FLEX": 4.49,
+    "WR": 37.17
+   },
+   "fpts": 14.0,
+   "name": "Puka Nacua",
+   "pct": 41.68,
+   "pos": "WR",
+   "salary": 8100,
+   "team": "LAR"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 5.28,
+    "TE": 29.84
+   },
+   "fpts": 23.9,
+   "name": "Isaiah Likely",
+   "pct": 35.14,
+   "pos": "TE",
+   "salary": 4800,
+   "team": "NYG"
+  },
+  {
+   "dk_pct": {
+    "DST": 31.76
+   },
+   "fpts": 4.0,
+   "name": "Panthers",
+   "pct": 31.77,
+   "pos": "DST",
+   "salary": 2500,
+   "team": "CAR"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.09,
+    "WR": 25.97
+   },
+   "fpts": 12.2,
+   "name": "Drake London",
+   "pct": 27.08,
+   "pos": "WR",
+   "salary": 7000,
+   "team": "ATL"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 3.45,
+    "RB": 21.67
+   },
+   "fpts": 9.7,
+   "name": "Kyren Williams",
+   "pct": 25.13,
+   "pos": "RB",
+   "salary": 6800,
+   "team": "LAR"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.32,
+    "RB": 22.94
+   },
+   "fpts": 7.3,
+   "name": "Bijan Robinson",
+   "pct": 24.27,
+   "pos": "RB",
+   "salary": 8700,
+   "team": "ATL"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.98,
+    "WR": 23.04
+   },
+   "fpts": 31.5,
+   "name": "Malik Nabers",
+   "pct": 24.03,
+   "pos": "WR",
+   "salary": 6500,
+   "team": "NYG"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 3.3,
+    "RB": 19.94
+   },
+   "fpts": 30.9,
+   "name": "Kenneth Walker III",
+   "pct": 23.26,
+   "pos": "RB",
+   "salary": 8500,
+   "team": "KC"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 3.81,
+    "WR": 17.45
+   },
+   "fpts": 14.3,
+   "name": "Xavier Worthy",
+   "pct": 21.27,
+   "pos": "WR",
+   "salary": 4600,
+   "team": "KC"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.29,
+    "WR": 19.86
+   },
+   "fpts": 25.7,
+   "name": "Germie Bernard",
+   "pct": 21.16,
+   "pos": "WR",
+   "salary": 4000,
+   "team": "PIT"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 7.42,
+    "TE": 12.02
+   },
+   "fpts": 11.0,
+   "name": "Brock Bowers",
+   "pct": 19.45,
+   "pos": "TE",
+   "salary": 7500,
+   "team": "LV"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.84,
+    "RB": 16.39
+   },
+   "fpts": 22.1,
+   "name": "Chuba Hubbard",
+   "pct": 18.24,
+   "pos": "RB",
+   "salary": 6300,
+   "team": "CAR"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 2.73,
+    "RB": 14.93
+   },
+   "fpts": 24.3,
+   "name": "James Cook III",
+   "pct": 17.67,
+   "pos": "RB",
+   "salary": 7400,
+   "team": "BUF"
+  },
+  {
+   "dk_pct": {
+    "QB": 16.1
+   },
+   "fpts": 16.88,
+   "name": "Matthew Stafford",
+   "pct": 16.1,
+   "pos": "QB",
+   "salary": 6400,
+   "team": "LAR"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 3.08,
+    "RB": 12.21
+   },
+   "fpts": 15.8,
+   "name": "Ashton Jeanty",
+   "pct": 15.3,
+   "pos": "RB",
+   "salary": 6500,
+   "team": "LV"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.94,
+    "RB": 14.18
+   },
+   "fpts": 22.1,
+   "name": "Jonathan Taylor",
+   "pct": 15.13,
+   "pos": "RB",
+   "salary": 8000,
+   "team": "IND"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 5.3,
+    "TE": 9.55
+   },
+   "fpts": 5.2,
+   "name": "Tyler Higbee",
+   "pct": 14.86,
+   "pos": "TE",
+   "salary": 3400,
+   "team": "LAR"
+  },
+  {
+   "dk_pct": {
+    "QB": 14.48
+   },
+   "fpts": 18.3,
+   "name": "Josh Allen",
+   "pct": 14.49,
+   "pos": "QB",
+   "salary": 7500,
+   "team": "BUF"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.02,
+    "WR": 13.43
+   },
+   "fpts": 17.5,
+   "name": "Luther Burden III",
+   "pct": 14.47,
+   "pos": "WR",
+   "salary": 5400,
+   "team": "CHI"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.62,
+    "RB": 12.29
+   },
+   "fpts": 3.6,
+   "name": "Rhamondre Stevenson",
+   "pct": 13.91,
+   "pos": "RB",
+   "salary": 6000,
+   "team": "NE"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.95,
+    "WR": 12.04
+   },
+   "fpts": 15.7,
+   "name": "Jalen Coker",
+   "pct": 13.0,
+   "pos": "WR",
+   "salary": 5900,
+   "team": "CAR"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.83,
+    "WR": 10.76
+   },
+   "fpts": 26.7,
+   "name": "Tre Tucker",
+   "pct": 12.6,
+   "pos": "WR",
+   "salary": 4700,
+   "team": "LV"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 2.36,
+    "RB": 10.04
+   },
+   "fpts": 5.8,
+   "name": "Tyler Allgeier",
+   "pct": 12.4,
+   "pos": "RB",
+   "salary": 4800,
+   "team": "ARI"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.07,
+    "WR": 10.92
+   },
+   "fpts": 6.9,
+   "name": "Davante Adams",
+   "pct": 12.0,
+   "pos": "WR",
+   "salary": 6600,
+   "team": "LAR"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.0,
+    "WR": 10.86
+   },
+   "fpts": 16.2,
+   "name": "Keenan Allen",
+   "pct": 11.86,
+   "pos": "WR",
+   "salary": 4300,
+   "team": "IND"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 2.45,
+    "TE": 9.32
+   },
+   "fpts": 12.1,
+   "name": "Dallas Goedert",
+   "pct": 11.78,
+   "pos": "TE",
+   "salary": 3900,
+   "team": "PHI"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.28,
+    "RB": 9.59
+   },
+   "fpts": 12.4,
+   "name": "Braelon Allen",
+   "pct": 10.88,
+   "pos": "RB",
+   "salary": 5700,
+   "team": "NYJ"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.88,
+    "RB": 9.23
+   },
+   "fpts": 23.0,
+   "name": "D'Andre Swift",
+   "pct": 10.12,
+   "pos": "RB",
+   "salary": 6700,
+   "team": "CHI"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.81,
+    "WR": 9.18
+   },
+   "fpts": 6.9,
+   "name": "Rome Odunze",
+   "pct": 9.99,
+   "pos": "WR",
+   "salary": 4900,
+   "team": "CHI"
+  },
+  {
+   "dk_pct": {
+    "QB": 9.98
+   },
+   "fpts": 8.48,
+   "name": "Jameis Winston",
+   "pct": 9.99,
+   "pos": "QB",
+   "salary": 5100,
+   "team": "NYG"
+  },
+  {
+   "dk_pct": {
+    "QB": 9.85
+   },
+   "fpts": 22.52,
+   "name": "Kirk Cousins",
+   "pct": 9.86,
+   "pos": "QB",
+   "salary": 5400,
+   "team": "LV"
+  },
+  {
+   "dk_pct": {
+    "DST": 9.07
+   },
+   "fpts": 4.0,
+   "name": "Jets",
+   "pct": 9.07,
+   "pos": "DST",
+   "salary": 2200,
+   "team": "NYJ"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.09,
+    "RB": 7.72
+   },
+   "fpts": 15.0,
+   "name": "Dameon Pierce",
+   "pct": 8.82,
+   "pos": "RB",
+   "salary": 5100,
+   "team": "PHI"
+  },
+  {
+   "dk_pct": {
+    "DST": 8.17
+   },
+   "fpts": 9.0,
+   "name": "Browns",
+   "pct": 8.17,
+   "pos": "DST",
+   "salary": 2500,
+   "team": "CLE"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.81,
+    "WR": 7.15
+   },
+   "fpts": 2.5,
+   "name": "Denzel Boston",
+   "pct": 7.96,
+   "pos": "WR",
+   "salary": 5500,
+   "team": "CLE"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 2.96,
+    "TE": 4.82
+   },
+   "fpts": 10.8,
+   "name": "Dalton Kincaid",
+   "pct": 7.79,
+   "pos": "TE",
+   "salary": 5100,
+   "team": "BUF"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.36,
+    "WR": 7.38
+   },
+   "fpts": 14.3,
+   "name": "Chris Olave",
+   "pct": 7.74,
+   "pos": "WR",
+   "salary": 7600,
+   "team": "NO"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.64,
+    "WR": 7.1
+   },
+   "fpts": 19.0,
+   "name": "Carnell Tate",
+   "pct": 7.74,
+   "pos": "WR",
+   "salary": 5000,
+   "team": "TEN"
+  },
+  {
+   "dk_pct": {
+    "QB": 7.5
+   },
+   "fpts": 19.5,
+   "name": "Caleb Williams",
+   "pct": 7.51,
+   "pos": "QB",
+   "salary": 6200,
+   "team": "CHI"
+  },
+  {
+   "dk_pct": {
+    "QB": 7.25
+   },
+   "fpts": 19.84,
+   "name": "Bryce Young",
+   "pct": 7.26,
+   "pos": "QB",
+   "salary": 5700,
+   "team": "CAR"
+  }
+ ],
+ "points": {
+  "cash_line": 139.6,
+  "first": 210.5,
+  "median": 124.060005,
+  "top_0_1pct": 187.37999,
+  "top_10pct": 151.5,
+  "top_1pct": 172.94
+ },
+ "rank_points": [
+  [
+   1,
+   210.5
+  ],
+  [
+   2,
+   209.2
+  ],
+  [
+   5,
+   202.95999
+  ],
+  [
+   10,
+   201.09999
+  ],
+  [
+   20,
+   198.27998
+  ],
+  [
+   50,
+   193.83998
+  ],
+  [
+   100,
+   190.33998
+  ],
+  [
+   200,
+   186.21999
+  ],
+  [
+   500,
+   180.63998
+  ],
+  [
+   1000,
+   176.27998
+  ],
+  [
+   2000,
+   171.22
+  ],
+  [
+   5000,
+   163.45999
+  ],
+  [
+   10000,
+   156.68
+  ],
+  [
+   20000,
+   148.7
+  ],
+  [
+   50000,
+   134.38
+  ],
+  [
+   100000,
+   116.899994
+  ],
+  [
+   158904,
+   0.0
+  ]
+ ],
+ "sha256": "660a868a27f0bf2eedb1fb44dc6af13f67f0cd89005e1a33c35cf9ba7eb73d8e",
+ "shape": {
+  "bring_back_pct": 32.13,
+  "dst_vs_own_qb_pct": 0.697,
+  "resolved": 158819,
+  "salary_at_cap_pct": 49.59,
+  "salary_mean": 49879.2,
+  "salary_median": 49900,
+  "stack_pct": [
+   16.96,
+   48.42,
+   32.43,
+   2.19
+  ],
+  "unresolved": 0
+ },
+ "top_lineups": [
+  {
+   "lineup": [
+    [
+     "DST",
+     "Chiefs"
+    ],
+    [
+     "FLEX",
+     "Kenneth Walker III"
+    ],
+    [
+     "QB",
+     "Michael Penix Jr."
+    ],
+    [
+     "RB",
+     "D'Andre Swift"
+    ],
+    [
+     "RB",
+     "Chuba Hubbard"
+    ],
+    [
+     "TE",
+     "Isaiah Likely"
+    ],
+    [
+     "WR",
+     "Malik Nabers"
+    ],
+    [
+     "WR",
+     "Xavier Worthy"
+    ],
+    [
+     "WR",
+     "Germie Bernard"
+    ]
+   ],
+   "points": 210.5,
+   "rank": 1
+  },
+  {
+   "lineup": [
+    [
+     "DST",
+     "Titans"
+    ],
+    [
+     "FLEX",
+     "Isaiah Likely"
+    ],
+    [
+     "QB",
+     "Michael Penix Jr."
+    ],
+    [
+     "RB",
+     "Kenneth Walker III"
+    ],
+    [
+     "RB",
+     "Chuba Hubbard"
+    ],
+    [
+     "TE",
+     "Brock Bowers"
+    ],
+    [
+     "WR",
+     "Malik Nabers"
+    ],
+    [
+     "WR",
+     "Carnell Tate"
+    ],
+    [
+     "WR",
+     "Germie Bernard"
+    ]
+   ],
+   "points": 209.2,
+   "rank": 2
+  },
+  {
+   "lineup": [
+    [
+     "DST",
+     "Chiefs"
+    ],
+    [
+     "FLEX",
+     "Michael Mayer"
+    ],
+    [
+     "QB",
+     "Kirk Cousins"
+    ],
+    [
+     "RB",
+     "Kenneth Walker III"
+    ],
+    [
+     "RB",
+     "James Cook III"
+    ],
+    [
+     "TE",
+     "Kyle Pitts Sr."
+    ],
+    [
+     "WR",
+     "Chris Olave"
+    ],
+    [
+     "WR",
+     "Malik Nabers"
+    ],
+    [
+     "WR",
+     "Germie Bernard"
+    ]
+   ],
+   "points": 203.72,
+   "rank": 3
+  },
+  {
+   "lineup": [
+    [
+     "DST",
+     "Titans"
+    ],
+    [
+     "FLEX",
+     "Isaiah Likely"
+    ],
+    [
+     "QB",
+     "Kirk Cousins"
+    ],
+    [
+     "RB",
+     "Kenneth Walker III"
+    ],
+    [
+     "RB",
+     "James Cook III"
+    ],
+    [
+     "TE",
+     "Brock Bowers"
+    ],
+    [
+     "WR",
+     "Luther Burden III"
+    ],
+    [
+     "WR",
+     "Tre Tucker"
+    ],
+    [
+     "WR",
+     "Germie Bernard"
+    ]
+   ],
+   "points": 203.51999,
+   "rank": 4
+  },
+  {
+   "lineup": [
+    [
+     "DST",
+     "Titans"
+    ],
+    [
+     "FLEX",
+     "Jalen Royals"
+    ],
+    [
+     "QB",
+     "Tyler Shough"
+    ],
+    [
+     "RB",
+     "Kenneth Walker III"
+    ],
+    [
+     "RB",
+     "James Cook III"
+    ],
+    [
+     "TE",
+     "Isaiah Likely"
+    ],
+    [
+     "WR",
+     "Chris Olave"
+    ],
+    [
+     "WR",
+     "Malik Nabers"
+    ],
+    [
+     "WR",
+     "Germie Bernard"
+    ]
+   ],
+   "points": 202.95999,
+   "rank": 5
+  }
+ ],
+ "with_lineup": 158819
+}

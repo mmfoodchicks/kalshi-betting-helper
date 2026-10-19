@@ -1,0 +1,26 @@
+{
+ "196653900": {
+  "cash_line": 139.6,
+  "draft_group_id": 154941,
+  "entries": 158904,
+  "final": true,
+  "first": 210.5,
+  "kind": "classic",
+  "name": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st, $100K Leaderboard Eligible]",
+  "sha256": "660a868a27f0bf2eedb1fb44dc6af13f67f0cd89005e1a33c35cf9ba7eb73d8e",
+  "source": "the owner's final export, summarized off the PC and committed (2026-10-19); the export itself stays out of git",
+  "starts": "2026-10-18T17:00:00.0000000Z"
+ },
+ "196786588": {
+  "cash_line": 93.68,
+  "draft_group_id": 154959,
+  "entries": 78431,
+  "final": true,
+  "first": 117.33999,
+  "kind": "showdown",
+  "name": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (DAL @ GB)",
+  "sha256": "41db4790b2c69049ee8c0363fd8572cb66b4a2111018d3b877afd9982bc60f37",
+  "source": "the owner's final export, summarized off the PC and committed (2026-10-19); the export itself stays out of git",
+  "starts": "2026-10-19T00:20:00.0000000Z"
+ }
+}

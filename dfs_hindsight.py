@@ -386,9 +386,25 @@ def due():
         rows = c.execute("SELECT event_key, draft_group_id, MIN(event_date) d, MAX(mode) mode FROM dfs_builds "
                          "WHERE sport='nfl' AND graded=1 AND backtest=0 AND draft_group_id IS NOT NULL "
                          "GROUP BY event_key, draft_group_id").fetchall()
-        have = {r["event_key"] for r in c.execute("SELECT event_key FROM dfs_actuals WHERE sport='nfl_hindsight'")}
-    return [(r["event_key"], int(r["draft_group_id"]), r["d"] or "") for r in rows
-            if f"{r['event_key']}:{r['draft_group_id']}" not in have and (r["mode"] or "") != "showdown"]
+        done = {r["event_key"]: r["payload"] for r in
+                c.execute("SELECT event_key, payload FROM dfs_actuals WHERE sport='nfl_hindsight'")}
+    out = []
+    for r in rows:
+        if (r["mode"] or "") == "showdown":
+            continue
+        key = f"{r['event_key']}:{r['draft_group_id']}"
+        if key in done:
+            # a row stored before its contest's standings were read has no
+            # finishes: once a summary for the draft group exists, the slate
+            # is due ONCE more (week 6's export came the morning after)
+            try:
+                has_field = bool(json.loads(done[key] or "{}").get("field"))
+            except ValueError:
+                has_field = True
+            if has_field or not _fields_for(int(r["draft_group_id"])):
+                continue
+        out.append((r["event_key"], int(r["draft_group_id"]), r["d"] or ""))
+    return out
 
 
 def tick(limit=1):
