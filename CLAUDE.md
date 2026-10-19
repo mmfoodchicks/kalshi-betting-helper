@@ -212,6 +212,14 @@ data-only `sim-history` branch (which never deploys):
   `casual_pct` (the calibrated field it replaced) beside `field_pct`;
   `research/cl_own_w7b.py` (written before week 7) KEEPS the field only if it
   beats `casual_pct` on week 7's top 40, else `FIELD_MODEL = "softmax"`.
+  **Slot-allocation v1** (`research/cl_slot.py`, frozen 2026-09-20) PASSED its
+  held-out week 2 (`research/cl_week2.py postgame`, clean run at ac09ae4,
+  `research/reports/cl_week2.md`): slot cross-entropy 23.24 -> 22.04, salary
+  Wasserstein-1 $920 -> $36 (mean $49,839 vs real $49,871), all four
+  secondary seeds the same way. Its FLEX allocation and spend mechanism are not
+  in production; joining them to the optimizer field is a change to test
+  first. NEVER edit dfs_tourney.py while a frozen harness runs: they rebuild
+  variants from the source on disk (the first week-2 run refused mid-way).
 - **The NHL deep stack** (2026-10-16): `nhl_pbp.py` turns the league's own
   feed (api-web.nhle.com -- strength states, shooter and goalie, shot type and
   location; ESPN has no strength states) into fourteen-int event records and

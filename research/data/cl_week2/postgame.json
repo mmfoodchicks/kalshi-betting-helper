@@ -1,0 +1,1248 @@
+{
+ "meta": {
+  "contest": 195648007,
+  "draft_group": 153428,
+  "export": {
+   "committed": false,
+   "contest_detail_at_freeze": {
+    "draft_group_id": 153428,
+    "entry_fee": 20.0,
+    "first_prize": 1000000.0,
+    "max_entries": 176470,
+    "name": "NFL $3M Fantasy Football Millionaire [$1M to 1st]",
+    "places_paid": 38825,
+    "prize_pool": 3000000.0,
+    "starts": "2026-09-20T17:00:00.0000000Z",
+    "state": "Upcoming"
+   },
+   "contest_id": 195648007,
+   "csv_bytes": 35167961,
+   "csv_mtime_in_zip": "2026-09-21 00:03:48",
+   "csv_sha256": "497e9e538af765ba5d5a50797d21c61280a92bbbc2b714fccd46d93b8110bc57",
+   "frozen_utc": "2026-10-18 23:22:33 UTC",
+   "gz_bytes": 5983091,
+   "gz_sha256": "40bf8c709442891139615821ebb9aea1418018606b31e231c446d13eb8e1dc96",
+   "kind": "classic",
+   "note": "week-2 held-out contest for slot-allocation v1: frozen after the game, scored by research.cl_week2 postgame against the pre-lock input receipt",
+   "prospective": true,
+   "rows_excluding_header": 172761,
+   "why_not_committed": "6.0 MB gzipped against a small repository Render clones on every deploy; the bytes stay with the owner's zip and are pinned here by hash",
+   "zip_sha256": "1b8337c4bf88580d000ec79a42a0ed3b6c2918d9bfa210cb5543a731df074f4e"
+  },
+  "finished_utc": "2026-10-19 01:01:00 UTC",
+  "input": {
+   "built_ts": 1789856108.0,
+   "built_utc": "2026-09-19 22:15:08 UTC",
+   "bytes": 974110,
+   "draft_group": 153428,
+   "fetched_utc": "2026-09-20 04:51:49 UTC",
+   "field_only": 26,
+   "kind": "served_snapshot",
+   "lock_utc": "2026-09-20 17:00:00 UTC",
+   "minutes_before_lock": 1124.9,
+   "path": "research/data/cl_week2/served_board_153428.json",
+   "pinned_source": "the app's served classic board pulled by .github/workflows/error-log.yml into sim-history as errors/tourney-153428.json (commit f480566, committed 2026-09-20 04:51:49 UTC), copied byte for byte",
+   "players": 260,
+   "pool_after_served_pool": 260,
+   "pool_sig": "adb10de083ab283b",
+   "sha256": "c858bf10a08c4c67b1e709e283906cb2a2fc24c23a5b945889002880d5f62a49",
+   "slate_identity": "ARI/ATL/BAL/CAR/CHI/CIN/CLE/DAL/DEN/GB/HOU/JAX/LAC/LV/MIA/MIN/NE/NO/NYJ/PHI/PIT/SEA/SF/TB/TEN/WAS 2026-09-20",
+   "source": {
+    "branch": "sim-history",
+    "commit": "f480566584d33d49a273a305b4d7d4cc313fe304",
+    "path": "errors/tourney-153428.json",
+    "workflow": ".github/workflows/error-log.yml"
+   }
+  },
+  "lock_utc": "2026-09-20 17:00:00 UTC",
+  "no_live_fetch": true,
+  "provenance": {
+   "commit": "ac09ae4",
+   "data_split": null,
+   "dirty": false,
+   "model": "frozen candidate and current family; nothing fitted",
+   "seed": {
+    "primary": 20260913,
+    "secondary": [
+     20260914,
+     20260915,
+     20260916,
+     20260917
+    ]
+   },
+   "source_files": 77,
+   "source_sha": "a93134290b778f4a1646db5a5a37adc197c73aeb5708c701cdebacf9c7e271f4",
+   "worlds": 171257
+  },
+  "receipt": "research/data/cl_week2/week2_input_receipt.json",
+  "seconds": 4431.6,
+  "stage": "week 2 post-game: slot-allocation v1 against the untouched current family, the frozen protocol, one command",
+  "verify": {
+   "checked_utc": "2026-10-18 23:47:09 UTC",
+   "cl_slot_file_sha256": "a8e3eba302fed269dc65bc55cc68d6fc29a32c6dc1379d39505f79ba44844cd3",
+   "cl_slot_file_sha256_at_freeze": "82d6c9a2e99a2d0f2f834fafce589a68da3bd3fb5f4bd93cace9c6aecb02940b",
+   "classic_sample_sha256": "987d30db002cf1692e6bbbec664e9499d97ca37448761b0337ddd86b0c7afd5e",
+   "failures": [],
+   "frozen_file_sha256": "62b83debdd0c9458831327b3fbc5e1479aea7d9ddedaf0ea902a87ece79f2080",
+   "parameters": {
+    "beta": 0.15,
+    "delta": 3.05371,
+    "eta": 0.0,
+    "flex_probs_rb_wr_te": [
+     0.4251,
+     0.3613,
+     0.2136
+    ]
+   },
+   "passed": true,
+   "producing_functions": [
+    "slot_sampler",
+    "sample",
+    "real_slot_shares",
+    "model_slot_shares",
+    "slot_cross_entropy",
+    "quantiles",
+    "wasserstein1",
+    "real_from_export",
+    "grade_field",
+    "_objective",
+    "_grid_pass",
+    "_delta_bisect",
+    "fit",
+    "score"
+   ],
+   "producing_functions_identical_to": "00e2943",
+   "sampler_base_sha256": "987d30db002cf1692e6bbbec664e9499d97ca37448761b0337ddd86b0c7afd5e",
+   "sampler_variant_sha256": "60cc8d2d207a5bb2cbf61b7820146f0cd81b8c00b40ede6d0aec7acfe053fe37"
+  }
+ },
+ "primary": {
+  "artifact": "research/data/cl_slot_week2_153428.json",
+  "candidate": {
+   "ce": 22.04207,
+   "kl": 2.82024,
+   "salary_mean": 49839.2,
+   "w1": 36.137
+  },
+  "cross_check_wrapper_reproduces_score": true,
+  "current_family": {
+   "ce": 23.24369,
+   "kl": 4.02185,
+   "salary_mean": 48950.5,
+   "w1": 920.239
+  },
+  "delta_candidate_minus_current": {
+   "ce": -1.20162,
+   "w1": -884.1
+  },
+  "seed": 20260913
+ },
+ "real_empirical": {
+  "active_entries": 171257,
+  "bring_back_pct": {
+   "all_entries": 33.31,
+   "among_stacked": 36.02,
+   "definition": "a WR or TE from the quarterback's opponent",
+   "model": 35.0
+  },
+  "collision": {
+   "compared": "distinct_pairs (the constant's definition: P(two random distinct entries hold the same lineup); the statistic dfs_tourney._collision reports for a sampled field); sum_p2 is the plug-in HHI, descriptive only, and cannot be compared to the constant: its floor 1/N exceeds the constant",
+   "distinct_pairs": 4.2059016100128626e-06,
+   "effective_lineups": 99551.5,
+   "effective_lineups_pairs": 237761.1,
+   "hhi_floor_1_over_n": 5.839177376691172e-06,
+   "identity_n_hhi_minus_1_over_n_minus_1": 4.205901610012859e-06,
+   "model_reported": 1.2e-07,
+   "ratio_hhi_over_model_not_like_for_like": 83.71,
+   "ratio_real_over_model": 35.05,
+   "sum_p2": 1.0045054427698501e-05
+  },
+  "distinct_lineups": 164899,
+  "dst_vs_own_qb_pct": {
+   "definition": "the defense's opponent is the quarterback's team",
+   "model": 8.0,
+   "real": 0.2
+  },
+  "dst_vs_own_rb_pct": 2.453,
+  "duplicates": {
+   "1-1": {
+    "entries": 161480,
+    "entry_share_pct": 94.29,
+    "lineups": 161480
+   },
+   "11-50": {
+    "entries": 734,
+    "entry_share_pct": 0.43,
+    "lineups": 44
+   },
+   "2-2": {
+    "entries": 5086,
+    "entry_share_pct": 2.97,
+    "lineups": 2543
+   },
+   "3-5": {
+    "entries": 2496,
+    "entry_share_pct": 1.46,
+    "lineups": 714
+   },
+   "51-plus": {
+    "entries": 667,
+    "entry_share_pct": 0.39,
+    "lineups": 5
+   },
+   "6-10": {
+    "entries": 794,
+    "entry_share_pct": 0.46,
+    "lineups": 113
+   }
+  },
+  "flex_position_pct": {
+   "RB": 50.75,
+   "TE": 16.7,
+   "WR": 32.55
+  },
+  "max_lineup_copies": 150,
+  "max_lineup_share_pct": 0.0876,
+  "max_ownership": {
+   "any_slot_pct": 47.29,
+   "any_slot_pct_of_all_rows": 46.88,
+   "by_slot_pct": {
+    "FLEX": 4.33,
+    "RB": 42.55
+   },
+   "model_target": 0.38,
+   "player": "Bijan Robinson"
+  },
+  "ownership_any_slot_pct": {
+   "49ers": 9.9056,
+   "AJ Barner": 0.3147,
+   "Aaron Jones Sr.": 21.7066,
+   "Aaron Rodgers": 0.2318,
+   "Adam Trautman": 0.0216,
+   "Adonai Mitchell": 0.8992,
+   "Alvin Kamara": 0.4245,
+   "Andrei Iosivas": 0.087,
+   "Antonio Williams": 2.8857,
+   "Ashton Jeanty": 15.1597,
+   "Austin Hooper": 0.0029,
+   "Baker Mayfield": 8.8569,
+   "Barion Brown": 0.0058,
+   "Bears": 2.2516,
+   "Ben Sinnott": 0.2558,
+   "Bengals": 2.5219,
+   "Bhayshul Tuten": 2.8431,
+   "Bijan Robinson": 47.2897,
+   "Blake Whiteheart": 0.0018,
+   "Bo Nix": 2.0373,
+   "Braelon Allen": 0.0502,
+   "Breece Hall": 9.1284,
+   "Brenton Strange": 1.4026,
+   "Brevyn Spann-Ford": 0.0543,
+   "Brian Robinson Jr.": 0.0677,
+   "Brian Thomas Jr.": 0.7906,
+   "Brock Purdy": 9.4746,
+   "Broncos": 4.248,
+   "Browns": 2.6241,
+   "Bryce Lance": 0.1781,
+   "Bryce Young": 5.6558,
+   "Buccaneers": 13.4774,
+   "Bucky Irving": 12.2249,
+   "C.J. Stroud": 2.0647,
+   "Cade Otton": 1.228,
+   "Caleb Douglas": 5.49,
+   "Caleb Williams": 9.0922,
+   "Calvin Ridley": 0.0467,
+   "Cam Ward": 0.1489,
+   "Cardinals": 5.0561,
+   "Carnell Tate": 0.459,
+   "Carson Wentz": 9.4577,
+   "CeeDee Lamb": 19.0112,
+   "Chargers": 2.5126,
+   "Charlie Kolar": 0.0175,
+   "Chase Brown": 1.7027,
+   "Chris Bell": 0.1034,
+   "Chris Brooks": 0.0549,
+   "Chris Godwin Jr.": 3.7108,
+   "Chris Moore": 0.3533,
+   "Chris Olave": 4.4751,
+   "Chris Rodriguez Jr.": 0.0385,
+   "Christian McCaffrey": 22.8107,
+   "Christian Watson": 11.5032,
+   "Chuba Hubbard": 4.7017,
+   "Cole Kmet": 0.463,
+   "Colston Loveland": 10.8609,
+   "Commanders": 0.2756,
+   "Cooper Kupp": 0.4198,
+   "Cooper Rush": 0.7065,
+   "Courtland Sutton": 1.0861,
+   "Cowboys": 0.8589,
+   "D'Andre Swift": 5.3253,
+   "DK Metcalf": 6.9743,
+   "Dak Prescott": 13.0564,
+   "Dallas Goedert": 8.0925,
+   "Dalton Schultz": 22.5474,
+   "Daniel Bellinger": 0.0047,
+   "Darnell Washington": 0.0683,
+   "Darren Waller": 0.7673,
+   "David Montgomery": 10.3137,
+   "David Njoku": 2.1009,
+   "De'Von Achane": 4.1137,
+   "DeMario Douglas": 2.2037,
+   "DeVonta Smith": 3.6746,
+   "DeeJay Dallas": 0.0339,
+   "Deebo Samuel Sr.": 7.3416,
+   "Demarcus Robinson": 1.03,
+   "Demond Claiborne": 0.1261,
+   "Denzel Boston": 0.5372,
+   "Derrick Henry": 37.4922,
+   "Deshaun Watson": 0.5646,
+   "Devaughn Vele": 9.2148,
+   "Devontez Walker": 0.7235,
+   "Dolphins": 1.0721,
+   "Dontayvion Wicks": 2.5091,
+   "Drake London": 3.347,
+   "Drake Maye": 1.6811,
+   "Drew Lock": 1.2105,
+   "Durham Smythe": 0.007,
+   "Dyami Brown": 0.0228,
+   "Eagles": 6.1049,
+   "Eli Raridon": 0.0444,
+   "Elic Ayomanor": 0.0327,
+   "Elijah Arroyo": 0.0204,
+   "Elijah Higgins": 0.0006,
+   "Emanuel Wilson": 0.0006,
+   "Emari Demercado": 0.0041,
+   "Emeka Egbuka": 13.5481,
+   "Erick All Jr.": 0.0012,
+   "Evan Engram": 1.771,
+   "Falcons": 1.1089,
+   "Foster Moreau": 0.0374,
+   "Garrett Wilson": 12.1542,
+   "Geno Smith": 1.0744,
+   "George Holani": 0.0298,
+   "George Kittle": 4.4442,
+   "George Pickens": 18.7654,
+   "Germie Bernard": 0.108,
+   "Greg Dulcich": 0.1495,
+   "Gunnar Helm": 0.188,
+   "Harold Fannin Jr.": 2.1751,
+   "Hunter Henry": 2.6597,
+   "Ian Thomas": 0.0035,
+   "Isaiah Bond": 0.0058,
+   "Isaiah Davis": 0.0012,
+   "Isaiah Williams": 0.0204,
+   "J.K. Dobbins": 2.5126,
+   "Ja'Marr Chase": 14.1366,
+   "Jack Bech": 0.2137,
+   "Jacoby Brissett": 0.7352,
+   "Jacory Croskey-Merritt": 3.173,
+   "Jadarian Price": 3.7552,
+   "Jaguars": 9.2703,
+   "Jahan Dotson": 0.0508,
+   "Jake Ferguson": 4.6386,
+   "Jakobi Meyers": 0.9664,
+   "Jalen Coker": 15.7868,
+   "Jalen Hurts": 2.2125,
+   "Jalen McMillan": 0.2394,
+   "Jalen Nailor": 0.3305,
+   "Jared Wayne": 0.0199,
+   "Javonte Williams": 17.2384,
+   "Jaxon Smith-Njigba": 10.0989,
+   "Jayden Daniels": 8.8323,
+   "Jayden Reed": 2.1114,
+   "Jaylen Waddle": 3.2553,
+   "Jaylen Warren": 0.6225,
+   "Jaylen Wright": 0.0035,
+   "Jaylin Noel": 1.6175,
+   "Jeremiyah Love": 1.0651,
+   "Jerry Jeudy": 0.1886,
+   "Jets": 4.5873,
+   "Joe Burrow": 2.2341,
+   "John Bates": 0.7287,
+   "Jonah Coleman": 0.1355,
+   "Jonathon Brooks": 0.1121,
+   "Jonnu Smith": 0.0969,
+   "Jordan Addison": 3.6606,
+   "Jordan Love": 4.453,
+   "Josh Oliver": 0.139,
+   "Justice Hill": 0.0724,
+   "Justin Herbert": 2.8075,
+   "Justin Jefferson": 18.8716,
+   "Juwan Johnson": 4.3695,
+   "KC Concepcion Jr.": 1.6175,
+   "KaVontae Turpin": 0.0707,
+   "Kaelon Black": 0.6137,
+   "Kalif Raymond": 4.0255,
+   "Kayshon Boutte": 3.8247,
+   "Kaytron Allen": 0.0093,
+   "Keaton Mitchell": 0.035,
+   "Kendre Miller": 0.0187,
+   "Kendrick Bourne": 1.0224,
+   "Kenny Gainwell": 0.1571,
+   "Kenyon Sadiq": 1.6478,
+   "Kirk Cousins": 0.2482,
+   "Kyle Monangai": 1.0861,
+   "Kyle Pitts Sr.": 0.8765,
+   "Kyle Williams": 0.1255,
+   "LaJohntay Wester": 0.4741,
+   "Ladd McConkey": 1.235,
+   "Lamar Jackson": 5.4228,
+   "LeQuint Allen Jr.": 0.0018,
+   "Luke Farrell": 0.2768,
+   "Luther Burden III": 10.6209,
+   "Mack Hollins": 1.5626,
+   "Makai Lemon": 0.2511,
+   "Malik Benson": 0.0012,
+   "Malik Washington": 1.0826,
+   "Malik Willis": 0.8537,
+   "MarShawn Lloyd": 0.915,
+   "Mark Andrews": 12.0614,
+   "Marlin Klein": 0.0216,
+   "Marvin Harrison Jr.": 0.7515,
+   "Mason Taylor": 0.0701,
+   "Matt Hibner": 0.0216,
+   "Matthew Golden": 14.9244,
+   "Michael Mayer": 13.1516,
+   "Michael Wilson": 1.0458,
+   "Mike Evans": 8.0908,
+   "Mike Gesicki": 3.8924,
+   "Mike Washington Jr.": 0.0368,
+   "Nate Boerkircher": 0.0018,
+   "Noah Fant": 0.3889,
+   "Olamide Zaccheaus": 0.0134,
+   "Ollie Gordon II": 0.0012,
+   "Omarion Hampton": 3.9198,
+   "Oronde Gadsden II": 0.2768,
+   "Oscar Delp": 0.007,
+   "Packers": 1.1637,
+   "Panthers": 4.8891,
+   "Parker Washington": 9.3357,
+   "Pat Bryant": 1.6058,
+   "Pat Freiermuth": 1.3068,
+   "Patriots": 5.3037,
+   "Quentin Johnston": 7.2318,
+   "Quinshon Judkins": 1.1036,
+   "RJ Harvey": 0.0163,
+   "Rachaad White": 0.1261,
+   "Raheim Sanders": 0.0269,
+   "Raiders": 1.8195,
+   "Rashid Shaheed": 0.4397,
+   "Rashod Bateman": 7.9664,
+   "Ravens": 5.7814,
+   "Rhamondre Stevenson": 3.9117,
+   "Rico Dowdle": 0.1915,
+   "Roman Wilson": 1.7442,
+   "Rome Odunze": 4.8214,
+   "Romeo Doubs": 1.329,
+   "Ryan Flournoy": 0.7877,
+   "Saints": 0.4806,
+   "Samaje Perine": 0.0292,
+   "Saquon Barkley": 10.6191,
+   "Seahawks": 4.2754,
+   "Steelers": 4.6135,
+   "Stefon Diggs": 9.2084,
+   "T.J. Hockenson": 3.994,
+   "Tai Felton": 0.0193,
+   "Tank Bigsby": 0.0298,
+   "Ted Hurst III": 0.2622,
+   "Tee Higgins": 3.3879,
+   "Terry McLaurin": 14.1787,
+   "Tetairoa McMillan": 5.7084,
+   "Texans": 2.084,
+   "Titans": 2.6259,
+   "Tommy Tremble": 0.3182,
+   "Tony Pollard": 0.1968,
+   "Tory Horton": 0.0292,
+   "Travis Etienne Jr.": 1.635,
+   "Tre Tucker": 0.7054,
+   "Tre' Harris": 0.9868,
+   "TreVeyon Henderson": 1.2572,
+   "Trevor Lawrence": 3.7996,
+   "Trey McBride": 5.6208,
+   "Troy Franklin": 0.0479,
+   "Tucker Kraft": 3.0866,
+   "Tyjae Spears": 0.0321,
+   "Tyler Allgeier": 0.216,
+   "Tyler Shough": 3.0878,
+   "Vikings": 1.0878,
+   "Wan'Dale Robinson": 0.9734,
+   "Will Kacmarek": 0.0012,
+   "Will Shipley": 0.0047,
+   "Woody Marks": 0.2289,
+   "Xavier Hutchinson": 5.7166,
+   "Xavier Legette": 0.042,
+   "Zachariah Branch": 0.0123
+  },
+  "ownership_top": [
+   {
+    "any_slot_pct": 47.29,
+    "name": "Bijan Robinson",
+    "pos": "RB",
+    "team": "ATL"
+   },
+   {
+    "any_slot_pct": 37.49,
+    "name": "Derrick Henry",
+    "pos": "RB",
+    "team": "BAL"
+   },
+   {
+    "any_slot_pct": 22.81,
+    "name": "Christian McCaffrey",
+    "pos": "RB",
+    "team": "SF"
+   },
+   {
+    "any_slot_pct": 22.55,
+    "name": "Dalton Schultz",
+    "pos": "TE",
+    "team": "HOU"
+   },
+   {
+    "any_slot_pct": 21.71,
+    "name": "Aaron Jones Sr.",
+    "pos": "RB",
+    "team": "MIN"
+   },
+   {
+    "any_slot_pct": 19.01,
+    "name": "CeeDee Lamb",
+    "pos": "WR",
+    "team": "DAL"
+   },
+   {
+    "any_slot_pct": 18.87,
+    "name": "Justin Jefferson",
+    "pos": "WR",
+    "team": "MIN"
+   },
+   {
+    "any_slot_pct": 18.77,
+    "name": "George Pickens",
+    "pos": "WR",
+    "team": "DAL"
+   },
+   {
+    "any_slot_pct": 17.24,
+    "name": "Javonte Williams",
+    "pos": "RB",
+    "team": "DAL"
+   },
+   {
+    "any_slot_pct": 15.79,
+    "name": "Jalen Coker",
+    "pos": "WR",
+    "team": "CAR"
+   },
+   {
+    "any_slot_pct": 15.16,
+    "name": "Ashton Jeanty",
+    "pos": "RB",
+    "team": "LV"
+   },
+   {
+    "any_slot_pct": 14.92,
+    "name": "Matthew Golden",
+    "pos": "WR",
+    "team": "GB"
+   },
+   {
+    "any_slot_pct": 14.18,
+    "name": "Terry McLaurin",
+    "pos": "WR",
+    "team": "WAS"
+   },
+   {
+    "any_slot_pct": 14.14,
+    "name": "Ja'Marr Chase",
+    "pos": "WR",
+    "team": "CIN"
+   },
+   {
+    "any_slot_pct": 13.55,
+    "name": "Emeka Egbuka",
+    "pos": "WR",
+    "team": "TB"
+   },
+   {
+    "any_slot_pct": 13.48,
+    "name": "Buccaneers",
+    "pos": "DST",
+    "team": "TB"
+   },
+   {
+    "any_slot_pct": 13.15,
+    "name": "Michael Mayer",
+    "pos": "TE",
+    "team": "LV"
+   },
+   {
+    "any_slot_pct": 13.06,
+    "name": "Dak Prescott",
+    "pos": "QB",
+    "team": "DAL"
+   },
+   {
+    "any_slot_pct": 12.22,
+    "name": "Bucky Irving",
+    "pos": "RB",
+    "team": "TB"
+   },
+   {
+    "any_slot_pct": 12.15,
+    "name": "Garrett Wilson",
+    "pos": "WR",
+    "team": "NYJ"
+   }
+  ],
+  "players_from_one_game_max_pct": {
+   "1": 0.51,
+   "2": 32.13,
+   "3": 39.61,
+   "4": 21.43,
+   "5": 5.39,
+   "6": 0.79,
+   "7": 0.12,
+   "8": 0.02
+  },
+  "players_from_one_team_max_pct": {
+   "1": 6.38,
+   "2": 53.8,
+   "3": 34.98,
+   "4": 4.48,
+   "5": 0.33,
+   "6": 0.03,
+   "7": 0.0
+  },
+  "players_from_qb_game_pct": {
+   "1": 8.3,
+   "2": 29.56,
+   "3": 34.87,
+   "4": 20.98,
+   "5": 5.36,
+   "6": 0.79,
+   "7": 0.12,
+   "8": 0.02
+  },
+  "players_used": 258,
+  "pool_players": 260,
+  "punts_under_3000_pct": {
+   "0": 51.83,
+   "1": 47.03,
+   "2": 1.13,
+   "3": 0.01
+  },
+  "salary_used": {
+   "mean": 49871.0,
+   "median": 49900.0,
+   "model": 49400.0,
+   "p10_p25_p75_p90": [
+    49700.0,
+    49800.0,
+    50000.0,
+    50000.0
+   ],
+   "share_at_cap_pct": 49.76,
+   "share_ge_49500_pct": 95.6,
+   "share_le_48000_pct": 0.2
+  },
+  "share_from_150_max_users_pct": 16.76,
+  "stack_pct": {
+   "0_1_2_3plus": [
+    16.43,
+    56.03,
+    25.97,
+    1.57
+   ],
+   "definition": "WR/TE teammates of the quarterback, a back not counted (the sampler's definition)",
+   "model": [
+    17.4,
+    49.0,
+    28.9,
+    4.7
+   ],
+   "with_backs_counted": [
+    12.45,
+    48.63,
+    34.11,
+    4.81
+   ]
+  },
+  "top_lineups": [
+   {
+    "copies": 150,
+    "lineup": [
+     "Carson Wentz",
+     "Christian McCaffrey",
+     "Colston Loveland",
+     "Derrick Henry",
+     "George Pickens",
+     "Jets",
+     "Justin Jefferson",
+     "T.J. Hockenson",
+     "Terry McLaurin"
+    ]
+   },
+   {
+    "copies": 150,
+    "lineup": [
+     "Bijan Robinson",
+     "Buccaneers",
+     "Caleb Williams",
+     "David Montgomery",
+     "Emeka Egbuka",
+     "Jake Ferguson",
+     "Jordan Addison",
+     "Kalif Raymond",
+     "Travis Etienne Jr."
+    ]
+   },
+   {
+    "copies": 148,
+    "lineup": [
+     "Carson Wentz",
+     "Colston Loveland",
+     "George Pickens",
+     "Jadarian Price",
+     "Jordan Addison",
+     "Justin Jefferson",
+     "Saquon Barkley",
+     "Seahawks",
+     "Terry McLaurin"
+    ]
+   }
+  ],
+  "user_max_entry_brackets": {
+   "1": {
+    "entries": 39483,
+    "share_pct": 22.85
+   },
+   "10": {
+    "entries": 4200,
+    "share_pct": 2.43
+   },
+   "150": {
+    "entries": 28950,
+    "share_pct": 16.76
+   },
+   "2": {
+    "entries": 17832,
+    "share_pct": 10.32
+   },
+   "3": {
+    "entries": 12045,
+    "share_pct": 6.97
+   },
+   "4": {
+    "entries": 7740,
+    "share_pct": 4.48
+   },
+   "5": {
+    "entries": 9540,
+    "share_pct": 5.52
+   },
+   "6": {
+    "entries": 4944,
+    "share_pct": 2.86
+   }
+  }
+ },
+ "secondary_seeds": {
+  "delta_ce": {
+   "max": -1.20838,
+   "mean": -1.27687,
+   "min": -1.37033,
+   "n": 4,
+   "sd": 0.06767
+  },
+  "delta_w1": {
+   "max": -678.026,
+   "mean": -775.89325,
+   "min": -858.895,
+   "n": 4,
+   "sd": 74.83872
+  },
+  "reads": "stochastic sensitivity of the comparison; not five validations, not a seed choice",
+  "rows": [
+   {
+    "candidate": {
+     "ce": 22.03793,
+     "kl": 2.81609,
+     "salary_mean": 49838.9,
+     "w1": 36.437
+    },
+    "candidate_receipt": {
+     "acceptance_rate": 0.0869,
+     "accepted": 171257,
+     "incomplete_rows": 0,
+     "raw_draws": 1971174,
+     "rejected_by_delta": 1799557,
+     "requested": 171257,
+     "short": false
+    },
+    "current_calibration": {
+     "beta": 0.134573,
+     "kappa": -3.953125
+    },
+    "current_family": {
+     "ce": 23.30268,
+     "kl": 4.08085,
+     "salary_mean": 49040.6,
+     "w1": 830.363
+    },
+    "seed": 20260914
+   },
+   {
+    "candidate": {
+     "ce": 22.05356,
+     "kl": 2.83173,
+     "salary_mean": 49840.0,
+     "w1": 35.437
+    },
+    "candidate_receipt": {
+     "acceptance_rate": 0.0868,
+     "accepted": 171257,
+     "incomplete_rows": 0,
+     "raw_draws": 1972266,
+     "rejected_by_delta": 1800650,
+     "requested": 171257,
+     "short": false
+    },
+    "current_calibration": {
+     "beta": 0.132106,
+     "kappa": -3.953125
+    },
+    "current_family": {
+     "ce": 23.26194,
+     "kl": 4.0401,
+     "salary_mean": 48976.1,
+     "w1": 894.332
+    },
+    "seed": 20260915
+   },
+   {
+    "candidate": {
+     "ce": 22.05825,
+     "kl": 2.83642,
+     "salary_mean": 49839.3,
+     "w1": 36.137
+    },
+    "candidate_receipt": {
+     "acceptance_rate": 0.087,
+     "accepted": 171257,
+     "incomplete_rows": 0,
+     "raw_draws": 1968978,
+     "rejected_by_delta": 1797433,
+     "requested": 171257,
+     "short": false
+    },
+    "current_calibration": {
+     "beta": 0.135823,
+     "kappa": -3.953125
+    },
+    "current_family": {
+     "ce": 23.32226,
+     "kl": 4.10043,
+     "salary_mean": 49061.9,
+     "w1": 808.863
+    },
+    "seed": 20260916
+   },
+   {
+    "candidate": {
+     "ce": 22.03837,
+     "kl": 2.81653,
+     "salary_mean": 49839.4,
+     "w1": 35.537
+    },
+    "candidate_receipt": {
+     "acceptance_rate": 0.0867,
+     "accepted": 171257,
+     "incomplete_rows": 0,
+     "raw_draws": 1974414,
+     "rejected_by_delta": 1802966,
+     "requested": 171257,
+     "short": false
+    },
+    "current_calibration": {
+     "beta": 0.134997,
+     "kappa": -4.203125
+    },
+    "current_family": {
+     "ce": 23.4087,
+     "kl": 4.18687,
+     "salary_mean": 49157.3,
+     "w1": 713.563
+    },
+    "seed": 20260917
+   }
+  ],
+  "seeds": [
+   20260914,
+   20260915,
+   20260916,
+   20260917
+  ]
+ },
+ "support": {
+  "blank_entries": 69,
+  "contest_rows_excluding_header": 172761,
+  "definition": "conditional on fully representable entries: a lineup with any player outside the served pool is omitted (the frozen real_from_export)",
+  "excluded_entries": 1435,
+  "excluded_share_of_active_pct": 0.831,
+  "fully_representable_entries": 171257,
+  "malformed_lineups": 0,
+  "nonblank_active_entries": 172692,
+  "representable_share_of_active_pct": 99.169,
+  "roster_slot_mass_outside_support_pct": {
+   "DST": 0.0,
+   "FLEX": 0.258,
+   "QB": 0.027,
+   "RB": 0.034,
+   "TE": 0.053,
+   "WR": 0.152
+  },
+  "unsupported_players_by_exclusions": [
+   {
+    "excluded_entries": 227,
+    "name": "Elijah Sarratt",
+    "share_of_active_pct": 0.131
+   },
+   {
+    "excluded_entries": 117,
+    "name": "Jahdae Walker",
+    "share_of_active_pct": 0.068
+   },
+   {
+    "excluded_entries": 83,
+    "name": "Nico Collins",
+    "share_of_active_pct": 0.048
+   },
+   {
+    "excluded_entries": 75,
+    "name": "Drew Sample",
+    "share_of_active_pct": 0.043
+   },
+   {
+    "excluded_entries": 75,
+    "name": "Travis Hunter",
+    "share_of_active_pct": 0.043
+   },
+   {
+    "excluded_entries": 60,
+    "name": "Josh Cameron",
+    "share_of_active_pct": 0.035
+   },
+   {
+    "excluded_entries": 58,
+    "name": "Zay Flowers",
+    "share_of_active_pct": 0.034
+   },
+   {
+    "excluded_entries": 51,
+    "name": "Zavion Thomas",
+    "share_of_active_pct": 0.03
+   },
+   {
+    "excluded_entries": 42,
+    "name": "Hollywood Brown",
+    "share_of_active_pct": 0.024
+   },
+   {
+    "excluded_entries": 41,
+    "name": "Michael Pittman Jr.",
+    "share_of_active_pct": 0.024
+   },
+   {
+    "excluded_entries": 36,
+    "name": "Ameer Abdullah",
+    "share_of_active_pct": 0.021
+   },
+   {
+    "excluded_entries": 29,
+    "name": "Sean Tucker",
+    "share_of_active_pct": 0.017
+   },
+   {
+    "excluded_entries": 26,
+    "name": "Treylon Burks",
+    "share_of_active_pct": 0.015
+   },
+   {
+    "excluded_entries": 25,
+    "name": "Mitchell Evans",
+    "share_of_active_pct": 0.014
+   },
+   {
+    "excluded_entries": 24,
+    "name": "Dohnte Meyers",
+    "share_of_active_pct": 0.014
+   },
+   {
+    "excluded_entries": 22,
+    "name": "Jordan James",
+    "share_of_active_pct": 0.013
+   },
+   {
+    "excluded_entries": 21,
+    "name": "Jauan Jennings",
+    "share_of_active_pct": 0.012
+   },
+   {
+    "excluded_entries": 19,
+    "name": "Myles Price",
+    "share_of_active_pct": 0.011
+   },
+   {
+    "excluded_entries": 19,
+    "name": "Jonathan Mingo",
+    "share_of_active_pct": 0.011
+   },
+   {
+    "excluded_entries": 15,
+    "name": "Efton Chism III",
+    "share_of_active_pct": 0.009
+   },
+   {
+    "excluded_entries": 14,
+    "name": "Brenen Thompson",
+    "share_of_active_pct": 0.008
+   },
+   {
+    "excluded_entries": 14,
+    "name": "Jordan Mason",
+    "share_of_active_pct": 0.008
+   },
+   {
+    "excluded_entries": 13,
+    "name": "John Metchie III",
+    "share_of_active_pct": 0.008
+   },
+   {
+    "excluded_entries": 12,
+    "name": "Lil'Jordan Humphrey",
+    "share_of_active_pct": 0.007
+   },
+   {
+    "excluded_entries": 11,
+    "name": "Brady Russell",
+    "share_of_active_pct": 0.006
+   }
+  ],
+  "week1_representable_share_for_comparison_pct": 99.733
+ },
+ "timing_sensitivity": {
+  "candidate": {
+   "ce": 22.0456,
+   "kl": 2.82376,
+   "salary_mean": 49839.5,
+   "w1": 35.837
+  },
+  "candidate_receipt": {
+   "acceptance_rate": 0.0871,
+   "accepted": 171257,
+   "incomplete_rows": 0,
+   "raw_draws": 1966680,
+   "rejected_by_delta": 1795103,
+   "requested": 171257,
+   "short": false
+  },
+  "capture_stamp": "20260920T004709Z",
+  "captured_utc": "2026-09-20 00:47:24 UTC",
+  "current_family": {
+   "ce": 23.33896,
+   "kl": 4.11713,
+   "salary_mean": 49076.5,
+   "w1": 794.798
+  },
+  "hours_to_lock": 16.21,
+  "note": "the co-primaries here condition on entries representable on THIS pool, which is not the primary's support when the pools differ; the difference is stamped, not hidden",
+  "pool": {
+   "players": 260,
+   "reconstructed": true
+  },
+  "pool_differences_vs_primary": {
+   "depth_tag_differs": [
+    "David Njoku",
+    "Oronde Gadsden II"
+   ],
+   "field_only_differs": [],
+   "identical_pools": false,
+   "mismatches": {
+    "game": [],
+    "opp": [],
+    "pos": [],
+    "salary": [],
+    "team": []
+   },
+   "only_in_early_capture": [],
+   "only_in_primary": [],
+   "players": {
+    "common": 260,
+    "early_capture": 260,
+    "primary": 260
+   },
+   "projection": {
+    "abs_diff_ge_1": [],
+    "identical": 255,
+    "max_abs_diff": 0.5,
+    "mean_abs_diff": 0.008,
+    "players_compared": 260
+   }
+  },
+  "role": "input-timing sensitivity only; never decides",
+  "support": {
+   "blank_entries": 69,
+   "contest_rows_excluding_header": 172761,
+   "definition": "conditional on fully representable entries: a lineup with any player outside the served pool is omitted (the frozen real_from_export)",
+   "excluded_entries": 1435,
+   "excluded_share_of_active_pct": 0.831,
+   "fully_representable_entries": 171257,
+   "malformed_lineups": 0,
+   "nonblank_active_entries": 172692,
+   "representable_share_of_active_pct": 99.169,
+   "roster_slot_mass_outside_support_pct": {
+    "DST": 0.0,
+    "FLEX": 0.258,
+    "QB": 0.027,
+    "RB": 0.034,
+    "TE": 0.053,
+    "WR": 0.152
+   },
+   "unsupported_players_by_exclusions": [
+    {
+     "excluded_entries": 227,
+     "name": "Elijah Sarratt",
+     "share_of_active_pct": 0.131
+    },
+    {
+     "excluded_entries": 117,
+     "name": "Jahdae Walker",
+     "share_of_active_pct": 0.068
+    },
+    {
+     "excluded_entries": 83,
+     "name": "Nico Collins",
+     "share_of_active_pct": 0.048
+    },
+    {
+     "excluded_entries": 75,
+     "name": "Drew Sample",
+     "share_of_active_pct": 0.043
+    },
+    {
+     "excluded_entries": 75,
+     "name": "Travis Hunter",
+     "share_of_active_pct": 0.043
+    },
+    {
+     "excluded_entries": 60,
+     "name": "Josh Cameron",
+     "share_of_active_pct": 0.035
+    },
+    {
+     "excluded_entries": 58,
+     "name": "Zay Flowers",
+     "share_of_active_pct": 0.034
+    },
+    {
+     "excluded_entries": 51,
+     "name": "Zavion Thomas",
+     "share_of_active_pct": 0.03
+    },
+    {
+     "excluded_entries": 42,
+     "name": "Hollywood Brown",
+     "share_of_active_pct": 0.024
+    },
+    {
+     "excluded_entries": 41,
+     "name": "Michael Pittman Jr.",
+     "share_of_active_pct": 0.024
+    },
+    {
+     "excluded_entries": 36,
+     "name": "Ameer Abdullah",
+     "share_of_active_pct": 0.021
+    },
+    {
+     "excluded_entries": 29,
+     "name": "Sean Tucker",
+     "share_of_active_pct": 0.017
+    },
+    {
+     "excluded_entries": 26,
+     "name": "Treylon Burks",
+     "share_of_active_pct": 0.015
+    },
+    {
+     "excluded_entries": 25,
+     "name": "Mitchell Evans",
+     "share_of_active_pct": 0.014
+    },
+    {
+     "excluded_entries": 24,
+     "name": "Dohnte Meyers",
+     "share_of_active_pct": 0.014
+    },
+    {
+     "excluded_entries": 22,
+     "name": "Jordan James",
+     "share_of_active_pct": 0.013
+    },
+    {
+     "excluded_entries": 21,
+     "name": "Jauan Jennings",
+     "share_of_active_pct": 0.012
+    },
+    {
+     "excluded_entries": 19,
+     "name": "Myles Price",
+     "share_of_active_pct": 0.011
+    },
+    {
+     "excluded_entries": 19,
+     "name": "Jonathan Mingo",
+     "share_of_active_pct": 0.011
+    },
+    {
+     "excluded_entries": 15,
+     "name": "Efton Chism III",
+     "share_of_active_pct": 0.009
+    },
+    {
+     "excluded_entries": 14,
+     "name": "Brenen Thompson",
+     "share_of_active_pct": 0.008
+    },
+    {
+     "excluded_entries": 14,
+     "name": "Jordan Mason",
+     "share_of_active_pct": 0.008
+    },
+    {
+     "excluded_entries": 13,
+     "name": "John Metchie III",
+     "share_of_active_pct": 0.008
+    },
+    {
+     "excluded_entries": 12,
+     "name": "Lil'Jordan Humphrey",
+     "share_of_active_pct": 0.007
+    },
+    {
+     "excluded_entries": 11,
+     "name": "Brady Russell",
+     "share_of_active_pct": 0.006
+    }
+   ],
+   "week1_representable_share_for_comparison_pct": 99.733
+  }
+ },
+ "verdict": {
+  "candidate_lower_ce": true,
+  "candidate_lower_w1": true,
+  "rule": "mechanical from the primary seed's two co-primaries; an exact tie counts as not lower; no combined score; secondary seeds and the timing arm never decide",
+  "text": "the slot-allocation and spend mechanisms transferred on this slate"
+ }
+}

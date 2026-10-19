@@ -22372,6 +22372,31 @@ ck("wired: the classic build steers its field when FIELD_MODEL is 'optimizer' (t
    and '**({"casual_pct": round(float(casual_pct[i]), 2)} if casual_pct is not None else {}),' in _of_build
    and '"model": FIELD_MODEL if steer is not None else "softmax",' in _of_build and '"steer": steer},' in _of_build)
 
+# ---- 2026-10-19 slot-allocation v1, scored on its held-out week 2 (research/cl_week2.py postgame) ----
+# Frozen 2026-09-20 before week 2's lock; the owner's export arrived 2026-10-18.
+# The run that counts is the clean one (commit ac09ae4, nothing modified): its
+# first attempt broke off when dfs_tourney.py was edited under it and refused,
+# as it should. The verdict is mechanical from the primary seed's two
+# co-primaries; the four secondary seeds and the timing arm never decide.
+print("=" * 72)
+print("Slot-allocation v1 on its held-out week 2")
+print("=" * 72)
+import json as _json_w2p
+_w2p = _json_w2p.load(open(_os.path.join(_root, "research", "data", "cl_week2", "postgame.json")))
+_w2p_d = _w2p["primary"]["delta_candidate_minus_current"]
+ck("slot-allocation v1 passed its frozen week-2 test on a clean tree: both co-primaries lower for the candidate on the "
+   "primary seed (slot cross-entropy -1.20, salary Wasserstein-1 -$884), the run at commit ac09ae4 with nothing modified, "
+   "the export pinned by hash and not committed, and the report the template's own",
+   _w2p["verdict"]["candidate_lower_ce"] is True and _w2p["verdict"]["candidate_lower_w1"] is True
+   and abs(_w2p_d["ce"] + 1.20162) < 1e-5 and abs(_w2p_d["w1"] + 884.1) < 0.05
+   and _w2p["verdict"]["text"] == "the slot-allocation and spend mechanisms transferred on this slate"
+   and _w2p["meta"]["provenance"]["dirty"] is False and _w2p["meta"]["provenance"]["commit"] == "ac09ae4"
+   and _w2p["meta"]["export"]["committed"] is False
+   and _w2p["meta"]["export"]["zip_sha256"] == "1b8337c4bf88580d000ec79a42a0ed3b6c2918d9bfa210cb5543a731df074f4e"
+   and "transferred on this slate" in open(_os.path.join(_root, "research", "reports", "cl_week2.md")).read()
+   and not _os.path.exists(_os.path.join(_root, "research", "data", "dk_standings", "contest-standings-195648007.csv.gz")),
+   str(_w2p_d)[:300])
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
