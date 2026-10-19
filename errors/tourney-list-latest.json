@@ -1,7 +1,21 @@
 {
  "boards": [
   {
-   "age_s": 17063,
+   "age_s": 27750,
+   "built_ts": 1792387599,
+   "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st, [$1M to 1st, $100K Leaderboard Eligible]",
+   "dg": 155198,
+   "entries": 147058,
+   "entry_fee": 20.0,
+   "kind": "classic",
+   "label": "Sunday main (8 games)",
+   "n_contests": 2,
+   "starts": "2026-10-25T17:00:00.0000000Z",
+   "teams": null,
+   "worlds": 180000
+  },
+  {
+   "age_s": 47782,
    "built_ts": 1792367567,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (DAL @ GB)",
    "dg": 154959,
@@ -17,7 +31,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 29404,
+   "age_s": 60123,
    "built_ts": 1792355227,
    "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (WAS @ SF)",
    "dg": 154960,
@@ -33,7 +47,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 41716,
+   "age_s": 72435,
    "built_ts": 1792342915,
    "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st, $100K Leaderboard Eligible]",
    "dg": 154941,
