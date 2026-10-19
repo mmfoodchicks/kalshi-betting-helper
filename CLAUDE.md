@@ -190,7 +190,15 @@ data-only `sim-history` branch (which never deploys):
   tail inflation does not arise. Its scoring pass scores all ~780k legal
   lineups where only the ~26k we may enter are listed: scoring those alone
   against the full field is ~3.7x faster (the `opt_worlds` column, best of ALL
-  lineups, would need its own pass) -- not shipped yet.
+  lineups, would need its own pass) -- not shipped yet. **Its field is flatter
+  than the real one** (`research/sd_dup.py`, `research/reports/sd_dup.md`,
+  2026-10-19): Sunday night's served field, rebuilt exactly, had a pair
+  collision of 2.07e-4 against the real 5.05e-4 (S7 found the same on three
+  older games); at the knob that matches it (`FIELD_TOP_SHARE` 0.468%)
+  Monday's lists kept 16-18 of every top 20 and the money list's cash rate read
+  3.6 points lower. Descriptive; the S7 prospective test
+  (`research/s7_prospective.py`) is what judges fields, and Monday's slate is
+  its first pre-lock capture.
   **Ownership** (`research/cl_own.py`, 2026-10-18, rule hashed first): a
   per-position pull on projection and value (TE allowed at FLEX), fit on
   week 1, FAILED on week 6 (top-40 MAE 8.95 vs the served field's 8.29) -- the

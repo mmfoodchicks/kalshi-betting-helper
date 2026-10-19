@@ -22475,6 +22475,71 @@ ck("a look-back stored before its contest's standings were read is due ONCE more
    _cs_due1 == [("nfl:2026:w6", 154941, "2026-10-18")] and _cs_due2 == [],
    str((_cs_due1, _cs_due2)))
 
+# ---- 2026-10-19 the showdown field's flatness, and tonight's lists (research/sd_dup.py) ----
+# The owner, the morning of WAS @ SF: "anything else we can do before Monday
+# night's game?" Descriptive. Pinned with its definitions: the collision is
+# sum f^2 against DraftKings' distinct-lineup c(c-1)/(N(N-1)), the hot knob
+# is the one whose collision equals Sunday's real one, both fields score the
+# same games, the lists sort the board's way.
+print("=" * 72)
+print("The showdown field's flatness, and tonight's lists")
+print("=" * 72)
+import json as _json_sdd
+_sdd_src = open(_os.path.join(_root, "research", "sd_dup.py")).read()
+_sdd = _json_sdd.load(open(_os.path.join(_root, "research", "data", "sd_dup.json")))
+_sdd_s, _sdd_t = _sdd["snf"], _sdd["tonight"]
+ck("Sunday night's served showdown field was ~2.4x flatter than the real one (pair collision 2.07e-4 against 5.05e-4, "
+   "the top build 156 copies against 314, $607 less salary), the hot knob matching the real collision is 0.468%, and "
+   "the best-lineup share beat the field share on captain and flex ownership -- one game, read first, so nothing ships",
+   '"pair_collision": float((f ** 2).sum())' in _sdd_src
+   and 'real_c = float(d["duplicates"]["distinct_pair_collision"])' in _sdd_src
+   and "pairs = (sum(c * (c - 1) for c in counts) / (N * (N - 1)))" in open(_os.path.join(_root, "dk_standings.py")).read()
+   and abs(_sdd_s["served"]["pair_collision"] - 2.0708e-4) < 1e-7 and abs(_sdd_s["real"]["pair_collision"] - 5.0511e-4) < 1e-7
+   and _sdd_s["hot_knob"] == 0.00468 and abs(_sdd_s["hot"]["pair_collision"] / _sdd_s["real"]["pair_collision"] - 1) < 0.01
+   and _sdd_s["served"]["top_copies"] == 156.4 and _sdd_s["real"]["top_copies"] == 314
+   and _sdd_s["players_outside_real_top40"] == 0
+   and _sdd_s["ownership_mae"]["cpt"]["opt"] < _sdd_s["ownership_mae"]["cpt"]["field"]
+   and _sdd_s["ownership_mae"]["flex"]["opt"] < _sdd_s["ownership_mae"]["flex"]["field"],
+   str(_sdd_s["ownership_mae"]))
+ck("tonight's lists barely move under a field as hot as Sunday's real one (16-18 of every top 20 shared, the same "
+   "60,000 games, the 22,866 lineups we may enter scored against the whole weighted universe both times); the money "
+   "list's cash rate reads 39.4% served and 35.8% hot",
+   _sdd_t["dg"] == 154960 and _sdd_t["n_sims"] == 60000 and _sdd_t["lineups_legal"] == 309849
+   and _sdd_t["lineups_allowed"] == 22866 and _sdd_t["hot_knob"] == _sdd_s["hot_knob"]
+   and "r, _o, _n = T.run_vs_field(Wc, W, ff, X, [grid], workers=workers)" in _sdd_src
+   and "f_hot, beta_hot = T.field_weights(ents, idx, cpt_mult=nfl_dfs.CPT_MULT, top_share=hot)" in _sdd_src
+   and 'order = np.lexsort((-m["ev"][pos], -np.round(m["money"][pos], 6)))' in _sdd_src
+   and all(16 <= v["overlap_top20"] <= 18 for v in _sdd_t["lists"].values()) and len(_sdd_t["lists"]) == 5
+   and abs(_sdd_t["lists"]["top_money"]["served_picks"]["under_served"] - 0.394) < 0.001
+   and abs(_sdd_t["lists"]["top_money"]["served_picks"]["under_hot"] - 0.358) < 0.001,
+   str({k: v["overlap_top20"] for k, v in _sdd_t["lists"].items()}))
+try:
+    import numpy as _np_sdd
+    import dfs_tourney as _T_sdd
+except ImportError:
+    _np_sdd = None
+if _np_sdd is None or getattr(_T_sdd, "np", None) is None:
+    ck("(skipped under the no-numpy suite for a stated reason: rebuilding Sunday's field needs numpy; the pins above "
+       "still run) the served field rebuilds from the committed pool", True)
+else:
+    _sdd_b = _json_sdd.load(open(_os.path.join(_root, "research", "data", "sd_dup_snf_board.json")))
+    _sdd_idx, _sdd_W, _sdd_ok = _T_sdd.enumerate_showdown(_sdd_b["players"], 50000, cpt_mult=1.5)
+    _sdd_f, _sdd_beta = _T_sdd.field_weights(_sdd_b["players"], _sdd_idx, cpt_mult=1.5)
+    _sdd_fh, _sdd_bh = _T_sdd.field_weights(_sdd_b["players"], _sdd_idx, cpt_mult=1.5, top_share=_sdd_s["hot_knob"])
+    ck("Sunday's served field rebuilds exactly from the committed pool (780,492 lineups, beta 0.4731, the served "
+       "collision) and the hot knob's collision is the real one, recomputed here",
+       len(_sdd_idx) == _sdd_b["lineups_legal"] == 780492 and round(_sdd_beta, 4) == _sdd_b["beta"] == 0.4731
+       and abs(float((_sdd_f ** 2).sum()) - _sdd_s["served"]["pair_collision"]) < 1e-12
+       and abs(float((_sdd_fh ** 2).sum()) / _sdd_s["real"]["pair_collision"] - 1) < 0.01,
+       str((len(_sdd_idx), _sdd_beta)))
+    del _sdd_idx, _sdd_W, _sdd_ok, _sdd_f, _sdd_fh
+_sdd_cap = _json_sdd.load(open(_os.path.join(_root, "research", "data", "prospective", "154960", "20261019T130736Z",
+                                              "capture.json")))
+ck("tonight's slate is captured for the S7 prospective test BEFORE lock (11.1 h ahead, the $1.5M Monday Night Showdown "
+   "its biggest GPP), so its export can score the frozen field family after the game",
+   _sdd_cap["pre_lock"] is True and _sdd_cap["hours_to_lock"] > 11 and _sdd_cap["lock_utc"] == "2026-10-20 00:15:00 UTC"
+   and _sdd_cap["biggest_gpp_detailed"]["id"] == 196786690 and _sdd_cap["draft_group"] == 154960)
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

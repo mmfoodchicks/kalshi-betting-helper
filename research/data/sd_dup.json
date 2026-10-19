@@ -1,0 +1,668 @@
+{
+ "snf": {
+  "served": {
+   "pair_collision": 0.0002070769298511259,
+   "distinct_expected": 19422,
+   "entries_in_duplicated_pct": 88.34,
+   "top_copies": 156.4,
+   "salary_mean": 48658,
+   "salary_median": 49100,
+   "team_split_pct": {
+    "3-3": 39.93,
+    "4-2": 49.91,
+    "5-1": 10.16
+   }
+  },
+  "hot_knob": 0.00468,
+  "hot_beta": 0.6141,
+  "hot": {
+   "pair_collision": 0.0005054053393183475,
+   "distinct_expected": 13272,
+   "entries_in_duplicated_pct": 92.66,
+   "top_copies": 365.9,
+   "salary_mean": 49027,
+   "salary_median": 49300,
+   "team_split_pct": {
+    "3-3": 40.38,
+    "4-2": 50.12,
+    "5-1": 9.49
+   }
+  },
+  "real": {
+   "pair_collision": 0.000505106654547457,
+   "distinct": 12627,
+   "entries_in_duplicated_pct": 93.49,
+   "top_copies": 314,
+   "salary_mean": 49265.5,
+   "salary_median": 49600.0,
+   "team_split_pct": {
+    "3-3": 37.83,
+    "4-2": 48.05,
+    "5-1": 14.12
+   }
+  },
+  "entries": 78189,
+  "players": 24,
+  "players_outside_real_top40": 0,
+  "ownership_mae": {
+   "cpt": {
+    "field": 2.069,
+    "opt": 1.605
+   },
+   "flex": {
+    "field": 5.742,
+    "opt": 4.752
+   }
+  }
+ },
+ "tonight": {
+  "lists": {
+   "top_win": {
+    "overlap_top20": 16,
+    "overlap_top5": 5,
+    "served_picks": {
+     "under_served": 0.0002589745565747867,
+     "under_hot": 0.0004548928060258264
+    },
+    "hot_picks": {
+     "under_served": 0.0002524295904458352,
+     "under_hot": 0.0004639642011485155
+    },
+    "served_top5": [
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "49ers",
+      "Kaelon Black",
+      "Jayden Daniels",
+      "Stefon Diggs"
+     ],
+     [
+      "Stefon Diggs (CPT)",
+      "Eddy Pineiro",
+      "Christian McCaffrey",
+      "Kaelon Black",
+      "Jayden Daniels",
+      "Rachaad White"
+     ],
+     [
+      "Stefon Diggs (CPT)",
+      "Drew Stevens",
+      "Commanders",
+      "Christian McCaffrey",
+      "Jayden Daniels",
+      "Rachaad White"
+     ],
+     [
+      "Jayden Daniels (CPT)",
+      "Commanders",
+      "Terry McLaurin",
+      "Stefon Diggs",
+      "George Kittle",
+      "Rachaad White"
+     ],
+     [
+      "Jayden Daniels (CPT)",
+      "Drew Stevens",
+      "Commanders",
+      "Mike Evans",
+      "Terry McLaurin",
+      "Stefon Diggs"
+     ]
+    ],
+    "hot_top5": [
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "49ers",
+      "Kaelon Black",
+      "Jayden Daniels",
+      "Stefon Diggs"
+     ],
+     [
+      "Stefon Diggs (CPT)",
+      "Eddy Pineiro",
+      "Christian McCaffrey",
+      "Kaelon Black",
+      "Jayden Daniels",
+      "Rachaad White"
+     ],
+     [
+      "Jayden Daniels (CPT)",
+      "Drew Stevens",
+      "Commanders",
+      "Mike Evans",
+      "Terry McLaurin",
+      "Stefon Diggs"
+     ],
+     [
+      "Stefon Diggs (CPT)",
+      "Drew Stevens",
+      "Commanders",
+      "Christian McCaffrey",
+      "Jayden Daniels",
+      "Rachaad White"
+     ],
+     [
+      "Jayden Daniels (CPT)",
+      "Commanders",
+      "Terry McLaurin",
+      "Stefon Diggs",
+      "George Kittle",
+      "Rachaad White"
+     ]
+    ],
+    "served_top5_copies": [
+     [
+      0.7,
+      0.3
+     ],
+     [
+      0.3,
+      0.1
+     ],
+     [
+      0.1,
+      0.0
+     ],
+     [
+      0.3,
+      0.1
+     ],
+     [
+      0.1,
+      0.0
+     ]
+    ]
+   },
+   "top_top1": {
+    "overlap_top20": 16,
+    "overlap_top5": 4,
+    "served_picks": {
+     "under_served": 0.04208111151876333,
+     "under_hot": 0.04185226487580111
+    },
+    "hot_picks": {
+     "under_served": 0.041592889344707444,
+     "under_hot": 0.042267334247272435
+    },
+    "served_top5": [
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "49ers",
+      "Brock Purdy",
+      "George Kittle",
+      "Austin Ekeler"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "49ers",
+      "Kaelon Black",
+      "Brock Purdy",
+      "Terry McLaurin"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "Jayden Daniels",
+      "Jacob Cowing",
+      "Terry McLaurin",
+      "Rachaad White"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Terry McLaurin",
+      "Austin Ekeler"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "49ers",
+      "Kaelon Black",
+      "Brock Purdy",
+      "Mike Evans",
+      "Austin Ekeler"
+     ]
+    ],
+    "hot_top5": [
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "49ers",
+      "Brock Purdy",
+      "George Kittle",
+      "Austin Ekeler"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "49ers",
+      "Kaelon Black",
+      "Brock Purdy",
+      "Terry McLaurin"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "Jayden Daniels",
+      "Jacob Cowing",
+      "Terry McLaurin",
+      "Rachaad White"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Terry McLaurin",
+      "Austin Ekeler"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "Drew Stevens",
+      "Kaelon Black",
+      "Jayden Daniels",
+      "Terry McLaurin"
+     ]
+    ],
+    "served_top5_copies": [
+     [
+      42.0,
+      66.1
+     ],
+     [
+      9.0,
+      9.3
+     ],
+     [
+      5.5,
+      5.0
+     ],
+     [
+      2.6,
+      1.9
+     ],
+     [
+      23.2,
+      30.9
+     ]
+    ]
+   },
+   "top_top01": {
+    "overlap_top20": 17,
+    "overlap_top5": 5,
+    "served_picks": {
+     "under_served": 0.008893160372163585,
+     "under_hot": 0.0098931668409077
+    },
+    "hot_picks": {
+     "under_served": 0.008841592618082327,
+     "under_hot": 0.01009253020180312
+    },
+    "served_top5": [
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "49ers",
+      "Brock Purdy",
+      "George Kittle",
+      "Austin Ekeler"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "49ers",
+      "Jayden Daniels",
+      "Terry McLaurin",
+      "Chig Okonkwo"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "49ers",
+      "Kaelon Black",
+      "Brock Purdy",
+      "Terry McLaurin"
+     ],
+     [
+      "Jayden Daniels (CPT)",
+      "Drew Stevens",
+      "Commanders",
+      "Christian McCaffrey",
+      "Terry McLaurin",
+      "Rachaad White"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Terry McLaurin",
+      "Austin Ekeler"
+     ]
+    ],
+    "hot_top5": [
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "49ers",
+      "Jayden Daniels",
+      "Terry McLaurin",
+      "Chig Okonkwo"
+     ],
+     [
+      "Jayden Daniels (CPT)",
+      "Drew Stevens",
+      "Commanders",
+      "Christian McCaffrey",
+      "Terry McLaurin",
+      "Rachaad White"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "49ers",
+      "Brock Purdy",
+      "George Kittle",
+      "Austin Ekeler"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Terry McLaurin",
+      "Austin Ekeler"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "49ers",
+      "Kaelon Black",
+      "Brock Purdy",
+      "Terry McLaurin"
+     ]
+    ],
+    "served_top5_copies": [
+     [
+      42.0,
+      66.1
+     ],
+     [
+      3.3,
+      2.5
+     ],
+     [
+      9.0,
+      9.3
+     ],
+     [
+      1.1,
+      0.6
+     ],
+     [
+      2.6,
+      1.9
+     ]
+    ]
+   },
+   "top_money": {
+    "overlap_top20": 18,
+    "overlap_top5": 4,
+    "served_picks": {
+     "under_served": 0.39415593188051207,
+     "under_hot": 0.3581553467332722
+    },
+    "hot_picks": {
+     "under_served": 0.3937446543766513,
+     "under_hot": 0.3591123932135066
+    },
+    "served_top5": [
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "Brock Purdy",
+      "Jayden Daniels",
+      "Jacob Cowing",
+      "Austin Ekeler"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "Kaelon Black",
+      "Brock Purdy",
+      "Jayden Daniels",
+      "Jacob Cowing"
+     ],
+     [
+      "Brock Purdy (CPT)",
+      "Eddy Pineiro",
+      "Christian McCaffrey",
+      "Jayden Daniels",
+      "Jacob Cowing",
+      "Chig Okonkwo"
+     ],
+     [
+      "Brock Purdy (CPT)",
+      "Jayden Daniels",
+      "Mike Evans",
+      "Jacob Cowing",
+      "George Kittle",
+      "Austin Ekeler"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "Brock Purdy",
+      "Jayden Daniels",
+      "Jacob Cowing",
+      "Brandin Cooks"
+     ]
+    ],
+    "hot_top5": [
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "Brock Purdy",
+      "Jayden Daniels",
+      "Jacob Cowing",
+      "Austin Ekeler"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "Kaelon Black",
+      "Brock Purdy",
+      "Jayden Daniels",
+      "Jacob Cowing"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "Brock Purdy",
+      "Jayden Daniels",
+      "Jacob Cowing",
+      "Brandin Cooks"
+     ],
+     [
+      "Brock Purdy (CPT)",
+      "Jayden Daniels",
+      "Mike Evans",
+      "Jacob Cowing",
+      "George Kittle",
+      "Austin Ekeler"
+     ],
+     [
+      "Jayden Daniels (CPT)",
+      "Christian McCaffrey",
+      "Brock Purdy",
+      "Jacob Cowing",
+      "Rachaad White",
+      "Austin Ekeler"
+     ]
+    ],
+    "served_top5_copies": [
+     [
+      51.8,
+      86.4
+     ],
+     [
+      34.0,
+      50.6
+     ],
+     [
+      97.3,
+      193.2
+     ],
+     [
+      138.1,
+      302.0
+     ],
+     [
+      39.2,
+      60.5
+     ]
+    ]
+   },
+   "top_ev": {
+    "overlap_top20": 17,
+    "overlap_top5": 4,
+    "served_picks": {
+     "under_served": 231.4544872918446,
+     "under_hot": 353.9041338436993
+    },
+    "hot_picks": {
+     "under_served": 228.6379374209571,
+     "under_hot": 357.30696386118836
+    },
+    "served_top5": [
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "49ers",
+      "Kaelon Black",
+      "Jayden Daniels",
+      "Stefon Diggs"
+     ],
+     [
+      "Stefon Diggs (CPT)",
+      "Eddy Pineiro",
+      "Christian McCaffrey",
+      "Kaelon Black",
+      "Jayden Daniels",
+      "Rachaad White"
+     ],
+     [
+      "Jayden Daniels (CPT)",
+      "Drew Stevens",
+      "Commanders",
+      "Christian McCaffrey",
+      "Terry McLaurin",
+      "Rachaad White"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Stefon Diggs",
+      "Austin Ekeler"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "49ers",
+      "Kaelon Black",
+      "Mike Evans",
+      "Stefon Diggs"
+     ]
+    ],
+    "hot_top5": [
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "49ers",
+      "Kaelon Black",
+      "Jayden Daniels",
+      "Stefon Diggs"
+     ],
+     [
+      "Jayden Daniels (CPT)",
+      "Drew Stevens",
+      "Commanders",
+      "Christian McCaffrey",
+      "Terry McLaurin",
+      "Rachaad White"
+     ],
+     [
+      "Stefon Diggs (CPT)",
+      "Eddy Pineiro",
+      "Christian McCaffrey",
+      "Kaelon Black",
+      "Jayden Daniels",
+      "Rachaad White"
+     ],
+     [
+      "Christian McCaffrey (CPT)",
+      "Eddy Pineiro",
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Stefon Diggs",
+      "Austin Ekeler"
+     ],
+     [
+      "Jayden Daniels (CPT)",
+      "Eddy Pineiro",
+      "Drew Stevens",
+      "Christian McCaffrey",
+      "Stefon Diggs",
+      "Chig Okonkwo"
+     ]
+    ],
+    "served_top5_copies": [
+     [
+      0.7,
+      0.3
+     ],
+     [
+      0.3,
+      0.1
+     ],
+     [
+      1.1,
+      0.6
+     ],
+     [
+      1.1,
+      0.6
+     ],
+     [
+      0.5,
+      0.2
+     ]
+    ]
+   }
+  },
+  "dg": 154960,
+  "n_sims": 60000,
+  "seed": 7,
+  "lineups_legal": 309849,
+  "lineups_allowed": 22866,
+  "beta_hot": 0.4469,
+  "hot_knob": 0.00468,
+  "timing": {
+   "capture_s": 90.7,
+   "score_served_s": 144.6,
+   "score_hot_s": 143.1,
+   "total_s": 378.5
+  },
+  "fee": 20.0,
+  "contest_capacity": 88235
+ },
+ "built_utc": "2026-10-19T13:15:41Z"
+}
