@@ -1400,7 +1400,13 @@ for _g in _struct_games:                 # evict the 800-run sims: later guards
         os.remove(os.path.join(B._SIM_DISK, f"{_pk}.pkl"))
     except OSError:
         pass
-if _on and _on.get("groups"):
+if len(_rich) < 2:
+    # The same premise as the OFF half: five required legs at four a game need
+    # two games, and late on a one-game postseason night (2026-10-19 23:30 ET,
+    # the only playable game tomorrow's) there is one -- no slip can exist.
+    ck("(skipped for a stated reason: fewer than two playable games on the live slate, so five legs at four a game "
+       "cannot exist) same-game ON still stacks", True, f"{len(_rich)} playable game(s)")
+elif _on and _on.get("groups"):
     ck("same-game ON still stacks (the fix did not disable stacking)",
        max(g["size"] for g in _on["groups"]) > 1,
        [(g["matchup"], g["size"]) for g in _on["groups"]][:4])
@@ -22423,10 +22429,12 @@ _cs_idx = _json_cs.load(open(_os.path.join(_root, "research", "data", "dk_fields
 _cs_sums = {cid: _json_cs.load(open(_os.path.join(_root, "research", "data", "dk_fields", f"dk_field_{cid}.json")))
             for cid in _cs_idx}
 _cs_blob = " ".join(_json_cs.dumps(v) for v in _cs_sums.values())
-ck("the committed summaries are the two final exports the owner sent from away -- the week-6 Millionaire (classic, "
-   "158,904 entries, first 210.5) and the Sunday-night DAL @ GB Showdown (78,431 entries) -- final (no time remaining), "
-   "carrying no entrant field at all, their sha256 the export's, and no export beside them in git",
-   set(_cs_idx) == {"196653900", "196786588"}
+ck("the committed summaries are the final exports the owner sent from away -- the week-6 Millionaire (classic, "
+   "158,904 entries, first 210.5), the Sunday-night DAL @ GB Showdown (78,431 entries) and the Monday-night WAS @ SF "
+   "Showdown (87,465) -- final (no time remaining), carrying no entrant field at all, their sha256 the export's, and no "
+   "export beside them in git",
+   set(_cs_idx) == {"196653900", "196786588", "196786690"}
+   and _cs_sums["196786690"]["kind"] == "showdown" and _cs_sums["196786690"]["entries"] == 87465
    and _cs_sums["196653900"]["kind"] == "classic" and _cs_sums["196653900"]["entries"] == 158904
    and abs(_cs_sums["196653900"]["points"]["first"] - 210.5) < 0.01
    and _cs_sums["196786588"]["kind"] == "showdown" and _cs_sums["196786588"]["entries"] == 78431
@@ -22448,7 +22456,7 @@ finally:
 ck("listing merges the deep store's index with the committed one, one row a contest, the committed row winning; a "
    "committed summary wins over the deep store's for the same contest (it was made from the FINAL export on purpose), "
    "and a contest only in the deep store still reads from it",
-   sorted(r["contest_id"] for r in _cs_list) == [555, 196653900, 196786588]
+   sorted(r["contest_id"] for r in _cs_list) == [555, 196653900, 196786588, 196786690]
    and next(r for r in _cs_list if r["contest_id"] == 196653900)["name"].startswith("NFL $2.75M")
    and (_cs_s1 or {}).get("entries") == 158904 and (_cs_s2 or {}).get("from") == "deep",
    str([(r["contest_id"], r.get("name")) for r in _cs_list]))
@@ -22822,6 +22830,79 @@ ck("the drift alarm ledgers NFL-DRIFT when a leg type sits one-sided off Kalshi 
    str(_ab_notes))
 ck("the logger reads the slate sim from the shared store and never runs one (no CPU-bound work in a web worker)",
    "_slate_sims" not in _insp.getsource(_npl_ab) and "boardshare.get(f\"nfl_parlay_sims5_" in _insp.getsource(_npl_ab._cached_sims))
+
+# ---- 2026-10-20 Monday night after the game: the showdown points, the board on the real points, S7's first contest ----
+# The owner, sending the $1.5M Monday Night Showdown's export: "go nuts".
+print("=" * 72)
+print("Monday night after the game")
+print("=" * 72)
+import dk_standings as _ds_mn
+import json as _json_mn
+_mn_csv = ("Rank,EntryId,EntryName,TimeRemaining,Points,Lineup,,Player,Roster Position,%Drafted,FPTS\n"
+           "1,1,a (1/1),0,64.5,CPT Al One FLEX Bo Two FLEX Cy Three FLEX Di Four FLEX Ed Five FLEX Fi Six,,Al One,FLEX,50.00%,20\n"
+           "2,2,b (1/1),0,54.5,CPT Bo Two FLEX Al One FLEX Cy Three FLEX Di Four FLEX Ed Five FLEX Fi Six,,Al One,CPT,25.00%,30\n"
+           "3,3,c (1/1),0,10,CPT Cy Three FLEX Al One FLEX Bo Two FLEX Di Four FLEX Ed Five FLEX Fi Six,,Bo Two,CPT,40.00%,15\n")
+_mn_p = _ds_mn.parse(_mn_csv)
+ck("a showdown export's points are each player's BASE score: DraftKings lists every man twice, FLEX and a CPT row at "
+   "1.5x, and the CPT row (the later one) used to win -- now the FLEX figure, or CPT / 1.5 for a man nobody played at FLEX; "
+   "the ownership per roster slot is untouched",
+   _mn_p["fpts"] == {"Al One": 20.0, "Bo Two": 10.0}
+   and _mn_p["dk_own"][("Al One", "CPT")] == 0.25 and _mn_p["dk_own"][("Al One", "FLEX")] == 0.5,
+   str(_mn_p["fpts"]))
+_mn_ok = []
+for _cid in (196786588, 196786690):
+    _sm = _json_mn.load(open(_os.path.join(_root, "research", "data", "dk_fields", f"dk_field_{_cid}.json")))
+    _fp = {_ds_mn._norm(r["name"]): r["fpts"] for r in _sm["ownership"]}
+    _tl = _sm["top_lineups"][0]
+    _rb = sum((1.5 if sl == "CPT" else 1.0) * _fp.get(_ds_mn._norm(nm), 0.0) for sl, nm in _tl["lineup"]
+              if _ds_mn._norm(nm) in _fp)
+    _have = all(_ds_mn._norm(nm) in _fp for _sl, nm in _tl["lineup"])
+    _mn_ok.append((_cid, _have, round(_rb, 2), round(_tl["points"], 2)))
+ck("both committed showdown summaries rebuild their own winning lineup from their per-player points (Sunday 117.34, "
+   "Monday 125.8 among the 40 most owned) -- the definition pinned, not just the numbers",
+   all(not have or abs(rb - pts) < 0.05 for _c, have, rb, pts in _mn_ok) and any(have for _c, have, _r, _p in _mn_ok),
+   str(_mn_ok))
+_mn_sm = _json_mn.load(open(_os.path.join(_root, "research", "data", "dk_fields", "dk_field_196786690.json")))
+_mn_ix = _json_mn.load(open(_os.path.join(_root, "research", "data", "dk_fields", "index.json")))
+ck("Monday night's final export is summarized as intake does and committed as a summary only: 87,465 entries, 87,284 "
+   "with a lineup, its sha256, no entrant in it, and the export itself ignored by git",
+   _mn_sm["entries"] == 87465 and _mn_sm["with_lineup"] == 87284 and _mn_sm["final"] is True
+   and _mn_sm["sha256"] == "1ed58a880b2f729e7196bcc47340ba129ade970f9a50c4997c0bb1ed5204e10d"
+   and '"user"' not in _json_mn.dumps(_mn_sm) and _mn_ix["196786690"]["draft_group_id"] == 154960
+   and "research/data/dk_standings/contest-standings-196786690.csv.gz" in open(_os.path.join(_root, ".gitignore")).read())
+_mn_pg = _json_mn.load(open(_os.path.join(_root, "research", "data", "sd_postgame_154960.json")))
+_sn_pg = _json_mn.load(open(_os.path.join(_root, "research", "data", "sd_postgame_154959.json")))
+_pg_src = open(_os.path.join(_root, "research", "sd_postgame.py")).read()
+ck("the board served for Monday night could hold only 56.9% of the real field (Juszczyk, Burks, McNichols, Watkins "
+   "outside its pool), its field 2.6x flatter than the real one, and Sunday's knob carried over: 5.65e-4 against the "
+   "real 6.32e-4 where the served 0.2% read 2.41e-4",
+   abs(_mn_pg["field"]["real_entries_the_universe_holds_pct"] - 56.89) < 0.01
+   and list(_mn_pg["field"]["players_outside_the_pool"])[:4] == ["Kyle Juszczyk", "Treylon Burks", "Jeremy McNichols", "Jordan Watkins"]
+   and abs(_mn_pg["field"]["served"]["pair_collision"] - 2.408e-4) < 1e-7
+   and abs(_mn_pg["field"]["snf_knob"]["pair_collision"] - 5.650e-4) < 1e-7
+   and abs(_mn_pg["field"]["real"]["pair_collision"] - 6.317e-4) < 1e-7
+   and "SNF_HOT_KNOB = 0.00468" in _pg_src and "assert len(idx) == b[\"lineups_legal\"]" in _pg_src,
+   str(_mn_pg["field"]["real_entries_the_universe_holds_pct"]))
+ck("the best-lineup share beat the served field's ownership again (Monday, the game not read to find it: captain "
+   "1.83 vs 2.42, flex 6.68 vs 7.15; Sunday 1.60 vs 2.07, 4.75 vs 5.74)",
+   all(pg["ownership"][s]["opt"] < pg["ownership"][s]["field"] for pg in (_mn_pg, _sn_pg) for s in ("cpt", "flex"))
+   and abs(_mn_pg["ownership"]["cpt"]["opt"] - 1.833) < 0.001 and abs(_mn_pg["ownership"]["flex"]["field"] - 7.154) < 0.001)
+ck("the listed lineups on the real points, rank = 1 + the entries strictly above, cashed = within the paid places: "
+   "Monday's EV list cashed 9 of its top 20 (best 829th) and no portfolio reached the top 1%; Sunday's money list "
+   "cashed 4 of its top 5, its best 5,572nd -- the figures reported 2026-10-19, recomputed",
+   _mn_pg["lists"]["top_ev"]["top20_cashed"] == 9 and _mn_pg["lists"]["top_ev"]["top20_best_rank"] == 829
+   and not any(v["any_top1pct"] for v in _mn_pg["portfolios"].values())
+   and sum(1 for x in _sn_pg["lists"]["top_money"]["top5"] if x["cashed"]) == 4
+   and _sn_pg["lists"]["top_money"]["top5"][0]["rank"] == 5572
+   and "above = len(real_pts) - bisect.bisect_right(real_pts, score + 1e-6)" in _pg_src
+   and '"cashed": rank <= places' in _pg_src)
+_s7l = _json_mn.load(open(_os.path.join(_root, "research", "data", "s7_prospective.json")))["contests"]["196786690"]["primary"]
+ck("S7's first prospective contest, scored on the capture taken 0.9 h before lock: the frozen projection+salary field "
+   "beats projection-only by 0.459 nats an entry (user-cluster 95% 0.436-0.483), 97.4% of the field representable, "
+   "and the concentration still far off (effective lineups 1,479 real against 11,650)",
+   _s7l["role"] == "primary" and _s7l["capture_stamp"] == "20261019T232101Z" and _s7l["hours_to_lock"] == 0.897
+   and abs(_s7l["principal_delta"] + 0.45879) < 1e-5 and _s7l["principal_ci95_user_cluster"] == [0.43606, 0.48288]
+   and _s7l["representable_pct"] == 97.4 and _s7l["effective_lineups"]["observed"] == 1479.0)
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

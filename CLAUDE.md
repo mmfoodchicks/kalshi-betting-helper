@@ -197,8 +197,18 @@ data-only `sim-history` branch (which never deploys):
   older games); at the knob that matches it (`FIELD_TOP_SHARE` 0.468%)
   Monday's lists kept 16-18 of every top 20 and the money list's cash rate read
   3.6 points lower. Descriptive; the S7 prospective test
-  (`research/s7_prospective.py`) is what judges fields, and Monday's slate is
-  its first pre-lock capture.
+  (`research/s7_prospective.py`) is what judges fields. **Monday after the
+  game** (`research/sd_postgame.py`, `research/reports/sd_mnf.md`): S7's first
+  prospective contest -- the frozen projection+salary field beat
+  projection-only by 0.459 nats an entry (95% 0.436-0.483); the served
+  universe held only 56.9% of the real field (Juszczyk, Burks, McNichols,
+  Watkins: our depth and roster gates, inherited by the FIELD) where every DK
+  player Sleeper projects >= 1.0 would hold 96.0% at 1.34M lineups (a change
+  that needs the allowed-only scoring pass first); Sunday's knob (0.468%) read
+  Monday's real collision within 11%; the best-lineup share beat the field's
+  ownership on both nights. **A showdown export lists every player twice**
+  (FLEX, and CPT at 1.5x): `dk_standings.parse` takes the FLEX figure (the
+  CPT one / 1.5 when there is none) -- keyed on the name alone it read 1.5x.
   **Ownership** (`research/cl_own.py`, 2026-10-18, rule hashed first): a
   per-position pull on projection and value (TE allowed at FLEX), fit on
   week 1, FAILED on week 6 (top-40 MAE 8.95 vs the served field's 8.29) -- the

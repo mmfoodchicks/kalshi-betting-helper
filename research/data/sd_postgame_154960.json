@@ -1,0 +1,470 @@
+{
+ "board": {
+  "draft_group_id": 154960,
+  "built_ts": 1792441560,
+  "mins_before_lock": 229,
+  "sims": 60000,
+  "lineups_legal": 219121,
+  "lineups_allowed": 22866
+ },
+ "export_sha256": "1ed58a880b2f729e7196bcc47340ba129ade970f9a50c4997c0bb1ed5204e10d",
+ "entries_with_lineup": 87284,
+ "places_paid": 19130,
+ "entry_fee": 20.0,
+ "cash_line": 103.21,
+ "first": 125.799995,
+ "field": {
+  "served": {
+   "pair_collision": 0.0002407840672373027,
+   "distinct_expected": 17418,
+   "top_copies": 174.6,
+   "salary_mean": 48297,
+   "salary_median": 48800
+  },
+  "snf_knob": {
+   "pair_collision": 0.0005649920671894455,
+   "distinct_expected": 11535,
+   "top_copies": 408.5,
+   "salary_mean": 48776,
+   "salary_median": 49200
+  },
+  "snf_knob_beta": 0.51,
+  "real": {
+   "pair_collision": 0.000631729507433458,
+   "distinct": 14097,
+   "top_copies": 747,
+   "salary_mean": 49242.7,
+   "salary_median": 49500.0,
+   "team_split_pct": {
+    "3-3": 35.56,
+    "4-2": 46.49,
+    "5-1": 17.96
+   }
+  },
+  "real_entries_the_universe_holds_pct": 56.89,
+  "players_outside_the_pool": {
+   "Kyle Juszczyk": 10119,
+   "Treylon Burks": 8507,
+   "Jeremy McNichols": 8395,
+   "Jordan Watkins": 4422,
+   "Dyami Brown": 4039,
+   "Ben Sinnott": 1674,
+   "Brayden Willis": 634,
+   "Malik Turner": 535
+  }
+ },
+ "ownership": {
+  "cpt": {
+   "field": 2.416,
+   "opt": 1.833
+  },
+  "flex": {
+   "field": 7.154,
+   "opt": 6.679
+  },
+  "players": [
+   {
+    "name": "Brock Purdy",
+    "field_cpt": 33.3,
+    "opt_cpt": 16.14,
+    "real_cpt": 19.86,
+    "field_flex": 54.4,
+    "opt_flex": 56.22,
+    "real_flex": 60.48
+   },
+   {
+    "name": "Christian McCaffrey",
+    "field_cpt": 12.1,
+    "opt_cpt": 23.47,
+    "real_cpt": 14.61,
+    "field_flex": 49.0,
+    "opt_flex": 38.58,
+    "real_flex": 45.63
+   },
+   {
+    "name": "Jayden Daniels",
+    "field_cpt": 9.9,
+    "opt_cpt": 12.36,
+    "real_cpt": 13.23,
+    "field_flex": 42.2,
+    "opt_flex": 44.33,
+    "real_flex": 51.56
+   },
+   {
+    "name": "Mike Evans",
+    "field_cpt": 9.0,
+    "opt_cpt": 11.88,
+    "real_cpt": 9.16,
+    "field_flex": 38.4,
+    "opt_flex": 32.94,
+    "real_flex": 28.88
+   },
+   {
+    "name": "George Kittle",
+    "field_cpt": 8.6,
+    "opt_cpt": 9.82,
+    "real_cpt": 19.51,
+    "field_flex": 39.7,
+    "opt_flex": 34.16,
+    "real_flex": 43.63
+   },
+   {
+    "name": "Rachaad White",
+    "field_cpt": 3.9,
+    "opt_cpt": 5.62,
+    "real_cpt": 5.36,
+    "field_flex": 27.9,
+    "opt_flex": 28.04,
+    "real_flex": 34.16
+   },
+   {
+    "name": "Eddy Pineiro",
+    "field_cpt": 3.1,
+    "opt_cpt": 1.57,
+    "real_cpt": 0.7,
+    "field_flex": 24.3,
+    "opt_flex": 32.0,
+    "real_flex": 20.89
+   },
+   {
+    "name": "Terry McLaurin",
+    "field_cpt": 2.3,
+    "opt_cpt": 4.84,
+    "real_cpt": 4.18,
+    "field_flex": 18.3,
+    "opt_flex": 26.18,
+    "real_flex": 23.63
+   },
+   {
+    "name": "Austin Ekeler",
+    "field_cpt": 2.9,
+    "opt_cpt": 2.51,
+    "real_cpt": 1.42,
+    "field_flex": 26.3,
+    "opt_flex": 25.02,
+    "real_flex": 20.51
+   },
+   {
+    "name": "Chig Okonkwo",
+    "field_cpt": 2.8,
+    "opt_cpt": 2.04,
+    "real_cpt": 1.27,
+    "field_flex": 24.5,
+    "opt_flex": 24.34,
+    "real_flex": 19.52
+   },
+   {
+    "name": "Kaelon Black",
+    "field_cpt": 1.3,
+    "opt_cpt": 3.2,
+    "real_cpt": 0.56,
+    "field_flex": 16.0,
+    "opt_flex": 22.09,
+    "real_flex": 6.61
+   },
+   {
+    "name": "Drew Stevens",
+    "field_cpt": 2.1,
+    "opt_cpt": 0.94,
+    "real_cpt": 0.39,
+    "field_flex": 20.4,
+    "opt_flex": 23.93,
+    "real_flex": 15.56
+   },
+   {
+    "name": "49ers",
+    "field_cpt": 2.5,
+    "opt_cpt": 1.12,
+    "real_cpt": 2.35,
+    "field_flex": 22.5,
+    "opt_flex": 21.51,
+    "real_flex": 15.26
+   },
+   {
+    "name": "Antonio Williams",
+    "field_cpt": 1.4,
+    "opt_cpt": 1.06,
+    "real_cpt": 0.9,
+    "field_flex": 17.1,
+    "opt_flex": 17.16,
+    "real_flex": 14.59
+   },
+   {
+    "name": "Luke Farrell",
+    "field_cpt": 1.2,
+    "opt_cpt": 0.24,
+    "real_cpt": 0.04,
+    "field_flex": 21.8,
+    "opt_flex": 16.49,
+    "real_flex": 2.88
+   },
+   {
+    "name": "Stefon Diggs",
+    "field_cpt": 0.5,
+    "opt_cpt": 1.58,
+    "real_cpt": 1.9,
+    "field_flex": 6.7,
+    "opt_flex": 14.81,
+    "real_flex": 13.09
+   },
+   {
+    "name": "Jacob Cowing",
+    "field_cpt": 1.0,
+    "opt_cpt": 0.37,
+    "real_cpt": 0.31,
+    "field_flex": 16.5,
+    "opt_flex": 13.57,
+    "real_flex": 10.04
+   },
+   {
+    "name": "Brandin Cooks",
+    "field_cpt": 0.7,
+    "opt_cpt": 0.69,
+    "real_cpt": 2.51,
+    "field_flex": 9.8,
+    "opt_flex": 11.37,
+    "real_flex": 21.43
+   },
+   {
+    "name": "Commanders",
+    "field_cpt": 0.7,
+    "opt_cpt": 0.41,
+    "real_cpt": 0.33,
+    "field_flex": 11.1,
+    "opt_flex": 9.58,
+    "real_flex": 4.95
+   },
+   {
+    "name": "John Bates",
+    "field_cpt": 0.7,
+    "opt_cpt": 0.12,
+    "real_cpt": 0.01,
+    "field_flex": 13.0,
+    "opt_flex": 7.66,
+    "real_flex": 1.47
+   }
+  ]
+ },
+ "lists": {
+  "top_win": {
+   "n": 60,
+   "top5": [
+    {
+     "points": 93.7,
+     "rank": 45024,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "Jayden Daniels"
+    },
+    {
+     "points": 105.7,
+     "rank": 11824,
+     "cashed": true,
+     "paid": 30.0,
+     "captain": "Stefon Diggs"
+    },
+    {
+     "points": 91.05,
+     "rank": 53148,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "Christian McCaffrey"
+    },
+    {
+     "points": 107.0,
+     "rank": 9464,
+     "cashed": true,
+     "paid": 30.0,
+     "captain": "Stefon Diggs"
+    },
+    {
+     "points": 102.65,
+     "rank": 20351,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "Christian McCaffrey"
+    }
+   ],
+   "top20_cashed": 7,
+   "top20_best_rank": 829,
+   "top20_paid": 235.0,
+   "top20_fees": 400.0
+  },
+  "top_ev": {
+   "n": 60,
+   "top5": [
+    {
+     "points": 102.65,
+     "rank": 20351,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "Christian McCaffrey"
+    },
+    {
+     "points": 102.65,
+     "rank": 20351,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "Christian McCaffrey"
+    },
+    {
+     "points": 111.55,
+     "rank": 4098,
+     "cashed": true,
+     "paid": 35.0,
+     "captain": "Christian McCaffrey"
+    },
+    {
+     "points": 98.1,
+     "rank": 32435,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "Jayden Daniels"
+    },
+    {
+     "points": 91.05,
+     "rank": 53148,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "Christian McCaffrey"
+    }
+   ],
+   "top20_cashed": 9,
+   "top20_best_rank": 829,
+   "top20_paid": 305.0,
+   "top20_fees": 400.0
+  },
+  "top_top1": {
+   "n": 60,
+   "top5": [
+    {
+     "points": 95.51,
+     "rank": 39817,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "Christian McCaffrey"
+    },
+    {
+     "points": 83.31,
+     "rank": 70942,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "Christian McCaffrey"
+    },
+    {
+     "points": 89.71,
+     "rank": 56511,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "Christian McCaffrey"
+    },
+    {
+     "points": 89.95,
+     "rank": 56001,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "Christian McCaffrey"
+    },
+    {
+     "points": 91.95,
+     "rank": 50544,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "Christian McCaffrey"
+    }
+   ],
+   "top20_cashed": 3,
+   "top20_best_rank": 2803,
+   "top20_paid": 100.0,
+   "top20_fees": 400.0
+  },
+  "top_money": {
+   "n": 60,
+   "top5": [
+    {
+     "points": 98.61,
+     "rank": 30812,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "Christian McCaffrey"
+    },
+    {
+     "points": 96.61,
+     "rank": 36421,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "Christian McCaffrey"
+    },
+    {
+     "points": 95.21,
+     "rank": 40880,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "Christian McCaffrey"
+    },
+    {
+     "points": 95.51,
+     "rank": 39817,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "Christian McCaffrey"
+    },
+    {
+     "points": 103.04,
+     "rank": 19570,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "Brock Purdy"
+    }
+   ],
+   "top20_cashed": 2,
+   "top20_best_rank": 10626,
+   "top20_paid": 60.0,
+   "top20_fees": 400.0
+  }
+ },
+ "portfolios": {
+  "10": {
+   "entries": 10,
+   "cashed": 2,
+   "best_rank": 982,
+   "any_top1pct": false,
+   "paid": 80.0,
+   "fees": 200.0,
+   "board_p_any_top1_pct": 34.6
+  },
+  "20": {
+   "entries": 20,
+   "cashed": 4,
+   "best_rank": 982,
+   "any_top1pct": false,
+   "paid": 145.0,
+   "fees": 400.0,
+   "board_p_any_top1_pct": 52.8
+  },
+  "5": {
+   "entries": 5,
+   "cashed": 0,
+   "best_rank": 39817,
+   "any_top1pct": false,
+   "paid": 0.0,
+   "fees": 100.0,
+   "board_p_any_top1_pct": 21.4
+  }
+ },
+ "hindsight_best_allowed": {
+  "points": 120.45,
+  "rank": 120,
+  "cashed": true,
+  "paid": 150.0,
+  "lineup": [
+   "Christian McCaffrey (CPT)",
+   "Jayden Daniels",
+   "George Kittle",
+   "Rachaad White",
+   "Chig Okonkwo",
+   "John Bates"
+  ]
+ },
+ "payout_table_rows": 24
+}

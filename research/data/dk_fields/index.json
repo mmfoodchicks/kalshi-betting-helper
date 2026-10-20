@@ -22,5 +22,17 @@
   "sha256": "41db4790b2c69049ee8c0363fd8572cb66b4a2111018d3b877afd9982bc60f37",
   "source": "the owner's final export, summarized off the PC and committed (2026-10-19); the export itself stays out of git",
   "starts": "2026-10-19T00:20:00.0000000Z"
+ },
+ "196786690": {
+  "cash_line": 103.21,
+  "draft_group_id": 154960,
+  "entries": 87465,
+  "final": true,
+  "first": 125.799995,
+  "kind": "showdown",
+  "name": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (WAS @ SF)",
+  "sha256": "1ed58a880b2f729e7196bcc47340ba129ade970f9a50c4997c0bb1ed5204e10d",
+  "source": "the owner's final export, summarized off the PC and committed (2026-10-20); the export itself stays out of git",
+  "starts": "2026-10-20T00:15:00.0000000Z"
  }
 }

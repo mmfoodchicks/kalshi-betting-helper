@@ -116,6 +116,20 @@
    "kind": "showdown",
    "rows_excluding_header": 88235,
    "zip_sha256": "c61518b7601190d588638c04b707cc959ffd8f8fe3e9c9bc1f95a606dd1a332b"
+  },
+  "contest-standings-196786690.csv.gz": {
+   "committed": false,
+   "contest_id": 196786690,
+   "csv_bytes": 13879222,
+   "csv_mtime_in_zip": "2026-10-20 03:24:40",
+   "csv_sha256": "4263a4873c690ba6bf28e0523238a729c5ed61c8021880edc392b16daa354931",
+   "frozen_utc": "2026-10-20 03:27:56 UTC",
+   "gz_sha256": "21096bc328f167d2184b3bb8a23e977bd08dc82e40728caca787f312081931c8",
+   "kind": "showdown",
+   "note": "Monday night's held-out showdown for the S7 prospective test (pre-lock captures 13:07 and 23:21 UTC): frozen after the game, scored by research.s7_prospective; the export names every entrant, so it stays out of git (.gitignore)",
+   "prospective": true,
+   "rows_excluding_header": 87465,
+   "zip_sha256": "1ed58a880b2f729e7196bcc47340ba129ade970f9a50c4997c0bb1ed5204e10d"
   }
  },
  "frozen_utc": "2026-09-19 12:10:03 UTC",

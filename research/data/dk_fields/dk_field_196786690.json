@@ -1,0 +1,784 @@
+{
+ "contest": {
+  "draft_group_id": 154960,
+  "entry_fee": 20.0,
+  "first_prize": 500000.0,
+  "max_entries": 88235,
+  "name": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (WAS @ SF)",
+  "places_paid": 19130,
+  "prize_pool": 1500000.0,
+  "starts": "2026-10-20T00:15:00.0000000Z"
+ },
+ "contest_id": 196786690,
+ "duplicates": {
+  "distinct_lineups": 14097,
+  "distinct_pair_collision": 0.000631729507433458,
+  "entries_in_duplicated_lineups_pct": 93.12,
+  "max_copies": 747
+ },
+ "entries": 87465,
+ "final": true,
+ "kind": "showdown",
+ "malformed": 0,
+ "max_entry_users_pct": 25.21,
+ "ownership": [
+  {
+   "cpt_pct": 19.86,
+   "dk_pct": {
+    "CPT": 19.82,
+    "FLEX": 60.35
+   },
+   "fpts": 17.36,
+   "name": "Brock Purdy",
+   "pct": 80.34,
+   "pos": "QB",
+   "salary": 10800,
+   "team": "SF"
+  },
+  {
+   "cpt_pct": 13.23,
+   "dk_pct": {
+    "CPT": 13.21,
+    "FLEX": 51.46
+   },
+   "fpts": 24.0,
+   "name": "Jayden Daniels",
+   "pct": 64.8,
+   "pos": "QB",
+   "salary": 10000,
+   "team": "WAS"
+  },
+  {
+   "cpt_pct": 19.51,
+   "dk_pct": {
+    "CPT": 19.47,
+    "FLEX": 43.54
+   },
+   "fpts": 17.9,
+   "name": "George Kittle",
+   "pct": 63.14,
+   "pos": "TE",
+   "salary": 8200,
+   "team": "SF"
+  },
+  {
+   "cpt_pct": 14.61,
+   "dk_pct": {
+    "CPT": 14.58,
+    "FLEX": 45.54
+   },
+   "fpts": 31.7,
+   "name": "Christian McCaffrey",
+   "pct": 60.25,
+   "pos": "RB",
+   "salary": 11800,
+   "team": "SF"
+  },
+  {
+   "cpt_pct": 5.36,
+   "dk_pct": {
+    "CPT": 5.35,
+    "FLEX": 34.09
+   },
+   "fpts": 15.7,
+   "name": "Rachaad White",
+   "pct": 39.52,
+   "pos": "RB",
+   "salary": 6600,
+   "team": "WAS"
+  },
+  {
+   "cpt_pct": 9.16,
+   "dk_pct": {
+    "CPT": 9.14,
+    "FLEX": 28.82
+   },
+   "fpts": 12.4,
+   "name": "Mike Evans",
+   "pct": 38.04,
+   "pos": "WR",
+   "salary": 9600,
+   "team": "SF"
+  },
+  {
+   "cpt_pct": 4.18,
+   "dk_pct": {
+    "CPT": 4.17,
+    "FLEX": 23.58
+   },
+   "fpts": 3.7,
+   "name": "Terry McLaurin",
+   "pct": 27.81,
+   "pos": "WR",
+   "salary": 8000,
+   "team": "WAS"
+  },
+  {
+   "cpt_pct": 2.51,
+   "dk_pct": {
+    "CPT": 2.5,
+    "FLEX": 21.38
+   },
+   "fpts": 2.3,
+   "name": "Brandin Cooks",
+   "pct": 23.93,
+   "pos": "WR",
+   "salary": 4000,
+   "team": "SF"
+  },
+  {
+   "cpt_pct": 1.42,
+   "dk_pct": {
+    "CPT": 1.42,
+    "FLEX": 20.47
+   },
+   "fpts": 2.7,
+   "name": "Austin Ekeler",
+   "pct": 21.94,
+   "pos": "RB",
+   "salary": 3600,
+   "team": "WAS"
+  },
+  {
+   "cpt_pct": 0.7,
+   "dk_pct": {
+    "CPT": 0.7,
+    "FLEX": 20.84
+   },
+   "fpts": 5.0,
+   "name": "Eddy Pineiro",
+   "pct": 21.58,
+   "pos": "K",
+   "salary": 5200,
+   "team": "SF"
+  },
+  {
+   "cpt_pct": 1.27,
+   "dk_pct": {
+    "CPT": 1.27,
+    "FLEX": 19.48
+   },
+   "fpts": 13.9,
+   "name": "Chig Okonkwo",
+   "pct": 20.79,
+   "pos": "TE",
+   "salary": 4600,
+   "team": "WAS"
+  },
+  {
+   "cpt_pct": 2.35,
+   "dk_pct": {
+    "CPT": 2.34,
+    "FLEX": 15.23
+   },
+   "fpts": 5.0,
+   "name": "49ers",
+   "pct": 17.61,
+   "pos": "DST",
+   "salary": 4400,
+   "team": "SF"
+  },
+  {
+   "cpt_pct": 0.39,
+   "dk_pct": {
+    "CPT": 0.39,
+    "FLEX": 15.53
+   },
+   "fpts": 7.0,
+   "name": "Drew Stevens",
+   "pct": 15.95,
+   "pos": "K",
+   "salary": 5000,
+   "team": "WAS"
+  },
+  {
+   "cpt_pct": 0.9,
+   "dk_pct": {
+    "CPT": 0.9,
+    "FLEX": 14.56
+   },
+   "fpts": 8.0,
+   "name": "Antonio Williams",
+   "pct": 15.49,
+   "pos": "WR",
+   "salary": 4200,
+   "team": "WAS"
+  },
+  {
+   "cpt_pct": 1.9,
+   "dk_pct": {
+    "CPT": 1.89,
+    "FLEX": 13.06
+   },
+   "fpts": 16.4,
+   "name": "Stefon Diggs",
+   "pct": 14.98,
+   "pos": "WR",
+   "salary": 8400,
+   "team": "WAS"
+  },
+  {
+   "cpt_pct": 0.19,
+   "dk_pct": {
+    "CPT": 0.19,
+    "FLEX": 11.38
+   },
+   "fpts": 2.0,
+   "name": "Kyle Juszczyk",
+   "pct": 11.59,
+   "pos": "RB",
+   "salary": 1400,
+   "team": "SF"
+  },
+  {
+   "cpt_pct": 0.31,
+   "dk_pct": {
+    "CPT": 0.31,
+    "FLEX": 10.02
+   },
+   "fpts": 0.0,
+   "name": "Jacob Cowing",
+   "pct": 10.35,
+   "pos": "WR",
+   "salary": 2200,
+   "team": "SF"
+  },
+  {
+   "cpt_pct": 0.38,
+   "dk_pct": {
+    "CPT": 0.38,
+    "FLEX": 9.35
+   },
+   "fpts": 10.6,
+   "name": "Treylon Burks",
+   "pct": 9.75,
+   "pos": "WR",
+   "salary": 3200,
+   "team": "WAS"
+  },
+  {
+   "cpt_pct": 0.36,
+   "dk_pct": {
+    "CPT": 0.36,
+    "FLEX": 9.24
+   },
+   "fpts": 1.3,
+   "name": "Jeremy McNichols",
+   "pct": 9.62,
+   "pos": "RB",
+   "salary": 200,
+   "team": "WAS"
+  },
+  {
+   "cpt_pct": 0.56,
+   "dk_pct": {
+    "CPT": 0.56,
+    "FLEX": 6.6
+   },
+   "fpts": 4.7,
+   "name": "Kaelon Black",
+   "pct": 7.17,
+   "pos": "RB",
+   "salary": 3800,
+   "team": "SF"
+  },
+  {
+   "cpt_pct": 0.33,
+   "dk_pct": {
+    "CPT": 0.32,
+    "FLEX": 4.94
+   },
+   "fpts": 4.0,
+   "name": "Commanders",
+   "pct": 5.28,
+   "pos": "DST",
+   "salary": 3400,
+   "team": "WAS"
+  },
+  {
+   "cpt_pct": 0.23,
+   "dk_pct": {
+    "CPT": 0.23,
+    "FLEX": 4.83
+   },
+   "fpts": 3.2,
+   "name": "Jordan Watkins",
+   "pct": 5.07,
+   "pos": "WR",
+   "salary": 2000,
+   "team": "SF"
+  },
+  {
+   "cpt_pct": 0.08,
+   "dk_pct": {
+    "CPT": 0.08,
+    "FLEX": 4.54
+   },
+   "fpts": 1.6,
+   "name": "Dyami Brown",
+   "pct": 4.63,
+   "pos": "WR",
+   "salary": 2600,
+   "team": "WAS"
+  },
+  {
+   "cpt_pct": 0.04,
+   "dk_pct": {
+    "CPT": 0.04,
+    "FLEX": 2.87
+   },
+   "fpts": 0.0,
+   "name": "Luke Farrell",
+   "pct": 2.92,
+   "pos": "TE",
+   "salary": 1200,
+   "team": "SF"
+  },
+  {
+   "cpt_pct": 0.03,
+   "dk_pct": {
+    "CPT": 0.03,
+    "FLEX": 1.88
+   },
+   "fpts": 0.0,
+   "name": "Ben Sinnott",
+   "pct": 1.92,
+   "pos": "TE",
+   "salary": 600,
+   "team": "WAS"
+  },
+  {
+   "cpt_pct": 0.01,
+   "dk_pct": {
+    "CPT": 0.01,
+    "FLEX": 1.47
+   },
+   "fpts": 1.4,
+   "name": "John Bates",
+   "pct": 1.48,
+   "pos": "TE",
+   "salary": 1600,
+   "team": "WAS"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "CPT": 0.0,
+    "FLEX": 0.72
+   },
+   "fpts": 0.0,
+   "name": "Brayden Willis",
+   "pct": 0.73,
+   "pos": "TE",
+   "salary": 200,
+   "team": "SF"
+  },
+  {
+   "cpt_pct": 0.01,
+   "dk_pct": {
+    "CPT": 0.01,
+    "FLEX": 0.6
+   },
+   "fpts": 0.0,
+   "name": "Malik Turner",
+   "pct": 0.61,
+   "pos": "WR",
+   "salary": 200,
+   "team": "SF"
+  },
+  {
+   "cpt_pct": 0.01,
+   "dk_pct": {
+    "CPT": 0.01,
+    "FLEX": 0.54
+   },
+   "fpts": 0.0,
+   "name": "Colson Yankoff",
+   "pct": 0.54,
+   "pos": "TE",
+   "salary": 200,
+   "team": "WAS"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "CPT": 0.0,
+    "FLEX": 0.48
+   },
+   "fpts": 0.0,
+   "name": "Craig Reynolds",
+   "pct": 0.49,
+   "pos": "RB",
+   "salary": 200,
+   "team": "WAS"
+  },
+  {
+   "cpt_pct": 0.01,
+   "dk_pct": {
+    "CPT": 0.01,
+    "FLEX": 0.45
+   },
+   "fpts": 0.0,
+   "name": "Luke McCaffrey",
+   "pct": 0.46,
+   "pos": "WR",
+   "salary": 1000,
+   "team": "WAS"
+  },
+  {
+   "cpt_pct": 0.01,
+   "dk_pct": {
+    "CPT": 0.01,
+    "FLEX": 0.4
+   },
+   "fpts": 0.0,
+   "name": "Jordan James",
+   "pct": 0.4,
+   "pos": "RB",
+   "salary": 400,
+   "team": "SF"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "CPT": 0.0,
+    "FLEX": 0.15
+   },
+   "fpts": 0.0,
+   "name": "Jacory Croskey-Merritt",
+   "pct": 0.16,
+   "pos": "RB",
+   "salary": 7000,
+   "team": "WAS"
+  },
+  {
+   "cpt_pct": 0.01,
+   "dk_pct": {
+    "CPT": 0.01,
+    "FLEX": 0.15
+   },
+   "fpts": 0.0,
+   "name": "Van Jefferson",
+   "pct": 0.15,
+   "pos": "WR",
+   "salary": 800,
+   "team": "WAS"
+  },
+  {
+   "cpt_pct": 0.02,
+   "dk_pct": {
+    "CPT": 0.02,
+    "FLEX": 0.1
+   },
+   "fpts": 0.0,
+   "name": "Christian Kirk",
+   "pct": 0.12,
+   "pos": "WR",
+   "salary": 3000,
+   "team": "SF"
+  },
+  {
+   "cpt_pct": 0.02,
+   "dk_pct": {
+    "CPT": 0.02,
+    "FLEX": 0.08
+   },
+   "fpts": 0.0,
+   "name": "Athan Kaliakmanis",
+   "pct": 0.1,
+   "pos": "QB",
+   "salary": 6000,
+   "team": "WAS"
+  },
+  {
+   "cpt_pct": 0.02,
+   "dk_pct": {
+    "CPT": 0.02,
+    "FLEX": 0.07
+   },
+   "fpts": 0.0,
+   "name": "Mac Jones",
+   "pct": 0.09,
+   "pos": "QB",
+   "salary": 6000,
+   "team": "SF"
+  },
+  {
+   "cpt_pct": 0.01,
+   "dk_pct": {
+    "CPT": 0.01,
+    "FLEX": 0.05
+   },
+   "fpts": 0.0,
+   "name": "Deebo Samuel Sr.",
+   "pct": 0.06,
+   "pos": "WR",
+   "salary": 8600,
+   "team": "SF"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "CPT": 0.0,
+    "FLEX": 0.03
+   },
+   "fpts": 0.0,
+   "name": "Sincere McCormick",
+   "pct": 0.03,
+   "pos": "RB",
+   "salary": 200,
+   "team": "SF"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "FLEX": 0.02
+   },
+   "fpts": 0.0,
+   "name": "Xavier Smith",
+   "pct": 0.02,
+   "pos": "WR",
+   "salary": 200,
+   "team": "SF"
+  }
+ ],
+ "points": {
+  "cash_line": 103.21,
+  "first": 125.799995,
+  "median": 94.14,
+  "top_0_1pct": 121.05,
+  "top_10pct": 107.51,
+  "top_1pct": 116.55
+ },
+ "rank_points": [
+  [
+   1,
+   125.799995
+  ],
+  [
+   2,
+   125.799995
+  ],
+  [
+   5,
+   125.799995
+  ],
+  [
+   10,
+   125.799995
+  ],
+  [
+   20,
+   125.799995
+  ],
+  [
+   50,
+   123.75
+  ],
+  [
+   100,
+   120.649994
+  ],
+  [
+   200,
+   119.81
+  ],
+  [
+   500,
+   118.05
+  ],
+  [
+   1000,
+   116.149994
+  ],
+  [
+   2000,
+   114.850006
+  ],
+  [
+   5000,
+   110.4
+  ],
+  [
+   10000,
+   106.71001
+  ],
+  [
+   20000,
+   102.81
+  ],
+  [
+   50000,
+   92.149994
+  ],
+  [
+   87465,
+   0.0
+  ]
+ ],
+ "sha256": "1ed58a880b2f729e7196bcc47340ba129ade970f9a50c4997c0bb1ed5204e10d",
+ "shape": {
+  "resolved": 87284,
+  "salary_mean": 49242.7,
+  "salary_median": 49500.0,
+  "team_split_pct": {
+   "3-3": 35.56,
+   "4-2": 46.49,
+   "5-1": 17.96
+  },
+  "unresolved": 0
+ },
+ "top_lineups": [
+  {
+   "lineup": [
+    [
+     "CPT",
+     "Jayden Daniels"
+    ],
+    [
+     "FLEX",
+     "Christian McCaffrey"
+    ],
+    [
+     "FLEX",
+     "George Kittle"
+    ],
+    [
+     "FLEX",
+     "Rachaad White"
+    ],
+    [
+     "FLEX",
+     "Chig Okonkwo"
+    ],
+    [
+     "FLEX",
+     "Treylon Burks"
+    ]
+   ],
+   "points": 125.799995,
+   "rank": 1
+  },
+  {
+   "lineup": [
+    [
+     "CPT",
+     "Jayden Daniels"
+    ],
+    [
+     "FLEX",
+     "Christian McCaffrey"
+    ],
+    [
+     "FLEX",
+     "George Kittle"
+    ],
+    [
+     "FLEX",
+     "Rachaad White"
+    ],
+    [
+     "FLEX",
+     "Chig Okonkwo"
+    ],
+    [
+     "FLEX",
+     "Treylon Burks"
+    ]
+   ],
+   "points": 125.799995,
+   "rank": 1
+  },
+  {
+   "lineup": [
+    [
+     "CPT",
+     "Jayden Daniels"
+    ],
+    [
+     "FLEX",
+     "Christian McCaffrey"
+    ],
+    [
+     "FLEX",
+     "George Kittle"
+    ],
+    [
+     "FLEX",
+     "Rachaad White"
+    ],
+    [
+     "FLEX",
+     "Chig Okonkwo"
+    ],
+    [
+     "FLEX",
+     "Treylon Burks"
+    ]
+   ],
+   "points": 125.799995,
+   "rank": 1
+  },
+  {
+   "lineup": [
+    [
+     "CPT",
+     "Jayden Daniels"
+    ],
+    [
+     "FLEX",
+     "Christian McCaffrey"
+    ],
+    [
+     "FLEX",
+     "George Kittle"
+    ],
+    [
+     "FLEX",
+     "Rachaad White"
+    ],
+    [
+     "FLEX",
+     "Chig Okonkwo"
+    ],
+    [
+     "FLEX",
+     "Treylon Burks"
+    ]
+   ],
+   "points": 125.799995,
+   "rank": 1
+  },
+  {
+   "lineup": [
+    [
+     "CPT",
+     "Jayden Daniels"
+    ],
+    [
+     "FLEX",
+     "Christian McCaffrey"
+    ],
+    [
+     "FLEX",
+     "George Kittle"
+    ],
+    [
+     "FLEX",
+     "Rachaad White"
+    ],
+    [
+     "FLEX",
+     "Chig Okonkwo"
+    ],
+    [
+     "FLEX",
+     "Treylon Burks"
+    ]
+   ],
+   "points": 125.799995,
+   "rank": 1
+  }
+ ],
+ "with_lineup": 87284
+}

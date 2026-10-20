@@ -53,3 +53,7 @@ research/data/cl_week2/rehearsal/
 research/data/cl_worlds_smoke.json
 research/data/sd_worlds_smoke.json
 research/data/cl_own_smoke.json
+
+# Monday night 2026-10-19 showdown export (S7 prospective test): frozen locally for the scorer,
+# never committed -- it names every entrant (only the summary and the scored artifact are committed)
+research/data/dk_standings/contest-standings-196786690.csv.gz

@@ -1,0 +1,304 @@
+{
+ "contests": {
+  "196786690": {
+   "capture_sensitivity": [
+    {
+     "active_entries": 87284,
+     "capture_stamp": "20261019T130736Z",
+     "contest": 196786690,
+     "cpt_position_mix_l1_pp": {
+      "primary": 23.57,
+      "projection_only": 29.68
+     },
+     "draft_group": 154960,
+     "effective_lineups": {
+      "observed": 1421.9,
+      "primary": 11066.5
+     },
+     "entries_in_51plus_copy_lineups_pct": {
+      "observed": 25.85,
+      "primary": 0.0
+     },
+     "five_one_pct": {
+      "observed": 18.66,
+      "primary": 13.93
+     },
+     "hours_to_lock": 11.121,
+     "label": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (WAS @ SF)",
+     "nll_per_entry": {
+      "projection_only_frozen": 9.99734,
+      "projection_plus_salary_frozen_primary": 9.47478,
+      "projection_plus_salary_frozen_secondary": 9.48026,
+      "salary_only_diagnostic": 9.70534
+     },
+     "observed_mass_in_top_1000_pct": {
+      "primary": 31.695,
+      "projection_only": 25.929
+     },
+     "principal_ci95_user_cluster": [
+      0.49974,
+      0.54549
+     ],
+     "principal_delta": -0.52256,
+     "production_field_on_own_support": {
+      "nll": 9.40935,
+      "support_pct": 61.13
+     },
+     "real_chalk_rank": {
+      "primary": 69,
+      "projection_only": 95
+     },
+     "representable_pct": 87.8,
+     "role": "timing_sensitivity",
+     "salary_left": {
+      "share_exactly_0_pct": {
+       "observed": 14.86,
+       "primary": 11.29
+      },
+      "share_ge_1000_pct": {
+       "model": 37.14,
+       "observed": 27.6
+      }
+     },
+     "salary_only_delta": -0.292,
+     "secondary_delta": -0.51708,
+     "slate_identity": "SF/WAS 2026-10-20",
+     "top_share_pct": {
+      "observed": 0.9747,
+      "primary": 0.0431
+     },
+     "week": 6
+    }
+   ],
+   "contest": 196786690,
+   "draft_group": 154960,
+   "label": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (WAS @ SF)",
+   "primary": {
+    "active_entries": 87284,
+    "capture_stamp": "20261019T232101Z",
+    "contest": 196786690,
+    "cpt_position_mix_l1_pp": {
+     "primary": 23.51,
+     "projection_only": 28.54
+    },
+    "draft_group": 154960,
+    "effective_lineups": {
+     "observed": 1479.0,
+     "primary": 11650.5
+    },
+    "entries_in_51plus_copy_lineups_pct": {
+     "observed": 27.43,
+     "primary": 0.0
+    },
+    "five_one_pct": {
+     "observed": 17.78,
+     "primary": 13.01
+    },
+    "hours_to_lock": 0.897,
+    "label": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (WAS @ SF)",
+    "nll_per_entry": {
+     "projection_only_frozen": 9.96742,
+     "projection_plus_salary_frozen_primary": 9.50863,
+     "projection_plus_salary_frozen_secondary": 9.51364,
+     "salary_only_diagnostic": 9.74793
+    },
+    "observed_mass_in_top_1000_pct": {
+     "primary": 30.779,
+     "projection_only": 26.084
+    },
+    "principal_ci95_user_cluster": [
+     0.43606,
+     0.48288
+    ],
+    "principal_delta": -0.45879,
+    "production_field_on_own_support": {
+     "nll": 9.23254,
+     "support_pct": 56.89
+    },
+    "real_chalk_rank": {
+     "primary": 59,
+     "projection_only": 65
+    },
+    "representable_pct": 97.4,
+    "role": "primary",
+    "salary_left": {
+     "share_exactly_0_pct": {
+      "observed": 15.1,
+      "primary": 11.29
+     },
+     "share_ge_1000_pct": {
+      "model": 37.29,
+      "observed": 27.83
+     }
+    },
+    "salary_only_delta": -0.21949,
+    "secondary_delta": -0.45378,
+    "slate_identity": "SF/WAS 2026-10-20",
+    "top_share_pct": {
+     "observed": 0.8787,
+     "primary": 0.042
+    },
+    "week": 6
+   },
+   "primary_stamp": "20261019T232101Z",
+   "reads": "primary = the latest valid pre-lock capture scored; capture_sensitivity = earlier valid captures scored with the same frozen parameters, retained beside it, never part of the pass/fail criterion",
+   "runs": {
+    "20261019T130736Z": {
+     "active_entries": 87284,
+     "capture_stamp": "20261019T130736Z",
+     "contest": 196786690,
+     "cpt_position_mix_l1_pp": {
+      "primary": 23.57,
+      "projection_only": 29.68
+     },
+     "draft_group": 154960,
+     "effective_lineups": {
+      "observed": 1421.9,
+      "primary": 11066.5
+     },
+     "entries_in_51plus_copy_lineups_pct": {
+      "observed": 25.85,
+      "primary": 0.0
+     },
+     "five_one_pct": {
+      "observed": 18.66,
+      "primary": 13.93
+     },
+     "hours_to_lock": 11.121,
+     "label": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (WAS @ SF)",
+     "nll_per_entry": {
+      "projection_only_frozen": 9.99734,
+      "projection_plus_salary_frozen_primary": 9.47478,
+      "projection_plus_salary_frozen_secondary": 9.48026,
+      "salary_only_diagnostic": 9.70534
+     },
+     "observed_mass_in_top_1000_pct": {
+      "primary": 31.695,
+      "projection_only": 25.929
+     },
+     "principal_ci95_user_cluster": [
+      0.49974,
+      0.54549
+     ],
+     "principal_delta": -0.52256,
+     "production_field_on_own_support": {
+      "nll": 9.40935,
+      "support_pct": 61.13
+     },
+     "real_chalk_rank": {
+      "primary": 69,
+      "projection_only": 95
+     },
+     "representable_pct": 87.8,
+     "role": "timing_sensitivity",
+     "salary_left": {
+      "share_exactly_0_pct": {
+       "observed": 14.86,
+       "primary": 11.29
+      },
+      "share_ge_1000_pct": {
+       "model": 37.14,
+       "observed": 27.6
+      }
+     },
+     "salary_only_delta": -0.292,
+     "secondary_delta": -0.51708,
+     "slate_identity": "SF/WAS 2026-10-20",
+     "top_share_pct": {
+      "observed": 0.9747,
+      "primary": 0.0431
+     },
+     "week": 6
+    },
+    "20261019T232101Z": {
+     "active_entries": 87284,
+     "capture_stamp": "20261019T232101Z",
+     "contest": 196786690,
+     "cpt_position_mix_l1_pp": {
+      "primary": 23.51,
+      "projection_only": 28.54
+     },
+     "draft_group": 154960,
+     "effective_lineups": {
+      "observed": 1479.0,
+      "primary": 11650.5
+     },
+     "entries_in_51plus_copy_lineups_pct": {
+      "observed": 27.43,
+      "primary": 0.0
+     },
+     "five_one_pct": {
+      "observed": 17.78,
+      "primary": 13.01
+     },
+     "hours_to_lock": 0.897,
+     "label": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (WAS @ SF)",
+     "nll_per_entry": {
+      "projection_only_frozen": 9.96742,
+      "projection_plus_salary_frozen_primary": 9.50863,
+      "projection_plus_salary_frozen_secondary": 9.51364,
+      "salary_only_diagnostic": 9.74793
+     },
+     "observed_mass_in_top_1000_pct": {
+      "primary": 30.779,
+      "projection_only": 26.084
+     },
+     "principal_ci95_user_cluster": [
+      0.43606,
+      0.48288
+     ],
+     "principal_delta": -0.45879,
+     "production_field_on_own_support": {
+      "nll": 9.23254,
+      "support_pct": 56.89
+     },
+     "real_chalk_rank": {
+      "primary": 59,
+      "projection_only": 65
+     },
+     "representable_pct": 97.4,
+     "role": "primary",
+     "salary_left": {
+      "share_exactly_0_pct": {
+       "observed": 15.1,
+       "primary": 11.29
+      },
+      "share_ge_1000_pct": {
+       "model": 37.29,
+       "observed": 27.83
+      }
+     },
+     "salary_only_delta": -0.21949,
+     "secondary_delta": -0.45378,
+     "slate_identity": "SF/WAS 2026-10-20",
+     "top_share_pct": {
+      "observed": 0.8787,
+      "primary": 0.042
+     },
+     "week": 6
+    }
+   },
+   "slate_identity": "SF/WAS 2026-10-20",
+   "unscored_pre_lock_captures": []
+  }
+ },
+ "meta": {
+  "distinct_slates_scored": 1,
+  "feature_selection_round_allowed": false,
+  "frozen": "research/data/s7_frozen_field.json",
+  "prospective_contests_scored": 1,
+  "rules": [
+   "no refit of beta or gamma per slate",
+   "no new parameter after seeing a contest",
+   "score a contest before any of its counts changes anything",
+   "at least 3 distinct genuinely pre-lock captured slates (games) before another feature-selection round; contests sharing a pool and a game environment are one test, and are counted separately as metadata",
+   "the frozen parameter file is immutable: a re-freeze with identical parameters leaves it byte-for-byte unchanged, a differing one is refused",
+   "the latest valid pre-lock capture is the primary; every earlier valid capture is a timing-sensitivity arm scored with the same frozen parameters, retained beside it, and never part of the pass/fail criterion",
+   "the scorer refuses a capture stamped after the earliest contest start"
+  ],
+  "slates": [
+   "SF/WAS 2026-10-20"
+  ],
+  "stage": "S7 prospective ledger: every scored run per contest, keyed by capture stamp; the primary is the latest valid pre-lock capture"
+ }
+}

@@ -88,11 +88,13 @@ def read_text(path):
 
 def parse(text):
     """{"entries": [{rank, points, user, user_entries, lineup}], "dk_own":
-    {(name, roster position): share}, "fpts": {name: points}, "malformed"}."""
+    {(name, roster position): share}, "fpts": {name: base points}, "malformed"}
+    -- a showdown captain's 1.5x is the lineup's to apply, never the player's."""
     rows = list(csv.reader(text.splitlines()))
     if not rows or rows[0][:6] != _HEADER:
         raise ValueError(f"not a DraftKings standings export (header {rows[0][:6] if rows else None})")
     entries, own, fpts, bad = [], {}, {}, 0
+    cpt_pts = {}
     for r in rows[1:]:
         if len(r) < 6:
             continue
@@ -111,10 +113,24 @@ def parse(text):
                         "user_entries": int(m.group(2)) if m else 1, "lineup": lu})
         if len(r) > 10 and r[7].strip():
             try:
-                own[(_norm(r[7]), r[8].strip().upper())] = float(r[9].rstrip("%")) / 100.0
-                fpts[_norm(r[7])] = float(r[10] or 0.0)
+                slot = r[8].strip().upper()
+                own[(_norm(r[7]), slot)] = float(r[9].rstrip("%")) / 100.0
+                # A showdown's player table lists each man TWICE, a FLEX row
+                # and a CPT row whose FPTS is his 1.5x captain score. Keyed on
+                # the name alone, the later row won -- the captain figure for
+                # 44 of Monday night's 55 players (McCaffrey 47.55 for a
+                # 31.7-point game) and every player Sunday night, so the
+                # summary's points and the Real fields card read 1.5x. The
+                # base score is the FLEX row's; a CPT row stands in at /1.5
+                # only for a player nobody played at FLEX.
+                if slot == "CPT":
+                    cpt_pts[_norm(r[7])] = float(r[10] or 0.0)
+                else:
+                    fpts[_norm(r[7])] = float(r[10] or 0.0)
             except ValueError:
                 bad += 1
+    for nm, v in cpt_pts.items():
+        fpts.setdefault(nm, round(v / 1.5, 4))
     return {"entries": entries, "dk_own": own, "fpts": fpts, "malformed": bad}
 
 

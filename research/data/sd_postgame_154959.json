@@ -1,0 +1,506 @@
+{
+ "board": {
+  "draft_group_id": 154959,
+  "built_ts": 1792367567,
+  "mins_before_lock": 27,
+  "sims": 60000,
+  "lineups_legal": 780492,
+  "lineups_allowed": 26282
+ },
+ "export_sha256": "41db4790b2c69049ee8c0363fd8572cb66b4a2111018d3b877afd9982bc60f37",
+ "entries_with_lineup": 78189,
+ "places_paid": 17255,
+ "entry_fee": 15.0,
+ "cash_line": 93.68,
+ "first": 117.33999,
+ "field": {
+  "served": {
+   "pair_collision": 0.0002070769298511259,
+   "distinct_expected": 19422,
+   "top_copies": 156.4,
+   "salary_mean": 48658,
+   "salary_median": 49100
+  },
+  "snf_knob": {
+   "pair_collision": 0.0005054053393183475,
+   "distinct_expected": 13272,
+   "top_copies": 365.9,
+   "salary_mean": 49027,
+   "salary_median": 49300
+  },
+  "snf_knob_beta": 0.6141,
+  "real": {
+   "pair_collision": 0.000505106654547457,
+   "distinct": 12627,
+   "top_copies": 314,
+   "salary_mean": 49265.5,
+   "salary_median": 49600.0,
+   "team_split_pct": {
+    "3-3": 37.83,
+    "4-2": 48.05,
+    "5-1": 14.12
+   }
+  },
+  "real_entries_the_universe_holds_pct": 92.57,
+  "players_outside_the_pool": {
+   "Jonathan Mingo": 1625,
+   "Luke Schoonmaker": 1423,
+   "Hunter Luepke": 1325,
+   "Mark Redman": 876,
+   "Josh Whyle": 291,
+   "Coleman Owen": 77,
+   "Lenny Krieg": 60,
+   "Emari Demercado": 36
+  }
+ },
+ "ownership": {
+  "cpt": {
+   "field": 2.068,
+   "opt": 1.604
+  },
+  "flex": {
+   "field": 5.742,
+   "opt": 4.753
+  },
+  "players": [
+   {
+    "name": "Dak Prescott",
+    "field_cpt": 13.6,
+    "opt_cpt": 9.7,
+    "real_cpt": 5.83,
+    "field_flex": 46.7,
+    "opt_flex": 56.77,
+    "real_flex": 44.91
+   },
+   {
+    "name": "CeeDee Lamb",
+    "field_cpt": 12.9,
+    "opt_cpt": 19.3,
+    "real_cpt": 11.17,
+    "field_flex": 46.5,
+    "opt_flex": 38.77,
+    "real_flex": 36.04
+   },
+   {
+    "name": "Jordan Love",
+    "field_cpt": 20.6,
+    "opt_cpt": 6.52,
+    "real_cpt": 13.55,
+    "field_flex": 53.7,
+    "opt_flex": 50.33,
+    "real_flex": 61.17
+   },
+   {
+    "name": "Javonte Williams",
+    "field_cpt": 16.1,
+    "opt_cpt": 12.96,
+    "real_cpt": 11.63,
+    "field_flex": 48.6,
+    "opt_flex": 31.59,
+    "real_flex": 37.55
+   },
+   {
+    "name": "Christian Watson",
+    "field_cpt": 11.1,
+    "opt_cpt": 10.85,
+    "real_cpt": 17.37,
+    "field_flex": 43.9,
+    "opt_flex": 31.4,
+    "real_flex": 40.28
+   },
+   {
+    "name": "Matthew Golden",
+    "field_cpt": 6.3,
+    "opt_cpt": 8.77,
+    "real_cpt": 12.74,
+    "field_flex": 32.5,
+    "opt_flex": 29.41,
+    "real_flex": 35.98
+   },
+   {
+    "name": "George Pickens",
+    "field_cpt": 1.3,
+    "opt_cpt": 7.79,
+    "real_cpt": 7.55,
+    "field_flex": 12.3,
+    "opt_flex": 26.79,
+    "real_flex": 29.37
+   },
+   {
+    "name": "Tucker Kraft",
+    "field_cpt": 4.5,
+    "opt_cpt": 6.02,
+    "real_cpt": 6.38,
+    "field_flex": 25.3,
+    "opt_flex": 26.61,
+    "real_flex": 29.41
+   },
+   {
+    "name": "MarShawn Lloyd",
+    "field_cpt": 1.7,
+    "opt_cpt": 5.59,
+    "real_cpt": 4.79,
+    "field_flex": 14.8,
+    "opt_flex": 24.01,
+    "real_flex": 20.99
+   },
+   {
+    "name": "Jake Ferguson",
+    "field_cpt": 1.5,
+    "opt_cpt": 3.38,
+    "real_cpt": 1.45,
+    "field_flex": 14.9,
+    "opt_flex": 22.48,
+    "real_flex": 16.09
+   },
+   {
+    "name": "Ryan Flournoy",
+    "field_cpt": 1.8,
+    "opt_cpt": 2.86,
+    "real_cpt": 1.97,
+    "field_flex": 19.7,
+    "opt_flex": 22.1,
+    "real_flex": 24.6
+   },
+   {
+    "name": "Trey Smack",
+    "field_cpt": 1.9,
+    "opt_cpt": 0.83,
+    "real_cpt": 0.34,
+    "field_flex": 19.5,
+    "opt_flex": 21.58,
+    "real_flex": 16.72
+   },
+   {
+    "name": "Brandon Aubrey",
+    "field_cpt": 1.3,
+    "opt_cpt": 0.86,
+    "real_cpt": 1.08,
+    "field_flex": 13.5,
+    "opt_flex": 21.51,
+    "real_flex": 22.66
+   },
+   {
+    "name": "Pierre Strong Jr.",
+    "field_cpt": 0.7,
+    "opt_cpt": 0.89,
+    "real_cpt": 0.96,
+    "field_flex": 11.9,
+    "opt_flex": 13.94,
+    "real_flex": 20.83
+   },
+   {
+    "name": "Cowboys",
+    "field_cpt": 0.5,
+    "opt_cpt": 0.75,
+    "real_cpt": 0.37,
+    "field_flex": 9.1,
+    "opt_flex": 13.41,
+    "real_flex": 5.92
+   },
+   {
+    "name": "Packers",
+    "field_cpt": 0.5,
+    "opt_cpt": 0.62,
+    "real_cpt": 0.8,
+    "field_flex": 8.5,
+    "opt_flex": 10.98,
+    "real_flex": 8.41
+   },
+   {
+    "name": "Kaleb Johnson",
+    "field_cpt": 0.3,
+    "opt_cpt": 0.83,
+    "real_cpt": 0.16,
+    "field_flex": 6.9,
+    "opt_flex": 10.69,
+    "real_flex": 3.27
+   },
+   {
+    "name": "Tyler Goodson",
+    "field_cpt": 0.7,
+    "opt_cpt": 0.52,
+    "real_cpt": 0.13,
+    "field_flex": 12.8,
+    "opt_flex": 10.56,
+    "real_flex": 3.38
+   },
+   {
+    "name": "Savion Williams",
+    "field_cpt": 0.6,
+    "opt_cpt": 0.11,
+    "real_cpt": 0.71,
+    "field_flex": 14.9,
+    "opt_flex": 8.08,
+    "real_flex": 9.52
+   },
+   {
+    "name": "Jonnu Smith",
+    "field_cpt": 0.6,
+    "opt_cpt": 0.29,
+    "real_cpt": 0.14,
+    "field_flex": 11.5,
+    "opt_flex": 7.85,
+    "real_flex": 4.87
+   },
+   {
+    "name": "KaVontae Turpin",
+    "field_cpt": 0.3,
+    "opt_cpt": 0.21,
+    "real_cpt": 0.28,
+    "field_flex": 6.7,
+    "opt_flex": 6.21,
+    "real_flex": 8.29
+   },
+   {
+    "name": "J. Michael Sturdivant",
+    "field_cpt": 0.5,
+    "opt_cpt": 0.17,
+    "real_cpt": 0.09,
+    "field_flex": 11.9,
+    "opt_flex": 6.21,
+    "real_flex": 2.01
+   },
+   {
+    "name": "Bo Melton",
+    "field_cpt": 0.2,
+    "opt_cpt": 0.17,
+    "real_cpt": 0.28,
+    "field_flex": 5.1,
+    "opt_flex": 5.0,
+    "real_flex": 6.32
+   },
+   {
+    "name": "Brevyn Spann-Ford",
+    "field_cpt": 0.3,
+    "opt_cpt": 0.04,
+    "real_cpt": 0.07,
+    "field_flex": 8.7,
+    "opt_flex": 3.73,
+    "real_flex": 4.12
+   }
+  ]
+ },
+ "lists": {
+  "top_win": {
+   "n": 60,
+   "top5": [
+    {
+     "points": 77.37,
+     "rank": 48122,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "George Pickens"
+    },
+    {
+     "points": 52.97,
+     "rank": 76794,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "George Pickens"
+    },
+    {
+     "points": 63.67,
+     "rank": 70189,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "George Pickens"
+    },
+    {
+     "points": 64.82,
+     "rank": 68602,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "MarShawn Lloyd"
+    },
+    {
+     "points": 55.27,
+     "rank": 76075,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "George Pickens"
+    }
+   ],
+   "top20_cashed": 0,
+   "top20_best_rank": 44671,
+   "top20_paid": 0.0,
+   "top20_fees": 300.0
+  },
+  "top_ev": {
+   "n": 60,
+   "top5": [
+    {
+     "points": 77.37,
+     "rank": 48122,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "George Pickens"
+    },
+    {
+     "points": 63.67,
+     "rank": 70189,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "George Pickens"
+    },
+    {
+     "points": 52.97,
+     "rank": 76794,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "George Pickens"
+    },
+    {
+     "points": 64.82,
+     "rank": 68602,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "MarShawn Lloyd"
+    },
+    {
+     "points": 60.67,
+     "rank": 73116,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "George Pickens"
+    }
+   ],
+   "top20_cashed": 0,
+   "top20_best_rank": 17628,
+   "top20_paid": 0.0,
+   "top20_fees": 300.0
+  },
+  "top_top1": {
+   "n": 60,
+   "top5": [
+    {
+     "points": 77.37,
+     "rank": 48122,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "George Pickens"
+    },
+    {
+     "points": 82.51,
+     "rank": 38021,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "George Pickens"
+    },
+    {
+     "points": 63.67,
+     "rank": 70189,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "George Pickens"
+    },
+    {
+     "points": 90.21,
+     "rank": 22869,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "George Pickens"
+    },
+    {
+     "points": 83.21,
+     "rank": 36737,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "George Pickens"
+    }
+   ],
+   "top20_cashed": 1,
+   "top20_best_rank": 15510,
+   "top20_paid": 25.0,
+   "top20_fees": 300.0
+  },
+  "top_money": {
+   "n": 60,
+   "top5": [
+    {
+     "points": 102.56,
+     "rank": 5572,
+     "cashed": true,
+     "paid": 30.0,
+     "captain": "CeeDee Lamb"
+    },
+    {
+     "points": 96.07,
+     "rank": 13194,
+     "cashed": true,
+     "paid": 25.0,
+     "captain": "Dak Prescott"
+    },
+    {
+     "points": 101.07,
+     "rank": 6721,
+     "cashed": true,
+     "paid": 25.0,
+     "captain": "Dak Prescott"
+    },
+    {
+     "points": 84.86,
+     "rank": 32820,
+     "cashed": false,
+     "paid": 0.0,
+     "captain": "CeeDee Lamb"
+    },
+    {
+     "points": 94.17,
+     "rank": 16451,
+     "cashed": true,
+     "paid": 25.0,
+     "captain": "Dak Prescott"
+    }
+   ],
+   "top20_cashed": 6,
+   "top20_best_rank": 5572,
+   "top20_paid": 155.0,
+   "top20_fees": 300.0
+  }
+ },
+ "portfolios": {
+  "10": {
+   "entries": 10,
+   "cashed": 1,
+   "best_rank": 5572,
+   "any_top1pct": false,
+   "paid": 30.0,
+   "fees": 150.0,
+   "board_p_any_top1_pct": 36.2
+  },
+  "20": {
+   "entries": 20,
+   "cashed": 4,
+   "best_rank": 3,
+   "any_top1pct": true,
+   "paid": 651.4,
+   "fees": 300.0,
+   "board_p_any_top1_pct": 54.6
+  },
+  "5": {
+   "entries": 5,
+   "cashed": 1,
+   "best_rank": 5572,
+   "any_top1pct": false,
+   "paid": 30.0,
+   "fees": 75.0,
+   "board_p_any_top1_pct": 21.2
+  }
+ },
+ "hindsight_best_allowed": {
+  "points": 117.34,
+  "rank": 1,
+  "cashed": true,
+  "paid": 250000.0,
+  "lineup": [
+   "Matthew Golden (CPT)",
+   "CeeDee Lamb",
+   "Jordan Love",
+   "George Pickens",
+   "Ryan Flournoy",
+   "Pierre Strong Jr."
+  ]
+ },
+ "payout_table_rows": 22
+}

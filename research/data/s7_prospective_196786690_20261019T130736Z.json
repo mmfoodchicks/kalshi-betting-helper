@@ -1,0 +1,1468 @@
+{
+ "arms": {
+  "projection_only_frozen": {
+   "arm": "projection_only",
+   "frozen_theta": [
+    0.35144,
+    0.0
+   ],
+   "likelihood": {
+    "model_mean_salary_left_dollars": 2288.5,
+    "model_mean_x": 85.0167,
+    "moment_residual_s": 1.534976,
+    "moment_residual_x": -1.016753,
+    "nll_per_entry_nats": 9.99734,
+    "observed_mean_salary_left_dollars": 753.6,
+    "observed_mean_x": 86.0335
+   },
+   "ordering": {
+    "model_mass_in_top_k_pct": {
+     "10": 0.802,
+     "100": 4.484,
+     "1000": 21.428,
+     "10000": 65.048
+    },
+    "model_top_lineup_observed_copies": 62,
+    "observed_mass_in_model_top_k_pct": {
+     "10": 0.959,
+     "100": 5.102,
+     "1000": 25.929,
+     "10000": 73.293
+    },
+    "real_chalk_model_rank": 95,
+    "spearman_observed_count_vs_utility": 0.2311,
+    "winner": {
+     "diagnostic_only": true,
+     "model_rank": 18642,
+     "points": 125.799995
+    }
+   },
+   "out_of_objective": {
+    "cpt_position_mix_pct": {
+     "l1_pp": 29.68,
+     "model": {
+      "DST": 2.01,
+      "K": 3.52,
+      "QB": 45.07,
+      "RB": 22.04,
+      "TE": 11.61,
+      "WR": 15.77
+     },
+     "observed": {
+      "DST": 3.01,
+      "K": 1.17,
+      "QB": 32.57,
+      "RB": 22.26,
+      "TE": 20.89,
+      "WR": 20.1
+     }
+    },
+    "k_dst_slots_pct": {
+     "l1_pp": 8.88,
+     "model": {
+      "0": 47.37,
+      "1": 41.74,
+      "2": 10.21,
+      "3": 0.68,
+      "4": 0.0
+     },
+     "observed": {
+      "0": 49.47,
+      "1": 37.3,
+      "2": 12.13,
+      "3": 1.07,
+      "4": 0.03
+     }
+    },
+    "salary_left_share_ge_1000_pct": {
+     "model": 67.12,
+     "observed": 27.6
+    },
+    "structure_pct": {
+     "l1_pp": 8.23,
+     "model": {
+      "3-3": 30.53,
+      "4-2": 48.75,
+      "5-1": 20.73
+     },
+     "observed": {
+      "3-3": 34.64,
+      "4-2": 46.7,
+      "5-1": 18.66
+     }
+    }
+   },
+   "rank_bins_by_this_utility": [
+    {
+     "model_pct": 0.802,
+     "observed_pct": 0.959,
+     "rank": "1-10"
+    },
+    {
+     "model_pct": 3.682,
+     "observed_pct": 4.143,
+     "rank": "11-100"
+    },
+    {
+     "model_pct": 16.944,
+     "observed_pct": 20.827,
+     "rank": "101-1000"
+    },
+    {
+     "model_pct": 43.62,
+     "observed_pct": 47.364,
+     "rank": "1001-10000"
+    },
+    {
+     "model_pct": 32.491,
+     "observed_pct": 26.245,
+     "rank": "10001-100000"
+    },
+    {
+     "model_pct": 2.461,
+     "observed_pct": 0.462,
+     "rank": "100001-end"
+    }
+   ],
+   "salary_left": {
+    "model": {
+     "0-200": 7.32,
+     "1000-2000": 21.81,
+     "200-500": 8.86,
+     "2000-up": 41.91,
+     "500-1000": 15.16,
+     "exactly_0": 4.95,
+     "ge_1000_pct": 67.12,
+     "ge_2000_pct": 44.25,
+     "mean_dollars": 2288.5,
+     "median_and_p10_p25_p75_p90_dollars": [
+      1600.0,
+      200.0,
+      600.0,
+      3200.0,
+      5300.0
+     ]
+    },
+    "observed": {
+     "0-200": 20.59,
+     "1000-2000": 16.36,
+     "200-500": 20.33,
+     "2000-up": 8.28,
+     "500-1000": 19.59,
+     "exactly_0": 14.86,
+     "ge_1000_pct": 27.6,
+     "ge_2000_pct": 9.24,
+     "mean_dollars": 753.6,
+     "median_and_p10_p25_p75_p90_dollars": [
+      400.0,
+      0.0,
+      100.0,
+      1000.0,
+      1900.0
+     ]
+    }
+   },
+   "second_moments": {
+    "corr_x_s": {
+     "model": -0.7924,
+     "observed": -0.4149
+    },
+    "cov_x_s": {
+     "model": -8.70296,
+     "observed": -1.59438
+    },
+    "var_s": {
+     "model": 4.83469,
+     "observed": 0.865,
+     "ratio_observed_over_model": 0.1789
+    },
+    "var_x": {
+     "model": 24.9503,
+     "observed": 17.0752,
+     "ratio_observed_over_model": 0.6844
+    }
+   },
+   "shape": {
+    "distinct_lineups": {
+     "model_expected": 29883.3,
+     "observed": 12134
+    },
+    "duplication": {
+     "1-1": {
+      "model_entry_share_pct": 22.33,
+      "observed_entry_share_pct": 6.44
+     },
+     "11-50": {
+      "model_entry_share_pct": 21.97,
+      "observed_entry_share_pct": 37.07
+     },
+     "2-2": {
+      "model_entry_share_pct": 13.15,
+      "observed_entry_share_pct": 4.86
+     },
+     "3-5": {
+      "model_entry_share_pct": 23.07,
+      "observed_entry_share_pct": 11.49
+     },
+     "51-plus": {
+      "model_entry_share_pct": 0.83,
+      "observed_entry_share_pct": 25.85
+     },
+     "6-10": {
+      "model_entry_share_pct": 18.64,
+      "observed_entry_share_pct": 14.29
+     }
+    },
+    "effective_lineups_inverse_sum_p2": {
+     "model": 11582.2,
+     "observed": 1421.9
+    },
+    "max_share_pct": {
+     "model": 0.1182,
+     "observed": 0.9747
+    }
+   },
+   "theta": {
+    "beta": 0.35144,
+    "gamma": 0.0
+   },
+   "top_1000_composition": {
+    "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
+    "model_top_1000_by_utility": {
+     "cpt_position_mix_pct": {
+      "DST": 0.6,
+      "K": 1.3,
+      "QB": 60.9,
+      "RB": 17.8,
+      "TE": 11.3,
+      "WR": 8.1
+     },
+     "k_dst_slots_pct": {
+      "0": 56.4,
+      "1": 37.1,
+      "2": 6.2,
+      "3": 0.3
+     },
+     "lineups": 1000,
+     "mean_projection": 90.225,
+     "mean_salary_left_dollars": 733.3,
+     "structure_pct": {
+      "3-3": 21.9,
+      "4-2": 48.3,
+      "5-1": 29.8
+     }
+    },
+    "observed_1000_most_duplicated": {
+     "cpt_position_mix_pct": {
+      "DST": 3.0,
+      "K": 0.5,
+      "QB": 31.7,
+      "RB": 23.2,
+      "TE": 21.0,
+      "WR": 20.6
+     },
+     "k_dst_slots_pct": {
+      "0": 52.0,
+      "1": 35.8,
+      "2": 11.0,
+      "3": 1.2
+     },
+     "lineups": 1000,
+     "mean_projection": 87.078,
+     "mean_salary_left_dollars": 468.1,
+     "structure_pct": {
+      "3-3": 31.5,
+      "4-2": 48.9,
+      "5-1": 19.6
+     }
+    },
+    "tie_break": {
+     "cutoff_copies": 15,
+     "lineups_at_cutoff": 83,
+     "of_which_included": 9,
+     "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
+    }
+   }
+  },
+  "projection_plus_salary_frozen_primary": {
+   "arm": "projection_plus_salary",
+   "frozen_theta": [
+    0.11213,
+    1.04523
+   ],
+   "likelihood": {
+    "model_mean_salary_left_dollars": 942.3,
+    "model_mean_x": 84.5542,
+    "moment_residual_s": 0.188707,
+    "moment_residual_x": -1.479255,
+    "nll_per_entry_nats": 9.47478,
+    "observed_mean_salary_left_dollars": 753.6,
+    "observed_mean_x": 86.0335
+   },
+   "ordering": {
+    "model_mass_in_top_k_pct": {
+     "10": 0.399,
+     "100": 3.067,
+     "1000": 20.043,
+     "10000": 77.334
+    },
+    "model_top_lineup_observed_copies": 7,
+    "observed_mass_in_model_top_k_pct": {
+     "10": 0.831,
+     "100": 7.694,
+     "1000": 31.695,
+     "10000": 85.813
+    },
+    "real_chalk_model_rank": 69,
+    "spearman_observed_count_vs_utility": 0.2453,
+    "winner": {
+     "diagnostic_only": true,
+     "model_rank": 5391,
+     "points": 125.799995
+    }
+   },
+   "out_of_objective": {
+    "cpt_position_mix_pct": {
+     "l1_pp": 23.57,
+     "model": {
+      "DST": 2.22,
+      "K": 4.0,
+      "QB": 35.0,
+      "RB": 24.2,
+      "TE": 9.9,
+      "WR": 24.69
+     },
+     "observed": {
+      "DST": 3.01,
+      "K": 1.17,
+      "QB": 32.57,
+      "RB": 22.26,
+      "TE": 20.89,
+      "WR": 20.1
+     }
+    },
+    "k_dst_slots_pct": {
+     "l1_pp": 12.07,
+     "model": {
+      "0": 45.48,
+      "1": 43.34,
+      "2": 10.44,
+      "3": 0.75,
+      "4": 0.0
+     },
+     "observed": {
+      "0": 49.47,
+      "1": 37.3,
+      "2": 12.13,
+      "3": 1.07,
+      "4": 0.03
+     }
+    },
+    "salary_left_share_ge_1000_pct": {
+     "model": 37.14,
+     "observed": 27.6
+    },
+    "structure_pct": {
+     "l1_pp": 9.46,
+     "model": {
+      "3-3": 36.97,
+      "4-2": 49.1,
+      "5-1": 13.93
+     },
+     "observed": {
+      "3-3": 34.64,
+      "4-2": 46.7,
+      "5-1": 18.66
+     }
+    }
+   },
+   "rank_bins_by_this_utility": [
+    {
+     "model_pct": 0.399,
+     "observed_pct": 0.831,
+     "rank": "1-10"
+    },
+    {
+     "model_pct": 2.669,
+     "observed_pct": 6.862,
+     "rank": "11-100"
+    },
+    {
+     "model_pct": 16.976,
+     "observed_pct": 24.002,
+     "rank": "101-1000"
+    },
+    {
+     "model_pct": 57.291,
+     "observed_pct": 54.118,
+     "rank": "1001-10000"
+    },
+    {
+     "model_pct": 22.576,
+     "observed_pct": 14.029,
+     "rank": "10001-100000"
+    },
+    {
+     "model_pct": 0.09,
+     "observed_pct": 0.158,
+     "rank": "100001-end"
+    }
+   ],
+   "salary_left": {
+    "model": {
+     "0-200": 16.0,
+     "1000-2000": 20.85,
+     "200-500": 17.37,
+     "2000-up": 12.02,
+     "500-1000": 22.46,
+     "exactly_0": 11.29,
+     "ge_1000_pct": 37.14,
+     "ge_2000_pct": 13.58,
+     "mean_dollars": 942.3,
+     "median_and_p10_p25_p75_p90_dollars": [
+      600.0,
+      0.0,
+      200.0,
+      1300.0,
+      2200.0
+     ]
+    },
+    "observed": {
+     "0-200": 20.59,
+     "1000-2000": 16.36,
+     "200-500": 20.33,
+     "2000-up": 8.28,
+     "500-1000": 19.59,
+     "exactly_0": 14.86,
+     "ge_1000_pct": 27.6,
+     "ge_2000_pct": 9.24,
+     "mean_dollars": 753.6,
+     "median_and_p10_p25_p75_p90_dollars": [
+      400.0,
+      0.0,
+      100.0,
+      1000.0,
+      1900.0
+     ]
+    }
+   },
+   "second_moments": {
+    "corr_x_s": {
+     "model": -0.4194,
+     "observed": -0.4149
+    },
+    "cov_x_s": {
+     "model": -1.79369,
+     "observed": -1.59438
+    },
+    "var_s": {
+     "model": 0.97503,
+     "observed": 0.865,
+     "ratio_observed_over_model": 0.8872
+    },
+    "var_x": {
+     "model": 18.7599,
+     "observed": 17.0752,
+     "ratio_observed_over_model": 0.9102
+    }
+   },
+   "shape": {
+    "distinct_lineups": {
+     "model_expected": 21638.8,
+     "observed": 12134
+    },
+    "duplication": {
+     "1-1": {
+      "model_entry_share_pct": 11.83,
+      "observed_entry_share_pct": 6.44
+     },
+     "11-50": {
+      "model_entry_share_pct": 28.08,
+      "observed_entry_share_pct": 37.07
+     },
+     "2-2": {
+      "model_entry_share_pct": 9.5,
+      "observed_entry_share_pct": 4.86
+     },
+     "3-5": {
+      "model_entry_share_pct": 23.3,
+      "observed_entry_share_pct": 11.49
+     },
+     "51-plus": {
+      "model_entry_share_pct": 0.0,
+      "observed_entry_share_pct": 25.85
+     },
+     "6-10": {
+      "model_entry_share_pct": 27.29,
+      "observed_entry_share_pct": 14.29
+     }
+    },
+    "effective_lineups_inverse_sum_p2": {
+     "model": 11066.5,
+     "observed": 1421.9
+    },
+    "max_share_pct": {
+     "model": 0.0431,
+     "observed": 0.9747
+    }
+   },
+   "theta": {
+    "beta": 0.11213,
+    "gamma": 1.04523
+   },
+   "top_1000_composition": {
+    "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
+    "model_top_1000_by_utility": {
+     "cpt_position_mix_pct": {
+      "DST": 1.5,
+      "K": 3.3,
+      "QB": 48.9,
+      "RB": 19.5,
+      "TE": 10.1,
+      "WR": 16.7
+     },
+     "k_dst_slots_pct": {
+      "0": 47.6,
+      "1": 42.0,
+      "2": 9.6,
+      "3": 0.8
+     },
+     "lineups": 1000,
+     "mean_projection": 88.928,
+     "mean_salary_left_dollars": 168.4,
+     "structure_pct": {
+      "3-3": 31.0,
+      "4-2": 48.1,
+      "5-1": 20.9
+     }
+    },
+    "observed_1000_most_duplicated": {
+     "cpt_position_mix_pct": {
+      "DST": 3.0,
+      "K": 0.5,
+      "QB": 31.7,
+      "RB": 23.2,
+      "TE": 21.0,
+      "WR": 20.6
+     },
+     "k_dst_slots_pct": {
+      "0": 52.0,
+      "1": 35.8,
+      "2": 11.0,
+      "3": 1.2
+     },
+     "lineups": 1000,
+     "mean_projection": 87.078,
+     "mean_salary_left_dollars": 468.1,
+     "structure_pct": {
+      "3-3": 31.5,
+      "4-2": 48.9,
+      "5-1": 19.6
+     }
+    },
+    "tie_break": {
+     "cutoff_copies": 15,
+     "lineups_at_cutoff": 83,
+     "of_which_included": 9,
+     "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
+    }
+   }
+  },
+  "projection_plus_salary_frozen_secondary": {
+   "arm": "projection_plus_salary",
+   "frozen_theta": [
+    0.11556,
+    0.99494
+   ],
+   "likelihood": {
+    "model_mean_salary_left_dollars": 987.0,
+    "model_mean_x": 84.5248,
+    "moment_residual_s": 0.233452,
+    "moment_residual_x": -1.508695,
+    "nll_per_entry_nats": 9.48026,
+    "observed_mean_salary_left_dollars": 753.6,
+    "observed_mean_x": 86.0335
+   },
+   "ordering": {
+    "model_mass_in_top_k_pct": {
+     "10": 0.393,
+     "100": 3.002,
+     "1000": 19.562,
+     "10000": 76.015
+    },
+    "model_top_lineup_observed_copies": 7,
+    "observed_mass_in_model_top_k_pct": {
+     "10": 0.831,
+     "100": 7.626,
+     "1000": 31.366,
+     "10000": 85.84
+    },
+    "real_chalk_model_rank": 67,
+    "spearman_observed_count_vs_utility": 0.2451,
+    "winner": {
+     "diagnostic_only": true,
+     "model_rank": 5473,
+     "points": 125.799995
+    }
+   },
+   "out_of_objective": {
+    "cpt_position_mix_pct": {
+     "l1_pp": 23.45,
+     "model": {
+      "DST": 2.22,
+      "K": 4.01,
+      "QB": 35.09,
+      "RB": 24.24,
+      "TE": 9.96,
+      "WR": 24.49
+     },
+     "observed": {
+      "DST": 3.01,
+      "K": 1.17,
+      "QB": 32.57,
+      "RB": 22.26,
+      "TE": 20.89,
+      "WR": 20.1
+     }
+    },
+    "k_dst_slots_pct": {
+     "l1_pp": 12.02,
+     "model": {
+      "0": 45.46,
+      "1": 43.31,
+      "2": 10.48,
+      "3": 0.75,
+      "4": 0.0
+     },
+     "observed": {
+      "0": 49.47,
+      "1": 37.3,
+      "2": 12.13,
+      "3": 1.07,
+      "4": 0.03
+     }
+    },
+    "salary_left_share_ge_1000_pct": {
+     "model": 38.78,
+     "observed": 27.6
+    },
+    "structure_pct": {
+     "l1_pp": 9.28,
+     "model": {
+      "3-3": 36.88,
+      "4-2": 49.1,
+      "5-1": 14.02
+     },
+     "observed": {
+      "3-3": 34.64,
+      "4-2": 46.7,
+      "5-1": 18.66
+     }
+    }
+   },
+   "rank_bins_by_this_utility": [
+    {
+     "model_pct": 0.393,
+     "observed_pct": 0.831,
+     "rank": "1-10"
+    },
+    {
+     "model_pct": 2.61,
+     "observed_pct": 6.794,
+     "rank": "11-100"
+    },
+    {
+     "model_pct": 16.56,
+     "observed_pct": 23.741,
+     "rank": "101-1000"
+    },
+    {
+     "model_pct": 56.453,
+     "observed_pct": 54.473,
+     "rank": "1001-10000"
+    },
+    {
+     "model_pct": 23.866,
+     "observed_pct": 14.001,
+     "rank": "10001-100000"
+    },
+    {
+     "model_pct": 0.119,
+     "observed_pct": 0.159,
+     "rank": "100001-end"
+    }
+   ],
+   "salary_left": {
+    "model": {
+     "0-200": 15.44,
+     "1000-2000": 21.33,
+     "200-500": 16.94,
+     "2000-up": 13.18,
+     "500-1000": 22.28,
+     "exactly_0": 10.82,
+     "ge_1000_pct": 38.78,
+     "ge_2000_pct": 14.81,
+     "mean_dollars": 987.0,
+     "median_and_p10_p25_p75_p90_dollars": [
+      700.0,
+      0.0,
+      200.0,
+      1400.0,
+      2400.0
+     ]
+    },
+    "observed": {
+     "0-200": 20.59,
+     "1000-2000": 16.36,
+     "200-500": 20.33,
+     "2000-up": 8.28,
+     "500-1000": 19.59,
+     "exactly_0": 14.86,
+     "ge_1000_pct": 27.6,
+     "ge_2000_pct": 9.24,
+     "mean_dollars": 753.6,
+     "median_and_p10_p25_p75_p90_dollars": [
+      400.0,
+      0.0,
+      100.0,
+      1000.0,
+      1900.0
+     ]
+    }
+   },
+   "second_moments": {
+    "corr_x_s": {
+     "model": -0.4353,
+     "observed": -0.4149
+    },
+    "cov_x_s": {
+     "model": -1.95271,
+     "observed": -1.59438
+    },
+    "var_s": {
+     "model": 1.06153,
+     "observed": 0.865,
+     "ratio_observed_over_model": 0.8149
+    },
+    "var_x": {
+     "model": 18.9608,
+     "observed": 17.0752,
+     "ratio_observed_over_model": 0.9005
+    }
+   },
+   "shape": {
+    "distinct_lineups": {
+     "model_expected": 22305.3,
+     "observed": 12134
+    },
+    "duplication": {
+     "1-1": {
+      "model_entry_share_pct": 12.42,
+      "observed_entry_share_pct": 6.44
+     },
+     "11-50": {
+      "model_entry_share_pct": 26.51,
+      "observed_entry_share_pct": 37.07
+     },
+     "2-2": {
+      "model_entry_share_pct": 9.89,
+      "observed_entry_share_pct": 4.86
+     },
+     "3-5": {
+      "model_entry_share_pct": 23.94,
+      "observed_entry_share_pct": 11.49
+     },
+     "51-plus": {
+      "model_entry_share_pct": 0.0,
+      "observed_entry_share_pct": 25.85
+     },
+     "6-10": {
+      "model_entry_share_pct": 27.24,
+      "observed_entry_share_pct": 14.29
+     }
+    },
+    "effective_lineups_inverse_sum_p2": {
+     "model": 11508.3,
+     "observed": 1421.9
+    },
+    "max_share_pct": {
+     "model": 0.0425,
+     "observed": 0.9747
+    }
+   },
+   "theta": {
+    "beta": 0.11556,
+    "gamma": 0.99494
+   },
+   "top_1000_composition": {
+    "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
+    "model_top_1000_by_utility": {
+     "cpt_position_mix_pct": {
+      "DST": 1.5,
+      "K": 3.3,
+      "QB": 49.4,
+      "RB": 19.2,
+      "TE": 9.8,
+      "WR": 16.8
+     },
+     "k_dst_slots_pct": {
+      "0": 48.1,
+      "1": 41.7,
+      "2": 9.4,
+      "3": 0.8
+     },
+     "lineups": 1000,
+     "mean_projection": 89.005,
+     "mean_salary_left_dollars": 177.0,
+     "structure_pct": {
+      "3-3": 30.7,
+      "4-2": 48.1,
+      "5-1": 21.2
+     }
+    },
+    "observed_1000_most_duplicated": {
+     "cpt_position_mix_pct": {
+      "DST": 3.0,
+      "K": 0.5,
+      "QB": 31.7,
+      "RB": 23.2,
+      "TE": 21.0,
+      "WR": 20.6
+     },
+     "k_dst_slots_pct": {
+      "0": 52.0,
+      "1": 35.8,
+      "2": 11.0,
+      "3": 1.2
+     },
+     "lineups": 1000,
+     "mean_projection": 87.078,
+     "mean_salary_left_dollars": 468.1,
+     "structure_pct": {
+      "3-3": 31.5,
+      "4-2": 48.9,
+      "5-1": 19.6
+     }
+    },
+    "tie_break": {
+     "cutoff_copies": 15,
+     "lineups_at_cutoff": 83,
+     "of_which_included": 9,
+     "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
+    }
+   }
+  },
+  "salary_only_diagnostic": {
+   "arm": "salary_only",
+   "frozen_theta": [
+    0.0,
+    1.25121
+   ],
+   "likelihood": {
+    "model_mean_salary_left_dollars": 943.8,
+    "model_mean_x": 82.6532,
+    "moment_residual_s": 0.190258,
+    "moment_residual_x": -3.380307,
+    "nll_per_entry_nats": 9.70534,
+    "observed_mean_salary_left_dollars": 753.6,
+    "observed_mean_x": 86.0335
+   },
+   "ordering": {
+    "model_mass_in_top_k_pct": {
+     "10": 0.156,
+     "100": 1.565,
+     "1000": 15.136,
+     "10000": 75.227
+    },
+    "model_top_lineup_observed_copies": 7,
+    "observed_mass_in_model_top_k_pct": {
+     "10": 0.154,
+     "100": 1.662,
+     "1000": 20.912,
+     "10000": 82.579
+    },
+    "real_chalk_model_rank": 972,
+    "spearman_observed_count_vs_utility": 0.2446,
+    "winner": {
+     "diagnostic_only": true,
+     "model_rank": 4112,
+     "points": 125.799995
+    }
+   },
+   "out_of_objective": {
+    "cpt_position_mix_pct": {
+     "l1_pp": 32.8,
+     "model": {
+      "DST": 2.33,
+      "K": 4.15,
+      "QB": 28.77,
+      "RB": 24.43,
+      "TE": 8.96,
+      "WR": 31.34
+     },
+     "observed": {
+      "DST": 3.01,
+      "K": 1.17,
+      "QB": 32.57,
+      "RB": 22.26,
+      "TE": 20.89,
+      "WR": 20.1
+     }
+    },
+    "k_dst_slots_pct": {
+     "l1_pp": 13.31,
+     "model": {
+      "0": 44.88,
+      "1": 43.95,
+      "2": 10.43,
+      "3": 0.73,
+      "4": 0.0
+     },
+     "observed": {
+      "0": 49.47,
+      "1": 37.3,
+      "2": 12.13,
+      "3": 1.07,
+      "4": 0.03
+     }
+    },
+    "salary_left_share_ge_1000_pct": {
+     "model": 37.17,
+     "observed": 27.6
+    },
+    "structure_pct": {
+     "l1_pp": 14.18,
+     "model": {
+      "3-3": 39.13,
+      "4-2": 49.3,
+      "5-1": 11.57
+     },
+     "observed": {
+      "3-3": 34.64,
+      "4-2": 46.7,
+      "5-1": 18.66
+     }
+    }
+   },
+   "rank_bins_by_this_utility": [
+    {
+     "model_pct": 0.156,
+     "observed_pct": 0.154,
+     "rank": "1-10"
+    },
+    {
+     "model_pct": 1.408,
+     "observed_pct": 1.508,
+     "rank": "11-100"
+    },
+    {
+     "model_pct": 13.571,
+     "observed_pct": 19.249,
+     "rank": "101-1000"
+    },
+    {
+     "model_pct": 60.091,
+     "observed_pct": 61.667,
+     "rank": "1001-10000"
+    },
+    {
+     "model_pct": 24.672,
+     "observed_pct": 17.24,
+     "rank": "10001-100000"
+    },
+    {
+     "model_pct": 0.101,
+     "observed_pct": 0.181,
+     "rank": "100001-end"
+    }
+   ],
+   "salary_left": {
+    "model": {
+     "0-200": 15.91,
+     "1000-2000": 20.84,
+     "200-500": 17.45,
+     "2000-up": 12.06,
+     "500-1000": 22.46,
+     "exactly_0": 11.28,
+     "ge_1000_pct": 37.17,
+     "ge_2000_pct": 13.62,
+     "mean_dollars": 943.8,
+     "median_and_p10_p25_p75_p90_dollars": [
+      600.0,
+      0.0,
+      200.0,
+      1300.0,
+      2200.0
+     ]
+    },
+    "observed": {
+     "0-200": 20.59,
+     "1000-2000": 16.36,
+     "200-500": 20.33,
+     "2000-up": 8.28,
+     "500-1000": 19.59,
+     "exactly_0": 14.86,
+     "ge_1000_pct": 27.6,
+     "ge_2000_pct": 9.24,
+     "mean_dollars": 753.6,
+     "median_and_p10_p25_p75_p90_dollars": [
+      400.0,
+      0.0,
+      100.0,
+      1000.0,
+      1900.0
+     ]
+    }
+   },
+   "second_moments": {
+    "corr_x_s": {
+     "model": -0.3971,
+     "observed": -0.4149
+    },
+    "cov_x_s": {
+     "model": -1.82516,
+     "observed": -1.59438
+    },
+    "var_s": {
+     "model": 0.97956,
+     "observed": 0.865,
+     "ratio_observed_over_model": 0.883
+    },
+    "var_x": {
+     "model": 21.566,
+     "observed": 17.0752,
+     "ratio_observed_over_model": 0.7918
+    }
+   },
+   "shape": {
+    "distinct_lineups": {
+     "model_expected": 22474.6,
+     "observed": 12134
+    },
+    "duplication": {
+     "1-1": {
+      "model_entry_share_pct": 12.1,
+      "observed_entry_share_pct": 6.44
+     },
+     "11-50": {
+      "model_entry_share_pct": 21.16,
+      "observed_entry_share_pct": 37.07
+     },
+     "2-2": {
+      "model_entry_share_pct": 9.74,
+      "observed_entry_share_pct": 4.86
+     },
+     "3-5": {
+      "model_entry_share_pct": 24.54,
+      "observed_entry_share_pct": 11.49
+     },
+     "51-plus": {
+      "model_entry_share_pct": 0.0,
+      "observed_entry_share_pct": 25.85
+     },
+     "6-10": {
+      "model_entry_share_pct": 32.45,
+      "observed_entry_share_pct": 14.29
+     }
+    },
+    "effective_lineups_inverse_sum_p2": {
+     "model": 13442.7,
+     "observed": 1421.9
+    },
+    "max_share_pct": {
+     "model": 0.0156,
+     "observed": 0.9747
+    }
+   },
+   "theta": {
+    "beta": 0.0,
+    "gamma": 1.25121
+   },
+   "top_1000_composition": {
+    "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
+    "model_top_1000_by_utility": {
+     "cpt_position_mix_pct": {
+      "DST": 1.5,
+      "K": 2.3,
+      "QB": 33.8,
+      "RB": 25.5,
+      "TE": 3.5,
+      "WR": 33.4
+     },
+     "k_dst_slots_pct": {
+      "0": 45.1,
+      "1": 45.1,
+      "2": 9.2,
+      "3": 0.6
+     },
+     "lineups": 1000,
+     "mean_projection": 84.417,
+     "mean_salary_left_dollars": 27.9,
+     "structure_pct": {
+      "3-3": 39.2,
+      "4-2": 47.4,
+      "5-1": 13.4
+     }
+    },
+    "observed_1000_most_duplicated": {
+     "cpt_position_mix_pct": {
+      "DST": 3.0,
+      "K": 0.5,
+      "QB": 31.7,
+      "RB": 23.2,
+      "TE": 21.0,
+      "WR": 20.6
+     },
+     "k_dst_slots_pct": {
+      "0": 52.0,
+      "1": 35.8,
+      "2": 11.0,
+      "3": 1.2
+     },
+     "lineups": 1000,
+     "mean_projection": 87.078,
+     "mean_salary_left_dollars": 468.1,
+     "structure_pct": {
+      "3-3": 31.5,
+      "4-2": 48.9,
+      "5-1": 19.6
+     }
+    },
+    "tie_break": {
+     "cutoff_copies": 15,
+     "lineups_at_cutoff": 83,
+     "of_which_included": 9,
+     "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
+    }
+   }
+  }
+ },
+ "contest": {
+  "draft_group_id": 154960,
+  "entry_fee": 20.0,
+  "first_prize": 500000.0,
+  "id": 196786690,
+  "max_entries": 88235,
+  "name": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (WAS @ SF)",
+  "places_paid": 19130,
+  "prize_pool": 1500000.0,
+  "starts": "2026-10-20T00:15:00.0000000Z"
+ },
+ "excluded_entries_salary_profile": {
+  "excluded": {
+   "entries": 1958,
+   "mean_k": 0.7007,
+   "median_k": 0.5,
+   "share_at_zero_pct": 19.25,
+   "share_ge_1000_pct": 26.35
+  },
+  "reads": "three marginal summaries; they can show that the support exclusion does not appear to materially explain the salary-left result, not that it introduces no bias",
+  "representable": {
+   "entries": 76636,
+   "mean_k": 0.7536,
+   "median_k": 0.4,
+   "share_at_zero_pct": 14.86,
+   "share_ge_1000_pct": 27.6
+  }
+ },
+ "inputs": {
+  "draftkings": {
+   "files": {
+    "contests": {
+     "bytes": 259201,
+     "endpoint": "dk.contests + dk.contest_detail (nfl, 154960)",
+     "file": "contests_154960.json",
+     "records": 13,
+     "retrieved_ts": 1792415263,
+     "sha256": "6dd71c4c03e2dccb66ae098b8d520a02260fc2cc04cdda6bd76eaa6fa530a2b2"
+    },
+    "slate": {
+     "bytes": 12782,
+     "endpoint": "dk.slate_for(nfl, 154960)",
+     "file": "slate_154960.json",
+     "records": 48,
+     "retrieved_ts": 1792415259,
+     "sha256": "5f2e5cdca18e1568b5588b43d1c867780358bec01728511101d429a38f38aeb1"
+    }
+   },
+   "normalization_version": 1,
+   "source": "draftkings"
+  },
+  "sleeper_feeds": {
+   "files": {
+    "capture.json": {
+     "bytes": 1448,
+     "sha256": "c056b8f6c599a65c683c236d6a7273b27091a5da0121dd79965d7e775484c87f"
+    },
+    "contests_154960.json": {
+     "bytes": 259201,
+     "sha256": "6dd71c4c03e2dccb66ae098b8d520a02260fc2cc04cdda6bd76eaa6fa530a2b2"
+    },
+    "manifest.json": {
+     "bytes": 658,
+     "sha256": "3c8f13e9e49a2939673d14e10acd5fe651a551d427c237c13129fa112d6fd4ce"
+    },
+    "players_2026_6.json": {
+     "bytes": 15701,
+     "sha256": "7e0f5614a3a0ae4f6e4af7b277b6fca7a38a762a60713ab534deeeacbf888f8a"
+    },
+    "proj_2026_6.json": {
+     "bytes": 2130218,
+     "sha256": "5679501dcf0a5fb7df5d5607ef0ae22989ddbd54383057f58032afa5cb395516"
+    },
+    "proj_2026_6_def.json": {
+     "bytes": 29898,
+     "sha256": "3aec6ca29eb8de84022f327f1699e37a4986353e4c4d4b8c372c632d6c2da513"
+    },
+    "proj_2026_6_k.json": {
+     "bytes": 108493,
+     "sha256": "8e49f94dc7e12fa89c93bc8551de47ffea3fd05bd4574aecd3aaf485ea025527"
+    },
+    "slate_154960.json": {
+     "bytes": 12782,
+     "sha256": "5f2e5cdca18e1568b5588b43d1c867780358bec01728511101d429a38f38aeb1"
+    }
+   },
+   "source": "sleeper"
+  },
+  "standings": {
+   "committed": false,
+   "contest_id": 196786690,
+   "csv_bytes": 13879222,
+   "csv_mtime_in_zip": "2026-10-20 03:24:40",
+   "csv_sha256": "4263a4873c690ba6bf28e0523238a729c5ed61c8021880edc392b16daa354931",
+   "frozen_utc": "2026-10-20 03:27:56 UTC",
+   "gz_sha256": "21096bc328f167d2184b3bb8a23e977bd08dc82e40728caca787f312081931c8",
+   "kind": "showdown",
+   "note": "Monday night's held-out showdown for the S7 prospective test (pre-lock captures 13:07 and 23:21 UTC): frozen after the game, scored by research.s7_prospective; the export names every entrant, so it stays out of git (.gitignore)",
+   "prospective": true,
+   "rows_excluding_header": 87465,
+   "zip_sha256": "1ed58a880b2f729e7196bcc47340ba129ade970f9a50c4997c0bb1ed5204e10d"
+  }
+ },
+ "meta": {
+  "capture": {
+   "biggest_gpp_detailed": {
+    "id": 196786690,
+    "max_entries": 88235,
+    "name": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (WAS @ SF)",
+    "prize_pool": 1500000.0
+   },
+   "capture_stamp": "20261019T130736Z",
+   "captured_utc": "2026-10-19 13:07:44 UTC",
+   "contests_detailed": [
+    "196774493",
+    "196774495",
+    "196786671",
+    "196786672",
+    "196786688",
+    "196786689",
+    "196786690",
+    "196786691",
+    "196786692",
+    "196786705",
+    "196786731",
+    "196789171",
+    "196789428"
+   ],
+   "directory": "research/data/prospective/154960/20261019T130736Z",
+   "draft_group": 154960,
+   "files": {
+    "contests_154960.json": "6dd71c4c03e2dccb66ae098b8d520a02260fc2cc04cdda6bd76eaa6fa530a2b2",
+    "manifest.json": "3c8f13e9e49a2939673d14e10acd5fe651a551d427c237c13129fa112d6fd4ce",
+    "players_2026_6.json": "7e0f5614a3a0ae4f6e4af7b277b6fca7a38a762a60713ab534deeeacbf888f8a",
+    "proj_2026_6.json": "5679501dcf0a5fb7df5d5607ef0ae22989ddbd54383057f58032afa5cb395516",
+    "proj_2026_6_def.json": "3aec6ca29eb8de84022f327f1699e37a4986353e4c4d4b8c372c632d6c2da513",
+    "proj_2026_6_k.json": "8e49f94dc7e12fa89c93bc8551de47ffea3fd05bd4574aecd3aaf485ea025527",
+    "slate_154960.json": "5f2e5cdca18e1568b5588b43d1c867780358bec01728511101d429a38f38aeb1"
+   },
+   "hours_to_lock": 11.121,
+   "lock_utc": "2026-10-20 00:15:00 UTC",
+   "note": "MNF WAS @ SF, morning capture ~11 h before lock (2026-10-19 13:xx UTC); a later capture nearer lock, if one is taken, is the primary",
+   "pre_lock": true,
+   "slate_identity": "SF/WAS 2026-10-20",
+   "week": 6
+  },
+  "contest": 196786690,
+  "contest_detail_source": "pre-lock capture",
+  "draft_group": 154960,
+  "fit_free": true,
+  "fits_called": 0,
+  "frozen": {
+   "file": "research/data/s7_frozen_field.json",
+   "frozen_utc": "2026-09-19 18:38:34 UTC",
+   "sha256": "13cb71b7e5f29074645f8c2cd67b99ca59705d95bfdae4e7476c424176883a35"
+  },
+  "label": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (WAS @ SF)",
+  "pre_lock_captures_available": [
+   "20261019T130736Z",
+   "20261019T232101Z"
+  ],
+  "provenance": {
+   "commit": "954b0b9",
+   "data_split": null,
+   "dirty": true,
+   "dirty_detail": {
+    "hashed_sources": 80,
+    "modified_sources": [],
+    "untracked_sources": [
+     "research/sd_postgame.py"
+    ]
+   },
+   "model": "frozen parameters; nothing fitted",
+   "seed": 20260912,
+   "source_files": 80,
+   "source_sha": "0f0159141c841b9e130afc9bad29fa45663f75a06a93e28befc4f9d52853900c",
+   "worlds": null
+  },
+  "role": "timing_sensitivity",
+  "role_reads": "primary = the latest valid pre-lock capture; timing_sensitivity = an earlier valid capture scored with the same frozen parameters, retained beside the primary, never part of the pass/fail criterion",
+  "rules": [
+   "no refit of beta or gamma per slate",
+   "no new parameter after seeing a contest",
+   "score a contest before any of its counts changes anything",
+   "at least 3 distinct genuinely pre-lock captured slates (games) before another feature-selection round; contests sharing a pool and a game environment are one test, and are counted separately as metadata",
+   "the frozen parameter file is immutable: a re-freeze with identical parameters leaves it byte-for-byte unchanged, a differing one is refused",
+   "the latest valid pre-lock capture is the primary; every earlier valid capture is a timing-sensitivity arm scored with the same frozen parameters, retained beside it, and never part of the pass/fail criterion",
+   "the scorer refuses a capture stamped after the earliest contest start"
+  ],
+  "slate_identity": "SF/WAS 2026-10-20",
+  "stage": "S7 prospective: the frozen field family scored on a contest captured before lock; nothing fitted",
+  "week": 6
+ },
+ "principal": {
+  "criterion": "per-entry NLL of projection+salary (frozen primary) minus projection-only (frozen baseline) on the representable support of a contest captured before lock; negative = salary helps",
+  "delta_nll_primary_minus_projection_only": -0.52256,
+  "delta_nll_salary_only_minus_projection_only": -0.292,
+  "delta_nll_secondary_minus_projection_only": -0.51708,
+  "user_cluster_bootstrap_primary": {
+   "ci95_user_cluster": [
+    0.49974,
+    0.54549
+   ],
+   "conditional_on": "the frozen parameters, fitted on the three retrospective contests before this one existed; only this contest's users are resampled",
+   "entries": 76636,
+   "mean": 0.52255,
+   "replicates": 1000,
+   "se_naive_per_entry": 0.00383,
+   "se_user_cluster": 0.01196,
+   "sign": "positive = projection+salary assigns higher probability to this contest's entries",
+   "users": 24768
+  }
+ },
+ "production_field": {
+  "beta": 0.35014,
+  "effective_lineups_inverse_sum_p2": {
+   "model": 6140.7,
+   "observed_on_its_support": 1134.9
+  },
+  "entries_on_support": 53355,
+  "injury_statuses": "AS CAPTURED (pre-lock capture; production's gate sees these)",
+  "legal_but_not_enumerated": 0,
+  "legal_lineups": 309849,
+  "max_share_pct": {
+   "model": 0.2,
+   "observed_on_its_support": 0.9165
+  },
+  "mle_on_this_support": {
+   "skipped": "prospective scoring fits nothing on the contest's counts"
+  },
+  "nll_per_entry_nats_on_its_support": 9.40935,
+  "note": "the served placeholder on its own gated universe (historical fidelity); its likelihood is on a different, smaller support and is not comparable to the lifted-universe rows",
+  "players": 21,
+  "saturated_on_its_support": 8.01767,
+  "support_pct_of_active": 61.13,
+  "uniform_on_its_support": 12.64384
+ },
+ "saturated_nll_per_entry_nats": 8.35127,
+ "support": {
+  "active_entries": 87284,
+  "legal_but_not_enumerated": 0,
+  "representable_entries": 76636,
+  "representable_pct": 87.8,
+  "statement": "conditional on the 87.8% of active entries whose six players all carry a Sleeper projection under the game's teams; the other 12.2% hold a player Sleeper never projected and are outside the likelihood, not repaired",
+  "unrepresentable_by_player": [
+   {
+    "entries": 8395,
+    "name": "Jeremy McNichols"
+   },
+   {
+    "entries": 634,
+    "name": "Brayden Willis"
+   },
+   {
+    "entries": 535,
+    "name": "Malik Turner"
+   },
+   {
+    "entries": 424,
+    "name": "Craig Reynolds"
+   },
+   {
+    "entries": 136,
+    "name": "Jacory Croskey-Merritt"
+   },
+   {
+    "entries": 133,
+    "name": "Van Jefferson"
+   },
+   {
+    "entries": 103,
+    "name": "Christian Kirk"
+   },
+   {
+    "entries": 90,
+    "name": "Athan Kaliakmanis"
+   },
+   {
+    "entries": 81,
+    "name": "Mac Jones"
+   },
+   {
+    "entries": 52,
+    "name": "Deebo Samuel Sr."
+   }
+  ],
+  "unrepresentable_pct": 12.2
+ },
+ "uniform_nll_per_entry_nats": 14.60561,
+ "universe": {
+  "legal_lineups": 2203621,
+  "players": 28,
+  "players_without_projection": [
+   "Athan Kaliakmanis",
+   "Brayden Willis",
+   "Craig Reynolds",
+   "Devin Neal",
+   "Jack Stoll",
+   "Jack Westover",
+   "Jaden Bradley",
+   "Khalil Dinkins",
+   "Kurtis Rourke",
+   "Mac Jones",
+   "Malik Turner",
+   "Nick DeGennaro",
+   "River Cracraft",
+   "Sam Hartman",
+   "Sincere McCormick",
+   "Tyler Ott",
+   "Van Jefferson",
+   "Wesley Grimes",
+   "Will Pauling",
+   "Xavier Smith"
+  ],
+  "roster": {
+   "captured_utc": "2026-10-19 13:07:44 UTC",
+   "file": "research/data/prospective/154960/20261019T130736Z/players_2026_6.json",
+   "injury_statuses": "CLEARED (as in the first artifact); the gate itself is not applied here",
+   "records": 58,
+   "sha256": "7e0f5614a3a0ae4f6e4af7b277b6fca7a38a762a60713ab534deeeacbf888f8a",
+   "teams": [
+    "SF",
+    "WAS"
+   ]
+  },
+  "salary_left_observed_mean_dollars": 753.6,
+  "salary_left_universe_mean_dollars": 20436.7
+ }
+}

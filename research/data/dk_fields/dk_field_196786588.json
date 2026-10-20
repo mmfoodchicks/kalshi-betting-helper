@@ -28,7 +28,7 @@
     "CPT": 13.51,
     "FLEX": 60.98
    },
-   "fpts": 31.86,
+   "fpts": 21.24,
    "name": "Jordan Love",
    "pct": 74.72,
    "pos": "QB",
@@ -41,7 +41,7 @@
     "CPT": 17.31,
     "FLEX": 40.15
    },
-   "fpts": 14.1,
+   "fpts": 9.4,
    "name": "Christian Watson",
    "pct": 57.64,
    "pos": "WR",
@@ -54,7 +54,7 @@
     "CPT": 5.81,
     "FLEX": 44.77
    },
-   "fpts": 19.53,
+   "fpts": 13.02,
    "name": "Dak Prescott",
    "pct": 50.73,
    "pos": "QB",
@@ -67,7 +67,7 @@
     "CPT": 11.59,
     "FLEX": 37.43
    },
-   "fpts": 19.5,
+   "fpts": 13.0,
    "name": "Javonte Williams",
    "pct": 49.18,
    "pos": "RB",
@@ -80,7 +80,7 @@
     "CPT": 12.71,
     "FLEX": 35.87
    },
-   "fpts": 38.1,
+   "fpts": 25.4,
    "name": "Matthew Golden",
    "pct": 48.72,
    "pos": "WR",
@@ -93,7 +93,7 @@
     "CPT": 11.14,
     "FLEX": 35.93
    },
-   "fpts": 24.0,
+   "fpts": 16.0,
    "name": "CeeDee Lamb",
    "pct": 47.21,
    "pos": "WR",
@@ -106,7 +106,7 @@
     "CPT": 7.53,
     "FLEX": 29.28
    },
-   "fpts": 19.95,
+   "fpts": 13.3,
    "name": "George Pickens",
    "pct": 36.92,
    "pos": "WR",
@@ -119,7 +119,7 @@
     "CPT": 6.36,
     "FLEX": 29.32
    },
-   "fpts": 13.05,
+   "fpts": 8.7,
    "name": "Tucker Kraft",
    "pct": 35.79,
    "pos": "TE",
@@ -132,7 +132,7 @@
     "CPT": 1.96,
     "FLEX": 24.53
    },
-   "fpts": 25.5,
+   "fpts": 17.0,
    "name": "Ryan Flournoy",
    "pct": 26.57,
    "pos": "WR",
@@ -145,7 +145,7 @@
     "CPT": 4.77,
     "FLEX": 20.93
    },
-   "fpts": 1.5,
+   "fpts": 1.0,
    "name": "MarShawn Lloyd",
    "pct": 25.78,
    "pos": "RB",
@@ -158,7 +158,7 @@
     "CPT": 1.08,
     "FLEX": 22.59
    },
-   "fpts": 1.5,
+   "fpts": 1.0,
    "name": "Brandon Aubrey",
    "pct": 23.74,
    "pos": "K",
@@ -171,7 +171,7 @@
     "CPT": 0.96,
     "FLEX": 20.76
    },
-   "fpts": 17.55,
+   "fpts": 11.7,
    "name": "Pierre Strong Jr.",
    "pct": 21.79,
    "pos": "RB",
@@ -184,7 +184,7 @@
     "CPT": 1.45,
     "FLEX": 16.04
    },
-   "fpts": 4.95,
+   "fpts": 3.3,
    "name": "Jake Ferguson",
    "pct": 17.54,
    "pos": "TE",
@@ -197,7 +197,7 @@
     "CPT": 0.34,
     "FLEX": 16.67
    },
-   "fpts": 18.0,
+   "fpts": 12.0,
    "name": "Trey Smack",
    "pct": 17.07,
    "pos": "K",
@@ -210,7 +210,7 @@
     "CPT": 0.71,
     "FLEX": 9.49
    },
-   "fpts": 12.15,
+   "fpts": 8.1,
    "name": "Savion Williams",
    "pct": 10.23,
    "pos": "WR",
@@ -223,7 +223,7 @@
     "CPT": 0.79,
     "FLEX": 8.39
    },
-   "fpts": 13.5,
+   "fpts": 9.0,
    "name": "Packers",
    "pct": 9.21,
    "pos": "DST",
@@ -262,7 +262,7 @@
     "CPT": 0.37,
     "FLEX": 5.9
    },
-   "fpts": 7.5,
+   "fpts": 5.0,
    "name": "Cowboys",
    "pct": 6.29,
    "pos": "DST",
@@ -288,7 +288,7 @@
     "CPT": 0.07,
     "FLEX": 4.11
    },
-   "fpts": 11.25,
+   "fpts": 7.5,
    "name": "Brevyn Spann-Ford",
    "pct": 4.18,
    "pos": "TE",
@@ -301,7 +301,7 @@
     "CPT": 0.13,
     "FLEX": 3.37
    },
-   "fpts": 2.85,
+   "fpts": 1.9,
    "name": "Tyler Goodson",
    "pct": 3.5,
    "pos": "RB",
@@ -314,7 +314,7 @@
     "CPT": 0.16,
     "FLEX": 3.26
    },
-   "fpts": -0.3,
+   "fpts": -0.2,
    "name": "Kaleb Johnson",
    "pct": 3.42,
    "pos": "RB",
@@ -366,7 +366,7 @@
     "CPT": 0.04,
     "FLEX": 1.65
    },
-   "fpts": 5.85,
+   "fpts": 3.9,
    "name": "Hunter Luepke",
    "pct": 1.69,
    "pos": "RB",
