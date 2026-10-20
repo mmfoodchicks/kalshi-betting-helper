@@ -1,8 +1,8 @@
 {
  "boards": [
   {
-   "age_s": 1303,
-   "built_ts": 1792447071,
+   "age_s": 1725,
+   "built_ts": 1792469869,
    "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st, $100K Leaderboard Eligible]",
    "dg": 155198,
    "entries": 147058,
@@ -15,8 +15,24 @@
    "worlds": 180000
   },
   {
-   "age_s": 6815,
-   "built_ts": 1792441560,
+   "age_s": 13497,
+   "built_ts": 1792458097,
+   "contest": "NFL Showdown $1.25M Thursday Night Showdown [$300K to 1st] (NE @ CHI)",
+   "dg": 155204,
+   "entries": 73529,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "CHI vs NE",
+   "starts": "2026-10-23T00:15:00.0000000Z",
+   "teams": [
+    "CHI",
+    "NE"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 19318,
+   "built_ts": 1792452276,
    "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (WAS @ SF)",
    "dg": 154960,
    "entries": 88235,
@@ -27,22 +43,6 @@
    "teams": [
     "SF",
     "WAS"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 80806,
-   "built_ts": 1792367567,
-   "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (DAL @ GB)",
-   "dg": 154959,
-   "entries": 78431,
-   "entry_fee": 15.0,
-   "kind": "showdown",
-   "label": "DAL vs GB",
-   "starts": "2026-10-19T00:20:00.0000000Z",
-   "teams": [
-    "DAL",
-    "GB"
    ],
    "worlds": 60000
   }
