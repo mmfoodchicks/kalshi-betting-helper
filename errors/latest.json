@@ -2,6 +2,160 @@
  "errors": [
   {
    "code": "HIND-nopool",
+   "id": 1807,
+   "last_ts": 1792556494.3144188,
+   "msg": "DraftKings served no pool",
+   "n": 1,
+   "path": "nfl:2026:w6:154941",
+   "pid": 3581,
+   "tb": "",
+   "ts": 1792556494.3144188
+  },
+  {
+   "code": "HIND-nopool",
+   "id": 1806,
+   "last_ts": 1792554660.207705,
+   "msg": "DraftKings served no pool",
+   "n": 1,
+   "path": "nfl:2026:w6:154941",
+   "pid": 3581,
+   "tb": "",
+   "ts": 1792554660.207705
+  },
+  {
+   "code": "HIND-nopool",
+   "id": 1805,
+   "last_ts": 1792552835.4975693,
+   "msg": "DraftKings served no pool",
+   "n": 1,
+   "path": "nfl:2026:w6:154941",
+   "pid": 3581,
+   "tb": "",
+   "ts": 1792552835.4975693
+  },
+  {
+   "code": "HIND-nopool",
+   "id": 1804,
+   "last_ts": 1792551360.9740508,
+   "msg": "DraftKings served no pool",
+   "n": 1,
+   "path": "nfl:2026:w6:154941",
+   "pid": 3563,
+   "tb": "",
+   "ts": 1792551360.9740508
+  },
+  {
+   "code": "HIND-nopool",
+   "id": 1803,
+   "last_ts": 1792549540.606474,
+   "msg": "DraftKings served no pool",
+   "n": 1,
+   "path": "nfl:2026:w6:154941",
+   "pid": 3563,
+   "tb": "",
+   "ts": 1792549540.606474
+  },
+  {
+   "code": "HIND-nopool",
+   "id": 1802,
+   "last_ts": 1792547718.9517372,
+   "msg": "DraftKings served no pool",
+   "n": 1,
+   "path": "nfl:2026:w6:154941",
+   "pid": 3563,
+   "tb": "",
+   "ts": 1792547718.9517372
+  },
+  {
+   "code": "HIND-nopool",
+   "id": 1801,
+   "last_ts": 1792545899.676827,
+   "msg": "DraftKings served no pool",
+   "n": 2,
+   "path": "nfl:2026:w6:154941",
+   "pid": 3563,
+   "tb": "",
+   "ts": 1792545165.3855393
+  },
+  {
+   "code": "HIND-nopool",
+   "id": 1800,
+   "last_ts": 1792543345.3879445,
+   "msg": "DraftKings served no pool",
+   "n": 1,
+   "path": "nfl:2026:w6:154941",
+   "pid": 3092,
+   "tb": "",
+   "ts": 1792543345.3879445
+  },
+  {
+   "code": "HIND-nopool",
+   "id": 1799,
+   "last_ts": 1792541523.0619159,
+   "msg": "DraftKings served no pool",
+   "n": 1,
+   "path": "nfl:2026:w6:154941",
+   "pid": 3092,
+   "tb": "",
+   "ts": 1792541523.0619159
+  },
+  {
+   "code": "HIND-nopool",
+   "id": 1798,
+   "last_ts": 1792539653.9128947,
+   "msg": "DraftKings served no pool",
+   "n": 1,
+   "path": "nfl:2026:w6:154941",
+   "pid": 3092,
+   "tb": "",
+   "ts": 1792539653.9128947
+  },
+  {
+   "code": "HIND-nopool",
+   "id": 1797,
+   "last_ts": 1792537836.0389824,
+   "msg": "DraftKings served no pool",
+   "n": 1,
+   "path": "nfl:2026:w6:154941",
+   "pid": 3092,
+   "tb": "",
+   "ts": 1792537836.0389824
+  },
+  {
+   "code": "HIND-nopool",
+   "id": 1796,
+   "last_ts": 1792536022.9565642,
+   "msg": "DraftKings served no pool",
+   "n": 1,
+   "path": "nfl:2026:w6:154941",
+   "pid": 3092,
+   "tb": "",
+   "ts": 1792536022.9565642
+  },
+  {
+   "code": "HIND-nopool",
+   "id": 1795,
+   "last_ts": 1792534303.7248855,
+   "msg": "DraftKings served no pool",
+   "n": 1,
+   "path": "nfl:2026:w6:154941",
+   "pid": 3070,
+   "tb": "",
+   "ts": 1792534303.7248855
+  },
+  {
+   "code": "HIND-nopool",
+   "id": 1794,
+   "last_ts": 1792532472.277852,
+   "msg": "DraftKings served no pool",
+   "n": 1,
+   "path": "nfl:2026:w6:154941",
+   "pid": 3070,
+   "tb": "",
+   "ts": 1792532472.277852
+  },
+  {
+   "code": "HIND-nopool",
    "id": 1793,
    "last_ts": 1792530653.3050728,
    "msg": "DraftKings served no pool",
@@ -2034,190 +2188,25 @@
    "pid": 123097,
    "tb": "Traceback (most recent call last):\n  File \"/app/deep_cache.py\", line 281, in _worker\n    payload = job[\"run\"]()\n              ^^^^^^^^^^^^\n  File \"/app/app.py\", line 1467, in run_mlb\n    agg = deep_season.run_deep(season, n_seasons=4000, workers=workers,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/deep_season.py\", line 623, in run_deep\n    games = season_sim._remaining_games(season)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/season_sim.py\", line 80, in _remaining_games\n    data = baseball._get(\n           ^^^^^^^^^^^^^^\n  File \"/app/baseball.py\", line 209, in _get\n    return kalshi._get_json(url)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n",
    "ts": 1791953743.464494
-  },
-  {
-   "code": "SS-winner_markets",
-   "id": 1608,
-   "last_ts": 1791951261.421627,
-   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "n": 1,
-   "path": null,
-   "pid": 123097,
-   "tb": "Traceback (most recent call last):\n  File \"/app/season_sim.py\", line 530, in _winner_markets\n    for m in kalshi.markets_for_series(series, limit=60):\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 182, in markets_for_series\n    data = _get_json(f\"{BASE}/markets?{params}\")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
-   "ts": 1791951261.421627
-  },
-  {
-   "code": "DEEP-mlb_deep",
-   "id": 1607,
-   "last_ts": 1791951250.0008185,
-   "msg": "HTTPError: HTTP Error 400: Bad Request",
-   "n": 1,
-   "path": null,
-   "pid": 123097,
-   "tb": "Traceback (most recent call last):\n  File \"/app/deep_cache.py\", line 281, in _worker\n    payload = job[\"run\"]()\n              ^^^^^^^^^^^^\n  File \"/app/app.py\", line 1467, in run_mlb\n    agg = deep_season.run_deep(season, n_seasons=4000, workers=workers,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/deep_season.py\", line 623, in run_deep\n    games = season_sim._remaining_games(season)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/season_sim.py\", line 80, in _remaining_games\n    data = baseball._get(\n           ^^^^^^^^^^^^^^\n  File \"/app/baseball.py\", line 209, in _get\n    return kalshi._get_json(url)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n",
-   "ts": 1791951250.0008185
-  },
-  {
-   "code": "DEEP-mlb_deep",
-   "id": 1606,
-   "last_ts": 1791949424.6918876,
-   "msg": "HTTPError: HTTP Error 400: Bad Request",
-   "n": 1,
-   "path": null,
-   "pid": 123097,
-   "tb": "Traceback (most recent call last):\n  File \"/app/deep_cache.py\", line 281, in _worker\n    payload = job[\"run\"]()\n              ^^^^^^^^^^^^\n  File \"/app/app.py\", line 1467, in run_mlb\n    agg = deep_season.run_deep(season, n_seasons=4000, workers=workers,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/deep_season.py\", line 623, in run_deep\n    games = season_sim._remaining_games(season)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/season_sim.py\", line 80, in _remaining_games\n    data = baseball._get(\n           ^^^^^^^^^^^^^^\n  File \"/app/baseball.py\", line 209, in _get\n    return kalshi._get_json(url)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n",
-   "ts": 1791949424.6918876
-  },
-  {
-   "code": "DEEP-mlb_deep",
-   "id": 1605,
-   "last_ts": 1791948146.8419206,
-   "msg": "HTTPError: HTTP Error 400: Bad Request",
-   "n": 1,
-   "path": null,
-   "pid": 122463,
-   "tb": "Traceback (most recent call last):\n  File \"/app/deep_cache.py\", line 281, in _worker\n    payload = job[\"run\"]()\n              ^^^^^^^^^^^^\n  File \"/app/app.py\", line 1467, in run_mlb\n    agg = deep_season.run_deep(season, n_seasons=4000, workers=workers,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/deep_season.py\", line 623, in run_deep\n    games = season_sim._remaining_games(season)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/season_sim.py\", line 80, in _remaining_games\n    data = baseball._get(\n           ^^^^^^^^^^^^^^\n  File \"/app/baseball.py\", line 209, in _get\n    return kalshi._get_json(url)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n",
-   "ts": 1791948146.8419206
-  },
-  {
-   "code": "DEEP-mlb_deep",
-   "id": 1604,
-   "last_ts": 1791946321.8014631,
-   "msg": "HTTPError: HTTP Error 400: Bad Request",
-   "n": 1,
-   "path": null,
-   "pid": 122463,
-   "tb": "Traceback (most recent call last):\n  File \"/app/deep_cache.py\", line 281, in _worker\n    payload = job[\"run\"]()\n              ^^^^^^^^^^^^\n  File \"/app/app.py\", line 1467, in run_mlb\n    agg = deep_season.run_deep(season, n_seasons=4000, workers=workers,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/deep_season.py\", line 623, in run_deep\n    games = season_sim._remaining_games(season)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/season_sim.py\", line 80, in _remaining_games\n    data = baseball._get(\n           ^^^^^^^^^^^^^^\n  File \"/app/baseball.py\", line 209, in _get\n    return kalshi._get_json(url)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n",
-   "ts": 1791946321.8014631
-  },
-  {
-   "code": "DEEP-mlb_deep",
-   "id": 1603,
-   "last_ts": 1791944496.7165961,
-   "msg": "HTTPError: HTTP Error 400: Bad Request",
-   "n": 1,
-   "path": null,
-   "pid": 122463,
-   "tb": "Traceback (most recent call last):\n  File \"/app/deep_cache.py\", line 281, in _worker\n    payload = job[\"run\"]()\n              ^^^^^^^^^^^^\n  File \"/app/app.py\", line 1467, in run_mlb\n    agg = deep_season.run_deep(season, n_seasons=4000, workers=workers,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/deep_season.py\", line 623, in run_deep\n    games = season_sim._remaining_games(season)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/season_sim.py\", line 80, in _remaining_games\n    data = baseball._get(\n           ^^^^^^^^^^^^^^\n  File \"/app/baseball.py\", line 209, in _get\n    return kalshi._get_json(url)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n",
-   "ts": 1791944496.7165961
-  },
-  {
-   "code": "DEEP-mlb_deep",
-   "id": 1602,
-   "last_ts": 1791942671.6279252,
-   "msg": "HTTPError: HTTP Error 400: Bad Request",
-   "n": 1,
-   "path": null,
-   "pid": 122463,
-   "tb": "Traceback (most recent call last):\n  File \"/app/deep_cache.py\", line 281, in _worker\n    payload = job[\"run\"]()\n              ^^^^^^^^^^^^\n  File \"/app/app.py\", line 1467, in run_mlb\n    agg = deep_season.run_deep(season, n_seasons=4000, workers=workers,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/deep_season.py\", line 623, in run_deep\n    games = season_sim._remaining_games(season)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/season_sim.py\", line 80, in _remaining_games\n    data = baseball._get(\n           ^^^^^^^^^^^^^^\n  File \"/app/baseball.py\", line 209, in _get\n    return kalshi._get_json(url)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n",
-   "ts": 1791942671.6279252
-  },
-  {
-   "code": "DEEP-mlb_deep",
-   "id": 1601,
-   "last_ts": 1791940846.5915456,
-   "msg": "HTTPError: HTTP Error 400: Bad Request",
-   "n": 1,
-   "path": null,
-   "pid": 122463,
-   "tb": "Traceback (most recent call last):\n  File \"/app/deep_cache.py\", line 281, in _worker\n    payload = job[\"run\"]()\n              ^^^^^^^^^^^^\n  File \"/app/app.py\", line 1467, in run_mlb\n    agg = deep_season.run_deep(season, n_seasons=4000, workers=workers,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/deep_season.py\", line 623, in run_deep\n    games = season_sim._remaining_games(season)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/season_sim.py\", line 80, in _remaining_games\n    data = baseball._get(\n           ^^^^^^^^^^^^^^\n  File \"/app/baseball.py\", line 209, in _get\n    return kalshi._get_json(url)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n",
-   "ts": 1791940846.5915456
-  },
-  {
-   "code": "DEEP-mlb_deep",
-   "id": 1600,
-   "last_ts": 1791939021.9150326,
-   "msg": "HTTPError: HTTP Error 400: Bad Request",
-   "n": 1,
-   "path": null,
-   "pid": 122463,
-   "tb": "Traceback (most recent call last):\n  File \"/app/deep_cache.py\", line 281, in _worker\n    payload = job[\"run\"]()\n              ^^^^^^^^^^^^\n  File \"/app/app.py\", line 1467, in run_mlb\n    agg = deep_season.run_deep(season, n_seasons=4000, workers=workers,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/deep_season.py\", line 623, in run_deep\n    games = season_sim._remaining_games(season)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/season_sim.py\", line 80, in _remaining_games\n    data = baseball._get(\n           ^^^^^^^^^^^^^^\n  File \"/app/baseball.py\", line 209, in _get\n    return kalshi._get_json(url)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n",
-   "ts": 1791939021.9150326
-  },
-  {
-   "code": "DEEP-mlb_deep",
-   "id": 1599,
-   "last_ts": 1791937485.3981187,
-   "msg": "HTTPError: HTTP Error 400: Bad Request",
-   "n": 1,
-   "path": null,
-   "pid": 122028,
-   "tb": "Traceback (most recent call last):\n  File \"/app/deep_cache.py\", line 281, in _worker\n    payload = job[\"run\"]()\n              ^^^^^^^^^^^^\n  File \"/app/app.py\", line 1467, in run_mlb\n    agg = deep_season.run_deep(season, n_seasons=4000, workers=workers,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/deep_season.py\", line 623, in run_deep\n    games = season_sim._remaining_games(season)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/season_sim.py\", line 80, in _remaining_games\n    data = baseball._get(\n           ^^^^^^^^^^^^^^\n  File \"/app/baseball.py\", line 209, in _get\n    return kalshi._get_json(url)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n",
-   "ts": 1791937485.3981187
-  },
-  {
-   "code": "DEEP-mlb_deep",
-   "id": 1598,
-   "last_ts": 1791935660.313719,
-   "msg": "HTTPError: HTTP Error 400: Bad Request",
-   "n": 1,
-   "path": null,
-   "pid": 122028,
-   "tb": "Traceback (most recent call last):\n  File \"/app/deep_cache.py\", line 281, in _worker\n    payload = job[\"run\"]()\n              ^^^^^^^^^^^^\n  File \"/app/app.py\", line 1467, in run_mlb\n    agg = deep_season.run_deep(season, n_seasons=4000, workers=workers,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/deep_season.py\", line 623, in run_deep\n    games = season_sim._remaining_games(season)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/season_sim.py\", line 80, in _remaining_games\n    data = baseball._get(\n           ^^^^^^^^^^^^^^\n  File \"/app/baseball.py\", line 209, in _get\n    return kalshi._get_json(url)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n",
-   "ts": 1791935660.313719
-  },
-  {
-   "code": "DEEP-mlb_deep",
-   "id": 1597,
-   "last_ts": 1791933835.2681713,
-   "msg": "HTTPError: HTTP Error 400: Bad Request",
-   "n": 1,
-   "path": null,
-   "pid": 122028,
-   "tb": "Traceback (most recent call last):\n  File \"/app/deep_cache.py\", line 281, in _worker\n    payload = job[\"run\"]()\n              ^^^^^^^^^^^^\n  File \"/app/app.py\", line 1467, in run_mlb\n    agg = deep_season.run_deep(season, n_seasons=4000, workers=workers,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/deep_season.py\", line 623, in run_deep\n    games = season_sim._remaining_games(season)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/season_sim.py\", line 80, in _remaining_games\n    data = baseball._get(\n           ^^^^^^^^^^^^^^\n  File \"/app/baseball.py\", line 209, in _get\n    return kalshi._get_json(url)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n",
-   "ts": 1791933835.2681713
-  },
-  {
-   "code": "DEEP-mlb_deep",
-   "id": 1596,
-   "last_ts": 1791932010.2106483,
-   "msg": "HTTPError: HTTP Error 400: Bad Request",
-   "n": 1,
-   "path": null,
-   "pid": 122028,
-   "tb": "Traceback (most recent call last):\n  File \"/app/deep_cache.py\", line 281, in _worker\n    payload = job[\"run\"]()\n              ^^^^^^^^^^^^\n  File \"/app/app.py\", line 1467, in run_mlb\n    agg = deep_season.run_deep(season, n_seasons=4000, workers=workers,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/deep_season.py\", line 623, in run_deep\n    games = season_sim._remaining_games(season)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/season_sim.py\", line 80, in _remaining_games\n    data = baseball._get(\n           ^^^^^^^^^^^^^^\n  File \"/app/baseball.py\", line 209, in _get\n    return kalshi._get_json(url)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n",
-   "ts": 1791932010.2106483
-  },
-  {
-   "code": "DEEP-mlb_deep",
-   "id": 1595,
-   "last_ts": 1791930184.903953,
-   "msg": "HTTPError: HTTP Error 400: Bad Request",
-   "n": 1,
-   "path": null,
-   "pid": 122028,
-   "tb": "Traceback (most recent call last):\n  File \"/app/deep_cache.py\", line 281, in _worker\n    payload = job[\"run\"]()\n              ^^^^^^^^^^^^\n  File \"/app/app.py\", line 1467, in run_mlb\n    agg = deep_season.run_deep(season, n_seasons=4000, workers=workers,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/deep_season.py\", line 623, in run_deep\n    games = season_sim._remaining_games(season)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/season_sim.py\", line 80, in _remaining_games\n    data = baseball._get(\n           ^^^^^^^^^^^^^^\n  File \"/app/baseball.py\", line 209, in _get\n    return kalshi._get_json(url)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n",
-   "ts": 1791930184.903953
-  },
-  {
-   "code": "DEEP-mlb_deep",
-   "id": 1594,
-   "last_ts": 1791929059.570734,
-   "msg": "HTTPError: HTTP Error 400: Bad Request",
-   "n": 1,
-   "path": null,
-   "pid": 121428,
-   "tb": "Traceback (most recent call last):\n  File \"/app/deep_cache.py\", line 281, in _worker\n    payload = job[\"run\"]()\n              ^^^^^^^^^^^^\n  File \"/app/app.py\", line 1467, in run_mlb\n    agg = deep_season.run_deep(season, n_seasons=4000, workers=workers,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/deep_season.py\", line 623, in run_deep\n    games = season_sim._remaining_games(season)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/season_sim.py\", line 80, in _remaining_games\n    data = baseball._get(\n           ^^^^^^^^^^^^^^\n  File \"/app/baseball.py\", line 209, in _get\n    return kalshi._get_json(url)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n",
-   "ts": 1791929059.570734
   }
  ],
- "generated_at": 1792532112.5792768,
+ "generated_at": 1792557751.7279167,
  "summary": [
   {
    "code": "DEEP-mlb_deep",
-   "first_ts": 1791929059.570734,
+   "first_ts": 1791953743.464494,
    "last_msg": "HTTPError: HTTP Error 400: Bad Request",
    "last_ts": 1792139265.3349197,
-   "n": 126,
-   "variants": 116
+   "n": 112,
+   "variants": 102
   },
   {
    "code": "HIND-nopool",
    "first_ts": 1792470555.758984,
    "last_msg": "DraftKings served no pool",
-   "last_ts": 1792530653.3050728,
-   "n": 37,
-   "variants": 34
+   "last_ts": 1792556494.3144188,
+   "n": 52,
+   "variants": 48
   },
   {
    "code": "MEM-high",
@@ -2274,14 +2263,6 @@
    "last_ts": 1792051176.0584657,
    "n": 2,
    "variants": 2
-  },
-  {
-   "code": "SS-winner_markets",
-   "first_ts": 1791951261.421627,
-   "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "last_ts": 1791951261.421627,
-   "n": 1,
-   "variants": 1
   },
   {
    "code": "UFCC-fights",

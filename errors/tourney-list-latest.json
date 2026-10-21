@@ -1,8 +1,8 @@
 {
  "boards": [
   {
-   "age_s": 3231,
-   "built_ts": 1792528880,
+   "age_s": 18868,
+   "built_ts": 1792538882,
    "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st, $100K Leaderboard Eligible]",
    "dg": 155198,
    "entries": 147058,
@@ -15,8 +15,8 @@
    "worlds": 180000
   },
   {
-   "age_s": 51234,
-   "built_ts": 1792480878,
+   "age_s": 21429,
+   "built_ts": 1792536321,
    "contest": "NFL Showdown $1.25M Thursday Night Showdown [$300K to 1st] (NE @ CHI)",
    "dg": 155204,
    "entries": 73529,
@@ -27,22 +27,6 @@
    "teams": [
     "CHI",
     "NE"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 79835,
-   "built_ts": 1792452276,
-   "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (WAS @ SF)",
-   "dg": 154960,
-   "entries": 88235,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "SF vs WAS",
-   "starts": "2026-10-20T00:15:00.0000000Z",
-   "teams": [
-    "SF",
-    "WAS"
    ],
    "worlds": 60000
   }
