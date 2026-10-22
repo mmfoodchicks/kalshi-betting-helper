@@ -2,6 +2,17 @@
  "errors": [
   {
    "code": "NFL-DRIFT",
+   "id": 1937,
+   "last_ts": 1792703805.2676802,
+   "msg": "Rush Yds: the model sits -4.3 points off Kalshi's mid over 180 rungs in 14 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 89,
+   "tb": "",
+   "ts": 1792703805.2676802
+  },
+  {
+   "code": "NFL-DRIFT",
    "id": 1936,
    "last_ts": 1792702978.5276687,
    "msg": "Rush Yds: the model sits -4.5 points off Kalshi's mid over 180 rungs in 14 games",
@@ -2529,20 +2540,9 @@
    "pid": 137438,
    "tb": "Traceback (most recent call last):\n  File \"/app/kalshi.py\", line 254, in build\n    d = _get_json(f\"{BASE}/series/{series}/markets/{ticker}/candlesticks\"\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
    "ts": 1792101226.7876618
-  },
-  {
-   "code": "DEEP-mlb_deep",
-   "id": 1706,
-   "last_ts": 1792099368.557222,
-   "msg": "HTTPError: HTTP Error 400: Bad Request",
-   "n": 1,
-   "path": null,
-   "pid": 136782,
-   "tb": "Traceback (most recent call last):\n  File \"/app/deep_cache.py\", line 281, in _worker\n    payload = job[\"run\"]()\n              ^^^^^^^^^^^^\n  File \"/app/app.py\", line 1467, in run_mlb\n    agg = deep_season.run_deep(season, n_seasons=4000, workers=workers,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/deep_season.py\", line 623, in run_deep\n    games = season_sim._remaining_games(season)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/season_sim.py\", line 80, in _remaining_games\n    data = baseball._get(\n           ^^^^^^^^^^^^^^\n  File \"/app/baseball.py\", line 209, in _get\n    return kalshi._get_json(url)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n",
-   "ts": 1792099368.557222
   }
  ],
- "generated_at": 1792703357.1472342,
+ "generated_at": 1792704787.6408424,
  "summary": [
   {
    "code": "HIND-nopool",
@@ -2555,10 +2555,10 @@
   {
    "code": "NFL-DRIFT",
    "first_ts": 1792558319.4804556,
-   "last_msg": "Rush Yds: the model sits -4.5 points off Kalshi's mid over 180 rungs in 14 games",
-   "last_ts": 1792702978.5276687,
-   "n": 74,
-   "variants": 66
+   "last_msg": "Rush Yds: the model sits -4.3 points off Kalshi's mid over 180 rungs in 14 games",
+   "last_ts": 1792703805.2676802,
+   "n": 75,
+   "variants": 67
   },
   {
    "code": "MEM-high",
@@ -2570,11 +2570,11 @@
   },
   {
    "code": "DEEP-mlb_deep",
-   "first_ts": 1792099368.557222,
+   "first_ts": 1792101334.5656512,
    "last_msg": "HTTPError: HTTP Error 400: Bad Request",
    "last_ts": 1792139265.3349197,
-   "n": 23,
-   "variants": 22
+   "n": 22,
+   "variants": 21
   },
   {
    "code": "KNFL-markets-fetch",
