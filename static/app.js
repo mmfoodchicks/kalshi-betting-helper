@@ -8681,7 +8681,19 @@ function initDfsLookback() {
 // shape, Classic vs Showdown from the slate, and the slate's pool into the
 // CSV box. Hand-typed numbers and a pasted CSV were the two ways the contest
 // sim ended up modeling a contest that did not exist.
-let _dfsDkContests = [], _dfsDkShape = null, _dfsDkBusy = false;
+let _dfsDkContests = [], _dfsDkShape = null, _dfsDkBusy = false, _dfsDkSlates = [];
+// What a slate IS, in words: a single game names its teams (DraftKings' own
+// contest names, dk.slates "matchup"). The list used to say "1 game", and the
+// 14-game Thu-Mon classic sorted above the Thursday showdown at the same
+// 8:15 PM ET start -- the tab's default, and the slate the owner's Build
+// meant for NE @ CHI queued (2026-10-22).
+function _dfsSlateWhat(x) {
+  if (!x) return "this slate";
+  const n = x.games || 1, tag = x.tag ? " " + x.tag : "";
+  if (x.sport !== "nfl") return x.matchup || `${n} game${n === 1 ? "" : "s"}${tag}`;
+  return x.matchup ? `${x.matchup} showdown` : `${n}-game classic${tag}`;
+}
+function _dfsSlateOf(dg) { return _dfsDkSlates.find((x) => String(x.draft_group_id) === String(dg)) || null; }
 // The picked contest's own payout table (dk.contest_detail tiers), sent with the
 // build so the contest sim prices THIS contest, not a fitted curve.
 let _dfsDkPay = null;
@@ -8722,7 +8734,9 @@ async function loadDfsSlates() {
     const sl = (d.slates || []).filter((x) => x.n_contests > 0);
     if (!sl.length) { sel.innerHTML = `<option value="">no DraftKings slate posted for ${sp.toUpperCase()}</option>`; return; }
     const mem = _dfsDkRecall();
-    sel.innerHTML = sl.map((x) => `<option value="${x.draft_group_id}">${_dfsDkWhen(x.starts)} · ${x.games || 1} game${(x.games || 1) === 1 ? "" : "s"}${x.tag ? " " + escapeHtml(x.tag) : ""} · ${x.n_contests} contests</option>`).join("");
+    _dfsDkSlates = sl;
+    renderDfsTourneyBuild();
+    sel.innerHTML = sl.map((x) => `<option value="${x.draft_group_id}">${_dfsDkWhen(x.starts)} · ${escapeHtml(_dfsSlateWhat(x))} · ${x.n_contests} contests</option>`).join("");
     if (mem && sl.some((x) => String(x.draft_group_id) === String(mem.dg))) sel.value = String(mem.dg);
     await loadDfsContests(mem && String(sel.value) === String(mem.dg) ? mem.id : null);
   } catch (e) {
@@ -8804,16 +8818,19 @@ async function applyDfsContest(id) {
 // lineup sample of the public, for every seven-figure contest on the slate.
 // The owner's PC builds it (numpy, gigabytes, the better part of an hour)
 // and uploads it as a board; the server only serves it. On its own the PC
-// builds the Sunday main slate and the Thursday / Sunday / Monday night
-// showdowns; the Build button queues any slate, and "boards on file" keeps a
-// finished board reachable after DraftKings drops the slate at lock.
+// builds the Sunday main slate (Saturday night and after Sunday's inactives,
+// pc_worker._CL_WEEK_WINDOWS) and the Thursday / Sunday / Monday night
+// showdowns; Build on the PC (a dropdown of slates by name) queues any slate,
+// every board says who asked for it (requested_by: "PC request" or
+// "Schedule"), and "boards on file" keeps a finished board reachable after
+// DraftKings drops the slate at lock.
 let _dfsTourneyDg = null, _dfsTourneyData = null, _dfsTourneyK = "5", _dfsTourneyAll = false;
-let _dfsTourneyLabel = "", _dfsTourneyBusy = false, _dfsTourneyCid = null, _dfsTourneyList = "top_top1";
+let _dfsTourneyBusy = false, _dfsTourneyCid = null, _dfsTourneyList = "top_top1";
 function _dfsTourneyBoxes() {
   const box = $("dfsTourney");
   if (!box) return null;
-  if (!$("dfsTourneyMain")) box.innerHTML = `<div id="dfsTourneyMain"></div><div id="dfsTourneyFiles"></div>`;
-  return { main: $("dfsTourneyMain"), files: $("dfsTourneyFiles") };
+  if (!$("dfsTourneyMain")) box.innerHTML = `<div id="dfsTourneyBuild"></div><div id="dfsTourneyMain"></div><div id="dfsTourneyFiles"></div>`;
+  return { build: $("dfsTourneyBuild"), main: $("dfsTourneyMain"), files: $("dfsTourneyFiles") };
 }
 // Game-day weather (NFL): the recorder's logged kickoff forecasts. Shown for
 // information; a held-out test found no weather adjustment that beat
@@ -8892,12 +8909,11 @@ async function loadDfsTourney(dg, force) {
   const sp = ($("dfsSport") || {}).value;
   loadNflWeather();
   loadDfsFields();
+  renderDfsTourneyBuild();
   if (sp !== "nfl") { bx.main.innerHTML = ""; bx.files.innerHTML = ""; _dfsTourneyDg = null; _dfsTourneyData = null; return; }
   loadDfsTourneyList();
   if (!dg) { bx.main.innerHTML = ""; _dfsTourneyDg = null; _dfsTourneyData = null; return; }
   _dfsTourneyDg = String(dg);
-  const sel = $("dfsDkSlate");
-  _dfsTourneyLabel = (sel && sel.selectedOptions && sel.selectedOptions[0] && String(sel.value) === String(dg)) ? sel.selectedOptions[0].textContent : "";
   bx.main.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ tournament: looking for the PC's build…</div>`;
   try {
     const d = await (await fetch(`/api/dfs/tourney?sport=nfl&dg=${encodeURIComponent(dg)}`)).json();
@@ -8918,23 +8934,59 @@ async function loadDfsTourneyList() {
     const pend = d.pending || [];
     if (!rows.length && !pend.length) { bx.files.innerHTML = ""; return; }
     const links = rows.map((r) => `<a href="#" onclick="loadDfsTourney(${r.dg}, true);return false" style="margin-right:10px" title="${escapeHtml(r.contest || "")}">${escapeHtml(r.label || (r.teams || []).join(" vs ") || String(r.dg))}</a><span class="small" style="color:var(--faint);margin-right:12px">${agoStr(r.age_s)}</span>`).join("");
-    const q = pend.length ? `<span class="small" style="color:var(--muted)"> · queued for the PC: ${pend.map((p) => escapeHtml(p.label || String(p.dg))).join(", ")}</span>` : "";
+    const q = pend.length ? `<span class="small" style="color:var(--muted)"> · queued for the PC: ${pend.map((p) => `${escapeHtml(p.label || String(p.dg))} <a href="#" onclick="dfsTourneyCancel(${Number(p.dg)});return false" title="take this request back (a build the PC has started still finishes)">✕</a>`).join(", ")}</span>` : "";
     bx.files.innerHTML = `<div class="small" style="margin-top:6px;color:var(--muted)">🗂 boards on file: ${links}${q}</div>`;
   } catch (e) { bx.files.innerHTML = ""; }
 }
+// Build on the PC: a dropdown of every NFL slate by NAME, nothing picked
+// until the owner picks. The button used to build whichever slate the
+// contest picker showed, and that defaulted to the earliest start -- the
+// 14-game Thu-Mon classic, not NE @ CHI (2026-10-22). A classic slate with no
+// $1M+ contest is listed but cannot be picked: the PC builds classic boards
+// only for those, and such a request sat in the queue answering "nothing to
+// build" (the server refuses it too).
+function renderDfsTourneyBuild(msg) {
+  const bx = _dfsTourneyBoxes();
+  if (!bx || !bx.build) return;
+  const nfl = _dfsDkSlates.filter((x) => x.sport === "nfl");
+  if ((($("dfsSport") || {}).value || "") !== "nfl" || !nfl.length) { bx.build.innerHTML = ""; return; }
+  const keep = (($("dfsTourneyPickBuild") || {}).value) || "";
+  const opts = nfl.map((x) => {
+    const showdown = (x.games || 1) === 1;
+    const off = !showdown && x.top_pool != null && x.top_pool < 1e6;
+    return `<option value="${x.draft_group_id}"${off ? " disabled" : ""}>${escapeHtml(_dfsSlateWhat(x))} · ${_dfsDkWhen(x.starts)}${off ? " · no $1M+ contest" : ""}</option>`;
+  }).join("");
+  bx.build.innerHTML = `<div class="small" style="margin-top:6px">🛠 Build on the PC: <select id="dfsTourneyPickBuild" style="width:auto;padding:2px 4px"><option value="">- pick a slate -</option>${opts}</select> <button class="track-mini" type="button" onclick="dfsTourneyRequest()" title="Queue exactly the slate picked for the PC's next cycle. It builds requests before anything else: a showdown takes about 20 minutes, a classic slate about an hour.">Build</button>${msg ? ` <span style="color:var(--muted)">${escapeHtml(msg)}</span>` : ""}</div>`;
+  if (keep && nfl.some((x) => String(x.draft_group_id) === keep)) $("dfsTourneyPickBuild").value = keep;
+}
 async function dfsTourneyRequest() {
-  if (!_dfsTourneyDg || _dfsTourneyBusy) return;
+  const dg = (($("dfsTourneyPickBuild") || {}).value) || "";
+  if (!dg) { renderDfsTourneyBuild("pick the slate to build first"); return; }
+  if (_dfsTourneyBusy) return;
+  const sl = _dfsSlateOf(dg);
+  const showdown = !!sl && (sl.games || 1) === 1;
   _dfsTourneyBusy = true;
   try {
-    const showdown = !!(_dfsDkShape && _dfsDkShape.showdown) || !!(_dfsTourneyData && _dfsTourneyData.kind === "showdown");
     const r = await (await fetch("/api/dfs/tourney/request", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sport: "nfl", dg: _dfsTourneyDg, kind: showdown ? "showdown" : "classic", label: _dfsTourneyLabel || ((_dfsTourneyData || {}).contest || {}).name || "" }),
+      body: JSON.stringify({ sport: "nfl", dg: Number(dg), kind: showdown ? "showdown" : "classic",
+                             label: `${_dfsSlateWhat(sl)} · ${_dfsDkWhen((sl || {}).starts)}` }),
     })).json();
-    if (r.queued && _dfsTourneyData) { _dfsTourneyData.queued_ts = r.ts; renderDfsTourney(_dfsTourneyData); }
+    if (r.queued && _dfsTourneyData && String(_dfsTourneyDg) === String(dg)) { _dfsTourneyData.queued_ts = r.ts; renderDfsTourney(_dfsTourneyData); }
+    renderDfsTourneyBuild(r.queued ? `queued: ${_dfsSlateWhat(sl)}` : (r.error || "could not queue it"));
     loadDfsTourneyList();
-  } catch (e) { /* the panel keeps its last state; the next load shows the queue */ }
+  } catch (e) { renderDfsTourneyBuild("could not reach the server"); }
   finally { _dfsTourneyBusy = false; }
+}
+async function dfsTourneyCancel(dg) {
+  try {
+    await fetch("/api/dfs/tourney/request", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sport: "nfl", dg, cancel: true }),
+    });
+    if (_dfsTourneyData && String(_dfsTourneyDg) === String(dg)) { delete _dfsTourneyData.queued_ts; renderDfsTourney(_dfsTourneyData); }
+    loadDfsTourneyList();
+  } catch (e) { /* the next load shows the queue as it stands */ }
 }
 function dfsTourneyPick(k) { _dfsTourneyK = String(k); if (_dfsTourneyData) renderDfsTourney(_dfsTourneyData); }
 function dfsTourneyAll() { _dfsTourneyAll = !_dfsTourneyAll; if (_dfsTourneyData) renderDfsTourney(_dfsTourneyData); }
@@ -8965,27 +9017,32 @@ function dfsTourneyCopy(list, i) {
   const txt = r.captain ? `CPT ${r.captain}; ${r.flex.join("; ")}` : (r.lineup || []).map((p) => `${p.slot} ${p.name}`).join("; ");
   try { navigator.clipboard.writeText(txt); } catch (e) { /* no clipboard: the row is on screen */ }
 }
+// "Build requested by": the owner's Build on the PC, or the PC's own rules
+// with the reason (pc_worker._requested_by). A board built before 2026-10-22
+// carries neither and says nothing.
+function _dfsTourneyBy(d) {
+  const rb = d.requested_by;
+  if (!rb || !rb.by) return "";
+  return ` · Build requested by: <b>${escapeHtml(rb.by)}</b>${rb.by === "Schedule" && rb.why ? ` (${escapeHtml(rb.why)})` : ""}`;
+}
 function _dfsTourneyQueued(d) {
   if (!d.queued_ts) return "";
   const t = new Date(d.queued_ts * 1000).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-  return `<span class="small" style="color:var(--muted)"> · ⏳ queued ${t}: the PC picks it up within 10 minutes; a showdown build takes about 20, a classic slate about an hour</span>`;
-}
-function _dfsTourneyButton(d) {
-  if (!_dfsTourneyDg) return "";
-  const label = d.status === "ok" ? "Rebuild on the PC" : "Build on the PC";
-  return `<button class="track-mini" type="button" onclick="dfsTourneyRequest()" title="Queue this slate for the PC's next cycle. It builds requests before anything else.">${label}</button>`;
+  return `<span class="small" style="color:var(--muted)"> · ⏳ queued ${t}: the PC picks it up within 10 minutes; a showdown build takes about 20, a classic slate about an hour · <a href="#" onclick="dfsTourneyCancel(${Number(_dfsTourneyDg)});return false">cancel</a></span>`;
 }
 function renderDfsTourney(d) {
   const bx = _dfsTourneyBoxes();
   if (!bx) return;
   const box = bx.main;
   const pc = d.pc || {};
-  const pcTxt = pc.state === "on" ? "PC on"
+  // What the PC is building right now, and who asked (the task note carries
+  // "requested by PC request" or "requested by Schedule: <why>").
+  const pcTxt = pc.state === "on" ? `PC on${pc.task ? ` · building now: ${escapeHtml(pc.task)}` : ""}`
     : pc.state === "behind" ? (pc.pull_error ? "PC on, but its update (git pull) is failing"
       : `PC on, updating after its current build${pc.task ? ` (${escapeHtml(pc.task)})` : ""}`)
     : `PC off${pc.seen_s != null ? ` (seen ${agoStr(pc.seen_s)})` : ""}`;
   if (d.status !== "ok") {
-    box.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ <b>Tournament</b> - ${escapeHtml(d.why || "not built yet")} · ${pcTxt} ${_dfsTourneyButton(d)}${_dfsTourneyQueued(d)}</div>`;
+    box.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ <b>Tournament</b> - ${escapeHtml(d.why || "not built yet")} · ${pcTxt}${_dfsTourneyQueued(d)}</div>`;
     return;
   }
   const classic = d.kind === "classic";
@@ -9081,7 +9138,7 @@ function renderDfsTourney(d) {
     ? ` Each simulated game is played snap by snap by the deep engine at the drive model's and its own blended level; every player's, defense's and kicker's points come off that one box score.`
     : (d.model ? ` Worlds: the ${escapeHtml(d.model)} model.` : "");
   box.innerHTML = `<div style="margin-top:10px;padding:8px 10px;border:1px solid var(--line,#333);border-radius:8px">
-    <div><b>🏟️ Tournament</b> <span class="small" style="color:var(--muted)">${escapeHtml(c.name || "")} · ${nf(c.max_entries)} entries · ${money(c.entry_fee)} · ${money(c.first_prize)} to 1st · built ${agoStr(d.age_s || 0)} · ${pcTxt}</span> ${_dfsTourneyButton(d)}${_dfsTourneyQueued(d)}</div>
+    <div><b>🏟️ Tournament</b> <span class="small" style="color:var(--muted)">${escapeHtml(c.name || "")} · ${nf(c.max_entries)} entries · ${money(c.entry_fee)} · ${money(c.first_prize)} to 1st · built ${agoStr(d.age_s || 0)}${_dfsTourneyBy(d)} · ${pcTxt}</span>${_dfsTourneyQueued(d)}</div>
     ${contestBtns}
     <div class="small" style="color:var(--muted);margin-top:2px">${head}${worldsTxt} ${escapeHtml(fm.note || "")}${fieldOnly.length ? ` Our depth and roster gates keep us off ${fieldOnly.slice(0, 8).map(escapeHtml).join(", ")}${fieldOnly.length > 8 ? ` and ${fieldOnly.length - 8} more` : ""}; the field still plays them.` : ""}</div>
     ${exp ? `<div class="small" style="color:var(--muted);margin-top:2px">⚠️ <b>Experimental win, EV and ROI</b>: ${expWhy}. Top 1% and top 0.1% are the ranking columns; the raw numbers stay on the sheet for comparison while the tail estimator is validated.</div>` : ""}

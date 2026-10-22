@@ -528,12 +528,29 @@ _CL_FULL_GUESS_S = 2700         # no timed board to scale from yet
 # pool (the $5, $100 and $4,444 Millionaires share one board). Owner: "as a
 # rule only list and do Sunday ones that are over 1 Mil in pool."
 _STATUS_WINDOWS = (("nightly", 3, 0, 3, 59, None), ("sunday", 11, 35, 12, 15, 6))
-# When a board is re-checked for STATUS changes (Eastern): every night at
-# 3:00, and Sunday 11:35-12:15 after the inactives post at 11:30. A build
-# is an hour of the PC; a projection drifting is not a reason to spend
-# it, a starter turning doubtful is. Owner: "let it run nightly to check
-# ONLY for players changing their status ... yes Sunday before the games
-# run rebuild it."
+# When a SHOWDOWN board is re-checked for STATUS changes (Eastern): every
+# night at 3:00, and Sunday 11:35-12:15 after the inactives post at 11:30.
+# Owner: "let it run nightly to check ONLY for players changing their status
+# ... yes Sunday before the games run rebuild it." The Sunday main slate's
+# board no longer reads these: it runs on _CL_WEEK_WINDOWS below.
+
+# The Sunday main slate's board (the Millionaires) is the better part of an
+# hour of the PC (2,578 s on 2026-10-22, 180,000 worlds). It built the moment
+# the slate posted and then on every name DraftKings dropped from the pool
+# (each Out / IR through the week: 40 by Thursday of week 7), every nightly
+# status move and every engine bump -- 8+ builds of week 7's board by
+# Thursday. The owner, 2026-10-22: "the mega millions really doesnt need to
+# be built until ... the games really start. which is at the end of the
+# week, no reason to have it automatically run on like monday or tuesday."
+# So on its own it builds once Saturday night and once after Sunday's
+# inactives -- nothing else; any other time is a pick in the tab's Build on
+# the PC. Mountain time (the owner's clock): (name, weekday Mon=0, from, to).
+_CL_WEEK_WINDOWS = (("saturday night", 5, (18, 0), (23, 59)),)
+# ... and after the inactives (posted 90 minutes before kickoff): from 85 to
+# 40 minutes before the slate locks, ~9:35-10:20 am MT for a 1 pm ET Sunday.
+# A full build (~43 min) started at the window's open lands ~40 minutes
+# before lock; a late start runs the quick count (_cl_sims).
+_CL_PREGAME_MIN = (85, 40)
 
 
 def _tourney_requests(url, tok):
@@ -758,6 +775,57 @@ def _pool_sig(slate):
 
 
 
+def _cl_window_key(starts_ts, now=None):
+    """The scheduled window the Sunday main slate's board is in right now, as
+    a once-per-window key ('2026-10-24 saturday night'), or None. Only ahead
+    of the slate's lock: a window after it builds nothing."""
+    import datetime
+    now = time.time() if now is None else now
+    if starts_ts is not None and now >= float(starts_ts):
+        return None
+    if starts_ts is not None:
+        mins = (float(starts_ts) - now) / 60.0
+        if _CL_PREGAME_MIN[1] <= mins <= _CL_PREGAME_MIN[0]:
+            lock_day = datetime.datetime.fromtimestamp(float(starts_ts), _mt_zone()).date()
+            return f"{lock_day.isoformat()} pregame"
+    t = datetime.datetime.fromtimestamp(now, _mt_zone())
+    for name, wd, lo, hi in _CL_WEEK_WINDOWS:
+        if t.weekday() == wd and lo <= (t.hour, t.minute) <= hi:
+            return f"{t.date().isoformat()} {name}"
+    return None
+
+
+def _mt_zone():
+    """Mountain time; the PC's own clock (it is in Mountain) when the tz
+    database is missing."""
+    try:
+        import clock
+        return clock.MT
+    except Exception as e:
+        print(f"[vigil-pc] no Mountain tz ({type(e).__name__}: {e}) - using the local clock")
+        return None
+
+
+def _cl_rebuild_reason(board, req, state, dg, window):
+    """Why the main slate's board builds now, or None: a press of Build on
+    the PC newer than the board, or a scheduled window not yet built in
+    (_CL_WEEK_WINDOWS). No board, a dropped player, a status move or an
+    engine bump no longer builds it on its own."""
+    if req and (req.get("ts") or 0) > ((board or {}).get("built_ts") or 0):
+        return "queued from the tab"
+    if window and state.get("cl_windows", {}).get(str(dg)) != window:
+        return f"scheduled ({window})"
+    return None
+
+
+def _requested_by(why):
+    """Who asked for a build, as the tab says it: the owner's Build on the PC
+    ("PC request") or the PC's own rules ("Schedule"). The owner,
+    2026-10-22: "add a 'Build requested by -' ... PC request and Schedule?
+    That way we know whats building it." """
+    return "PC request" if why == "queued from the tab" else "Schedule"
+
+
 def _cl_full_estimate(board):
     """Seconds a full-world classic build takes on this PC: the last board's
     own time when it was a full build, else its stages scaled -- the sims by
@@ -814,7 +882,6 @@ def _task_classic_tourney(url, tok):
     if not todo:
         return
     state = _tourney_state()
-    status_key = _status_window_key()
     for dg, sl in todo:
         name = f"cl_tourney_nfl_{dg}"
         try:
@@ -825,13 +892,16 @@ def _task_classic_tourney(url, tok):
         if not slate:
             continue
         board, age = boardshare.get(name, None)
-        why, window = _rebuild_reason(board, _pool_sig(slate), wanted.get(dg), state, dg, status_key)
+        window = _cl_window_key(_dt_ts(sl.get("starts")))
+        why = _cl_rebuild_reason(board, wanted.get(dg), state, dg, window)
         if why is None:
-            _consume_window(state, dg, window)      # a look that found nothing still counts
-            if not _tourney_resave(name, board, url, tok):
+            if board is None:
+                print(f"[vigil-pc] classic tourney {dg} ({sl.get('games')} games): not built - "
+                      f"it builds Saturday night and after Sunday's inactives, or on a Build from the tab")
+            elif not _tourney_resave(name, board, url, tok):
                 print(f"[vigil-pc] classic tourney {dg} ({sl.get('games')} games): current ({age/60:.0f} min old)")
             continue
-        _yield_point(f"classic board {dg} ({sl.get('games')} games)")
+        _yield_point(f"classic board {dg} ({sl.get('games')} games) - requested by {_requested_by(why)}: {why}")
         print(f"[vigil-pc] classic tourney {dg} ({sl.get('games')} games): building - {why}...")
         t0 = time.time()
         try:
@@ -845,8 +915,11 @@ def _task_classic_tourney(url, tok):
         if not art:
             print(f"[vigil-pc] classic tourney {dg}: nothing to build (no seven-figure contest, or no pool)")
             continue
+        art["requested_by"] = {"by": _requested_by(why), "why": why}
         boardshare.put(name, art)
-        _consume_window(state, dg, window)          # consumed only now the build stands
+        # consumed only now the build stands, whatever started it: a Build
+        # pressed inside a window is that window's build
+        _consume_window(state, dg, window, kind="cl_windows")
         print(f"[vigil-pc] classic tourney {dg}: done in {time.time() - t0:.0f}s, "
               f"{art['candidates']:,} candidates x {art['worlds']:,} worlds, "
               f"{len(art['contests'])} contest(s)")
@@ -940,7 +1013,8 @@ def _task_showdown_tourney(url, tok):
                 left = "" if mins_left is None else f", {mins_left:.0f} min to lock"
                 print(f"[vigil-pc] tourney {dg} {sl.get('tag') or ''}: current ({age/60:.0f} min old{left})")
             continue
-        _yield_point(f"showdown board {dg} {sl.get('tag') or ''}".strip())
+        _yield_point(f"showdown board {dg} {sl.get('tag') or ''}".strip()
+                     + f" - requested by {_requested_by(why)}: {why}")
         print(f"[vigil-pc] tourney {dg} {sl.get('tag') or ''}: building (60,000 worlds) - {why}...")
         t0 = time.time()
         try:
@@ -952,6 +1026,7 @@ def _task_showdown_tourney(url, tok):
         if not art:
             print(f"[vigil-pc] tourney {dg}: nothing to build (no contest or pool)")
             continue
+        art["requested_by"] = {"by": _requested_by(why), "why": why}
         boardshare.put(name, art)
         _consume_window(state, dg, window)
         if pl_key:

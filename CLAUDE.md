@@ -482,7 +482,21 @@ The worker builds the SAME
 artifacts with the SAME functions and uploads anything fresher than the
 server's copy through `/api/art/upload`. The server adopts by file freshness
 and self-computes whenever the PC is off — **the PC can only add speed or be
-ignored**. `vigil-pc.bat` is frozen on purpose (cmd reads .bat by byte offset,
+ignored**. **The tab's "Build on the PC" is a dropdown of slates by name**
+(2026-10-22; `dk.slates` "matchup" names a single game, "NE @ CHI
+showdown"), nothing picked until the owner picks: the old button built
+whatever the contest picker showed, which defaulted to the earliest start,
+and the owner's Build meant for NE @ CHI queued the 14-game Thu-Mon classic
+at the same 8:15 PM ET. A classic slate with no $1M+ contest cannot be
+queued (the PC answered it "nothing to build" forever); a request can be
+cancelled. **The Sunday main slate's board builds on its own only Saturday
+6 pm-midnight MT and 85-40 minutes before lock** (after the inactives;
+`pc_worker._CL_WEEK_WINDOWS`, `_CL_PREGAME_MIN`): never when the slate
+posts, on a dropped player, a status move or an engine bump (8+ builds of
+week 7's 43-minute board by Thursday) -- the owner: "no reason to have it
+automatically run on like monday or tuesday". **Every board records who asked
+for it** (`requested_by`: "PC request" for a Build from the tab, "Schedule"
+with the reason), and the PC's building-now note says the same. `vigil-pc.bat` is frozen on purpose (cmd reads .bat by byte offset,
 so a self-pulling batch file corrupts itself); all logic lives in Python.
 
 ## Hard-won gotchas

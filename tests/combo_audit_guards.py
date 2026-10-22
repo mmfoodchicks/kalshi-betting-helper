@@ -13087,12 +13087,16 @@ finally:
     _shutil.rmtree(_tmp15, ignore_errors=True)
 # ---- the classic-slate tournament ------------------------------------------
 _pcw16 = open(_os.path.join(_root, "pc_worker.py")).read()
-ck("the PC builds the Sunday main slate against its seven-figure contests, checks statuses nightly at 3 ET and Sunday 11:35-12:15 ET, and never rebuilds on age",
+ck("the PC builds the Sunday main slate against its seven-figure contests on its own only Saturday night and after "
+   "Sunday's inactives (the owner, 2026-10-22); the showdowns keep their status checks nightly at 3 ET and Sunday "
+   "11:35-12:15 ET; nothing rebuilds on age",
    '("classic tourney", lambda: _task_classic_tourney(url, tok))' in _pcw16
    and "_CL_MIN_POOL = 1_000_000" in _pcw16
    and '("nightly", 3, 0, 3, 59, None)' in _pcw16 and '("sunday", 11, 35, 12, 15, 6)' in _pcw16
    and 'return "the DraftKings pool changed"' in _pcw16 and 'return "queued from the tab"' in _pcw16
    and 'return (f"status changed: {detail}" if changed else None), status_key' in _pcw16
+   and '_CL_WEEK_WINDOWS = (("saturday night", 5, (18, 0), (23, 59)),)' in _pcw16
+   and "_CL_PREGAME_MIN = (85, 40)" in _pcw16
    and "3 * 3600" not in _pcw16
    # repinned 2026-10-18: the worlds come from _cl_sims (180,000, or 60,000
    # when kickoff is nearer than a full build; research/cl_worlds.py)
@@ -15856,7 +15860,7 @@ ck("the DFS tab shows the tournament for an NFL showdown slate (portfolio sizes,
    and "dfsTourneyPick(" in _js14 and "most popular build" in _js14
    and "optimal CPT" in _js14 and "PC off" in _js14
    and 'if (!dg) { bx.main.innerHTML = ""' in _js14
-   and "Build on the PC" in _js14 and "Rebuild on the PC" in _js14
+   and "🛠 Build on the PC: <select id=\"dfsTourneyPickBuild\"" in _js14
    and 'fetch("/api/dfs/tourney/request"' in _js14
    and "async function loadDfsTourneyList()" in _js14 and "boards on file" in _js14
    and "loadDfsTourney(${r.dg}, true)" in _js14 and "queued_ts" in _js14)
@@ -23061,6 +23065,175 @@ if _T_tn.available():
        str(_cmp_tn))
 else:
     ck("(numpy is not installed here -- the subset scoring guards run where it is)", True)
+
+# ---- 2026-10-22 Build on the PC: a dropdown of slates by name ----
+# The owner: "I click build on PC and it builds all possible default
+# tournaments, when I only wanted to run the chi vs ne one ... add the
+# dropdown if I want to build a specific one." The button built whichever
+# slate the contest picker showed; the picker sorted the 14-game Thu-Mon
+# classic above the Thursday showdown (same 8:15 PM ET start), said only
+# "1 game" for the showdown, and defaulted to the classic: the Build at
+# 11:06 am MT queued dg 155197. It had no $1M+ contest, so the PC answered
+# "nothing to build" every cycle and the request sat in the queue.
+print("=" * 72)
+print("Build on the PC: a dropdown of slates by name")
+print("=" * 72)
+import dk as _dk_bb
+import racing as _rc_bb
+_lobby_bb = {"Contests": [
+    {"dg": 155204, "n": "NFL Showdown $1.25M Thursday Night Showdown [$300K to 1st] (NE @ CHI)"},
+    {"dg": 155204, "n": "NFL Showdown $20 Double Up (NE @ CHI)"},
+    {"dg": 155197, "n": "NFL $300K Thu-Mon Special"},
+    {"dg": 155198, "n": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st]"}],
+    "DraftGroups": [
+    {"DraftGroupId": 155197, "Sport": "NFL", "StartDateEst": "2026-10-22T20:15:00", "GameCount": 14,
+     "ContestTypeId": 21, "ContestStartTimeSuffix": "(Thu-Mon)"},
+    {"DraftGroupId": 155204, "Sport": "NFL", "StartDateEst": "2026-10-22T20:15:00", "GameCount": 1, "ContestTypeId": 96},
+    {"DraftGroupId": 155198, "Sport": "NFL", "StartDateEst": "2026-10-25T13:00:00", "GameCount": 10, "ContestTypeId": 21}]}
+_odg_bb = _dk_bb._get
+_dk_bb._get = lambda url, timeout=25: _lobby_bb
+_rc_bb._form_cache.pop(("dk_slates", "nfl"), None)
+try:
+    _sl_bb = _dk_bb.slates("nfl")
+finally:
+    _dk_bb._get = _odg_bb
+    _rc_bb._form_cache.pop(("dk_slates", "nfl"), None)
+ck("a single-game slate names its teams off DraftKings' own contest names; a classic slate carries none",
+   [(x["draft_group_id"], x.get("matchup")) for x in _sl_bb] == [(155197, None), (155204, "NE @ CHI"), (155198, None)],
+   str([(x["draft_group_id"], x.get("matchup")) for x in _sl_bb]))
+_js_bb = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the tab builds from a dropdown of every NFL slate by NAME (\"NE @ CHI showdown\", \"14-game classic (Thu-Mon)\"), nothing "
+   "picked until the owner picks; a classic slate with no $1M+ contest cannot be picked; the old button that built "
+   "whatever the contest picker showed is gone; a queued request can be taken back",
+   'return x.matchup ? `${x.matchup} showdown` : `${n}-game classic${tag}`;' in _js_bb
+   and "${escapeHtml(_dfsSlateWhat(x))} · ${x.n_contests} contests</option>" in _js_bb
+   and '<option value="">- pick a slate -</option>${opts}</select>' in _js_bb
+   and 'const off = !showdown && x.top_pool != null && x.top_pool < 1e6;' in _js_bb
+   and 'const dg = (($("dfsTourneyPickBuild") || {}).value) || "";' in _js_bb
+   and 'if (!dg) { renderDfsTourneyBuild("pick the slate to build first"); return; }' in _js_bb
+   and "_dfsTourneyButton" not in _js_bb and "dg: _dfsTourneyDg" not in _js_bb
+   and "async function dfsTourneyCancel(dg)" in _js_bb and 'JSON.stringify({ sport: "nfl", dg, cancel: true })' in _js_bb)
+_old_bb = (_bs14._DIR, _app14._SIM_TOKEN, _dk_bb.contests, _dk_bb.slates)
+_tmp_bb = _tf14.mkdtemp(prefix="vigil-build-guard-")
+try:
+    _bs14._DIR = _tmp_bb
+    _app14._SIM_TOKEN = "guardtokbb"
+    _pools_bb = {155197: [300000.0, 20000.0], 155198: [2500000.0, 50000.0], 155204: [1250000.0]}
+
+    def _cts_bb(sport, draft_group_id=None):
+        dgs = [draft_group_id] if draft_group_id else list(_pools_bb)
+        return [{"draft_group_id": d, "prize_pool": p} for d in dgs for p in _pools_bb.get(int(d), [])]
+    _dk_bb.contests = _cts_bb
+    _dk_bb.slates = lambda sport: [dict(x) for x in _sl_bb]
+    _c_bb = _app14.app.test_client()
+    _h_bb = {"X-Sim-Token": "guardtokbb"}
+    _sl_api_bb = {x["draft_group_id"]: x["top_pool"] for x in _c_bb.get("/api/dfs/slates?sport=nfl").get_json()["slates"]}
+    _q_bb = lambda: [r["dg"] for r in (_c_bb.get("/api/dfs/tourney/requests", headers=_h_bb).get_json().get("requests") or [])]
+    _rb1 = _c_bb.post("/api/dfs/tourney/request", json={"sport": "nfl", "dg": 155197, "kind": "classic", "label": "x"})
+    _rb2 = _c_bb.post("/api/dfs/tourney/request", json={"sport": "nfl", "dg": 155198, "kind": "classic", "label": "x"})
+    _rb3 = _c_bb.post("/api/dfs/tourney/request", json={"sport": "nfl", "dg": 155204, "kind": "showdown", "label": "x"})
+    _q1_bb = _q_bb()
+    _rb4 = _c_bb.post("/api/dfs/tourney/request", json={"sport": "nfl", "dg": 155198, "cancel": True}).get_json()
+    _q2_bb = _q_bb()
+finally:
+    _bs14._DIR, _app14._SIM_TOKEN, _dk_bb.contests, _dk_bb.slates = _old_bb
+    _shutil.rmtree(_tmp_bb, ignore_errors=True)
+import pc_worker as _pw_bb
+ck("each slate carries its richest contest's pool; the server refuses a classic slate with no $1M+ contest (the PC would "
+   "answer it 'nothing to build' forever), queues one that has one and any showdown, and Cancel takes a request back",
+   _sl_api_bb == {155197: 300000.0, 155204: 1250000.0, 155198: 2500000.0}
+   and _rb1.status_code == 400 and "$1,000,000+" in (_rb1.get_json().get("error") or "")
+   and _rb2.status_code == 200 and _rb3.status_code == 200
+   and sorted(_q1_bb) == [155198, 155204] and _rb4.get("cancelled") is True and _q2_bb == [155204]
+   and _app14._TOURNEY_CL_MIN_POOL == _pw_bb._CL_MIN_POOL == 1_000_000,
+   str((_sl_api_bb, _rb1.status_code, _q1_bb, _q2_bb)))
+
+# ---- 2026-10-22 the Millionaire board at the end of the week; who asked for each build ----
+# The owner: "the mega millions really doesnt need to be built until ... the
+# games really start. which is at the end of the week, no reason to have it
+# automatically run on like monday or tuesday." and "add a 'Build requested
+# by -' ... PC request and Schedule? That way we know whats building it."
+# The 43-minute board had built when the slate posted and on every player
+# DraftKings dropped (40 by Thursday), every nightly status move and every
+# engine bump: 8+ builds of week 7's board by Thursday.
+print("=" * 72)
+print("The Millionaire board at the end of the week; who asked for each build")
+print("=" * 72)
+import pc_worker as _pw_cs
+import clock as _clk_cs
+import datetime as _dtm_cs
+
+
+def _cs_ts(y, mo, d, h, mi):
+    return _dtm_cs.datetime(y, mo, d, h, mi, tzinfo=_clk_cs.MT).timestamp()
+
+
+_cs_lock = _dtm_cs.datetime(2026, 10, 25, 17, 0, tzinfo=_dtm_cs.timezone.utc).timestamp()   # 11:00 am MT Sunday
+_cs_keys = {
+    "mon": _pw_cs._cl_window_key(_cs_lock, now=_cs_ts(2026, 10, 19, 20, 0)),
+    "tue": _pw_cs._cl_window_key(_cs_lock, now=_cs_ts(2026, 10, 20, 21, 0)),
+    "wed 9 pm": _pw_cs._cl_window_key(_cs_lock, now=_cs_ts(2026, 10, 21, 21, 0)),
+    "fri 9 pm": _pw_cs._cl_window_key(_cs_lock, now=_cs_ts(2026, 10, 23, 21, 0)),
+    "sat 5:59 pm": _pw_cs._cl_window_key(_cs_lock, now=_cs_ts(2026, 10, 24, 17, 59)),
+    "sat 6 pm": _pw_cs._cl_window_key(_cs_lock, now=_cs_ts(2026, 10, 24, 18, 0)),
+    "sat 11:59 pm": _pw_cs._cl_window_key(_cs_lock, now=_cs_ts(2026, 10, 24, 23, 59)),
+    "sun T-86": _pw_cs._cl_window_key(_cs_lock, now=_cs_lock - 86 * 60),
+    "sun T-85": _pw_cs._cl_window_key(_cs_lock, now=_cs_lock - 85 * 60),
+    "sun T-40": _pw_cs._cl_window_key(_cs_lock, now=_cs_lock - 40 * 60),
+    "sun T-39": _pw_cs._cl_window_key(_cs_lock, now=_cs_lock - 39 * 60),
+    "after lock": _pw_cs._cl_window_key(_cs_lock, now=_cs_lock + 60),
+    "next sat, old slate": _pw_cs._cl_window_key(_cs_lock, now=_cs_ts(2026, 10, 31, 19, 0)),
+}
+ck("the Millionaire board's own builds, in Mountain time: Saturday 6 pm to midnight, and Sunday 85 to 40 minutes before "
+   "lock (after the inactives, 9:35-10:20 am MT for an 11 am MT lock) -- never Monday to Friday, never after lock",
+   _cs_keys == {"mon": None, "tue": None, "wed 9 pm": None, "fri 9 pm": None, "sat 5:59 pm": None,
+                "sat 6 pm": "2026-10-24 saturday night", "sat 11:59 pm": "2026-10-24 saturday night",
+                "sun T-86": None, "sun T-85": "2026-10-25 pregame", "sun T-40": "2026-10-25 pregame",
+                "sun T-39": None, "after lock": None, "next sat, old slate": None},
+   str(_cs_keys))
+_cs_st = {}
+_cs_b = {"kind": "classic", "engine": 0, "pool_sig": "old", "built_ts": 100, "status": {"Guard Player One": "q"}}
+_cs_r = {
+    "no board, monday": _pw_cs._cl_rebuild_reason(None, None, _cs_st, 7, None),
+    "no board, requested": _pw_cs._cl_rebuild_reason(None, {"ts": 50}, _cs_st, 7, None),
+    "req": _pw_cs._cl_rebuild_reason(_cs_b, {"ts": 200}, _cs_st, 7, None),
+    "old req": _pw_cs._cl_rebuild_reason(_cs_b, {"ts": 50}, _cs_st, 7, None),
+    "quiet": _pw_cs._cl_rebuild_reason(_cs_b, None, _cs_st, 7, None),
+    "window": _pw_cs._cl_rebuild_reason(_cs_b, None, _cs_st, 7, "2026-10-24 saturday night"),
+}
+_pw_cs_save = _pw_cs._tourney_state_save
+try:
+    _pw_cs._tourney_state_save = lambda st: None          # hermetic: no state file from a guard
+    _pw_cs._consume_window(_cs_st, 7, "2026-10-24 saturday night", kind="cl_windows")
+finally:
+    _pw_cs._tourney_state_save = _pw_cs_save
+_cs_r["window again"] = _pw_cs._cl_rebuild_reason(_cs_b, None, _cs_st, 7, "2026-10-24 saturday night")
+_cs_r["next window"] = _pw_cs._cl_rebuild_reason(_cs_b, None, _cs_st, 7, "2026-10-25 pregame")
+ck("what builds it: a press of Build on the PC (any day) and each window once; NOT the slate posting, a dropped player, "
+   "a status move or a board built on older code (this one carries engine 0 and a moved status)",
+   _cs_r == {"no board, monday": None, "no board, requested": "queued from the tab", "req": "queued from the tab",
+             "old req": None, "quiet": None, "window": "scheduled (2026-10-24 saturday night)",
+             "window again": None, "next window": "scheduled (2026-10-25 pregame)"}
+   and _cs_st == {"cl_windows": {"7": "2026-10-24 saturday night"}},
+   str(_cs_r))
+_cs_task = _insp.getsource(_pw_cs._task_classic_tourney)
+_cs_sd = _insp.getsource(_pw_cs._task_showdown_tourney)
+_cs_js = open(_os.path.join(_root, "static", "app.js")).read()
+ck("wired: the classic task asks the schedule, not the pool signature or the status windows, and a build counts as its "
+   "window's build whatever started it; every board, classic and showdown, records who asked for it -- 'PC request' "
+   "for a Build from the tab, 'Schedule' with the reason otherwise -- and the PC's building-now note says it too",
+   'window = _cl_window_key(_dt_ts(sl.get("starts")))' in _cs_task
+   and "why = _cl_rebuild_reason(board, wanted.get(dg), state, dg, window)" in _cs_task
+   and "_pool_sig(slate)" not in _cs_task and "status_key" not in _cs_task
+   and '_consume_window(state, dg, window, kind="cl_windows")' in _cs_task
+   and _cs_task.index('_consume_window(state, dg, window, kind="cl_windows")') > _cs_task.index("boardshare.put(name, art)")
+   and _pw_cs._requested_by("queued from the tab") == "PC request"
+   and _pw_cs._requested_by("pre-lock refresh (T-4h)") == "Schedule"
+   and _pw_cs._requested_by("scheduled (2026-10-24 saturday night)") == "Schedule"
+   and all('art["requested_by"] = {"by": _requested_by(why), "why": why}' in src
+           and src.index('art["requested_by"]') < src.index("boardshare.put(name, art)") for src in (_cs_task, _cs_sd))
+   and "requested by {_requested_by(why)}: {why}" in _cs_task and "requested by {_requested_by(why)}: {why}" in _cs_sd
+   and "Build requested by: <b>${escapeHtml(rb.by)}</b>" in _cs_js and "building now: ${escapeHtml(pc.task)}" in _cs_js)
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

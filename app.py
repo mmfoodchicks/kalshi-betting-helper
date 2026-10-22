@@ -2125,14 +2125,18 @@ def api_dfs_slates():
         return jsonify({"error": f"unknown sport (have: {', '.join(sorted(dk.SPORTS))})"}), 400
     try:
         sl = dk.slates(sport)
-        counts = {}
+        counts, top = {}, {}
         for c in dk.contests(sport):
             k = str(c.get("draft_group_id"))
             counts[k] = counts.get(k, 0) + 1
+            top[k] = max(top.get(k, 0.0), float(c.get("prize_pool") or 0))
     except Exception as e:
         return jsonify({"error": f"dk lobby failed: {e}"}), 502
+    # top_pool: the richest contest's prize pool, so the tab's Build list can
+    # say which classic slates the PC will build ($1M+ only)
     return jsonify({"sport": sport,
-                    "slates": [dict(x, n_contests=counts.get(str(x["draft_group_id"]), 0))
+                    "slates": [dict(x, n_contests=counts.get(str(x["draft_group_id"]), 0),
+                                    top_pool=top.get(str(x["draft_group_id"]), 0.0))
                                for x in sl]})
 
 
@@ -2181,6 +2185,7 @@ def api_dfs_contest():
 
 
 _TOURNEY_REQ = "tourney_requests"      # the tab's Build queue, a json beside the boards
+_TOURNEY_CL_MIN_POOL = 1_000_000       # pc_worker._CL_MIN_POOL: classic boards only for $1M+ contests
 
 
 def _tourney_requests():
@@ -2253,9 +2258,10 @@ def api_dfs_tourney():
     if not payload:
         return jsonify({"status": "none", "sport": sport, "draft_group_id": dg, "pc": pc,
                         "queued_ts": queued_ts,
-                        "why": "not built yet - the PC builds the Sunday main slate and the "
-                               "Thursday, Sunday and Monday night showdowns on its own; the "
-                               "button queues any other slate"})
+                        "why": "not built yet - on its own the PC builds the Sunday main slate "
+                               "Saturday night and after Sunday's inactives, and the Thursday, "
+                               "Sunday and Monday night showdowns before their games; Build on "
+                               "the PC queues any slate"})
     out = dict(payload)
     out["status"] = "ok"
     out["age_s"] = int(age or 0)
@@ -2271,7 +2277,14 @@ def api_dfs_tourney_request():
     a request is answered once a board newer than it arrives. The owner's
     ask, 2026-09-10: "let me have a button that will run it if I want."
 
-    JSON body: {sport, dg, kind: showdown|classic, label}"""
+    JSON body: {sport, dg, kind: showdown|classic, label}, or {dg, cancel:
+    true} to take a request back (the PC finishes a build it has started).
+
+    A classic slate with no contest of _TOURNEY_CL_MIN_POOL is refused: the
+    PC builds classic boards only against seven-figure contests
+    (pc_worker._CL_MIN_POOL), so such a request answered "nothing to build"
+    every cycle and sat in the queue for three days -- the 14-game Thu-Mon
+    slate queued 2026-10-22 when the owner meant the Thursday showdown."""
     import boardshare
     import tempfile
     body = request.get_json(silent=True) or {}
@@ -2285,8 +2298,22 @@ def api_dfs_tourney_request():
     kind = "showdown" if (body.get("kind") or "") == "showdown" else "classic"
     reqs = _tourney_requests()
     now = int(time.time())
-    reqs[str(dg)] = {"sport": sport, "kind": kind, "ts": now,
-                     "label": str(body.get("label") or "")[:120]}
+    if body.get("cancel"):
+        reqs.pop(str(dg), None)
+    else:
+        if kind == "classic":
+            import dk
+            try:
+                top = max((float(c.get("prize_pool") or 0) for c in dk.contests(sport, draft_group_id=dg)), default=0.0)
+            except Exception as e:
+                errlog.note("TOURN-req-pool", e)
+                top = None                     # the lobby blinked: let the PC decide
+            if top is not None and top < _TOURNEY_CL_MIN_POOL:
+                return jsonify({"error": f"no contest on this slate has a ${_TOURNEY_CL_MIN_POOL:,.0f}+ prize pool "
+                                         f"(the biggest is ${top:,.0f}); the PC builds classic boards only for those",
+                                "min_pool": _TOURNEY_CL_MIN_POOL}), 400
+        reqs[str(dg)] = {"sport": sport, "kind": kind, "ts": now,
+                         "label": str(body.get("label") or "")[:120]}
     reqs = {k: v for k, v in reqs.items() if (v.get("ts") or 0) >= now - 3 * 86400}
     try:
         os.makedirs(boardshare._DIR, exist_ok=True)
@@ -2297,6 +2324,8 @@ def api_dfs_tourney_request():
     except Exception as e:
         errlog.note("TOURN-req-write", e)
         return jsonify({"error": "could not queue the request"}), 500
+    if body.get("cancel"):
+        return jsonify({"cancelled": True, "dg": dg, "pending": len(_tourney_pending())})
     return jsonify({"queued": True, "dg": dg, "kind": kind, "ts": now,
                     "pending": len(_tourney_pending())})
 

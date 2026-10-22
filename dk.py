@@ -24,6 +24,7 @@ What we take from DK, and what we deliberately don't:
 """
 
 import csv
+import re
 import io
 
 import errlog
@@ -92,6 +93,14 @@ def _get(url, timeout=25):
     return racing._get_json(url, timeout=timeout)
 
 
+# A single-game slate's teams, off DraftKings' own contest names ("NFL
+# Showdown $1.25M Thursday Night Showdown [$300K to 1st] (NE @ CHI)"). The
+# slate list used to say only "1 game": on 2026-10-22 the 14-game Thu-Mon
+# classic sorted above the Thursday showdown at the same 8:15 PM ET start,
+# was the tab's default, and the owner's Build meant for NE @ CHI queued it.
+_MATCHUP = re.compile(r"\(([A-Z]{2,4}) (?:@|vs\.?) ([A-Z]{2,4})\)")
+
+
 def slates(sport):
     """[{draft_group_id, starts, games, sport}] for a sport, soonest first.
     Empty when DK has nothing posted (offseason / no slate today)."""
@@ -106,9 +115,12 @@ def slates(sport):
             return None
         out = []
         allowed = _LINEUP_TYPES.get((sport or "").lower())
-        names = {}
+        names, matchup = {}, {}
         for c in d.get("Contests") or []:
             names.setdefault(c.get("dg"), []).append((c.get("n") or "").lower())
+            m = _MATCHUP.search(c.get("n") or "")
+            if m and c.get("dg") not in matchup:
+                matchup[c.get("dg")] = f"{m.group(1)} @ {m.group(2)}"
         for g in d.get("DraftGroups") or []:
             dg = g.get("DraftGroupId")
             if not dg:
@@ -129,7 +141,8 @@ def slates(sport):
                         "starts": g.get("StartDateEst"),
                         "games": g.get("GameCount"),
                         "contest_type": ctype,
-                        "tag": tag})
+                        "tag": tag,
+                        "matchup": matchup.get(dg) if g.get("GameCount") == 1 else None})
         out.sort(key=lambda s: (str(s["starts"] or ""), -(s["games"] or 0)))
         if not out:
             # A throttled or mangled lobby response parses to an EMPTY list,
