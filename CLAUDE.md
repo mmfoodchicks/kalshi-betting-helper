@@ -484,7 +484,10 @@ server's copy through `/api/art/upload`. The server adopts by file freshness
 and self-computes whenever the PC is off — **the PC can only add speed or be
 ignored**. **The tab's "Build on the PC" is a dropdown of slates by name**
 (2026-10-22; `dk.slates` "matchup" names a single game, "NE @ CHI
-showdown"), nothing picked until the owner picks: the old button built
+showdown"), nothing picked until the owner picks, grouped: what the PC
+builds on its own first (`app._tourney_auto`, pc_worker's rules mirrored --
+$500K+ showdowns, then the main slate named by its Millionaire), the rest,
+then the classic slates it cannot build greyed out. The old button built
 whatever the contest picker showed, which defaulted to the earliest start,
 and the owner's Build meant for NE @ CHI queued the 14-game Thu-Mon classic
 at the same 8:15 PM ET. A classic slate with no $1M+ contest cannot be

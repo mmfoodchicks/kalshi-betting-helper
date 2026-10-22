@@ -23108,7 +23108,10 @@ ck("the tab builds from a dropdown of every NFL slate by NAME (\"NE @ CHI showdo
    'return x.matchup ? `${x.matchup} showdown` : `${n}-game classic${tag}`;' in _js_bb
    and "${escapeHtml(_dfsSlateWhat(x))} · ${x.n_contests} contests</option>" in _js_bb
    and '<option value="">- pick a slate -</option>${opts}</select>' in _js_bb
-   and 'const off = !showdown && x.top_pool != null && x.top_pool < 1e6;' in _js_bb
+   and "const off = (x) => (x.games || 1) !== 1 && x.top_pool != null && x.top_pool < 1e6;" in _js_bb
+   and 'group("Built automatically by the PC", auto) + group("Other slates", rest)' in _js_bb
+   and 'group("No $1M+ contest - the PC does not build these", none)' in _js_bb
+   and 'nfl.filter((x) => x.auto).sort((a, b) => (a.auto === "main") - (b.auto === "main"))' in _js_bb
    and 'const dg = (($("dfsTourneyPickBuild") || {}).value) || "";' in _js_bb
    and 'if (!dg) { renderDfsTourneyBuild("pick the slate to build first"); return; }' in _js_bb
    and "_dfsTourneyButton" not in _js_bb and "dg: _dfsTourneyDg" not in _js_bb
@@ -23127,7 +23130,7 @@ try:
     _dk_bb.slates = lambda sport: [dict(x) for x in _sl_bb]
     _c_bb = _app14.app.test_client()
     _h_bb = {"X-Sim-Token": "guardtokbb"}
-    _sl_api_bb = {x["draft_group_id"]: x["top_pool"] for x in _c_bb.get("/api/dfs/slates?sport=nfl").get_json()["slates"]}
+    _sl_api_bb = {x["draft_group_id"]: (x["top_pool"], x["auto"]) for x in _c_bb.get("/api/dfs/slates?sport=nfl").get_json()["slates"]}
     _q_bb = lambda: [r["dg"] for r in (_c_bb.get("/api/dfs/tourney/requests", headers=_h_bb).get_json().get("requests") or [])]
     _rb1 = _c_bb.post("/api/dfs/tourney/request", json={"sport": "nfl", "dg": 155197, "kind": "classic", "label": "x"})
     _rb2 = _c_bb.post("/api/dfs/tourney/request", json={"sport": "nfl", "dg": 155198, "kind": "classic", "label": "x"})
@@ -23139,9 +23142,10 @@ finally:
     _bs14._DIR, _app14._SIM_TOKEN, _dk_bb.contests, _dk_bb.slates = _old_bb
     _shutil.rmtree(_tmp_bb, ignore_errors=True)
 import pc_worker as _pw_bb
-ck("each slate carries its richest contest's pool; the server refuses a classic slate with no $1M+ contest (the PC would "
+ck("each slate carries its richest contest's pool and whether the PC builds it on its own (the Millionaire's main "
+   "slate, a $500K+ showdown; the 14-game Thu-Mon classic neither); the server refuses a classic slate with no $1M+ contest (the PC would "
    "answer it 'nothing to build' forever), queues one that has one and any showdown, and Cancel takes a request back",
-   _sl_api_bb == {155197: 300000.0, 155204: 1250000.0, 155198: 2500000.0}
+   _sl_api_bb == {155197: (300000.0, None), 155204: (1250000.0, "showdown"), 155198: (2500000.0, "main")}
    and _rb1.status_code == 400 and "$1,000,000+" in (_rb1.get_json().get("error") or "")
    and _rb2.status_code == 200 and _rb3.status_code == 200
    and sorted(_q1_bb) == [155198, 155204] and _rb4.get("cancelled") is True and _q2_bb == [155204]
@@ -23234,6 +23238,23 @@ ck("wired: the classic task asks the schedule, not the pool signature or the sta
            and src.index('art["requested_by"]') < src.index("boardshare.put(name, art)") for src in (_cs_task, _cs_sd))
    and "requested by {_requested_by(why)}: {why}" in _cs_task and "requested by {_requested_by(why)}: {why}" in _cs_sd
    and "Build requested by: <b>${escapeHtml(rb.by)}</b>" in _cs_js and "building now: ${escapeHtml(pc.task)}" in _cs_js)
+
+_au_bb = _app14._tourney_auto([
+    {"draft_group_id": 1, "contest_type": 21, "games": 10, "tag": None, "top_pool": 2.5e6},
+    {"draft_group_id": 2, "contest_type": 21, "games": 12, "tag": "(Sun-Mon)", "top_pool": 4e5},
+    {"draft_group_id": 3, "contest_type": 21, "games": 14, "tag": "(Thu-Mon)", "top_pool": 3e5},
+    {"draft_group_id": 4, "contest_type": 96, "games": 1, "tag": None, "top_pool": 1.25e6},
+    {"draft_group_id": 5, "contest_type": 96, "games": 1, "tag": None, "top_pool": 499999.0},
+    {"draft_group_id": 6, "contest_type": 96, "games": 1, "tag": None, "top_pool": 500000.0}])
+_au2_bb = _app14._tourney_auto([{"draft_group_id": 9, "contest_type": 21, "games": 10, "tag": None, "top_pool": 9e5}])
+ck("'built automatically' is the PC's own rule, mirrored: the untagged classic of ten-plus games with a $1M+ contest "
+   "(pc_worker._main_slate, _CL_MIN_POOL) and every showdown at $500K+ (_SD_MIN_POOL) -- not the tagged classics, not "
+   "a $499,999 showdown, not a main slate without its Millionaire",
+   _au_bb == {1: "main", 4: "showdown", 6: "showdown"} and _au2_bb == {}
+   and _app14._TOURNEY_SD_MIN_POOL == _pw_bb._SD_MIN_POOL == 500_000
+   and 'sl.get("contest_type") != 21 or (sl.get("games") or 0) < 10 or sl.get("tag")' in _insp.getsource(_pw_bb._main_slate)
+   and "elif pool_by_dg.get(dg, 0.0) >= _SD_MIN_POOL:" in _insp.getsource(_pw_bb._task_showdown_tourney),
+   str((_au_bb, _au2_bb)))
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

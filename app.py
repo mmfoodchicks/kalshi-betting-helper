@@ -2125,19 +2125,26 @@ def api_dfs_slates():
         return jsonify({"error": f"unknown sport (have: {', '.join(sorted(dk.SPORTS))})"}), 400
     try:
         sl = dk.slates(sport)
-        counts, top = {}, {}
+        counts, top, top_name = {}, {}, {}
         for c in dk.contests(sport):
             k = str(c.get("draft_group_id"))
             counts[k] = counts.get(k, 0) + 1
-            top[k] = max(top.get(k, 0.0), float(c.get("prize_pool") or 0))
+            pool = float(c.get("prize_pool") or 0)
+            if pool > top.get(k, -1.0):
+                top[k], top_name[k] = pool, c.get("name") or ""
     except Exception as e:
         return jsonify({"error": f"dk lobby failed: {e}"}), 502
-    # top_pool: the richest contest's prize pool, so the tab's Build list can
-    # say which classic slates the PC will build ($1M+ only)
-    return jsonify({"sport": sport,
-                    "slates": [dict(x, n_contests=counts.get(str(x["draft_group_id"]), 0),
-                                    top_pool=top.get(str(x["draft_group_id"]), 0.0))
-                               for x in sl]})
+    # top_pool / top_name: the richest contest, so the tab's Build list can say
+    # which classic slates the PC will build ($1M+ only) and name the
+    # Millionaire; auto: what the PC builds on its own (_tourney_auto)
+    rows = [dict(x, n_contests=counts.get(str(x["draft_group_id"]), 0),
+                 top_pool=top.get(str(x["draft_group_id"]), 0.0),
+                 top_name=top_name.get(str(x["draft_group_id"]), ""))
+            for x in sl]
+    auto = _tourney_auto(rows) if sport == "nfl" else {}
+    for r in rows:
+        r["auto"] = auto.get(r["draft_group_id"])
+    return jsonify({"sport": sport, "slates": rows})
 
 
 @app.route("/api/dfs/contests")
@@ -2186,6 +2193,27 @@ def api_dfs_contest():
 
 _TOURNEY_REQ = "tourney_requests"      # the tab's Build queue, a json beside the boards
 _TOURNEY_CL_MIN_POOL = 1_000_000       # pc_worker._CL_MIN_POOL: classic boards only for $1M+ contests
+_TOURNEY_SD_MIN_POOL = 500_000         # pc_worker._SD_MIN_POOL: the showdowns it builds on its own
+
+
+def _tourney_auto(slates):
+    """{dg: "main" | "showdown"} for the slates the PC builds on its own, by
+    pc_worker's own rules (mirrored here: importing pc_worker would point
+    this server's stores at the PC's folders): the Sunday main slate
+    (_main_slate: the untagged classic of ten-plus games, the most games,
+    with a $1M+ contest to build against) and every showdown whose richest
+    contest clears _TOURNEY_SD_MIN_POOL. The tab lists these first. Rows
+    carry top_pool (api_dfs_slates)."""
+    out = {}
+    mains = [s for s in slates if s.get("contest_type") == 21 and (s.get("games") or 0) >= 10 and not s.get("tag")]
+    if mains:
+        m = max(mains, key=lambda s: s.get("games") or 0)
+        if (m.get("top_pool") or 0) >= _TOURNEY_CL_MIN_POOL:
+            out[m["draft_group_id"]] = "main"
+    for s in slates:
+        if s.get("games") == 1 and s.get("contest_type") == 96 and (s.get("top_pool") or 0) >= _TOURNEY_SD_MIN_POOL:
+            out[s["draft_group_id"]] = "showdown"
+    return out
 
 
 def _tourney_requests():

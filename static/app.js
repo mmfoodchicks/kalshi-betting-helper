@@ -8951,11 +8951,19 @@ function renderDfsTourneyBuild(msg) {
   const nfl = _dfsDkSlates.filter((x) => x.sport === "nfl");
   if ((($("dfsSport") || {}).value || "") !== "nfl" || !nfl.length) { bx.build.innerHTML = ""; return; }
   const keep = (($("dfsTourneyPickBuild") || {}).value) || "";
-  const opts = nfl.map((x) => {
-    const showdown = (x.games || 1) === 1;
-    const off = !showdown && x.top_pool != null && x.top_pool < 1e6;
-    return `<option value="${x.draft_group_id}"${off ? " disabled" : ""}>${escapeHtml(_dfsSlateWhat(x))} · ${_dfsDkWhen(x.starts)}${off ? " · no $1M+ contest" : ""}</option>`;
-  }).join("");
+  // Three groups, the owner's ask (2026-10-22): the slates the PC builds on
+  // its own first (the primetime showdowns in start order, then the Sunday
+  // main slate named by its Millionaire -- /api/dfs/slates "auto", the PC's
+  // own rules), then the rest, then the classic slates it cannot build (no
+  // $1M+ contest) greyed out at the bottom.
+  const off = (x) => (x.games || 1) !== 1 && x.top_pool != null && x.top_pool < 1e6;
+  const shortName = (n) => String(n || "").replace(/^NFL\s+/, "").replace(/\s*\[.*$/, "");
+  const opt = (x) => `<option value="${x.draft_group_id}"${off(x) ? " disabled" : ""}>${escapeHtml(_dfsSlateWhat(x))}${x.auto === "main" && x.top_name ? ` - ${escapeHtml(shortName(x.top_name))}` : ""} · ${_dfsDkWhen(x.starts)}${off(x) ? " · no $1M+ contest" : ""}</option>`;
+  const auto = nfl.filter((x) => x.auto).sort((a, b) => (a.auto === "main") - (b.auto === "main"));
+  const rest = nfl.filter((x) => !x.auto && !off(x)), none = nfl.filter((x) => !x.auto && off(x));
+  const group = (label, xs) => xs.length ? `<optgroup label="${label}">${xs.map(opt).join("")}</optgroup>` : "";
+  const opts = group("Built automatically by the PC", auto) + group("Other slates", rest)
+    + group("No $1M+ contest - the PC does not build these", none);
   bx.build.innerHTML = `<div class="small" style="margin-top:6px">🛠 Build on the PC: <select id="dfsTourneyPickBuild" style="width:auto;padding:2px 4px"><option value="">- pick a slate -</option>${opts}</select> <button class="track-mini" type="button" onclick="dfsTourneyRequest()" title="Queue exactly the slate picked for the PC's next cycle. It builds requests before anything else: a showdown takes about 20 minutes, a classic slate about an hour.">Build</button>${msg ? ` <span style="color:var(--muted)">${escapeHtml(msg)}</span>` : ""}</div>`;
   if (keep && nfl.some((x) => String(x.draft_group_id) === keep)) $("dfsTourneyPickBuild").value = keep;
 }
