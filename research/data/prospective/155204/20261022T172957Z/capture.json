@@ -1,0 +1,41 @@
+{
+ "biggest_gpp_detailed": {
+  "id": 196947072,
+  "max_entries": 73529,
+  "name": "NFL Showdown $1.25M Thursday Night Showdown [$300K to 1st] (NE @ CHI)",
+  "prize_pool": 1250000.0
+ },
+ "capture_stamp": "20261022T172957Z",
+ "captured_utc": "2026-10-22 17:30:06 UTC",
+ "contests_detailed": [
+  "196946509",
+  "196946767",
+  "196947065",
+  "196947067",
+  "196947070",
+  "196947071",
+  "196947072",
+  "196947073",
+  "196947074",
+  "196947079",
+  "196947087",
+  "196976722",
+  "196976723"
+ ],
+ "draft_group": 155204,
+ "files": {
+  "contests_155204.json": "efd8bab13565ad88cb5465a3a75657132bd495ef7d8430c8cf6c6b8f7e839464",
+  "manifest.json": "af92e9c84c446e10b648ad047df916f6831c795af7d6baea96ec3e04773ea6f7",
+  "players_2026_7.json": "522187ecc8f495286d40a2637c45071190d7c491aac522af5967ddd433da4eac",
+  "proj_2026_7.json": "e194300e83321d4d80aad1f70a1ee9d25c9ac696e6fcb05160bb84d289cf51b2",
+  "proj_2026_7_def.json": "aa06316d42eb9711857d4f7ae326faaec35c74af73f2256d52b0dc19c05c0f76",
+  "proj_2026_7_k.json": "fd17558f7cc15c9a9fd499293c84b5bd07bce4aa2838c36832a5e7de5ed4c2db",
+  "slate_155204.json": "cc515d2b31c4ec7b362cf3e6e54a47629c95eb865e8f9d4a9006f47b99a18f89"
+ },
+ "hours_to_lock": 6.748,
+ "lock_utc": "2026-10-23 00:15:00 UTC",
+ "note": "TNF NE @ CHI, morning (timing arm)",
+ "pre_lock": true,
+ "slate_identity": "CHI/NE 2026-10-23",
+ "week": 7
+}

@@ -130,6 +130,8 @@ def snapshot(now=None, payload=None, index=None, ladders=None, sleeper=None, for
     if updated or live or wx_n or md:
         deep_cache.save(key, store)
         deep_cache.save(LATEST, key)
+    if md and store.get("drift"):
+        deep_cache.save(DRIFT_KEY, dict(store["drift"], week_key=key))
     return {"key": key, "updated": updated, "frozen": frozen, "games": len(store["games"]),
             "sleeper": len(store["sleeper"]), "weather": wx_n, "model_rungs": md}
 
@@ -224,6 +226,17 @@ def _model_rungs(store, games, idx, now, season, week, sims=None):
 # game -- the games floor is what keeps one game from ringing it). The
 # moneyline is read on the home side only (the two clubs' rungs cancel).
 DRIFT_GAP, DRIFT_N, DRIFT_GAMES, DRIFT_QUAL = 0.04, 30, 4, 0.5
+# The latest pass's readout, kept small and apart from the week's log so the
+# combo maker can read it on every build (nfl_game_sim.drift_types): a type
+# the alarm rings on is priced at Kalshi's number until the model is fixed.
+DRIFT_KEY = "nfl_props_drift"
+DRIFT_FRESH_S = 3 * 3600
+
+
+def alarmed(v):
+    """Does one type's readout ring the alarm (see above)?"""
+    return (v.get("n", 0) >= DRIFT_N and v.get("games", 0) >= DRIFT_GAMES
+            and abs(v.get("gap", 0.0)) >= DRIFT_GAP)
 
 
 def drift(store, now):
@@ -251,7 +264,7 @@ def drift(store, now):
     for t, b in by.items():
         gap = b["sum"] / b["n"]
         out["by_type"][t] = {"n": b["n"], "games": len(b["games"]), "gap": round(gap, 4)}
-        if b["n"] >= DRIFT_N and len(b["games"]) >= DRIFT_GAMES and abs(gap) >= DRIFT_GAP:
+        if alarmed(out["by_type"][t]):
             errlog.note("NFL-DRIFT", msg=(f"{t}: the model sits {100 * gap:+.1f} points off Kalshi's mid "
                                           f"over {b['n']} rungs in {len(b['games'])} games"), path=t)
     return out

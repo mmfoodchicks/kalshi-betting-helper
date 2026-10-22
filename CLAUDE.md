@@ -187,10 +187,11 @@ data-only `sim-history` branch (which never deploys):
   60,000 games the board's top-20 figures HELD on fresh games (shown/fresh
   0.92-1.00), two independent draws shared 14-19 of 20 and 120,000 bought
   nothing visible -- its field is the whole weighted universe, so the classic
-  tail inflation does not arise. Its scoring pass scores all ~780k legal
-  lineups where only the ~26k we may enter are listed: scoring those alone
-  against the full field is ~3.7x faster (the `opt_worlds` column, best of ALL
-  lineups, would need its own pass) -- not shipped yet. **Its field is flatter
+  tail inflation does not arise. **Since 2026-10-22 (SD_ENGINE 7) the scoring
+  pass scores only the rows the board reads** -- every lineup we may enter
+  and the chalk -- against the whole field (`run_subset`): their buckets are
+  read out of the field's own score matrix, so the figures are run()'s bit
+  for bit, and `opt` still counts the best of ALL lineups. **Its field is flatter
   than the real one** (`research/sd_dup.py`, `research/reports/sd_dup.md`,
   2026-10-19): Sunday night's served field, rebuilt exactly, had a pair
   collision of 2.07e-4 against the real 5.05e-4 (S7 found the same on three
@@ -203,8 +204,11 @@ data-only `sim-history` branch (which never deploys):
   projection-only by 0.459 nats an entry (95% 0.436-0.483); the served
   universe held only 56.9% of the real field (Juszczyk, Burks, McNichols,
   Watkins: our depth and roster gates, inherited by the FIELD) where every DK
-  player Sleeper projects >= 1.0 would hold 96.0% at 1.34M lineups (a change
-  that needs the allowed-only scoring pass first); Sunday's knob (0.468%) read
+  player Sleeper projects >= 1.0 would hold 96.0% at 1.34M lineups. **Shipped
+  2026-10-22** (`_field_extras`): the field takes the players our depth and
+  roster gates keep out (never an injury listing) projected 1.0+, the best
+  eight, the universe held to 900,000 lineups (`_FIELD_MAX_LINEUPS`, the
+  least-projected extra dropped first); Sunday's knob (0.468%) read
   Monday's real collision within 11%; the best-lineup share beat the field's
   ownership on both nights. **A showdown export lists every player twice**
   (FLEX, and CPT at 1.5x): `dk_standings.parse` takes the FLEX figure (the

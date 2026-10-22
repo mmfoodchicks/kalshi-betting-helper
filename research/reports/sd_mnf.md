@@ -76,6 +76,36 @@ the full field: at 1.3M lineups the current pass, which scores every lineup,
 would not land inside the pre-lock windows. Not shipped. It is a board
 change to make with its own timing check.
 
+**Shipped 2026-10-22, before Thursday's NE @ CHI (`SD_ENGINE` 7).**
+
+- **The field.** It takes the players our depth and roster gates keep out,
+  projected 1.0+ (`dfs_tourney._field_extras`). An injury listing is never a
+  field gate. DraftKings' own out-statuses are already off the slate.
+- **The universe cap.** It is held to 900,000 lineups, and the
+  least-projected extra goes first. On Monday's pool the full rule reached
+  1.34M lineups, so the cap would have dropped extras until it fit. The four
+  most-used alone gave 782,456 lineups and 89.6% of the real entries, against
+  56.9%.
+- **The scoring pass.** It now scores only the rows the board reads: the
+  ~44k lineups we may enter and the chalk (`run_subset`). Their buckets are
+  read out of the field's own score matrix, so the figures are the old pass's
+  bit for bit (guarded on and off DraftKings' lattice, serial and over
+  processes).
+
+Thursday's board, rebuilt in a sandbox (4 cores) at 11:14 am MT:
+
+| | served (PC, Wed 2:28 pm MT) | new (sandbox) |
+|---|---|---|
+| field-only players | 3 | 4 (Zavion Thomas, WR4, projected 1.8, was under the old 2.0 floor) |
+| legal lineups | 587,385 | 786,301 |
+| scoring | 797 s | 440 s |
+| portfolio | 193 s | 358 s (the field is a third larger) |
+| total | 1,022 s | 887 s |
+
+Thursday's game has no roster-gated player with a projection, so its change
+is small: the money list kept 19 of its top 20 and the EV list 16. Monday's
+pool is where the gap was.
+
 ## Ownership: the best-lineup share won again
 
 | MAE over the board's players | served field share | best-lineup share (`opt_*_pct`) |

@@ -1959,6 +1959,10 @@ function renderMixed(m) {
   // left out, and a quarterback in doubt puts his game's lines at Kalshi's price.
   const availNote = (m.availability && m.availability.length)
     ? `<div class="small" style="margin-top:4px;color:var(--muted)" title="Sleeper's mid-week projection still counts these players; the market prices the doubt. Their own legs are left out, the legs their absence moves use Kalshi's number, and a quarterback in doubt puts his whole game at Kalshi's number.">⚠ May not play: ${m.availability.map((f) => `${f.name} (${f.team} ${f.pos}, ${f.why})`).join("; ")}. Their legs are left out; ${m.availability.some((f) => f.pos === "QB") ? "a quarterback in doubt puts his game at Kalshi's price" : "their teammates at the same position use Kalshi's price"}.</div>` : "";
+  // Leg types the drift alarm rings on (nfl_game_sim.drift_types) price at
+  // Kalshi's number: the model sits one-sided off the market on them this week.
+  const driftNote = m.drift_market_only
+    ? `<div class="small" style="margin-top:4px;color:var(--muted)" title="The drift alarm compares the model with Kalshi on every priced leg each half hour. A type sitting 4+ points one way across 4+ games is priced at Kalshi's number until the model is fixed, so its gap cannot read as edge.">⚠ Priced at Kalshi's number (the model is off the market on them this week): ${Object.entries(m.drift_market_only).map(([t, g]) => `${t} (${g > 0 ? "+" : ""}${g} pts)`).join(", ")}.</div>` : "";
   // Name what was honoured and what was impossible. "Couldn't satisfy your
   // target(s)" was true but useless: with a required leg count AND a required
   // payout it never said which one broke, and the builder used to quietly drop
@@ -2027,6 +2031,7 @@ function renderMixed(m) {
     ${evWarn}
     ${unpriced}
     ${availNote}
+    ${driftNote}
     ${alts}
     <div class="small" style="margin-top:4px">Naive independent guess: <b>${m.indep_prob_pct}%</b> (${m.indep_payout_x}×). Same-game legs use simulated joint odds; different games multiply. <i>Fair payout is no-vig (1÷our probability) - Kalshi's actual combo pays a bit less (their margin); a much bigger gap means we disagree with the market on a leg.</i></div>
   </div>`;
@@ -9078,7 +9083,7 @@ function renderDfsTourney(d) {
   box.innerHTML = `<div style="margin-top:10px;padding:8px 10px;border:1px solid var(--line,#333);border-radius:8px">
     <div><b>🏟️ Tournament</b> <span class="small" style="color:var(--muted)">${escapeHtml(c.name || "")} · ${nf(c.max_entries)} entries · ${money(c.entry_fee)} · ${money(c.first_prize)} to 1st · built ${agoStr(d.age_s || 0)} · ${pcTxt}</span> ${_dfsTourneyButton(d)}${_dfsTourneyQueued(d)}</div>
     ${contestBtns}
-    <div class="small" style="color:var(--muted);margin-top:2px">${head}${worldsTxt} ${escapeHtml(fm.note || "")}${fieldOnly.length ? ` The depth gate keeps us off ${fieldOnly.slice(0, 8).map(escapeHtml).join(", ")}${fieldOnly.length > 8 ? ` and ${fieldOnly.length - 8} more` : ""}; the field still plays them.` : ""}</div>
+    <div class="small" style="color:var(--muted);margin-top:2px">${head}${worldsTxt} ${escapeHtml(fm.note || "")}${fieldOnly.length ? ` Our depth and roster gates keep us off ${fieldOnly.slice(0, 8).map(escapeHtml).join(", ")}${fieldOnly.length > 8 ? ` and ${fieldOnly.length - 8} more` : ""}; the field still plays them.` : ""}</div>
     ${exp ? `<div class="small" style="color:var(--muted);margin-top:2px">⚠️ <b>Experimental win, EV and ROI</b>: ${expWhy}. Top 1% and top 0.1% are the ranking columns; the raw numbers stay on the sheet for comparison while the tail estimator is validated.</div>` : ""}
     ${chalkHtml}
     <div style="margin-top:8px"><b>Portfolio</b> <span class="small" style="color:var(--muted)">- each entry adds the games the ones before it do not cover; the first k rows are the best k</span><div class="small" style="margin-top:2px">${sizeBtns}</div></div>

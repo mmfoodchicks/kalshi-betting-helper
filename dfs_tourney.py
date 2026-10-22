@@ -112,7 +112,12 @@ ENGINE = 10
 #    (research/reports/nfl_dfs_engine.md).
 # 6: the money curve and its ranked list (top_money); the universe is every
 #    legal lineup already, so nothing else moves -- rebuilt for the list.
-SD_ENGINE = 6
+# 7: the FIELD holds the players our depth and roster gates keep out of our
+#    entries (_field_extras: projected 1.0+, never an injury listing, the
+#    universe held to 900,000 lineups), and only the rows the board reads are
+#    scored against it (run_subset, exact). Monday night the served universe
+#    held 56.9% of the real field (research/reports/sd_mnf.md). 2026-10-22.
+SD_ENGINE = 7
 
 # The game simulator every tournament board is built on (nfl_dfs_sim.MODELS);
 # the preseason is always legacy. "engine" since 2026-10-16: on the held-out
@@ -965,22 +970,32 @@ def _range_jobs(N, workers, chunk, per=3):
 
 
 def _score_range(job):
-    """One world range of run_vs_field: (acc, acc2, opt) summed over it."""
+    """One world range of run_vs_field: (acc, acc2, opt) summed over it.
+
+    With "cand_idx" (run_subset) the candidates are those ROWS of the field
+    and their buckets are read out of the field's own score matrix -- never a
+    second, narrower matmul, whose blocking could move a score across a 0.01
+    bucket and part a lineup from its own copies in the field (its ties are
+    its EV). opt then still counts the best of the WHOLE field, as run()'s
+    does."""
     a, b, chunk = job
     WcT, X, wf = _PAR["WcT"], _PAR["X"], _PAR["wf"]
     same = "WfT" not in _PAR
     WfT = WcT if same else _PAR["WfT"]
+    ci = _PAR.get("cand_idx")
     G, G2, F_grid, E_log, nE = _PAR["G"], _PAR["G2"], _PAR["F_grid"], _PAR["E_log"], _PAR["nE"]
-    K = WcT.shape[1]
+    K = WcT.shape[1] if ci is None else len(ci)
     acc = np.zeros((K, G.shape[1]), dtype=np.float64)
     acc2 = np.zeros((K, G2.shape[1]), dtype=np.float64)
-    opt = np.zeros(K, dtype=np.int64)
+    opt = np.zeros(WcT.shape[1], dtype=np.int64)
     for start in range(a, b, chunk):
         Xc = np.ascontiguousarray(X[:, start:min(b, start + chunk)].T)   # (c, P)
         Sc = Xc @ WcT                                                    # (c, K)
-        opt += np.bincount(np.argmax(Sc, axis=1), minlength=K)
+        opt += np.bincount(np.argmax(Sc, axis=1), minlength=WcT.shape[1])
         Bc = _buckets(Sc)
         Bf = Bc if same else _buckets(Xc @ WfT)
+        if ci is not None:
+            Bc = Bc[:, ci]                       # the field is every row; the candidates, these
         for j in range(Bc.shape[0]):
             iF, iFE = _world_tables(Bf[j], wf, F_grid, E_log, nE)
             bj = Bc[j]
@@ -989,7 +1004,7 @@ def _score_range(job):
     return acc, acc2, opt
 
 
-def run_vs_field(Wc, Wf, wf, X, grids, chunk=500, progress=None, workers=1):
+def run_vs_field(Wc, Wf, wf, X, grids, chunk=500, progress=None, workers=1, cand_idx=None):
     """Score candidates against a field in every world. Wc (K, P) candidate
     lineup weights, Wf (M, P) the field's lineups with probability wf (M,)
     summing to one (showdown: every legal lineup and the field model;
@@ -1017,6 +1032,10 @@ def run_vs_field(Wc, Wf, wf, X, grids, chunk=500, progress=None, workers=1):
         arrays["WfT"] = np.ascontiguousarray(Wf.T, dtype=np.float32)
     extra = {"G": G, "G2": G2, "F_grid": grids[0]["F"],
              "E_log": np.log(np.maximum(grids[0]["E"], 1e-300)), "nE": nE}
+    if cand_idx is not None:
+        if not same:
+            raise ValueError("cand_idx reads candidates out of the field: pass the field as Wc too")
+        extra["cand_idx"] = np.asarray(cand_idx, dtype=np.int64)
     jobs = _range_jobs(N, w, ch)
     t0 = time.time()
     parts = _par_map(_score_range, jobs, w, arrays, extra,
@@ -1044,6 +1063,27 @@ def run(W, X, f, grid, chunk=500, progress=None, workers=1):
     return {"win": r["win"], "win_sole": r["win_sole"], "top1": r["top1"], "top01": r["top01"],
             "cash": r["cash"], "money": r["money"], "ev": r["ev"], "ev_notie": r["ev_notie"],
             "opt": opt, "n_worlds": N}
+
+
+def run_subset(W, X, f, grid, rows, chunk=500, progress=None, workers=1):
+    """run() for the rows the board reads -- the lineups we may enter and the
+    chalk -- against the same field, every legal lineup: the same figures as
+    run() on those rows exactly (their buckets are the field's own, see
+    _score_range), NaN on the rest; opt still counts the best of ALL lineups
+    (the board's opt shares). run() looked every legal lineup up in every
+    world: on Sunday night's 780k-lineup universe scoring only the ~26k we may
+    enter was ~3.7x faster (research/sd_worlds.py, 2026-10-18), which is what
+    lets the field hold the players the public plays (_field_extras)."""
+    rows = np.asarray(rows, dtype=np.int64)
+    res, opt, N = run_vs_field(W, W, f, X, [grid], chunk=chunk, progress=progress,
+                               workers=workers, cand_idx=rows)
+    r, M = res[0], W.shape[0]
+    out = {"opt": opt, "n_worlds": N}
+    for k in ("win", "win_sole", "top1", "top01", "cash", "money", "ev", "ev_notie"):
+        full = np.full(M, np.nan)
+        full[rows] = r[k]
+        out[k] = full
+    return out
 
 
 def greedy_cover(P, k):
@@ -1162,8 +1202,43 @@ def portfolio(W, X, f, grid, cand_idx, k, chunk=500, workers=1):
 
 
 # ---- NFL showdown adapter ----------------------------------------------------
-_FIELD_EXTRA_MAX = 8      # depth-gated players the FIELD still plays (WR4, RB3...)
-_FIELD_EXTRA_MIN_PROJ = 2.0    # a WR4 projected at 3 is in thousands of their lineups
+# Players OUR gates keep out that the FIELD still plays. Monday night
+# (2026-10-19, research/reports/sd_mnf.md) the served universe held only
+# 56.9% of the real field: Juszczyk ("not on any roster Sleeper knows",
+# 10,119 entries), Burks (WR4, projected 1.47 -- under the old 2.0 floor --
+# 8,507, and in the winning lineup), McNichols (Sleeper "roster status
+# Inactive", 8,395), Watkins and Dyami Brown (WR4/WR5). The depth chart and
+# the roster lookups are our rule for OUR entries; the field takes every such
+# player projected for 1.0+ -- on Monday exactly those six, holding 96.0% of
+# the real entries. An INJURY listing is not a field gate: a starter tagged
+# Out would put real field mass on a man who is not playing. The universe is
+# held to _FIELD_MAX_LINEUPS (the least-projected extras go first): the
+# scoring pass is per-world work over every legal lineup, and 900k is about
+# Sunday night's 780k, which the PC built inside the pre-lock windows.
+_FIELD_EXTRA_MAX = 8
+_FIELD_EXTRA_MIN_PROJ = 1.0
+_FIELD_GATES = ("depth chart", "not on any roster Sleeper knows", "roster status")
+_FIELD_MAX_LINEUPS = 900_000
+
+
+def _field_extras(by_name, dx):
+    """The players our gates left out (`dx`, nfl_dfs._apply_depth's excluded
+    list) that the field still plays: gated by depth or a roster lookup, never
+    by an injury listing, projected for _FIELD_EXTRA_MIN_PROJ+; the best
+    projected _FIELD_EXTRA_MAX of them, each tagged _field_only (in no lineup
+    we may enter) and labelled by his depth rank, or his position when a
+    roster lookup gated him (the card adds "field only")."""
+    extra = []
+    for d in dx:
+        e = by_name.get(d["name"])
+        why = d.get("why") or ""
+        if e is not None and any(g in why for g in _FIELD_GATES) \
+                and (e.get("proj") or 0) >= _FIELD_EXTRA_MIN_PROJ:
+            e["_field_only"] = True
+            e["depth"] = why.split(" ")[0] if "by depth chart" in why else e.get("pos")
+            extra.append(e)
+    extra.sort(key=lambda e: -e["proj"])
+    return extra[:_FIELD_EXTRA_MAX]
 
 
 def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=500,
@@ -1236,16 +1311,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     # The depth gate is OUR rule, not the public's: a WR4 with a real
     # projection is in thousands of their lineups, so he stays in the field's
     # pool (never in ours) and his boom worlds count against us honestly.
-    extra = []
-    for d in dx:
-        e = by_name.get(d["name"])
-        if e is not None and "depth chart" in (d.get("why") or "") \
-                and (e.get("proj") or 0) >= _FIELD_EXTRA_MIN_PROJ:
-            e["_field_only"] = True
-            e["depth"] = (d["why"].split(" ") or [""])[0]
-            extra.append(e)
-    extra.sort(key=lambda e: -e["proj"])
-    extra = extra[:_FIELD_EXTRA_MAX]
+    extra = _field_extras(by_name, dx)
     field_only = {e["name"] for e in extra}
     for d in dx:
         d["field"] = d["name"] in field_only
@@ -1280,8 +1346,25 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
 
     idx, W, allowed = enumerate_showdown(ents, nfl_dfs.CAP, cpt_mult=nfl_dfs.CPT_MULT,
                                          entry_ok=entry_ok, cpt_ok=cpt_ok)
+    # the universe held to _FIELD_MAX_LINEUPS: the least-projected field-only
+    # player goes first (our own players never do)
+    while idx is not None and len(idx) > _FIELD_MAX_LINEUPS and any(e.get("_field_only") for e in ents):
+        drop = min((e for e in ents if e.get("_field_only")), key=lambda e: e["proj"])
+        for d in excluded:
+            if d["name"] == drop["name"]:
+                d["why"] = (d.get("why") or "") + f"; out of the field too, to hold it under {_FIELD_MAX_LINEUPS:,} lineups"
+        ents = [e for e in ents if e is not drop]
+        N = min(len(e["arr"]) for e in ents)
+        if n_worlds:
+            N = min(N, int(n_worlds))
+        X = np.asarray([e["arr"][:N] for e in ents], dtype=np.float32)
+        idx, W, allowed = enumerate_showdown(ents, nfl_dfs.CAP, cpt_mult=nfl_dfs.CPT_MULT,
+                                             entry_ok=entry_ok, cpt_ok=cpt_ok)
     if idx is None:
         return None
+    field_only = {e["name"] for e in ents if e.get("_field_only")}
+    for d in excluded:
+        d["field"] = d["name"] in field_only
     f, beta = field_weights(ents, idx, cpt_mult=nfl_dfs.CPT_MULT)
     own_c, own_f = field_ownership(ents, idx, f)
     for i, e in enumerate(ents):
@@ -1295,12 +1378,15 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     chunk = chunk_for(len(idx), chunk)
     log(f"[tourney] {len(idx):,} legal lineups, {int(allowed.sum()):,} we may enter "
         f"({t2 - t1:.0f}s); field beta {beta:.3f}, top build {100 * f.max():.2f}% "
-        f"(~{C * f.max():.0f} copies); scoring every lineup in every world, "
+        f"(~{C * f.max():.0f} copies); scoring the lineups we may enter against all of them in every world, "
         f"{chunk} worlds a chunk...")
     grid = payout_grid(C, contest.get("payouts") or [], float(contest.get("entry_fee") or 1.0),
                        int(contest.get("places_paid") or max(1, C // 5)))
-    res = run(W, X, f, grid, chunk=chunk, workers=_workers(workers),
-              progress=lambda done, n, dt: log(f"[tourney]   {done:,}/{n:,} worlds, {dt:.0f}s"))
+    # only the rows the board reads are looked up: the lineups we may enter
+    # and the chalk (run_subset; the same figures as run() on them, exactly)
+    rows = np.union1d(np.where(allowed)[0], [int(np.argmax(f))])
+    res = run_subset(W, X, f, grid, rows, chunk=chunk, workers=_workers(workers),
+                     progress=lambda done, n, dt: log(f"[tourney]   {done:,}/{n:,} worlds, {dt:.0f}s"))
     t3 = time.time()
     fee = float(contest.get("entry_fee") or 1.0)
     copies = C * f                                         # expected duplicates in the field

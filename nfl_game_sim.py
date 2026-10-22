@@ -1506,6 +1506,7 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
     item["preseason"] = bool(preseason)
     item["excluded_started"] = n_started or None
     item["excluded_unpriced"] = _pinfo.get("excluded_unpriced") or None
+    item["drift_market_only"] = _pinfo.get("drift") or None
     _av = _pinfo.get("availability") or {}
     item["availability"] = [f for grp in item.get("groups") or []
                             for f in _av.get(grp.get("suffix"), [])] or None
@@ -1635,6 +1636,24 @@ def _avail_scope(cands, doubt, pos):
     return kept
 
 
+def drift_types(now=None):
+    """{leg type: gap} the drift alarm rings on in its latest fresh pass
+    (nfl_props_log.drift): those legs price at Kalshi's number. The alarm's
+    first week (2026-10-22, week 7): rushing yards, the model 4.4 points under
+    Kalshi's mid over 127 rungs in 12 games -- on the low rungs, where the
+    sim's rushing spread (fitted on every rusher) leaves a featured back too
+    much mass near zero. Until the model is fixed, that gap must not read as
+    edge on a slip."""
+    import time as _t6
+    import deep_cache
+    import nfl_props_log as _npl
+    d, _ts = deep_cache.load(_npl.DRIFT_KEY)
+    now = _t6.time() if now is None else now
+    if not d or now - (d.get("ts") or 0) > _npl.DRIFT_FRESH_S:
+        return {}
+    return {t: v["gap"] for t, v in (d.get("by_type") or {}).items() if _npl.alarmed(v)}
+
+
 def _canon_team(ab):
     import nfl_data
     return nfl_data._canon(ab) if ab else ab
@@ -1693,7 +1712,14 @@ def _build_frontier(week, preseason, n_sims, floor, ceil, n_legs, max_legs_per_g
     except Exception as e:
         errlog.note("NFLG-parlay-index", e)
         _idx_up = False
-    pinfo = {"priced_ok": _idx_up, "excluded_unpriced": 0, "availability": {}}
+    pinfo = {"priced_ok": _idx_up, "excluded_unpriced": 0, "availability": {}, "drift": {}}
+    dtypes = {}
+    if not preseason:
+        try:
+            dtypes = drift_types()
+        except Exception as e:
+            errlog.note("NFLG-drift-read", e)
+    pinfo["drift"] = {t: round(100 * g, 1) for t, g in dtypes.items()}
     avail, apos = {}, {}
     if not preseason:
         try:
@@ -1735,6 +1761,9 @@ def _build_frontier(week, preseason, n_sims, floor, ceil, n_legs, max_legs_per_g
         # Players in doubt (availability): their own legs out, the legs their
         # absence would move at Kalshi's number (_avail_scope).
         doubt = {tm: avail[tm] for tm in _pair_teams(g) if tm in avail}
+        for c in cands:                          # a type the drift alarm rings on
+            if c["type"] in dtypes:
+                c["market_only"] = True
         if doubt:
             cands = _avail_scope(cands, doubt, apos)
             pinfo["availability"][g["suffix"] or g.get("pair")] = [

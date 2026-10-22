@@ -205,3 +205,22 @@ Needs the odds API's key in the server's environment (the variable `odds_api.py`
 
 Not shipped, by the owner's choice: a link to the owner's own Kalshi account.
 
+## Shipped 2026-10-22 (Thursday)
+
+- **The drift alarm now acts.** Its first live week rang on one type. At
+  09:45 UTC on Thursday, rushing yards sat **-4.4 points** under Kalshi's mid
+  over 127 rungs in 12 games. Receiving yards read -3.5, under the 4-point
+  line. Passing yards read -0.2, spreads +1.1, TDs +1.5, moneylines +1.9 and
+  totals +2.3. The rushing gap is on the low rungs. The sim's rushing spread is
+  fitted on every rusher, so it leaves a featured back too much mass near zero
+  (item 5's 1.11 SD ratio). That is the same direction.
+- Each pass now keeps its readout apart from the week's log
+  (`nfl_props_log.DRIFT_KEY`). The combo maker reads it on every build
+  (`nfl_game_sim.drift_types`, fresh for 3 h). Each leg type the alarm rings on
+  is priced at Kalshi's number, with model weight 0. That is the same
+  `market_only` path a player in doubt takes. The slip names the types and
+  their gaps.
+- This is not a fix for the model. It stops a known one-sided gap from
+  reading as edge while the model is wrong. The fix is the rushing shape, to
+  be judged on the graded rung log.
+

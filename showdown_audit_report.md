@@ -118,7 +118,9 @@ Classic and Showdown now version **separately**. `dfs_tourney.SD_ENGINE` was set
 to 2 here and is **3** as of the discrete-v2 promotion (section Y6), and **4**
 since the engine model (2026-10-16, `research/reports/nfl_dfs_engine.md`),
 and **5** since its passing-volume anchor the same day, and **6** for the
-"best chance to win money" list (a sixth payout curve, same day);
+"best chance to win money" list (a sixth payout curve, same day), and **7**
+for the field that holds the players our gates keep out (2026-10-22,
+`research/reports/sd_mnf.md`);
 the two change for different reasons and each rebuild is expensive enough (an
 hour against twenty minutes) that one shared number would spend the PC's
 evening on boards whose meaning never moved. An artifact with no engine stamp
@@ -1319,7 +1321,7 @@ summaries of everything rather than statements about one thing.
 |---|---|---|
 | Showdown simulator | **`engine-deep` v1** on the tournament board; `legacy-latent-discrete` v2 on the lineup sheet and in the preseason | the engine model, promoted 2026-10-16 on a pre-registered 2025 test (`research/reports/nfl_dfs_engine.md`); the discrete scorer (section Y6) stays where the engine cannot run (the server has no numpy) |
 | Classic simulator | **`engine-deep` v1** on the tournament board | same promotion; the sheet stays legacy |
-| Showdown engine | `SD_ENGINE = 6` | 3 from the discrete promotion, 4 from the engine model, 5 from its passing-volume anchor, 6 for the money list; Classic's is 9 |
+| Showdown engine | `SD_ENGINE = 7` | 3 from the discrete promotion, 4 from the engine model, 5 from its passing-volume anchor, 6 for the money list, 7 for the field that holds the players our gates keep out; Classic's is 9 |
 | Showdown pool signature | rich | price, status and id sensitive |
 | Classic pool signature | names only | deliberate; an hour of rebuild for a price tweak is a bad trade |
 | Pre-lock refreshes | T-4h, T-2h, T-1h, T-25m | once each; on the right clock since 2026-10-16 (the lobby's Eastern start was read as UTC, so all four ran four hours early) |

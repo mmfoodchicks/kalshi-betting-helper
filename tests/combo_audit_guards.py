@@ -14352,8 +14352,9 @@ ck("and the engine number in the findings section no longer contradicts the prod
    "is **3** as of the discrete-v2 promotion" in _sdrw and "**4** since the engine model" in _sdrw
    and "**5** since its passing-volume anchor" in _sdrw
    and "**6** for the \"best chance to win money\" list" in _sdrw
-   and "| Showdown engine | `SD_ENGINE = 6` |" in _sdrw and "Classic's is 9 |" in _sdrw
-   and _dt14.SD_ENGINE == 6)
+   and "**7** for the field that holds the players our gates keep out" in _sdrw
+   and "| Showdown engine | `SD_ENGINE = 7` |" in _sdrw and "Classic's is 9 |" in _sdrw
+   and _dt14.SD_ENGINE == 7)
 ck("and the report records the seed-stamp gap, that it was fixed prospectively, and that the historical artifacts were deliberately NOT regenerated",
    "### R1c. Six artifacts stamped `seed: null` while running on fixed seeds" in _sdrw
    and "deliberately NOT\nregenerated" in _sdr.replace("\r", "")
@@ -14460,8 +14461,10 @@ ck("and the showdown engine moved, so every board built under the old scorer is 
    # the discrete promotion itself still did not move classic's (6 then; 7
    # only for the engine model)
    # and 5 at its passing-volume anchor, the same day, for the same kind of
-   # reason; 6 for the money list (a new curve and list, nothing else moved)
-   _dt14.SD_ENGINE == 6 and "# 4: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read()
+   # reason; 6 for the money list (a new curve and list, nothing else moved);
+   # 7 for the field that holds the players our gates keep out (2026-10-22)
+   _dt14.SD_ENGINE == 7 and "# 4: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read()
+   and "# 7: the FIELD holds the players our depth and roster gates keep out" in open(_os.path.join(_root, "dfs_tourney.py")).read()
    and "# 6: the money curve and its ranked list (top_money)" in open(_os.path.join(_root, "dfs_tourney.py")).read()
    and "# 5: the engine's passing volume anchored" in open(_os.path.join(_root, "dfs_tourney.py")).read()
    and _pw_s1._expected_engine("showdown") == _dt14.SD_ENGINE
@@ -14891,8 +14894,9 @@ ck("and on a LIVE board the whole span of defensible conventions is worth about 
    and _s4t["by_q"]["top1"]["best_lineup_same_under_both"] is True
    and _s4t["by_q"]["top01"]["rank_corr"] > 0.95
    # NOT bumped for a 1% effect: 3 stood until the engine model moved it to 4
-   # (5 its passing anchor, 6 the money list -- none of them a tie convention)
-   and _dt14.SD_ENGINE == 6 and "# 4: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read()
+   # (5 its passing anchor, 6 the money list, 7 the field that holds the
+   # players our gates keep out -- none of them a tie convention)
+   and _dt14.SD_ENGINE == 7 and "# 4: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read()
    and "# 5: the engine's passing volume anchored" in open(_os.path.join(_root, "dfs_tourney.py")).read(),
    f"top1 bracket {100 * _s4t['by_q']['top1']['relative_bracket_at_best']:.1f}%, "
    f"top0.1% {100 * _s4t['by_q']['top01']['relative_bracket_at_best']:.1f}%")
@@ -15036,8 +15040,8 @@ ck("and the tab says it too, under the number, rather than leaving it to read as
    "any top 1% (in-sample)" in _js_s1
    and "these worlds also chose the lineups" in _js_s1
    and "basis.measured_optimism_pct.worst" in _js_s1)
-ck("no board was invalidated for the label, because no number changed (the versions moved later -- 3 -> 4 -> 5 -> 6 and 6 -> 7 -> 8 -> 9 -> 10, for the engine model, its passing anchor, the money list and classic's optimizer field -- and say so)",
-   _dt14.SD_ENGINE == 6 and _dt14.ENGINE == 10
+ck("no board was invalidated for the label, because no number changed (the versions moved later -- 3 -> 4 -> 5 -> 6 -> 7 and 6 -> 7 -> 8 -> 9 -> 10, for the engine model, its passing anchor, the money list, showdown's wider field and classic's optimizer field -- and say so)",
+   _dt14.SD_ENGINE == 7 and _dt14.ENGINE == 10
    and "# 5: the engine's passing volume anchored" in open(_os.path.join(_root, "dfs_tourney.py")).read()
    and "# 8: the engine's passing volume anchored" in open(_os.path.join(_root, "dfs_tourney.py")).read()
    and "# 4: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read()
@@ -22605,11 +22609,13 @@ def _au_price(cands, suffix, blend=True):
 
 
 import nfl_data as _nd_au
-_au_orig = (_ng_au._slate_sims, _ng_au.price_cands, _ng_au.kalshi_index, _ng_au.availability, _nd_au.week_teams)
+_au_orig = (_ng_au._slate_sims, _ng_au.price_cands, _ng_au.kalshi_index, _ng_au.availability, _nd_au.week_teams,
+           _ng_au.drift_types)
 try:
     _ng_au._slate_sims = lambda week, pre, n: [dict(g, cands=[dict(c) for c in g["cands"]]) for g in _au_games]
     _ng_au.price_cands = _au_price
     _ng_au.availability = lambda *a, **k: {}          # hermetic: no Sleeper read in a guard
+    _ng_au.drift_types = lambda now=None: {}          # nor a drift record this machine's logger left
     _nd_au.week_teams = lambda season, week: {}
     _ng_au.kalshi_index = lambda: {"S0": {}, "S1": {}}
     _au_up = _ng_au._build_frontier(7, False, _au_n, 0.55, 1.0, 2, 3, 4, "prefer", "off", None, None, False,
@@ -22618,7 +22624,8 @@ try:
     _au_dn = _ng_au._build_frontier(7, False, _au_n, 0.55, 1.0, 2, 3, 4, "prefer", "off", None, None, False,
                                     None, None, None)
 finally:
-    _ng_au._slate_sims, _ng_au.price_cands, _ng_au.kalshi_index, _ng_au.availability, _nd_au.week_teams = _au_orig
+    (_ng_au._slate_sims, _ng_au.price_cands, _ng_au.kalshi_index, _ng_au.availability, _nd_au.week_teams,
+     _ng_au.drift_types) = _au_orig
 _au_legs = lambda gb: [l for _lab, bs, _s in gb for b in bs for l in b["legs"]]
 ck("the NFL pool holds only the legs Kalshi lists while its index answers (the rule baseball, college and UFC keep) "
    "and counts the rest; an empty index keeps the model-only pool and says so",
@@ -22806,6 +22813,13 @@ try:
                               forecast=lambda g: {}, sims=_ab_sims(0.99))
     _ab_st3, _ = _dc_ab.load(_npl_ab.KEY.format(season=2026, week=7))
     _ab_one = _npl_ab.drift({"model": {"S0": _ab_st2["model"]["S0"]}}, _ab_now + 1800)
+    _ab_dk, _ = _dc_ab.load(_npl_ab.DRIFT_KEY)
+    _ab_dt = _ng_au.drift_types(now=_ab_now + 3 * 3600)
+    _ab_dt_old = _ng_au.drift_types(now=_ab_now + 1800 + _npl_ab.DRIFT_FRESH_S + 1)
+    _dc_ab.save(_npl_ab.DRIFT_KEY, {"ts": round(_ab_now), "by_type": {
+        "Rush Yds": {"n": 127, "games": 12, "gap": -0.044}, "Rec Yds": {"n": 20, "games": 9, "gap": -0.05},
+        "Pass Yds": {"n": 60, "games": 3, "gap": -0.06}, "TD": {"n": 90, "games": 12, "gap": 0.015}}})
+    _ab_dt_w7 = _ng_au.drift_types(now=_ab_now + 60)
 finally:
     _k_ab._parse_time = _ab_pt0
     _el_ab.note = _ab_note0
@@ -22828,6 +22842,50 @@ ck("the drift alarm ledgers NFL-DRIFT when a leg type sits one-sided off Kalshi 
    and _ab_one["by_type"]["Total"]["games"] == 1
    and (_npl_ab.DRIFT_GAP, _npl_ab.DRIFT_N, _npl_ab.DRIFT_GAMES) == (0.04, 30, 4),
    str(_ab_notes))
+ck("the latest pass's drift readout is kept apart from the week's log for the combo maker, which reads only a FRESH "
+   "one (3 h) and only the types the alarm rings on: week 7's rushing yards (-4.4 over 127 rungs in 12 games) are in, "
+   "a gap under 30 rungs or 4 games or 4 points is not, and the frozen pass (no live rungs) leaves the last readout",
+   _ab_dk["ts"] == round(_ab_now + 1800) and _ab_dk["week_key"] == _npl_ab.KEY.format(season=2026, week=7)
+   and _ab_dt == {"Total": 0.05} and _ab_dt_old == {} and _ab_dt_w7 == {"Rush Yds": -0.044}
+   and _npl_ab.DRIFT_FRESH_S == 3 * 3600,
+   str((_ab_dt, _ab_dt_old, _ab_dt_w7)))
+_dr_seen = []
+
+
+def _dr_price(cands, suffix, blend=True):
+    _dr_seen.append([(c["type"], bool(c.get("market_only"))) for c in cands])
+    return _au_price(cands, suffix, blend)
+
+
+_dr_orig = (_ng_au._slate_sims, _ng_au.price_cands, _ng_au.kalshi_index, _ng_au.availability, _nd_au.week_teams,
+            _ng_au.drift_types)
+try:
+    _ng_au._slate_sims = lambda week, pre, n: [dict(g, cands=[dict(c) for c in g["cands"]]) for g in _au_games]
+    _ng_au.price_cands = _dr_price
+    _ng_au.availability = lambda *a, **k: {}
+    _nd_au.week_teams = lambda season, week: {}
+    _ng_au.kalshi_index = lambda: {"S0": {}, "S1": {}}
+    _ng_au.drift_types = lambda now=None: {"Total": 0.05}
+    _dr_on = _ng_au._build_frontier(7, False, _au_n, 0.55, 1.0, 2, 3, 4, "prefer", "off", None, None, False,
+                                    None, None, None)
+    _dr_on_seen, _dr_seen[:] = list(_dr_seen), []
+    _ng_au.drift_types = lambda now=None: {"Rush Yds": -0.044}
+    _dr_off = _ng_au._build_frontier(7, False, _au_n, 0.55, 1.0, 2, 3, 4, "prefer", "off", None, None, False,
+                                     None, None, None)
+    _dr_off_seen = list(_dr_seen)
+finally:
+    (_ng_au._slate_sims, _ng_au.price_cands, _ng_au.kalshi_index, _ng_au.availability, _nd_au.week_teams,
+     _ng_au.drift_types) = _dr_orig
+_dr_bf = _insp.getsource(_ng_au._build_frontier)
+ck("a leg type the drift alarm rings on reaches pricing marked market-only in every game (Kalshi's number, model weight "
+   "0) and the slip names it with the gap; a type it does not ring on is untouched; the preseason never reads it",
+   _dr_on_seen and all(mo for grp in _dr_on_seen for _t, mo in grp) and _dr_on[4]["drift"] == {"Total": 5.0}
+   and _dr_off_seen and not any(mo for grp in _dr_off_seen for _t, mo in grp) and _dr_off[4]["drift"] == {"Rush Yds": -4.4}
+   and "if not preseason:\n        try:\n            dtypes = drift_types()" in _dr_bf
+   and _dr_bf.index('c["market_only"] = True') < _dr_bf.index("price_cands(cands, g[\"suffix\"])")
+   and 'item["drift_market_only"] = _pinfo.get("drift") or None' in _insp.getsource(_ng_au.build_parlay)
+   and "Priced at Kalshi's number (the model is off the market on them this week)" in open(_os.path.join(_root, "static", "app.js")).read(),
+   str((_dr_on[4].get("drift"), _dr_off[4].get("drift"), _dr_on_seen[:1])))
 ck("the logger reads the slate sim from the shared store and never runs one (no CPU-bound work in a web worker)",
    "_slate_sims" not in _insp.getsource(_npl_ab) and "boardshare.get(f\"nfl_parlay_sims5_" in _insp.getsource(_npl_ab._cached_sims))
 
@@ -22903,6 +22961,106 @@ ck("S7's first prospective contest, scored on the capture taken 0.9 h before loc
    _s7l["role"] == "primary" and _s7l["capture_stamp"] == "20261019T232101Z" and _s7l["hours_to_lock"] == 0.897
    and abs(_s7l["principal_delta"] + 0.45879) < 1e-5 and _s7l["principal_ci95_user_cluster"] == [0.43606, 0.48288]
    and _s7l["representable_pct"] == 97.4 and _s7l["effective_lineups"]["observed"] == 1479.0)
+
+# ---- 2026-10-22 Thursday night: the showdown field holds the players the public plays ----
+# The owner, on game day: "I want to make sure everything is perfect and ready.
+# I want the best chance of winning money." Monday's served universe held 56.9%
+# of the real field (research/reports/sd_mnf.md); the field now takes the
+# players OUR gates keep out, and only the rows the board reads are scored.
+print("=" * 72)
+print("Thursday night: the showdown field universe")
+print("=" * 72)
+import dfs_tourney as _T_tn
+_tn_src = _insp.getsource(_T_tn.build_nfl_showdown)
+_tn_by = {n: {"name": n, "pos": "RB", "proj": pj} for n, pj in [
+    ("Burks", 1.47), ("Juszczyk", 4.0), ("McNichols", 3.2), ("Starter Out", 12.0), ("Deep WR5", 0.6),
+    ("PS Guy", 2.5)] + [(f"Extra{i}", 1.1 + i / 10) for i in range(8)]}
+_tn_dx = ([{"name": "Burks", "why": "WR4 by depth chart (keep WR1-3)"},
+           {"name": "Juszczyk", "why": "not on any roster Sleeper knows"},
+           {"name": "McNichols", "why": "roster status Inactive"},
+           {"name": "Starter Out", "why": "listed Out"},
+           {"name": "Deep WR5", "why": "WR5 by depth chart (keep WR1-3)"},
+           {"name": "PS Guy", "why": "not on the depth chart (practice squad / inactive)"},
+           {"name": "Nobody", "why": "WR6 by depth chart (keep WR1-3)"}]
+          + [{"name": f"Extra{i}", "why": "RB3 by depth chart (keep RB1-2)"} for i in range(8)])
+_tn_ex = _T_tn._field_extras(_tn_by, _tn_dx)
+_tn_names = [e["name"] for e in _tn_ex]
+ck("the field plays the players our depth and roster gates keep out of OUR entries -- Monday's Burks (WR4, projected "
+   "1.47, in the winning lineup), Juszczyk (no roster Sleeper knows), McNichols (Sleeper roster status Inactive) -- "
+   "projected for 1.0+, the best eight; never a man listed Out, never one projected under 1.0",
+   _tn_names == ["Juszczyk", "McNichols", "PS Guy", "Extra7", "Extra6", "Extra5", "Extra4", "Burks"],
+   str(_tn_names))
+_tn_ex9 = _T_tn._field_extras(_tn_by, [d for d in _tn_dx if not d["name"].startswith("Extra")])
+ck("(the rule, one by one) Burks at 1.47 is in where the old 2.0 floor left him out; Out and sub-1.0 are not; the "
+   "depth label is the depth rank or the position (the card adds 'field only'); every extra is tagged _field_only",
+   [e["name"] for e in _tn_ex9] == ["Juszczyk", "McNichols", "PS Guy", "Burks"]
+   and _tn_by["Burks"]["depth"] == "WR4" and _tn_by["Juszczyk"]["depth"] == "RB"
+   and _tn_by["McNichols"]["depth"] == "RB" and _tn_by["PS Guy"]["depth"] == "RB"
+   and "Our depth and roster gates keep us off ${fieldOnly" in open(_os.path.join(_root, "static", "app.js")).read()
+   and all(e.get("_field_only") for e in _tn_ex9) and "_field_only" not in _tn_by["Starter Out"]
+   and len(_tn_ex) == _T_tn._FIELD_EXTRA_MAX == 8 and "Deep WR5" not in _tn_names
+   and _T_tn._FIELD_EXTRA_MIN_PROJ == 1.0,
+   str([(e["name"], e["depth"]) for e in _tn_ex9]))
+ck("the board takes its field extras from that rule, holds the universe to 900,000 lineups by dropping the "
+   "least-projected field-only player first (never one of ours), and its field-only list and exclusions say who "
+   "the field actually holds",
+   "extra = _field_extras(by_name, dx)" in _tn_src and _T_tn._FIELD_MAX_LINEUPS == 900_000
+   and "while idx is not None and len(idx) > _FIELD_MAX_LINEUPS and any(e.get(\"_field_only\") for e in ents):" in _tn_src
+   and "drop = min((e for e in ents if e.get(\"_field_only\")), key=lambda e: e[\"proj\"])" in _tn_src
+   and "field_only = {e[\"name\"] for e in ents if e.get(\"_field_only\")}" in _tn_src
+   and _tn_src.index("field_only = {e[\"name\"] for e in ents if e.get(\"_field_only\")}") > _tn_src.index("while idx is not None")
+   and "listed" not in "".join(_T_tn._FIELD_GATES))
+ck("the board scores only the rows it reads -- every lineup we may enter and the chalk -- against the whole field",
+   "rows = np.union1d(np.where(allowed)[0], [int(np.argmax(f))])" in _tn_src
+   and "res = run_subset(W, X, f, grid, rows, chunk=chunk, workers=_workers(workers)," in _tn_src
+   and "res = run(W, X, f, grid" not in _tn_src)
+if _T_tn.available():
+    import numpy as _np_tn
+    _rng_tn = _np_tn.random.default_rng(22)
+    _pl_tn = []
+    for _i in range(14):
+        _s = int(_rng_tn.integers(20, 120)) * 100
+        _pl_tn.append({"name": f"q{_i}", "pos": "WR", "team": "AA" if _i % 2 else "BB",
+                       "salary": _s, "cpt_salary": int(_s * 1.5), "proj": float(_rng_tn.uniform(2, 22))})
+    _idx_tn, _W_tn, _al_tn = _T_tn.enumerate_showdown(
+        _pl_tn, 50000, entry_ok=lambda cap, picked: all(p["name"] not in ("q3", "q8") for p in picked),
+        cpt_ok=lambda p: p["name"] != "q0")
+    _f_tn, _b_tn = _T_tn.field_weights(_pl_tn, _idx_tn)
+    _grid_tn = _T_tn.payout_grid(20000, [{"from": 1, "to": 1, "prize": 50000.0}, {"from": 2, "to": 40, "prize": 400.0},
+                                         {"from": 41, "to": 4000, "prize": 8.0}], 4.0, 4000, n=900, n_tie=60)
+    _rows_tn = _np_tn.union1d(_np_tn.where(_al_tn)[0], [int(_np_tn.argmax(_f_tn))])
+    _out_tn = _np_tn.setdiff1d(_np_tn.arange(len(_idx_tn)), _rows_tn)
+    _keys_tn = ("win", "win_sole", "top1", "top01", "cash", "money", "ev", "ev_notie")
+    _cmp_tn = []
+    for _lat in (True, False):
+        _X_tn = _np_tn.asarray([_rng_tn.gamma(2.0, p["proj"] / 2.0, size=300) for p in _pl_tn])
+        if _lat:
+            _X_tn = _np_tn.round(_X_tn * 50) / 50                   # DraftKings' 0.02 lattice
+        _X_tn = _X_tn.astype(_np_tn.float32)
+        _full_tn = _T_tn.run(_W_tn, _X_tn, _f_tn, _grid_tn, chunk=70)
+        _sub_tn = _T_tn.run_subset(_W_tn, _X_tn, _f_tn, _grid_tn, _rows_tn, chunk=70)
+        _sub2_tn = _T_tn.run_subset(_W_tn, _X_tn, _f_tn, _grid_tn, _rows_tn, chunk=70, workers=2)
+        _cmp_tn.append((
+            all(_np_tn.array_equal(_full_tn[k][_rows_tn], _sub_tn[k][_rows_tn]) for k in _keys_tn),
+            all(bool(_np_tn.isnan(_sub_tn[k][_out_tn]).all()) for k in _keys_tn),
+            _np_tn.array_equal(_full_tn["opt"], _sub_tn["opt"]) and _np_tn.array_equal(_full_tn["opt"], _sub2_tn["opt"]),
+            max(float(_np_tn.abs(_full_tn[k][_rows_tn] - _sub2_tn[k][_rows_tn]).max()) for k in _keys_tn),
+            _sub_tn["n_worlds"] == _full_tn["n_worlds"] == 300,
+            float(_full_tn["ev"][_rows_tn].max()) > 0))
+    try:
+        _T_tn.run_vs_field(_W_tn[_al_tn], _W_tn, _f_tn, _X_tn, [_grid_tn], cand_idx=[0, 1])
+        _raise_tn = False
+    except ValueError:
+        _raise_tn = True
+    ck("scoring only the rows the board reads gives run()'s figures on them EXACTLY -- win, sole win, top 1% and 0.1%, "
+       "cash, money, EV and untied EV, bit for bit, on DraftKings' lattice and off it -- NaN on every other lineup, "
+       "and the best-of-ALL-lineups tallies unchanged; two processes agree; a candidate index without the field as its "
+       "own candidates is refused (the buckets must be the field's own)",
+       all(a and b and c and d < 1e-12 and e and g for a, b, c, d, e, g in _cmp_tn) and len(_out_tn) > 0
+       and 0 < len(_rows_tn) < len(_idx_tn) and _raise_tn,
+       str(_cmp_tn))
+else:
+    ck("(numpy is not installed here -- the subset scoring guards run where it is)", True)
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
