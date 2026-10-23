@@ -32,7 +32,17 @@ import re
 #    and nfl_pbp_<season>.pkl (nfl_pbp's compact play-by-play season store).
 # 5: the deep store's soccer_rows_<year> entries carry each league's shots
 #    ((rows, names, shots), soccer.history) and soccer_model carries shots_w.
-SCHEMA = 5
+# 6: the deep store gains nba_matchup_<season>.pkl (the NBA matchup engine's cut
+#    player-games), nba_matchup_book_<season>.pkl (its as-of replay) and the
+#    nba_matchup job marker; the boards store gains matchups_<sport>_<date>.pkl
+#    (the Matchups tab's slate index) and matchups_<sport>_<date>_g<id>.pkl (one
+#    game's full players), matchups.py; and nfl_matchup_<season>.pkl (the NFL
+#    matchup data's compact play store, nfl_matchup_data SCHEMA 2) with
+#    nfl_matchup_ids.pkl (its player-id crosswalk) and the nfl_matchup marker;
+#    and nfl_matchup_defhist_<season>_wNN.pkl (nfl_matchup.def_history: one
+#    week's defense vectors, ~2.7 KB, written once for a week the committed
+#    table lacks, never rewritten).
+SCHEMA = 6
 
 _NAME_RE = re.compile(r"^[\w.,@=+-]{1,140}\.pkl$")
 

@@ -1,0 +1,11 @@
+{
+ "sha256": "4b7e792cb4256251ddeda0d0004e6b5527bd500b303eafa97498103bb8c9f051",
+ "utc": "2026-10-23T09:39:09Z",
+ "file": "research/reports/nfl_matchup_model.md",
+ "block": "between <!-- PREREG-START --> and <!-- PREREG-END -->",
+ "code_at_prereg": {
+  "nfl_matchup.py": "cdea47a50b5b2d7547d9010a5745e40cad85e05a66d5addf0c8490b65a47a6bc",
+  "research/nfl_matchup_frame.py": "8e41776aef6e9187ebd4e4af7dff664d50521cb28250080f3256a654eb6307c2",
+  "research/nfl_matchup_fit.py": "3b0254c5d34d59253f005c8110c5a6a17e9d42f45a5e19d1c70e54ac24c2cf44"
+ }
+}

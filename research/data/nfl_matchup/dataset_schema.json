@@ -1,0 +1,2030 @@
+[
+ {
+  "name": "season",
+  "meaning": "season",
+  "source": "nflverse pbp",
+  "kind": "key"
+ },
+ {
+  "name": "week",
+  "meaning": "week",
+  "source": "nflverse pbp",
+  "kind": "key"
+ },
+ {
+  "name": "game_id",
+  "meaning": "nflverse game id",
+  "source": "nflverse pbp",
+  "kind": "key"
+ },
+ {
+  "name": "date",
+  "meaning": "game date",
+  "source": "nflverse pbp",
+  "kind": "key"
+ },
+ {
+  "name": "team",
+  "meaning": "player's team (nflverse code; LA = Rams)",
+  "source": "nflverse pbp",
+  "kind": "key"
+ },
+ {
+  "name": "opp",
+  "meaning": "opponent",
+  "source": "nflverse pbp",
+  "kind": "key"
+ },
+ {
+  "name": "home",
+  "meaning": "1 when the player's team is home",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "gsis",
+  "meaning": "nflverse gsis id",
+  "source": "nflverse pbp",
+  "kind": "key"
+ },
+ {
+  "name": "sleeper_id",
+  "meaning": "Sleeper id (DynastyProcess crosswalk)",
+  "source": "DynastyProcess",
+  "kind": "key"
+ },
+ {
+  "name": "name",
+  "meaning": "display name",
+  "source": "nflverse players.csv",
+  "kind": "key"
+ },
+ {
+  "name": "norm_name",
+  "meaning": "kalshi_nfl._norm of the name",
+  "source": "derived",
+  "kind": "key"
+ },
+ {
+  "name": "pos",
+  "meaning": "QB/RB/WR/TE (FB -> RB)",
+  "source": "nflverse players.csv",
+  "kind": "key"
+ },
+ {
+  "name": "played",
+  "meaning": "1 when the player had a snap, target, carry or pass attempt in pbp/participation",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "in_sleeper",
+  "meaning": "1 when Sleeper lists a projection for this player-week",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed"
+ },
+ {
+  "name": "sl_role",
+  "meaning": "Sleeper-projection role (QB1/RB1/WR1...; 2026: QB1 only), from the Tuesday snapshot",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "derived"
+ },
+ {
+  "name": "sl_proj_pass_att",
+  "meaning": "Sleeper projected pass_att",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed (not provably pre-kickoff)"
+ },
+ {
+  "name": "sl_proj_pass_cmp",
+  "meaning": "Sleeper projected pass_cmp",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed (not provably pre-kickoff)"
+ },
+ {
+  "name": "sl_proj_pass_yd",
+  "meaning": "Sleeper projected pass_yd",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed (not provably pre-kickoff)"
+ },
+ {
+  "name": "sl_proj_pass_td",
+  "meaning": "Sleeper projected pass_td",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed (not provably pre-kickoff)"
+ },
+ {
+  "name": "sl_proj_pass_int",
+  "meaning": "Sleeper projected pass_int",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed (not provably pre-kickoff)"
+ },
+ {
+  "name": "sl_proj_rush_att",
+  "meaning": "Sleeper projected rush_att",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed (not provably pre-kickoff)"
+ },
+ {
+  "name": "sl_proj_rush_yd",
+  "meaning": "Sleeper projected rush_yd",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed (not provably pre-kickoff)"
+ },
+ {
+  "name": "sl_proj_rush_td",
+  "meaning": "Sleeper projected rush_td",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed (not provably pre-kickoff)"
+ },
+ {
+  "name": "sl_proj_rec_tgt",
+  "meaning": "Sleeper projected rec_tgt",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed (not provably pre-kickoff)"
+ },
+ {
+  "name": "sl_proj_rec",
+  "meaning": "Sleeper projected rec",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed (not provably pre-kickoff)"
+ },
+ {
+  "name": "sl_proj_rec_yd",
+  "meaning": "Sleeper projected rec_yd",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed (not provably pre-kickoff)"
+ },
+ {
+  "name": "sl_proj_rec_td",
+  "meaning": "Sleeper projected rec_td",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed (not provably pre-kickoff)"
+ },
+ {
+  "name": "sl_proj_fum_lost",
+  "meaning": "Sleeper projected fum_lost",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed (not provably pre-kickoff)"
+ },
+ {
+  "name": "sl_proj_ppr",
+  "meaning": "PPR points of the Sleeper line under the owner's convention",
+  "source": "derived from Sleeper",
+  "kind": "derived"
+ },
+ {
+  "name": "sl_act_pass_att",
+  "meaning": "Sleeper's box score pass_att",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed"
+ },
+ {
+  "name": "sl_act_pass_yd",
+  "meaning": "Sleeper's box score pass_yd",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed"
+ },
+ {
+  "name": "sl_act_pass_td",
+  "meaning": "Sleeper's box score pass_td",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed"
+ },
+ {
+  "name": "sl_act_pass_int",
+  "meaning": "Sleeper's box score pass_int",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed"
+ },
+ {
+  "name": "sl_act_rush_att",
+  "meaning": "Sleeper's box score rush_att",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed"
+ },
+ {
+  "name": "sl_act_rush_yd",
+  "meaning": "Sleeper's box score rush_yd",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed"
+ },
+ {
+  "name": "sl_act_rush_td",
+  "meaning": "Sleeper's box score rush_td",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed"
+ },
+ {
+  "name": "sl_act_rec_tgt",
+  "meaning": "Sleeper's box score rec_tgt",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed"
+ },
+ {
+  "name": "sl_act_rec",
+  "meaning": "Sleeper's box score rec",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed"
+ },
+ {
+  "name": "sl_act_rec_yd",
+  "meaning": "Sleeper's box score rec_yd",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed"
+ },
+ {
+  "name": "sl_act_rec_td",
+  "meaning": "Sleeper's box score rec_td",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed"
+ },
+ {
+  "name": "sl_act_fum_lost",
+  "meaning": "Sleeper's box score fum_lost",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed"
+ },
+ {
+  "name": "sl_act_pts_ppr",
+  "meaning": "Sleeper's box score pts_ppr",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed"
+ },
+ {
+  "name": "sl_act_gp",
+  "meaning": "Sleeper's box score gp",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed"
+ },
+ {
+  "name": "sl_act_off_snp",
+  "meaning": "Sleeper's box score off_snp",
+  "source": "Sleeper weekly API (post-week snapshot; see report)",
+  "kind": "observed"
+ },
+ {
+  "name": "act_tgt",
+  "meaning": "targets",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "act_rec",
+  "meaning": "receptions",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "act_rec_yds",
+  "meaning": "receiving yards",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "act_rec_td",
+  "meaning": "receiving TD",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "act_air",
+  "meaning": "air yards on targets",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "act_car",
+  "meaning": "carries (designed runs + scrambles)",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "act_rush_yds",
+  "meaning": "rushing yards",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "act_rush_td",
+  "meaning": "rushing TD",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "act_pass_att",
+  "meaning": "pass attempts (no sacks)",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "act_pass_cmp",
+  "meaning": "completions",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "act_pass_yds",
+  "meaning": "passing yards",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "act_pass_td",
+  "meaning": "passing TD",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "act_int",
+  "meaning": "interceptions thrown",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "act_fuml",
+  "meaning": "fumbles lost",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "act_rz_tgt",
+  "meaning": "red-zone targets",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "act_rz_car",
+  "meaning": "red-zone carries",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "act_std",
+  "meaning": "standard fantasy points",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "act_half",
+  "meaning": "half-PPR points",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "act_ppr",
+  "meaning": "PPR points",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "act_snaps",
+  "meaning": "offensive snaps on the field",
+  "source": "nflverse participation (NGS post-snap charting, 2021-2025) (2026: nflverse snap_counts, PFR, by name)",
+  "kind": "observed"
+ },
+ {
+  "name": "act_db_snaps",
+  "meaning": "dropbacks on the field",
+  "source": "nflverse participation (NGS post-snap charting, 2021-2025) (2026: nflverse snap_counts, PFR, by name)",
+  "kind": "observed"
+ },
+ {
+  "name": "act_snap_share",
+  "meaning": "snaps / team snaps",
+  "source": "nflverse participation (NGS post-snap charting, 2021-2025) (2026: nflverse snap_counts, PFR, by name)",
+  "kind": "observed"
+ },
+ {
+  "name": "team_snaps",
+  "meaning": "team offensive snaps",
+  "source": "nflverse participation (NGS post-snap charting, 2021-2025) (2026: nflverse snap_counts, PFR, by name)",
+  "kind": "observed"
+ },
+ {
+  "name": "team_db",
+  "meaning": "team dropbacks",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "team_tgt",
+  "meaning": "team targets",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "team_car",
+  "meaning": "team carries",
+  "source": "nflverse pbp",
+  "kind": "observed"
+ },
+ {
+  "name": "snaps_source",
+  "meaning": "ngs | pfr | none",
+  "source": "derived",
+  "kind": "key"
+ },
+ {
+  "name": "p_games",
+  "meaning": "games in the profile (weighted)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_games_cur",
+  "meaning": "games this season before the cutoff",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_snap_share",
+  "meaning": "snap share",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_tgt_share",
+  "meaning": "target share",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_air_share",
+  "meaning": "air-yard share",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_car_share",
+  "meaning": "carry share",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_rz_tgt_share",
+  "meaning": "red-zone target share",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_rz_car_share",
+  "meaning": "red-zone carry share",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_tgt_pg",
+  "meaning": "targets per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_car_pg",
+  "meaning": "carries per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_tgt_per_db",
+  "meaning": "targets per on-field dropback, numerator and denominator from the same charted plays, team-scoped",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "proxy (targets per route run)"
+ },
+ {
+  "name": "p_tgt_per_db_man",
+  "meaning": "... vs man coverage (same plays, team-scoped)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "proxy"
+ },
+ {
+  "name": "p_tgt_per_db_zone",
+  "meaning": "... vs zone",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "proxy"
+ },
+ {
+  "name": "p_tgt_per_db_n",
+  "meaning": "on-field dropbacks (denominator, weighted)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_tgt_per_db_n_current",
+  "meaning": "on-field dropbacks from THIS season (0 on every 2026 row: no participation file)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_tgt_per_db_proxy",
+  "meaning": "targets / (team dropbacks x PFR offensive snap share), this season's games for this team as of the cutoff -- the one same-season per-dropback rate 2026 has; unshrunk: gate on p_tgt_per_db_proxy_n (>= 20 removes every value above 1) or shrink toward the league rate; do not cap",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "proxy"
+ },
+ {
+  "name": "p_tgt_per_db_proxy_n",
+  "meaning": "sum of team dropbacks x snap share behind the proxy",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "derived"
+ },
+ {
+  "name": "p_catch",
+  "meaning": "catch rate",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_catch_eb",
+  "meaning": "catch rate, shrunk",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "modelled (EB)"
+ },
+ {
+  "name": "p_ypt",
+  "meaning": "yards per target",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_ypt_eb",
+  "meaning": "yards per target, shrunk",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "modelled (EB)"
+ },
+ {
+  "name": "p_epa_t",
+  "meaning": "EPA per target",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_epa_t_eb",
+  "meaning": "EPA per target, shrunk",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "modelled (EB)"
+ },
+ {
+  "name": "p_adot",
+  "meaning": "average depth of target",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_yac_rec",
+  "meaning": "YAC per reception",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_expl20",
+  "meaning": "20+ yard plays per target",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_contested",
+  "meaning": "contested-target share (FTN)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_catchable",
+  "meaning": "catchable-target share (FTN)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_targets",
+  "meaning": "targets in the profile (weighted)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_depth_behind",
+  "meaning": "share of targets behind the line",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_depth_short",
+  "meaning": "0-9 air yards",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_depth_int",
+  "meaning": "10-19",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_depth_deep",
+  "meaning": "20+",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_loc_left",
+  "meaning": "share of targets to the left",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_loc_mid",
+  "meaning": "middle",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_loc_right",
+  "meaning": "right",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_route_quick",
+  "meaning": "route-family share (charted routes on targets)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_route_screen",
+  "meaning": "p_route_screen",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_route_int",
+  "meaning": "p_route_int",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_route_vert",
+  "meaning": "p_route_vert",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_man_tgt",
+  "meaning": "targets vs man",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_zone_tgt",
+  "meaning": "targets vs zone",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_man_ypt",
+  "meaning": "yards per target vs man",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_zone_ypt",
+  "meaning": "vs zone",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_man_ypt_eb",
+  "meaning": "shrunk toward his overall",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "modelled (EB)"
+ },
+ {
+  "name": "p_zone_ypt_eb",
+  "meaning": "p_zone_ypt_eb",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "modelled (EB)"
+ },
+ {
+  "name": "p_man_epa_t",
+  "meaning": "EPA per target vs man",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_zone_epa_t",
+  "meaning": "vs zone",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_man_catch",
+  "meaning": "catch rate vs man",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_zone_catch",
+  "meaning": "vs zone",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_sh_tgt_per_db",
+  "meaning": "targets per on-field dropback vs single-high (C1+C3), same plays, team-scoped",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "proxy"
+ },
+ {
+  "name": "p_th_tgt_per_db",
+  "meaning": "vs two-high (C2+C4+C6+2-Man)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "proxy"
+ },
+ {
+  "name": "p_sh_epa_t",
+  "meaning": "EPA per target vs single-high (player-scoped: all his teams)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_th_epa_t",
+  "meaning": "vs two-high",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_ypc",
+  "meaning": "yards per carry",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_ypc_eb",
+  "meaning": "p_ypc_eb",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "modelled (EB)"
+ },
+ {
+  "name": "p_rush_success",
+  "meaning": "rush success rate",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_rush_epa",
+  "meaning": "EPA per carry",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_stuff",
+  "meaning": "carries for <= 0",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_expl10",
+  "meaning": "10+ yard carries",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_carries",
+  "meaning": "carries in the profile",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_ypc_light",
+  "meaning": "YPC vs light box (<= 6)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_ypc_heavy",
+  "meaning": "YPC vs heavy box (8+)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_fp_std_pg",
+  "meaning": "standard points per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_fp_half_pg",
+  "meaning": "half-PPR",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_fp_ppr_pg",
+  "meaning": "PPR",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_rec_tgt_share",
+  "meaning": "last-4 target share",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_rec_car_share",
+  "meaning": "last-4 carry share",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_rec_snap_share",
+  "meaning": "last-4 snap share",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_rec_tgt_pg",
+  "meaning": "last-4 targets per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_rec_fp_ppr_pg",
+  "meaning": "last-4 PPR per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_rec_games",
+  "meaning": "games in the recent window",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "p_align_mid_proxy",
+  "meaning": "middle-of-field target share (alignment PROXY, not charted alignment)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "proxy"
+ },
+ {
+  "name": "d_games",
+  "meaning": "defense games in the profile (weighted)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_games_cur",
+  "meaning": "this season",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_cov_n",
+  "meaning": "charted dropbacks behind the coverage figures (2026: prior seasons only)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_nickel",
+  "meaning": "5-DB share",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_dime",
+  "meaning": "6+-DB share",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_base",
+  "meaning": "<= 4-DB share",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_most_played_share",
+  "meaning": "share of the most-used DL-LB-DB grouping",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_base_43",
+  "meaning": "1 = inferred 4-3 base, 0 = 3-4",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "derived"
+ },
+ {
+  "name": "d_nickel_vs_11",
+  "meaning": "nickel share against 11 personnel",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_dime_vs_11",
+  "meaning": "dime share against 11",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_base_vs_12",
+  "meaning": "<= 4-DB share against 12 personnel",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_dime_3rd_long",
+  "meaning": "dime share on 3rd & 7+",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_light_box",
+  "meaning": "<= 6 in the box",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_heavy_box",
+  "meaning": "8+ in the box",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_box_mean",
+  "meaning": "mean box",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_man",
+  "meaning": "man share of charted dropbacks",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_man_eb",
+  "meaning": "shrunk",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "modelled (EB)"
+ },
+ {
+  "name": "d_zone",
+  "meaning": "zone share",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_single_high",
+  "meaning": "C1 + C3 share",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_two_high",
+  "meaning": "C2 + C4 + C6 + 2-Man",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_zero",
+  "meaning": "Cover 0",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_fam_c0",
+  "meaning": "COVER_0 share",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_fam_c1",
+  "meaning": "COVER_1",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_fam_c2",
+  "meaning": "COVER_2",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_fam_c3",
+  "meaning": "COVER_3",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_fam_c4",
+  "meaning": "COVER_4",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_fam_c6",
+  "meaning": "COVER_6",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_fam_c9",
+  "meaning": "COVER_9",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_fam_2man",
+  "meaning": "2_MAN",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_fam_combo",
+  "meaning": "COMBO",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_blitz",
+  "meaning": "5+ pass rushers per dropback",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_blitz_eb",
+  "meaning": "d_blitz_eb",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "modelled (EB)"
+ },
+ {
+  "name": "d_pressure",
+  "meaning": "pressure per dropback (NGS)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_sack",
+  "meaning": "sacks per dropback",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_ttt",
+  "meaning": "time to throw allowed (s)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_rushers",
+  "meaning": "mean pass rushers",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_epa_db",
+  "meaning": "EPA per dropback allowed",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_ypt",
+  "meaning": "yards per target allowed",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_epa_t",
+  "meaning": "EPA per target allowed",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_catch",
+  "meaning": "catch rate allowed",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_expl20",
+  "meaning": "20+ per target allowed",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_targets",
+  "meaning": "targets faced (weighted)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_man_ypt",
+  "meaning": "YPT allowed in man",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_zone_ypt",
+  "meaning": "in zone",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_man_epa_t",
+  "meaning": "d_man_epa_t",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_zone_epa_t",
+  "meaning": "d_zone_epa_t",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_sh_epa_t",
+  "meaning": "EPA/target allowed in single-high",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_th_epa_t",
+  "meaning": "in two-high",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_depth_behind_ypt",
+  "meaning": "YPT allowed by target depth",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_depth_short_ypt",
+  "meaning": "d_depth_short_ypt",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_depth_int_ypt",
+  "meaning": "d_depth_int_ypt",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_depth_deep_ypt",
+  "meaning": "d_depth_deep_ypt",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_loc_left_ypt",
+  "meaning": "YPT allowed by pass location",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_loc_mid_ypt",
+  "meaning": "d_loc_mid_ypt",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_loc_right_ypt",
+  "meaning": "d_loc_right_ypt",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_route_quick_epa",
+  "meaning": "EPA/target allowed by route family",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_route_screen_epa",
+  "meaning": "d_route_screen_epa",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_route_int_epa",
+  "meaning": "d_route_int_epa",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_route_vert_epa",
+  "meaning": "d_route_vert_epa",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_run_ypc",
+  "meaning": "YPC allowed",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_run_success",
+  "meaning": "rush success allowed",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_run_epa",
+  "meaning": "EPA per carry allowed",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_run_stuff",
+  "meaning": "stuff rate",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_run_expl10",
+  "meaning": "10+ carries allowed",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_run_ypc_light",
+  "meaning": "YPC allowed with a light box",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_run_ypc_heavy",
+  "meaning": "with a heavy box",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_WR_tgt_per_db",
+  "meaning": "WR targets per dropback faced",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_WR_ypt",
+  "meaning": "YPT allowed to WR",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_WR_ypt_eb",
+  "meaning": "d_WR_ypt_eb",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "modelled (EB)"
+ },
+ {
+  "name": "d_WR_epa_t",
+  "meaning": "EPA/target allowed to WR",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_WR_catch",
+  "meaning": "d_WR_catch",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_WR_man_ypt",
+  "meaning": "YPT allowed to WR in man",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_WR_zone_ypt",
+  "meaning": "in zone",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_WR_tgt_pg",
+  "meaning": "WR targets allowed per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_WR_rec_yds_pg",
+  "meaning": "WR receiving yards allowed per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_WR_std_pg",
+  "meaning": "WR standard points allowed per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_WR_half_pg",
+  "meaning": "half-PPR",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_WR_ppr_pg",
+  "meaning": "PPR",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_WR_ppr_pg_eb",
+  "meaning": "d_WR_ppr_pg_eb",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "modelled (EB)"
+ },
+ {
+  "name": "d_WR_adj_ppr",
+  "meaning": "WR PPR allowed minus the offences' averages elsewhere",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "derived (opponent-adjusted)"
+ },
+ {
+  "name": "d_WR_adj_tgt",
+  "meaning": "d_WR_adj_tgt",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "derived (opponent-adjusted)"
+ },
+ {
+  "name": "d_WR_adj_rec_yds",
+  "meaning": "d_WR_adj_rec_yds",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "derived (opponent-adjusted)"
+ },
+ {
+  "name": "d_WR_rec_ppr_pg",
+  "meaning": "last-4 WR PPR allowed per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_TE_tgt_per_db",
+  "meaning": "TE targets per dropback faced",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_TE_ypt",
+  "meaning": "YPT allowed to TE",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_TE_ypt_eb",
+  "meaning": "d_TE_ypt_eb",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "modelled (EB)"
+ },
+ {
+  "name": "d_TE_epa_t",
+  "meaning": "EPA/target allowed to TE",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_TE_catch",
+  "meaning": "d_TE_catch",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_TE_man_ypt",
+  "meaning": "YPT allowed to TE in man",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_TE_zone_ypt",
+  "meaning": "in zone",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_TE_tgt_pg",
+  "meaning": "TE targets allowed per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_TE_rec_yds_pg",
+  "meaning": "TE receiving yards allowed per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_TE_std_pg",
+  "meaning": "TE standard points allowed per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_TE_half_pg",
+  "meaning": "half-PPR",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_TE_ppr_pg",
+  "meaning": "PPR",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_TE_ppr_pg_eb",
+  "meaning": "d_TE_ppr_pg_eb",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "modelled (EB)"
+ },
+ {
+  "name": "d_TE_adj_ppr",
+  "meaning": "TE PPR allowed minus the offences' averages elsewhere",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "derived (opponent-adjusted)"
+ },
+ {
+  "name": "d_TE_adj_tgt",
+  "meaning": "d_TE_adj_tgt",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "derived (opponent-adjusted)"
+ },
+ {
+  "name": "d_TE_adj_rec_yds",
+  "meaning": "d_TE_adj_rec_yds",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "derived (opponent-adjusted)"
+ },
+ {
+  "name": "d_TE_rec_ppr_pg",
+  "meaning": "last-4 TE PPR allowed per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_RB_tgt_per_db",
+  "meaning": "RB targets per dropback faced",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_RB_ypt",
+  "meaning": "YPT allowed to RB",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_RB_ypt_eb",
+  "meaning": "d_RB_ypt_eb",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "modelled (EB)"
+ },
+ {
+  "name": "d_RB_epa_t",
+  "meaning": "EPA/target allowed to RB",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_RB_catch",
+  "meaning": "d_RB_catch",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_RB_man_ypt",
+  "meaning": "YPT allowed to RB in man",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_RB_zone_ypt",
+  "meaning": "in zone",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_RB_tgt_pg",
+  "meaning": "RB targets allowed per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_RB_rec_yds_pg",
+  "meaning": "RB receiving yards allowed per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_RB_std_pg",
+  "meaning": "RB standard points allowed per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_RB_half_pg",
+  "meaning": "half-PPR",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_RB_ppr_pg",
+  "meaning": "PPR",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_RB_ppr_pg_eb",
+  "meaning": "d_RB_ppr_pg_eb",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "modelled (EB)"
+ },
+ {
+  "name": "d_RB_adj_ppr",
+  "meaning": "RB PPR allowed minus the offences' averages elsewhere",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "derived (opponent-adjusted)"
+ },
+ {
+  "name": "d_RB_adj_tgt",
+  "meaning": "d_RB_adj_tgt",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "derived (opponent-adjusted)"
+ },
+ {
+  "name": "d_RB_adj_rec_yds",
+  "meaning": "d_RB_adj_rec_yds",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "derived (opponent-adjusted)"
+ },
+ {
+  "name": "d_RB_rec_ppr_pg",
+  "meaning": "last-4 RB PPR allowed per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_RB_car_pg",
+  "meaning": "RB carries allowed per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_RB_rush_yds_pg",
+  "meaning": "RB rushing yards allowed per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_RB_adj_rush_yds",
+  "meaning": "d_RB_adj_rush_yds",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "derived (opponent-adjusted)"
+ },
+ {
+  "name": "d_QB_pass_yds_pg",
+  "meaning": "QB passing yards allowed per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_QB_ppr_pg",
+  "meaning": "QB fantasy points allowed per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "d_QB_adj_pass_yds",
+  "meaning": "d_QB_adj_pass_yds",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "derived (opponent-adjusted)"
+ },
+ {
+  "name": "d_QB_adj_ppr",
+  "meaning": "d_QB_adj_ppr",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "derived (opponent-adjusted)"
+ },
+ {
+  "name": "d_rec_games",
+  "meaning": "games in the defense's recent window",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_games",
+  "meaning": "offense games (weighted)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_pass_rate",
+  "meaning": "dropbacks per snap",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_proe",
+  "meaning": "pass rate over nflfastR xpass",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_neutral_pass_rate",
+  "meaning": "pass rate, |score diff| <= 7 in Q1-Q3",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_early_pass_rate",
+  "meaning": "1st/2nd-down pass rate",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_shotgun",
+  "meaning": "o_shotgun",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_no_huddle",
+  "meaning": "o_no_huddle",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_play_action",
+  "meaning": "of dropbacks (FTN)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_screen",
+  "meaning": "of dropbacks (FTN)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_motion",
+  "meaning": "of snaps (FTN)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_rpo",
+  "meaning": "of snaps (FTN)",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_rz_pass_rate",
+  "meaning": "o_rz_pass_rate",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_plays_pg",
+  "meaning": "snaps per game",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_p11",
+  "meaning": "11 personnel share",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_p12",
+  "meaning": "o_p12",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_p21",
+  "meaning": "o_p21",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_p13",
+  "meaning": "o_p13",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_tgt_WR",
+  "meaning": "target share to WR",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_tgt_TE",
+  "meaning": "o_tgt_TE",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_tgt_RB",
+  "meaning": "o_tgt_RB",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_deep_rate",
+  "meaning": "20+ air yards per attempt",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_pressure_allowed",
+  "meaning": "o_pressure_allowed",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_sack",
+  "meaning": "o_sack",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_blitz_faced",
+  "meaning": "o_blitz_faced",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "o_ttt",
+  "meaning": "o_ttt",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "q_gsis",
+  "meaning": "the quarterback the q_ features describe: Sleeper's QB1 by projected pass attempts from the TUESDAY post-week snapshot (2023-25: player_weeks role; 2026: the fetch of 2026-10-23) -- not provably pre-kickoff",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "derived (not provably pre-kickoff)"
+ },
+ {
+  "name": "q_source",
+  "meaning": "sleeper_qb1_tuesday | last_starter | none",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "derived"
+ },
+ {
+  "name": "q_games",
+  "meaning": "q_games",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "q_dropbacks",
+  "meaning": "q_dropbacks",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "q_epa_db",
+  "meaning": "EPA per dropback",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "q_epa_db_eb",
+  "meaning": "q_epa_db_eb",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "modelled (EB)"
+ },
+ {
+  "name": "q_comp",
+  "meaning": "q_comp",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "q_ypa",
+  "meaning": "q_ypa",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "q_sack",
+  "meaning": "q_sack",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "q_ttt",
+  "meaning": "q_ttt",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "q_deep_rate",
+  "meaning": "q_deep_rate",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "q_cpoe_short",
+  "meaning": "CPOE on 0-9 air yards",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "q_cpoe_int",
+  "meaning": "10-19",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "q_cpoe_deep",
+  "meaning": "20+",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "q_epa_man",
+  "meaning": "EPA/dropback vs man",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "q_epa_zone",
+  "meaning": "q_epa_zone",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "q_epa_press",
+  "meaning": "under pressure",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "q_epa_nopress",
+  "meaning": "q_epa_nopress",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "q_epa_blitz",
+  "meaning": "vs blitz",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "q_epa_noblitz",
+  "meaning": "q_epa_noblitz",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "q_tgt_share_to_player",
+  "meaning": "share of this QB's targets to this player",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "q_is_player",
+  "meaning": "1 when the row's player IS the quarterback",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "derived"
+ },
+ {
+  "name": "qp_gsis",
+  "meaning": "the PRE-KICKOFF quarterback pick: the app's frozen pre-kickoff Sleeper capture when one dated before the game exists (research/data/feeds, 2026 weeks 1-2, Sunday/Monday games), else the team's leading passer in its last game as of the cutoff",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "derived (pre-kickoff by construction)"
+ },
+ {
+  "name": "qp_source",
+  "meaning": "frozen_capture | last_starter | none",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "derived"
+ },
+ {
+  "name": "qp_same_as_q",
+  "meaning": "1 when qp_gsis == q_gsis",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "derived"
+ },
+ {
+  "name": "qp_games",
+  "meaning": "qp_games",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "qp_dropbacks",
+  "meaning": "qp_dropbacks",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "qp_epa_db",
+  "meaning": "EPA per dropback",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "qp_epa_db_eb",
+  "meaning": "qp_epa_db_eb",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "modelled (EB)"
+ },
+ {
+  "name": "qp_ttt",
+  "meaning": "qp_ttt",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "qp_cpoe_short",
+  "meaning": "qp_cpoe_short",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "qp_epa_man",
+  "meaning": "qp_epa_man",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "qp_epa_zone",
+  "meaning": "qp_epa_zone",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "qp_epa_press",
+  "meaning": "qp_epa_press",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "qp_epa_blitz",
+  "meaning": "qp_epa_blitz",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "qp_tgt_share_to_player",
+  "meaning": "share of this QB's targets to this player",
+  "source": "nfl_matchup_profiles as of (season, week): prior weeks of the season + prior seasons at DECAY weights",
+  "kind": "observed"
+ },
+ {
+  "name": "x_exp_tgt_per_db",
+  "meaning": "p_tgt_per_db_man x d_man + p_tgt_per_db_zone x d_zone (falls back to p_tgt_per_db); bounded in [0, 1] because every input is",
+  "source": "derived from the profiles",
+  "kind": "derived"
+ },
+ {
+  "name": "x_exp_ypt_mz",
+  "meaning": "p_man_ypt_eb x d_man + p_zone_ypt_eb x d_zone",
+  "source": "derived from the profiles",
+  "kind": "derived"
+ },
+ {
+  "name": "x_exp_tgt_per_db_shell",
+  "meaning": "p_sh_tgt_per_db x d_single_high + p_th_tgt_per_db x d_two_high (+ p_tgt_per_db x the rest)",
+  "source": "derived from the profiles",
+  "kind": "derived"
+ },
+ {
+  "name": "x_depth_ypt",
+  "meaning": "sum over depth of the player's target share x the defense's YPT allowed at that depth",
+  "source": "derived from the profiles",
+  "kind": "derived"
+ },
+ {
+  "name": "x_route_epa",
+  "meaning": "sum over route family of the player's share x the defense's EPA/target allowed",
+  "source": "derived from the profiles",
+  "kind": "derived"
+ },
+ {
+  "name": "x_pos_ypt_gap",
+  "meaning": "d_<pos>_ypt_eb minus the league YPT allowed to the position",
+  "source": "derived from the profiles",
+  "kind": "derived"
+ },
+ {
+  "name": "x_pos_adj_ppr",
+  "meaning": "d_<pos>_adj_ppr for the row's position",
+  "source": "derived from the profiles",
+  "kind": "derived"
+ },
+ {
+  "name": "x_box_ypc",
+  "meaning": "p_ypc_light x d_light_box + p_ypc_heavy x d_heavy_box + p_ypc x the rest",
+  "source": "derived from the profiles",
+  "kind": "derived"
+ }
+]

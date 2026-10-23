@@ -21334,7 +21334,7 @@ ck("history refetches a league whose stored year predates shots and stores it wi
    and "fit_rows = pseudo_rows(rows, shots)" in _insp.getsource(_soc_acc.build_artifact)
    and "recent, meetings = _recent_and_meetings(rows, model)" in _insp.getsource(_soc_acc.build_artifact)
    and '"btts_base": btts_rates(rows, asof.toordinal()),' in _insp.getsource(_soc_acc.build_artifact)
-   and _art_acc.SCHEMA == 5 and "soccer_rows_<year>" in open(_os.path.join(_root, "artifacts.py")).read(),
+   and _art_acc.SCHEMA >= 5 and "soccer_rows_<year>" in open(_os.path.join(_root, "artifacts.py")).read(),
    str((_fetched_acc[:3], list(_saved_acc), _hs_acc)))
 _js_acc = open(_os.path.join(_root, "static", "app.js")).read()
 ck("the soccer tab says what the headline rests on: the chance on every card is Kalshi's de-vigged price, the model's figure beside "
@@ -23255,6 +23255,19 @@ ck("'built automatically' is the PC's own rule, mirrored: the untagged classic o
    and 'sl.get("contest_type") != 21 or (sl.get("games") or 0) < 10 or sl.get("tag")' in _insp.getsource(_pw_bb._main_slate)
    and "elif pool_by_dg.get(dg, 0.0) >= _SD_MIN_POOL:" in _insp.getsource(_pw_bb._task_showdown_tourney),
    str((_au_bb, _au2_bb)))
+
+print("=" * 72)
+print("MX. The matchup upgrade (2026-10-23): prop math, the NBA engine, the NFL matchup data and model,")
+print("    the Matchups tab's plumbing -- each guard file also runs alone (python3 tests/guards_<name>.py)")
+print("=" * 72)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+for _mx_mod in ("guards_prop_math", "guards_nba_matchup", "guards_nfl_matchup_data", "guards_nfl_matchup_model",
+                "guards_matchups"):
+    try:
+        __import__(_mx_mod).run(ck)
+    except Exception as _mx_e:            # a guard file that cannot run is a failed guard, never a skipped one
+        import traceback as _mx_tb
+        ck(f"{_mx_mod} runs to the end", False, f"{type(_mx_e).__name__}: {_mx_e} " + _mx_tb.format_exc()[-600:])
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

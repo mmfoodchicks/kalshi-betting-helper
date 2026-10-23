@@ -1,0 +1,842 @@
+{
+ "seasons": "2018-2024",
+ "method": "odd weeks vs even weeks of one regular season; Pearson r across units; k = n(1-r)/r (Spearman-Brown) with n the mean denominator of a half",
+ "pooled": {
+  "def.man": {
+   "r": 0.866,
+   "n_units": 224,
+   "mean_n_half": 291.0,
+   "k": 44.9,
+   "reliability_full_season": 0.928
+  },
+  "def.two_high": {
+   "r": 0.8,
+   "n_units": 224,
+   "mean_n_half": 291.0,
+   "k": 72.6,
+   "reliability_full_season": 0.889
+  },
+  "def.single_high": {
+   "r": 0.81,
+   "n_units": 224,
+   "mean_n_half": 291.0,
+   "k": 68.5,
+   "reliability_full_season": 0.895
+  },
+  "def.zero": {
+   "r": 0.684,
+   "n_units": 224,
+   "mean_n_half": 291.0,
+   "k": 134.2,
+   "reliability_full_season": 0.813
+  },
+  "def.blitz": {
+   "r": 0.783,
+   "n_units": 224,
+   "mean_n_half": 314.1,
+   "k": 86.8,
+   "reliability_full_season": 0.879
+  },
+  "def.pressure": {
+   "r": 0.401,
+   "n_units": 224,
+   "mean_n_half": 291.9,
+   "k": 435.8,
+   "reliability_full_season": 0.573
+  },
+  "def.sack": {
+   "r": 0.314,
+   "n_units": 224,
+   "mean_n_half": 315.3,
+   "k": 688.3,
+   "reliability_full_season": 0.478
+  },
+  "def.ttt": {
+   "r": 0.415,
+   "n_units": 224,
+   "mean_n_half": 281.2,
+   "k": 396.8,
+   "reliability_full_season": 0.586
+  },
+  "def.nickel": {
+   "r": 0.884,
+   "n_units": 224,
+   "mean_n_half": 515.7,
+   "k": 67.8,
+   "reliability_full_season": 0.938
+  },
+  "def.dime": {
+   "r": 0.947,
+   "n_units": 224,
+   "mean_n_half": 515.7,
+   "k": 29.1,
+   "reliability_full_season": 0.973
+  },
+  "def.base": {
+   "r": 0.794,
+   "n_units": 224,
+   "mean_n_half": 515.7,
+   "k": 133.9,
+   "reliability_full_season": 0.885
+  },
+  "def.light_box": {
+   "r": 0.765,
+   "n_units": 224,
+   "mean_n_half": 515.2,
+   "k": 158.5,
+   "reliability_full_season": 0.867
+  },
+  "def.heavy_box": {
+   "r": 0.743,
+   "n_units": 224,
+   "mean_n_half": 515.2,
+   "k": 178.6,
+   "reliability_full_season": 0.852
+  },
+  "def.box_mean": {
+   "r": 0.72,
+   "n_units": 224,
+   "mean_n_half": 515.2,
+   "k": 200.3,
+   "reliability_full_season": 0.837
+  },
+  "def.run_ypc": {
+   "r": 0.355,
+   "n_units": 224,
+   "mean_n_half": 200.4,
+   "k": 364.9,
+   "reliability_full_season": 0.523
+  },
+  "def.run_success": {
+   "r": 0.305,
+   "n_units": 224,
+   "mean_n_half": 200.4,
+   "k": 457.5,
+   "reliability_full_season": 0.467
+  },
+  "def.epa_db": {
+   "r": 0.226,
+   "n_units": 224,
+   "mean_n_half": 315.3,
+   "k": 1079.0,
+   "reliability_full_season": 0.369
+  },
+  "def.scramble": {
+   "r": 0.068,
+   "n_units": 224,
+   "mean_n_half": 315.3,
+   "k": 4292.5,
+   "reliability_full_season": 0.128
+  },
+  "def.fam_COVER_1": {
+   "r": 0.839,
+   "n_units": 224,
+   "mean_n_half": 291.0,
+   "k": 56.0,
+   "reliability_full_season": 0.912
+  },
+  "def.epa_t_COVER_1": {
+   "r": 0.005,
+   "n_units": 224,
+   "mean_n_half": 77.5,
+   "k": null,
+   "reliability_full_season": null
+  },
+  "def.ypt_COVER_1": {
+   "r": 0.164,
+   "n_units": 224,
+   "mean_n_half": 77.5,
+   "k": 393.6,
+   "reliability_full_season": 0.282
+  },
+  "def.fam_COVER_2": {
+   "r": 0.855,
+   "n_units": 224,
+   "mean_n_half": 291.0,
+   "k": 49.3,
+   "reliability_full_season": 0.922
+  },
+  "def.epa_t_COVER_2": {
+   "r": 0.094,
+   "n_units": 222,
+   "mean_n_half": 40.4,
+   "k": 391.7,
+   "reliability_full_season": 0.171
+  },
+  "def.ypt_COVER_2": {
+   "r": 0.052,
+   "n_units": 222,
+   "mean_n_half": 40.4,
+   "k": 741.6,
+   "reliability_full_season": 0.098
+  },
+  "def.fam_COVER_3": {
+   "r": 0.901,
+   "n_units": 224,
+   "mean_n_half": 291.0,
+   "k": 31.9,
+   "reliability_full_season": 0.948
+  },
+  "def.epa_t_COVER_3": {
+   "r": 0.108,
+   "n_units": 224,
+   "mean_n_half": 76.5,
+   "k": 634.5,
+   "reliability_full_season": 0.194
+  },
+  "def.ypt_COVER_3": {
+   "r": 0.133,
+   "n_units": 224,
+   "mean_n_half": 76.5,
+   "k": 497.1,
+   "reliability_full_season": 0.235
+  },
+  "def.fam_COVER_4": {
+   "r": 0.854,
+   "n_units": 224,
+   "mean_n_half": 291.0,
+   "k": 49.8,
+   "reliability_full_season": 0.921
+  },
+  "def.epa_t_COVER_4": {
+   "r": -0.04,
+   "n_units": 224,
+   "mean_n_half": 32.9,
+   "k": null,
+   "reliability_full_season": null
+  },
+  "def.ypt_COVER_4": {
+   "r": 0.117,
+   "n_units": 224,
+   "mean_n_half": 32.9,
+   "k": 249.3,
+   "reliability_full_season": 0.209
+  },
+  "def.fam_COVER_6": {
+   "r": 0.847,
+   "n_units": 224,
+   "mean_n_half": 291.0,
+   "k": 52.7,
+   "reliability_full_season": 0.917
+  },
+  "def.epa_t_COVER_6": {
+   "r": 0.11,
+   "n_units": 219,
+   "mean_n_half": 18.3,
+   "k": 148.5,
+   "reliability_full_season": 0.198
+  },
+  "def.ypt_COVER_6": {
+   "r": 0.066,
+   "n_units": 219,
+   "mean_n_half": 18.3,
+   "k": 260.5,
+   "reliability_full_season": 0.123
+  },
+  "def.fam_2_MAN": {
+   "r": 0.788,
+   "n_units": 224,
+   "mean_n_half": 291.0,
+   "k": 78.5,
+   "reliability_full_season": 0.881
+  },
+  "def.epa_t_2_MAN": {
+   "r": 0.046,
+   "n_units": 191,
+   "mean_n_half": 10.6,
+   "k": 222.6,
+   "reliability_full_season": 0.087
+  },
+  "def.ypt_2_MAN": {
+   "r": 0.072,
+   "n_units": 191,
+   "mean_n_half": 10.6,
+   "k": 136.3,
+   "reliability_full_season": 0.135
+  },
+  "def.fam_COVER_0": {
+   "r": 0.684,
+   "n_units": 224,
+   "mean_n_half": 291.0,
+   "k": 134.2,
+   "reliability_full_season": 0.813
+  },
+  "def.epa_t_COVER_0": {
+   "r": -0.069,
+   "n_units": 223,
+   "mean_n_half": 11.3,
+   "k": null,
+   "reliability_full_season": null
+  },
+  "def.ypt_COVER_0": {
+   "r": 0.007,
+   "n_units": 223,
+   "mean_n_half": 11.3,
+   "k": null,
+   "reliability_full_season": null
+  },
+  "def.epa_t_man": {
+   "r": -0.033,
+   "n_units": 224,
+   "mean_n_half": 97.9,
+   "k": null,
+   "reliability_full_season": null
+  },
+  "def.ypt_man": {
+   "r": 0.079,
+   "n_units": 224,
+   "mean_n_half": 97.9,
+   "k": 1141.0,
+   "reliability_full_season": 0.147
+  },
+  "def.epa_t_zone": {
+   "r": 0.17,
+   "n_units": 224,
+   "mean_n_half": 172.5,
+   "k": 843.5,
+   "reliability_full_season": 0.29
+  },
+  "def.ypt_zone": {
+   "r": 0.223,
+   "n_units": 224,
+   "mean_n_half": 172.5,
+   "k": 602.0,
+   "reliability_full_season": 0.364
+  },
+  "def.ypt_WR": {
+   "r": 0.12,
+   "n_units": 224,
+   "mean_n_half": 160.6,
+   "k": 1175.3,
+   "reliability_full_season": 0.215
+  },
+  "def.epa_t_WR": {
+   "r": 0.129,
+   "n_units": 224,
+   "mean_n_half": 160.6,
+   "k": 1082.4,
+   "reliability_full_season": 0.229
+  },
+  "def.catch_WR": {
+   "r": 0.295,
+   "n_units": 224,
+   "mean_n_half": 160.6,
+   "k": 383.2,
+   "reliability_full_season": 0.456
+  },
+  "def.tgt_per_db_WR": {
+   "r": 0.174,
+   "n_units": 224,
+   "mean_n_half": 315.3,
+   "k": 1494.5,
+   "reliability_full_season": 0.297
+  },
+  "def.ppr_pg_WR": {
+   "r": 0.092,
+   "n_units": 224,
+   "mean_n_half": 8.3,
+   "k": 81.7,
+   "reliability_full_season": 0.168
+  },
+  "def.tgt_pg_WR": {
+   "r": 0.178,
+   "n_units": 224,
+   "mean_n_half": 8.3,
+   "k": 38.2,
+   "reliability_full_season": 0.302
+  },
+  "def.adj_ppr_WR": {
+   "r": 0.127,
+   "n_units": 224,
+   "mean_n_half": 8.3,
+   "k": 57.0,
+   "reliability_full_season": 0.225
+  },
+  "def.ypt_TE": {
+   "r": 0.002,
+   "n_units": 224,
+   "mean_n_half": 57.5,
+   "k": null,
+   "reliability_full_season": null
+  },
+  "def.epa_t_TE": {
+   "r": 0.026,
+   "n_units": 224,
+   "mean_n_half": 57.5,
+   "k": 2177.6,
+   "reliability_full_season": 0.05
+  },
+  "def.catch_TE": {
+   "r": 0.061,
+   "n_units": 224,
+   "mean_n_half": 57.5,
+   "k": 884.9,
+   "reliability_full_season": 0.115
+  },
+  "def.tgt_per_db_TE": {
+   "r": 0.019,
+   "n_units": 224,
+   "mean_n_half": 315.3,
+   "k": null,
+   "reliability_full_season": null
+  },
+  "def.ppr_pg_TE": {
+   "r": 0.105,
+   "n_units": 224,
+   "mean_n_half": 8.3,
+   "k": 70.9,
+   "reliability_full_season": 0.189
+  },
+  "def.tgt_pg_TE": {
+   "r": 0.09,
+   "n_units": 224,
+   "mean_n_half": 8.3,
+   "k": 83.9,
+   "reliability_full_season": 0.165
+  },
+  "def.adj_ppr_TE": {
+   "r": 0.143,
+   "n_units": 224,
+   "mean_n_half": 8.3,
+   "k": 49.5,
+   "reliability_full_season": 0.251
+  },
+  "def.ypt_RB": {
+   "r": 0.094,
+   "n_units": 224,
+   "mean_n_half": 52.7,
+   "k": 508.3,
+   "reliability_full_season": 0.172
+  },
+  "def.epa_t_RB": {
+   "r": 0.162,
+   "n_units": 224,
+   "mean_n_half": 52.7,
+   "k": 272.6,
+   "reliability_full_season": 0.279
+  },
+  "def.catch_RB": {
+   "r": 0.055,
+   "n_units": 224,
+   "mean_n_half": 52.7,
+   "k": 904.4,
+   "reliability_full_season": 0.104
+  },
+  "def.tgt_per_db_RB": {
+   "r": 0.338,
+   "n_units": 224,
+   "mean_n_half": 315.3,
+   "k": 618.8,
+   "reliability_full_season": 0.505
+  },
+  "def.ppr_pg_RB": {
+   "r": 0.405,
+   "n_units": 224,
+   "mean_n_half": 8.3,
+   "k": 12.2,
+   "reliability_full_season": 0.576
+  },
+  "def.tgt_pg_RB": {
+   "r": 0.363,
+   "n_units": 224,
+   "mean_n_half": 8.3,
+   "k": 14.5,
+   "reliability_full_season": 0.533
+  },
+  "def.adj_ppr_RB": {
+   "r": 0.35,
+   "n_units": 224,
+   "mean_n_half": 8.3,
+   "k": 15.4,
+   "reliability_full_season": 0.519
+  },
+  "def.pass_yds_pg_QB": {
+   "r": 0.221,
+   "n_units": 224,
+   "mean_n_half": 8.3,
+   "k": 29.2,
+   "reliability_full_season": 0.362
+  },
+  "def.ppr_pg_QB": {
+   "r": 0.216,
+   "n_units": 224,
+   "mean_n_half": 8.3,
+   "k": 30.0,
+   "reliability_full_season": 0.355
+  },
+  "off.pass_rate": {
+   "r": 0.612,
+   "n_units": 224,
+   "mean_n_half": 515.7,
+   "k": 326.6,
+   "reliability_full_season": 0.76
+  },
+  "off.proe": {
+   "r": 0.757,
+   "n_units": 224,
+   "mean_n_half": 515.7,
+   "k": 165.4,
+   "reliability_full_season": 0.862
+  },
+  "off.neutral_pass_rate": {
+   "r": 0.549,
+   "n_units": 224,
+   "mean_n_half": 260.9,
+   "k": 214.4,
+   "reliability_full_season": 0.709
+  },
+  "off.play_action": {
+   "r": 0.64,
+   "n_units": 96,
+   "mean_n_half": 317.8,
+   "k": 179.0,
+   "reliability_full_season": 0.78
+  },
+  "off.motion": {
+   "r": 0.906,
+   "n_units": 96,
+   "mean_n_half": 525.1,
+   "k": 54.5,
+   "reliability_full_season": 0.951
+  },
+  "off.shotgun": {
+   "r": 0.927,
+   "n_units": 224,
+   "mean_n_half": 515.7,
+   "k": 40.5,
+   "reliability_full_season": 0.962
+  },
+  "off.p11": {
+   "r": 0.915,
+   "n_units": 224,
+   "mean_n_half": 515.7,
+   "k": 47.9,
+   "reliability_full_season": 0.956
+  },
+  "off.deep_rate": {
+   "r": 0.398,
+   "n_units": 224,
+   "mean_n_half": 263.0,
+   "k": 397.5,
+   "reliability_full_season": 0.57
+  },
+  "pl.tgt_per_db": {
+   "r": 0.679,
+   "n_units": 1268,
+   "mean_n_half": 197.0,
+   "k": 92.9,
+   "reliability_full_season": 0.809
+  },
+  "pl.target_share": {
+   "r": 0.851,
+   "n_units": 1268,
+   "mean_n_half": 242.6,
+   "k": 42.5,
+   "reliability_full_season": 0.919
+  },
+  "pl.air_share": {
+   "r": 0.897,
+   "n_units": 1268,
+   "mean_n_half": 1930.8,
+   "k": 221.7,
+   "reliability_full_season": 0.946
+  },
+  "pl.catch": {
+   "r": 0.434,
+   "n_units": 1268,
+   "mean_n_half": 37.5,
+   "k": 48.8,
+   "reliability_full_season": 0.606
+  },
+  "pl.ypt": {
+   "r": 0.323,
+   "n_units": 1268,
+   "mean_n_half": 37.5,
+   "k": 78.7,
+   "reliability_full_season": 0.488
+  },
+  "pl.epa_t": {
+   "r": 0.187,
+   "n_units": 1268,
+   "mean_n_half": 37.5,
+   "k": 163.1,
+   "reliability_full_season": 0.315
+  },
+  "pl.adot": {
+   "r": 0.879,
+   "n_units": 1268,
+   "mean_n_half": 36.5,
+   "k": 5.0,
+   "reliability_full_season": 0.935
+  },
+  "pl.yac_rec": {
+   "r": 0.582,
+   "n_units": 1268,
+   "mean_n_half": 25.2,
+   "k": 18.1,
+   "reliability_full_season": 0.735
+  },
+  "pl.contested": {
+   "r": 0.427,
+   "n_units": 544,
+   "mean_n_half": 37.7,
+   "k": 50.7,
+   "reliability_full_season": 0.598
+  },
+  "pl.ppr_pg": {
+   "r": 0.75,
+   "n_units": 1268,
+   "mean_n_half": 7.3,
+   "k": 2.5,
+   "reliability_full_season": 0.857
+  },
+  "pl.mid_share_proxy": {
+   "r": 0.45,
+   "n_units": 1268,
+   "mean_n_half": 37.5,
+   "k": 45.9,
+   "reliability_full_season": 0.621
+  },
+  "pl.route_vertical": {
+   "r": 0.661,
+   "n_units": 366,
+   "mean_n_half": 37.1,
+   "k": 19.0,
+   "reliability_full_season": 0.796
+  },
+  "pl.mz_tgt_rate_split": {
+   "r": 0.388,
+   "n_units": 1267,
+   "mean_n_half": 65.6,
+   "k": 103.5,
+   "reliability_full_season": 0.559
+  },
+  "pl.mz_ypt_split": {
+   "r": 0.017,
+   "n_units": 771,
+   "mean_n_half": 17.2,
+   "k": null,
+   "reliability_full_season": null
+  },
+  "pl.mz_epa_split": {
+   "r": -0.017,
+   "n_units": 771,
+   "mean_n_half": 17.2,
+   "k": null,
+   "reliability_full_season": null
+  },
+  "pl.ypt_man": {
+   "r": 0.144,
+   "n_units": 1266,
+   "mean_n_half": 14.0,
+   "k": 83.2,
+   "reliability_full_season": 0.252
+  },
+  "pl.ypt_zone": {
+   "r": 0.232,
+   "n_units": 1268,
+   "mean_n_half": 23.4,
+   "k": 77.6,
+   "reliability_full_season": 0.377
+  },
+  "pl.epa_t_COVER_1": {
+   "r": 0.063,
+   "n_units": 625,
+   "mean_n_half": 16.1,
+   "k": 238.6,
+   "reliability_full_season": 0.119
+  },
+  "pl.tgt_per_db_COVER_1": {
+   "r": 0.54,
+   "n_units": 1264,
+   "mean_n_half": 53.2,
+   "k": 45.3,
+   "reliability_full_season": 0.701
+  },
+  "pl.epa_t_COVER_3": {
+   "r": 0.112,
+   "n_units": 559,
+   "mean_n_half": 15.2,
+   "k": 120.6,
+   "reliability_full_season": 0.201
+  },
+  "pl.tgt_per_db_COVER_3": {
+   "r": 0.361,
+   "n_units": 1267,
+   "mean_n_half": 49.5,
+   "k": 87.5,
+   "reliability_full_season": 0.531
+  },
+  "pl.tgt_per_db_COVER_2": {
+   "r": 0.34,
+   "n_units": 1164,
+   "mean_n_half": 29.0,
+   "k": 56.2,
+   "reliability_full_season": 0.507
+  },
+  "pl.tgt_per_db_COVER_4": {
+   "r": 0.192,
+   "n_units": 1090,
+   "mean_n_half": 24.3,
+   "k": 102.5,
+   "reliability_full_season": 0.322
+  },
+  "pl.ypc": {
+   "r": 0.301,
+   "n_units": 461,
+   "mean_n_half": 76.4,
+   "k": 177.7,
+   "reliability_full_season": 0.462
+  },
+  "pl.rush_success": {
+   "r": 0.362,
+   "n_units": 461,
+   "mean_n_half": 76.4,
+   "k": 134.6,
+   "reliability_full_season": 0.531
+  },
+  "pl.epa_t_COVER_2": {
+   "r": 0.168,
+   "n_units": 135,
+   "mean_n_half": 11.2,
+   "k": 55.4,
+   "reliability_full_season": 0.288
+  },
+  "pl.epa_t_COVER_4": {
+   "r": -0.07,
+   "n_units": 99,
+   "mean_n_half": 11.3,
+   "k": null,
+   "reliability_full_season": null
+  },
+  "qb.epa_db": {
+   "r": 0.525,
+   "n_units": 242,
+   "mean_n_half": 240.0,
+   "k": 216.9,
+   "reliability_full_season": 0.689
+  },
+  "qb.ttt": {
+   "r": 0.756,
+   "n_units": 242,
+   "mean_n_half": 224.4,
+   "k": 72.3,
+   "reliability_full_season": 0.861
+  },
+  "qb.deep_rate": {
+   "r": 0.449,
+   "n_units": 242,
+   "mean_n_half": 217.8,
+   "k": 267.4,
+   "reliability_full_season": 0.62
+  },
+  "qb.sack": {
+   "r": 0.471,
+   "n_units": 242,
+   "mean_n_half": 240.0,
+   "k": 269.8,
+   "reliability_full_season": 0.64
+  },
+  "qb.cpoe_short": {
+   "r": 0.286,
+   "n_units": 242,
+   "mean_n_half": 110.5,
+   "k": 276.1,
+   "reliability_full_season": 0.444
+  },
+  "qb.cpoe_intermediate": {
+   "r": 0.185,
+   "n_units": 242,
+   "mean_n_half": 45.4,
+   "k": 199.5,
+   "reliability_full_season": 0.313
+  },
+  "qb.cpoe_deep": {
+   "r": 0.036,
+   "n_units": 242,
+   "mean_n_half": 25.5,
+   "k": 691.8,
+   "reliability_full_season": 0.069
+  },
+  "qb.epa_db_man": {
+   "r": 0.223,
+   "n_units": 242,
+   "mean_n_half": 84.0,
+   "k": 292.7,
+   "reliability_full_season": 0.365
+  },
+  "qb.epa_db_zone": {
+   "r": 0.47,
+   "n_units": 242,
+   "mean_n_half": 144.7,
+   "k": 163.3,
+   "reliability_full_season": 0.639
+  },
+  "qb.epa_db_pressure": {
+   "r": 0.613,
+   "n_units": 242,
+   "mean_n_half": 66.7,
+   "k": 42.2,
+   "reliability_full_season": 0.76
+  },
+  "qb.epa_db_no_pressure": {
+   "r": 0.408,
+   "n_units": 242,
+   "mean_n_half": 162.5,
+   "k": 235.9,
+   "reliability_full_season": 0.579
+  },
+  "qb.epa_db_blitz": {
+   "r": 0.249,
+   "n_units": 242,
+   "mean_n_half": 63.4,
+   "k": 190.9,
+   "reliability_full_season": 0.399
+  },
+  "qb.epa_db_no_blitz": {
+   "r": 0.432,
+   "n_units": 242,
+   "mean_n_half": 175.9,
+   "k": 231.6,
+   "reliability_full_season": 0.603
+  },
+  "qb.mz_epa_split": {
+   "r": -0.1,
+   "n_units": 242,
+   "mean_n_half": 82.4,
+   "k": null,
+   "reliability_full_season": null
+  }
+ },
+ "k": {
+  "def_cov_share": 51.4,
+  "def_blitz": 86.8,
+  "def_pressure": 435.8,
+  "def_sack": 688.3,
+  "def_ttt": 396.8,
+  "def_epa_db": 1079.0,
+  "def_scramble": 4292.5,
+  "def_box": 168.6,
+  "def_pers": 48.5,
+  "def_allow_target": 902.4,
+  "def_allow_game": 48.7,
+  "def_run": 411.2,
+  "off_rate": 181.4,
+  "qb_rate": 243.4,
+  "qb_depth": 389.1,
+  "qb_ttt": 72.3,
+  "qb_deep": 267.4,
+  "pl_target": 96.9,
+  "pl_snap": 92.9,
+  "pl_adot": 5.0,
+  "pl_yac": 18.1,
+  "pl_game": 2.5,
+  "pl_share": 42.5,
+  "pl_carry": 156.1
+ },
+ "source": "research/nfl_matchup_kfit.py (research.nfl_matchup_dataset.measure_reliability on 2018-2024 only)",
+ "seconds": 12.7,
+ "license": {
+  "credit": "FTN Data via nflverse (CC BY-SA 4.0); nflverse-data (CC BY 4.0)"
+ }
+}

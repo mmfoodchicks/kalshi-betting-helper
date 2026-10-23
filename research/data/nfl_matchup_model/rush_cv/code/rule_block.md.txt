@@ -1,0 +1,109 @@
+<!-- RUSHCV-PREREG-START -->
+## 9. Pre-registered: a line-dependent rushing-yard spread (written 2026-10-23, before any 2026 week-8 game)
+
+This is a separate rule with its own hash (`research/data/nfl_matchup_model/rush_cv/prereg.json`).
+It decides nothing about the rule above. It answers one question: does a
+rushing-yard spread that depends on the line beat the shipped
+single-CV-per-position spread on games nobody has seen?
+
+**What was seen before writing it.** Three things:
+
+- The review's calibration table (section 2a). It pools 2023-2025 revised
+  rows and 2026 weeks 1-6 frozen rows, so neither 2025 nor 2026 weeks 1-6
+  is held out for this question.
+- The 2023-2024 decile CVs that the candidate below is fitted on (training
+  data). Across bins they ran 0.48-3.12 for RB and 0.52-1.95 for QB. The
+  fits were RB c 3.69 d -0.43 and QB c 3.64 d -0.48.
+- A plumbing pass of the code on 2025 outcomes scrambled from 2023 rows, and
+  on the 2026 week-6 and week-7 props logs with scrambled outcomes.
+
+No 2026 week-8 game has been played: the first kicks off on Thursday
+2026-10-29.
+
+**Q1. The candidate.** For RB and QB, the positive part's coefficient of
+variation is cv(L) = c_p x max(L, 1)^d_p, clamped to [0.25, 4.0]. L is the
+yards mean the distribution is built at: Sleeper's rushing-yards line, since
+no matchup term ships in rushing yards. Everything else is the shipped
+model: the zero mass from the carries NegBin at Sleeper's carry line (alpha
+by moments per position), the gamma family, and WR's single CV.
+
+c_p and d_p come from the passing-yards decile template:
+
+1. Take the fit rows of position p (Sleeper rushing-yards line > 0 and carry
+   line > 0).
+2. Cut ten bins at the deciles of the line, both ends inclusive.
+3. In each bin with at least 10 positive outcomes, take the moment CV of the
+   positive part: sqrt(sum((y - m_pos)^2) / sum(m_pos^2)) over y > 0, with
+   m_pos = L / (1 - p0).
+4. Fit log CV on log(mean line in the bin) by least squares.
+
+The baseline, A, is the shipped single CV per position: the same moments
+over the same rows, pooled.
+
+**Q2. Data.**
+
+- **2023-2025:** `research/data/nfl_matchup_model/rush_cv/rows_2023_2025.csv.gz`.
+  These are the frames' revised Sleeper lines and Sleeper box scores; the
+  validation and test frames give byte-identical extracts. The harness
+  refits A and refuses unless it reproduces `validate.json`'s (2023-2024)
+  and `coefs.json`'s (2023-2025) carry alphas and rushing CVs exactly.
+- **2026 lines:** the sim-history props logs (`props/nfl_props_2026_wNN.json`).
+  A player's frozen line is his Sleeper record there, used only when its
+  content time is strictly before his game's kickoff.
+- **2026 outcomes:** Sleeper's box (`stats_2026_<w>.json`), fetched at least
+  48 hours after the week's last game and matched on (normalised name,
+  team).
+  - A projected player with no box line did not play and scores 0 yards.
+  - A team missing from the box file drops out.
+  - If more than 10% of the scored rows have no box line, the judgement
+    refuses: that is a data problem, not an outcome.
+- **Rows scored** (R3's priced universe): RB with 5+ projected carries, QB
+  with 2+, and a positive yards line.
+
+**Q3. The metric.** Per row, the threshold log loss summed over 10, 15, 25,
+40, 50, 60, 75 and 100 yards: R3's thresholds plus 10+, which Kalshi lists.
+Probabilities are clipped to [1e-6, 1 - 1e-6]. d is the mean over rows of
+(candidate minus baseline), with its SE clustered by game (G / (G - 1)).
+
+**Q4. The 2025 gate (fit 2023-2024).** Go on to the judgement only if d < -2
+SE AND d < -0.0005 x 8 (R3's rule). 2025 is not blind for this question,
+since the review's table pools it. The gate only stops a candidate that
+does not hold even on the season after its fit. If it fails, nothing is
+judged, the single CV stays and so does the slate note.
+
+**Q5. The judgement (once).** Refit c_p and d_p on 2023-2025, the export's
+seasons. The baseline is `coefs.json`'s committed spread; the harness
+refuses if its own refit differs.
+
+- **Window:** 2026 weeks 8-10. If those weeks hold fewer than 30 games with
+  a scored row, the window extends one week at a time, up to week 12. The
+  count comes from the frozen captures alone, before any outcome is read.
+- **PASS** if d < 0 (R4's shipping rule).
+- **Once:** it runs after the window's last game and writes
+  `judge_lock.json`. A re-run needs `--force`, and the report must say so.
+- **Reported beside the decision, deciding nothing:** d by position, and the
+  calibration cells (RB lines 20-30, QB 10-20 and 20-30, RB 50+) at 10+,
+  15+, 25+ and 40+.
+
+**Q6. What a result does.** Nothing ships automatically.
+
+- **PASS:** the line-dependent spread becomes eligible to ship as its own
+  change, with production reading `cv_c` / `cv_d`, a guard, and the slate
+  note removed.
+- **FAIL:** the single CV stays, and so does the slate note.
+- **Not addressed by the candidate:** the excess zero mass (2a).
+
+**Q7. The code.** `research/nfl_matchup_rushcv.py`. It is self-contained:
+its own numerics, checked against `research/nfl_matchup_fit.gammaq` (0.0
+difference on a grid) and against production's `market_dist` (1.1e-15
+over 600 rows x 8 thresholds). Its bytes are stored at registration under
+`research/data/nfl_matchup_model/rush_cv/code/`, with their sha256 in
+`rush_cv/prereg.json`. Every command refuses when the file, the extract or
+this block no longer hash to what was registered. `kalshi_nfl.py`, which
+supplies the name and team keys, is hashed too, and any drift is reported
+in the outputs.
+
+    python3 -m research.nfl_matchup_rushcv choose
+    python3 -m research.nfl_matchup_rushcv judge --props nfl_props_2026_w08.json nfl_props_2026_w09.json \
+        nfl_props_2026_w10.json --sleeper <dir with stats_2026_8..10.json>
+<!-- RUSHCV-PREREG-END -->

@@ -3,7 +3,7 @@
 // serve a stale app.js after an update). The cache is only an offline fallback.
 // Live /api/ data is always network. Bumping SHELL purges every older cache.
 const SHELL = "vigil-shell-v131";
-const PRECACHE = ["/", "/static/style.css", "/static/app.js",
+const PRECACHE = ["/", "/static/style.css", "/static/app.js", "/static/matchups.js",
                   "/static/icon-192.png", "/static/manifest.json"];
 
 self.addEventListener("install", (e) => {

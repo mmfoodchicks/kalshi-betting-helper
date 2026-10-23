@@ -2604,6 +2604,7 @@ function setupTabs() {
       $("tab-sports").classList.toggle("hidden", tab !== "sports");
       $("tab-nfl").classList.toggle("hidden", tab !== "nfl");
       $("tab-nba").classList.toggle("hidden", tab !== "nba");
+      $("tab-matchups").classList.toggle("hidden", tab !== "matchups");
       $("tab-nhl").classList.toggle("hidden", tab !== "nhl");
       $("tab-ufc").classList.toggle("hidden", tab !== "ufc");
       $("tab-tennis").classList.toggle("hidden", tab !== "tennis");
@@ -2625,6 +2626,7 @@ function setupTabs() {
       if (tab === "sports") initSportsTab();
       if (tab === "nfl") initNFL();
       if (tab === "nba") initNBA();
+      if (tab === "matchups" && typeof initMatchups === "function") initMatchups();
       if (tab === "nhl") initNHL();
       if (tab === "soccer") initSoccer();
       if (tab === "ufc") initUFC();

@@ -1,0 +1,66 @@
+{
+ "rows_compared": 19611,
+ "seasons": "2023-2025 player-games with a Sleeper box (gp)",
+ "stats": {
+  "act_rec_yds": {
+   "n": 11508,
+   "exact": 0.9921,
+   "within_1": 0.9926,
+   "mean_abs_diff": 0.089,
+   "mean_diff_pbp_minus_sleeper": -0.001,
+   "sleeper_col": "sl_act_rec_yd"
+  },
+  "act_rec": {
+   "n": 11616,
+   "exact": 1.0,
+   "within_1": 1.0,
+   "mean_abs_diff": 0.0,
+   "mean_diff_pbp_minus_sleeper": 0.0,
+   "sleeper_col": "sl_act_rec"
+  },
+  "act_tgt": {
+   "n": 12907,
+   "exact": 0.9996,
+   "within_1": 1.0,
+   "mean_abs_diff": 0.0,
+   "mean_diff_pbp_minus_sleeper": -0.0,
+   "sleeper_col": "sl_act_rec_tgt"
+  },
+  "act_rush_yds": {
+   "n": 6536,
+   "exact": 0.8937,
+   "within_1": 0.9507,
+   "mean_abs_diff": 0.215,
+   "mean_diff_pbp_minus_sleeper": 0.189,
+   "sleeper_col": "sl_act_rush_yd"
+  },
+  "act_car": {
+   "n": 6722,
+   "exact": 0.8929,
+   "within_1": 0.9527,
+   "mean_abs_diff": 0.18,
+   "mean_diff_pbp_minus_sleeper": -0.18,
+   "sleeper_col": "sl_act_rush_att"
+  },
+  "act_pass_yds": {
+   "n": 1892,
+   "exact": 0.9984,
+   "within_1": 0.9984,
+   "mean_abs_diff": 0.012,
+   "mean_diff_pbp_minus_sleeper": -0.012,
+   "sleeper_col": "sl_act_pass_yd"
+  },
+  "act_ppr": {
+   "n": 14957,
+   "exact": 0.8848,
+   "within_1": 0.9528,
+   "mean_abs_diff": 0.159,
+   "mean_diff_pbp_minus_sleeper": -0.121,
+   "sleeper_col": "sl_act_pts_ppr"
+  }
+ },
+ "license": {
+  "credit": "FTN Data via nflverse (CC BY-SA 4.0); nflverse-data (CC BY 4.0); DynastyProcess db_playerids",
+  "share_alike": "tables derived from FTN charting are shared under CC BY-SA 4.0"
+ }
+}

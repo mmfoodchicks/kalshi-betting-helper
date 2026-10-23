@@ -1,0 +1,12 @@
+{
+ "sha256": "a04c7e8ab0ae20700d87bb436679f724b9b0f486481f28082bd12845b4b90b3f",
+ "utc": "2026-10-23T15:10:09Z",
+ "code": {
+  "research/nfl_matchup_rushcv.py": "0cf82493e9fd8c82af20f3914b37429604a1e950ab54a8a020faf56a3b4f602f"
+ },
+ "deps": {
+  "kalshi_nfl.py": "fdb75941c249b40e08612a2ccc69d0e51c46ae44496b13bc104f8eee66704f59"
+ },
+ "extract_sha256": "aed3732e264a4952afe132841325eef5f15b10f89bf45b8775565712fa2644dd",
+ "superseded": []
+}

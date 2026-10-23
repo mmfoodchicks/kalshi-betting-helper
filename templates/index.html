@@ -59,6 +59,7 @@
     <button class="tab" data-tab="sports">🔴 Live &amp; Futures</button>
     <button class="tab" data-tab="nfl">🏈 Football</button>
     <button class="tab" data-tab="nba">🏀 NBA</button>
+    <button class="tab" data-tab="matchups">🔬 Matchups</button>
     <button class="tab" data-tab="nhl">🏒 NHL</button>
     <button class="tab" data-tab="soccer">⚽ Soccer</button>
     <button class="tab" data-tab="ufc">🥊 UFC</button>
@@ -470,6 +471,14 @@
       <div id="nbaResults" class="markets"><div class="empty">Loading…</div></div>
     </section>
    </div><!-- /tab-nba -->
+
+   <div id="tab-matchups" class="hidden">
+    <section class="card">
+      <h2>🔬 Matchups: offense vs defense</h2>
+      <p class="sub" style="margin:2px 0 8px">How each player produces, what his opponent measurably concedes, how much that changes each line, and whether Kalshi's price is off. Every fact says whether it is observed, modelled or a proxy.</p>
+      <div id="mxRoot"></div>
+    </section>
+   </div><!-- /tab-matchups -->
 
    <div id="tab-nhl" class="hidden">
     <section class="card">
@@ -939,5 +948,6 @@
   </footer>
 
   <script src="/static/app.js?v={{ v }}"></script>
+  <script src="/static/matchups.js?v={{ v }}"></script>
 </body>
 </html>

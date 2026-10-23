@@ -466,6 +466,59 @@ data-only `sim-history` branch (which never deploys):
   box stat by stat, and an ESPN box-score cross-check (dfs_actuals sport
   `nfl_hindsight`). Week 1, checked: best 292.1 against the Millionaire's
   273.98 winner; the board's top lineup 205.4, about 12,107th of 832,342.
+- **The Matchups tab** (2026-10-23; every piece reviewed by a Fable agent and the
+  orchestrator until both agreed, `research/reports/matchup_agreement_log.md` and
+  `research/reviews/`). Offense vs defense for NBA and NFL player props.
+  - **Shared parts:** `prop_value` turns a model probability and a Kalshi book into
+    fee-in EV at the ask, with labels (high probability, +EV, robust +EV, strong fit,
+    low evidence).
+    - `thin_book` / `stale_quote` qualifiers stand in for a +EV label on a book that is
+      not believable or a quote over 600 s old.
+    - Robust is refused on a zero-width band.
+  - **`prop_dist`** holds the ladder distributions. **`kalshi_nba_props`** reads
+    KXNBAPTS/REB/AST/3PT/PRA and their fees. Its event ticker is AWAY then HOME on the
+    Eastern date. A player who never plays settles at a fair price, so every
+    probability is conditional on him entering.
+  - **NBA engine** (`nba_matchup*.py`):
+    - ESPN play-by-play cut into player-games, with as-of profiles from strictly earlier
+      MT dates.
+    - Validated on 2024-25 and tested once on 2025-26 by a hashed rule
+      (`research/reports/nba_matchup.md`).
+    - Overall defense allowed and teammates out ship in every market. Position
+      allowances ship for rebounds and assists. Style x concession and comparable
+      opponents ship for rebounds only; for points, assists and threes they measured
+      nothing and show as weight 0.
+    - Teammates-out reads the box in research and ESPN "Out" in production, so its gain
+      is an UPPER BOUND (`research/nba_absent_reasons.py`).
+    - Kalshi's tight books beat it (0.542 vs 0.556 log loss), and betting its edges lost
+      14%.
+    - `dk_fp` beats DK's average (MAE 8.16 -> 7.81) but feeds no builder: Vigil has no
+      NBA lineup builder. It shows on the tab.
+    - The replay never takes in the owner's MT today, because `board()` refuses a date
+      the book holds. The job therefore runs every six hours, not nightly.
+  - **NFL**:
+    - **Data:** `nfl_matchup_data` / `_profiles` hold nflverse pbp, participation and
+      FTN (credit "FTN Data via nflverse", CC BY-SA). Participation is published after
+      the postseason, so 2026's coverage is prior-season only.
+    - **Model:** `nfl_matchup.py`, `research/reports/nfl_matchup_model.md`. Nothing about
+      the defense beats Sleeper's line out of sample: coverage, shells, blitz, box,
+      position allowances, similar defenses. The man/zone target split is real but adds
+      nothing past Sleeper.
+    - **What ships:** only a game-script term on passing TDs (weak evidence). The DFS
+      hook does not ship.
+    - **Calibration:** low-threshold rushing yards run high for RBs (10+ 0.86 vs 0.67
+      hit). The line-dependent fix failed its own 2025 gate, so the slate says so.
+  - **Serving:** `matchups.py`.
+    - A slate is built in a niced child under HEAVY_BUILD, today or tomorrow MT only.
+    - It is published as an index (the scanner's lines) plus one boardshare piece per
+      game. One NBA night is 13-19 MB whole.
+    - An empty or failed build never out-freshens a full board. It is backdated, retried
+      after 120 s, and the PC's `pc_board` never publishes one.
+    - "market better on record" mutes the EV of any +EV line in a stat where Kalshi's
+      pre-game price beat the engine (NBA tight books; NFL 2026 frozen lines).
+    - Deep jobs `nba_matchup` (6 h) and `nfl_matchup` (daily; backfills once, with raw
+      files dropped, any of the two prior seasons the daily rule does not read itself). Guards: `tests/guards_{prop_math,nba_matchup,nfl_matchup_data,nfl_matchup_model,matchups}.py`,
+      run from combo_audit_guards' MX section.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 

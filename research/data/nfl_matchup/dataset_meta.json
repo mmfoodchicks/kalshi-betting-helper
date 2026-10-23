@@ -1,0 +1,155 @@
+{
+ "rows": 22825,
+ "by_season": {
+  "2023": {
+   "rows": 6868,
+   "weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+   ],
+   "games": 272
+  },
+  "2024": {
+   "rows": 6829,
+   "weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+   ],
+   "games": 272
+  },
+  "2025": {
+   "rows": 6875,
+   "weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+   ],
+   "games": 272
+  },
+  "2026": {
+   "rows": 2253,
+   "weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "games": 93
+  }
+ },
+ "sleeper": {
+  "rows": 23671,
+  "mapped_to_gsis": 23600,
+  "unmapped_examples": []
+ },
+ "qb_source": {
+  "sleeper_qb1_tuesday": 1817,
+  "last_starter": 1
+ },
+ "qp_source": {
+  "last_starter": 1760,
+  "frozen_capture": 58
+ },
+ "snaps_source": {
+  "ngs": 19691,
+  "none": 923,
+  "pfr": 2212
+ },
+ "sleeper_only_dropped_as_duplicates": 1,
+ "snap_count_rows": 33648,
+ "frozen_qb_captures": [
+  "2026 w1 (2026-09-12)",
+  "2026 w2 (2026-09-19)"
+ ],
+ "seconds": 123.6,
+ "bytes": 7458011,
+ "sha256": "766a60ed11ee3c017141443bd114625b3d756c5bb03737dfc3148389bbef2738",
+ "sleeper_fields": {
+  "proj": {
+   "rec_tgt": 18805,
+   "rec": 18764,
+   "rec_yd": 18767,
+   "rec_td": 17573,
+   "rush_att": 14188,
+   "rush_yd": 14203,
+   "rush_td": 10370,
+   "fum_lost": 13564,
+   "pass_att": 1910,
+   "pass_cmp": 1910,
+   "pass_yd": 1910,
+   "pass_td": 1886,
+   "pass_int": 1886
+  },
+  "act": {
+   "gp": 23563,
+   "off_snp": 21774,
+   "rec_tgt": 14419,
+   "rec": 12958,
+   "rec_yd": 12841,
+   "pts_ppr": 16722,
+   "rush_att": 7487,
+   "rush_yd": 7285,
+   "rec_td": 2354,
+   "rush_td": 1379,
+   "pass_att": 2183,
+   "pass_yd": 2097,
+   "pass_int": 957,
+   "fum_lost": 850,
+   "pass_td": 1466
+  }
+ },
+ "columns": 338,
+ "license": {
+  "credit": "FTN Data via nflverse (CC BY-SA 4.0); nflverse-data (CC BY 4.0); DynastyProcess db_playerids",
+  "share_alike": "tables derived from FTN charting are shared under CC BY-SA 4.0"
+ }
+}

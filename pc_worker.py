@@ -320,6 +320,14 @@ def _task_boards():
     # adopts. This pulls five combo builds per lineup change off the shared
     # core the health probe lives on.
     _add("presets", lambda: __import__("presets").pc_build())
+    # The Matchups tab's boards (index + one piece a game, matchups.py), for
+    # the owner's Mountain-time today. pc_board, not board(): synchronous, and
+    # an empty slate (no book on this machine yet) is never published, so it
+    # can never out-freshen the server's full board through the boards sync.
+    # LAST, because they build inline (~25 s each): every board above has been
+    # started once before they take the loop's 300 s.
+    _add("matchups-nba", lambda: __import__("matchups").pc_board("nba"))
+    _add("matchups-nfl", lambda: __import__("matchups").pc_board("nfl"))
 
     deadline = time.time() + 300
     pending = dict(builders)
@@ -330,7 +338,10 @@ def _task_boards():
                 # A builder that hands back a payload is done; None/(None, age)
                 # means its background build is still running.
                 val = out[0] if isinstance(out, tuple) else out
-                if val is not None:
+                if isinstance(val, dict) and val.get("skipped"):
+                    print(f"[vigil-pc] board {label}: skipped - {val['skipped']}")
+                    pending.pop(label, None)
+                elif val is not None:
                     print(f"[vigil-pc] board {label}: fresh")
                     pending.pop(label, None)
             except Exception as e:
@@ -484,6 +495,14 @@ def _task_deep(url, tok):
             None if not __import__("pro_sim").in_season("nba") else
             __import__("nba_deep_data").update(__import__("nba_deep_data").season_of(
                 __import__("clock").today_et().isoformat()))))),
+        # the NBA matchup engine's book (last night's games, the as-of replay):
+        # the Matchups tab's NBA board reads it, here and on the server
+        ("nba_matchup", lambda: _plain("nba_matchup", lambda: __import__("nba_matchup").run_job(log=print))),
+        # the NFL matchup data (nflverse pbp / participation / FTN, cut into the
+        # per-season store the matchup profiles read)
+        ("nfl_matchup", lambda: _plain("nfl_matchup", lambda: (
+            None if not __import__("pro_sim").in_season("nfl") else
+            __import__("matchups").nfl_data_job(log=print)))),
         ("cfb", lambda: _plain("cfb", lambda: __import__("cfb").run_season(n=4000))),
         ("nfl", lambda: _plain("nfl", lambda: __import__("pro_sim").project("nfl", 4000))),
         # the NBA / NHL seasons through their real formats: the same run as

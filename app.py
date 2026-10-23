@@ -58,7 +58,7 @@ def _asset_version():
     page reload fetches the new UI without needing a server restart."""
     try:
         latest = max(os.path.getmtime(os.path.join(_STATIC_DIR, f))
-                     for f in ("app.js", "style.css", "sw.js"))
+                     for f in ("app.js", "matchups.js", "style.css", "sw.js"))
         return str(int(latest))
     except OSError:
         return _ASSET_VERSION
@@ -1645,6 +1645,40 @@ def _register_deep_sims():
             return payload
         return run
 
+    def run_nba_matchup():
+        """The NBA matchup engine's season state (nba_matchup.run_job): last
+        night's ESPN summaries cut into player-games, then the as-of book
+        replayed with the committed fit (research/reports/nba_matchup.md) --
+        what the Matchups tab's NBA board reads. The PC first; on the server
+        one niced child under the heavy-build gate (~250 MB at its peak,
+        measured; the first run backfills last season, ~12 minutes of
+        fetches). None outside the season window."""
+        import pro_sim
+        if not pro_sim.in_season("nba"):
+            return None
+        if _deep_pc_first("nba_matchup"):
+            return deep_cache.DEFERRED
+        import nba_matchup
+        with deep_cache.HEAVY_BUILD:
+            return nba_matchup.run_job_isolated()
+
+    def run_nfl_matchup():
+        """The NFL matchup data (matchups.nfl_data_job -> nfl_matchup_data.refresh):
+        nflverse's play-by-play, participation and FTN charting for the current
+        season (and the previous one until October), re-downloaded only when
+        upstream's Last-Modified moved, cut into the compact per-season store
+        the matchup profiles read, the two seasons before backfilled once. The
+        PC first; on the server one niced child under the heavy-build gate.
+        None outside the season window."""
+        import pro_sim
+        if not pro_sim.in_season("nfl"):
+            return None
+        if _deep_pc_first("nfl_matchup"):
+            return deep_cache.DEFERRED
+        import matchups
+        with deep_cache.HEAVY_BUILD:
+            return matchups.job_isolated("matchups", "nfl_data_job")
+
     def run_model_trust():
         """Re-measure how far each sport's model may depart from the market, by
         replaying point-in-time history. Stores the fitted blend weights."""
@@ -1689,6 +1723,15 @@ def _register_deep_sims():
     deep_cache.register("nfl_deep", run_nfl_deep)
     deep_cache.register("nhl_deep", run_nhl_deep)
     deep_cache.register("nba_deep", run_nba_deep)
+    # Every six hours, not once a night: the replay never takes in games on the
+    # owner's Mountain-time today (nba_matchup._entries -- a board for a date the
+    # book holds is refused), and the nightly slot fires just after ET midnight,
+    # 22:00 MT, while it is still today in MT. Run once a night, Friday's games
+    # would enter the book only on Saturday night and Saturday's board would
+    # read a book a day behind. The rebuild is ~4 s of CPU (measured 3.9 s, two
+    # seasons), so four runs a day cost little and the book is current by 6 am MT.
+    deep_cache.register("nba_matchup", run_nba_matchup, max_age=6 * 3600, cadence="age")
+    deep_cache.register("nfl_matchup", run_nfl_matchup)
     deep_cache.register("nba_season", run_pro_season("nba"))
     deep_cache.register("nhl_season", run_pro_season("nhl"))
     deep_cache.register("cfb", run_cfb)
@@ -2256,6 +2299,65 @@ def _tourney_board(sport, dg):
         if payload:
             return payload, age
     return None, None
+
+
+def _json_finite(x):
+    """The payload with every non-finite float (NaN, inf) as None. Flask
+    writes a NaN as a bare `NaN`, which is not JSON: the browser's parse
+    throws and the tab used to say "could not reach the server" (the Fable
+    review of the Matchups tab, B5, 2026-10-23)."""
+    if isinstance(x, float):
+        import math
+        return x if math.isfinite(x) else None
+    if isinstance(x, dict):
+        return {k: _json_finite(v) for k, v in x.items()}
+    if isinstance(x, (list, tuple)):
+        return [_json_finite(v) for v in x]
+    return x
+
+
+@app.route("/api/matchups")
+def api_matchups():
+    """The offense-vs-defense matchup board the Matchups tab renders
+    (static/matchups.js; the payload contract is the engines' shared shape --
+    players, their profiles, the factors the model applied, every line with
+    its probability band, Kalshi's quote and the fee-adjusted value).
+
+    ?sport=nfl|nba&date=YYYY-MM-DD (the owner's Mountain-time day) -> the
+    slate INDEX (every player's lines, no matrix); add &game=<id> for that
+    game's full players. The engine never runs in this process: a stale or
+    missing board for today or tomorrow is rebuilt in a niced child
+    (matchups.board), and a past date serves what was published at the time."""
+    import datetime
+    import matchups
+    sport = (request.args.get("sport") or "nfl").lower()
+    if sport not in matchups.SPORTS:
+        return jsonify({"status": "none", "why": f"matchups cover {', '.join(matchups.SPORTS)}"}), 400
+    key = (request.args.get("date") or "").strip() or matchups.today_mt()
+    try:
+        key = datetime.date.fromisoformat(key).isoformat()
+    except ValueError:
+        return jsonify({"status": "none", "why": "date must be YYYY-MM-DD"}), 400
+    gid = (request.args.get("game") or "").strip()
+    if gid:
+        if not (gid.isascii() and gid.isdigit() and len(gid) <= 20):
+            return jsonify({"status": "none", "why": "game must be a game id"}), 400
+        payload, age = matchups.game(sport, key, gid)
+        if not payload:
+            return jsonify({"status": "none", "sport": sport, "date": key, "game": gid,
+                            "why": "That game's detail is not published yet - reload the slate."})
+        out = _json_finite(dict(payload))
+        out.update(status="ok", sport=sport, date=key, age_s=int(age or 0))
+        return jsonify(out)
+    payload, age, building = matchups.board(sport, key)
+    if not payload:
+        why = (f"Building the {sport.upper()} matchup board for {key} - usually under a minute, longer when "
+               "another heavy build holds the server; this page checks again."
+               if building else f"No {sport.upper()} matchup board was published for {key}.")
+        return jsonify({"status": "none", "sport": sport, "date": key, "building": building, "why": why})
+    out = _json_finite(dict(payload))
+    out.update(status="ok", sport=sport, date=key, age_s=int(age or 0), building=building)
+    return jsonify(out)
 
 
 @app.route("/api/dfs/tourney")
