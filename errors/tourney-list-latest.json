@@ -1,7 +1,7 @@
 {
  "boards": [
   {
-   "age_s": 13146,
+   "age_s": 37706,
    "built_ts": 1792717595,
    "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (DAL @ PHI)",
    "dg": 155217,
@@ -17,7 +17,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 13697,
+   "age_s": 38257,
    "built_ts": 1792717044,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (KC @ SEA)",
    "dg": 155216,
@@ -33,7 +33,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 19175,
+   "age_s": 43735,
    "built_ts": 1792711566,
    "contest": "NFL Showdown $1.25M Thursday Night Showdown [$300K to 1st] (NE @ CHI)",
    "dg": 155204,
@@ -49,7 +49,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 24077,
+   "age_s": 48638,
    "built_ts": 1792706664,
    "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st, $100K Leaderboard Eligible]",
    "dg": 155198,
