@@ -2,6 +2,50 @@
  "errors": [
   {
    "code": "NFL-DRIFT",
+   "id": 1963,
+   "last_ts": 1792789633.8597896,
+   "msg": "Rush Yds: the model sits -4.2 points off Kalshi's mid over 201 rungs in 13 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 7,
+   "tb": "",
+   "ts": 1792789633.8597896
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 1962,
+   "last_ts": 1792788697.848388,
+   "msg": "Rush Yds: the model sits -4.3 points off Kalshi's mid over 199 rungs in 13 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 69,
+   "tb": "",
+   "ts": 1792788697.848388
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 1961,
+   "last_ts": 1792787433.4674191,
+   "msg": "Rush Yds: the model sits -4.3 points off Kalshi's mid over 198 rungs in 13 games",
+   "n": 2,
+   "path": "Rush Yds",
+   "pid": 7,
+   "tb": "",
+   "ts": 1792787433.4674191
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 1960,
+   "last_ts": 1792785593.6999996,
+   "msg": "Rec Yds: the model sits -6.2 points off Kalshi's mid over 306 rungs in 13 games",
+   "n": 3,
+   "path": "Rec Yds",
+   "pid": 7,
+   "tb": "",
+   "ts": 1792785593.6999996
+  },
+  {
+   "code": "NFL-DRIFT",
    "id": 1959,
    "last_ts": 1792783766.2015724,
    "msg": "Rush Yds: the model sits -4.3 points off Kalshi's mid over 187 rungs in 13 games",
@@ -2496,28 +2540,17 @@
    "pid": 7,
    "tb": "",
    "ts": 1792186868.5809286
-  },
-  {
-   "code": "MEM-high",
-   "id": 1732,
-   "last_ts": 1792184235.3813136,
-   "msg": "1996/2048MB: 1450.9MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 239.7MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 74.6MB pid7 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 36.1MB pid15 /portdetectorv2; 24.8MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 24.3MB pid54 /usr/local/bin/python3.11 -c import os; os.nice(",
-   "n": 1,
-   "path": null,
-   "pid": 9,
-   "tb": "",
-   "ts": 1792184235.3813136
   }
  ],
- "generated_at": 1792784858.8270953,
+ "generated_at": 1792790558.1674275,
  "summary": [
   {
    "code": "NFL-DRIFT",
    "first_ts": 1792558319.4804556,
-   "last_msg": "Rush Yds: the model sits -4.3 points off Kalshi's mid over 187 rungs in 13 games",
-   "last_ts": 1792783766.2015724,
-   "n": 116,
-   "variants": 85
+   "last_msg": "Rush Yds: the model sits -4.2 points off Kalshi's mid over 201 rungs in 13 games",
+   "last_ts": 1792789633.8597896,
+   "n": 123,
+   "variants": 89
   },
   {
    "code": "HIND-nopool",
@@ -2529,11 +2562,11 @@
   },
   {
    "code": "MEM-high",
-   "first_ts": 1792184235.3813136,
+   "first_ts": 1792186868.5809286,
    "last_msg": "1861/2048MB: 1370.0MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 205.9MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 85.7MB pid7 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 24.9MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
    "last_ts": 1792706759.9560285,
-   "n": 26,
-   "variants": 26
+   "n": 25,
+   "variants": 25
   },
   {
    "code": "KNFL-markets-fetch",

@@ -1,24 +1,8 @@
 {
  "boards": [
   {
-   "age_s": 4570,
-   "built_ts": 1792780288,
-   "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (KC @ SEA)",
-   "dg": 155216,
-   "entries": 78431,
-   "entry_fee": 15.0,
-   "kind": "showdown",
-   "label": "KC vs SEA",
-   "starts": "2026-10-26T00:20:00.0000000Z",
-   "teams": [
-    "KC",
-    "SEA"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 67262,
-   "built_ts": 1792717595,
+   "age_s": 1119,
+   "built_ts": 1792789439,
    "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (DAL @ PHI)",
    "dg": 155217,
    "entries": 73529,
@@ -33,7 +17,23 @@
    "worlds": 60000
   },
   {
-   "age_s": 73291,
+   "age_s": 1775,
+   "built_ts": 1792788782,
+   "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (KC @ SEA)",
+   "dg": 155216,
+   "entries": 78431,
+   "entry_fee": 15.0,
+   "kind": "showdown",
+   "label": "KC vs SEA",
+   "starts": "2026-10-26T00:20:00.0000000Z",
+   "teams": [
+    "KC",
+    "SEA"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 78990,
    "built_ts": 1792711566,
    "contest": "NFL Showdown $1.25M Thursday Night Showdown [$300K to 1st] (NE @ CHI)",
    "dg": 155204,
@@ -49,7 +49,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 78193,
+   "age_s": 83893,
    "built_ts": 1792706664,
    "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st, $100K Leaderboard Eligible]",
    "dg": 155198,
