@@ -21,7 +21,15 @@
 // does not stop a quote from ending the string (the Fable review's B1 ran an
 // alert() through a player id that way, 2026-10-23).
 let _mx = { sport: "nfl", date: "", data: null, err: "", view: "scan", player: "", cmp: ["", ""],
-  label: "", stat: "", game: "", listed: true, sort: "ev", dir: -1, open: {}, full: {}, retry: null, tries: 0 };
+  label: "", stat: "", game: "", listed: true, sort: "best", dir: -1, side: "best", open: {}, full: {}, retry: null, tries: 0 };
+// The owner's sort menu and side picker (2026-10-23): "Best picks" ranks the
+// believable +EV lines by their EV at the CAUTIOUS end of the model's band
+// (the EV itself where the engine has no band), thin books and lines the
+// record impeaches last; the side picker shows every line's YES or NO side,
+// or each line's better side.
+const _MX_SORTS = [["best", "Best picks"], ["ev", "Highest EV"], ["p", "Highest probability"],
+  ["edge", "Biggest edge vs market"], ["nef", "Most evidence"]];
+const _MX_SIDES = [["best", "Best side"], ["yes", "YES"], ["no", "NO"]];
 // The slate arrives as an INDEX (every player's lines, nothing else) and each
 // game's full players -- profiles, the matrix, comparables -- as its own piece,
 // fetched when a player page opens: the whole slate was 18.8 MB of JSON for one
@@ -108,7 +116,31 @@ function _mxChips(l, stat) {
 // The value block is prop_value.line_value's output (EV in cents per
 // contract after the fee at the ask, its interval over the model's band);
 // show its better side. No EV on either side -> null, drawn as "-" (B7).
-function _mxBest(v, labels) {
+// Does the engine's record say the market forecast this stat better? From the
+// line's own qualifier, or (for a side the qualifier was not computed for) the
+// slate's market_record -- the same rule matchups.mark_record applies.
+function _mxImpeached(stat, labels) {
+  if ((labels || []).includes("market_better")) return true;
+  const rec = (_mx.data || {}).market_record || {};
+  const r = Object.prototype.hasOwnProperty.call(rec, stat) ? rec[stat] : (Object.prototype.hasOwnProperty.call(rec, "*") ? rec["*"] : null);
+  return !!(r && _mxOk(r.market_ll) && _mxOk(r.model_ll) && r.market_ll < r.model_ll);
+}
+// The EV block of one chosen side ("yes" / "no"), or each line's better side ("best").
+function _mxSideValue(v, labels, side, stat) {
+  if (side !== "yes" && side !== "no") return _mxBest(v, labels, stat);
+  if (!v) return null;
+  const ev = side === "no" ? v.ev_no : v.ev_yes;
+  if (!_mxOk(ev)) return null;
+  const iv = (v.ev_interval || {})[side] || [null, null];
+  return { side, ev, roi: side === "no" ? v.roi_no : v.roi_yes, lo: iv[0], hi: iv[1], ok: v.believable !== false,
+    mkt: ev > 0 && _mxImpeached(stat, labels), stale: (labels || []).includes("stale_quote") };
+}
+// The probability of the side shown, and its band (NO's band is YES's, flipped).
+function _mxSideP(l, side) {
+  if (side !== "no") return { p: l.p, lo: l.p_lo, hi: l.p_hi };
+  return { p: _mxOk(l.p) ? 1 - l.p : null, lo: _mxOk(l.p_hi) ? 1 - l.p_hi : null, hi: _mxOk(l.p_lo) ? 1 - l.p_lo : null };
+}
+function _mxBest(v, labels, stat) {
   if (!v) return null;
   const side = v.best_side === "no" || v.best_side === "yes" ? v.best_side
     : ((_mxOk(v.ev_no) && (!_mxOk(v.ev_yes) || v.ev_no > v.ev_yes)) ? "no" : "yes");
@@ -122,30 +154,51 @@ function _mxBest(v, labels) {
   // a line the engine's record impeaches (market_better) is muted and ranked
   // like a thin book: the price is real, the probability is what lost (F18)
   return { side, ev, roi: side === "no" ? v.roi_no : v.roi_yes, lo: iv[0], hi: iv[1], ok: v.believable !== false,
-    mkt: (labels || []).includes("market_better") };
+    mkt: (labels || []).includes("market_better") || (stat !== undefined && ev > 0 && _mxImpeached(stat, labels)),
+    stale: (labels || []).includes("stale_quote") };
 }
 function _mxEvCell(b, bold) {
   if (!b) return "-";
-  const strong = bold && b.ok && !b.mkt;
+  const strong = bold && b.ok && !b.mkt && !b.stale;
   const txt = `${_mxSide(b.side)} ${strong ? "<b>" : ""}${_mxSigned(b.ev, 1)}¢${strong ? "</b>" : ""}`;
   if (!b.ok) return `<span style="color:var(--muted)" title="The book is one-sided, wider than 20c or untraded: this EV is arithmetic against a listing, not a price signal.">${txt} (thin book)</span>`;
+  if (b.stale) return `<span style="color:var(--muted)" title="${_mxEsc(_MX_QUALS.stale_quote[1])}">${txt} (stale quote)</span>`;
   if (b.mkt) return `<span style="color:var(--muted)" title="${_mxEsc(_MX_QUALS.market_better[1])}">${txt} (market better on record)</span>`;
   return txt;
 }
 // The model against the market's own probability (B4): line_value's `edge` is
 // model p minus the market reference (`p_market`, of kind `market_kind`: a
 // two-sided mid, or an ask-only upper bound).
-function _mxVsMkt(v) {
+function _mxVsMkt(v, side) {
   if (!v || !_mxOk(v.p_market)) return "-";
-  return `mkt ${_mxPct(v.p_market)} <span class="small" style="color:var(--muted)">${_mxEsc(v.market_kind || "")}${v.fee_assumed ? ", fee assumed" : ""}</span> · ${_mxSigned(_mxOk(v.edge) ? 100 * v.edge : null)} pts`;
+  const no = side === "no";
+  // a one-sided book's p_market is an ask-only UPPER bound on YES; flipped it
+  // would be a lower bound on NO with no NO contract behind it -- no edge shown
+  if (no && v.market_kind !== "two_sided") return "-";
+  const pm = no ? 1 - v.p_market : v.p_market, edge = _mxOk(v.edge) ? (no ? -v.edge : v.edge) : null;
+  return `mkt ${_mxPct(pm)} <span class="small" style="color:var(--muted)">${_mxEsc(v.market_kind || "")}${v.fee_assumed ? ", fee assumed" : ""}</span> · ${_mxSigned(_mxOk(edge) ? 100 * edge : null)} pts`;
 }
+// The side a row is shown for: the chosen one, or the line's better side.
+function _mxRowSide(r) { return _mx.side === "yes" || _mx.side === "no" ? _mx.side : (r.b ? r.b.side : "yes"); }
 
+// The sort and side are a per-viewer convenience (localStorage, never required).
+function _mxSave() {
+  try { localStorage.setItem("mxSortSide", JSON.stringify({ sort: _mx.sort, side: _mx.side })); } catch (e) { /* private mode */ }
+}
+function _mxRestore() {
+  try {
+    const o = JSON.parse(localStorage.getItem("mxSortSide") || "{}");
+    if (_MX_SORTS.some(([k]) => k === o.sort)) _mx.sort = o.sort;
+    if (["best", "yes", "no"].includes(o.side)) _mx.side = o.side;
+  } catch (e) { /* private mode or bad JSON: defaults */ }
+}
 function initMatchups() {
   const root = $("mxRoot");
   if (!root) return;
   if (root.dataset.ready) { mxLoad(); return; }
   root.dataset.ready = "1";
   try { const s = localStorage.getItem("mxSport"); if (s === "nba" || s === "nfl") _mx.sport = s; } catch (e) { /* private mode */ }
+  _mxRestore();
   root.innerHTML = `<div class="row-between" style="gap:8px;flex-wrap:wrap">
       <div class="subtabs">
         <button class="subtab" data-mx="sport" data-val="nfl">🏈 NFL</button><button class="subtab" data-mx="sport" data-val="nba">🏀 NBA</button>
@@ -173,7 +226,7 @@ function _mxClick(e) {
     mxLoad();
   } else if (act === "view") { _mx.view = val; mxRender(); _mxNeedPieces(); }
   else if (act === "open") { e.preventDefault(); _mx.player = val; _mx.view = "player"; mxRender(); _mxNeedPieces(); }
-  else if (act === "sort") { if (_mx.sort === val) _mx.dir = -_mx.dir; else { _mx.sort = val; _mx.dir = -1; } mxRender(); }
+  else if (act === "sort") { if (_mx.sort === val) _mx.dir = -_mx.dir; else { _mx.sort = val; _mx.dir = -1; } _mxSave(); mxRender(); }
   else if (act === "label") { _mx.label = val; mxRender(); }
   else if (act === "toggle") { _mx.open[val] = !_mx.open[val]; mxRender(); }
 }
@@ -183,6 +236,8 @@ function _mxChange(e) {
   const act = el.dataset.mx;
   if (act === "date") { _mx.date = el.value; _mx.tries = 0; mxLoad(); }
   else if (act === "stat") { _mx.stat = el.value; mxRender(); }
+  else if (act === "side") { _mx.side = ["yes", "no"].includes(el.value) ? el.value : "best"; _mxSave(); mxRender(); }
+  else if (act === "sortsel") { _mx.sort = _MX_SORTS.some(([k]) => k === el.value) ? el.value : "best"; _mx.dir = -1; _mxSave(); mxRender(); }
   else if (act === "game") { _mx.game = el.value; mxRender(); }
   else if (act === "listed") { _mx.listed = !!el.checked; mxRender(); }
   else if (act === "pick") { _mx.player = el.value; mxRender(); _mxNeedPieces(); }
@@ -297,7 +352,7 @@ function _mxRows(d) {
     for (const m of p.markets || []) {
       for (const l of m.lines || []) {
         if (_mx.listed && !l.market) { _mx.hidden += 1; continue; }
-        rows.push({ p, m, l, b: _mxBest(l.value, l.labels) });
+        rows.push({ p, m, l, b: _mxSideValue(l.value, l.labels, _mx.side, m.stat) });
       }
     }
   }
@@ -308,12 +363,35 @@ function mxScanView(d) {
   let rows = _mxRows(d);
   const stats = [...new Set(rows.map((r) => r.m.stat))];
   const games = (d.games || []).map((g) => [g.game_id, `${g.away} @ ${g.home}`]);
-  if (_mx.label) rows = rows.filter((r) => (r.l.labels || []).includes(_mx.label));
+  if (_mx.label) {
+    // the +EV chips name a side: with YES or NO chosen, a line qualifies only
+    // when THAT side's EV is positive
+    const evLab = _mx.label === "positive_ev" || _mx.label === "positive_ev_robust";
+    rows = rows.filter((r) => (r.l.labels || []).includes(_mx.label)
+      && (!evLab || _mx.side === "best" || (r.b && r.b.ev > 0)));
+  }
   if (_mx.stat) rows = rows.filter((r) => String(r.m.stat) === _mx.stat);
   if (_mx.game) rows = rows.filter((r) => String(r.p.game_id) === _mx.game);
+  const clean = (r) => r.b && r.b.ok && !r.b.mkt && !r.b.stale;
+  // below the clean +EV lines: the muted +EV lines (thin, stale, impeached),
+  // then every negative-EV line, then lines with no EV at all
+  const demoted = (r, v) => (!r.b ? -1e12 : r.b.ev > 0 ? -1e11 : -2e11) + (_mxOk(v) ? v / 1e3 : -1e8);
+  const sideEdge = (r) => {
+    const v = r.l.value || {}, e = v.edge, no = _mxRowSide(r) === "no";
+    if (!_mxOk(e) || (no && v.market_kind !== "two_sided")) return null;
+    return no ? -e : e;
+  };
   const key = {
-    ev: (r) => (r.b && r.b.ok && !r.b.mkt ? _mxKey(r.b.ev) : -1e11 + (r.b ? _mxKey(r.b.ev) / 1e3 : -1e9)), p: (r) => _mxKey(r.l.p),
-    edge: (r) => _mxKey((r.l.value || {}).edge), nef: (r) => _mxKey((r.l.hit_similar_def || {}).n_eff),
+    // a believable, unimpeached +EV line ranks by its cautious EV (the band's
+    // unfavourable end; the EV itself without a band); everything else after
+    best: (r) => {
+      const c = r.b ? (_mxOk(r.b.lo) ? Math.min(r.b.lo, r.b.ev) : r.b.ev) : null;
+      // the demoted tiers keep the same cautious order among themselves
+      return clean(r) && r.b.ev > 0 ? _mxKey(c) : demoted(r, c);
+    },
+    ev: (r) => (clean(r) ? _mxKey(r.b.ev) : demoted(r, r.b ? r.b.ev : null)),
+    p: (r) => _mxKey(_mxSideP(r.l, _mxRowSide(r)).p),
+    edge: (r) => _mxKey(sideEdge(r)), nef: (r) => _mxKey((r.l.hit_similar_def || {}).n_eff),
   }[_mx.sort] || (() => 0);
   rows.sort((a, b) => _mx.dir * (key(a) - key(b)));
   const th = (k, t) => `<th style="cursor:pointer" data-mx="sort" data-val="${k}">${t}${_mx.sort === k ? (_mx.dir < 0 ? " ▾" : " ▴") : ""}</th>`;
@@ -323,9 +401,9 @@ function mxScanView(d) {
     return `<tr style="border-top:1px solid var(--line,#333)">
       <td style="text-align:left"><a href="#" data-mx="open" data-val="${_mxEsc(r.p.player_id)}">${_mxEsc(r.p.name)}</a> <span class="small" style="color:var(--muted)">${_mxEsc(r.p.pos || "")} ${_mxEsc(r.p.team)} v ${_mxEsc(r.p.opp)}</span></td>
       <td>${_mxEsc(_mxStat(r.m.stat))} ${_mxEsc(r.l.k)}+</td>
-      <td><b>${_mxPct(r.l.p)}</b> <span class="small" style="color:var(--muted)">${_mxBand(r.l)}</span></td>
+      <td>${(() => { const sp = _mxSideP(r.l, _mxRowSide(r)); return `<span class="small" style="color:var(--muted)">${_mxSide(_mxRowSide(r))}</span> <b>${_mxPct(sp.p)}</b> <span class="small" style="color:var(--muted)">${_mxBand({ p_lo: sp.lo, p_hi: sp.hi })}</span>`; })()}</td>
       <td>${r.l.market ? `${_mxCents(mk.yes_ask)} / ${_mxCents(mk.no_ask)}` : "-"}</td>
-      <td>${_mxVsMkt(r.l.value)}</td>
+      <td>${_mxVsMkt(r.l.value, _mxRowSide(r))}</td>
       <td>${b ? `${_mxEvCell(b, true)} <span class="small" style="color:var(--muted)">${_mxSigned(b.lo, 1)} to ${_mxSigned(b.hi, 1)}</span>` : "-"}</td>
       <td>${_mxNum((r.l.hit_similar_def || {}).n_eff, 1)}</td>
       <td style="text-align:left">${_mxChips(r.l, r.m.stat)}</td></tr>`;
@@ -335,9 +413,12 @@ function mxScanView(d) {
       · <select data-mx="stat" style="width:auto;padding:2px 4px"><option value="">every stat</option>${stats.map((s) => `<option value="${_mxEsc(s)}"${_mx.stat === String(s) ? " selected" : ""}>${_mxEsc(_mxStat(s))}</option>`).join("")}</select>
       <select data-mx="game" style="width:auto;padding:2px 4px"><option value="">every game</option>${games.map(([id, t]) => `<option value="${_mxEsc(id)}"${_mx.game === String(id) ? " selected" : ""}>${_mxEsc(t)}</option>`).join("")}</select>
       <label style="display:inline-flex;align-items:center;gap:4px;white-space:nowrap"><input type="checkbox" data-mx="listed" ${_mx.listed ? "checked" : ""} style="width:auto;margin:0"/> only lines Kalshi lists</label></div>
-    <div class="small" style="color:var(--muted);margin-bottom:4px">"vs market" is the model's probability minus the market's own (the two-sided mid, or the ask when only one side is quoted). EV is cents per contract after Kalshi's fee at the ask, for the better side; the range is the EV at the ends of the model's probability band. "Similar n" is the effective number of past games against comparable defenses.</div>
+    <div class="small" style="margin-bottom:6px">Side: <select data-mx="side" style="width:auto;padding:2px 4px">${_MX_SIDES.map(([k, t]) => `<option value="${k}"${_mx.side === k ? " selected" : ""}>${t}</option>`).join("")}</select>
+      · Sort: <select data-mx="sortsel" style="width:auto;padding:2px 4px">${_MX_SORTS.map(([k, t]) => `<option value="${k}"${_mx.sort === k ? " selected" : ""}>${t}</option>`).join("")}</select>
+      <span style="color:var(--muted)">${_mx.sort === "best" ? "Best picks: believable +EV lines, ranked by their EV at the cautious end of the model's band; thin books and lines the market beat on record go last." : ""}</span></div>
+    <div class="small" style="color:var(--muted);margin-bottom:4px">"vs market" is the model's probability minus the market's own (the two-sided mid, or the ask when only one side is quoted). EV is cents per contract after Kalshi's fee at the ask, for the side shown; the range is the EV at the ends of the model's probability band. "Similar n" is the effective number of past games against comparable defenses.</div>
     <div class="scroller" style="overflow-x:auto"><table class="small" style="border-collapse:collapse;width:100%;min-width:720px;text-align:right">
-      <thead><tr><th style="text-align:left;min-width:150px">Player</th><th>Line</th>${th("p", "Model")}<th>YES / NO ask</th>${th("edge", "vs market")}${th("ev", "EV")}${th("nef", "Similar n")}<th style="text-align:left">Labels</th></tr></thead>
+      <thead><tr><th style="text-align:left;min-width:150px">Player</th><th>Line</th>${th("p", "Model (side)")}<th>YES / NO ask</th>${th("edge", "vs market")}${th("ev", "EV")}${th("nef", "Similar n")}<th style="text-align:left">Labels</th></tr></thead>
       <tbody>${body || `<tr><td colspan="8" class="empty">No lines match.${_mx.hidden ? ` ${_mx.hidden} line${_mx.hidden === 1 ? " is" : "s are"} hidden by "only lines Kalshi lists" - Kalshi lists none of them on this board.` : ""}</td></tr>`}</tbody></table></div>${more}`;
 }
 
@@ -403,7 +484,7 @@ function _mxHit(h) {
 function _mxMarkets(p, compact) {
   return (p.markets || []).map((m) => {
     const rows = (m.lines || []).map((l) => {
-      const mk = l.market || {}, b = _mxBest(l.value, l.labels);
+      const mk = l.market || {}, b = _mxBest(l.value, l.labels, m.stat);
       const evCell = _mxEvCell(b, true);
       if (compact) {
         return `<tr style="border-top:1px solid var(--line,#333)"><td>${_mxEsc(l.k)}+</td><td><b>${_mxPct(l.p)}</b> <span class="small" style="color:var(--muted)">${_mxBand(l)}</span></td>
@@ -432,6 +513,20 @@ function _mxComparables(p) {
   if (!c.length) return "";
   return `<details style="margin-top:8px"><summary class="small"><b>Similar past matchups</b> (${c.length}, every one used, wins and misses alike)</summary>${_mxDetail(c.map((x) => ({ date: x.date, opp: x.opp, similarity: _mxNum(x.similarity, 2), weight: _mxNum(x.weight, 3), stats: Object.entries(x.stats || {}).map(([k, v]) => `${_mxStat(k)} ${v}`).join(", "), why: x.why })))}</details>`;
 }
+// The engine's component breakdown (e.g. a QB's expected designed runs,
+// scrambles and kneels; a back's carries and his yards before vs after
+// contact): rows of {label, value, unit, kind, basis}, drawn as the facts are.
+function _mxBreakdown(p) {
+  const rows = Array.isArray(p.breakdown) ? p.breakdown : [];
+  if (!rows.length) return "";
+  const body = rows.filter((r) => r && typeof r === "object").map((r) => {
+    const v = { value: r.value, unit: r.unit, kind: r.kind, basis: r.basis };
+    const range = _mxOk(r.lo) && _mxOk(r.hi) && r.hi > r.lo ? ` <span class="small" style="color:var(--muted)">(${_mxNum(r.lo, 2)} to ${_mxNum(r.hi, 2)})</span>` : "";
+    const basis = r.basis ? `<div class="small" style="color:var(--faint,var(--muted));font-size:11px">${_mxEsc(String(r.basis).slice(0, 160))}</div>` : "";
+    return `<tr title="${_mxEsc(r.basis || "")}"><td style="text-align:left;color:var(--muted)">${_mxEsc(r.label || "")}${basis}</td><td>${_mxFactVal(v)}${range}</td><td>${_mxKind(r.kind)}</td></tr>`;
+  }).join("");
+  return `<div style="margin-top:8px"><div class="small"><b>Where the projection comes from</b> <span style="color:var(--muted)">- the model's components, each with its basis</span></div><table class="small" style="border-collapse:collapse;width:100%;text-align:right">${body}</table></div>`;
+}
 function _mxPlayerCard(p, idx, compact) {
   const st = p.status || {};
   return `<div style="border:1px solid var(--line,#333);border-radius:8px;padding:8px 10px;margin-bottom:10px">
@@ -441,6 +536,7 @@ function _mxPlayerCard(p, idx, compact) {
       <div><div class="small"><b>What ${_mxEsc(p.opp)} concedes</b></div>${_mxFacts(p.opponent_profile)}</div>
     </div>
     <div style="margin-top:8px"><div class="small"><b>Matchup matrix</b> <span style="color:var(--muted)">- tap a row for its data; the effect column is what the model actually applied</span></div>${_mxMatrix(p, idx)}</div>
+    ${_mxBreakdown(p)}
     ${_mxMarkets(p, compact)}
     ${_mxComparables(p)}
     ${(p.notes || []).length ? `<div class="small" style="color:var(--muted);margin-top:6px">${p.notes.map(_mxEsc).join(" · ")}</div>` : ""}

@@ -48,6 +48,11 @@ def _payload():
             "players": [pl("1", "11"), pl("2", "11"), pl("3", "22")]}
 
 
+def _mx_sort_default_ok(js):
+    return ('sort: "best"' in js and 'side: "best"' in js and '["best", "Best picks"]' in js
+            and '["yes", "YES"], ["no", "NO"]' in js and "localStorage.setItem(\"mxSortSide\"" in js)
+
+
 def run(ck):
     import boardshare
     import matchups
@@ -359,6 +364,98 @@ def run(ck):
        "raw ${side} / ${b.side} interpolation in the source, and (where node exists) the real _mxChips / _mxEvCell "
        "given best_side / fit_side = '<img src=x onerror=...>' emit no tag",
        not raw_side and "function _mxSide(x)" in js and node_ok is not False, str((raw_side, node_ok, node_out)))
+    bd_ok, bd_out = None, ""
+    try:
+        import shutil
+        import subprocess
+        if shutil.which("node"):
+            evil = "<img src=x onerror=alert(7)>"
+            h2 = ("const $ = () => null;\n" + js + "\n"
+                  "const p = {breakdown: [{label: '" + evil + "', value: 3.1, unit: '" + evil + "', kind: '" + evil + "',"
+                  " basis: '" + evil + "'}, {label: 'carries', value: 14.2, unit: 'per_game', kind: 'modelled', basis: 'b'}, null]};\n"
+                  "process.stdout.write(JSON.stringify([_mxBreakdown(p), _mxBreakdown({}), _mxBreakdown({breakdown: 'x'})]));")
+            r2 = subprocess.run(["node", "-e", h2], capture_output=True, text=True, timeout=30)
+            o2 = json.loads(r2.stdout) if r2.returncode == 0 and r2.stdout else None
+            bd_out = r2.stdout[:400] + r2.stderr[-300:]
+            bd_ok = bool(o2) and "<img" not in o2[0].lower() and "carries" in o2[0] and "14.20" in o2[0] \
+                and o2[1] == "" and o2[2] == ""
+    except Exception as e:
+        bd_ok, bd_out = False, repr(e)
+    ck("Matchups tab: a player's component breakdown (the rushing upgrade's designed runs / scrambles / kneels, "
+       "carries, YBC vs YAC) renders every row through the escaped fact formatter; a hostile label, unit, kind or basis "
+       "emits no tag; a missing or malformed breakdown renders nothing",
+       "function _mxBreakdown(p)" in js and "${_mxBreakdown(p)}" in js and bd_ok is not False, str((bd_ok, bd_out)))
+    # the owner's sort menu and side picker (2026-10-23)
+    so_ok, so_out = None, ""
+    try:
+        import shutil
+        import subprocess
+        if shutil.which("node"):
+            h3 = ("const $ = () => null;\n" + js + "\n"
+                  "function L(k, p, lo, hi, evy, evn, ivy, ivn, believable, labels, edge, kind) { return {k, p, p_lo: lo, p_hi: hi,"
+                  " market: {yes_ask: 50, no_ask: 52}, labels: labels || [], value: {best_side: evy >= evn ? 'yes' : 'no',"
+                  " ev_yes: evy, ev_no: evn, ev_interval: {yes: ivy, no: ivn}, believable, edge, p_market: 0.4,"
+                  " market_kind: kind || 'two_sided'}}; }\n"
+                  "const lines = [\n"
+                  " L(1, 0.70, 0.60, 0.80, 9.0, -11, [-1.0, 19], [-21, -1], true, ['positive_ev'], 0.20),\n"   # big EV, poor floor
+                  " L(2, 0.60, 0.58, 0.62, 6.0, -8, [4.0, 8], [-10, -6], true, ['positive_ev'], 0.10),\n"     # robust: best pick
+                  " L(3, 0.90, 0.88, 0.92, 30, -32, [28, 32], [-34, -30], false, ['thin_book'], 0.40),\n"     # thin book
+                  " L(4, 0.80, 0.78, 0.82, 20, -22, [18, 22], [-24, -20], true, ['positive_ev', 'market_better'], 0.30),\n"
+                  " L(5, 0.20, 0.15, 0.25, -12, 7.0, [-17, -7], [2, 12], true, ['positive_ev'], -0.30),\n"
+                  " L(6, 0.45, 0.40, 0.50, -3.0, -5, [-8, 2], [-10, 0], true, [], -0.05),\n"                  # clean, -EV
+                  " L(7, 0.75, 0.70, 0.80, 13.3, -15, [10, 16], [-18, -12], true, ['stale_quote', 'low_evidence'], 0.25),\n"
+                  " L(8, 0.30, 0.25, 0.35, -9, 4.0, [-14, -4], [1, 9], true, ['positive_ev'], -0.20, 'one_sided'),\n"
+                  " L(9, 0.50, 0.30, 0.70, 2.0, -4, [-30, 10], [-12, 28], false, ['thin_book'], 0.0)];\n"   # muted +EV, floor -30
+                  "_mx.data = {status: 'ok', games: [], players: [{player_id: '1', name: 'P', team: 'A', opp: 'B', game_id: '9',"
+                  " markets: [{stat: 'pts', lines}]}]};\n"
+                  "_mx.listed = false; _mx.sort = 'best'; _mx.side = 'best'; _mx.dir = -1;\n"
+                  "const ord = (html) => [...html.matchAll(/Points (\\d+)\\+/g)].map((m) => +m[1]);\n"
+                  "const best = ord(mxScanView(_mx.data));\n"
+                  "_mx.sort = 'ev'; const ev = ord(mxScanView(_mx.data));\n"
+                  "_mx.sort = 'best'; _mx.side = 'no'; const noHtml = mxScanView(_mx.data); const noOrd = ord(noHtml);\n"
+                  "_mx.sort = 'p'; const noP = ord(mxScanView(_mx.data));\n"
+                  "_mx.sort = 'edge'; const noEdge = ord(mxScanView(_mx.data));\n"
+                  "_mx.sort = 'best'; _mx.label = 'positive_ev'; const noEvChip = ord(mxScanView(_mx.data)); _mx.label = '';\n"
+                  "const r5 = _mxSideP(lines[4], 'no');\n"
+                  # the change handler and the stored choices, fed bad values
+                  "const store = {}; globalThis.localStorage = {getItem: (k) => store[k] || null, setItem: (k, v) => { store[k] = v; }};\n"
+                  "const ch = (act, value) => _mxChange({target: {closest: () => ({dataset: {mx: act}, value})}});\n"
+                  "globalThis.mxRender = () => {};\n"
+                  "ch('side', 'constructor'); const sideBad = _mx.side; ch('sortsel', '<img src=x>'); const sortBad = _mx.sort;\n"
+                  "ch('side', 'no'); ch('sortsel', 'edge'); const saved = store.mxSortSide;\n"
+                  "_mx.side = 'best'; _mx.sort = 'best'; store.mxSortSide = '{\"sort\":\"<img>\",\"side\":\"__proto__\"}'; _mxRestore();\n"
+                  "const restoredBad = [_mx.sort, _mx.side]; store.mxSortSide = saved; _mxRestore();\n"
+                  "process.stdout.write(JSON.stringify({best, ev, noOrd, noP, noEdge, noEvChip, r5, vs: _mxVsMkt(lines[4].value, 'no'),"
+                  " vs1: _mxVsMkt(lines[7].value, 'no'), sideBad, sortBad, saved, restoredBad, restored: [_mx.sort, _mx.side],"
+                  " sel: noHtml.includes('data-mx=\"sortsel\"') && noHtml.includes('data-mx=\"side\"')}));")
+            r3 = subprocess.run(["node", "-e", h3], capture_output=True, text=True, timeout=30)
+            o3 = json.loads(r3.stdout) if r3.returncode == 0 and r3.stdout else None
+            so_out = r3.stdout[:900] + r3.stderr[-400:]
+            # Best picks: clean +EV by cautious EV (2: +4, 5: NO +2, 8: NO +1, 1: -1), then the muted +EV
+            # (thin 3: 28, impeached 4: 18, stale 7: 10, thin 9: -30 -- still above the -EV tier), then the
+            # negative-EV line 6 (cautious -8). Highest EV: every
+            # believable, fresh, unimpeached line by EV (1, 5, 2, 8, then 6 at -3), the muted ones after.
+            so_ok = bool(o3) \
+                and o3["best"] == [2, 5, 8, 1, 3, 4, 7, 9, 6] \
+                and o3["ev"] == [1, 5, 2, 8, 6, 3, 4, 7, 9] \
+                and o3["noOrd"][:2] == [5, 8] and o3["noOrd"][-4:] == [7, 1, 4, 3] \
+                and o3["noP"] == [5, 8, 6, 9, 2, 1, 7, 4, 3] \
+                and o3["noEdge"] == [5, 6, 9, 2, 1, 7, 4, 3, 8] \
+                and o3["noEvChip"] == [5, 8] \
+                and abs(o3["r5"]["p"] - 0.80) < 1e-9 and abs(o3["r5"]["lo"] - 0.75) < 1e-9 \
+                and abs(o3["r5"]["hi"] - 0.85) < 1e-9 and "+30.0 pts" in o3["vs"] and "mkt 60%" in o3["vs"] \
+                and o3["vs1"] == "-" and o3["sideBad"] == "best" and o3["sortBad"] == "best" \
+                and o3["restoredBad"] == ["best", "best"] and o3["restored"] == ["edge", "no"] and o3["sel"]
+    except Exception as e:
+        so_ok, so_out = False, repr(e)
+    ck("Matchups tab (sort / side): 'Best picks' (the default) ranks believable +EV lines by the EV at the cautious end "
+       "of the band (a +6c line whose floor is +4c above a NO +7c whose floor is +2c above a +9c line whose floor is "
+       "-1c), thin books and lines the record "
+       "impeaches next (with a stale quote), then every negative-EV line; 'Highest EV' ranks by EV in the same tiers; "
+       "the NO side shows 1 - p with the band flipped, NO's EV and the edge negated against 1 - p_market, a one-sided "
+       "book's NO edge as '-' (no NO contract behind it); the probability and edge sorts read the NO side; the +EV chip "
+       "with NO chosen keeps only lines whose NO EV is positive; the menus and the stored choices refuse bad values",
+       _mx_sort_default_ok(js) and so_ok is not False, str((so_ok, so_out)))
     ck("Matchups tab (F18/F17): a line the record impeaches (market_better) has its EV muted, never bold, and ranked "
        "with the thin books; the chip's tooltip prints the record it rests on (season, n, both log losses)",
        "mkt: (labels || []).includes(\"market_better\")" in js and "r.b && r.b.ok && !r.b.mkt" in js
