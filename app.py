@@ -2346,10 +2346,24 @@ def api_matchups():
         if not payload:
             return jsonify({"status": "none", "sport": sport, "date": key, "game": gid,
                             "why": "That game's detail is not published yet - reload the slate."})
+        if matchups.buildable(key) and matchups.started_piece(payload):
+            return jsonify({"status": "none", "sport": sport, "date": key, "game": gid,
+                            "why": "That game is under way or over: its players are off the list until their next "
+                                   "game (in-game prices are not pre-game prices)."})
         out = _json_finite(dict(payload))
         out.update(status="ok", sport=sport, date=key, age_s=int(age or 0))
         return jsonify(out)
+    # Today's and tomorrow's boards (MT) drop the players of any game already under way
+    # (its quotes are in-game); the next day's board takes over at midnight MT. A past
+    # date serves its LAST publish as it is -- which can be a rebuild made during play,
+    # so its quotes are not a pre-game record.
     payload, age, building = matchups.board(sport, key)
+    if payload and matchups.buildable(key):
+        payload, _gone = matchups.drop_started(payload)
+    elif payload and key < matchups.today_mt():
+        payload = dict(payload, notes=list(payload.get("notes") or []) + [
+            "A past date shows its last publish, which can be a rebuild made during play: its quotes and EV are "
+            "not a pre-game record."])
     if not payload:
         why = (f"Building the {sport.upper()} matchup board for {key} - usually under a minute, longer when "
                "another heavy build holds the server; this page checks again."

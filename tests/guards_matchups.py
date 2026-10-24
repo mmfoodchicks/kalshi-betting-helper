@@ -416,6 +416,9 @@ def run(ck):
                   "_mx.sort = 'p'; const noP = ord(mxScanView(_mx.data));\n"
                   "_mx.sort = 'edge'; const noEdge = ord(mxScanView(_mx.data));\n"
                   "_mx.sort = 'best'; _mx.label = 'positive_ev'; const noEvChip = ord(mxScanView(_mx.data)); _mx.label = '';\n"
+                  "_mx.side = 'yes'; const yesOrd = ord(mxScanView(_mx.data));\n"
+                  "const st7 = [_mxSideValue(lines[6].value, lines[6].labels, 'yes', 'pts').stale,"
+                  " _mxSideValue(lines[6].value, lines[6].labels, 'no', 'pts').stale]; _mx.side = 'no';\n"
                   "const r5 = _mxSideP(lines[4], 'no');\n"
                   # the change handler and the stored choices, fed bad values
                   "const store = {}; globalThis.localStorage = {getItem: (k) => store[k] || null, setItem: (k, v) => { store[k] = v; }};\n"
@@ -425,7 +428,8 @@ def run(ck):
                   "ch('side', 'no'); ch('sortsel', 'edge'); const saved = store.mxSortSide;\n"
                   "_mx.side = 'best'; _mx.sort = 'best'; store.mxSortSide = '{\"sort\":\"<img>\",\"side\":\"__proto__\"}'; _mxRestore();\n"
                   "const restoredBad = [_mx.sort, _mx.side]; store.mxSortSide = saved; _mxRestore();\n"
-                  "process.stdout.write(JSON.stringify({best, ev, noOrd, noP, noEdge, noEvChip, r5, vs: _mxVsMkt(lines[4].value, 'no'),"
+                  "process.stdout.write(JSON.stringify({best, ev, noOrd, noP, noEdge, noEvChip, yesOrd, st7, r5,"
+                  " vs: _mxVsMkt(lines[4].value, 'no'),"
                   " vs1: _mxVsMkt(lines[7].value, 'no'), sideBad, sortBad, saved, restoredBad, restored: [_mx.sort, _mx.side],"
                   " sel: noHtml.includes('data-mx=\"sortsel\"') && noHtml.includes('data-mx=\"side\"')}));")
             r3 = subprocess.run(["node", "-e", h3], capture_output=True, text=True, timeout=30)
@@ -442,6 +446,7 @@ def run(ck):
                 and o3["noP"] == [5, 8, 6, 9, 2, 1, 7, 4, 3] \
                 and o3["noEdge"] == [5, 6, 9, 2, 1, 7, 4, 3, 8] \
                 and o3["noEvChip"] == [5, 8] \
+                and o3["yesOrd"] == [2, 1, 3, 4, 7, 9, 6, 8, 5] and o3["st7"] == [True, False] \
                 and abs(o3["r5"]["p"] - 0.80) < 1e-9 and abs(o3["r5"]["lo"] - 0.75) < 1e-9 \
                 and abs(o3["r5"]["hi"] - 0.85) < 1e-9 and "+30.0 pts" in o3["vs"] and "mkt 60%" in o3["vs"] \
                 and o3["vs1"] == "-" and o3["sideBad"] == "best" and o3["sortBad"] == "best" \
@@ -454,7 +459,9 @@ def run(ck):
        "impeaches next (with a stale quote), then every negative-EV line; 'Highest EV' ranks by EV in the same tiers; "
        "the NO side shows 1 - p with the band flipped, NO's EV and the edge negated against 1 - p_market, a one-sided "
        "book's NO edge as '-' (no NO contract behind it); the probability and edge sorts read the NO side; the +EV chip "
-       "with NO chosen keeps only lines whose NO EV is positive; the menus and the stored choices refuse bad values",
+       "with NO chosen keeps only lines whose NO EV is positive; with YES chosen a stale quote's +EV ranks after the "
+       "clean +EV lines (sort review R2), and the stale qualifier rides only the side whose +EV earned it (R1); the "
+       "menus and the stored choices refuse bad values",
        _mx_sort_default_ok(js) and so_ok is not False, str((so_ok, so_out)))
     ck("Matchups tab (F18/F17): a line the record impeaches (market_better) has its EV muted, never bold, and ranked "
        "with the thin books; the chip's tooltip prints the record it rests on (season, n, both log losses)",
@@ -489,6 +496,128 @@ def run(ck):
        and 'deep_cache.register("nba_matchup", run_nba_matchup, max_age=6 * 3600, cadence="age")' in inspect.getsource(A)
        and '_deep_pc_first("nba_matchup")' in inspect.getsource(A))
     json.dumps(idx)            # the index is plain JSON
+
+    # the live view (the owner, 2026-10-24): a player leaves the list once his game starts; the next day's
+    # board takes over at midnight MT and is never mixed into the pool of unplayed players. The fixture's
+    # clock is 18:00 MT on 2026-11-05.
+    now = 1793926800.0
+    H = 3600.0
+
+    def _g(gid, start, state=None):
+        return {"game_id": gid, "home": "H" + gid, "away": "A" + gid, "start_ts": start, "state": state}
+
+    def _p(pid, gid):
+        return {"player_id": pid, "name": "P" + pid, "team": "T", "opp": "O", "game_id": gid, "markets": []}
+    today_idx = {"sport": "nba", "built_ts": now - 600, "notes": ["today note"], "games": [
+        _g("1", now + H), _g("2", now - H), _g("3", now - 4 * H), _g("4", None), _g("5", None, "in"), _g("6", now)],
+        "players": [_p("a", "1"), _p("b", "2"), _p("c", "3"), _p("f", "4"), _p("g", "5"), _p("h", "6")]}
+    lv, gone = matchups.drop_started(today_idx, now=now)
+    same, gone0 = matchups.drop_started(dict(today_idx, games=[_g("1", now + H)], players=[_p("a", "1")]), now=now)
+    ck("matchups live view: a player leaves the list the moment his game starts (b under way, c over, h tipping "
+       "now); a game ahead stays (a); a game with no start time stays (f) unless its board says it is in play (g); "
+       "the published board is never changed; the slate says why and that the next day's board shows from "
+       "midnight MT, the epoch of which rides the payload",
+       [p["player_id"] for p in lv["players"]] == ["a", "f"] and gone == {"2", "3", "5", "6"}
+       and [g["game_id"] for g in lv["games"]] == ["1", "4"] and len(today_idx["players"]) == 6
+       and any("under way or over" in n and "midnight" in n for n in lv["notes"]) and lv.get("live_filtered")
+       and lv.get("next_day_ts") == 1793948400.0 and gone0 == set() and same["notes"] == ["today note"],
+       str(([p["player_id"] for p in lv["players"]], gone, lv.get("next_day_ts"), lv["notes"])))
+    saved_board, saved_today = matchups.board, matchups.today_mt
+    asked = []
+    import app as A2
+    saved_ds, saved_sp, saved_bld, saved_game = matchups.drop_started, matchups.started_piece, matchups.buildable, \
+        matchups.game
+    matchups.board = lambda sport, key=None: (asked.append(key) or (today_idx, 60.0, False))
+    matchups.today_mt = lambda: "2026-11-05"
+    matchups.drop_started = lambda idx, now=None: saved_ds(idx, now=1793926800.0)
+    matchups.started_piece = lambda piece, now=None: saved_sp(piece, now=1793926800.0)
+    matchups.buildable = lambda key, today=None: key in ("2026-11-05", "2026-11-06")
+    # a real piece carries the whole slate's games list: it must be judged by ITS game (the re-check's V12)
+    matchups.game = lambda sport, key, gid: ({"game_id": gid, "games": list(today_idx["games"]),
+                                              "players": [_p("b", gid)]}, 10.0)
+    try:
+        cl2 = A2.app.test_client()
+        r_def = cl2.get("/api/matchups?sport=nba").get_json()
+        r_day = cl2.get("/api/matchups?sport=nba&date=2026-11-05").get_json()
+        r_past = cl2.get("/api/matchups?sport=nba&date=2026-10-01").get_json()
+        r_live_piece = cl2.get("/api/matchups?sport=nba&date=2026-11-05&game=2").get_json()
+        r_pre_piece = cl2.get("/api/matchups?sport=nba&date=2026-11-05&game=1").get_json()
+        r_past_piece = cl2.get("/api/matchups?sport=nba&date=2026-10-01&game=2").get_json()
+    finally:
+        matchups.board, matchups.today_mt = saved_board, saved_today
+        matchups.drop_started, matchups.started_piece, matchups.buildable = saved_ds, saved_sp, saved_bld
+        matchups.game = saved_game
+    ck("matchups live view: /api/matchups serves today's board (no next day mixed in: only today's board is ever "
+       "asked for) less its started games, as does an explicit today; a past date serves its last publish as it is; "
+       "and says its quotes are not a pre-game record; a started game's DETAIL piece is refused on a buildable date "
+       "(it would carry in-game quotes), judged by its own game in the slate's list, while a game ahead, or a past "
+       "date's, is served",
+       {p["player_id"] for p in r_def["players"]} == {"a", "f"} and {p["player_id"] for p in r_day["players"]} == {"a", "f"}
+       and len(r_past["players"]) == 6 and set(asked) == {"2026-11-05", "2026-10-01"}
+       and any("last publish" in n for n in r_past["notes"])
+       and r_live_piece.get("status") == "none" and "under way" in (r_live_piece.get("why") or "")
+       and r_pre_piece.get("status") == "ok" and r_past_piece.get("status") == "ok",
+       str((r_def.get("players"), asked, r_live_piece)))
+    js_live = open(os.path.join(_ROOT, "static", "matchups.js")).read()
+    lv_ok, lv_out = None, ""
+    try:
+        import shutil
+        import subprocess
+        if shutil.which("node"):
+            h4 = ("const _els = {}; const $ = (id) => (_els[id] = _els[id] || {innerHTML: '', value: '', dataset: {}});\n"
+                  "globalThis.document = {visibilityState: 'visible', querySelectorAll: () => [], addEventListener: () => {}};\n"
+                  "let waited = null, cb = null; globalThis.setTimeout = (f, ms) => { waited = ms; cb = f; return 1; };\n"
+                  "globalThis.clearTimeout = () => {};\n" + js_live + "\n"
+                  "(async () => {\n"
+                  "const nowS = Date.now() / 1000;\n"
+                  "const L = [{k: 10, p: 0.5, labels: [], market: {yes_ask: 50, no_ask: 52}}];\n"
+                  "const d = {status: 'ok', date: '2026-11-05', live_filtered: true, next_day_ts: nowS + 7200, games: ["
+                  "{game_id: '1', away: 'A1', home: 'H1', start_ts: nowS - 60},"
+                  "{game_id: '2', away: 'A2', home: 'H2', start_ts: nowS + 3600}],"
+                  " players: [{player_id: 'x', name: 'Xx', team: 'T', opp: 'O', game_id: '1', markets: [{stat: 'pts', lines: L}]},"
+                  "{player_id: 'y', name: 'Yy', team: 'T', opp: 'O', game_id: '2', markets: [{stat: 'pts', lines: L}]}]};\n"
+                  "let served = d, fetches = 0;\n"
+                  "globalThis.fetch = async () => { fetches += 1; return {status: 200, json: async () => served}; };\n"
+                  "_mx.listed = false; _mx.data = d; const html = mxScanView(d);\n"
+                  "await mxLoad(); const armed = waited;\n"
+                  "const done = Object.assign({}, d, {players: [d.players[0]]}); _mx.data = done; _mxLiveTimer(); const wDone = waited;\n"
+                  "_mx.data = Object.assign({}, done, {placeholder: true}); _mxLiveTimer(); const wPh = waited;\n"
+                  "_mx.data = Object.assign({}, d, {games: [d.games[0], Object.assign({}, d.games[1], {start_ts: nowS + 300})]});"
+                  " _mxLiveTimer(); const wSoon = waited;\n"
+                  "_mx.date = '2026-11-05'; _mx.data = d; _mxLiveTimer(); served = d; await cb(); const keptPick = _mx.date;\n"
+                  "_mx.data = d; _mx.tries = 8; _mx.date = '2026-11-05';\n"
+                  "_mx.data = Object.assign({}, d, {next_day_ts: nowS - 5}); _mxLiveTimer();\n"
+                  "served = Object.assign({}, d); const f0 = fetches; await cb();\n"
+                  "await new Promise((r) => setImmediate(r));\n"
+                  "globalThis.fetch = async () => { throw new Error('down'); }; waited = null; _mx.retry = null;\n"
+                  "await mxLoad(true); const wErr = waited;\n"
+                  "globalThis.fetch = async () => ({status: 200, json: async () => ({status: 'none', why: 'no board'})});"
+                  " waited = null; _mx.retry = null; await mxLoad(true); const wNone = waited;\n"
+                  "_mx.tries = 7; served = d; globalThis.fetch = async () => ({status: 200, json: async () => served});"
+                  " const fN = cb; fN(); const triesAfterRetry = _mx.tries;\n"
+                  "process.stdout.write(JSON.stringify({started: [..._mxStarted(d)], x: html.includes('Xx'), y: html.includes('Yy'),"
+                  " a1: html.includes('A1 @ H1'), a2: html.includes('A2 @ H2'), armed, wDone, tries: _mx.tries,"
+                  " date: _mx.date, refetched: fetches > f0, stopped: !!(_mx.data || {}).stopped, wErr, wPh, wSoon, keptPick,"
+                  " wNone, triesAfterRetry}));\n"
+                  "})();")
+            r4 = subprocess.run(["node", "-e", h4], capture_output=True, text=True, timeout=30)
+            o4 = json.loads(r4.stdout) if r4.returncode == 0 and r4.stdout else None
+            lv_out = r4.stdout[:600] + r4.stderr[-400:]
+            lv_ok = bool(o4) and o4["started"] == ["1"] and not o4["x"] and o4["y"] and not o4["a1"] and o4["a2"] \
+                and o4["armed"] == 900000 and 7200000 <= o4["wDone"] <= 7206000 and o4["tries"] == 0 \
+                and o4["date"] == "" and o4["refetched"] and not o4["stopped"] and o4["wErr"] == 120000 \
+                and o4["wPh"] == 900000 and 300000 <= o4["wSoon"] <= 306000 and o4["keptPick"] == "2026-11-05" \
+                and o4["wNone"] == 120000 and o4["triesAfterRetry"] == 0
+    except Exception as e:
+        lv_ok, lv_out = False, repr(e)
+    ck("Matchups tab live view (in the browser): a game that starts while the tab is open drops its players and leaves "
+       "the game picker on the page's own clock; a load arms the live timer -- at the next start and at least every "
+       "fifteen minutes (the boards' TTL) while anyone is left, else only for midnight MT (no rebuilds of an empty "
+       "list); a failed reload looks again in two minutes instead of ending the polling; at "
+       "midnight a date picked as today follows the day and the poll's building retries start afresh (the re-check's "
+       "R-1/R-3: it stalled on 'still building' or served the finished board); a tab back from the background "
+       "re-renders; a game filter whose game left is cleared",
+       lv_ok is not False and '_mx.game = ""' in js_live and '"visibilitychange"' in js_live, str((lv_ok, lv_out)))
 
     # the NFL data job backfills the two seasons the profiles read back, once
     import types

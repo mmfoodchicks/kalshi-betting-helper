@@ -133,7 +133,8 @@ function _mxSideValue(v, labels, side, stat) {
   if (!_mxOk(ev)) return null;
   const iv = (v.ev_interval || {})[side] || [null, null];
   return { side, ev, roi: side === "no" ? v.roi_no : v.roi_yes, lo: iv[0], hi: iv[1], ok: v.believable !== false,
-    mkt: ev > 0 && _mxImpeached(stat, labels), stale: (labels || []).includes("stale_quote") };
+    // the stale_quote label was earned by a +EV side: on the other, negative side it is noise (sort review R1)
+    mkt: ev > 0 && _mxImpeached(stat, labels), stale: ev > 0 && (labels || []).includes("stale_quote") };
 }
 // The probability of the side shown, and its band (NO's band is YES's, flipped).
 function _mxSideP(l, side) {
@@ -212,6 +213,13 @@ function initMatchups() {
     <div id="mxBody" style="margin-top:8px"><div class="empty">Loading…</div></div>`;
   root.addEventListener("click", _mxClick);
   root.addEventListener("change", _mxChange);
+  // a tab coming back from the background re-renders at once (a game that started while it
+  // was hidden leaves the list now, not at the next poll) and re-arms the live timer
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible" || !(_mx.data || {}).live_filtered) return;
+    // back after more than two minutes: look again (quotes, and games that started meanwhile)
+    if (Date.now() - (_mx.loadedAt || 0) > 120000) { _mx.tries = 0; mxLoad(true); } else { mxRender(); _mxLiveTimer(); }
+  });
   mxLoad();
 }
 
@@ -262,6 +270,7 @@ async function mxLoad(retry) {
   } catch (e) {
     _mx.err = "Could not reach the server.";
     mxRender();
+    _mxRetrySoon();
     return;
   }
   // A body that is not JSON, or JSON without a known status, is a bad
@@ -279,12 +288,57 @@ async function mxLoad(retry) {
     _mx.retry = setTimeout(() => mxLoad(true), 20000);
   } else if (_mx.data && _mx.data.building) {
     // the server's "this page checks again" is no longer true once the tab stops
-    _mx.data.why = "Still building after eight checks (about three minutes) - reload the tab to look again.";
+    _mx.data.why = "Still building after eight checks (about three minutes) - the tab looks again in two minutes.";
     _mx.data.building = false;
     _mx.data.stopped = true;
   }
+  _mx.loadedAt = Date.now();
+  // a game filter whose game has left the list would empty the table under "every game"
+  if (_mx.game && !(((_mx.data || {}).games) || []).some((g) => String(g.game_id) === _mx.game)) _mx.game = "";
   mxRender();
   if (_mx.view !== "scan") _mxNeedPieces();
+  // a live board arms the live timer; a failed or unreadable answer looks again in two minutes
+  // (a deploy swap or a network blip must not end the polling), a building one has its own retry
+  if (_mx.data && _mx.data.status === "ok") _mxLiveTimer();
+  else if (!_mx.retry) _mxRetrySoon();
+}
+function _mxRetrySoon() {
+  if (_mx.live) { clearTimeout(_mx.live); _mx.live = null; }
+  _mx.live = setTimeout(() => {
+    if (document.visibilityState === "hidden") { _mxRetrySoon(); return; }
+    _mx.tries = 0;
+    mxLoad(true);
+  }, 120000);
+}
+// While today's (or tomorrow's) board is open, look again when the next game starts --
+// its players leave the list -- and just after midnight Mountain time, when the next
+// day's board takes over (the owner: the next game shows "starting at midnight", never
+// mixed into the pool of unplayed players); at least every fifteen minutes for fresh quotes.
+function _mxLiveTimer() {
+  if (_mx.live) { clearTimeout(_mx.live); _mx.live = null; }
+  const d = _mx.data || {};
+  if (!d.live_filtered || d.status !== "ok") return;
+  const now = Date.now() / 1000;
+  const started = _mxStarted(d);
+  // a placeholder (a failed or empty build) promises a retry: it is polled like a live board
+  const left = d.placeholder || (d.players || []).some((p) => !started.has(String(p.game_id)));
+  const next = (d.games || []).map((g) => g.start_ts).concat([d.next_day_ts])
+    .filter((t) => _mxOk(t) && t > now).sort((a, b) => a - b)[0];
+  // with nobody left to show, only midnight brings anything: no ten-minute rebuilds of an empty list
+  // at most every 15 minutes, the boards' TTL: a shorter poll would only force rebuilds
+  const wait = left ? Math.max(30, Math.min(900, _mxOk(next) ? next - now + 5 : 900))
+    : Math.max(30, _mxOk(d.next_day_ts) ? d.next_day_ts - now + 5 : 900);
+  _mx.live = setTimeout(() => {
+    if (document.visibilityState === "hidden") { _mxLiveTimer(); return; }
+    // past midnight a date the owner picked as "today" follows the day: asking for it again
+    // would serve the finished board, every played player back on it
+    if (_mx.date && _mx.date === d.date && _mxOk(d.next_day_ts) && Date.now() / 1000 >= d.next_day_ts) {
+      _mx.date = "";
+      if ($("mxDate")) $("mxDate").value = "";
+    }
+    _mx.tries = 0;      // a poll is a fresh look: the building retries count from it, or midnight's build stalls
+    mxLoad(true);
+  }, wait * 1000);
 }
 
 // The full players of the games the open view needs (the player page, the
@@ -322,7 +376,8 @@ function mxRender() {
   if (!st || !body) return;
   if (_mx.err) { st.innerHTML = ""; body.innerHTML = `<div class="empty">${_mxEsc(_mx.err)}</div>`; return; }
   const d = _mx.data || {};
-  if (d.date && $("mxDate") && !$("mxDate").value) $("mxDate").value = d.date;
+  // with no date picked the picker follows the board's day (it turns at midnight)
+  if (d.date && $("mxDate") && (!_mx.date || !$("mxDate").value)) $("mxDate").value = d.date;
   if (d.status !== "ok") {
     st.innerHTML = "";
     body.innerHTML = `<div class="empty">${_mxEsc(d.why || "No matchup board for this date yet.")}</div>`;
@@ -345,10 +400,18 @@ function mxRender() {
 }
 
 // ---- Opportunities: every line, ranked ---------------------------------------
+// The games already under way on this page's clock: a board the server filtered when it
+// answered keeps dropping players as their games start while the tab stays open.
+function _mxStarted(d) {
+  const now = Date.now() / 1000;
+  return new Set(d.live_filtered ? (d.games || []).filter((g) => _mxOk(g.start_ts) && g.start_ts <= now).map((g) => String(g.game_id)) : []);
+}
 function _mxRows(d) {
   const rows = [];
   _mx.hidden = 0;
+  const started = _mxStarted(d);
   for (const p of d.players || []) {
+    if (started.has(String(p.game_id))) continue;
     for (const m of p.markets || []) {
       for (const l of m.lines || []) {
         if (_mx.listed && !l.market) { _mx.hidden += 1; continue; }
@@ -362,7 +425,8 @@ function _mxKey(v) { return _mxOk(v) ? v : -1e12; }     // a missing value sorts
 function mxScanView(d) {
   let rows = _mxRows(d);
   const stats = [...new Set(rows.map((r) => r.m.stat))];
-  const games = (d.games || []).map((g) => [g.game_id, `${g.away} @ ${g.home}`]);
+  const started = _mxStarted(d);
+  const games = (d.games || []).filter((g) => !started.has(String(g.game_id))).map((g) => [g.game_id, `${g.away} @ ${g.home}`]);
   if (_mx.label) {
     // the +EV chips name a side: with YES or NO chosen, a line qualifies only
     // when THAT side's EV is positive
@@ -549,7 +613,7 @@ function _mxPicker(sel, act) {
 // One player's card from his game's full piece, or what is happening to it.
 function _mxCardFor(id, idx, compact) {
   if (!id) return `<div class="empty">${idx ? "Pick a player." : "Pick a player, or open one from Opportunities."}</div>`;
-  if (!_mxGameOf(id)) return `<div class="empty">He is not on this slate - pick a player from this date's list.</div>`;
+  if (!_mxGameOf(id)) return `<div class="empty">${(_mx.data || {}).live_filtered ? "He is not on the list: his game is under way or over (the next day's board shows from midnight, Mountain time), or he is not on this date's slate." : "He is not on this slate - pick a player from this date's list."}</div>`;
   const piece = _mx.full[_mxGameOf(id)];
   if (!piece || piece.loading) return `<div class="empty">Loading his matchup detail…</div>`;
   if (piece.error) return `<div class="empty">${_mxEsc(piece.error)}</div>`;

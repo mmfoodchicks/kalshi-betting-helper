@@ -419,3 +419,56 @@ def board(sport, key=None):
 def game(sport, key, game_id):
     """(full players of one game, age_s) as published with the index."""
     return boardshare.get(game_name(sport, key, str(game_id)), None)
+
+
+# ---- the live view: a player leaves the list once his game starts ----------------------------
+# The owner (2026-10-24): "when the specific player's game starts he drops from the
+# matchup list until it's over and the next game is picked up" -- and then: "I only want
+# it to show the next game starting at midnight, I dont want them tainting the pool of
+# unplayed players". So today's board (Mountain time) shows only the players whose game
+# has not started; the next day's board, with everyone's next game, takes over at
+# midnight MT when today_mt() turns. Once a game kicks off Kalshi's quotes are in-game
+# prices (kalshi_nba_props: the list endpoint keeps serving them during play), and a
+# pre-game probability set against them is exactly the mistake the CLAUDE.md gotcha
+# names. A game with no start time falls back to the state its board was built with.
+def game_started(g, now):
+    st = g.get("start_ts")
+    if not isinstance(st, (int, float)):
+        return str(g.get("state") or "").lower() in ("in", "post")
+    return now >= st
+
+
+def next_midnight_mt(now):
+    """The epoch of the next midnight, Mountain time: when the next day's board takes over."""
+    import clock
+    d = clock.mt_date(now) + datetime.timedelta(days=1)
+    return datetime.datetime.combine(d, datetime.time(0, 0), tzinfo=clock.MT).timestamp()
+
+
+def drop_started(idx, now=None):
+    """The index without the players of games already under way or over (a copy;
+    the published board is never changed). Returns (index, started game ids)."""
+    now = time.time() if now is None else now
+    if not idx:
+        return idx, set()
+    gone = {str(g.get("game_id")) for g in idx.get("games") or [] if game_started(g, now)}
+    out = dict(idx, live_filtered=True, next_day_ts=next_midnight_mt(now))
+    out["players"] = [p for p in idx.get("players") or [] if str(p.get("game_id")) not in gone]
+    out["games"] = [g for g in idx.get("games") or [] if str(g.get("game_id")) not in gone]
+    if gone:
+        n = len(gone)
+        out["notes"] = list(idx.get("notes") or []) + [
+            f"{n} game{'s' if n != 1 else ''} already under way or over: {'their' if n != 1 else 'its'} players are off "
+            "the list (in-game prices are not pre-game prices). The next day's board shows from midnight, Mountain time."]
+    return out, gone
+
+
+def started_piece(piece, now=None):
+    """True when a game's detail piece is for a game already under way or over: the
+    route refuses it, as the index drops it (both live reviews' MAJOR: the piece of a
+    board rebuilt after kickoff holds in-game quotes against the pre-game probability)."""
+    now = time.time() if now is None else now
+    gs = (piece or {}).get("games") or []
+    gid = str((piece or {}).get("game_id") or "")
+    mine = [g for g in gs if str(g.get("game_id")) == gid] or gs[:1]
+    return bool(mine) and game_started(mine[0], now)
