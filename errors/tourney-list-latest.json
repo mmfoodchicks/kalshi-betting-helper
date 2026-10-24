@@ -1,7 +1,7 @@
 {
  "boards": [
   {
-   "age_s": 1119,
+   "age_s": 26940,
    "built_ts": 1792789439,
    "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (DAL @ PHI)",
    "dg": 155217,
@@ -17,7 +17,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 1775,
+   "age_s": 27597,
    "built_ts": 1792788782,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (KC @ SEA)",
    "dg": 155216,
@@ -31,36 +31,6 @@
     "SEA"
    ],
    "worlds": 60000
-  },
-  {
-   "age_s": 78990,
-   "built_ts": 1792711566,
-   "contest": "NFL Showdown $1.25M Thursday Night Showdown [$300K to 1st] (NE @ CHI)",
-   "dg": 155204,
-   "entries": 73529,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "CHI vs NE",
-   "starts": "2026-10-23T00:15:00.0000000Z",
-   "teams": [
-    "CHI",
-    "NE"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 83893,
-   "built_ts": 1792706664,
-   "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st, $100K Leaderboard Eligible]",
-   "dg": 155198,
-   "entries": 147058,
-   "entry_fee": 20.0,
-   "kind": "classic",
-   "label": "Sunday main (10 games)",
-   "n_contests": 2,
-   "starts": "2026-10-25T17:00:00.0000000Z",
-   "teams": null,
-   "worlds": 180000
   }
  ],
  "pending": [],

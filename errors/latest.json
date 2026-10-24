@@ -2,6 +2,226 @@
  "errors": [
   {
    "code": "NFL-DRIFT",
+   "id": 1983,
+   "last_ts": 1792815680.8560865,
+   "msg": "Rush Yds: the model sits -4.5 points off Kalshi's mid over 218 rungs in 13 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 2081,
+   "tb": "",
+   "ts": 1792815680.8560865
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 1982,
+   "last_ts": 1792814673.970829,
+   "msg": "Rush Yds: the model sits -4.8 points off Kalshi's mid over 213 rungs in 13 games",
+   "n": 3,
+   "path": "Rush Yds",
+   "pid": 60,
+   "tb": "",
+   "ts": 1792814673.970829
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 1981,
+   "last_ts": 1792812847.00688,
+   "msg": "Rush Yds: the model sits -4.4 points off Kalshi's mid over 218 rungs in 13 games",
+   "n": 3,
+   "path": "Rush Yds",
+   "pid": 60,
+   "tb": "",
+   "ts": 1792812847.00688
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 1980,
+   "last_ts": 1792811023.6769042,
+   "msg": "Rush Yds: the model sits -4.7 points off Kalshi's mid over 213 rungs in 13 games",
+   "n": 3,
+   "path": "Rush Yds",
+   "pid": 60,
+   "tb": "",
+   "ts": 1792811023.6769042
+  },
+  {
+   "code": "MEM-high",
+   "id": 1979,
+   "last_ts": 1792809367.8072696,
+   "msg": "1991/2048MB: 1608.7MB pid7 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 176.8MB pid52 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 163.7MB pid60 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 24.7MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
+   "n": 1,
+   "path": null,
+   "pid": 60,
+   "tb": "",
+   "ts": 1792809367.8072696
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 1978,
+   "last_ts": 1792809177.228783,
+   "msg": "Rush Yds: the model sits -4.5 points off Kalshi's mid over 219 rungs in 13 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 60,
+   "tb": "",
+   "ts": 1792809177.228783
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 1977,
+   "last_ts": 1792809043.8962572,
+   "msg": "Rush Yds: the model sits -4.6 points off Kalshi's mid over 217 rungs in 13 games",
+   "n": 3,
+   "path": "Rush Yds",
+   "pid": 9,
+   "tb": "",
+   "ts": 1792809043.8962572
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 1976,
+   "last_ts": 1792807218.1635606,
+   "msg": "Rush Yds: the model sits -4.6 points off Kalshi's mid over 215 rungs in 13 games",
+   "n": 3,
+   "path": "Rush Yds",
+   "pid": 9,
+   "tb": "",
+   "ts": 1792807218.1635606
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 1975,
+   "last_ts": 1792805397.8334837,
+   "msg": "Rush Yds: the model sits -4.6 points off Kalshi's mid over 214 rungs in 13 games",
+   "n": 2,
+   "path": "Rush Yds",
+   "pid": 9,
+   "tb": "",
+   "ts": 1792805206.0556967
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 1974,
+   "last_ts": 1792803807.3537788,
+   "msg": "Rush Yds: the model sits -4.5 points off Kalshi's mid over 212 rungs in 13 games",
+   "n": 3,
+   "path": "Rush Yds",
+   "pid": 540,
+   "tb": "",
+   "ts": 1792803807.3537788
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 1973,
+   "last_ts": 1792801981.2137156,
+   "msg": "Rush Yds: the model sits -4.4 points off Kalshi's mid over 212 rungs in 13 games",
+   "n": 3,
+   "path": "Rush Yds",
+   "pid": 540,
+   "tb": "",
+   "ts": 1792801981.2137156
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 1972,
+   "last_ts": 1792800161.9277983,
+   "msg": "Rush Yds: the model sits -4.3 points off Kalshi's mid over 213 rungs in 13 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 540,
+   "tb": "",
+   "ts": 1792800161.9277983
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 1971,
+   "last_ts": 1792799869.4166977,
+   "msg": "Rush Yds: the model sits -4.5 points off Kalshi's mid over 212 rungs in 13 games",
+   "n": 3,
+   "path": "Rush Yds",
+   "pid": 61,
+   "tb": "",
+   "ts": 1792799869.4166977
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 1970,
+   "last_ts": 1792798030.2905345,
+   "msg": "Rush Yds: the model sits -4.7 points off Kalshi's mid over 206 rungs in 13 games",
+   "n": 3,
+   "path": "Rush Yds",
+   "pid": 61,
+   "tb": "",
+   "ts": 1792798030.2905345
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 1969,
+   "last_ts": 1792796208.4674056,
+   "msg": "Rush Yds: the model sits -4.6 points off Kalshi's mid over 206 rungs in 13 games",
+   "n": 3,
+   "path": "Rush Yds",
+   "pid": 61,
+   "tb": "",
+   "ts": 1792796208.4674056
+  },
+  {
+   "code": "KAL-candles",
+   "id": 1968,
+   "last_ts": 1792794509.551632,
+   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "n": 1,
+   "path": null,
+   "pid": 8,
+   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi.py\", line 254, in build\n    d = _get_json(f\"{BASE}/series/{series}/markets/{ticker}/candlesticks\"\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
+   "ts": 1792794509.551632
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 1967,
+   "last_ts": 1792794381.0109184,
+   "msg": "Rush Yds: the model sits -4.4 points off Kalshi's mid over 203 rungs in 13 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 61,
+   "tb": "",
+   "ts": 1792794381.0109184
+  },
+  {
+   "code": "MEM-high",
+   "id": 1966,
+   "last_ts": 1792794283.401397,
+   "msg": "1983/2048MB: 1542.9MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 252.5MB pid7 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 71.3MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 68.6MB pid60 /usr/local/bin/python3.11 -c import os\ntry:\n    ; 23.5MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
+   "n": 1,
+   "path": null,
+   "pid": 7,
+   "tb": "",
+   "ts": 1792794283.401397
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 1965,
+   "last_ts": 1792793293.7265801,
+   "msg": "Rush Yds: the model sits -4.2 points off Kalshi's mid over 205 rungs in 13 games",
+   "n": 3,
+   "path": "Rush Yds",
+   "pid": 7,
+   "tb": "",
+   "ts": 1792793293.7265801
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 1964,
+   "last_ts": 1792791474.599691,
+   "msg": "Rush Yds: the model sits -4.6 points off Kalshi's mid over 203 rungs in 13 games",
+   "n": 3,
+   "path": "Rush Yds",
+   "pid": 7,
+   "tb": "",
+   "ts": 1792791474.599691
+  },
+  {
+   "code": "NFL-DRIFT",
    "id": 1963,
    "last_ts": 1792789633.8597896,
    "msg": "Rush Yds: the model sits -4.2 points off Kalshi's mid over 201 rungs in 13 games",
@@ -2441,116 +2661,17 @@
    "pid": 8,
    "tb": "Traceback (most recent call last):\n  File \"/app/kalshi_nfl.py\", line 94, in _fetch\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
    "ts": 1792247361.243318
-  },
-  {
-   "code": "MEM-high",
-   "id": 1741,
-   "last_ts": 1792206031.2629323,
-   "msg": "1734/2048MB: 1244.6MB pid7 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 145.2MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 125.2MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 36.5MB pid15 /portdetectorv2; 24.8MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
-   "n": 1,
-   "path": null,
-   "pid": 8,
-   "tb": "",
-   "ts": 1792206031.2629323
-  },
-  {
-   "code": "KAL-candles",
-   "id": 1740,
-   "last_ts": 1792200562.3859959,
-   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "n": 1,
-   "path": null,
-   "pid": 7,
-   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi.py\", line 254, in build\n    d = _get_json(f\"{BASE}/series/{series}/markets/{ticker}/candlesticks\"\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
-   "ts": 1792200562.3859959
-  },
-  {
-   "code": "MEM-high",
-   "id": 1739,
-   "last_ts": 1792200367.2183475,
-   "msg": "1889/2048MB: 1365.1MB pid7 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 236.2MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 72.5MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 24.7MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
-   "n": 1,
-   "path": null,
-   "pid": 9,
-   "tb": "",
-   "ts": 1792200367.2183475
-  },
-  {
-   "code": "UFCC-rounds",
-   "id": 1738,
-   "last_ts": 1792198752.720809,
-   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "n": 1,
-   "path": null,
-   "pid": 9,
-   "tb": "Traceback (most recent call last):\n  File \"/app/ufc_combo.py\", line 109, in markets\n    for m in _series(\"KXUFCROUNDS\"):\n             ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/ufc_combo.py\", line 66, in _series\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
-   "ts": 1792198752.720809
-  },
-  {
-   "code": "MEM-high",
-   "id": 1737,
-   "last_ts": 1792196955.6605806,
-   "msg": "1791/2048MB: 1161.4MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 206.3MB pid7 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 93.8MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 36.1MB pid16 /portdetectorv2; 24.9MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
-   "n": 1,
-   "path": null,
-   "pid": 7,
-   "tb": "",
-   "ts": 1792196955.6605806
-  },
-  {
-   "code": "MEM-high",
-   "id": 1736,
-   "last_ts": 1792191256.8414712,
-   "msg": "2040/2048MB: 1479.9MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 243.4MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 99.4MB pid7 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 24.9MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
-   "n": 1,
-   "path": null,
-   "pid": 8,
-   "tb": "",
-   "ts": 1792191256.8414712
-  },
-  {
-   "code": "MEM-high",
-   "id": 1735,
-   "last_ts": 1792190300.187701,
-   "msg": "2040/2048MB: 1449.9MB pid7 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 415.7MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 167.7MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 25.0MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
-   "n": 1,
-   "path": null,
-   "pid": 9,
-   "tb": "",
-   "ts": 1792190300.187701
-  },
-  {
-   "code": "MEM-high",
-   "id": 1734,
-   "last_ts": 1792188452.2448409,
-   "msg": "2047/2048MB: 1486.5MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 290.8MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 274.0MB pid7 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 24.9MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
-   "n": 1,
-   "path": null,
-   "pid": 7,
-   "tb": "",
-   "ts": 1792188452.2448409
-  },
-  {
-   "code": "MEM-high",
-   "id": 1733,
-   "last_ts": 1792186868.5809286,
-   "msg": "1842/2048MB: 1243.2MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 276.5MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 166.9MB pid7 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 36.9MB pid15 /portdetectorv2; 24.9MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
-   "n": 1,
-   "path": null,
-   "pid": 7,
-   "tb": "",
-   "ts": 1792186868.5809286
   }
  ],
- "generated_at": 1792790558.1674275,
+ "generated_at": 1792816379.5950353,
  "summary": [
   {
    "code": "NFL-DRIFT",
    "first_ts": 1792558319.4804556,
-   "last_msg": "Rush Yds: the model sits -4.2 points off Kalshi's mid over 201 rungs in 13 games",
-   "last_ts": 1792789633.8597896,
-   "n": 123,
-   "variants": 89
+   "last_msg": "Rush Yds: the model sits -4.5 points off Kalshi's mid over 218 rungs in 13 games",
+   "last_ts": 1792815680.8560865,
+   "n": 165,
+   "variants": 106
   },
   {
    "code": "HIND-nopool",
@@ -2562,11 +2683,11 @@
   },
   {
    "code": "MEM-high",
-   "first_ts": 1792186868.5809286,
-   "last_msg": "1861/2048MB: 1370.0MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 205.9MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 85.7MB pid7 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 24.9MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
-   "last_ts": 1792706759.9560285,
-   "n": 25,
-   "variants": 25
+   "first_ts": 1792249421.1281316,
+   "last_msg": "1991/2048MB: 1608.7MB pid7 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 176.8MB pid52 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 163.7MB pid60 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 24.7MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
+   "last_ts": 1792809367.8072696,
+   "n": 20,
+   "variants": 20
   },
   {
    "code": "KNFL-markets-fetch",
@@ -2586,17 +2707,9 @@
   },
   {
    "code": "KAL-candles",
-   "first_ts": 1792200562.3859959,
+   "first_ts": 1792339206.802666,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "last_ts": 1792705240.1217618,
-   "n": 3,
-   "variants": 3
-  },
-  {
-   "code": "UFCC-rounds",
-   "first_ts": 1792198752.720809,
-   "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "last_ts": 1792695943.9849725,
+   "last_ts": 1792794509.551632,
    "n": 3,
    "variants": 3
   },
@@ -2613,6 +2726,14 @@
    "first_ts": 1792592282.4768794,
    "last_msg": "RuntimeError: KXNFLPASSYDS: page 2 failed after 200 markets -- a partial series is not an index",
    "last_ts": 1792655279.6554048,
+   "n": 2,
+   "variants": 2
+  },
+  {
+   "code": "UFCC-rounds",
+   "first_ts": 1792530644.346068,
+   "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "last_ts": 1792695943.9849725,
    "n": 2,
    "variants": 2
   }
