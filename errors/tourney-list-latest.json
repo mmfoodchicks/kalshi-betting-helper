@@ -1,24 +1,8 @@
 {
  "boards": [
   {
-   "age_s": 1762,
-   "built_ts": 1792873006,
-   "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (DAL @ PHI)",
-   "dg": 155217,
-   "entries": 73529,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "DAL vs PHI",
-   "starts": "2026-10-27T00:15:00.0000000Z",
-   "teams": [
-    "DAL",
-    "PHI"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 85986,
-   "built_ts": 1792788782,
+   "age_s": 26266,
+   "built_ts": 1792876783,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (KC @ SEA)",
    "dg": 155216,
    "entries": 78431,
@@ -29,6 +13,22 @@
    "teams": [
     "KC",
     "SEA"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 27687,
+   "built_ts": 1792875362,
+   "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (DAL @ PHI)",
+   "dg": 155217,
+   "entries": 73529,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "DAL vs PHI",
+   "starts": "2026-10-27T00:15:00.0000000Z",
+   "teams": [
+    "DAL",
+    "PHI"
    ],
    "worlds": 60000
   }
