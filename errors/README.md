@@ -2,7 +2,7 @@
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `NFL-DRIFT` | 315 | 10-25 18:52 | Receptions: the model sits -4.9 points off Kalshi's mid over 182 rungs in 5 games |
+| `NFL-DRIFT` | 317 | 10-25 19:53 | Receptions: the model sits -4.7 points off Kalshi's mid over 204 rungs in 5 games |
 | `HIND-nopool` | 103 | 10-22 03:59 | DraftKings served no pool |
 | `MEM-high` | 19 | 10-25 16:47 | 1783/2048MB: 1284.3MB pid7 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 139.7MB pid8 /usr/local/bin/python3.11 /usr |
 | `KNFL-markets-fetch` | 12 | 10-25 01:14 | HTTPError: HTTP Error 429: Too Many Requests |

@@ -2,6 +2,28 @@
  "errors": [
   {
    "code": "NFL-DRIFT",
+   "id": 2088,
+   "last_ts": 1792958007.3491502,
+   "msg": "Receptions: the model sits -4.7 points off Kalshi's mid over 204 rungs in 5 games",
+   "n": 1,
+   "path": "Receptions",
+   "pid": 514,
+   "tb": "",
+   "ts": 1792958007.3491502
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2087,
+   "last_ts": 1792956194.5014093,
+   "msg": "Receptions: the model sits -4.6 points off Kalshi's mid over 192 rungs in 5 games",
+   "n": 1,
+   "path": "Receptions",
+   "pid": 514,
+   "tb": "",
+   "ts": 1792956194.5014093
+  },
+  {
+   "code": "NFL-DRIFT",
    "id": 2086,
    "last_ts": 1792954378.8036666,
    "msg": "Receptions: the model sits -4.9 points off Kalshi's mid over 182 rungs in 5 games",
@@ -3664,15 +3686,15 @@
    "ts": 1792369964.9006412
   }
  ],
- "generated_at": 1792955688.4867337,
+ "generated_at": 1792961307.7240453,
  "summary": [
   {
    "code": "NFL-DRIFT",
    "first_ts": 1792558319.4804556,
-   "last_msg": "Receptions: the model sits -4.9 points off Kalshi's mid over 182 rungs in 5 games",
-   "last_ts": 1792954378.8036666,
-   "n": 315,
-   "variants": 192
+   "last_msg": "Receptions: the model sits -4.7 points off Kalshi's mid over 204 rungs in 5 games",
+   "last_ts": 1792958007.3491502,
+   "n": 317,
+   "variants": 194
   },
   {
    "code": "HIND-nopool",
