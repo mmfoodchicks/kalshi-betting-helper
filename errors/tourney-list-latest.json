@@ -1,24 +1,8 @@
 {
  "boards": [
   {
-   "age_s": 789,
-   "built_ts": 1792960518,
-   "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (KC @ SEA)",
-   "dg": 155216,
-   "entries": 78431,
-   "entry_fee": 15.0,
-   "kind": "showdown",
-   "label": "KC vs SEA",
-   "starts": "2026-10-26T00:20:00.0000000Z",
-   "teams": [
-    "KC",
-    "SEA"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 85945,
-   "built_ts": 1792875362,
+   "age_s": 15515,
+   "built_ts": 1792974277,
    "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (DAL @ PHI)",
    "dg": 155217,
    "entries": 73529,
@@ -31,16 +15,24 @@
     "PHI"
    ],
    "worlds": 60000
-  }
- ],
- "pending": [
+  },
   {
-   "dg": 153728,
-   "kind": "classic",
-   "label": "11-game classic \u00b7 Sun, Nov 1 1:00 PM ET",
-   "sport": "nfl",
-   "ts": 1792946881
+   "age_s": 15837,
+   "built_ts": 1792973954,
+   "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (KC @ SEA)",
+   "dg": 155216,
+   "entries": 78431,
+   "entry_fee": 15.0,
+   "kind": "showdown",
+   "label": "KC vs SEA",
+   "starts": "2026-10-26T00:20:00.0000000Z",
+   "teams": [
+    "KC",
+    "SEA"
+   ],
+   "worlds": 60000
   }
  ],
+ "pending": [],
  "sport": "nfl"
 }
