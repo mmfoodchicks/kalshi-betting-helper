@@ -1,8 +1,8 @@
 {
  "boards": [
   {
-   "age_s": 45168,
-   "built_ts": 1792974277,
+   "age_s": 883,
+   "built_ts": 1793053406,
    "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (DAL @ PHI)",
    "dg": 155217,
    "entries": 73529,
@@ -17,7 +17,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 45490,
+   "age_s": 80334,
    "built_ts": 1792973954,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (KC @ SEA)",
    "dg": 155216,
