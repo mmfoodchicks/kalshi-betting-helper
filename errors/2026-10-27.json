@@ -1,6 +1,28 @@
 {
  "errors": [
   {
+   "code": "SOC-kalshi",
+   "id": 2106,
+   "last_ts": 1793102417.023088,
+   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "n": 7,
+   "path": "KXCOPADELREYGAME",
+   "pid": 7065,
+   "tb": "Traceback (most recent call last):\n  File \"/app/soccer.py\", line 638, in build\n    ms = _fetch_series(ser)\n         ^^^^^^^^^^^^^^^^^^\n  File \"/app/soccer.py\", line 608, in _fetch_series\n    d = kalshi._get_json(url, timeout=20)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
+   "ts": 1793102382.6790912
+  },
+  {
+   "code": "UFCC-fights",
+   "id": 2105,
+   "last_ts": 1793094190.8992205,
+   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "n": 1,
+   "path": null,
+   "pid": 7020,
+   "tb": "Traceback (most recent call last):\n  File \"/app/ufc_combo.py\", line 99, in markets\n    for m in _series(\"KXUFCFIGHT\"):\n             ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/ufc_combo.py\", line 66, in _series\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
+   "ts": 1793094190.8992205
+  },
+  {
    "code": "KAL-candles",
    "id": 2104,
    "last_ts": 1793055521.4077,
@@ -3629,174 +3651,9 @@
    "pid": 2071,
    "tb": "",
    "ts": 1792499005.9085507
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1774,
-   "last_ts": 1792497187.0842557,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 2071,
-   "tb": "",
-   "ts": 1792497187.0842557
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1773,
-   "last_ts": 1792495369.9021742,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 2071,
-   "tb": "",
-   "ts": 1792495369.9021742
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1772,
-   "last_ts": 1792493551.9936018,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 2071,
-   "tb": "",
-   "ts": 1792493551.9936018
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1771,
-   "last_ts": 1792491735.4052145,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 2071,
-   "tb": "",
-   "ts": 1792491735.4052145
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1770,
-   "last_ts": 1792489917.3943162,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 2071,
-   "tb": "",
-   "ts": 1792489917.3943162
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1769,
-   "last_ts": 1792488502.695076,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 2057,
-   "tb": "",
-   "ts": 1792488502.695076
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1768,
-   "last_ts": 1792486686.0656369,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 2057,
-   "tb": "",
-   "ts": 1792486686.0656369
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1767,
-   "last_ts": 1792484870.6226242,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 2057,
-   "tb": "",
-   "ts": 1792484870.6226242
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1766,
-   "last_ts": 1792483047.7070231,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 2057,
-   "tb": "",
-   "ts": 1792483047.7070231
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1765,
-   "last_ts": 1792482083.7762866,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 2031,
-   "tb": "",
-   "ts": 1792482083.7762866
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1764,
-   "last_ts": 1792480265.4026847,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 2031,
-   "tb": "",
-   "ts": 1792480265.4026847
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1763,
-   "last_ts": 1792478448.744156,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 2031,
-   "tb": "",
-   "ts": 1792478448.744156
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1762,
-   "last_ts": 1792476630.6354067,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 2031,
-   "tb": "",
-   "ts": 1792476630.6354067
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1761,
-   "last_ts": 1792474809.9839416,
-   "msg": "DraftKings served no pool",
-   "n": 2,
-   "path": "nfl:2026:w6:154941",
-   "pid": 2031,
-   "tb": "",
-   "ts": 1792474268.508107
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1760,
-   "last_ts": 1792472421.9541883,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 9,
-   "tb": "",
-   "ts": 1792472421.9541883
   }
  ],
- "generated_at": 1793077205.3018475,
+ "generated_at": 1793102853.8576078,
  "summary": [
   {
    "code": "NFL-DRIFT",
@@ -3808,11 +3665,11 @@
   },
   {
    "code": "HIND-nopool",
-   "first_ts": 1792472421.9541883,
+   "first_ts": 1792499005.9085507,
    "last_msg": "DraftKings served no pool",
    "last_ts": 1792641577.8736289,
-   "n": 102,
-   "variants": 94
+   "n": 86,
+   "variants": 79
   },
   {
    "code": "KNFL-markets-fetch",
@@ -3847,18 +3704,26 @@
    "variants": 10
   },
   {
-   "code": "KNFL-index-build",
-   "first_ts": 1792592282.4768794,
-   "last_msg": "RuntimeError: KXNFLTOTAL: page 2 failed after 200 markets -- a partial series is not an index",
-   "last_ts": 1792991824.2195208,
-   "n": 4,
-   "variants": 4
+   "code": "SOC-kalshi",
+   "first_ts": 1793102382.6790912,
+   "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "last_ts": 1793102417.023088,
+   "n": 7,
+   "variants": 1
   },
   {
    "code": "UFCC-fights",
    "first_ts": 1792654037.6263058,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "last_ts": 1793008666.1578984,
+   "last_ts": 1793094190.8992205,
+   "n": 5,
+   "variants": 5
+  },
+  {
+   "code": "KNFL-index-build",
+   "first_ts": 1792592282.4768794,
+   "last_msg": "RuntimeError: KXNFLTOTAL: page 2 failed after 200 markets -- a partial series is not an index",
+   "last_ts": 1792991824.2195208,
    "n": 4,
    "variants": 4
   },
