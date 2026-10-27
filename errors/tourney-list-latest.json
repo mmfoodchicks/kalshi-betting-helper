@@ -1,8 +1,8 @@
 {
  "boards": [
   {
-   "age_s": 60854,
-   "built_ts": 1793063083,
+   "age_s": 8969,
+   "built_ts": 1793130080,
    "contest": "NFL Showdown $1.25M Thursday Night Showdown [$300K to 1st] (CAR @ GB)",
    "dg": 155596,
    "entries": 73529,
@@ -17,7 +17,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 64698,
+   "age_s": 79809,
    "built_ts": 1793059239,
    "contest": "NFL Showdown $500K Wildcat [$100K to 1st] (DAL @ PHI)",
    "dg": 155217,
