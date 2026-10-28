@@ -1,6 +1,17 @@
 {
  "errors": [
   {
+   "code": "KNFL-markets-fetch",
+   "id": 2113,
+   "last_ts": 1793177007.0541716,
+   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "n": 1,
+   "path": null,
+   "pid": 10486,
+   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi_nfl.py\", line 108, in _fetch\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
+   "ts": 1793177007.0541716
+  },
+  {
    "code": "KNFL-index-build",
    "id": 2112,
    "last_ts": 1793165110.7172513,
@@ -2969,374 +2980,33 @@
    "pid": 6094,
    "tb": "",
    "ts": 1792588020.9685102
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1842,
-   "last_ts": 1792586892.5724275,
-   "msg": "Rush Yds: the model sits -4.6 points off Kalshi's mid over 45 rungs in 5 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6074,
-   "tb": "",
-   "ts": 1792586892.5724275
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1841,
-   "last_ts": 1792586889.6671512,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6074,
-   "tb": "",
-   "ts": 1792586889.6671512
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1840,
-   "last_ts": 1792585066.0560174,
-   "msg": "Rush Yds: the model sits -5.1 points off Kalshi's mid over 38 rungs in 5 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6074,
-   "tb": "",
-   "ts": 1792585066.0560174
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1839,
-   "last_ts": 1792585063.066621,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6074,
-   "tb": "",
-   "ts": 1792585063.066621
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1838,
-   "last_ts": 1792583244.0022223,
-   "msg": "Rush Yds: the model sits -5.3 points off Kalshi's mid over 38 rungs in 4 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6074,
-   "tb": "",
-   "ts": 1792583244.0022223
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1837,
-   "last_ts": 1792583240.8967726,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6074,
-   "tb": "",
-   "ts": 1792583240.8967726
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1836,
-   "last_ts": 1792581424.0166767,
-   "msg": "Rush Yds: the model sits -4.8 points off Kalshi's mid over 45 rungs in 5 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6074,
-   "tb": "",
-   "ts": 1792581424.0166767
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1835,
-   "last_ts": 1792581406.1853056,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6074,
-   "tb": "",
-   "ts": 1792581406.1853056
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1834,
-   "last_ts": 1792579587.867635,
-   "msg": "Rush Yds: the model sits -5.0 points off Kalshi's mid over 46 rungs in 5 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6074,
-   "tb": "",
-   "ts": 1792579587.867635
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1832,
-   "last_ts": 1792579585.9106534,
-   "msg": "DraftKings served no pool",
-   "n": 2,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6074,
-   "tb": "",
-   "ts": 1792579197.0853958
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1833,
-   "last_ts": 1792579199.8548708,
-   "msg": "Rush Yds: the model sits -4.9 points off Kalshi's mid over 47 rungs in 5 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6051,
-   "tb": "",
-   "ts": 1792579199.8548708
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1831,
-   "last_ts": 1792577359.2714992,
-   "msg": "Rush Yds: the model sits -5.1 points off Kalshi's mid over 46 rungs in 5 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6051,
-   "tb": "",
-   "ts": 1792577359.2714992
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1830,
-   "last_ts": 1792577357.216271,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6051,
-   "tb": "",
-   "ts": 1792577357.216271
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1829,
-   "last_ts": 1792575539.0714543,
-   "msg": "Rush Yds: the model sits -5.0 points off Kalshi's mid over 43 rungs in 5 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6051,
-   "tb": "",
-   "ts": 1792575539.0714543
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1828,
-   "last_ts": 1792575536.5246751,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6051,
-   "tb": "",
-   "ts": 1792575536.5246751
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1827,
-   "last_ts": 1792573717.797059,
-   "msg": "Rush Yds: the model sits -5.2 points off Kalshi's mid over 44 rungs in 5 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6051,
-   "tb": "",
-   "ts": 1792573717.797059
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1826,
-   "last_ts": 1792573710.6151097,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6051,
-   "tb": "",
-   "ts": 1792573710.6151097
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1825,
-   "last_ts": 1792571862.3336706,
-   "msg": "Rush Yds: the model sits -4.7 points off Kalshi's mid over 43 rungs in 4 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6051,
-   "tb": "",
-   "ts": 1792571862.3336706
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1824,
-   "last_ts": 1792571860.0424404,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6051,
-   "tb": "",
-   "ts": 1792571860.0424404
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1823,
-   "last_ts": 1792570594.0753791,
-   "msg": "Rush Yds: the model sits -5.1 points off Kalshi's mid over 43 rungs in 4 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 5573,
-   "tb": "",
-   "ts": 1792570594.0753791
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1822,
-   "last_ts": 1792570591.5284677,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 5573,
-   "tb": "",
-   "ts": 1792570591.5284677
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1821,
-   "last_ts": 1792568773.031656,
-   "msg": "Rush Yds: the model sits -4.8 points off Kalshi's mid over 43 rungs in 4 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 5573,
-   "tb": "",
-   "ts": 1792568773.031656
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1820,
-   "last_ts": 1792568769.3061254,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 5573,
-   "tb": "",
-   "ts": 1792568769.3061254
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1819,
-   "last_ts": 1792566947.5332546,
-   "msg": "Rush Yds: the model sits -4.6 points off Kalshi's mid over 43 rungs in 4 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 5573,
-   "tb": "",
-   "ts": 1792566947.5332546
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1818,
-   "last_ts": 1792566945.0495608,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 5573,
-   "tb": "",
-   "ts": 1792566945.0495608
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1817,
-   "last_ts": 1792565126.2600899,
-   "msg": "Rush Yds: the model sits -4.9 points off Kalshi's mid over 43 rungs in 5 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 5573,
-   "tb": "",
-   "ts": 1792565126.2600899
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1816,
-   "last_ts": 1792565123.8241935,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 5573,
-   "tb": "",
-   "ts": 1792565123.8241935
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1815,
-   "last_ts": 1792563286.1213593,
-   "msg": "Rush Yds: the model sits -4.7 points off Kalshi's mid over 45 rungs in 5 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 5573,
-   "tb": "",
-   "ts": 1792563286.1213593
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1814,
-   "last_ts": 1792563283.9104416,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 5573,
-   "tb": "",
-   "ts": 1792563283.9104416
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1813,
-   "last_ts": 1792561463.911289,
-   "msg": "Rush Yds: the model sits -6.0 points off Kalshi's mid over 37 rungs in 4 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 5573,
-   "tb": "",
-   "ts": 1792561463.911289
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1812,
-   "last_ts": 1792561461.5164144,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 5573,
-   "tb": "",
-   "ts": 1792561461.5164144
   }
  ],
- "generated_at": 1793165893.0799892,
+ "generated_at": 1793191807.3585265,
  "summary": [
   {
    "code": "NFL-DRIFT",
-   "first_ts": 1792561463.911289,
+   "first_ts": 1792588021.397981,
    "last_msg": "Receptions: the model sits -4.7 points off Kalshi's mid over 204 rungs in 5 games",
    "last_ts": 1792958007.3491502,
-   "n": 315,
-   "variants": 192
+   "n": 299,
+   "variants": 176
   },
   {
    "code": "HIND-nopool",
-   "first_ts": 1792561461.5164144,
+   "first_ts": 1792588020.9685102,
    "last_msg": "DraftKings served no pool",
    "last_ts": 1792641577.8736289,
-   "n": 49,
-   "variants": 45
+   "n": 33,
+   "variants": 30
   },
   {
    "code": "KNFL-markets-fetch",
    "first_ts": 1792592282.4690208,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "last_ts": 1793165110.7065783,
-   "n": 19,
-   "variants": 18
+   "last_ts": 1793177007.0541716,
+   "n": 20,
+   "variants": 19
   },
   {
    "code": "MEM-high",
