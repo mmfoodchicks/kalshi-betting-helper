@@ -552,7 +552,25 @@ posts, on a dropped player, a status move or an engine bump (8+ builds of
 week 7's 43-minute board by Thursday) -- the owner: "no reason to have it
 automatically run on like monday or tuesday". **Every board records who asked
 for it** (`requested_by`: "PC request" for a Build from the tab, "Schedule"
-with the reason), and the PC's building-now note says the same. `vigil-pc.bat` is frozen on purpose (cmd reads .bat by byte offset,
+with the reason), and the PC's building-now note says the same. **The main
+slate is the NEAREST week's** (`dk.main_slate`, the one rule the PC and the
+tab's "built automatically" entry read; 2026-10-28): the most games across
+weeks made week 8's 11-game slate "main" on week 7's Saturday, so week 7's
+Millionaire never rebuilt and the owner's Build went to next week's slate.
+Eight games is the floor (`_MAIN_MIN_GAMES`; Thanksgiving week's main slate
+has nine). **Every tournament build simulates the slate's OWN week**
+(`nfl_game_sim.current_week(day=)` off its first kickoff's ET date): today's
+week was simulated for any slate, and that weekend's replay of week 8's slate
+dropped Allen, Jackson and Lawrence as "no projection this week". Tournament
+boards and the Build queue outlive the day-old board sweep by a week
+(`boardshare._KEEP_LONG`; it had deleted Thursday's Millionaire board by
+Friday night). **A build the PC owed and did not land says why**: a queued
+request's beside it (`queued_attempt`), the schedule's own (req_ts 0, the
+Saturday-night Millionaire) on the slate's card (`last_attempt`), each in
+the ledger as `TOURN-attempt` (showdowns `TOURN-attempt-sd`) -- read the
+error-log snapshot before guessing why a board is missing. The builders say
+why they returned nothing (`dfs_tourney.last_refusal`). A request lives until
+its slate locks (`starts_ts`). `vigil-pc.bat` is frozen on purpose (cmd reads .bat by byte offset,
 so a self-pulling batch file corrupts itself); all logic lives in Python.
 
 ## Hard-won gotchas

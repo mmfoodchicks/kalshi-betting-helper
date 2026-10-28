@@ -8936,7 +8936,7 @@ async function loadDfsTourneyList() {
     const pend = d.pending || [];
     if (!rows.length && !pend.length) { bx.files.innerHTML = ""; return; }
     const links = rows.map((r) => `<a href="#" onclick="loadDfsTourney(${r.dg}, true);return false" style="margin-right:10px" title="${escapeHtml(r.contest || "")}">${escapeHtml(r.label || (r.teams || []).join(" vs ") || String(r.dg))}</a><span class="small" style="color:var(--faint);margin-right:12px">${agoStr(r.age_s)}</span>`).join("");
-    const q = pend.length ? `<span class="small" style="color:var(--muted)"> · queued for the PC: ${pend.map((p) => `${escapeHtml(p.label || String(p.dg))} <a href="#" onclick="dfsTourneyCancel(${Number(p.dg)});return false" title="take this request back (a build the PC has started still finishes)">✕</a>`).join(", ")}</span>` : "";
+    const q = pend.length ? `<span class="small" style="color:var(--muted)"> · queued for the PC: ${pend.map((p) => `${escapeHtml(p.label || String(p.dg))}${p.attempt ? ` <span style="color:#e0a656">(⚠ not built: ${escapeHtml(p.attempt.why || "no reason given")})</span>` : ""} <a href="#" onclick="dfsTourneyCancel(${Number(p.dg)});return false" title="take this request back (a build the PC has started still finishes)">✕</a>`).join(", ")}</span>` : "";
     bx.files.innerHTML = `<div class="small" style="margin-top:6px;color:var(--muted)">🗂 boards on file: ${links}${q}</div>`;
   } catch (e) { bx.files.innerHTML = ""; }
 }
@@ -8982,7 +8982,7 @@ async function dfsTourneyRequest() {
       body: JSON.stringify({ sport: "nfl", dg: Number(dg), kind: showdown ? "showdown" : "classic",
                              label: `${_dfsSlateWhat(sl)} · ${_dfsDkWhen((sl || {}).starts)}` }),
     })).json();
-    if (r.queued && _dfsTourneyData && String(_dfsTourneyDg) === String(dg)) { _dfsTourneyData.queued_ts = r.ts; renderDfsTourney(_dfsTourneyData); }
+    if (r.queued && _dfsTourneyData && String(_dfsTourneyDg) === String(dg)) { _dfsTourneyData.queued_ts = r.ts; delete _dfsTourneyData.queued_attempt; renderDfsTourney(_dfsTourneyData); }
     renderDfsTourneyBuild(r.queued ? `queued: ${_dfsSlateWhat(sl)}` : (r.error || "could not queue it"));
     loadDfsTourneyList();
   } catch (e) { renderDfsTourneyBuild("could not reach the server"); }
@@ -8994,7 +8994,7 @@ async function dfsTourneyCancel(dg) {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sport: "nfl", dg, cancel: true }),
     });
-    if (_dfsTourneyData && String(_dfsTourneyDg) === String(dg)) { delete _dfsTourneyData.queued_ts; renderDfsTourney(_dfsTourneyData); }
+    if (_dfsTourneyData && String(_dfsTourneyDg) === String(dg)) { delete _dfsTourneyData.queued_ts; delete _dfsTourneyData.queued_attempt; renderDfsTourney(_dfsTourneyData); }
     loadDfsTourneyList();
   } catch (e) { /* the next load shows the queue as it stands */ }
 }
@@ -9035,10 +9035,26 @@ function _dfsTourneyBy(d) {
   if (!rb || !rb.by) return "";
   return ` · Build requested by: <b>${escapeHtml(rb.by)}</b>${rb.by === "Schedule" && rb.why ? ` (${escapeHtml(rb.why)})` : ""}`;
 }
+// A request the PC tried and could not build carries its report
+// (queued_attempt: when, and why); it used to read "queued" and nothing more
+// for days (week 8's main slate, queued 2026-10-24).
 function _dfsTourneyQueued(d) {
   if (!d.queued_ts) return "";
-  const t = new Date(d.queued_ts * 1000).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-  return `<span class="small" style="color:var(--muted)"> · ⏳ queued ${t}: the PC picks it up within 10 minutes; a showdown build takes about 20, a classic slate about an hour · <a href="#" onclick="dfsTourneyCancel(${Number(_dfsTourneyDg)});return false">cancel</a></span>`;
+  const hm = (ts) => new Date(ts * 1000).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  const a = d.queued_attempt;
+  const tried = a && a.ts ? ` · <b style="color:#e0a656">⚠ the PC tried at ${hm(a.ts)} and could not build it: ${escapeHtml(a.why || "no reason given")}</b> - it tries again every cycle until it builds, you cancel, or the slate locks` : "";
+  return `<span class="small" style="color:var(--muted)"> · ⏳ queued ${hm(d.queued_ts)}: the PC picks it up within 10 minutes; a showdown build takes about 20, a classic slate about an hour${tried} · <a href="#" onclick="dfsTourneyCancel(${Number(_dfsTourneyDg)});return false">cancel</a></span>`;
+}
+// The PC's latest failed try at this slate that no queued request carries:
+// its own schedule's (the Saturday-night Millionaire) or an earlier Build's,
+// newer than the board on show. A scheduled build that failed used to leave
+// nothing on the tab at all (last_attempt, 2026-10-28).
+function _dfsTourneyTried(d) {
+  const a = d.last_attempt;
+  if (!a || !a.ts) return "";
+  const t = new Date(a.ts * 1000).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" });
+  const who = a.scheduled ? "the PC's scheduled build" : "the PC's try at an earlier Build";
+  return `<div class="small" style="margin-top:4px"><b style="color:#e0a656">⚠ ${who} at ${t} did not build it: ${escapeHtml(a.why || "no reason given")}</b>${d.status === "ok" ? " - this is the board built before it" : ""}</div>`;
 }
 function renderDfsTourney(d) {
   const bx = _dfsTourneyBoxes();
@@ -9052,7 +9068,7 @@ function renderDfsTourney(d) {
       : `PC on, updating after its current build${pc.task ? ` (${escapeHtml(pc.task)})` : ""}`)
     : `PC off${pc.seen_s != null ? ` (seen ${agoStr(pc.seen_s)})` : ""}`;
   if (d.status !== "ok") {
-    box.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ <b>Tournament</b> - ${escapeHtml(d.why || "not built yet")} · ${pcTxt}${_dfsTourneyQueued(d)}</div>`;
+    box.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ <b>Tournament</b> - ${escapeHtml(d.why || "not built yet")} · ${pcTxt}${_dfsTourneyQueued(d)}</div>${_dfsTourneyTried(d)}`;
     return;
   }
   const classic = d.kind === "classic";
@@ -9148,7 +9164,7 @@ function renderDfsTourney(d) {
     ? ` Each simulated game is played snap by snap by the deep engine at the drive model's and its own blended level; every player's, defense's and kicker's points come off that one box score.`
     : (d.model ? ` Worlds: the ${escapeHtml(d.model)} model.` : "");
   box.innerHTML = `<div style="margin-top:10px;padding:8px 10px;border:1px solid var(--line,#333);border-radius:8px">
-    <div><b>🏟️ Tournament</b> <span class="small" style="color:var(--muted)">${escapeHtml(c.name || "")} · ${nf(c.max_entries)} entries · ${money(c.entry_fee)} · ${money(c.first_prize)} to 1st · built ${agoStr(d.age_s || 0)}${_dfsTourneyBy(d)} · ${pcTxt}</span>${_dfsTourneyQueued(d)}</div>
+    <div><b>🏟️ Tournament</b> <span class="small" style="color:var(--muted)">${escapeHtml(c.name || "")} · ${nf(c.max_entries)} entries · ${money(c.entry_fee)} · ${money(c.first_prize)} to 1st · built ${agoStr(d.age_s || 0)}${_dfsTourneyBy(d)} · ${pcTxt}</span>${_dfsTourneyQueued(d)}</div>${_dfsTourneyTried(d)}
     ${contestBtns}
     <div class="small" style="color:var(--muted);margin-top:2px">${head}${worldsTxt} ${escapeHtml(fm.note || "")}${fieldOnly.length ? ` Our depth and roster gates keep us off ${fieldOnly.slice(0, 8).map(escapeHtml).join(", ")}${fieldOnly.length > 8 ? ` and ${fieldOnly.length - 8} more` : ""}; the field still plays them.` : ""}</div>
     ${exp ? `<div class="small" style="color:var(--muted);margin-top:2px">⚠️ <b>Experimental win, EV and ROI</b>: ${expWhy}. Top 1% and top 0.1% are the ranking columns; the raw numbers stay on the sheet for comparison while the tail estimator is validated.</div>` : ""}

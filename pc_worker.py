@@ -590,6 +590,25 @@ def _tourney_requests(url, tok):
     return out
 
 
+def _report_attempt(url, tok, dg, req, why, kind="classic"):
+    """Tell the server why a slate was not built this cycle
+    (/api/dfs/tourney/attempt): one the owner queued (`req`, the request it
+    was made against) or a build the PC's own schedule owed (`req` None,
+    req_ts 0). The tab shows it beside the request or the slate, and the
+    server's ledger keeps it (TOURN-attempt). A queued slate used to read
+    "queued" and nothing more for days -- week 8's main slate, 2026-10-24 --
+    and a scheduled build that failed left nothing at all ("the million nfl
+    hasn't ran"). Best-effort; the build is tried again next cycle."""
+    print(f"[vigil-pc] tourney {dg}: {'queued from the tab' if req else 'scheduled build'}, not built - {why}")
+    try:
+        _api(url, tok, "/api/dfs/tourney/attempt",
+             data=json.dumps({"dg": int(dg), "req_ts": int((req or {}).get("ts") or 0),
+                              "why": str(why)[:240], "kind": kind}).encode(),
+             headers={"Content-Type": "application/json"}, timeout=30)
+    except Exception as e:
+        print(f"[vigil-pc] tourney {dg}: that report did not reach the server ({type(e).__name__}: {e})")
+
+
 def _tourney_state_path():
     import boardshare
     return os.path.join(os.path.dirname(boardshare._DIR), "tourney_state.json")
@@ -750,25 +769,16 @@ def _tourney_resave(name, board, url, tok):
 
 
 def _main_slate(slates):
-    """The Sunday main slate: an untagged classic slate of ten-plus games
-    (the Early Only / Afternoon Only / Sun-Mon slates carry tags), the most
-    games if several, within the next eight days."""
-    now = time.time()
-    best = None
-    for sl in slates:
-        if sl.get("contest_type") != 21 or (sl.get("games") or 0) < 10 or sl.get("tag"):
-            continue
-        # Epoch on both sides. DraftKings' lobby string is EASTERN and the old
-        # comparison set it against this PC's naive local clock (Mountain), so a
-        # main slate stayed "upcoming" until six hours after kickoff.
-        st = _dt_ts(sl.get("starts"))
-        if st is None:
-            continue
-        if not (now - 4 * 3600 <= st <= now + 8 * 86400):
-            continue
-        if best is None or (sl.get("games") or 0) > (best.get("games") or 0):
-            best = sl
-    return best
+    """The Sunday main slate (dk.main_slate, the rule the tab's "built
+    automatically" entry reads too): an untagged classic slate of eight-plus
+    games within the next eight days, the NEAREST week's -- the most games
+    across weeks picked next Sunday's slate from 2026-10-24 on, and week 7's
+    Millionaire board was never rebuilt. Epochs on both sides: DraftKings'
+    lobby string is EASTERN, and the old comparison set it against this PC's
+    naive local clock (Mountain), so a main slate stayed "upcoming" until six
+    hours after kickoff."""
+    import dk
+    return dk.main_slate(slates, now=time.time())
 
 
 def _sd_pool_sig(slate):
@@ -896,20 +906,20 @@ def _task_classic_tourney(url, tok):
         todo.append((int(main["draft_group_id"]), main))
     by_dg = {int(sl["draft_group_id"]): sl for sl in slates if sl.get("draft_group_id")}
     for dg, r in sorted(wanted.items(), key=lambda kv: kv[1].get("ts") or 0):
-        if r.get("kind") == "classic" and dg in by_dg and dg not in [d for d, _ in todo]:
+        if r.get("kind") != "classic":
+            continue
+        if dg not in by_dg:
+            _report_attempt(url, tok, dg, r, "DraftKings no longer lists this slate (locked or pulled)")
+        elif dg not in [d for d, _ in todo]:
             todo.insert(0, (dg, by_dg[dg]))
     if not todo:
         return
     state = _tourney_state()
     for dg, sl in todo:
         name = f"cl_tourney_nfl_{dg}"
-        try:
-            slate = dk.slate_for("nfl", draft_group_id=dg)
-        except Exception as e:
-            print(f"[vigil-pc] classic tourney {dg}: slate failed ({type(e).__name__}: {e})")
-            continue
-        if not slate:
-            continue
+        # whether a build is owed first, then DraftKings' pool: a failure is
+        # then always one of an owed build, reported as the request's or the
+        # schedule's (wanted.get(dg) None)
         board, age = boardshare.get(name, None)
         window = _cl_window_key(_dt_ts(sl.get("starts")))
         why = _cl_rebuild_reason(board, wanted.get(dg), state, dg, window)
@@ -919,6 +929,15 @@ def _task_classic_tourney(url, tok):
                       f"it builds Saturday night and after Sunday's inactives, or on a Build from the tab")
             elif not _tourney_resave(name, board, url, tok):
                 print(f"[vigil-pc] classic tourney {dg} ({sl.get('games')} games): current ({age/60:.0f} min old)")
+            continue
+        try:
+            slate = dk.slate_for("nfl", draft_group_id=dg)
+        except Exception as e:
+            print(f"[vigil-pc] classic tourney {dg}: slate failed ({type(e).__name__}: {e})")
+            _report_attempt(url, tok, dg, wanted.get(dg), f"DraftKings' player pool did not load ({type(e).__name__})")
+            continue
+        if not slate:
+            _report_attempt(url, tok, dg, wanted.get(dg), "DraftKings has no player pool posted for this slate yet")
             continue
         _yield_point(f"classic board {dg} ({sl.get('games')} games) - requested by {_requested_by(why)}: {why}")
         print(f"[vigil-pc] classic tourney {dg} ({sl.get('games')} games): building - {why}...")
@@ -930,9 +949,12 @@ def _task_classic_tourney(url, tok):
         except Exception as e:
             # the window is NOT consumed: a failed build is retried next cycle
             print(f"[vigil-pc] classic tourney {dg}: failed ({type(e).__name__}: {e})")
+            _report_attempt(url, tok, dg, wanted.get(dg), f"the build failed ({type(e).__name__}: {e})")
             continue
         if not art:
-            print(f"[vigil-pc] classic tourney {dg}: nothing to build (no seven-figure contest, or no pool)")
+            why_not = dfs_tourney.last_refusal() or "nothing to build"
+            print(f"[vigil-pc] classic tourney {dg}: nothing to build ({why_not})")
+            _report_attempt(url, tok, dg, wanted.get(dg), why_not)
             continue
         art["requested_by"] = {"by": _requested_by(why), "why": why}
         boardshare.put(name, art)
@@ -1001,6 +1023,18 @@ def _task_showdown_tourney(url, tok):
         else:
             small += 1
     soon.sort(key=lambda x: (x[0], x[1], x[2]))
+    taken = {int(x[3]["draft_group_id"]) for x in soon}
+    listed = {int(sl["draft_group_id"]): sl for sl in slates if sl.get("draft_group_id")}
+    for dg, r in wanted.items():
+        if r.get("kind") != "showdown" or dg in taken:
+            continue
+        st = _dt_ts(listed[dg].get("starts")) if dg in listed else None
+        _report_attempt(url, tok, dg, r,
+                        "DraftKings no longer lists this slate (locked or pulled)" if dg not in listed
+                        else "this game has kicked off (no board after lock)" if st is not None and st < now - 30 * 60
+                        else "more than eight days out: a showdown is built in its last eight days"
+                        if st is not None and st > now + 8 * 86400
+                        else "not a one-game showdown slate, or its start is unreadable", kind="showdown")
     if small:
         print(f"[vigil-pc] tourney: {small} showdown slate(s) under ${_SD_MIN_POOL:,} pool "
               "skipped (the tab's Build button queues any of them)")
@@ -1015,8 +1049,14 @@ def _task_showdown_tourney(url, tok):
             slate = dk.slate_for("nfl", draft_group_id=dg)
         except Exception as e:
             print(f"[vigil-pc] tourney {dg}: slate failed ({type(e).__name__}: {e})")
+            if dg in wanted:
+                _report_attempt(url, tok, dg, wanted[dg], f"DraftKings' player pool did not load ({type(e).__name__})",
+                                kind="showdown")
             continue
         if not slate:
+            if dg in wanted:
+                _report_attempt(url, tok, dg, wanted[dg], "DraftKings has no player pool posted for this slate yet",
+                                kind="showdown")
             continue
         cur, age = boardshare.get(name, None)
         # showdown reads the price- and status-sensitive signature, and its
@@ -1041,9 +1081,13 @@ def _task_showdown_tourney(url, tok):
         except Exception as e:
             # neither window is consumed: the refresh is owed again next cycle
             print(f"[vigil-pc] tourney {dg}: failed ({type(e).__name__}: {e})")
+            _report_attempt(url, tok, dg, wanted.get(dg), f"the build failed ({type(e).__name__}: {e})",
+                            kind="showdown")
             continue
         if not art:
-            print(f"[vigil-pc] tourney {dg}: nothing to build (no contest or pool)")
+            why_not = dfs_tourney.last_refusal() or "nothing to build"
+            print(f"[vigil-pc] tourney {dg}: nothing to build ({why_not})")
+            _report_attempt(url, tok, dg, wanted.get(dg), why_not, kind="showdown")
             continue
         art["requested_by"] = {"by": _requested_by(why), "why": why}
         boardshare.put(name, art)

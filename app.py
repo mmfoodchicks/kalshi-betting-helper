@@ -2239,56 +2239,138 @@ _TOURNEY_CL_MIN_POOL = 1_000_000       # pc_worker._CL_MIN_POOL: classic boards 
 _TOURNEY_SD_MIN_POOL = 500_000         # pc_worker._SD_MIN_POOL: the showdowns it builds on its own
 
 
-def _tourney_auto(slates):
+def _tourney_auto(slates, now=None):
     """{dg: "main" | "showdown"} for the slates the PC builds on its own, by
-    pc_worker's own rules (mirrored here: importing pc_worker would point
-    this server's stores at the PC's folders): the Sunday main slate
-    (_main_slate: the untagged classic of ten-plus games, the most games,
-    with a $1M+ contest to build against) and every showdown whose richest
-    contest clears _TOURNEY_SD_MIN_POOL. The tab lists these first. Rows
-    carry top_pool (api_dfs_slates)."""
+    pc_worker's own rules (importing pc_worker would point this server's
+    stores at the PC's folders): the Sunday main slate (dk.main_slate, the
+    one rule both read: the untagged classic of eight-plus games, the NEAREST
+    week's, with a $1M+ contest to build against -- the most games across
+    weeks named next Sunday's slate "main" from 2026-10-24, and the owner's
+    Build went to it) and every showdown whose richest contest clears
+    _TOURNEY_SD_MIN_POOL. The tab lists these first. Rows carry top_pool
+    (api_dfs_slates); `now` is the clock (epoch), for the guards."""
+    import dk
     out = {}
-    mains = [s for s in slates if s.get("contest_type") == 21 and (s.get("games") or 0) >= 10 and not s.get("tag")]
-    if mains:
-        m = max(mains, key=lambda s: s.get("games") or 0)
-        if (m.get("top_pool") or 0) >= _TOURNEY_CL_MIN_POOL:
-            out[m["draft_group_id"]] = "main"
+    m = dk.main_slate(slates, now=now)
+    if m and (m.get("top_pool") or 0) >= _TOURNEY_CL_MIN_POOL:
+        out[m["draft_group_id"]] = "main"
     for s in slates:
         if s.get("games") == 1 and s.get("contest_type") == 96 and (s.get("top_pool") or 0) >= _TOURNEY_SD_MIN_POOL:
             out[s["draft_group_id"]] = "showdown"
     return out
 
 
-def _tourney_requests():
-    """{dg: {sport, kind, ts, label}} the owner has asked the PC to build."""
+_TOURNEY_ATTEMPTS = "tourney_attempts"  # the PC's last failed try at a slate, beside the queue
+_TOURNEY_REQ_TTL_S = 3 * 86400          # a request whose slate's start is unknown lives three days
+_TOURNEY_REQ_MAX_S = 8 * 86400          # ... and none outlives the boards it asks for (boardshare._KEEP_LONG_S)
+_TOURNEY_LOCK_GRACE_S = 30 * 60         # the PC builds nothing half an hour past a slate's start
+
+
+def _tourney_req_live(r, now):
+    """Is a Build request still owed? Until its slate's start (recorded when
+    it was queued) plus half an hour -- a Monday Build for Sunday used to
+    vanish on Thursday, unbuilt and unexplained (the Fable review,
+    2026-10-28) -- or three days where the start is unknown; never past
+    eight."""
+    ts = r.get("ts") or 0
+    if ts < now - _TOURNEY_REQ_MAX_S:
+        return False
+    st = r.get("starts_ts")
+    if st:
+        return now <= float(st) + _TOURNEY_LOCK_GRACE_S
+    return ts >= now - _TOURNEY_REQ_TTL_S
+
+
+def _tourney_json(name):
+    """One of the Build queue's json files ({} when absent or unreadable)."""
     import boardshare
     try:
-        with open(boardshare._path(_TOURNEY_REQ, "json")) as fh:
+        with open(boardshare._path(name, "json")) as fh:
             return json.load(fh) or {}
     except OSError:
         return {}
     except Exception as e:
-        errlog.note("TOURN-req-read", e)
+        errlog.note("TOURN-req-read", e, path=name)
         return {}
+
+
+def _tourney_json_save(name, obj):
+    """Write one of the Build queue's json files atomically; False on failure."""
+    import boardshare
+    import tempfile
+    try:
+        os.makedirs(boardshare._DIR, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=boardshare._DIR, suffix=".tmp")
+        with os.fdopen(fd, "w") as fh:
+            json.dump(obj, fh)
+        os.replace(tmp, boardshare._path(name, "json"))
+        return True
+    except Exception as e:
+        errlog.note("TOURN-req-write", e, path=name)
+        return False
+
+
+def _tourney_requests():
+    """{dg: {sport, kind, ts, label}} the owner has asked the PC to build."""
+    return _tourney_json(_TOURNEY_REQ)
 
 
 def _tourney_pending():
     """Requests no board has answered yet: no board for that slate, or the
-    board is older than the ask. The PC builds these first; the tab shows
-    'queued' until the board lands."""
+    board is older than the ask, and still owed (_tourney_req_live). The PC
+    builds these first; the tab shows 'queued' until the board lands, and
+    the PC's last failed try at THIS request (`attempt`: when, and why it
+    could not build) beside it -- a request the PC could not build used to
+    read 'queued' with nothing more, for days (week 8's main slate, queued
+    2026-10-24 while week 7 was still the calendar's week)."""
     out = []
+    now = time.time()
+    tries = _tourney_json(_TOURNEY_ATTEMPTS)
     for dg, r in sorted(_tourney_requests().items(), key=lambda kv: kv[1].get("ts") or 0):
+        if not _tourney_req_live(r, now):
+            continue
         payload, _age = _tourney_board(r.get("sport") or "nfl", dg)
         if payload and (payload.get("built_ts") or 0) >= (r.get("ts") or 0):
             continue
         try:
-            out.append(dict(r, dg=int(dg)))
+            row = dict(r, dg=int(dg))
         except (TypeError, ValueError):
             continue
+        a = tries.get(str(dg))
+        if isinstance(a, dict) and a.get("req_ts") == r.get("ts"):
+            row["attempt"] = {"ts": a.get("ts"), "why": a.get("why")}
+        out.append(row)
     return out
 
 
 _TOURNEY_KINDS = ("cl", "sd")           # classic board first, then showdown
+
+
+def _tourney_slate_start(sport, dg):
+    """The slate's first kickoff (epoch) from DraftKings' lobby, or None."""
+    import dk
+    import nfl_dfs
+    try:
+        for sl in dk.slates(sport) or []:
+            if int(sl.get("draft_group_id") or 0) == int(dg):
+                return nfl_dfs.iso_ts(sl.get("starts"))
+    except Exception as e:
+        errlog.note("TOURN-req-start", e)
+    return None
+
+
+def _tourney_last_attempt(dg, payload, queued):
+    """The PC's latest failed try at this slate, for its card: within three
+    days, newer than the board on show (or with none), and not the queued
+    request's own (that one rides `queued_attempt`); else None."""
+    a = _tourney_json(_TOURNEY_ATTEMPTS).get(str(dg))
+    if not isinstance(a, dict) or (a.get("ts") or 0) < time.time() - _TOURNEY_REQ_TTL_S:
+        return None
+    if payload and (payload.get("built_ts") or 0) >= (a.get("ts") or 0):
+        return None
+    if queued and a.get("req_ts") == queued[0].get("ts"):
+        return None
+    return {"ts": a.get("ts"), "why": a.get("why"), "scheduled": not a.get("req_ts")}
 
 
 def _tourney_board(sport, dg):
@@ -2398,10 +2480,12 @@ def api_dfs_tourney():
         return jsonify({"status": "none", "pc": pc, "why": "dg (draft group) required"})
     queued = [r for r in _tourney_pending() if r["dg"] == dg]
     queued_ts = queued[0].get("ts") if queued else None
+    queued_attempt = queued[0].get("attempt") if queued else None
     payload, age = _tourney_board(sport, dg)
+    last_attempt = _tourney_last_attempt(dg, payload, queued)
     if not payload:
         return jsonify({"status": "none", "sport": sport, "draft_group_id": dg, "pc": pc,
-                        "queued_ts": queued_ts,
+                        "queued_ts": queued_ts, "queued_attempt": queued_attempt, "last_attempt": last_attempt,
                         "why": "not built yet - on its own the PC builds the Sunday main slate "
                                "Saturday night and after Sunday's inactives, and the Thursday, "
                                "Sunday and Monday night showdowns before their games; Build on "
@@ -2411,6 +2495,8 @@ def api_dfs_tourney():
     out["age_s"] = int(age or 0)
     out["pc"] = pc
     out["queued_ts"] = queued_ts
+    out["queued_attempt"] = queued_attempt
+    out["last_attempt"] = last_attempt
     return jsonify(out)
 
 
@@ -2429,8 +2515,6 @@ def api_dfs_tourney_request():
     (pc_worker._CL_MIN_POOL), so such a request answered "nothing to build"
     every cycle and sat in the queue for three days -- the 14-game Thu-Mon
     slate queued 2026-10-22 when the owner meant the Thursday showdown."""
-    import boardshare
-    import tempfile
     body = request.get_json(silent=True) or {}
     sport = (body.get("sport") or "nfl").lower()
     try:
@@ -2457,16 +2541,10 @@ def api_dfs_tourney_request():
                                          f"(the biggest is ${top:,.0f}); the PC builds classic boards only for those",
                                 "min_pool": _TOURNEY_CL_MIN_POOL}), 400
         reqs[str(dg)] = {"sport": sport, "kind": kind, "ts": now,
-                         "label": str(body.get("label") or "")[:120]}
-    reqs = {k: v for k, v in reqs.items() if (v.get("ts") or 0) >= now - 3 * 86400}
-    try:
-        os.makedirs(boardshare._DIR, exist_ok=True)
-        fd, tmp = tempfile.mkstemp(dir=boardshare._DIR, suffix=".tmp")
-        with os.fdopen(fd, "w") as fh:
-            json.dump(reqs, fh)
-        os.replace(tmp, boardshare._path(_TOURNEY_REQ, "json"))
-    except Exception as e:
-        errlog.note("TOURN-req-write", e)
+                         "label": str(body.get("label") or "")[:120],
+                         "starts_ts": _tourney_slate_start(sport, dg)}
+    reqs = {k: v for k, v in reqs.items() if _tourney_req_live(v, now)}
+    if not _tourney_json_save(_TOURNEY_REQ, reqs):
         return jsonify({"error": "could not queue the request"}), 500
     if body.get("cancel"):
         return jsonify({"cancelled": True, "dg": dg, "pending": len(_tourney_pending())})
@@ -2483,6 +2561,41 @@ def api_dfs_tourney_requests():
     return jsonify({"requests": _tourney_pending()})
 
 
+@app.route("/api/dfs/tourney/attempt", methods=["POST"])
+def api_dfs_tourney_attempt():
+    """The PC's report on a slate it owed a build and could not build (its
+    door only): {dg, req_ts, why}, req_ts the queued request it was made
+    against, or 0 for a build the PC's own schedule owed. Kept beside the
+    queue, the latest one per slate: shown with the request it was made
+    against (a fresh Build starts clean), and on the slate's card while it
+    is newer than the board shown. Also ledgered (TOURN-attempt), so a
+    Saturday-night Millionaire that did not build is on the error-log
+    snapshot, not only on the PC's console. The PC retries every cycle."""
+    if not _pc_auth_ok():
+        return jsonify({"error": "auth"}), 403
+    body = request.get_json(silent=True) or {}
+    try:
+        dg, req_ts = int(body.get("dg") or 0), int(body.get("req_ts") or 0)
+    except (TypeError, ValueError):
+        dg, req_ts = 0, -1
+    if dg <= 0 or req_ts < 0:
+        return jsonify({"error": "dg and req_ts (0 for a scheduled build) required"}), 400
+    now = int(time.time())
+    why = str(body.get("why") or "")[:240]
+    tries = {k: v for k, v in _tourney_json(_TOURNEY_ATTEMPTS).items()
+             if isinstance(v, dict) and (v.get("ts") or 0) >= now - _TOURNEY_REQ_TTL_S}
+    prev = tries.get(str(dg)) or {}
+    tries[str(dg)] = {"req_ts": req_ts, "ts": now, "why": why}
+    # One ledger note an hour for the same failure: a showdown in its eight-day window before
+    # Sleeper projects its week is owed (and refused) every ten-minute cycle. The showdowns under
+    # their own code: the ledger writes one note per code per two seconds, and a showdown's must
+    # never hide the Millionaire's.
+    if not (prev.get("req_ts") == req_ts and prev.get("why") == why and (prev.get("ts") or 0) >= now - 3600):
+        errlog.note("TOURN-attempt-sd" if body.get("kind") == "showdown" else "TOURN-attempt",
+                    msg=f"dg {dg} ({'Build from the tab' if req_ts else 'schedule'}): {why}", path=str(dg))
+    return jsonify({"recorded": _tourney_json_save(_TOURNEY_ATTEMPTS, tries)})
+
+
 @app.route("/api/dfs/tourney/list")
 def api_dfs_tourney_list():
     """Every tournament board on file for a sport, newest first, plus the
@@ -2493,12 +2606,19 @@ def api_dfs_tourney_list():
     prefixes = tuple(f"{k}_tourney_{sport}_" for k in _TOURNEY_KINDS)
     rows = []
     try:
-        names = sorted(os.listdir(boardshare._DIR))
+        names = [fn for fn in os.listdir(boardshare._DIR) if fn.startswith(prefixes) and fn.endswith(".pkl")]
     except OSError:
         names = []
-    for fn in names:
-        if not (fn.startswith(prefixes) and fn.endswith(".pkl")):
-            continue
+
+    def _mtime(fn):
+        try:
+            return os.stat(os.path.join(boardshare._DIR, fn)).st_mtime
+        except OSError:
+            return 0.0
+    # The newest twelve files only (the list shows twelve): the boards are
+    # kept eight days now (boardshare._KEEP_LONG), and each one read here is
+    # unpickled in a web worker on every load of the tab.
+    for fn in sorted(names, key=_mtime, reverse=True)[:12]:
         payload, age = boardshare.get(fn[:-4], None)
         if not payload:
             continue

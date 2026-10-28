@@ -27,6 +27,16 @@ _DIR = os.path.join(os.environ.get("VIGIL_SIM_CACHE_DIR")
 # A claim older than this belongs to a dead builder and may be taken over.
 CLAIM_TIMEOUT = 300
 
+# Kept a week, not a day: the tournament boards are built once or twice a
+# slate (the classic one is the better part of an hour of the PC) and read
+# until it locks, and the tab's Build queue (and the PC's report on a
+# request it could not build) ages out its own entries (three days). The
+# day-old sweep deleted week 7's Millionaire board, built Thursday
+# 2026-10-22, by Friday night, so the tab said "not built yet" all weekend.
+# About 1-5 MB a board, a handful a week.
+_KEEP_LONG = ("cl_tourney_", "sd_tourney_", "tourney_requests.", "tourney_attempts.")
+_KEEP_LONG_S = 8 * 86400
+
 
 def _path(name, ext):
     safe = "".join(ch if (ch.isalnum() or ch in "-_") else "_" for ch in str(name))
@@ -63,12 +73,14 @@ def put(name, payload, age=0):
         if age:
             t = time.time() - age
             os.utime(final, (t, t))
-        # Boards a day old are dead weight on a 1 GB disk.
+        # Boards a day old are dead weight on a 1 GB disk -- but not the
+        # tournament boards or the tab's Build queue (_KEEP_LONG).
         cutoff = time.time() - 86400
+        long_cutoff = time.time() - _KEEP_LONG_S
         for f in os.listdir(_DIR):
             fp = os.path.join(_DIR, f)
             try:
-                if os.stat(fp).st_mtime < cutoff:
+                if os.stat(fp).st_mtime < (long_cutoff if f.startswith(_KEEP_LONG) else cutoff):
                     os.remove(fp)
             except OSError:
                 pass

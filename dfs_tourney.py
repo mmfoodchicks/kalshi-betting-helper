@@ -1241,6 +1241,24 @@ def _field_extras(by_name, dx):
     return extra[:_FIELD_EXTRA_MAX]
 
 
+# Why the last build returned None. The PC reports it beside a queued or
+# scheduled build that did not land; its "nothing to build" named two of
+# eleven causes (the Fable review of the Millionaire queue, 2026-10-28). One
+# process builds one board at a time.
+_REFUSAL = [""]
+
+
+def _refuse(why):
+    """None from a builder, remembering why (last_refusal)."""
+    _REFUSAL[0] = str(why)
+    return None
+
+
+def last_refusal():
+    """Why the latest build_nfl_classic / build_nfl_showdown returned None, or ''."""
+    return _REFUSAL[0]
+
+
 def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=500,
                        week=None, preseason=False, top=60, portfolio_sizes=(5, 10, 20),
                        candidates=1200, log=print, model=None, seed=None, workers=None):
@@ -1255,9 +1273,10 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     import nfl_dfs_sim
     import simulate
     t0 = time.time()
+    _REFUSAL[0] = ""
     slate = dk.slate_for("nfl", draft_group_id=int(dg))
     if not slate:
-        return None
+        return _refuse("DraftKings has no player pool posted for this slate")
     contests = slate.get("contests") or []
     contest = None
     if contest_id:
@@ -1267,7 +1286,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
         big = max(gpp or contests, key=lambda c: (c.get("prize_pool") or 0))
         contest = dk.contest_detail(int(big["id"]))
     if not contest:
-        return None
+        return _refuse("no contest on this slate could be read from DraftKings")
     csv_players = simulate.parse_dk_csv(slate["csv"])
     ents = nfl_dfs.showdown_pool(csv_players)
     teams = {e.get("team") for e in ents if e.get("team")}
@@ -1276,7 +1295,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
             import nfl_game_sim
             import nfl_preseason
             preseason = nfl_preseason.is_preseason()
-            week = nfl_game_sim.current_week(preseason)
+            week = nfl_game_sim.current_week(preseason, day=_slate_day(slate))
         except Exception as e:
             errlog.note("TOURN-week", e)
             week = 1
@@ -1307,7 +1326,8 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
         ents, dx = nfl_dfs._apply_depth(ents, preseason,
                                         None if not _starts_ts else float(_starts_ts) - time.time())
     except nfl_dfs.RosterUnavailable:
-        return None                     # ledgered as NFLD-roster; no board with the gate off
+        # ledgered as NFLD-roster; no board with the gate off
+        return _refuse("the depth-chart gate's roster lookup is unavailable (NFLD-roster)")
     # The depth gate is OUR rule, not the public's: a WR4 with a real
     # projection is in thousands of their lineups, so he stays in the field's
     # pool (never in ours) and his boom worlds count against us honestly.
@@ -1317,7 +1337,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
         d["field"] = d["name"] in field_only
     excluded += dx
     if len(ents) < 6:
-        return None
+        return _refuse(f"only {len(ents)} players with a week-{week} projection (six needed)")
     ents = ents + extra
     t1 = time.time()
     N = min(len(e["arr"]) for e in ents)
@@ -1361,7 +1381,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
         idx, W, allowed = enumerate_showdown(ents, nfl_dfs.CAP, cpt_mult=nfl_dfs.CPT_MULT,
                                              entry_ok=entry_ok, cpt_ok=cpt_ok)
     if idx is None:
-        return None
+        return _refuse("no legal lineup fits under the salary cap")
     field_only = {e["name"] for e in ents if e.get("_field_only")}
     for d in excluded:
         d["field"] = d["name"] in field_only
@@ -1373,7 +1393,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     if C is None:
         errlog.note("TOURN-capacity", msg="showdown contest detail carries no maximumEntries; "
                     "refusing to build on the current fill", path=str(contest.get("id")))
-        return None
+        return _refuse("the contest's field size (maximumEntries) is missing from DraftKings' detail")
     t2 = time.time()
     chunk = chunk_for(len(idx), chunk)
     log(f"[tourney] {len(idx):,} legal lineups, {int(allowed.sum()):,} we may enter "
@@ -2430,6 +2450,20 @@ def steer_field(draw, players, rng, beta, kappa, targets, n=OPT_FIELD_N, iters=O
     return u, {"alpha": OPT_FIELD_ALPHA, "n": int(n), "iters": int(iters), "damp": float(damp),
                "mae_to_targets_by_pass": trace}
 
+def _slate_day(slate):
+    """The slate's first kickoff as its EASTERN calendar date ('YYYY-MM-DD'),
+    or None when DraftKings gave none readable: the day whose NFL week the
+    builders simulate (nfl_game_sim.current_week(day=)). Today's week was
+    simulated for every slate, and week 8's main slate queued on 2026-10-24
+    played week 7's games."""
+    import datetime
+    import clock
+    ts = _iso_ts(slate.get("starts")) if isinstance(slate, dict) else None
+    if ts is None:
+        return None
+    return datetime.datetime.fromtimestamp(ts, clock.ET).date().isoformat()
+
+
 def _iso_ts(v):
     """DraftKings' start time as epoch seconds, or None. Lives in nfl_dfs now
     (the depth-chart gate's lock-relative roster allowance needs it too);
@@ -2863,9 +2897,10 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     import simulate
     rng = np.random.default_rng(seed)
     t0 = time.time()
+    _REFUSAL[0] = ""
     slate = dk.slate_for("nfl", draft_group_id=int(dg))
     if not slate:
-        return None
+        return _refuse("DraftKings has no player pool posted for this slate")
     rows = slate.get("contests") or []
     if contest_ids:
         want = [int(c) for c in contest_ids]
@@ -2873,7 +2908,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
         want = [int(c["id"]) for c in rows if float(c.get("prize_pool") or 0) >= float(min_pool)]
     contests = _contests_with_capacity([dk.contest_detail(cid) for cid in want[:6]])
     if not contests:
-        return None
+        return _refuse(f"no contest of ${float(min_pool):,.0f}+ with a payout table and a field size")
     contests.sort(key=lambda c: -float(c.get("prize_pool") or 0))
     csv_players = [c for c in simulate.parse_dk_csv(slate["csv"]) if nfl_dfs._playable(c)]
     if week is None:
@@ -2881,7 +2916,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
             import nfl_game_sim
             import nfl_preseason
             preseason = nfl_preseason.is_preseason()
-            week = nfl_game_sim.current_week(preseason)
+            week = nfl_game_sim.current_week(preseason, day=_slate_day(slate))
         except Exception as e:
             errlog.note("TOURN-week", e)
             week = 1
@@ -2896,7 +2931,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason, model=model, seed=seed,
                                    teams=slate_teams, workers=_workers(workers)) or {}
     if not pool:
-        return None
+        return _refuse(f"no week-{week} projections for this slate's teams yet")
     nidx, norm = nfl_dfs._norm_index(pool)
     ents, excluded = [], []
     for c in csv_players:
@@ -2919,7 +2954,8 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
         ents, dx = nfl_dfs._apply_depth(ents, preseason,
                                         nfl_dfs.seconds_to_lock(slate.get("starts") if isinstance(slate, dict) else None))
     except nfl_dfs.RosterUnavailable:
-        return None                     # ledgered as NFLD-roster; no board with the gate off
+        # ledgered as NFLD-roster; no board with the gate off
+        return _refuse("the depth-chart gate's roster lookup is unavailable (NFLD-roster)")
     extra = []
     for d in dx:
         e = by_name.get(d["name"])
@@ -2937,7 +2973,8 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     ents = ents + extra
     have = {p: sum(1 for e in ents if e["pos"] == p and not e.get("_field_only")) for p in _CL_POS}
     if have["QB"] < 2 or have["RB"] < 4 or have["WR"] < 6 or have["TE"] < 2 or have["DST"] < 2:
-        return None
+        return _refuse(f"too few players with a week-{week} projection: QB {have['QB']}, RB {have['RB']}, "
+                       f"WR {have['WR']}, TE {have['TE']}, DST {have['DST']} (2/4/6/2/2 needed)")
     P = len(ents)
     N = min(len(e["arr"]) for e in ents)
     if n_worlds:

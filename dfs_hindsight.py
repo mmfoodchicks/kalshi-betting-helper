@@ -72,12 +72,21 @@ def board_rows(payload):
     return out
 
 
+_CAPTURE_MAX_AGE_S = 2 * 86400
+
+
 def capture_tourney(boards_dir=None, now=None, get=None):
     """Log the top lineups of every NFL tournament board whose contest has
     started -- the board then on disk is the last one built before lock, and
-    boardshare keeps a board a day, so the recorder's half-hourly pass sees
-    it -- as dfs_builds rows (objective tourney:<list>), once each. Returns
-    how many rows went in."""
+    the recorder's half-hourly pass sees it -- as dfs_builds rows (objective
+    tourney:<list>), once each. Returns how many rows went in.
+
+    Only board files written in the last two days are read: boardshare keeps
+    the tournament boards eight days since 2026-10-28 (it kept every board a
+    day), each is unpickled here, and the scheduled and pre-lock rebuilds put
+    a fresh board on disk ahead of every lock. A board built earlier and
+    never rebuilt before its lock is not logged -- the day-old sweep deleted
+    it before."""
     import boardshare
     import dfslog
     import nfl_dfs
@@ -92,6 +101,11 @@ def capture_tourney(boards_dir=None, now=None, get=None):
     for fn in names:
         m = _BOARD.match(fn)
         if not m:
+            continue
+        try:
+            if time.time() - os.stat(os.path.join(d, fn)).st_mtime > _CAPTURE_MAX_AGE_S:
+                continue                    # the file's own age, on the real clock
+        except OSError:
             continue
         payload, _age = get(fn[:-4], None)
         if not payload or payload.get("sport", "nfl") != "nfl":

@@ -13101,7 +13101,9 @@ ck("the PC builds the Sunday main slate against its seven-figure contests on its
    # repinned 2026-10-18: the worlds come from _cl_sims (180,000, or 60,000
    # when kickoff is nearer than a full build; research/cl_worlds.py)
    and "min_pool=_CL_MIN_POOL, n_sims=n_sims" in _pcw16
-   and 'sl.get("contest_type") != 21 or (sl.get("games") or 0) < 10 or sl.get("tag")' in _pcw16,
+   # the main slate's rule moved to dk.main_slate (2026-10-28), read by the tab too
+   and "return dk.main_slate(slates, now=time.time())" in _pcw16
+   and 'sl.get("contest_type") != 21 or (sl.get("games") or 0) < _MAIN_MIN_GAMES or sl.get("tag")' in open(_os.path.join(_root, "dk.py")).read(),
    "owner: nightly for status changes only, Sunday before the games, only the Sunday ones over $1M")
 import pc_worker as _pcw16m
 _old16 = _bs14._DIR
@@ -15620,8 +15622,10 @@ try:
     _os.makedirs(_bs14._DIR, exist_ok=True)
     with open(_bs14._path("cl_tourney_nfl_777003", "pkl"), "wb") as _fh18:
         _fh18.write(b"cvigil_guard_no_such_module\n_Foreign\n)\x81.")
+    # times near now: since 2026-10-28 a request three days old leaves the queue
+    _now18 = int(__import__("time").time())
     with open(_bs14._path(_app14._TOURNEY_REQ, "json"), "w") as _fh18:
-        _json18.dump({"777003": {"sport": "nfl", "kind": "classic", "ts": 10, "label": "guard milly"}}, _fh18)
+        _json18.dump({"777003": {"sport": "nfl", "kind": "classic", "ts": _now18 - 100, "label": "guard milly"}}, _fh18)
     _c18 = _app14.app.test_client()
     _t18 = _c18.get("/api/dfs/tourney?sport=nfl&dg=777003").get_json()
     _pend18 = _app14._tourney_pending()
@@ -15633,7 +15637,7 @@ try:
        "this is what 'queued for 10:32pm' the next morning looked like from the server's seat")
     _pcw16m._ship_boards = lambda url, tok: _ship18.append((url, tok))
     _leaf18 = _np14.float64(2.5) if _dt14.available() else 2.5
-    _b18 = {"version": 2, "kind": "classic", "built_ts": 20, "pool_sig": "abc",
+    _b18 = {"version": 2, "kind": "classic", "built_ts": _now18 - 50, "pool_sig": "abc",
             "results": {"9": {"top_win": [{"ev_notie": _leaf18, "roi_pct": _leaf18}]}}}
     _did18 = _pcw16m._tourney_resave("cl_tourney_nfl_777003", _b18, "http://guard", "tok")
     with open(_bs14._path("cl_tourney_nfl_777003", "pkl"), "rb") as _fh18:
@@ -15645,7 +15649,7 @@ try:
        and b"numpy" not in _blob18 and _re18 and _re18.get("version") == _dt14.VERSION
        and type(_re18["results"]["9"]["top_win"][0]["ev_notie"]) is float
        and _re18["results"]["9"]["top_win"][0]["ev_notie"] == 2.5
-       and _re18.get("built_ts") == 20 and _app14._tourney_pending() == [],
+       and _re18.get("built_ts") == _now18 - 50 and _app14._tourney_pending() == [],
        "the 72-minute build was fine; rebuilding it would have cost another 72 minutes")
     _pcw18 = open(_os.path.join(_root, "pc_worker.py")).read()
     ck("both tournament tasks try the re-save before calling a current board current",
@@ -17033,8 +17037,10 @@ _src20 = {n: _insp18.getsource(f) for n, f in (("build_nfl_showdown", _dt14.buil
 ck("every builder that runs the depth-chart gate handles RosterUnavailable (no board with the gate off) and stamps roster_source on the boards it does build",
    all("RosterUnavailable" in t for t in _src20.values())
    and all('"roster_source":' in t for t in _src20.values())
-   and "return None" in _src20["build_nfl_showdown"].split("RosterUnavailable")[1][:80]
-   and "return None" in _src20["build_nfl_classic"].split("RosterUnavailable")[1][:80]
+   # since 2026-10-28 the builders return None through _refuse, which names the cause (last_refusal)
+   and all("return _refuse(" in _src20[n].split("RosterUnavailable")[1][:160]
+           and "NFLD-roster" in _src20[n].split("RosterUnavailable")[1][:160]
+           for n in ("build_nfl_showdown", "build_nfl_classic"))
    and '"error"' in _src20["_build_showdown"].split("RosterUnavailable")[1][:200]
    and '"error"' in _src20["build"].split("RosterUnavailable")[1][:200],
    str({n: ("RosterUnavailable" in t, '"roster_source":' in t) for n, t in _src20.items()}))
@@ -23080,16 +23086,21 @@ print("Build on the PC: a dropdown of slates by name")
 print("=" * 72)
 import dk as _dk_bb
 import racing as _rc_bb
+import clock as _clk_bb
+import datetime as _dtm_bb
+# start times relative to today: since 2026-10-28 the main slate is judged against the clock (dk.main_slate)
+_thu_bb = (_dtm_bb.datetime.now(_clk_bb.ET) + _dtm_bb.timedelta(days=1)).strftime("%Y-%m-%dT20:15:00")
+_sun_bb = (_dtm_bb.datetime.now(_clk_bb.ET) + _dtm_bb.timedelta(days=4)).strftime("%Y-%m-%dT13:00:00")
 _lobby_bb = {"Contests": [
     {"dg": 155204, "n": "NFL Showdown $1.25M Thursday Night Showdown [$300K to 1st] (NE @ CHI)"},
     {"dg": 155204, "n": "NFL Showdown $20 Double Up (NE @ CHI)"},
     {"dg": 155197, "n": "NFL $300K Thu-Mon Special"},
     {"dg": 155198, "n": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st]"}],
     "DraftGroups": [
-    {"DraftGroupId": 155197, "Sport": "NFL", "StartDateEst": "2026-10-22T20:15:00", "GameCount": 14,
+    {"DraftGroupId": 155197, "Sport": "NFL", "StartDateEst": _thu_bb, "GameCount": 14,
      "ContestTypeId": 21, "ContestStartTimeSuffix": "(Thu-Mon)"},
-    {"DraftGroupId": 155204, "Sport": "NFL", "StartDateEst": "2026-10-22T20:15:00", "GameCount": 1, "ContestTypeId": 96},
-    {"DraftGroupId": 155198, "Sport": "NFL", "StartDateEst": "2026-10-25T13:00:00", "GameCount": 10, "ContestTypeId": 21}]}
+    {"DraftGroupId": 155204, "Sport": "NFL", "StartDateEst": _thu_bb, "GameCount": 1, "ContestTypeId": 96},
+    {"DraftGroupId": 155198, "Sport": "NFL", "StartDateEst": _sun_bb, "GameCount": 10, "ContestTypeId": 21}]}
 _odg_bb = _dk_bb._get
 _dk_bb._get = lambda url, timeout=25: _lobby_bb
 _rc_bb._form_cache.pop(("dk_slates", "nfl"), None)
@@ -23239,22 +23250,485 @@ ck("wired: the classic task asks the schedule, not the pool signature or the sta
    and "requested by {_requested_by(why)}: {why}" in _cs_task and "requested by {_requested_by(why)}: {why}" in _cs_sd
    and "Build requested by: <b>${escapeHtml(rb.by)}</b>" in _cs_js and "building now: ${escapeHtml(pc.task)}" in _cs_js)
 
+_au_sun = "2026-10-25T13:00:00.0000000"                 # DraftKings' lobby string (Eastern)
+_au_now = _nda.iso_ts(_au_sun) - 2 * 86400              # the Friday before
 _au_bb = _app14._tourney_auto([
-    {"draft_group_id": 1, "contest_type": 21, "games": 10, "tag": None, "top_pool": 2.5e6},
-    {"draft_group_id": 2, "contest_type": 21, "games": 12, "tag": "(Sun-Mon)", "top_pool": 4e5},
-    {"draft_group_id": 3, "contest_type": 21, "games": 14, "tag": "(Thu-Mon)", "top_pool": 3e5},
+    {"draft_group_id": 1, "contest_type": 21, "games": 10, "tag": None, "top_pool": 2.5e6, "starts": _au_sun},
+    {"draft_group_id": 2, "contest_type": 21, "games": 12, "tag": "(Sun-Mon)", "top_pool": 4e5, "starts": _au_sun},
+    {"draft_group_id": 3, "contest_type": 21, "games": 14, "tag": "(Thu-Mon)", "top_pool": 3e5, "starts": _au_sun},
     {"draft_group_id": 4, "contest_type": 96, "games": 1, "tag": None, "top_pool": 1.25e6},
     {"draft_group_id": 5, "contest_type": 96, "games": 1, "tag": None, "top_pool": 499999.0},
-    {"draft_group_id": 6, "contest_type": 96, "games": 1, "tag": None, "top_pool": 500000.0}])
-_au2_bb = _app14._tourney_auto([{"draft_group_id": 9, "contest_type": 21, "games": 10, "tag": None, "top_pool": 9e5}])
-ck("'built automatically' is the PC's own rule, mirrored: the untagged classic of ten-plus games with a $1M+ contest "
-   "(pc_worker._main_slate, _CL_MIN_POOL) and every showdown at $500K+ (_SD_MIN_POOL) -- not the tagged classics, not "
-   "a $499,999 showdown, not a main slate without its Millionaire",
+    {"draft_group_id": 6, "contest_type": 96, "games": 1, "tag": None, "top_pool": 500000.0}], now=_au_now)
+_au2_bb = _app14._tourney_auto([{"draft_group_id": 9, "contest_type": 21, "games": 10, "tag": None, "top_pool": 9e5,
+                                 "starts": _au_sun}], now=_au_now)
+ck("'built automatically' is the PC's own rule, the same function: the untagged classic of ten-plus games with a $1M+ "
+   "contest (dk.main_slate, read by pc_worker._main_slate too; _CL_MIN_POOL) and every showdown at $500K+ "
+   "(_SD_MIN_POOL) -- not the tagged classics, not a $499,999 showdown, not a main slate without its Millionaire",
    _au_bb == {1: "main", 4: "showdown", 6: "showdown"} and _au2_bb == {}
    and _app14._TOURNEY_SD_MIN_POOL == _pw_bb._SD_MIN_POOL == 500_000
-   and 'sl.get("contest_type") != 21 or (sl.get("games") or 0) < 10 or sl.get("tag")' in _insp.getsource(_pw_bb._main_slate)
+   and 'sl.get("contest_type") != 21 or (sl.get("games") or 0) < _MAIN_MIN_GAMES or sl.get("tag")' in _insp.getsource(_dk_bb.main_slate)
+   and "dk.main_slate(slates, now=time.time())" in _insp.getsource(_pw_bb._main_slate)
+   and "dk.main_slate(slates, now=now)" in _insp.getsource(_app14._tourney_auto)
    and "elif pool_by_dg.get(dg, 0.0) >= _SD_MIN_POOL:" in _insp.getsource(_pw_bb._task_showdown_tourney),
    str((_au_bb, _au2_bb)))
+
+# ---- 2026-10-28 the Millionaire queue ---------------------------------------
+# The owner: "the million nfl hasn't ran and me clicking run doesnt run it, it
+# just stays in queue". From 2026-10-24 DraftKings listed week 8's 11-game
+# main slate beside week 7's 10-game one and the most games won: the PC's
+# Saturday-night window and the tab's "built automatically" entry both took
+# week 8's slate. Week 7's Millionaire board (built Thursday) had been deleted
+# by the day-old sweep Friday night and was never rebuilt; the owner's Build
+# queued week 8's slate, which any build that weekend simulated on WEEK 7's
+# games (replayed 2026-10-28: Allen, Jackson and Lawrence "no projection this
+# week"); and the tab said "queued" with nothing more for days. The Fable
+# review added: a scheduled build that fails must show too, Thanksgiving
+# week's main slate has nine games, a request lives until its slate locks.
+print("=" * 72)
+print("The Millionaire queue: the nearest week's main slate, the slate's own week, boards kept a week, the PC's report")
+print("=" * 72)
+import dk as _dk_mq
+import clock as _clk_mq
+import datetime as _dtm_mq
+import nfl_game_sim as _ngs_mq
+import nfl_live as _nl_mq
+import nfl_dfs_sim as _nds_mq
+import dfs_tourney as _dt_mq
+import dfs_hindsight as _dh_mq
+import pc_worker as _pw_mq
+import boardshare as _bs_mq
+import errlog as _el_mq
+import tempfile as _tf_mq
+import shutil as _sh_mq
+import json as _js_mq
+import time as _tm_mq
+
+
+def _mq_utc(y, mo, d, h, mi=0):
+    return _dtm_mq.datetime(y, mo, d, h, mi, tzinfo=_dtm_mq.timezone.utc).timestamp()
+
+
+def _mq_lobby(ts):
+    """DraftKings' lobby string: Eastern, no zone."""
+    return _dtm_mq.datetime.fromtimestamp(ts, _clk_mq.ET).strftime("%Y-%m-%dT%H:%M:%S.0000000")
+
+
+def _mq_sl(dg, games, ts, tag=None, ctype=21, pool=2.5e6):
+    return {"draft_group_id": dg, "contest_type": ctype, "games": games, "tag": tag, "starts": _mq_lobby(ts),
+            "top_pool": pool}
+
+
+_mq_w7 = _mq_utc(2026, 10, 25, 17)            # week 7's main slate, 1:00 pm EDT
+_mq_w8 = _mq_utc(2026, 11, 1, 18)             # week 8's, 1:00 pm EST (the clocks go back that morning)
+_mq_sat = _mq_utc(2026, 10, 25, 1)            # Saturday 7:00 pm MDT: the Saturday-night window
+_mq_lob = [_mq_sl(155198, 10, _mq_w7), _mq_sl(153728, 11, _mq_w8, pool=6e6),
+           _mq_sl(155592, 13, _mq_w7, tag="(Sun-Mon)", pool=5e5), _mq_sl(155591, 8, _mq_w7, tag="(Early Only)", pool=4e5)]
+_mq_same = [dict(_mq_lob[0]), _mq_sl(7, 12, _mq_w7), _mq_sl(8, 12, _mq_w7 + 3600)]
+_mq_3h = [_mq_sl(1, 10, _mq_w7), _mq_sl(2, 12, _mq_w7 + 3 * 3600 + 300)]          # one week, 3 h apart
+_mq_thu = [_mq_sl(3, 10, _mq_w7 - 2 * 86400 - 16 * 3600), _mq_sl(4, 12, _mq_w7)]   # one week, Thu 8:15 pm and Sun 1 pm
+_mq_tg = [_mq_sl(5, 9, _mq_utc(2026, 11, 29, 18)), _mq_sl(6, 13, _mq_utc(2026, 12, 6, 18))]   # Thanksgiving week: 9 games
+_mq_tg_sat = _mq_utc(2026, 11, 29, 1)
+_o_time_mq = _pw_mq.time.time
+try:
+    _pw_mq.time.time = lambda: _mq_sat
+    _mq_pc = (_pw_mq._main_slate(_mq_lob) or {}).get("draft_group_id")
+finally:
+    _pw_mq.time.time = _o_time_mq
+_mq_ms = lambda sls, now: (_dk_mq.main_slate(sls, now=now) or {}).get("draft_group_id")
+ck("the main slate is the NEAREST week's (week 7's 10 games on the Saturday, never week 8's 11 posted early), the most "
+   "games within that week however far apart its slates start (3 hours, Thursday to Sunday), the earlier start on a "
+   "tie, Thanksgiving week's nine-game slate (not the 13-game one a week on), never a seven-game one; the next week's "
+   "once this one is four hours past its kickoff; the PC and the tab read the same rule",
+   _mq_ms(_mq_lob, _mq_sat) == 155198 and _mq_pc == 155198
+   and _app14._tourney_auto(_mq_lob, now=_mq_sat) == {155198: "main"}
+   and _mq_ms(_mq_same, _mq_sat) == 7
+   and _mq_ms(_mq_3h, _mq_sat) == 2 and _mq_ms(_mq_thu, _mq_w7 - 3 * 86400) == 4
+   and _mq_ms(_mq_tg, _mq_tg_sat) == 5
+   and _mq_ms([_mq_sl(9, 7, _mq_w7)], _mq_sat) is None
+   and _mq_ms(_mq_lob, _mq_w7 + 3 * 3600) == 155198
+   and _mq_ms(_mq_lob, _mq_w7 + 4 * 3600 + 60) == 153728
+   and _dk_mq.main_slate(_mq_lob[1:2], now=_mq_w8 - 8 * 86400 - 60) is None
+   and _dk_mq.main_slate(_mq_lob[2:], now=_mq_sat) is None,
+   str((_mq_ms(_mq_lob, _mq_sat), _mq_ms(_mq_3h, _mq_sat), _mq_ms(_mq_tg, _mq_tg_sat))))
+
+# the slate's own week: current_week(day=) on a two-week schedule, from a Saturday of week 7
+_mq_sched = {7: ["2026-10-23T00:15Z", "2026-10-25T17:00Z", "2026-10-27T00:15Z"],
+             8: ["2026-10-30T00:15Z", "2026-11-01T18:00Z", "2026-11-03T01:15Z"]}
+_o_mq = (_nl_mq.schedule, _clk_mq.today_et)
+try:
+    _nl_mq.schedule = lambda wk, season, seasontype=2: [{"date": d} for d in _mq_sched.get(
+        wk, ["2026-09-14T00:15Z"] if wk < 7 else ["2026-12-31T18:00Z"])]
+    _clk_mq.today_et = lambda: _dtm_mq.date(2026, 10, 24)
+    _mq_wk = (_ngs_mq.current_week(False), _ngs_mq.current_week(False, day="2026-11-01"),
+              _ngs_mq.current_week(False, day="2026-10-25"), _ngs_mq.current_week(False, day="2026-10-29"),
+              _ngs_mq.current_week(False, day="2026-10-26"))
+finally:
+    _nl_mq.schedule, _clk_mq.today_et = _o_mq
+ck("a slate's week is the week of its first kickoff's Eastern date: on week 7's Saturday, week 8's main slate (Nov 1) "
+   "is week 8, Thursday night's (Oct 29) is week 8, Monday night's (Oct 26) still week 7; with no day, today's week",
+   _mq_wk == (7, 8, 7, 8, 7)
+   and _dt_mq._slate_day({"starts": "2026-10-30T00:15:00.0000000Z"}) == "2026-10-29"
+   and _dt_mq._slate_day({"starts": _mq_lobby(_mq_w8)}) == "2026-11-01"
+   and _dt_mq._slate_day({}) is None and _dt_mq._slate_day(None) is None,
+   str(_mq_wk))
+
+
+# both tournament builders hand the slate's day to current_week and simulate THAT week
+class _MqStop(Exception):
+    pass
+
+
+_mq_got = {}
+_mq_csv = ("Position,Name + ID,Name,ID,Roster Position,Salary,Game Info,TeamAbbrev,AvgPointsPerGame\n"
+           "QB,Guard Qb (1),Guard Qb,1,QB,6000,AA@BB 11/01/2026 01:00PM ET,AA,20\n"
+           "RB,Guard Rb (2),Guard Rb,2,RB/FLEX,5000,AA@BB 11/01/2026 01:00PM ET,BB,15\n")
+_mq_sd_csv = ("Position,Name + ID,Name,ID,Roster Position,Salary,Game Info,TeamAbbrev,AvgPointsPerGame\n"
+              "QB,Guard Qb (1),Guard Qb,1,CPT,9000,AA@BB 10/29/2026 08:15PM ET,AA,20\n"
+              "QB,Guard Qb (3),Guard Qb,3,FLEX,6000,AA@BB 10/29/2026 08:15PM ET,AA,20\n")
+
+
+def _mq_pool(week, **kw):
+    _mq_got.setdefault("weeks", []).append(week)
+    raise _MqStop()
+
+
+def _mq_week(pre=False, day=None):
+    _mq_got.setdefault("days", []).append(day)
+    return 8 if day and day >= "2026-10-27" else 7
+
+
+_mq_detail = {"id": 9, "name": "guard Millionaire", "prize_pool": 2.5e6, "max_entries": 100, "entries": 1000,
+              "payouts": [{"minPosition": 1, "maxPosition": 1, "payout": 1000.0}], "entry_fee": 20.0}
+_o_b_mq = (_dk_mq.slate_for, _dk_mq.contest_detail, _ngs_mq.current_week, _nds_mq.player_pool)
+_src_mq = _insp.getsource(_dt_mq)
+_mq_refused = None
+try:
+    if _dt_mq.np is not None:            # the server and CI have no numpy: the builders refuse before the week
+        _dk_mq.contest_detail = lambda cid: dict(_mq_detail)
+        _ngs_mq.current_week = _mq_week
+        _nds_mq.player_pool = _mq_pool
+        _dk_mq.slate_for = lambda sport, draft_group_id=None, exclude_games=None: {
+            "csv": _mq_csv, "starts": "2026-11-01T18:00:00.0000000Z", "draft_group_id": 153728,
+            "contests": [{"id": 9, "prize_pool": 2.5e6, "entries": 1000}], "n_players": 2}
+        try:
+            _dt_mq.build_nfl_classic(153728, n_sims=10, log=lambda *a: None)
+        except _MqStop:
+            pass
+        _dk_mq.slate_for = lambda sport, draft_group_id=None, exclude_games=None: {
+            "csv": _mq_sd_csv, "starts": "2026-10-30T00:15:00.0000000Z", "draft_group_id": 155596,
+            "contests": [{"id": 9, "prize_pool": 1.25e6, "entries": 1000}], "n_players": 2}
+        try:
+            _dt_mq.build_nfl_showdown(155596, n_sims=10, log=lambda *a: None)
+        except _MqStop:
+            pass
+        _dk_mq.slate_for = lambda sport, draft_group_id=None, exclude_games=None: None
+        _mq_refused = (_dt_mq.build_nfl_classic(1, n_sims=10, log=lambda *a: None), _dt_mq.last_refusal())
+finally:
+    _dk_mq.slate_for, _dk_mq.contest_detail, _ngs_mq.current_week, _nds_mq.player_pool = _o_b_mq
+ck("the classic and showdown builders simulate the slate's own week (Sunday Nov 1 -> week 8, Thursday night Oct 29 -> "
+   "week 8), asked on week 7's calendar -- they simulated today's week for any slate (without numpy, where the "
+   "builders cannot run, both calls are pinned in the source)",
+   _src_mq.count("week = nfl_game_sim.current_week(preseason, day=_slate_day(slate))") == 2
+   and "nfl_game_sim.current_week(preseason)" not in _src_mq
+   and (_dt_mq.np is None
+        or (_mq_got.get("days") == ["2026-11-01", "2026-10-29"] and _mq_got.get("weeks") == [8, 8])),
+   str(_mq_got))
+_mq_bodies = [_insp.getsource(_dt_mq.build_nfl_classic), _insp.getsource(_dt_mq.build_nfl_showdown)]
+ck("every way a builder returns nothing says why (last_refusal; 'nothing to build' named two causes of eleven): no "
+   "bare return None is left in either builder, each resets the reason first, and a slate with no pool says so",
+   all("return None" not in b and b.count("return _refuse(") >= 5 and '_REFUSAL[0] = ""' in b for b in _mq_bodies)
+   and _dt_mq._refuse("guard reason") is None and _dt_mq.last_refusal() == "guard reason"
+   and (_dt_mq.np is None or _mq_refused == (None, "DraftKings has no player pool posted for this slate")),
+   str(_mq_refused))
+
+# the tournament boards and the Build queue outlive the day-old sweep; nothing else does
+_tmp_mq = _tf_mq.mkdtemp(prefix="vigil-keep-guard-")
+_o_dir_mq = _bs_mq._DIR
+try:
+    _bs_mq._DIR = _tmp_mq
+    _mq_names = {"cl_tourney_nfl_1.pkl": 2, "sd_tourney_nfl_2.pkl": 2, "tourney_requests.json": 2,
+                 "tourney_attempts.json": 2, "nfl_board.pkl": 2, "cl_tourney_nfl_3.pkl": 9, "fresh_board.pkl": 0.5,
+                 "sd_tourney_nfl_4.pkl": 7.5}
+    for _n, _days in _mq_names.items():
+        _p = _os.path.join(_tmp_mq, _n)
+        open(_p, "w").write("x")
+        _t = _tm_mq.time() - _days * 86400
+        _os.utime(_p, (_t, _t))
+    _bs_mq.put("guard_new", {"x": 1})
+    _mq_left = sorted(_os.listdir(_tmp_mq))
+finally:
+    _bs_mq._DIR = _o_dir_mq
+    _sh_mq.rmtree(_tmp_mq, ignore_errors=True)
+ck("the day-old sweep spares the tournament boards and the Build queue for eight days (week 7's Thursday "
+   "Millionaire board was gone by Friday night; one 7.5 days old stays) and still clears every other day-old board",
+   _mq_left == ["cl_tourney_nfl_1.pkl", "fresh_board.pkl", "guard_new.pkl", "sd_tourney_nfl_2.pkl",
+                "sd_tourney_nfl_4.pkl", "tourney_attempts.json", "tourney_requests.json"]
+   and _bs_mq._KEEP_LONG_S == 8 * 86400,
+   str(_mq_left))
+
+# the PC's report on a slate it could not build, and the tab showing it
+_tmp_mq2 = _tf_mq.mkdtemp(prefix="vigil-attempt-guard-")
+_o_mq2 = (_bs_mq._DIR, _app14._SIM_TOKEN, _el_mq._DB, _el_mq._init_done, _dk_mq.contests, _dk_mq.slates)
+_mq_far = int(_tm_mq.time()) + 6 * 86400
+try:
+    _bs_mq._DIR = _tmp_mq2
+    _el_mq._DB, _el_mq._init_done = _os.path.join(_tmp_mq2, "errlog.db"), False
+    _app14._SIM_TOKEN = "guardtokmq"
+    _c_mq = _app14.app.test_client()
+    _h_mq = {"X-Sim-Token": "guardtokmq"}
+    _dk_mq.contests = lambda sport, draft_group_id=None: [{"draft_group_id": draft_group_id, "prize_pool": 6e6}]
+    _dk_mq.slates = lambda sport: [_mq_sl(153728, 11, _mq_far)]
+    _q_mq = _c_mq.post("/api/dfs/tourney/request", json={"sport": "nfl", "dg": 153728, "kind": "classic",
+                                                         "label": "11-game classic"}).get_json()
+    _a0 = _c_mq.post("/api/dfs/tourney/attempt", json={"dg": 153728, "req_ts": _q_mq["ts"], "why": "x"}).status_code
+    _a1 = _c_mq.post("/api/dfs/tourney/attempt", headers=_h_mq, json={"req_ts": 5}).status_code
+    _a2 = _c_mq.post("/api/dfs/tourney/attempt", headers=_h_mq,
+                     json={"dg": 153728, "req_ts": _q_mq["ts"], "why": "the build failed (KeyError: 'x')"}).get_json()
+    _t_mq = _c_mq.get("/api/dfs/tourney?sport=nfl&dg=153728", headers=_h_mq).get_json()
+    _l_mq = _c_mq.get("/api/dfs/tourney/list?sport=nfl", headers=_h_mq).get_json()
+    _stale_mq = _c_mq.post("/api/dfs/tourney/attempt", headers=_h_mq,
+                           json={"dg": 153728, "req_ts": _q_mq["ts"] - 5, "why": "an older request"}).get_json()
+    _t2_mq = _c_mq.get("/api/dfs/tourney?sport=nfl&dg=153728", headers=_h_mq).get_json()
+    _reqs_mq = _app14._tourney_requests()
+    _starts_mq = _reqs_mq["153728"].get("starts_ts")
+    # a scheduled build's report (req_ts 0): on the slate's card and in the ledger, until a newer board
+    _el_mq._last_write.clear()           # the ledger writes one note a code per two seconds
+    _s0 = _c_mq.post("/api/dfs/tourney/attempt", headers=_h_mq,
+                     json={"dg": 155198, "req_ts": 0, "why": "no week-8 projections for this slate's teams yet"}).get_json()
+    _t3_mq = _c_mq.get("/api/dfs/tourney?sport=nfl&dg=155198", headers=_h_mq).get_json()
+    _bs_mq.put("cl_tourney_nfl_155198", {"version": 9, "kind": "classic", "draft_group_id": 155198,
+                                         "built_ts": int(_tm_mq.time()) - 3600, "contests": [], "slate": {}})
+    _t4_mq = _c_mq.get("/api/dfs/tourney?sport=nfl&dg=155198", headers=_h_mq).get_json()
+    _bs_mq.put("cl_tourney_nfl_155198", {"version": 9, "kind": "classic", "draft_group_id": 155198,
+                                         "built_ts": int(_tm_mq.time()) + 60, "contests": [], "slate": {}})
+    _t5_mq = _c_mq.get("/api/dfs/tourney?sport=nfl&dg=155198", headers=_h_mq).get_json()
+    _tries_old_mq = _app14._tourney_json(_app14._TOURNEY_ATTEMPTS)
+    _tries_old_mq["155199"] = {"req_ts": 0, "ts": int(_tm_mq.time()) - 3 * 86400 - 60, "why": "three days old"}
+    _app14._tourney_json_save(_app14._TOURNEY_ATTEMPTS, _tries_old_mq)
+    _t6_mq = _c_mq.get("/api/dfs/tourney?sport=nfl&dg=155199", headers=_h_mq).get_json()
+    for _k in range(2):                  # the same failure twice inside the hour: one ledger note
+        _el_mq._last_write.clear()
+        _c_mq.post("/api/dfs/tourney/attempt", headers=_h_mq, json={"dg": 155197, "req_ts": 0, "why": "repeat guard"})
+    _rep_mq = [r.get("n") for r in _el_mq.recent(code="TOURN-attempt") if "repeat guard" in (r.get("msg") or "")]
+    _el_mq._last_write.clear()
+    _c_mq.post("/api/dfs/tourney/attempt", headers=_h_mq,
+               json={"dg": 155596, "req_ts": 0, "why": "sd guard", "kind": "showdown"})
+    _led_mq = [r.get("msg") for r in _el_mq.recent(code="TOURN-attempt")]
+    _led_sd_mq = [r.get("msg") for r in _el_mq.recent(code="TOURN-attempt-sd")]
+    # the attempts file drops entries over three days old on its next write
+    _tries_mq = _app14._tourney_json(_app14._TOURNEY_ATTEMPTS)
+    _tries_mq["777"] = {"req_ts": 0, "ts": int(_tm_mq.time()) - 3 * 86400 - 60, "why": "old"}
+    _app14._tourney_json_save(_app14._TOURNEY_ATTEMPTS, _tries_mq)
+    _c_mq.post("/api/dfs/tourney/attempt", headers=_h_mq, json={"dg": 778, "req_ts": 0, "why": "new"})
+    _tries2_mq = sorted(_app14._tourney_json(_app14._TOURNEY_ATTEMPTS))
+    # a request lives until its slate locks (here six days out), else three days, never past eight
+    _now_mq = _tm_mq.time()
+    _live_mq = [_app14._tourney_req_live(r, _now_mq) for r in (
+        {"ts": _now_mq - 4 * 86400, "starts_ts": _now_mq + 86400},
+        {"ts": _now_mq - 3600, "starts_ts": _now_mq - 31 * 60},
+        {"ts": _now_mq - 3600, "starts_ts": _now_mq - 29 * 60},
+        {"ts": _now_mq - 3 * 86400 - 60},
+        {"ts": _now_mq - 2 * 86400},
+        {"ts": _now_mq - 8 * 86400 - 60, "starts_ts": _now_mq + 3600})]
+    _reqs_mq["153728"]["ts"] = int(_now_mq) - 3 * 86400 - 60
+    _reqs_mq["153728"]["starts_ts"] = None
+    _app14._tourney_json_save(_app14._TOURNEY_REQ, _reqs_mq)
+    _old_mq = _app14._tourney_pending()
+finally:
+    (_bs_mq._DIR, _app14._SIM_TOKEN, _el_mq._DB, _el_mq._init_done, _dk_mq.contests, _dk_mq.slates) = _o_mq2
+    _sh_mq.rmtree(_tmp_mq2, ignore_errors=True)
+ck("the PC reports a slate it could not build through its own door: beside the request it was made against (never "
+   "an older request's), in the queue line, and -- for a build its own schedule owed (req_ts 0) -- on the slate's card "
+   "until a newer board lands, and in the ledger (TOURN-attempt); a request records its slate's start and lives until "
+   "it locks, three days where the start is unknown, never past eight; the reports age out at three days",
+   _a0 == 403 and _a1 == 400 and _a2.get("recorded") is True
+   and (_t_mq.get("queued_attempt") or {}).get("why") == "the build failed (KeyError: 'x')"
+   and _t_mq.get("queued_ts") == _q_mq["ts"] and _t_mq.get("last_attempt") is None
+   and ((_l_mq.get("pending") or [{}])[0].get("attempt") or {}).get("why") == "the build failed (KeyError: 'x')"
+   and _stale_mq.get("recorded") is True and _t2_mq.get("queued_attempt") is None
+   and (_t2_mq.get("last_attempt") or {}).get("why") == "an older request"
+   and abs((_starts_mq or 0) - _mq_far) <= 1
+   and _s0.get("recorded") is True and _t3_mq.get("status") == "none"
+   and _t3_mq.get("last_attempt", {}).get("scheduled") is True
+   and _t3_mq["last_attempt"].get("why") == "no week-8 projections for this slate's teams yet"
+   and _t4_mq.get("status") == "ok" and (_t4_mq.get("last_attempt") or {}).get("scheduled") is True
+   and _t5_mq.get("status") == "ok" and _t5_mq.get("last_attempt") is None
+   and _t6_mq.get("status") == "none" and _t6_mq.get("last_attempt") is None
+   and _rep_mq == [1]
+   and any("dg 155198 (schedule): no week-8 projections" in (m or "") for m in _led_mq)
+   and any("dg 153728 (Build from the tab): the build failed" in (m or "") for m in _led_mq)
+   and _led_sd_mq == ["dg 155596 (schedule): sd guard"] and not any("sd guard" in (m or "") for m in _led_mq)
+   and _tries2_mq == ["153728", "155197", "155198", "155596", "778"]
+   and _live_mq == [True, False, True, False, True, False]
+   and _old_mq == [],
+   str((_a0, _a1, _a2, _t_mq.get("queued_attempt"), _t2_mq.get("last_attempt"), _t3_mq.get("last_attempt"),
+        _t4_mq.get("last_attempt"), _t5_mq.get("last_attempt"), _tries2_mq, _live_mq, _old_mq, _led_mq)))
+
+# the PC side: which failures it reports, for which requests or schedule
+_mq_posts, _mq_fetched = [], []
+_tmp_mq3 = _tf_mq.mkdtemp(prefix="vigil-pc-attempt-guard-")
+_o_mq3 = (_bs_mq._DIR, _pw_mq._api, _pw_mq._tourney_requests, _pw_mq._yield_point, _dk_mq.slates, _dk_mq.slate_for,
+          _dk_mq.contests, _dt_mq.build_nfl_classic, _dt_mq.build_nfl_showdown, _dt_mq.available, _pw_mq.time.time,
+          _pw_mq._tourney_state_path)
+
+
+def _mq_api(url, tok, path, data=None, headers=None, timeout=90):
+    if path == "/api/dfs/tourney/attempt":
+        _mq_posts.append(_js_mq.loads(data.decode()))
+    return {}
+
+
+def _mq_raise(*a, **k):
+    raise KeyError("x")
+
+
+def _mq_none(*a, **k):
+    _dt_mq._REFUSAL[0] = "no week-8 projections for this slate's teams yet"
+
+
+def _mq_none_sd(*a, **k):
+    _dt_mq._REFUSAL[0] = "only 4 players with a week-8 projection (six needed)"
+
+
+def _mq_slate_for(sport, draft_group_id=None, exclude_games=None):
+    _mq_fetched.append(draft_group_id)
+    return {"csv": "x", "starts": _mq_lobby(_mq_w8)}
+
+
+try:
+    _bs_mq._DIR = _os.path.join(_tmp_mq3, "boards")
+    _pw_mq._tourney_state_path = lambda: _os.path.join(_tmp_mq3, "tourney_state.json")
+    _pw_mq._api = _mq_api
+    _pw_mq._yield_point = lambda label: None
+    _dt_mq.available = lambda: True
+    _pw_mq.time.time = lambda: _mq_sat
+    _dk_mq.contests = lambda sport, draft_group_id=None: []
+    _dk_mq.slate_for = _mq_slate_for
+    _mq_req = {153728: {"dg": 153728, "kind": "classic", "ts": 111}, 999001: {"dg": 999001, "kind": "classic", "ts": 222}}
+    _pw_mq._tourney_requests = lambda url, tok: dict(_mq_req)
+    _dk_mq.slates = lambda sport: [dict(x) for x in _mq_lob]
+    _dt_mq.build_nfl_classic = _mq_raise
+    _pw_mq._task_classic_tourney("u", "t")       # Saturday night: 999001 unlisted; 153728 requested and 155198 scheduled both fail
+    _mq_p1 = list(_mq_posts)
+    del _mq_posts[:]
+    _dt_mq.build_nfl_classic = _mq_none
+    _pw_mq._task_classic_tourney("u", "t")       # the same, nothing to build, with the builder's own reason
+    _mq_p2 = list(_mq_posts)
+    del _mq_posts[:]
+    del _mq_fetched[:]
+    _pw_mq.time.time = lambda: _mq_sat - 2 * 86400     # Thursday: no window, no request -> nothing owed, nothing fetched
+    _pw_mq._tourney_requests = lambda url, tok: {}
+    _pw_mq._task_classic_tourney("u", "t")
+    _mq_p_thu = (list(_mq_posts), list(_mq_fetched))
+    del _mq_posts[:]
+    _pw_mq.time.time = lambda: _mq_sat                 # Saturday night again, DraftKings posting no pool
+    _dk_mq.slate_for = lambda sport, draft_group_id=None, exclude_games=None: None
+    _pw_mq._task_classic_tourney("u", "t")
+    _mq_p_nopool = list(_mq_posts)
+    del _mq_posts[:]
+    _dk_mq.slate_for = _mq_slate_for
+    _pw_mq.time.time = lambda: _mq_sat
+    _pw_mq._tourney_requests = lambda url, tok: {155596: {"dg": 155596, "kind": "showdown", "ts": 333},
+                                                 155555: {"dg": 155555, "kind": "showdown", "ts": 444},
+                                                 155600: {"dg": 155600, "kind": "showdown", "ts": 555},
+                                                 155601: {"dg": 155601, "kind": "showdown", "ts": 666}}
+    _dk_mq.slates = lambda sport: [_mq_sl(155596, 1, _mq_sat - 3600, tag="(CAR @ GB)", ctype=96),
+                                   _mq_sl(155600, 1, _mq_sat + 9 * 86400, tag="(KC @ DEN)", ctype=96),
+                                   _mq_sl(155601, 1, _mq_sat + 2 * 86400, tag="(NE @ MIA)", ctype=96)]
+    _dt_mq.build_nfl_showdown = _mq_none_sd
+    _pw_mq._task_showdown_tourney("u", "t")      # 155596 kicked off; 155555 not listed; 155600 nine days out; 155601 builds nothing
+    _mq_p3 = sorted(_mq_posts, key=lambda x: x["dg"])
+finally:
+    (_bs_mq._DIR, _pw_mq._api, _pw_mq._tourney_requests, _pw_mq._yield_point, _dk_mq.slates, _dk_mq.slate_for,
+     _dk_mq.contests, _dt_mq.build_nfl_classic, _dt_mq.build_nfl_showdown, _dt_mq.available, _pw_mq.time.time,
+     _pw_mq._tourney_state_path) = _o_mq3
+    _dt_mq._REFUSAL[0] = ""
+    _sh_mq.rmtree(_tmp_mq3, ignore_errors=True)
+ck("the PC reports every owed build it did not land -- a queued slate unlisted, the build failing, nothing to build "
+   "(with the builder's own reason), a showdown that kicked off or sits beyond eight days -- against the request it "
+   "tried, and the main slate's SCHEDULED build (Saturday night) as the schedule's (req_ts 0); on a Thursday with "
+   "nothing owed it neither fetches DraftKings' pool nor reports",
+   [(p["dg"], p["req_ts"]) for p in _mq_p1] == [(999001, 222), (153728, 111), (155198, 0)]
+   and "no longer lists" in _mq_p1[0]["why"] and "KeyError" in _mq_p1[1]["why"] and "KeyError" in _mq_p1[2]["why"]
+   and [(p["dg"], p["req_ts"]) for p in _mq_p2] == [(999001, 222), (153728, 111), (155198, 0)]
+   and _mq_p2[1]["why"] == "no week-8 projections for this slate's teams yet"
+   and _mq_p_thu == ([], [])
+   and [(p["dg"], p["req_ts"], p["why"]) for p in _mq_p_nopool] == [
+       (155198, 0, "DraftKings has no player pool posted for this slate yet")]
+   and [(p["dg"], p["req_ts"]) for p in _mq_p3] == [(155555, 444), (155596, 333), (155600, 555), (155601, 666)]
+   and _mq_p3[3]["why"] == "only 4 players with a week-8 projection (six needed)"
+   and {p["kind"] for p in _mq_p1 + _mq_p2} == {"classic"} and {p["kind"] for p in _mq_p3} == {"showdown"}
+   and "no longer lists" in _mq_p3[0]["why"] and "kicked off" in _mq_p3[1]["why"]
+   and "more than eight days out" in _mq_p3[2]["why"],
+   str((_mq_p1, _mq_p2, _mq_p_thu, _mq_p_nopool, _mq_p3)))
+
+# the tab's list reads the newest twelve boards only; the recorder reads two days of them
+_tmp_mq4 = _tf_mq.mkdtemp(prefix="vigil-list-guard-")
+_o_mq4 = (_bs_mq._DIR, _bs_mq.get, _app14._SIM_TOKEN)
+_mq_reads = []
+try:
+    _bs_mq._DIR = _tmp_mq4
+    for _i in range(14):
+        _bs_mq.put(f"sd_tourney_nfl_{900 + _i}", {"version": 9, "kind": "showdown", "draft_group_id": 900 + _i,
+                                                   "built_ts": 1000 + _i, "contest": {"name": f"c{_i}"},
+                                                   "slate": {"teams": ["AA", "BB"]}})
+        _t = _tm_mq.time() - (_i + 1) * 3600 - (3 * 86400 if _i >= 12 else 0)   # newest file = lowest dg
+        _os.utime(_bs_mq._path(f"sd_tourney_nfl_{900 + _i}", "pkl"), (_t, _t))
+    _o_get_mq = _bs_mq.get
+
+    def _mq_get(name, max_age):
+        _mq_reads.append(name)
+        return _o_get_mq(name, max_age)
+    _bs_mq.get = _mq_get
+    _app14._SIM_TOKEN = "guardtokmq4"
+    _l4_mq = _app14.app.test_client().get("/api/dfs/tourney/list?sport=nfl",
+                                          headers={"X-Sim-Token": "guardtokmq4"}).get_json()
+    _mq_list_reads = sorted(n for n in _mq_reads if n.startswith("sd_tourney_nfl_"))
+    del _mq_reads[:]
+    _dh_mq.capture_tourney(_tmp_mq4, get=_mq_get)
+    _mq_cap_reads = sorted(_mq_reads)
+finally:
+    _bs_mq._DIR, _bs_mq.get, _app14._SIM_TOKEN = _o_mq4
+    _sh_mq.rmtree(_tmp_mq4, ignore_errors=True)
+ck("with a week of boards kept, the tab's list unpickles only the newest twelve files and the hindsight recorder only "
+   "those written in the last two days -- both run in a web worker",
+   _mq_list_reads == [f"sd_tourney_nfl_{900 + _i}" for _i in range(12)]
+   and [b["dg"] for b in (_l4_mq.get("boards") or [])] == [911 - _i for _i in range(12)]
+   and _mq_cap_reads == [f"sd_tourney_nfl_{900 + _i}" for _i in range(12)],
+   str((_mq_list_reads, _mq_cap_reads)))
+
+# the tab: the reports show beside the request and on the card, escaped; a new Build or a cancel clears them
+_jsrc_mq = open(_os.path.join(_root, "static", "app.js")).read()
+_qfn_mq = _jsrc_mq[_jsrc_mq.index("function _dfsTourneyQueued(d)"):]
+_qfn_mq = _qfn_mq[:_qfn_mq.index("\n}\n") + 3]
+_tfn_mq = _jsrc_mq[_jsrc_mq.index("function _dfsTourneyTried(d)"):]
+_tfn_mq = _tfn_mq[:_tfn_mq.index("\n}\n") + 3]
+_node_mq = ("const escapeHtml = (s) => String(s).replace(/</g, '&lt;'); let _dfsTourneyDg = '153728';\n" + _qfn_mq
+            + _tfn_mq
+            + "\nconst a = _dfsTourneyQueued({queued_ts: 1793300000, queued_attempt: {ts: 1793300600, why: '<b>x'}});\n"
+            + "const b = _dfsTourneyQueued({queued_ts: 1793300000});\nconst c = _dfsTourneyQueued({});\n"
+            + "const s = _dfsTourneyTried({status: 'none', last_attempt: {ts: 1793300600, why: '<i>y', scheduled: true}});\n"
+            + "const o = _dfsTourneyTried({status: 'ok', last_attempt: {ts: 1793300600, why: 'z', scheduled: false}});\n"
+            + "const n = _dfsTourneyTried({status: 'ok'});\n"
+            + "console.log(JSON.stringify([a.includes('could not build it: &lt;b>x'), a.includes('cancel'), "
+            + "b.includes('could not build'), b.includes('queued'), c, s.includes(\"the PC's scheduled build\"), "
+            + "s.includes('did not build it: &lt;i>y'), s.includes('board built before'), "
+            + "o.includes('an earlier Build'), o.includes('board built before'), n]));")
+import subprocess as _sp_mq
+try:
+    _nr_mq = _sp_mq.run(["node", "-e", _node_mq], capture_output=True, text=True, timeout=30)
+    _nout_mq = (_nr_mq.stdout or "").strip() or (_nr_mq.stderr or "")[-300:]
+except (OSError, _sp_mq.SubprocessError) as _e_mq:
+    _nout_mq = f"node unavailable: {_e_mq}"
+ck("the tab shows the PC's report beside a queued request and a scheduled build's failure on the slate's card (both "
+   "escaped; on a board, as the board built before it), nothing extra without one; a new Build or a cancel clears the "
+   "request's; the queue line names it too",
+   (_nout_mq == '[true,true,false,true,"",true,true,false,true,true,""]' or _nout_mq.startswith("node unavailable"))
+   and "_dfsTourneyData.queued_ts = r.ts; delete _dfsTourneyData.queued_attempt;" in _jsrc_mq
+   and "delete _dfsTourneyData.queued_ts; delete _dfsTourneyData.queued_attempt;" in _jsrc_mq
+   and _jsrc_mq.count("${_dfsTourneyTried(d)}") == 2
+   and '${p.attempt ? ` <span style="color:#e0a656">(⚠ not built: ${escapeHtml(p.attempt.why || "no reason given")})</span>` : ""}' in _jsrc_mq,
+   _nout_mq)
 
 print("=" * 72)
 print("MX. The matchup upgrade (2026-10-23): prop math, the NBA engine, the NFL matchup data and model,")

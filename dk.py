@@ -157,6 +157,50 @@ def slates(sport):
     return racing._cached(("dk_slates", sport), 900, build) or []
 
 
+# Two Sunday main slates start seven days apart; any two untagged main-size
+# slates closer than this belong to the same week.
+_MAIN_WEEK_S = 3 * 86400
+# The fewest games a main slate has. It was ten: 2026's Thanksgiving week has
+# NINE Sunday-afternoon games, so its Millionaire slate would not have counted
+# and the nearest-week rule would have handed that Saturday to week 13's slate
+# (the Fable review, 2026-10-28). Every smaller classic slate DraftKings posts
+# carries a tag (Early Only, Afternoon Only, Turbo).
+_MAIN_MIN_GAMES = 8
+
+
+def main_slate(slates, now=None):
+    """The NFL Sunday main slate among `slates` (slates() rows), or None: an
+    untagged classic slate of _MAIN_MIN_GAMES-plus games (the Early Only /
+    Afternoon Only / Sun-Mon / Thu-Mon slates carry tags) starting from four
+    hours ago to eight days ahead -- the NEAREST week's, and of that week's
+    the most games.
+
+    The most games used to win outright, across weeks. DraftKings posts next
+    Sunday's main slate days early, and from 2026-10-24 week 8's (11 games)
+    outranked week 7's (10): the PC's Saturday-night window and the tab's
+    "built automatically" entry both took next Sunday's, week 7's Millionaire
+    board was never rebuilt, and the owner's Build queued week 8's slate. The
+    PC (pc_worker._main_slate) and the tab (app._tourney_auto) both read this
+    one rule."""
+    import time
+    import nfl_dfs
+    now = time.time() if now is None else now
+    rows = []
+    for sl in slates or []:
+        if sl.get("contest_type") != 21 or (sl.get("games") or 0) < _MAIN_MIN_GAMES or sl.get("tag"):
+            continue
+        # Epoch on both sides: the lobby string is EASTERN (nfl_dfs.iso_ts)
+        st = nfl_dfs.iso_ts(sl.get("starts"))
+        if st is None or not (now - 4 * 3600 <= st <= now + 8 * 86400):
+            continue
+        rows.append((st, sl))
+    if not rows:
+        return None
+    first = min(st for st, _sl in rows)
+    week = [(st, sl) for st, sl in rows if st < first + _MAIN_WEEK_S]
+    return max(week, key=lambda r: ((r[1].get("games") or 0), -r[0]))[1]
+
+
 def contests(sport, draft_group_id=None):
     """Posted contests, richest first: [{name, entry_fee, entries, max_entries,
     prize_pool, first_prize, draft_group_id}]. Lets the contest simulator use the

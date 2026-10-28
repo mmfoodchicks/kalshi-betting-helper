@@ -737,16 +737,23 @@ def _et_day(iso):
         return d[:10]
 
 
-def current_week(preseason=False):
+def current_week(preseason=False, day=None):
     """The week the NFL tab should open on: the first whose games are not all in
     the past (ET). The tab used to default to week 1 forever, which is right for
     a few days a year — the morning after the Hall of Fame game it served one
     already-played exhibition while sixteen games sat under week 2, and the
-    board read "no games" until the user guessed the dropdown."""
+    board read "no games" until the user guessed the dropdown.
+
+    `day` ('YYYY-MM-DD', Eastern) asks the same question of another date: a
+    DraftKings slate's own week is current_week(day=its first kickoff's ET
+    date). The tournament builds simulated TODAY's week whatever slate they
+    were given: week 8's main slate, queued 2026-10-24, was simulated on week
+    7's games and never built, and a Thursday showdown posted on a Monday was
+    built on the finishing week's games."""
     import clock
     import nfl_live
     import time as _t2
-    today = clock.today_et().isoformat()
+    today = day or clock.today_et().isoformat()
     last = 4 if preseason else 18
     first_bad = None
     for wk in range(1, last + 1):
