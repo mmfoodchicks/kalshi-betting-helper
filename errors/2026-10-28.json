@@ -2617,396 +2617,33 @@
    "pid": 7056,
    "tb": "",
    "ts": 1792614410.4288244
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1874,
-   "last_ts": 1792612586.853154,
-   "msg": "DraftKings served no pool",
-   "n": 2,
-   "path": "nfl:2026:w6:154941",
-   "pid": 7056,
-   "tb": "",
-   "ts": 1792611974.2714896
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1875,
-   "last_ts": 1792611978.9741762,
-   "msg": "Rush Yds: the model sits -5.0 points off Kalshi's mid over 63 rungs in 7 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6589,
-   "tb": "",
-   "ts": 1792611978.9741762
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1873,
-   "last_ts": 1792610160.4750917,
-   "msg": "Rush Yds: the model sits -5.4 points off Kalshi's mid over 61 rungs in 7 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6589,
-   "tb": "",
-   "ts": 1792610160.4750917
-  },
-  {
-   "code": "KNFL-markets-fetch",
-   "id": 1872,
-   "last_ts": 1792610154.0442386,
-   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "n": 1,
-   "path": null,
-   "pid": 6589,
-   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi_nfl.py\", line 108, in _fetch\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
-   "ts": 1792610154.0442386
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1871,
-   "last_ts": 1792610139.2484322,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6589,
-   "tb": "",
-   "ts": 1792610139.2484322
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1870,
-   "last_ts": 1792608312.8358283,
-   "msg": "Rush Yds: the model sits -5.1 points off Kalshi's mid over 61 rungs in 7 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6589,
-   "tb": "",
-   "ts": 1792608312.8358283
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1869,
-   "last_ts": 1792608308.8106816,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6589,
-   "tb": "",
-   "ts": 1792608308.8106816
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1868,
-   "last_ts": 1792606471.7083452,
-   "msg": "Rush Yds: the model sits -4.8 points off Kalshi's mid over 58 rungs in 7 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6589,
-   "tb": "",
-   "ts": 1792606471.7083452
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1867,
-   "last_ts": 1792606468.2881207,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6589,
-   "tb": "",
-   "ts": 1792606468.2881207
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1866,
-   "last_ts": 1792604648.679099,
-   "msg": "Rush Yds: the model sits -5.1 points off Kalshi's mid over 61 rungs in 7 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6589,
-   "tb": "",
-   "ts": 1792604648.679099
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1863,
-   "last_ts": 1792604632.4445257,
-   "msg": "DraftKings served no pool",
-   "n": 2,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6589,
-   "tb": "",
-   "ts": 1792603938.3256557
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1865,
-   "last_ts": 1792603956.358307,
-   "msg": "Rush Yds: the model sits -5.2 points off Kalshi's mid over 60 rungs in 7 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6572,
-   "tb": "",
-   "ts": 1792603956.358307
-  },
-  {
-   "code": "KNFL-markets-fetch",
-   "id": 1864,
-   "last_ts": 1792603951.9736793,
-   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "n": 1,
-   "path": null,
-   "pid": 6572,
-   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi_nfl.py\", line 108, in _fetch\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
-   "ts": 1792603951.9736793
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1862,
-   "last_ts": 1792602118.7024574,
-   "msg": "Rush Yds: the model sits -4.5 points off Kalshi's mid over 55 rungs in 7 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6572,
-   "tb": "",
-   "ts": 1792602118.7024574
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1861,
-   "last_ts": 1792602115.521012,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6572,
-   "tb": "",
-   "ts": 1792602115.521012
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1860,
-   "last_ts": 1792600297.2369187,
-   "msg": "Rush Yds: the model sits -4.5 points off Kalshi's mid over 54 rungs in 6 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6572,
-   "tb": "",
-   "ts": 1792600297.2369187
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1859,
-   "last_ts": 1792600294.1286836,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6572,
-   "tb": "",
-   "ts": 1792600294.1286836
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1858,
-   "last_ts": 1792598466.2275121,
-   "msg": "Rush Yds: the model sits -4.2 points off Kalshi's mid over 54 rungs in 7 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6572,
-   "tb": "",
-   "ts": 1792598466.2275121
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1857,
-   "last_ts": 1792598462.5176387,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6572,
-   "tb": "",
-   "ts": 1792598462.5176387
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1856,
-   "last_ts": 1792597147.6847694,
-   "msg": "Rush Yds: the model sits -4.3 points off Kalshi's mid over 51 rungs in 6 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6094,
-   "tb": "",
-   "ts": 1792597147.6847694
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1855,
-   "last_ts": 1792597146.811854,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6094,
-   "tb": "",
-   "ts": 1792597146.811854
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1854,
-   "last_ts": 1792595325.9542189,
-   "msg": "Rush Yds: the model sits -4.5 points off Kalshi's mid over 50 rungs in 6 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6094,
-   "tb": "",
-   "ts": 1792595325.9542189
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1853,
-   "last_ts": 1792595324.7675672,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6094,
-   "tb": "",
-   "ts": 1792595324.7675672
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1852,
-   "last_ts": 1792593503.460543,
-   "msg": "Rush Yds: the model sits -5.0 points off Kalshi's mid over 46 rungs in 6 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6094,
-   "tb": "",
-   "ts": 1792593503.460543
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1851,
-   "last_ts": 1792593502.938603,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6094,
-   "tb": "",
-   "ts": 1792593502.938603
-  },
-  {
-   "code": "KNFL-index-build",
-   "id": 1850,
-   "last_ts": 1792592282.4768794,
-   "msg": "RuntimeError: KXNFLTOTAL: page 2 failed after 200 markets -- a partial series is not an index",
-   "n": 1,
-   "path": null,
-   "pid": 6094,
-   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi_nfl.py\", line 447, in index\n    built = _build()\n            ^^^^^^^^\n  File \"/app/kalshi_nfl.py\", line 225, in _build\n    for m in _fetch(_TOTAL_SERIES):\n             ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi_nfl.py\", line 115, in _fetch\n    raise RuntimeError(f\"{series}: page {page + 1} failed after {len(out)} markets \"\nRuntimeError: KXNFLTOTAL: page 2 failed after 200 markets -- a partial series is not an index\n",
-   "ts": 1792592282.4768794
-  },
-  {
-   "code": "KNFL-markets-fetch",
-   "id": 1849,
-   "last_ts": 1792592282.4690208,
-   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "n": 1,
-   "path": null,
-   "pid": 6094,
-   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi_nfl.py\", line 108, in _fetch\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
-   "ts": 1792592282.4690208
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1848,
-   "last_ts": 1792591666.762842,
-   "msg": "Rush Yds: the model sits -4.7 points off Kalshi's mid over 47 rungs in 5 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6094,
-   "tb": "",
-   "ts": 1792591666.762842
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1847,
-   "last_ts": 1792591666.0933366,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6094,
-   "tb": "",
-   "ts": 1792591666.0933366
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1846,
-   "last_ts": 1792589843.2253473,
-   "msg": "Rush Yds: the model sits -4.3 points off Kalshi's mid over 44 rungs in 4 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6094,
-   "tb": "",
-   "ts": 1792589843.2253473
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1845,
-   "last_ts": 1792589842.6574612,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6094,
-   "tb": "",
-   "ts": 1792589842.6574612
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1844,
-   "last_ts": 1792588021.397981,
-   "msg": "Rush Yds: the model sits -4.9 points off Kalshi's mid over 46 rungs in 5 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 6094,
-   "tb": "",
-   "ts": 1792588021.397981
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1843,
-   "last_ts": 1792588020.9685102,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 6094,
-   "tb": "",
-   "ts": 1792588020.9685102
   }
  ],
- "generated_at": 1793191807.3585265,
+ "generated_at": 1793218239.7353039,
  "summary": [
   {
    "code": "NFL-DRIFT",
-   "first_ts": 1792588021.397981,
+   "first_ts": 1792614421.757061,
    "last_msg": "Receptions: the model sits -4.7 points off Kalshi's mid over 204 rungs in 5 games",
    "last_ts": 1792958007.3491502,
-   "n": 299,
-   "variants": 176
+   "n": 284,
+   "variants": 161
   },
   {
    "code": "HIND-nopool",
-   "first_ts": 1792588020.9685102,
+   "first_ts": 1792614410.4288244,
    "last_msg": "DraftKings served no pool",
    "last_ts": 1792641577.8736289,
-   "n": 33,
-   "variants": 30
+   "n": 17,
+   "variants": 16
   },
   {
    "code": "KNFL-markets-fetch",
-   "first_ts": 1792592282.4690208,
+   "first_ts": 1792637923.0671608,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
    "last_ts": 1793177007.0541716,
-   "n": 20,
-   "variants": 19
+   "n": 17,
+   "variants": 16
   },
   {
    "code": "MEM-high",
@@ -3041,20 +2678,20 @@
    "variants": 1
   },
   {
-   "code": "KNFL-index-build",
-   "first_ts": 1792592282.4768794,
-   "last_msg": "RuntimeError: KXNFLRECYDS: page 2 failed after 200 markets -- a partial series is not an index",
-   "last_ts": 1793165110.7172513,
-   "n": 5,
-   "variants": 5
-  },
-  {
    "code": "UFCC-fights",
    "first_ts": 1792654037.6263058,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
    "last_ts": 1793094190.8992205,
    "n": 5,
    "variants": 5
+  },
+  {
+   "code": "KNFL-index-build",
+   "first_ts": 1792655279.6554048,
+   "last_msg": "RuntimeError: KXNFLRECYDS: page 2 failed after 200 markets -- a partial series is not an index",
+   "last_ts": 1793165110.7172513,
+   "n": 4,
+   "variants": 4
   },
   {
    "code": "DK-contest",
