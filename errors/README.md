@@ -1,14 +1,14 @@
-# Error ledger — updated 2026-10-27
+# Error ledger — updated 2026-10-28
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `NFL-DRIFT` | 317 | 10-25 19:53 | Receptions: the model sits -4.7 points off Kalshi's mid over 204 rungs in 5 games |
-| `HIND-nopool` | 65 | 10-22 03:59 | DraftKings served no pool |
-| `KNFL-markets-fetch` | 18 | 10-27 13:44 | HTTPError: HTTP Error 429: Too Many Requests |
-| `MEM-high` | 15 | 10-25 21:45 | 2035/2048MB: 1693.8MB pid545 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 141.3MB pid540 /usr/local/bin/python3.11  |
-| `KAL-candles` | 11 | 10-26 22:58 | HTTPError: HTTP Error 429: Too Many Requests |
-| `UFCC-rounds` | 9 | 10-26 18:49 | HTTPError: HTTP Error 429: Too Many Requests |
+| `NFL-DRIFT` | 315 | 10-25 19:53 | Receptions: the model sits -4.7 points off Kalshi's mid over 204 rungs in 5 games |
+| `HIND-nopool` | 49 | 10-22 03:59 | DraftKings served no pool |
+| `KNFL-markets-fetch` | 19 | 10-28 05:25 | HTTPError: HTTP Error 429: Too Many Requests |
+| `MEM-high` | 16 | 10-28 01:45 | 1889/2048MB: 1336.9MB pid8069 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 273.3MB pid8055 /usr/local/bin/python3.1 |
+| `KAL-candles` | 12 | 10-28 01:52 | HTTPError: HTTP Error 429: Too Many Requests |
+| `UFCC-rounds` | 10 | 10-27 23:26 | HTTPError: HTTP Error 429: Too Many Requests |
 | `SOC-kalshi` | 7 | 10-27 12:00 | HTTPError: HTTP Error 429: Too Many Requests |
+| `KNFL-index-build` | 5 | 10-28 05:25 | RuntimeError: KXNFLRECYDS: page 2 failed after 200 markets -- a partial series is not an index |
 | `UFCC-fights` | 5 | 10-27 09:43 | HTTPError: HTTP Error 429: Too Many Requests |
-| `KNFL-index-build` | 4 | 10-26 05:17 | RuntimeError: KXNFLTOTAL: page 2 failed after 200 markets -- a partial series is not an index |
 | `DK-contest` | 1 | 10-25 05:34 | HTTPError: HTTP Error 403: Forbidden |

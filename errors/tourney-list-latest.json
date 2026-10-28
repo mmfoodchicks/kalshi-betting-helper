@@ -1,7 +1,7 @@
 {
  "boards": [
   {
-   "age_s": 8969,
+   "age_s": 35812,
    "built_ts": 1793130080,
    "contest": "NFL Showdown $1.25M Thursday Night Showdown [$300K to 1st] (CAR @ GB)",
    "dg": 155596,
@@ -13,22 +13,6 @@
    "teams": [
     "CAR",
     "GB"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 79809,
-   "built_ts": 1793059239,
-   "contest": "NFL Showdown $500K Wildcat [$100K to 1st] (DAL @ PHI)",
-   "dg": 155217,
-   "entries": 1668,
-   "entry_fee": 333.0,
-   "kind": "showdown",
-   "label": "DAL vs PHI",
-   "starts": "2026-10-27T00:15:00.0000000Z",
-   "teams": [
-    "DAL",
-    "PHI"
    ],
    "worlds": 60000
   }
