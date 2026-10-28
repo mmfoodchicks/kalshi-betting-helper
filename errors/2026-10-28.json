@@ -1,6 +1,17 @@
 {
  "errors": [
   {
+   "code": "UFCC-fights",
+   "id": 2114,
+   "last_ts": 1793220439.8419366,
+   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "n": 1,
+   "path": null,
+   "pid": 11758,
+   "tb": "Traceback (most recent call last):\n  File \"/app/ufc_combo.py\", line 99, in markets\n    for m in _series(\"KXUFCFIGHT\"):\n             ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/ufc_combo.py\", line 66, in _series\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
+   "ts": 1793220439.8419366
+  },
+  {
    "code": "KNFL-markets-fetch",
    "id": 2113,
    "last_ts": 1793177007.0541716,
@@ -2551,91 +2562,17 @@
    "pid": 7078,
    "tb": "",
    "ts": 1792619334.6781466
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1881,
-   "last_ts": 1792618082.579511,
-   "msg": "Rush Yds: the model sits -4.0 points off Kalshi's mid over 72 rungs in 8 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 7056,
-   "tb": "",
-   "ts": 1792618082.579511
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1880,
-   "last_ts": 1792618078.8060713,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 7056,
-   "tb": "",
-   "ts": 1792618078.8060713
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1879,
-   "last_ts": 1792616259.0930474,
-   "msg": "Rush Yds: the model sits -5.0 points off Kalshi's mid over 71 rungs in 8 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 7056,
-   "tb": "",
-   "ts": 1792616259.0930474
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1878,
-   "last_ts": 1792616243.130516,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 7056,
-   "tb": "",
-   "ts": 1792616243.130516
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1877,
-   "last_ts": 1792614421.757061,
-   "msg": "Rush Yds: the model sits -4.8 points off Kalshi's mid over 70 rungs in 8 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 7056,
-   "tb": "",
-   "ts": 1792614421.757061
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1876,
-   "last_ts": 1792614410.4288244,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 7056,
-   "tb": "",
-   "ts": 1792614410.4288244
   }
  ],
- "generated_at": 1793218239.7353039,
+ "generated_at": 1793223516.7804964,
  "summary": [
   {
    "code": "NFL-DRIFT",
-   "first_ts": 1792614421.757061,
+   "first_ts": 1792619336.9183016,
    "last_msg": "Receptions: the model sits -4.7 points off Kalshi's mid over 204 rungs in 5 games",
    "last_ts": 1792958007.3491502,
-   "n": 284,
-   "variants": 161
-  },
-  {
-   "code": "HIND-nopool",
-   "first_ts": 1792614410.4288244,
-   "last_msg": "DraftKings served no pool",
-   "last_ts": 1792641577.8736289,
-   "n": 17,
-   "variants": 16
+   "n": 281,
+   "variants": 158
   },
   {
    "code": "KNFL-markets-fetch",
@@ -2652,6 +2589,14 @@
    "last_ts": 1793151950.983061,
    "n": 16,
    "variants": 16
+  },
+  {
+   "code": "HIND-nopool",
+   "first_ts": 1792619334.6781466,
+   "last_msg": "DraftKings served no pool",
+   "last_ts": 1792641577.8736289,
+   "n": 14,
+   "variants": 13
   },
   {
    "code": "KAL-candles",
@@ -2681,9 +2626,9 @@
    "code": "UFCC-fights",
    "first_ts": 1792654037.6263058,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "last_ts": 1793094190.8992205,
-   "n": 5,
-   "variants": 5
+   "last_ts": 1793220439.8419366,
+   "n": 6,
+   "variants": 6
   },
   {
    "code": "KNFL-index-build",

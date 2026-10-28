@@ -398,6 +398,7 @@
  },
  "kickoff_ts": 1793319300,
  "kind": "showdown",
+ "last_attempt": null,
  "lineups_allowed": 41491,
  "lineups_legal": 783174,
  "mins_before_lock": 1700,
@@ -3933,6 +3934,7 @@
    "p_any_top1_pct": 25.2
   }
  },
+ "queued_attempt": null,
  "requested_by": {
   "by": "Schedule",
   "why": "no board yet"
