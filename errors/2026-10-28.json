@@ -2518,61 +2518,17 @@
    "pid": 7078,
    "tb": "",
    "ts": 1792622980.7045648
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1885,
-   "last_ts": 1792621158.8928304,
-   "msg": "Rush Yds: the model sits -4.4 points off Kalshi's mid over 73 rungs in 9 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 7078,
-   "tb": "",
-   "ts": 1792621158.8928304
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1884,
-   "last_ts": 1792621158.3323693,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 7078,
-   "tb": "",
-   "ts": 1792621158.3323693
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1883,
-   "last_ts": 1792619336.9183016,
-   "msg": "Rush Yds: the model sits -4.2 points off Kalshi's mid over 71 rungs in 8 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 7078,
-   "tb": "",
-   "ts": 1792619336.9183016
-  },
-  {
-   "code": "HIND-nopool",
-   "id": 1882,
-   "last_ts": 1792619334.6781466,
-   "msg": "DraftKings served no pool",
-   "n": 1,
-   "path": "nfl:2026:w6:154941",
-   "pid": 7078,
-   "tb": "",
-   "ts": 1792619334.6781466
   }
  ],
- "generated_at": 1793223516.7804964,
+ "generated_at": 1793226753.936176,
  "summary": [
   {
    "code": "NFL-DRIFT",
-   "first_ts": 1792619336.9183016,
+   "first_ts": 1792622981.445224,
    "last_msg": "Receptions: the model sits -4.7 points off Kalshi's mid over 204 rungs in 5 games",
    "last_ts": 1792958007.3491502,
-   "n": 281,
-   "variants": 158
+   "n": 279,
+   "variants": 156
   },
   {
    "code": "KNFL-markets-fetch",
@@ -2592,11 +2548,11 @@
   },
   {
    "code": "HIND-nopool",
-   "first_ts": 1792619334.6781466,
+   "first_ts": 1792622980.7045648,
    "last_msg": "DraftKings served no pool",
    "last_ts": 1792641577.8736289,
-   "n": 14,
-   "variants": 13
+   "n": 12,
+   "variants": 11
   },
   {
    "code": "KAL-candles",
