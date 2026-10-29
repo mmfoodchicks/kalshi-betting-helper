@@ -1,7 +1,21 @@
 {
  "boards": [
   {
-   "age_s": 9437,
+   "age_s": 10870,
+   "built_ts": 1793232367,
+   "contest": "NFL $6M Midseason Main Event [$1.5M to 1st]",
+   "dg": 153728,
+   "entries": 4444,
+   "entry_fee": 1500.0,
+   "kind": "classic",
+   "label": "Sunday main (11 games)",
+   "n_contests": 2,
+   "starts": "2026-11-01T18:00:00.0000000Z",
+   "teams": null,
+   "worlds": 180000
+  },
+  {
+   "age_s": 25921,
    "built_ts": 1793217316,
    "contest": "NFL Showdown $1.25M Thursday Night Showdown [$300K to 1st] (CAR @ GB)",
    "dg": 155596,
