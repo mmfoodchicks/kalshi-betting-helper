@@ -1,7 +1,5 @@
 """SQLite persistence: every ledger the app grades itself against.
 
-  markets    the crypto market tracker (where the app started) + its signal
-             snapshots and resolved outcomes -> the running accuracy / Brier
   mlb_picks  the MLB model's moneyline picks: entry and closing price, result
   nfl_picks  the NFL twin (nfl_track), with preseason in its own bucket
   prop_log   MLB batter props: model vs Kalshi vs recent form, graded per box
@@ -40,47 +38,6 @@ def _conn():
 
 def init_db():
     with _lock, _conn() as c:
-        c.execute(
-            """
-            CREATE TABLE IF NOT EXISTS markets (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                coin TEXT NOT NULL,
-                threshold REAL NOT NULL,
-                direction TEXT NOT NULL,          -- 'above' | 'below'
-                close_time INTEGER NOT NULL,       -- epoch seconds
-                created_at INTEGER NOT NULL,
-                yes_price_cents REAL,              -- optional live Kalshi YES price at creation
-                -- snapshot of the model at creation, for scoring
-                snap_prob_yes REAL,
-                snap_recommendation TEXT,
-                snap_spot REAL,
-                -- optional held position (so we can advise when to sell)
-                kalshi_ticker TEXT,                -- live Kalshi market id, if from the scanner
-                position_side TEXT,                -- 'YES' | 'NO' you bought, or NULL
-                entry_cost_cents REAL,             -- what you paid for it, in cents
-                -- resolution
-                resolved INTEGER NOT NULL DEFAULT 0,
-                outcome TEXT,                      -- 'YES' | 'NO'
-                resolve_price REAL,
-                correct INTEGER                    -- 1/0 whether recommendation matched outcome (NULL if HOLD)
-            )
-            """
-        )
-        # Lightweight migration for databases created before positions existed.
-        cols = {r[1] for r in c.execute("PRAGMA table_info(markets)").fetchall()}
-        for col, decl in (("kalshi_ticker", "TEXT"), ("position_side", "TEXT"),
-                          ("entry_cost_cents", "REAL")):
-            if col not in cols:
-                # try/except, not just the PRAGMA check: several gunicorn
-                # workers run this migration at the same moment on boot, and on
-                # a fresh database two of them can both see the column missing
-                # before either adds it -- the loser then crashes the worker
-                # with "duplicate column name" and the boot loops.
-                try:
-                    c.execute(f"ALTER TABLE markets ADD COLUMN {col} {decl}")
-                except Exception as _e:
-                    errlog.note("DB-init_db", _e)  # a sibling worker just added it
-
         # Model's MLB picks, recorded pre-game and graded after finals.
         c.execute("""
             CREATE TABLE IF NOT EXISTS mlb_picks (
@@ -104,7 +61,7 @@ def init_db():
                     # a bias nobody can act on. Legacy rows read as version 0.
                     "model_version"):
             if col not in mcols:
-                try:               # same boot race as the markets migration
+                try:               # several workers migrate at once on boot
                     c.execute(f"ALTER TABLE mlb_picks ADD COLUMN {col} REAL")
                 except Exception as _e:
                     errlog.note("DB-init_db-2", _e)  # a sibling worker just added it
@@ -245,12 +202,12 @@ def init_db():
                 except Exception as _e:
                     errlog.note("ST-init-sliptag", _e)  # sibling won the race
 
-        # Unified bet ledger (real bets you place, crypto or baseball or other).
+        # Unified bet ledger (real bets you place).
         c.execute("""
             CREATE TABLE IF NOT EXISTS bets (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 created_at INTEGER NOT NULL,
-                kind TEXT,                -- 'crypto' | 'baseball' | 'other'
+                kind TEXT,                -- 'baseball' | 'other' (older rows: 'crypto')
                 description TEXT,
                 side TEXT,
                 stake REAL,               -- dollars risked
@@ -1283,116 +1240,49 @@ def list_bets():
     return {"bets": rows, "summary": summary}
 
 
-def add_market(coin, threshold, direction, close_time, yes_price_cents,
-               snap_prob_yes, snap_recommendation, snap_spot,
-               kalshi_ticker=None, position_side=None, entry_cost_cents=None):
-    with _lock, _conn() as c:
-        cur = c.execute(
-            """
-            INSERT INTO markets
-              (coin, threshold, direction, close_time, created_at, yes_price_cents,
-               snap_prob_yes, snap_recommendation, snap_spot,
-               kalshi_ticker, position_side, entry_cost_cents)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-            """,
-            (coin, threshold, direction, int(close_time), int(time.time()),
-             yes_price_cents, snap_prob_yes, snap_recommendation, snap_spot,
-             kalshi_ticker, position_side, entry_cost_cents),
-        )
-        return cur.lastrowid
+# The crypto features were removed on 2026-10-29 (the owner: "completely kill
+# all the crypto shit"). Their tables lived in this file: the 90-second quote
+# recorder's quote_samples, about 13,000 rows a day since August, with its
+# resolved_markets, and the hand tracker's markets. quote_samples is why a page
+# load could read ~1.4 GB into a web worker: every app open asked for the
+# recorder's backtest, which fetched every row as a dict (measured ~1.39 KB a
+# row; the MEM-high peaks grew 17.6 MB a day in step with the table). Dropped
+# once, by the background owner, off the request path. secure_delete is OFF
+# for the drop: Debian's SQLite (the server's) zeroes every freed page, which
+# wrote the whole table through the WAL -- a 1M-row copy of the table grew the
+# WAL by 181 MB in 0.85 s, on a 1 GB disk; with it off, 0.20 MB in 0.07 s. A
+# VACUUM after the drop hands the ~200 MB back to the disk (it copies only the
+# live ledger pages; Fable's review asked for it), and the checkpoint truncates
+# the WAL back to nothing. A VACUUM that fails (a writer held the file past the
+# busy timeout) is noted and leaves the space to be refilled by the ledgers.
+_CRYPTO_TABLES = ("quote_samples", "resolved_markets", "markets")
+# What the drop found and freed, for the ledger note: the real row count was
+# never exported anywhere (both reviews could only fit it, ~1M rows).
+LAST_CRYPTO_DROP = {}
 
 
-def set_position(market_id, side, entry_cost_cents):
-    """Record (or clear) a held position so we can give sell guidance."""
-    side = side.upper() if side else None
-    with _lock, _conn() as c:
-        c.execute(
-            "UPDATE markets SET position_side=?, entry_cost_cents=? WHERE id=?",
-            (side, entry_cost_cents, market_id),
-        )
-
-
-def get_market(market_id):
-    with _lock, _conn() as c:
-        row = c.execute("SELECT * FROM markets WHERE id=?", (market_id,)).fetchone()
-        return dict(row) if row else None
-
-
-def list_markets(include_resolved=True):
-    with _lock, _conn() as c:
-        rows = c.execute("SELECT * FROM markets ORDER BY close_time ASC").fetchall()
-    out = [dict(r) for r in rows]
-    if not include_resolved:
-        out = [m for m in out if not m["resolved"]]
-    return out
-
-
-def delete_market(market_id):
-    with _lock, _conn() as c:
-        c.execute("DELETE FROM markets WHERE id=?", (market_id,))
-
-
-def resolve_market(market_id, resolve_price):
-    """Mark a market resolved based on the price at close. Returns the row."""
-    with _lock, _conn() as c:
-        row = c.execute("SELECT * FROM markets WHERE id=?", (market_id,)).fetchone()
-        if not row or row["resolved"]:
-            return dict(row) if row else None
-        m = dict(row)
-        if m["direction"] == "above":
-            outcome = "YES" if resolve_price >= m["threshold"] else "NO"
-        else:
-            outcome = "YES" if resolve_price <= m["threshold"] else "NO"
-
-        rec = m["snap_recommendation"]
-        if rec == "BUY YES":
-            correct = 1 if outcome == "YES" else 0
-        elif rec == "BUY NO":
-            correct = 1 if outcome == "NO" else 0
-        else:
-            correct = None  # HOLD isn't scored as right/wrong
-
-        c.execute(
-            """
-            UPDATE markets
-            SET resolved=1, outcome=?, resolve_price=?, correct=?
-            WHERE id=?
-            """,
-            (outcome, resolve_price, correct, market_id),
-        )
-        m.update(resolved=1, outcome=outcome, resolve_price=resolve_price, correct=correct)
-        return m
-
-
-def stats():
-    """Aggregate accuracy + Brier score across resolved, scored markets."""
-    with _lock, _conn() as c:
-        rows = c.execute(
-            "SELECT * FROM markets WHERE resolved=1 AND correct IS NOT NULL"
-        ).fetchall()
-    scored = [dict(r) for r in rows]
-    total = len(scored)
-    wins = sum(1 for m in scored if m["correct"] == 1)
-
-    # Brier score over all resolved markets that had a probability snapshot.
-    with _lock, _conn() as c:
-        prob_rows = c.execute(
-            "SELECT outcome, snap_prob_yes FROM markets "
-            "WHERE resolved=1 AND snap_prob_yes IS NOT NULL"
-        ).fetchall()
-    brier_n = 0
-    brier_sum = 0.0
-    for r in prob_rows:
-        actual = 1.0 if r["outcome"] == "YES" else 0.0
-        p = r["snap_prob_yes"]
-        brier_sum += (p - actual) ** 2
-        brier_n += 1
-
-    return {
-        "scored_markets": total,
-        "wins": wins,
-        "losses": total - wins,
-        "accuracy_pct": round(100 * wins / total, 1) if total else None,
-        "brier_score": round(brier_sum / brier_n, 4) if brier_n else None,
-        "brier_samples": brier_n,
-    }
+def drop_crypto_tables():
+    """Drop whichever of the removed crypto features' tables remain; returns their names."""
+    with _lock:
+        c = _conn()
+        try:
+            have = {r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            gone = [t for t in _CRYPTO_TABLES if t in have]
+            if gone:
+                LAST_CRYPTO_DROP.clear()
+                LAST_CRYPTO_DROP.update(
+                    rows={t: c.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0] for t in gone},
+                    mb_before=round(os.path.getsize(DB_PATH) / 1e6, 1))
+                c.execute("PRAGMA secure_delete=OFF")
+                with c:
+                    for t in gone:
+                        c.execute(f"DROP TABLE IF EXISTS {t}")
+                try:
+                    c.execute("VACUUM")
+                except sqlite3.OperationalError as e:
+                    errlog.note("STORE-crypto-vacuum", e)
+                c.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                LAST_CRYPTO_DROP["mb_after"] = round(os.path.getsize(DB_PATH) / 1e6, 1)
+        finally:
+            c.close()
+    return gone

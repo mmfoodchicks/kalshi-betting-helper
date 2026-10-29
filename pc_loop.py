@@ -7,13 +7,16 @@ looping logic lives here, where an update is applied safely: pull, reinstall
 deps if they changed, and EXIT — the .bat restarts this file, which is now
 the new version.
 
-Two speeds:
+Three speeds:
   - every CHECK_S (60s): `git fetch` + hash compare. An update pulls,
     reinstalls, exits for restart, and the fresh loop runs a sim cycle
     immediately — so the PC is current within about a minute of a push,
     ready to backfill the server the moment its deploy swaps.
   - every CYCLE_S (600s), or right after an update/restart: run one
     pc_worker.py cycle in a subprocess (fresh import of the fresh code).
+  - every BOARDS_S (300s), on a thread of its own: one boards pass
+    (pc_worker.py --boards) in a subprocess, beside the cycle, so the boards
+    never wait behind a tournament or deep build (see BOARDS_S).
 
 The loop WAITS on the worker, so "within about a minute" held only between
 cycles: a cycle that rebuilds every board runs for hours, and on 2026-10-16
@@ -34,6 +37,14 @@ import time
 _HERE = os.path.dirname(os.path.abspath(__file__))
 CHECK_S = 60
 CYCLE_S = 600
+# The boards: a pass of their own every BOARDS_S, in a process of its own,
+# beside the main cycle. Inside the cycle they waited behind 13-45 minute
+# tournament builds and the deep jobs, the server's copies aged past their
+# TTLs, and the server rebuilt them in its web workers (tens to ~175 MB each);
+# the server now serves a PC copy up to boardshare.pc_grace(ttl) old (30 min,
+# or the board's TTL plus PC_SLACK_S when that is longer).
+BOARDS_S = 300
+BOARDS_TIMEOUT_S = 1800
 UPDATE_WAITING = 3              # pc_worker's exit code when it stopped for newer code
 _PULL_ERR = [""]                # the last pull's failure, "" while pulls succeed
 
@@ -138,11 +149,59 @@ def _heartbeat():
         _ping_server()
 
 
+_BOARDS_PROC = [None]           # the boards pass in flight, so an update can stop it
+
+
+def _boards_pass():
+    """One `pc_worker.py --boards` run; its exit code, or None when it was killed
+    for running past BOARDS_TIMEOUT_S or could not start."""
+    try:
+        p = subprocess.Popen([sys.executable, os.path.join(_HERE, "pc_worker.py"), "--boards"], cwd=_HERE)
+    except (OSError, subprocess.SubprocessError) as e:
+        print(f"[vigil-pc] boards pass could not run ({type(e).__name__}: {e})")
+        return None
+    _BOARDS_PROC[0] = p
+    try:
+        return p.wait(timeout=BOARDS_TIMEOUT_S)
+    except subprocess.TimeoutExpired:
+        p.kill()
+        p.wait()
+        print(f"[vigil-pc] boards pass ran past {BOARDS_TIMEOUT_S // 60} min - stopped; the next one starts fresh")
+        return None
+    finally:
+        _BOARDS_PROC[0] = None
+
+
+def _stop_boards():
+    """Stop a boards pass still running (an update restarts the loop on new code;
+    left alone, the old pass ran on beside the new one for up to half an hour)."""
+    p = _BOARDS_PROC[0]
+    if p is None or p.poll() is not None:
+        return
+    p.terminate()
+    try:
+        p.wait(timeout=30)
+    except subprocess.TimeoutExpired:
+        p.kill()
+
+
+def _boards_loop():
+    """A boards pass every BOARDS_S, start to start, on a daemon thread: the
+    main loop's exit-to-restart after an update does not wait on it -- it stops
+    the pass in flight (_stop_boards) and the fresh loop starts one on the new
+    code at once."""
+    while True:
+        t0 = time.time()
+        _boards_pass()
+        time.sleep(max(30.0, BOARDS_S - (time.time() - t0)))
+
+
 def main():
     print(f"[vigil-pc] loop up - git check every {CHECK_S}s, sim cycle every "
-          f"{CYCLE_S // 60} min (or immediately after an update)")
+          f"{CYCLE_S // 60} min (or immediately after an update), boards every {BOARDS_S // 60} min")
     _ping_server()
     threading.Thread(target=_heartbeat, daemon=True).start()
+    threading.Thread(target=_boards_loop, daemon=True).start()
     rc = _run_cycle()                              # fresh start = fresh cycle
     last_cycle = time.time()
     while True:
@@ -153,6 +212,7 @@ def main():
         if _update_available():
             if _apply_update():
                 print("[vigil-pc] restarting on the new code...")
+                _stop_boards()
                 sys.exit(0)                   # the .bat loop restarts us fresh
         # a cycle that stopped early for an update the pull could not take
         # runs again now, on the current code with yielding off (_run_cycle)

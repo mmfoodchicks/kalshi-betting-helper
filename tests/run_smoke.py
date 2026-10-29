@@ -99,9 +99,7 @@ def t_fee_consistency():
     import combine
     import futures
     import kalshi
-    import odds
     fns = {"kalshi.taker_fee_cents": kalshi.taker_fee_cents,
-           "odds.taker_fee_cents": odds.taker_fee_cents,
            "bestbets._fee": bestbets._fee,
            "baseball._kalshi_fee": baseball._kalshi_fee,
            "combine._fee_cents": combine._fee_cents,

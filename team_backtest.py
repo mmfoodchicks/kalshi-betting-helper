@@ -1,5 +1,5 @@
 """Point-in-time backtest for the TEAM-sport models — the generic sibling of
-ufc_backtest (and distinct from backtest.py, which replays the crypto model).
+ufc_backtest.
 
 Same question, asked of every league we model: does our engine actually beat the
 closing price, and by how much? That answer should set how far a board departs

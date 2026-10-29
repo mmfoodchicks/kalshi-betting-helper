@@ -99,10 +99,57 @@ def is_stale(key, max_age=WEEK):
     return a is None or a > max_age
 
 
+_gen_memo = {}              # key -> (file mtime, generated_at)
+
+
+def generated_at(key):
+    """When `key` was generated (the record's own stamp, which is the PC's time
+    for an uploaded run), unpickling the file once per version: the scheduler
+    asks it of every daily job each pass and every deep status poll asks it of
+    six, and the payloads run to several MB (Fable's server-memory review,
+    2026-10-29). None if absent or unreadable."""
+    try:
+        mt = os.stat(_path(key)).st_mtime
+    except OSError:
+        return None
+    hit = _gen_memo.get(key)
+    if hit and hit[0] == mt:
+        return hit[1]
+    _, ts = load(key)
+    _gen_memo[key] = (mt, ts)
+    return ts
+
+
 def is_stale_daily(key):
     """True if this job hasn't run since the most recent local midnight (or ever)."""
-    _, ts = load(key)
+    ts = generated_at(key)
     return ts is None or ts < _last_midnight_epoch()
+
+
+def run_child(module, func, *args, timeout=3600, **kwargs):
+    """`module.func(*args, **kwargs)` in a niced child; its return value comes back
+    pickled. The server's failsafe for the nightly sims (app._register_deep_sims):
+    they ran INSIDE the background web worker's scheduler thread -- a 4,000-season
+    Monte Carlo in pure Python, its allocations left in the worker -- whenever the
+    PC had not delivered first. A child's memory dies with it. Raises on failure,
+    so the scheduler records the run as an error."""
+    import pickle
+    import subprocess
+    import sys
+    # The child keeps the real stdout for the pickle alone: fd 1 and sys.stdout
+    # point at stderr before the job runs, so a stray print in a job (or in
+    # anything it imports) cannot corrupt the result (Fable's review r2).
+    out = subprocess.run(
+        [sys.executable, "-c", "import os\ntry:\n    os.nice(10)\nexcept (AttributeError, OSError):\n    pass\n"
+         "import sys, pickle, importlib\n_out = os.fdopen(os.dup(1), 'wb')\nos.dup2(2, 1)\nsys.stdout = sys.stderr\n"
+         "a, kw = pickle.loads(sys.stdin.buffer.read())\n"
+         f"_out.write(pickle.dumps(getattr(importlib.import_module({module!r}), {func!r})(*a, **kw)))\n_out.flush()"],
+        input=pickle.dumps((args, kwargs)), cwd=os.path.dirname(os.path.abspath(__file__)),
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout)
+    if out.returncode != 0 or not out.stdout:
+        raise RuntimeError(f"{module}.{func}: child rc={out.returncode}: "
+                           + (out.stderr or b"").decode(errors="replace")[-300:])
+    return pickle.loads(out.stdout)
 
 
 # ---- Nightly scheduler -----------------------------------------------------

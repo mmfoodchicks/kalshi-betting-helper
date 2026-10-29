@@ -182,10 +182,13 @@ def _sync_kind(url, tok, kind, min_fresher_s=60):
             continue
         body = gzip.compress(raw)
         try:
+            # X-Art-Age: the server stamps a board with its age here, not the
+            # upload's moment (app.api_art_upload; boardshare.pc_grace reads it)
             res = _api(url, tok,
                        f"/api/art/upload?kind={kind}&name={name}&schema={artifacts.SCHEMA}",
                        data=body, headers={"Content-Encoding": "gzip",
-                                           "Content-Type": "application/octet-stream"})
+                                           "Content-Type": "application/octet-stream",
+                                           "X-Art-Age": f"{max(0.0, l_age):.0f}"})
             if res.get("adopted"):
                 sent += 1
                 print(f"[vigil-pc]   ↑ {kind}/{name} ({len(body)//1024}KB)")
@@ -309,6 +312,11 @@ def _task_boards():
     _add("wnba", lambda: __import__("basket").board("wnba", date))
     _add("nhl", lambda: __import__("hockey").board(date))
     _add("futures", lambda: __import__("mfutures").rows())
+    # Soccer was never here: its board thread and the 6-hourly model refit
+    # (a ~120 MB child) always ran on the server (Fable's review, 2026-10-29).
+    # Built here, the board and the refit's soccer_model ship with the boards
+    # and deep syncs, and the server's copy stays inside its PC grace.
+    _add("soccer", lambda: __import__("soccer").board())
     # Racing DFS boards: correlated race sims + DK lineup search. Cheap on a
     # desktop, and the server then serves the uploaded board instead of
     # simulating on the shared CPU.
@@ -320,6 +328,11 @@ def _task_boards():
     # adopts. This pulls five combo builds per lineup change off the shared
     # core the health probe lives on.
     _add("presets", lambda: __import__("presets").pc_build())
+    # The NFL and UFC recipes, same rules (2026-10-29): the server's own
+    # rebuilds were 505 + 596 runs over the two weeks before; it now files
+    # the PC's slips and builds only when the PC is off or not delivering.
+    _add("nfl-presets", lambda: __import__("nfl_presets").pc_build())
+    _add("ufc-presets", lambda: __import__("ufc_presets").pc_build())
     # The Matchups tab's boards (index + one piece a game, matchups.py), for
     # the owner's Mountain-time today. pc_board, not board(): synchronous, and
     # an empty slate (no book on this machine yet) is never published, so it
@@ -351,8 +364,8 @@ def _task_boards():
         if pending:
             time.sleep(12)
     for label in pending:
-        print(f"[vigil-pc] board {label}: still building at deadline - "
-              "will finish next cycle")
+        print(f"[vigil-pc] board {label}: still building after the window - "
+              "the pass waits for its own builds before its last upload")
 
 
 _MIN_CAREER_FRAC = float(os.environ.get("VIGIL_MIN_CAREER_FRAC") or 0.70)
@@ -1161,8 +1174,11 @@ def _cycle(url, tok):
         total += _sync_kind(url, tok, "gamesim")
     except Exception as e:
         print(f"[vigil-pc] sync gamesim failed ({type(e).__name__}: {e})")
-    for label, fn in (("boards", _task_boards),
-                      ("showdown tourney", lambda: _task_showdown_tourney(url, tok)),
+    # The boards run on their own timer now (pc_loop's boards loop calls
+    # boards_main every BOARDS_S), so a long tournament or deep build no longer
+    # holds them back -- the server builds a board itself once the PC's copy
+    # ages past boardshare.PC_GRACE_S, which is what the PC is here to prevent.
+    for label, fn in (("showdown tourney", lambda: _task_showdown_tourney(url, tok)),
                       ("classic tourney", lambda: _task_classic_tourney(url, tok)),
                       ("deep nightly", lambda: _task_deep(url, tok)),
                       ("standings", _task_standings)):
@@ -1182,5 +1198,57 @@ def _cycle(url, tok):
     print(f"[vigil-pc] cycle done - {total} artifact(s) shipped")
 
 
+# A boards pass is a process that exits after its upload. Its builders run in
+# daemon threads (boardshare.nonblocking, the NFL/CFB/futures boards); in the
+# cycle, the ones still running when _task_boards' 300-s window closed finished
+# in the background while the cycle went on, but at a pass's exit they die
+# mid-build, their claims left on disk for CLAIM_TIMEOUT (Fable's review r3).
+# Measured builds fit the window (the NFL board 124 s at most over 17 server
+# runs); the slow cases are soccer's six-hourly refit (up to 1,200 s) and a PC
+# busy with a tournament build. So the pass uploads what is done, waits for the
+# builds it claimed until _BOARDS_JOIN_S from its start, and uploads again. At
+# 20 minutes a board rebuilt every pass is replaced by the next one inside the
+# server's 30-minute floor (boardshare.pc_grace); a TTL-1800 board that passes
+# its TTL during such a wait can outlast TTL + PC_SLACK_S and be built on the
+# server once -- the rare long pass. The last upload lands well inside
+# pc_loop's 30-minute kill (BOARDS_TIMEOUT_S).
+_BOARDS_JOIN_S = 1200
+
+
+def _sync_boards(url, tok):
+    try:
+        _sync_kind(url, tok, "boards")
+    except Exception as e:
+        print(f"[vigil-pc] boards sync failed ({type(e).__name__}: {e}) - next pass retries")
+
+
+def boards_main():
+    """One boards pass alone: every board builder the server serves, then the
+    boards upload (pc_loop runs it every BOARDS_S in its own process, beside the
+    main cycle); the builds still running are waited for up to _BOARDS_JOIN_S
+    and uploaded too. Returns 0; a failure is printed and the next pass retries."""
+    import boardshare
+    url, tok = _config()
+    t0 = time.time()
+    try:
+        _task_boards()
+    finally:
+        _sync_boards(url, tok)
+    if not boardshare.held_claims():
+        return 0
+    while boardshare.held_claims() and time.time() - t0 < _BOARDS_JOIN_S:
+        time.sleep(2)
+    left = sorted(boardshare.held_claims())
+    for name in left:
+        boardshare.release(name)        # dies at this exit: the next pass may claim it at once
+    if left:
+        print(f"[vigil-pc] boards still building after {_BOARDS_JOIN_S // 60} min, "
+              f"left to the next pass: {', '.join(left)}")
+    _sync_boards(url, tok)
+    return 0
+
+
 if __name__ == "__main__":
+    if "--boards" in sys.argv[1:]:
+        sys.exit(boards_main() or 0)
     sys.exit(main() or 0)

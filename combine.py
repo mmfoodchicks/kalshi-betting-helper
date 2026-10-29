@@ -1,34 +1,25 @@
-"""Cross-category combo maker: build a single parlay spanning MLB, daily crypto,
-UFC, tennis and golf.
+"""Cross-category combo maker: build a single parlay spanning MLB, NFL, NBA,
+NHL, UFC, tennis and golf.
 
 Each leg needs a probability. Where we have our own model we use it (MLB props /
-moneyline; crypto fair value from the GBM model); for the other sports we use
-the de-vig'd market probability (a legitimate probability, just not an
-independent edge). One leg per event keeps the legs ~independent so the combined
-chance is a clean product. The builder tunes each leg's line to a target
-confidence, exactly like the baseball combo maker.
-
-Crypto deliberately uses only DAILY markets — 15-minute and hourly are too
-volatile/efficient to belong in a multi-leg parlay.
+moneyline, the UFC fight model, ...); for the other sports we use the de-vig'd
+market probability (a legitimate probability, just not an independent edge). One
+leg per event keeps the legs ~independent so the combined chance is a clean
+product. The builder tunes each leg's line to a target confidence, exactly like
+the baseball combo maker.
 """
-
-import time as _t
 
 import baseball
 import kalshi
-import odds
-import prices
 import sports
 import errlog
 
-CRYPTO_COINS = ["BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "BCH", "LTC", "AVAX", "LINK"]
 # Only the categories Kalshi actually allows in multi-leg parlays.
 SPORT_KEYS = {"ufc", "tennis", "wta", "golf"}
 
 CATEGORIES = {
     "mlb": "⚾ Baseball",
     "nfl": "🏈 NFL",
-    "crypto": "⚡ Crypto (daily)",
     "nba": "🏀 NBA",
     "nhl": "🏒 NHL",
     "golf": "⛳ PGA",
@@ -49,7 +40,6 @@ CATEGORY_TYPES = {
     "nfl": [["ML", "Moneyline"], ["Total", "Totals"], ["Pass Yds", "Passing yds"],
             ["Rush Yds", "Rushing yds"], ["Rec Yds", "Receiving yds"],
             ["Receptions", "Receptions"], ["Anytime Td", "Anytime TD"]],
-    "crypto": [["Crypto", "Price up/down"]],
     "nba": [["ML", "Moneyline"], ["Spread", "Spread"], ["Total", "Totals"],
             ["Points", "Points"], ["Rebounds", "Rebounds"], ["Assists", "Assists"]],
     "nhl": [["ML", "Moneyline"], ["Spread", "Spread"], ["Total", "Totals"],
@@ -96,7 +86,7 @@ _ALL_TYPES = {tv for lst in CATEGORY_TYPES.values() for tv, _ in lst}
 # tennis NO mirrors were unpriced, and 100% of the Match, Sets and Games ones
 # duplicated an existing leg; Aces was the only market missing a side, and it now
 # states its own under.
-_NO_SKIP_TYPES = {"RFI", "ML", "UFC ML", "Crypto", "Outright",
+_NO_SKIP_TYPES = {"RFI", "ML", "UFC ML", "Outright",
                   "Match", "Sets", "Games", "Aces"}
 _NO_SKIP_WORDS = ("under ", "not ", " no ", "does not")
 
@@ -178,61 +168,6 @@ def _mlb_legs(date, season, allow_live=False):
                          "price_cents": v.get("price_cents"), "type": v["type"],
                          "side": v.get("side", "yes"), "live": bool(v.get("live")),
                          "sim_avg": v.get("sim_avg"), "avg_unit": v.get("avg_unit")})
-    return legs
-
-
-# Timeframes pulled for crypto edges. Daily is the steadiest read; hourly adds
-# the fast intraday opportunities (the ones the scanner surfaces). 15-min is too
-# noisy for a "best bets" board, so it's left to the live scanner.
-_CRYPTO_TIMEFRAMES = ("hourly", "daily")
-# Minimum minutes-to-close so we don't price a near-settled hourly market (thin,
-# whippy books in the last few minutes give false edges).
-_CRYPTO_MIN_MINS = {"hourly": 8.0, "daily": 30.0}
-_TF_LABEL = {"hourly": "hourly", "daily": "daily", "15M": "15-min"}
-
-
-def _crypto_legs():
-    legs = []
-    for coin in CRYPTO_COINS:
-        now = _t.time()
-        ctx = {}   # lazily-fetched {spot, candles}, only when a market exists
-
-        def _price():
-            if not ctx:
-                ctx["spot"] = prices.get_spot(coin)
-                ctx["candles"] = prices.get_candles(coin, granularity=60)
-            return ctx["spot"], ctx["candles"]
-
-        for tf in _CRYPTO_TIMEFRAMES:
-            try:
-                ms = kalshi.get_open_markets(coin, tf)
-            except Exception:
-                continue
-            if not ms:
-                continue
-            try:
-                spot, candles = _price()
-            except Exception:
-                break                              # no price feed for this coin
-            for m in ms or []:
-                if not m.get("yes_ask") or m["yes_ask"] >= 100 or not m.get("yes_bid"):
-                    continue
-                mins = max(0.0, (m["close_time"] - now) / 60.0) if m["close_time"] else 0.0
-                if mins < _CRYPTO_MIN_MINS.get(tf, 0.0):
-                    continue                      # too close to settlement -> noise
-                sig = odds.kalshi_signal(spot, candles, m, mins, calibrated=True)
-                if sig["fair_yes_cents"] >= sig["fair_no_cents"]:
-                    side, prob, price = "YES", sig["fair_yes_cents"] / 100.0, m["yes_ask"]
-                else:
-                    side, prob, price = "NO", sig["fair_no_cents"] / 100.0, m["no_ask"]
-                # One leg per (coin, timeframe): grouped so the combo tuner treats
-                # a coin's hourly and daily reads as separate events (both eligible)
-                # rather than collapsing them.
-                legs.append({
-                    "category": "⚡ Crypto", "event_id": f"crypto_{coin}_{tf}",
-                    "label": f"{coin} {_TF_LABEL.get(tf, tf)} {side}: {m.get('subtitle') or m['ticker']}",
-                    "matchup": coin, "prob": prob, "price_cents": price,
-                    "type": "Crypto", "timeframe": tf})
     return legs
 
 
@@ -662,8 +597,6 @@ def gather(cats, date, season, allow_live=False, tennis_window=None):
         add("mlb", lambda: _mlb_legs(date, season, allow_live=allow_live))
     if "nfl" in cats:
         add("nfl", _nfl_legs)
-    if "crypto" in cats:
-        add("crypto", _crypto_legs)
     if "ufc" in cats:
         add("ufc", _ufc_legs)                    # our UFC fight model, not de-vig
     if "tennis" in cats:

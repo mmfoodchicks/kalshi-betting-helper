@@ -78,12 +78,13 @@ def _init(c):
     _init_done = True
 
 
-def note(code, exc=None, msg="", path=None):
+def note(code, exc=None, msg="", path=None, detail=None):
     """Record one failure under a stable ID. Never raises.
 
     `exc` may be the caught exception (its type, message and traceback are
     captured); `msg` adds or replaces context; `path` is the route or job that
-    was being served, if any."""
+    was being served, if any; `detail` is longer context with no exception
+    behind it (a memory alarm's thread stacks), kept where a traceback goes."""
     try:
         code = str(code)[:80]
         if exc is not None and not msg:
@@ -95,6 +96,8 @@ def note(code, exc=None, msg="", path=None):
         if exc is not None and getattr(exc, "__traceback__", None):
             tb = "".join(traceback.format_exception(
                 type(exc), exc, exc.__traceback__))[-_TB_CAP:]
+        elif detail:
+            tb = str(detail)[:_TB_CAP]
         now = time.time()
         with _lock:
             held = _pending.pop(code, 0)

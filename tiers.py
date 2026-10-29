@@ -55,10 +55,6 @@ FEATURE_MIN = {
     "mixed_parlay": "pro",
     "dfs": "pro",
     "racing_picks": "pro",
-    "vol_edge": "pro",
-    "deribit": "pro",
-    "backtest": "edge",
-    "recorder_backtest": "edge",
 }
 
 # Sim-run options offered in the UI; each tagged with the tier needed to use it.

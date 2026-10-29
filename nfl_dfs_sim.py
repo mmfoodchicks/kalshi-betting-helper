@@ -1148,13 +1148,10 @@ def board(week=1, preseason=False):
     season = _season()
     key = ("nfl_sim_board", season, week, bool(preseason))
     name = f"nfl_sim_board_{season}_w{week}_{int(bool(preseason))}"
+    got = boardshare.adopt(name, _cache, key, _BOARD_TTL)   # fresh, a sibling's, or the PC's
+    if got is not None:
+        return got
     hit = _cache.get(key)
-    if hit and _time.time() - hit[0] < _BOARD_TTL:
-        return hit[1]
-    disk, age = boardshare.get(name, _BOARD_TTL)
-    if disk is not None:                     # a sibling already built it
-        _cache[key] = (_time.time() - age, disk)
-        return disk
     if key not in _board_inflight and boardshare.claim(name):
         _board_inflight.add(key)
 

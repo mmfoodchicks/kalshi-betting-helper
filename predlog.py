@@ -1,13 +1,12 @@
 """Universal prediction logger — the missing piece for site-wide calibration.
 
-MLB and crypto have graded prediction-vs-outcome history (game picks, prop log,
-the crypto recorder), so they calibrate. Tennis, UFC, racing, NFL and LoL don't,
-so they can't — yet. This module fixes that: it captures each sim's Kalshi
+MLB has graded prediction-vs-outcome history (game picks, prop log), so it
+calibrates. Tennis, UFC, racing, NFL and LoL didn't, so they couldn't. This module fixes that: it captures each sim's Kalshi
 prediction the first time it's priced, and when that market settles it reads the
 real outcome and grades it. calibrate.py then reads pairs(model) and fits a
-temperature exactly as it does for MLB/crypto — no new calibration code needed.
+temperature exactly as it does for MLB — no new calibration code needed.
 
-Design mirrors the crypto recorder:
+Design:
   - one row per (model, ticker), logged the first time we see it (INSERT OR
     IGNORE), storing the model's YES probability for that market;
   - a cheap background resolver reads each settled ticker's result and grades it;

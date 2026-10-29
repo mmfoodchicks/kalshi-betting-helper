@@ -45,13 +45,13 @@ import errlog
 _SPORTS = ("mlb", "nfl", "cfb", "nba", "nhl")
 
 # Non-sport models. Anything here prices its own markets end-to-end and returns
-# rows in the same shape, so the board treats a Bitcoin strike exactly like a
+# rows in the same shape, so the board treats a temperature record exactly like a
 # division title: our number, the book's number, and what the difference is worth.
-_OTHER = ("crypto", "climate")
+_OTHER = ("climate",)
 
 _LABEL = {"mlb": "⚾ MLB", "nfl": "🏈 NFL", "cfb": "🏈 CFB",
           "nba": "🏀 NBA", "nhl": "🏒 NHL",
-          "crypto": "⚡ Crypto", "climate": "🌡️ Climate"}
+          "climate": "🌡️ Climate"}
 
 # Human names for the market kinds the boards emit, normalized across sports
 # (MLB says "pennant", the NBA means "conference", they're the same bet).
@@ -60,7 +60,7 @@ _MARKET = {
     "pennant": "Conference / pennant", "conf": "Conference / pennant",
     "division": "Division", "playoffs": "Make the playoffs",
     "cfp": "Make the playoff", "win_total": "Season win total",
-    "price_level": "Price level", "temperature": "Global temperature",
+    "temperature": "Global temperature",
     "playin": "Make the play-in", "seed1": "No. 1 seed", "best": "Best record",
     "worst": "Worst record",
 }
@@ -273,7 +273,7 @@ def _row(sport, mtype, label, model_pct, price_cents, extra, days):
         "book": extra.get("best_book"),
         "suspect": absurd,
         "side": "yes",
-        # Continuous markets (crypto, climate) are always live; a league is only
+        # Continuous markets (climate) are always live; a league is only
         # "in season" once its teams have actually played, which is what lets the
         # board hide a sport whose year hasn't started.
         "in_season": bool(extra.get("in_season", True)),
@@ -429,32 +429,6 @@ def _collect_pro(sport, by_ticker, by_series, by_no):
     return _collect_board(sport, board, by_ticker, by_series, by_no)
 
 
-def _collect_crypto():
-    """Long-dated crypto price levels, priced off realized volatility.
-
-    Its own module owns the hard parts (touch versus terminal payoff, and a
-    horizon-matched vol estimate); here it just gets mapped into a board row."""
-    import crypto_futures
-    out = []
-    for r in crypto_futures.rows():
-        row = _row("crypto", "price_level", r["label"], r["model_pct"],
-                   r["price_cents"],
-                   {"team": r["coin"], "ticker": r["ticker"],
-                    "volume": r["volume"], "in_season": True,
-                    # A touch market read as terminal (or vice versa) is the main
-                    # way this can be wrong, so the payoff kind rides along.
-                    "confidence": "med" if r["kind"] == "touch" else "high"},
-                   r["days"])
-        if row:
-            row["detail"] = (f"{r['coin']} ${r['spot']:,.0f} → ${r['strike']:,.0f} "
-                             f"· {r['kind']} · {r['vol_pct']:.0f}% vol")
-            out.append(row)
-            no = _no_row(row, r.get("no_cents"))
-            if no:
-                out.append(no)
-    return out
-
-
 def _collect_climate():
     """Global-temperature markets, against the NASA GISS series they settle on.
 
@@ -544,7 +518,7 @@ def _collect_climate():
 def _sources():
     """(name, callable) for every model feeding the board, cheapest first.
 
-    Order matters because the board publishes incrementally: MLB, crypto and
+    Order matters because the board publishes incrementally: MLB and
     climate are seconds apart, so the page fills within about fifteen seconds
     instead of staying blank until the slowest league finishes."""
     by_ticker, by_series, by_no = _close_days()
@@ -561,7 +535,7 @@ def _sources():
                 return _collect_board("cfb", cfb.futures_board(), by_ticker, by_series, by_no)
             return _collect_pro(sp, by_ticker, by_series, by_no)
         return run
-    out = [("climate", _collect_climate), ("crypto", _collect_crypto)]
+    out = [("climate", _collect_climate)]
     out += [(sp, sport_src(sp)) for sp in ("mlb", "cfb", "nfl", "nba", "nhl")]
     return out
 
@@ -585,9 +559,7 @@ def _build():
             continue        # a sport out of season shouldn't sink the board
     for other in _OTHER:
         try:
-            if other == "crypto":
-                out += _collect_crypto()
-            elif other == "climate":
+            if other == "climate":
                 out += _collect_climate()
         except Exception:
             continue
@@ -608,10 +580,9 @@ def rows(block=False):
         _cache[key] = (_t.time(), val)
         boardshare.put("mfut", val)
         return val
-    disk, age = boardshare.get("mfut", _TTL)
-    if disk is not None:                    # a sibling already built (or is
-        _cache[key] = (_t.time() - age, disk)   # mid-build publishing as it goes)
-        return disk
+    got = boardshare.adopt("mfut", _cache, key, _TTL)   # a sibling's (or mid-build
+    if got is not None:                                  # partial), or the PC's
+        return got
     if key not in _inflight and boardshare.claim("mfut"):
         _inflight.add(key)
 

@@ -41,8 +41,7 @@ thin history can never earn a big correction. A model with no graded data is a
 no-op until its outcomes accrue. Everything is cached and fails safe.
 
 Registered models (loader returns [(prob 0-1, outcome 0/1)]): the MLB pick and
-prop ledgers and the crypto recorder feed 'win' / 'prop' / 'crypto' directly;
-every other sport (tennis, ufc, nfl, nfl_pre, nba, nhl, ...) feeds through
+prop ledgers feed 'win' / 'prop' directly; every other sport (tennis, ufc, nfl, nfl_pre, nba, nhl, ...) feeds through
 predlog.pairs(model), the universal prediction log, so a sport starts
 calibrating the moment its graded history clears its floor in _MODELS. A model
 with no graded data is a no-op.
@@ -275,11 +274,6 @@ def _prop_pairs():
     return store.prop_grade_pairs()
 
 
-def _crypto_pairs():
-    import recorder
-    return recorder.calibration_pairs()
-
-
 def _predlog_pairs(model):
     import predlog
     return predlog.pairs(model)
@@ -294,8 +288,7 @@ _MODELS = {
     # against the market. Win/prop have deep history, so they carry the full 800.
     # Tennis/UFC are the same noisy-binary shape but accrue graded markets far more
     # slowly, so they sit lower (enough to require a season+ of settled markets for a
-    # full correction, without stalling activation forever). Crypto's GBM fair value
-    # is a smooth continuous number that settles by the thousands, so 400 is ample.
+    # full correction, without stalling activation forever).
     #
     # A THIRD entry is the minimum number of distinct DAYS the sample must span
     # (see _fit). It matters wherever many rows settle on the same slate, which
@@ -306,7 +299,6 @@ _MODELS = {
     # day-to-day swings in league offence have had a real chance to average out.
     "win":    (_win_pairs,                        800, 30),
     "prop":   (_prop_pairs,                       800, 30),
-    "crypto": (_crypto_pairs,                     400),
     "tennis": (lambda: _predlog_pairs("tennis"), 400),
     "ufc":    (lambda: _predlog_pairs("ufc"),    300),
     # NFL moneylines (drive engine): same noisy-binary shape as tennis/UFC, and a
@@ -398,10 +390,6 @@ def win_prob(p):
 
 def batter_prop(p):
     return apply("prop", p)
-
-
-def crypto(p):
-    return apply("crypto", p)
 
 
 def tennis(p):

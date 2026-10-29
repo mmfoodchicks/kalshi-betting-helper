@@ -1,7 +1,6 @@
 """Background MLB player-prop recorder + grader.
 
-Like the crypto quote recorder (recorder.py), but for batter props. While the
-app is open it periodically logs, for every Kalshi-listed batter prop (1+/2+/3+
+While the app is open it periodically logs, for every Kalshi-listed batter prop (1+/2+/3+
 hits, 1+ HR) it can match to a player:
   - the model's matchup-adjusted probability (from baseball.analyze_slate)
   - Kalshi's live YES price (the implied market probability)

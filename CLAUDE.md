@@ -575,7 +575,35 @@ The worker builds the SAME
 artifacts with the SAME functions and uploads anything fresher than the
 server's copy through `/api/art/upload`. The server adopts by file freshness
 and self-computes whenever the PC is off — **the PC can only add speed or be
-ignored**. **The tab's "Build on the PC" is a dropdown of slates by name**
+ignored**. **The server serves, the PC builds** (2026-10-29; the owner: the
+website should house what the PC builds and take over only when it is off):
+while the PC is on, a board on disk up to `boardshare.PC_GRACE_S` (30 min, or
+the board's own TTL plus `PC_SLACK_S`, 12 min, when that is longer: the PC
+rebuilds at the TTL on its own clock and its upload lands minutes later, and
+the upload keeps the PC's age) is served as is (`boardshare.adopt` /
+`pc_grace`, every builder: `nonblocking`, the NFL, DFS, CFB and futures boards,
+the NFL slate sims); the server builds in a web worker only when the PC is off
+or its copy is past the grace. Two exceptions: a placeholder or empty board
+keeps its own TTL (`boardshare._short_lived`), and the Kalshi NFL and college
+indexes keep their 120 s TTL whatever the PC's state -- they are where every
+ask on those boards is read, a fetch and not a build. The PC's boards run on a pass
+of their own every 5 minutes (`pc_loop._boards_loop` -> `pc_worker.py
+--boards`), beside the cycle, so a tournament or deep build no longer ages
+them, and each upload carries `X-Art-Age` so a board keeps its PC age on the
+server. The pass also builds soccer (its board and the 6-hourly model refit)
+and the NFL and UFC recipes (`pc_build`, never logged on the PC; the server's
+tick files their slips, presets.tick's rule; with the PC on, neither the tick
+nor the tab's kick builds here until the PC's payload is 45 minutes old, or 15
+have passed without one: `_pc_covers`). A pass is a process that exits after
+its upload and its builders are daemon threads, so it uploads what is done,
+waits for the builds it claimed (`boardshare.held_claims`) up to 20 minutes
+from its start (`pc_worker._BOARDS_JOIN_S`), and uploads again. An update stops
+a boards pass in flight (`pc_loop._stop_boards`). Every nightly deep job is PC-first
+(`_deep_pc_first`); the eight that ran inline in the background worker's
+scheduler thread (f1, nascar, nfl_season, cfb, nfl, model_trust, nhl_deep,
+nba_deep) fall back to one niced child (`deep_cache.run_child`) under the
+heavy-build gate. `deep_cache.is_stale_daily` reads a payload's stamp once per
+file version (`generated_at`), not one multi-MB unpickle per pass and poll. **The tab's "Build on the PC" is a dropdown of slates by name**
 (2026-10-22; `dk.slates` "matchup" names a single game, "NE @ CHI
 showdown"), nothing picked until the owner picks, grouped: what the PC
 builds on its own first (`app._tourney_auto`, pc_worker's rules mirrored --
@@ -626,7 +654,17 @@ so a self-pulling batch file corrupts itself); all logic lives in Python.
   (11:26 ET the same day) was the combo maker simulating games inside a web
   worker beside a slate child; per-game sims now run in a niced child too
   (`baseball._game_sim_isolated`). Nothing CPU-bound belongs in a gunicorn
-  process on a one-core quota.
+  process on a one-core quota. A fifth pattern (Sep-Oct 2026): ONE worker at
+  1.0-1.77 GB, the peak growing 17.6 MB a day, 2,047/2,048 MB on 10-28 -- every
+  app open called the crypto recorder's backtest, which read every quote saved
+  every 90 s since August into the worker as dicts (~1.39 KB a row, measured).
+  The owner had every crypto feature removed (2026-10-29) and its tables are
+  dropped once (`store.drop_crypto_tables`, secure_delete OFF: Debian's SQLite
+  zeroes freed pages through the WAL, 181 MB for a 1M-row copy; then a VACUUM,
+  193 -> 13 MB on a copy, 0.29 s). A read that
+  grows with a table belongs in SQL, never a fetchall. Every worker now ledgers
+  `MEM-worker` past 600 MB with its requests in flight and every thread's
+  frames (in the row's `tb`): read the error-log snapshot first.
 - The slate builds in a **fresh subprocess** every few minutes; anything cached
   only in memory is re-paid every time. Persist to the deep store instead.
 - Never let in-game information touch a number that claims to be pre-game

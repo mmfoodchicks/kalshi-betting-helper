@@ -1046,13 +1046,10 @@ def board(week=1, preseason=False):
     season = _season()
     key = ("nfl_slate", season, week, bool(preseason))
     name = f"nfl_slate_{season}_w{week}_{int(bool(preseason))}"
+    got = boardshare.adopt(name, _cache, key, _BOARD_TTL)   # fresh, a sibling's, or the PC's
+    if got is not None:
+        return got
     hit = _cache.get(key)
-    if hit and _time.time() - hit[0] < _BOARD_TTL:
-        return hit[1]
-    disk, age = boardshare.get(name, _BOARD_TTL)
-    if disk is not None:                     # a sibling already built it
-        _cache[key] = (_time.time() - age, disk)
-        return disk
     if key not in _inflight and boardshare.claim(name):
         _inflight.add(key)
 
@@ -1858,7 +1855,7 @@ def _slate_sims(week, preseason, n_sims):
     # sims5: the pool carries the NO side of every spread and player leg
     # (sims4 added Kalshi's rungs and krefs); an older cache must not be served.
     name = f"nfl_parlay_sims5_{season}_w{week}_{int(bool(preseason))}_{n_sims}"
-    disk, _age = boardshare.get(name, _SIMS_TTL)
+    disk, _age = boardshare.get(name, boardshare.pc_grace(_SIMS_TTL))
     if disk is not None:
         return disk
     if not boardshare.claim(name):

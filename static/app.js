@@ -119,35 +119,6 @@ function stakeText(prob, costCents) {
   return `💰 Stake <b>$${dollars.toFixed(2)}</b> (~${contracts} @ ${costCents}¢, ${label}-Kelly)`;
 }
 
-// ---- Close-time helpers ---------------------------------------------------
-function nextMark(minutes) {
-  // Next clock boundary (e.g. next :00/:15/:30/:45 for 15).
-  const now = new Date();
-  const ms = minutes * 60 * 1000;
-  const next = new Date(Math.ceil(now.getTime() / ms) * ms);
-  if (next.getTime() - now.getTime() < 20 * 1000) next.setTime(next.getTime() + ms);
-  return Math.floor(next.getTime() / 1000);
-}
-function nextHour() {
-  const d = new Date();
-  d.setMinutes(0, 0, 0);
-  d.setHours(d.getHours() + 1);
-  return Math.floor(d.getTime() / 1000);
-}
-function computeCloseTime() {
-  const w = $("window").value;
-  if (w === "next15") return nextMark(15);
-  if (w === "nexthour") return nextHour();
-  if (w === "min15") return Math.floor(Date.now() / 1000) + 15 * 60;
-  if (w === "min60") return Math.floor(Date.now() / 1000) + 60 * 60;
-  if (w === "custom") {
-    const v = $("customTime").value;
-    if (!v) return null;
-    return Math.floor(new Date(v).getTime() / 1000);
-  }
-  return null;
-}
-
 function fmtCountdown(secs) {
   if (secs <= 0) return "closed";
   const m = Math.floor(secs / 60);
@@ -158,242 +129,11 @@ function fmtCountdown(secs) {
   }
   return `${m}m ${s}s`;
 }
-function fmtClock(epoch) {
-  return new Date(epoch * 1000).toLocaleString([], {
-    month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
-  });
-}
-
 function badge(rec, strength) {
   const cls = rec === "BUY YES" ? "yes" : rec === "BUY NO" ? "no" : "hold";
   const lean = strength === "lean" ? " lean" : "";
   const tag = strength === "lean" ? " (lean)" : strength === "strong" ? " ★" : "";
   return `<span class="badge ${cls}${lean}">${rec}${tag}</span>`;
-}
-
-// ---- Live preview in the setup card --------------------------------------
-let previewTimer = null;
-async function refreshPreview() {
-  const threshold = parseFloat($("threshold").value);
-  const close = computeCloseTime();
-  const prev = $("preview");
-  if (!threshold || !close) { prev.classList.add("hidden"); return; }
-  const params = new URLSearchParams({
-    coin: $("coin").value,
-    threshold,
-    direction: $("direction").value,
-    close_time: close,
-  });
-  const yp = $("yesPrice").value;
-  if (yp) params.set("yes_price_cents", yp);
-  try {
-    const r = await fetch("/api/quote?" + params.toString());
-    const sig = await r.json();
-    if (sig.error) { prev.classList.add("hidden"); return; }
-    prev.classList.remove("hidden");
-    prev.innerHTML = renderSignalBody(sig, close, null);
-  } catch (e) {
-    prev.classList.add("hidden");
-  }
-}
-
-// ---- Shared signal renderer ----------------------------------------------
-function renderSignalBody(sig, closeTime, marketId) {
-  const pctYes = Math.round(sig.prob_yes * 100);
-  const secs = closeTime - Math.floor(Date.now() / 1000);
-  const edgeTxt = sig.edge_cents !== null && sig.edge_cents !== undefined
-    ? ` · Edge <b>${sig.edge_cents > 0 ? "+" : ""}${sig.edge_cents}¢</b>` +
-      (sig.net_edge_cents != null
-        ? ` <span class="small" style="color:var(--muted)" title="after Kalshi's ~${sig.fee_cents}¢ taker fee">(net ${sig.net_edge_cents > 0 ? "+" : ""}${sig.net_edge_cents}¢)</span>` : "")
-    : "";
-  let html = `
-    ${badge(sig.recommendation, sig.strength)}
-    <div class="probbar">
-      <div class="fill" style="width:${pctYes}%"></div>
-      <div class="lbl">YES ${sig.fair_yes_cents}¢ &nbsp;|&nbsp; NO ${sig.fair_no_cents}¢</div>
-    </div>
-    <div class="note rationale">${sig.rationale}</div>
-    <div class="kv">
-      <span>Spot <b>$${sig.spot.toLocaleString()}</b></span>
-      <span>Closes in <b>${fmtCountdown(secs)}</b></span>
-      <span>Momentum <b>${sig.momentum_pct}%</b></span>
-      <span>Exp. move <b>±${sig.expected_move_pct}%</b></span>
-      <span>Confidence <b>${sig.confidence}%</b></span>${edgeTxt}
-    </div>`;
-  if (sig.dip_note) html += `<div class="note dip">💡 ${sig.dip_note}</div>`;
-  if (sig.exit_hint) html += `<div class="note exit">🎯 ${sig.exit_hint}</div>`;
-  return html;
-}
-
-// ---- Tracked markets list -------------------------------------------------
-function renderMarket(m) {
-  const dirTxt = m.direction === "above" ? "above" : "below";
-  const title = `${m.coin} ${dirTxt} $${Number(m.threshold).toLocaleString()}`;
-  const x = `<button class="x" title="Stop tracking" onclick="delMarket(${m.id})">✕</button>`;
-
-  if (m.resolved) {
-    const oc = m.outcome === "YES" ? "yes" : "no";
-    let verdict = "";
-    if (m.correct === 1) verdict = `<span class="correct">✓ model was right</span>`;
-    else if (m.correct === 0) verdict = `<span class="wrong">✗ model missed</span>`;
-    else verdict = `<span class="meta">(model said HOLD)</span>`;
-    return `<div class="market resolved">
-      <div class="top">
-        <div>
-          <div class="title">${title}</div>
-          <div class="meta">Closed ${fmtClock(m.close_time)} · settled $${Number(m.resolve_price).toLocaleString()}</div>
-        </div>${x}
-      </div>
-      <div class="kv">
-        <span>Resolved <b class="outcome ${oc}">${m.outcome}</b></span>
-        <span>Model called <b>${m.snap_recommendation}</b></span>
-        <span>${verdict}</span>
-      </div>
-    </div>`;
-  }
-
-  const sig = m.signal;
-  const body = sig
-    ? renderSignalBody(sig, m.close_time, m.id)
-    : `<div class="note rationale">${m.signal_error || "loading…"}</div>`;
-
-  // Sell guidance if a position is held; otherwise an "I bought this" form.
-  let posHtml;
-  if (m.position) {
-    const p = m.position;
-    const cls = p.action === "SELL" ? "sellbox sell" : "sellbox hold";
-    const pnl = p.pnl_cents;
-    const pnlTxt = pnl == null ? "" :
-      `<span class="${pnl >= 0 ? "ev pos" : "ev neg"}">${pnl >= 0 ? "+" : ""}${pnl}¢${p.pnl_pct != null ? ` (${p.pnl_pct >= 0 ? "+" : ""}${p.pnl_pct}%)` : ""}</span>`;
-    posHtml = `<div class="${cls}">
-      <div class="sellhead"><span class="sellaction">${p.action === "SELL" ? "🔔 " : "⏳ "}${p.headline}</span>${pnlTxt}</div>
-      <div class="small">You hold <b>${p.side}</b>, bought at <b>${p.entry_cost_cents}¢</b> · sell now ~<b>${p.sell_price_cents}¢</b>${p.sell_price_estimated ? " (est.)" : ""} · fair value <b>${p.fair_value_cents}¢</b></div>
-      <div class="choices">
-        <div class="choice"><b>💵 Sell now</b><br>get ~${p.sell_price_cents}¢ ${pnl != null ? `(${pnl >= 0 ? "+" : ""}${pnl}¢ net after the ~${p.exit_fee_cents != null ? p.exit_fee_cents : 0}¢ exit fee${p.pnl_gross_cents != null ? `, ${p.pnl_gross_cents >= 0 ? "+" : ""}${p.pnl_gross_cents}¢ gross` : ""})` : ""}</div>
-        <div class="choice"><b>⏳ Hold to close</b><br>worth ~${p.fair_value_cents}¢ avg (100¢ or 0¢)</div>
-      </div>
-      <div class="small">${p.detail}</div>
-      ${p.flip ? `<div class="note dip" style="border-color:var(--no);color:var(--no)">🔄 ${p.flip.note}</div>` : ""}
-      ${p.settle_note ? `<div class="small" style="margin-top:4px">⏰ ${p.settle_note}</div>` : ""}
-      <button class="track-mini" style="margin-top:8px" onclick="clearPosition(${m.id})">clear position</button>
-    </div>`;
-  } else {
-    const f = "pos_" + m.id;
-    posHtml = `<div class="addpos">
-      <button class="track-mini" onclick="document.getElementById('${f}').classList.toggle('hidden')">＋ I bought this</button>
-      <div class="buyform hidden" id="${f}">
-        I bought
-        <select id="${f}_side"><option value="YES">YES</option><option value="NO">NO</option></select>
-        at <input id="${f}_cost" type="number" step="any" min="0" max="100" placeholder="cost" style="width:64px"/> ¢
-        <button class="track-mini primary-mini" onclick="savePosition(${m.id})">Save</button>
-      </div>
-    </div>`;
-  }
-
-  return `<div class="market">
-    <div class="top">
-      <div>
-        <div class="title">${title}</div>
-        <div class="meta">Closes ${fmtClock(m.close_time)}</div>
-      </div>${x}
-    </div>
-    ${posHtml}
-    ${body}
-  </div>`;
-}
-
-window.savePosition = async (id) => {
-  const f = "pos_" + id;
-  const side = document.getElementById(f + "_side").value;
-  const cost = parseFloat(document.getElementById(f + "_cost").value);
-  if (isNaN(cost)) return;
-  await fetch(`/api/markets/${id}/position`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ position_side: side, entry_cost_cents: cost }),
-  });
-  refreshMarkets();
-};
-window.clearPosition = async (id) => {
-  await fetch(`/api/markets/${id}/position`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ position_side: null, entry_cost_cents: null }),
-  });
-  refreshMarkets();
-};
-
-async function refreshMarkets() {
-  try {
-    const [mRes, sRes] = await Promise.all([
-      fetch("/api/markets"),
-      fetch("/api/stats"),
-    ]);
-    const markets = await mRes.json();
-    const stats = await sRes.json();
-
-    const box = $("markets");
-    if (!markets.length) {
-      box.innerHTML = `<div class="empty">No markets yet. Add one above to get a live signal.</div>`;
-    } else {
-      // Active first, then resolved.
-      markets.sort((a, b) => (a.resolved - b.resolved) || (a.close_time - b.close_time));
-      box.innerHTML = markets.map(renderMarket).join("");
-    }
-
-    if (!isOwner()) {
-      $("statsBar").innerHTML = "";   // model accuracy stats are owner-only
-    } else if (stats.scored_markets) {
-      $("statsBar").innerHTML =
-        `Accuracy <b>${stats.accuracy_pct}%</b> (${stats.wins}/${stats.scored_markets}) · ` +
-        `Brier <b>${stats.brier_score}</b>`;
-    } else {
-      $("statsBar").innerHTML = `<span>No resolved markets yet</span>`;
-    }
-  } catch (e) {
-    /* transient network hiccup; next tick retries */
-  }
-}
-
-window.delMarket = async (id) => {
-  await fetch("/api/markets/" + id, { method: "DELETE" });
-  refreshMarkets();
-};
-
-// ---- Kalshi live scanner --------------------------------------------------
-function strikeToTracker(m) {
-  // Map a Kalshi market's geometry onto our (direction, threshold) tracker.
-  const st = (m.strike_type || "").toLowerCase();
-  if (st === "greater" || st === "greater_or_equal") return { direction: "above", threshold: m.floor };
-  if (st === "less" || st === "less_or_equal") return { direction: "below", threshold: m.cap };
-  return null; // 'between' isn't representable in the simple tracker
-}
-
-let lastScan = { coin: null, timeframe: null };
-const scanCtx = {}; // ticker -> context for the "I bought this" form
-
-function renderVol(v) {
-  if (!v) return "";
-  const hasImplied = v.ratio != null;
-  const cls = !hasImplied ? "" : v.ratio >= 1.15 ? "ev neg" : v.ratio <= 0.87 ? "ev pos" : "";
-  const moveLine = hasImplied
-    ? `implied <b>${v.implied_move_pct}%</b> vs realized <b>${v.realized_move_pct}%</b> move · ratio <b class="${cls}">${v.ratio}×</b>`
-    : `realized move <b>${v.realized_move_pct}%</b>`;
-  let deribit = "";
-  if (v.deribit_dvol_pct) {
-    const dcls = v.deribit_ratio >= 1.15 ? "ev neg" : v.deribit_ratio <= 0.87 ? "ev pos" : "";
-    deribit = `<div class="small" style="margin-top:6px">🛰️ vs Deribit (sharp options): DVOL <b>${v.deribit_dvol_pct}%</b>${v.deribit_ratio != null ? ` (<b class="${dcls}">${v.deribit_ratio}×</b>)` : ""} - ${v.deribit_note}</div>`;
-  }
-  return `<div class="volbox">
-    <div class="sellhead"><span class="sellaction">📊 ${v.verdict}</span>
-      <span class="small">${moveLine}</span></div>
-    <div class="small">${v.suggestion}</div>
-    ${deribit}
-  </div>`;
-}
-
-function recSide(sig) {
-  if (sig.recommendation === "BUY YES") return "YES";
-  if (sig.recommendation === "BUY NO") return "NO";
-  return null;
 }
 
 // Site-wide calibration audit, fetched once and cached. Returns a small note for
@@ -423,179 +163,6 @@ function appendCalNote(elId, model, label) {
     el.querySelectorAll(".calnote").forEach((n) => n.remove());
     if (h) el.insertAdjacentHTML("beforeend", h);
   });
-}
-
-function renderScanRow(m) {
-  const sig = m.signal;
-  const secs = m.close_time ? m.close_time - Math.floor(Date.now() / 1000) : 0;
-  const bestEdge = m.best_edge;
-  const side = recSide(sig);
-  const rowCls = sig.recommendation !== "HOLD" ? "scanrow edge" : "scanrow";
-  const tracker = strikeToTracker(m);
-  const fid = "buy_" + (m.ticker || "").replace(/[^a-z0-9]/gi, "_");
-
-  // One clear action line: what to buy, at what price, vs fair value.
-  let action;
-  if (side) {
-    const cost = side === "YES" ? m.yes_ask : m.no_ask;
-    const fair = side === "YES" ? sig.fair_yes_cents : sig.fair_no_cents;
-    const net = side === "YES" ? sig.net_edge_yes_cents : sig.net_edge_no_cents;
-    const netTag = net != null
-      ? ` <span class="small" style="color:var(--muted)" title="after Kalshi's taker fee">net +${net}¢</span>` : "";
-    const stake = stakeText(fair / 100, cost);
-    action = `<div class="actionline">
-        ${badge(sig.recommendation, sig.strength)}
-        <span class="edgeval pos">+${bestEdge}¢ edge${netTag}</span>
-      </div>
-      <div class="plain">✅ Buy <b>${side}</b> at <b>${cost}¢</b> → fair <b>${fair}¢</b>${sig.confidence != null ? ` · <b>${sig.confidence}%</b> confidence` : ""}${sig.dip_note ? ` · 💡 ${sig.dip_note}` : ""}</div>
-      ${stake ? `<div class="small" style="margin-top:4px">${stake}</div>` : ""}`;
-  } else {
-    action = `<div class="actionline">${badge("HOLD", "flat")}
-        <span class="edgeval neg">no clear edge</span></div>
-      <div class="plain">Model fair YES <b>${sig.fair_yes_cents}¢</b> vs market - wait for a better price.</div>`;
-  }
-
-  scanCtx[m.ticker] = {
-    coin: lastScan.coin, threshold: tracker ? tracker.threshold : null,
-    direction: tracker ? tracker.direction : null, close_time: m.close_time,
-    ticker: m.ticker, yes_ask: m.yes_ask, no_ask: m.no_ask, side,
-  };
-
-  const buttons = tracker ? `
-    <div class="scanbtns">
-      <button class="track-mini primary-mini" onclick="showBuyForm('${m.ticker}')">I bought this</button>
-      <button class="track-mini" onclick='trackFromScan(${JSON.stringify({
-        coin: lastScan.coin, threshold: tracker.threshold, direction: tracker.direction,
-        close_time: m.close_time, kalshi_ticker: m.ticker, yes_price_cents: m.yes_ask,
-      })})'>Just watch</button>
-    </div>
-    <div class="buyform hidden" id="${fid}">
-      I bought
-      <select id="${fid}_side">
-        <option value="YES"${side === "YES" ? " selected" : ""}>YES</option>
-        <option value="NO"${side === "NO" ? " selected" : ""}>NO</option>
-      </select>
-      at <input id="${fid}_cost" type="number" step="any" min="0" max="100"
-                placeholder="${side === "NO" ? m.no_ask : m.yes_ask}" style="width:64px"/> ¢
-      <button class="track-mini primary-mini" onclick="saveBuy('${m.ticker}')">Save</button>
-      <button class="track-mini" onclick="hideBuyForm('${m.ticker}')">cancel</button>
-    </div>` : "";
-
-  const ns = sig.near_settlement;
-  const nsHtml = ns
-    ? `<div class="note dip" style="border-color:var(--yes);color:var(--yes)">⏱ Near settlement (${ns.mins}m left): outcome looks ${ns.side === "YES" ? "YES" : "NO"} (model ${ns.fair}¢) but you can still buy <b>${ns.side}</b> at <b>${ns.ask}¢</b> - convergence edge.</div>`
-    : "";
-  return `<div class="${rowCls}">
-    <div class="scanhead">
-      <div class="strike">${m.subtitle || m.ticker}</div>
-      <div class="small">closes ${fmtCountdown(secs)} · Kalshi YES ${m.yes_ask ?? "–"}¢ / NO ${m.no_ask ?? "–"}¢</div>
-    </div>
-    ${action}
-    ${nsHtml}
-    ${buttons}
-  </div>`;
-}
-
-function fid(ticker) { return "buy_" + ticker.replace(/[^a-z0-9]/gi, "_"); }
-window.showBuyForm = (t) => { const el = document.getElementById(fid(t)); if (el) el.classList.remove("hidden"); };
-window.hideBuyForm = (t) => { const el = document.getElementById(fid(t)); if (el) el.classList.add("hidden"); };
-
-window.saveBuy = async (ticker) => {
-  const ctx = scanCtx[ticker];
-  if (!ctx || !ctx.direction) return;
-  const f = fid(ticker);
-  const sideEl = document.getElementById(f + "_side");
-  const costEl = document.getElementById(f + "_cost");
-  const sideVal = sideEl.value;
-  let cost = parseFloat(costEl.value);
-  if (isNaN(cost)) cost = sideVal === "YES" ? ctx.yes_ask : ctx.no_ask; // default to the ask
-  await fetch("/api/markets", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      coin: ctx.coin, threshold: ctx.threshold, direction: ctx.direction,
-      close_time: ctx.close_time, kalshi_ticker: ticker,
-      position_side: sideVal, entry_cost_cents: cost,
-    }),
-  });
-  hideBuyForm(ticker);
-  refreshMarkets();
-};
-
-window.trackFromScan = async (body) => {
-  await fetch("/api/markets", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  refreshMarkets();
-};
-
-async function runScan() {
-  const coin = $("scanCoin").value;
-  const timeframe = $("scanTimeframe").value;
-  lastScan = { coin, timeframe };
-  const box = $("scanResults");
-  box.innerHTML = `<div class="empty">Scanning ${coin} ${timeframe}…</div>`;
-  try {
-    const r = await fetch(`/api/kalshi/scan?coin=${coin}&timeframe=${timeframe}`);
-    const d = await r.json();
-    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
-    if (!d.markets || !d.markets.length) {
-      box.innerHTML = `<div class="empty">No open ${coin} ${timeframe} contracts on Kalshi right now.</div>`;
-      return;
-    }
-    // "Buys only" (default on): keep just the actionable BUY YES / BUY NO rows,
-    // and show how many flat HOLD contracts were hidden.
-    const buysOnly = $("scanBuysOnly") ? $("scanBuysOnly").checked : true;
-    const isBuy = (m) => m.signal && m.signal.recommendation && m.signal.recommendation !== "HOLD";
-    const shown = buysOnly ? d.markets.filter(isBuy) : d.markets;
-    const hidden = d.markets.length - shown.length;
-    let head = renderVol(d.vol) + await calNote("crypto", "crypto fair value");
-    if (buysOnly) {
-      head += shown.length
-        ? `<div class="small" style="color:var(--muted);margin:2px 0 8px">Showing <b>${shown.length}</b> buy${shown.length > 1 ? "s" : ""}${hidden ? ` · ${hidden} HOLD hidden` : ""}. <a href="#" id="scanShowAll">show all</a></div>`
-        : `<div class="empty">No edges right now - all ${d.markets.length} ${coin} ${timeframe} contracts are a HOLD. <a href="#" id="scanShowAll">show them anyway</a></div>`;
-    }
-    box.innerHTML = head + shown.map(renderScanRow).join("");
-    const showAll = $("scanShowAll");
-    if (showAll) showAll.addEventListener("click", (e) => {
-      e.preventDefault(); if ($("scanBuysOnly")) $("scanBuysOnly").checked = false; runScan();
-    });
-  } catch (e) {
-    box.innerHTML = `<div class="empty">Scan failed - retrying on next refresh.</div>`;
-  }
-}
-
-// ---- Create market --------------------------------------------------------
-async function trackMarket() {
-  const threshold = parseFloat($("threshold").value);
-  const close = computeCloseTime();
-  const msg = $("setupMsg");
-  if (!threshold) { msg.textContent = "Enter a threshold."; return; }
-  if (!close) { msg.textContent = "Pick a valid close time."; return; }
-  if (close <= Math.floor(Date.now() / 1000)) { msg.textContent = "Close time must be in the future."; return; }
-
-  const body = {
-    coin: $("coin").value,
-    threshold,
-    direction: $("direction").value,
-    close_time: close,
-  };
-  const yp = $("yesPrice").value;
-  if (yp) body.yes_price_cents = parseFloat(yp);
-
-  msg.textContent = "Adding…";
-  const r = await fetch("/api/markets", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const data = await r.json();
-  if (!r.ok) { msg.textContent = data.error || "Error"; return; }
-  msg.textContent = "Tracking ✓";
-  setTimeout(() => (msg.textContent = ""), 1500);
-  refreshMarkets();
 }
 
 // ---- Baseball insights ----------------------------------------------------
@@ -2599,7 +2166,6 @@ function setupTabs() {
       btn.classList.add("active");
       const tab = btn.dataset.tab;
       $("tab-bestbets").classList.toggle("hidden", tab !== "bestbets");
-      $("tab-crypto").classList.toggle("hidden", tab !== "crypto");
       $("tab-baseball").classList.toggle("hidden", tab !== "baseball");
       $("tab-sports").classList.toggle("hidden", tab !== "sports");
       $("tab-nfl").classList.toggle("hidden", tab !== "nfl");
@@ -2644,7 +2210,7 @@ function setupTabs() {
 
 // ---- Best Bets: every net-of-fee edge across all models, one screen --------
 const _SRC_LABEL = { mlb: "⚾ MLB slate", mlb_futures: "⚾ MLB futures", ufc: "🥊 UFC",
-                     tennis: "🎾 Tennis", crypto: "⚡ Crypto", arbitrage: "🔒 Arbitrage" };
+                     tennis: "🎾 Tennis", arbitrage: "🔒 Arbitrage" };
 async function loadBestBets() {
   const box = $("bbetsResults"), src = $("bbetsSources");
   box.innerHTML = `<div class="empty">Hunting edges across every model… (the MLB slate sim is the slow part - ~30s cold)</div>`;
@@ -2891,42 +2457,6 @@ async function loadHits() {
 }
 
 
-// ---- Backtest -------------------------------------------------------------
-function renderBacktest(r) {
-  if (r.error) return `<div class="empty">${r.error}</div>`;
-  const roi = r.roi_vs_50_pct;
-  let verdict, vcls;
-  if (roi != null && roi > 2) { verdict = "✅ Beats a coin-flip market"; vcls = "ev pos"; }
-  else if (roi != null && roi < -2) { verdict = "❌ Loses to a coin-flip market - don't trust directional calls at this horizon"; vcls = "ev neg"; }
-  else { verdict = "➖ Roughly break-even - no real edge here"; vcls = ""; }
-
-  const cal = r.calibration.map((b) => {
-    const off = Math.abs(b.predicted - b.actual);
-    const c = off <= 6 ? "var(--yes)" : off <= 14 ? "var(--hold)" : "var(--no)";
-    return `<div class="calrow">
-      <span>${b.range} <span style="color:var(--muted)">(${b.n})</span></span>
-      <span>predicted <b>${b.predicted}%</b> → actual <b style="color:${c}">${b.actual}%</b></span>
-    </div>`;
-  }).join("");
-
-  return `<div class="bbgame">
-    <div class="sellhead"><span class="sellaction ${vcls}">${verdict}</span></div>
-    <div class="kv" style="margin-top:6px">
-      <span>Decisions tested <b>${r.n.toLocaleString()}</b></span>
-      <span>Accuracy <b>${r.accuracy_pct}%</b></span>
-      <span>Confident-pick accuracy <b>${r.accuracy_confident_pct}%</b> <span style="color:var(--muted)">(${r.confident_n})</span></span>
-    </div>
-    <div class="kv">
-      <span>Brier <b>${r.brier}</b> <span style="color:var(--muted)">(coin-flip ${r.brier_baseline})</span></span>
-      <span>Illustrative ROI vs 50¢ <b class="${roi >= 0 ? "ev pos" : "ev neg"}">${roi >= 0 ? "+" : ""}${roi}%</b></span>
-      <span>Bet win rate <b>${r.roi_win_pct}%</b> <span style="color:var(--muted)">(${r.roi_bets} bets)</span></span>
-    </div>
-    <div class="teamhdr" style="margin-top:10px">Calibration - does the predicted % match what happened?</div>
-    <div class="calbox">${cal}</div>
-    <div class="small" style="margin-top:8px">Brier below 0.25 and ROI above 0 mean the model is adding real signal. If not, treat this coin/horizon as a coin flip.</div>
-  </div>`;
-}
-
 // ---- Edge Finder ----------------------------------------------------------
 let _edgeData = null;
 
@@ -3011,56 +2541,6 @@ function renderEdges() {
   }).join("");
   box.innerHTML = head + body +
     `<div class="small" style="margin-top:10px;color:var(--muted)">Showing ${rows.length} of ${d.n_priced} priced legs. <b>Edge</b> = our simulated chance − Kalshi's price; the small <b>net</b> figure subtracts Kalshi's ~1–2¢ taker fee (the edge you actually bank). <b>Trust</b> reflects how well-grounded the model is for that market (Ks/Total/ML strongest). Positive edge = we think YES is likelier than the market.</div>`;
-}
-
-async function runBacktest() {
-  if (!isOwner()) return;   // backtest is owner-only data
-  const box = $("btResults");
-  const coin = $("btCoin").value, horizon = $("btHorizon").value;
-  box.innerHTML = `<div class="empty">Replaying ${coin} history… (a few seconds)</div>`;
-  try {
-    const r = await (await fetch(`/api/backtest?coin=${coin}&horizon=${horizon}`)).json();
-    box.innerHTML = renderBacktest(r);
-  } catch (e) {
-    box.innerHTML = `<div class="empty">Backtest failed - try again.</div>`;
-  }
-}
-
-// ---- Live strategy tracker (real recorded Kalshi prices) ------------------
-async function loadStrategy() {
-  if (!isOwner()) return;   // crypto recorder log is owner-only data
-  const box = $("stratResults");
-  try {
-    const [st, bt] = await Promise.all([
-      fetch("/api/recorder/status").then((r) => r.json()),
-      fetch("/api/recorder/backtest").then((r) => r.json()),
-    ]);
-    if (bt.error) { box.innerHTML = `<div class="empty">${bt.error}</div>`; return; }
-    let html = `<div class="kv">
-      <span>Quotes recorded <b>${(st.samples || 0).toLocaleString()}</b></span>
-      <span>Contracts seen <b>${st.tickers || 0}</b></span>
-      <span>Settled markets <b>${bt.resolved_markets || 0}</b></span>
-      ${bt.calibration_brier != null ? `<span>Model Brier <b>${bt.calibration_brier}</b> (coin-flip 0.25)</span>` : ""}
-    </div>`;
-    if (!bt.resolved_markets) {
-      html += `<div class="empty" style="margin-top:10px">No contracts have settled yet. Leave the app running - the recorder samples every 90s and this fills in as markets close.</div>`;
-    } else {
-      html += `<div class="teamhdr" style="margin-top:12px">Betting the model's edge at real Kalshi prices (net of fees):</div>
-        <div class="calbox">
-          <div class="calrow" style="color:var(--muted)"><span>Min edge filter</span><span>Bets · Win% · ROI (net) · gross</span></div>`;
-      for (const s of bt.sweep) {
-        if (!s.bets) { html += `<div class="calrow"><span>≥ ${s.min_edge}¢</span><span style="color:var(--muted)">no bets</span></div>`; continue; }
-        const net = s.roi_net_pct;
-        const roiCls = net >= 0 ? "ev pos" : "ev neg";
-        html += `<div class="calrow"><span>≥ ${s.min_edge}¢ edge</span>
-          <span>${s.bets} · ${s.win_pct}% · <b class="${roiCls}">${net >= 0 ? "+" : ""}${net}%</b> · <span style="color:var(--muted)">${s.roi_pct >= 0 ? "+" : ""}${s.roi_pct}% gross</span></span></div>`;
-      }
-      html += `</div><div class="small" style="margin-top:8px">ROI is <b>net of Kalshi's ~1.7¢/contract trading fee</b>. Positive net ROI that grows with the edge filter = a real, fee-proof edge. The biggest edges (≥15¢) often mean the model is missing info - the 6–10¢ band is the sweet spot. Small samples are noisy; let it accumulate.</div>`;
-    }
-    box.innerHTML = html;
-  } catch (e) {
-    box.innerHTML = `<div class="empty">Couldn't load the tracker.</div>`;
-  }
 }
 
 // ---- Bet ledger -----------------------------------------------------------
@@ -6961,7 +6441,6 @@ async function initSim() {
   if (simInited) return;
   simInited = true;
   await fillSimKey();
-  $("simKind").addEventListener("change", fillSimKey);
   $("simBtn").addEventListener("click", runSim);
   $("simMode").addEventListener("change", simModeChange);
   // MLB DFS options only apply to the sim-driven MLB path.
@@ -7535,18 +7014,10 @@ async function runDfsSim() {
   } catch (e) { box.innerHTML = `<div class="empty">Failed.</div>`; }
 }
 async function fillSimKey() {
-  const kind = $("simKind").value;
-  if (kind === "commodity") {
-    const meta = await (await fetch("/api/commodities/meta")).json();
-    $("simKey").innerHTML = Object.entries(meta).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
-    $("simHorizon").innerHTML = [["1", "1 day"], ["3", "3 days"], ["7", "1 week"], ["30", "1 month"]]
-      .map(([v, l]) => `<option value="${v}">${l}</option>`).join("");
-  } else {
-    const coins = await (await fetch("/api/coins")).json();
-    $("simKey").innerHTML = coins.map((c) => `<option>${c}</option>`).join("");
-    $("simHorizon").innerHTML = [["15", "15 min"], ["60", "1 hour"], ["240", "4 hours"], ["1440", "1 day"]]
-      .map(([v, l]) => `<option value="${v}">${l}</option>`).join("");
-  }
+  const meta = await (await fetch("/api/commodities/meta")).json();
+  $("simKey").innerHTML = Object.entries(meta).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+  $("simHorizon").innerHTML = [["1", "1 day"], ["3", "3 days"], ["7", "1 week"], ["30", "1 month"]]
+    .map(([v, l]) => `<option value="${v}">${l}</option>`).join("");
 }
 function histBars(h) {
   const max = Math.max(...h.counts, 1);
@@ -7560,11 +7031,11 @@ async function runSim() {
   if (mode === "weather") return runWxSim();
   if (mode === "dfs") return runDfsSim();
   const box = $("simResults");
-  const kind = $("simKind").value, key = $("simKey").value, horizon = $("simHorizon").value;
+  const key = $("simKey").value, horizon = $("simHorizon").value;
   const th = $("simThreshold").value, dir = $("simDir").value;
   box.innerHTML = `<div class="empty">Running ${simRunsValue().toLocaleString()} paths…</div>`;
   try {
-    let url = `/api/simulate/price?kind=${kind}&key=${key}&horizon=${horizon}&sims=${simRunsValue()}`;
+    let url = `/api/simulate/price?kind=commodity&key=${key}&horizon=${horizon}&sims=${simRunsValue()}`;
     if (th) url += `&threshold=${th}&direction=${dir}`;
     const d = await (await fetch(url)).json();
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
@@ -8079,50 +7550,18 @@ async function init() {
   }
   applyTierUI();
 
-  const coins = await (await fetch("/api/coins")).json();
-  $("coin").innerHTML = coins.map((c) => `<option>${c}</option>`).join("");
-
-  $("window").addEventListener("change", () => {
-    $("customWrap").classList.toggle("hidden", $("window").value !== "custom");
-    refreshPreview();
-  });
-  ["coin", "direction", "threshold", "yesPrice", "customTime"].forEach((id) =>
-    $(id).addEventListener("input", () => {
-      clearTimeout(previewTimer);
-      previewTimer = setTimeout(refreshPreview, 350);
-    })
-  );
-  $("trackBtn").addEventListener("click", trackMarket);
-
-  // Scanner setup
-  const meta = await (await fetch("/api/kalshi/meta")).json();
-  $("scanCoin").innerHTML = meta.coins.map((c) => `<option>${c}</option>`).join("");
-  $("scanBtn").addEventListener("click", runScan);
-  $("scanCoin").addEventListener("change", runScan);
-  $("scanTimeframe").addEventListener("change", runScan);
-  if ($("scanBuysOnly")) $("scanBuysOnly").addEventListener("change", runScan);
-
-  // Bankroll / Kelly settings (persisted locally).
+  // Bankroll / Kelly settings (persisted locally; stakeText reads them).
   $("bankroll").value = localStorage.getItem("bankroll") || "";
   $("kellyMult").value = localStorage.getItem("kellyMult") || "0.5";
   $("bankroll").addEventListener("input", () => {
     localStorage.setItem("bankroll", $("bankroll").value);
-    if (lastScan.coin) runScan();
   });
   $("kellyMult").addEventListener("change", () => {
     localStorage.setItem("kellyMult", $("kellyMult").value);
-    if (lastScan.coin) runScan();
   });
 
-  // Backtest setup
-  $("btCoin").innerHTML = meta.coins.map((c) => `<option>${c}</option>`).join("");
-  $("btBtn").addEventListener("click", runBacktest);
-
-  // Live strategy tracker + ledger
-  $("stratBtn").addEventListener("click", loadStrategy);
+  // Bet ledger
   $("betAddBtn").addEventListener("click", addBet);
-  loadStrategy();
-  setInterval(() => { if (!document.hidden && !$("tab-crypto").classList.contains("hidden")) loadStrategy(); }, 60000);
 
   // Baseball setup
   setupTabs();
@@ -8172,7 +7611,6 @@ async function init() {
     });
   });
 
-  refreshMarkets();
   // Auto-refresh ticks skip while the user is typing / has a form open, and
   // while the app is in the BACKGROUND. Backgrounded ticks are pure damage: a
   // phone freezes and un-freezes them at will, so the server was being polled
@@ -8184,9 +7622,6 @@ async function init() {
     if (document.hidden || uiBusy()) return;
     fn();
   }, ms);
-  tick(refreshMarkets, 5000);
-  tick(refreshPreview, 5000);
-  tick(() => { if (lastScan.coin) runScan(); }, 8000);
   tick(() => {
     if (!$("tab-baseball").classList.contains("hidden") && $("bbGames").dataset.loaded) {
       loadBaseball(true);
@@ -8200,7 +7635,6 @@ async function init() {
     if (document.hidden) return;
     _slateFails = 0;                       // a fresh start, not a continued backoff
     if (uiBusy()) return;
-    refreshMarkets();
     if (!$("tab-baseball").classList.contains("hidden") && $("bbGames").dataset.loaded) {
       loadBaseball(true);
     }

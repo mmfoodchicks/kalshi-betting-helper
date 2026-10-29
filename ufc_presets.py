@@ -282,6 +282,63 @@ def best_today(payload, recs):
     return presets.best_today(payload, recs)
 
 
+# The PC builds this payload too (pc_build, on its boards pass every five
+# minutes) -- presets.tick's rule, ported 2026-10-29: over the two weeks
+# before, the server's own rebuilds were 596 runs (median 1.1 s, max 37.8 s).
+# While the PC is on, the server serves the PC's payload and files its slips
+# while it is at most _PC_STALE_S old, waits _PC_WAIT_S for a first one, and
+# builds only past those (the PC up but not delivering). With the PC off it
+# builds exactly as before.
+_PC_WAIT_S = 900
+_PC_STALE_S = 45 * 60
+_pc_wait = [0.0]
+
+
+def _pc_covers(cur, same):
+    """True while the PC is on and its payload covers this tick: `cur` built at
+    most _PC_STALE_S ago for the same slate (`same`; older means the PC stopped
+    delivering, so the server builds now), or no payload for this slate yet and
+    still inside _PC_WAIT_S of first noticing."""
+    import boardshare
+    try:
+        on = boardshare.pc_status().get("state") in ("on", "behind")
+    except Exception as e:
+        errlog.note("UFCP-pc", e)
+        on = False
+    if not on:
+        _pc_wait[0] = 0.0
+        return False
+    if cur and same:
+        # the PC's payload for this slate: current, or the PC stopped delivering
+        _pc_wait[0] = 0.0
+        return time.time() - (cur.get("built_ts") or 0) < _PC_STALE_S
+    if not _pc_wait[0]:
+        _pc_wait[0] = time.time()
+    return time.time() - _pc_wait[0] < _PC_WAIT_S
+
+
+def pc_build():
+    """PC edition (presets.pc_build's rules): build and PUBLISH, never log --
+    the server's tick() files an adopted payload's slips. None while the UFC
+    board is still building (the boards pass re-invokes it), {"skipped": why}
+    with no card."""
+    import boardshare
+    import ufc_combo
+    import ufc_sim
+    board = ufc_combo._board()
+    if not board:
+        raw = ufc_sim.board()
+        return None if raw is None else {"skipped": "no UFC card on the board"}
+    sig = card_sig(board)
+    cur, _age = boardshare.get(NAME, None)
+    if (cur and cur.get("sig") == sig and cur.get("rev") == REV
+            and time.time() - (cur.get("built_ts") or 0) < _STALE_S):
+        return cur
+    payload = build_all(board, ufc_combo.markets())
+    boardshare.put(NAME, payload)
+    return payload
+
+
 def tick(force=False):
     """Recorder-cadence entry point. Cheap when the card and the rev match
     and the build is under _STALE_S old (one cached-board read and a hash)."""
@@ -296,6 +353,11 @@ def tick(force=False):
              and time.time() - (cur.get("built_ts") or 0) < _STALE_S)
     if fresh and not force:
         if ensure_logged(cur):
+            boardshare.put(NAME, cur)
+        return 0
+    same = bool(cur and cur.get("rev") == REV)
+    if not force and _pc_covers(cur, same):
+        if same and ensure_logged(cur):
             boardshare.put(NAME, cur)
         return 0
     import jobs

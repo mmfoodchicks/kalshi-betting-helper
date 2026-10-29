@@ -3,7 +3,7 @@ ranked on one screen.
 
 Pulls from each model we own -- the MLB slate (moneylines + props via the Edge
 Finder), MLB season futures (deep engine when a run is cached), the UFC fight
-simulator, the tennis match simulator, daily crypto fair value -- plus any
+simulator, the tennis match simulator -- plus any
 outright arbitrage (outcome asks summing under 100¢) on the Kalshi sports books.
 
 Every row is fee-aware: net_edge = model % - ask - Kalshi's taker fee, i.e. the
@@ -24,8 +24,8 @@ def _fee(cents):
 
 # An edge this large is a claim that the market is wrong by more than any liquid
 # market usually is. Two sources (MLB futures, CFB futures) already downgraded
-# their own big edges to "low" and explained why; the other four -- crypto, the
-# shared basketball/hockey board, UFC and golf -- passed a flat "med" through, so
+# their own big edges to "low" and explained why; the others -- the shared
+# basketball/hockey board, UFC and golf (and crypto, removed 2026-10-29) -- passed a flat "med" through, so
 # an implausible number from those sources outranked a solid +6 from anywhere
 # else. Since trust sorts BEFORE size, that put the least believable rows at the
 # very top of the board. The check belongs here, once, where every row passes.
@@ -214,19 +214,6 @@ def _tennis_rows():
     return rows
 
 
-def _crypto_rows():
-    import combine
-    rows = []
-    for l in combine._crypto_legs():
-        kind = (l.get("timeframe") or "daily").capitalize()   # Hourly / Daily
-        row = _row("⚡ Crypto", kind, l["label"], l["matchup"],
-                   l["prob"] * 100.0, l.get("price_cents"), "med")
-        if row:
-            rows.append(row)
-    rows.sort(key=lambda x: -x["net_edge"])
-    return rows[:8]
-
-
 def _board_rows(b, sport_label):
     """Model edges from any engine board with the shared game shape (basketball
     / hockey): moneylines plus Kalshi's exact-line spreads and totals."""
@@ -371,7 +358,6 @@ def board(date=None, season=None, sims=2500):
     pull("ufc", _ufc_rows)
     pull("golf", _golf_rows)
     pull("tennis", _tennis_rows)
-    pull("crypto", _crypto_rows)
     pull("arbitrage", _arb_rows)
 
     keep = [r for r in rows if r["net_edge"] > 0]

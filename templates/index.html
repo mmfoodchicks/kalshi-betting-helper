@@ -29,7 +29,7 @@
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand"><span class="brand-mark">V</span><span class="brand-name">Vigil</span></div>
-      <p class="sub">Model odds &amp; live edges - Kalshi, DraftKings &amp; crypto.</p>
+      <p class="sub">Model odds &amp; live edges - Kalshi &amp; DraftKings.</p>
       <div class="settingsbar">
         <span class="setlabel">Bankroll</span> $<input id="bankroll" type="number" min="0" step="any" placeholder="1000" style="width:84px"/>
         <span class="setlabel">Kelly</span>
@@ -66,7 +66,6 @@
     <button class="tab" data-tab="tennis">🎾 Tennis</button>
     <button class="tab" data-tab="lol">🎮 LoL</button>
     <span class="navsep"></span>
-    <button class="tab" data-tab="crypto">⚡ Crypto</button>
     <button class="tab" data-tab="weather">🌤️ Weather</button>
     <span class="navsep"></span>
     <button class="tab" data-tab="combine">🎰 Combos</button>
@@ -88,108 +87,6 @@
       <div id="bbetsResults" class="markets"><div class="empty">Open the tab or hit Rescan to hunt edges across every model.</div></div>
     </section>
    </div>
-
-   <div id="tab-crypto" class="hidden">
-    <section class="card setup">
-      <h2>⚡ New market</h2>
-      <div class="grid">
-        <label>Coin
-          <select id="coin"></select>
-        </label>
-        <label>Condition
-          <select id="direction">
-            <option value="above">Price ABOVE</option>
-            <option value="below">Price BELOW</option>
-          </select>
-        </label>
-        <label>Threshold ($)
-          <input id="threshold" type="number" step="any" placeholder="e.g. 63000" />
-        </label>
-        <label>Window
-          <select id="window">
-            <option value="next15">Next 15-min mark</option>
-            <option value="nexthour">Top of next hour</option>
-            <option value="min15">In 15 minutes</option>
-            <option value="min60">In 60 minutes</option>
-            <option value="custom">Custom time…</option>
-          </select>
-        </label>
-        <label id="customWrap" class="hidden">Close time
-          <input id="customTime" type="datetime-local" />
-        </label>
-        <label>Kalshi YES price ¢ <span class="opt">(optional)</span>
-          <input id="yesPrice" type="number" step="any" min="0" max="100" placeholder="e.g. 47" />
-        </label>
-      </div>
-
-      <div id="preview" class="preview hidden"></div>
-
-      <div class="actions">
-        <button id="trackBtn" class="primary">Track this market</button>
-        <span id="setupMsg" class="msg"></span>
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="row-between">
-        <h2>📡 Kalshi live scanner</h2>
-        <div class="scan-controls">
-          <select id="scanCoin"></select>
-          <select id="scanTimeframe">
-            <option value="15M">15-min</option>
-            <option value="hourly" selected>Hourly</option>
-            <option value="daily">Daily</option>
-          </select>
-          <label class="small" title="Hide contracts with no edge (the model says HOLD) - show only actionable BUY YES / BUY NO."><input type="checkbox" id="scanBuysOnly" checked/> Buys only</label>
-          <button id="scanBtn">Scan</button>
-        </div>
-      </div>
-      <p class="sub" style="margin:4px 0 8px">Pulls the real open Kalshi contracts and live prices, ranks them by the model's edge. Auto-refreshes.</p>
-      <details class="legend">
-        <summary>How to read this ⓘ</summary>
-        <ul>
-          <li><b>Buy YES</b> = you bet the price <i>will</i> hit the target; <b>Buy NO</b> = you bet it <i>won't</i>. Each costs some cents (0–100¢) and pays <b>100¢</b> if it wins.</li>
-          <li><b>Fair value</b> = the model's estimate of what the contract is truly worth. <b>Edge</b> = fair value − the price you'd pay. A bigger positive edge = a better deal.</li>
-          <li>You can <b>sell anytime</b> before close. Tap <b>“I bought this”</b> and enter what you paid - the app will then tell you <b>when to sell</b> in “Tracked markets” below.</li>
-        </ul>
-      </details>
-      <div id="scanResults" class="markets"><div class="empty">Pick a coin &amp; timeframe, then Scan.</div></div>
-    </section>
-
-    <section class="card">
-      <div class="row-between">
-        <h2>Tracked markets</h2>
-        <div id="statsBar" class="stats owner-only"></div>
-      </div>
-      <div id="markets" class="markets"></div>
-    </section>
-
-    <section class="card owner-only">
-      <div class="row-between">
-        <h2>🔬 Backtest the model</h2>
-        <div class="scan-controls">
-          <select id="btCoin"></select>
-          <select id="btHorizon">
-            <option value="15">15 min ahead</option>
-            <option value="30">30 min ahead</option>
-            <option value="60">60 min ahead</option>
-          </select>
-          <button id="btBtn">Run backtest</button>
-        </div>
-      </div>
-      <p class="sub" style="margin:4px 0 12px">Replays real price history - predicts each minute using only past data, then checks what happened. Honest proof of whether the model beats a coin flip.</p>
-      <div id="btResults" class="markets"><div class="empty">Pick a coin &amp; horizon, then Run backtest.</div></div>
-    </section>
-
-    <section class="card owner-only">
-      <div class="row-between">
-        <h2>📈 Live strategy tracker</h2>
-        <button id="stratBtn">Refresh</button>
-      </div>
-      <p class="sub" style="margin:4px 0 12px">Records <b>real Kalshi prices</b> while the app runs, then backtests the model's edge at those prices once contracts settle. Needs a few hours to gather resolved markets.</p>
-      <div id="stratResults" class="markets"><div class="empty">Loading…</div></div>
-    </section>
-   </div><!-- /tab-crypto -->
 
    <div id="tab-baseball" class="hidden">
     <div class="subnav">
@@ -632,13 +529,12 @@
       <p class="sub" style="margin:4px 0 12px">Monte Carlo - thousands of random runs to see the full range of outcomes.</p>
       <div class="scan-controls" style="flex-wrap:wrap;gap:8px">
         <select id="simMode">
-          <option value="price">Coin / Commodity</option>
+          <option value="price">Commodity price</option>
           <option value="game">⚾ Baseball game</option>
           <option value="weather">🌡️ Weather high</option>
           <option value="dfs">🏁 DFS lineup (DraftKings)</option>
         </select>
         <span id="g_price" class="simg">
-          <select id="simKind"><option value="crypto">Crypto</option><option value="commodity">Commodity</option></select>
           <select id="simKey"></select>
           <select id="simHorizon"></select>
           <input id="simThreshold" type="number" step="any" placeholder="target $ (opt)" style="width:120px"/>
@@ -737,7 +633,7 @@
           <button class="subtab" data-cmbsub="rec">🔥 Recommended</button>
         </div>
       </div>
-      <p class="sub" style="margin:4px 0 10px">One parlay across <b>everything at once</b> - MLB, crypto, UFC, tennis &amp; golf - auto-tuned to your target confidence. <b>%</b> is our model for MLB &amp; crypto, the de-vig'd market elsewhere; one leg per event keeps the odds honest.</p>
+      <p class="sub" style="margin:4px 0 10px">One parlay across <b>everything at once</b> - MLB, NFL, NBA, NHL, UFC, tennis &amp; golf - auto-tuned to your target confidence. <b>%</b> is our model where we have one (MLB, UFC, ...), the de-vig'd market elsewhere; one leg per event keeps the odds honest.</p>
       <div id="combineCats" class="catrow"></div>
       <div id="cmbTypeChips" class="small" style="margin:6px 0"></div>
       <div id="cmbCatCounts" class="small" style="margin:6px 0"></div>
@@ -810,7 +706,6 @@
               <option value="division">Division</option>
               <option value="playoffs">Make the playoffs</option>
               <option value="win_total">Season win totals</option>
-              <option value="price_level">Crypto price levels</option>
               <option value="temperature">Global temperature</option>
             </select>
           </label>
@@ -848,7 +743,7 @@
         <b>Read this once.</b> These are not savings accounts. You are buying a contract that pays $1 if it comes true and <b>$0 if it doesn't</b> - a 96¢ contract loses the whole stake 4% of the time, and your money is locked up until it settles. At the market's own price the expected value of every row here is slightly <b>negative</b> (Kalshi's fee). The yield is what you're paid for carrying that tail risk - it is not an edge we found.
       </div>
       <div class="futctl">
-        <input id="futQ" type="search" placeholder="Search - e.g. fed, bitcoin, nba, election…" />
+        <input id="futQ" type="search" placeholder="Search - e.g. fed, nba, election…" />
         <label>Sort
           <select id="futSort">
             <option value="best">Best yield (APY)</option>
@@ -904,7 +799,6 @@
       <div class="grid">
         <label>Type
           <select id="betKind">
-            <option value="crypto">Crypto</option>
             <option value="baseball">Baseball</option>
             <option value="other">Other</option>
           </select>

@@ -19,8 +19,8 @@ import csv
 import io
 import math
 import random
+import statistics
 
-import odds
 import errlog
 
 
@@ -1270,14 +1270,24 @@ def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
     }
 
 
+def _gbm_params(candles, lookback=120):
+    """(mu, sigma, n): the mean and spread of the recent log returns, per candle.
+    Kept here when the crypto odds engine it came from was removed (2026-10-29):
+    the commodity price sim is its last user."""
+    closes = [c["close"] for c in candles][-lookback:]
+    rets = [math.log(cur / prev) for prev, cur in zip(closes, closes[1:]) if prev > 0 and cur > 0]
+    if len(rets) < 5:
+        return 0.0, 0.0, len(rets)
+    return statistics.fmean(rets), statistics.pstdev(rets), len(rets)
+
+
 def price_sim(spot, candles, horizon, n=20000, threshold=None, direction=None):
     """Many random GBM paths over `horizon` (in the candles' time unit).
 
-    Returns distribution stats + a histogram. `horizon` is in minutes for 1-min
-    crypto candles, or in days for daily commodity candles (units just have to
-    match the candles, which is how the odds engine already works).
+    Returns distribution stats + a histogram. `horizon` is in days for the
+    daily commodity candles (units just have to match the candles).
     """
-    mu, sigma, k = odds.estimate_params(candles)
+    mu, sigma, k = _gbm_params(candles)
     if sigma <= 0 or spot <= 0:
         return {"error": "not enough recent data to simulate"}
     drift = (mu - 0.5 * sigma * sigma) * horizon

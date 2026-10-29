@@ -4,17 +4,8 @@ No key needed. The throttled JSON getter (_get_json: 429/5xx backoff with
 Retry-After honoured), market lists, single-market reads (settlement results
 for grading), the trade tape (price_move), the taker-fee formula and the
 cents/time parsers live here; the per-sport index modules (kalshi_mlb,
-kalshi_nfl, tennis_prices, ufc_prices, ...) build on them. The crypto series
-conventions below are where it started: the app compares its fair value
-against the live YES/NO price instead of making you type the price in by hand.
-
-Series ticker convention (crypto):
-  - 15-minute markets : KX<COIN>15M   e.g. KXBTC15M
-  - hourly markets    : KX<COIN>       e.g. KXBTC
-  - daily markets     : KX<COIN>D      e.g. KXBTCD
-
-Not every coin has every timeframe; if a series has no open markets we simply
-return an empty list and the UI says so.
+kalshi_nfl, tennis_prices, ufc_prices, ...) build on them. (The app started
+as a crypto helper; every crypto feature was removed on 2026-10-29.)
 """
 
 import json
@@ -27,27 +18,6 @@ from datetime import datetime, timezone
 
 BASE = "https://api.elections.kalshi.com/trade-api/v2"
 _USER_AGENT = "kalshi-betting-helper/1.0"
-
-# Coins that exist on both our price feed (prices.py) and Kalshi crypto series.
-SCANNABLE_COINS = ["BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "BCH", "LTC", "AVAX", "LINK"]
-
-TIMEFRAMES = {
-    "15M": "15-minute",
-    "hourly": "hourly",
-    "daily": "daily",
-}
-
-
-def series_ticker(coin, timeframe):
-    coin = coin.upper()
-    if timeframe == "15M":
-        return f"KX{coin}15M"
-    if timeframe == "hourly":
-        return f"KX{coin}"
-    if timeframe == "daily":
-        return f"KX{coin}D"
-    raise ValueError(f"unknown timeframe '{timeframe}'")
-
 
 def _get_json(url, timeout=10):
     """GET with two retries on throttling and transient server errors.
@@ -171,7 +141,7 @@ def combo_ok(event_ticker):
 
 
 def markets_for_series(series_ticker_, limit=100):
-    """Normalized open markets for any series ticker (crypto, commodities, ...).
+    """Normalized open markets for any series ticker.
 
     Each item: ticker, title, subtitle, strike_type, floor, cap, close_time
     (epoch), yes_bid, yes_ask, no_bid, no_ask, last (CENTS), volume.
@@ -200,11 +170,6 @@ def markets_for_series(series_ticker_, limit=100):
         })
     out.sort(key=lambda x: (x["close_time"] is None, x["close_time"] or 0))
     return out
-
-
-def get_open_markets(coin, timeframe, limit=100):
-    """Normalized open Kalshi markets for a coin + timeframe."""
-    return markets_for_series(series_ticker(coin, timeframe), limit)
 
 
 def get_market(ticker):

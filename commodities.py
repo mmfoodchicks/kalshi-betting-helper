@@ -1,8 +1,8 @@
 """Commodity price feed (Yahoo Finance) for Kalshi commodity price markets.
 
-Models commodities the same way as crypto (GBM from recent price action), but on
-a DAILY timescale: candles are daily closes and the horizon is measured in days,
-so the volatility units stay consistent through the shared odds engine.
+Models a commodity as a GBM from recent price action on a DAILY timescale:
+candles are daily closes and the horizon is measured in days, so the volatility
+units stay consistent through simulate.price_sim.
 
 Basis caveat: our spot comes from the Yahoo front-month future, which may differ
 from Kalshi's exact settlement reference. If our spot doesn't line up with where

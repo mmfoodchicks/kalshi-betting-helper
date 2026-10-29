@@ -437,6 +437,67 @@ def cached_sims(week, pre):
     return disk
 
 
+# The PC builds this payload too (pc_build, on its boards pass every five
+# minutes) -- presets.tick's rule, ported 2026-10-29: over the two weeks
+# before, the server's own rebuilds were 505 runs and 1.1 h of the one shared
+# core (median 6.9 s, max 48.6 s). While the PC is on, the server serves the
+# PC's payload and files its slips while it is at most _PC_STALE_S old, waits
+# _PC_WAIT_S for a first one, and builds only past those (the PC up but not
+# delivering). With the PC off it builds exactly as before.
+_PC_WAIT_S = 900
+_PC_STALE_S = 45 * 60
+_pc_wait = [0.0]
+
+
+def _pc_covers(cur, same):
+    """True while the PC is on and its payload covers this tick: `cur` built at
+    most _PC_STALE_S ago for the same slate (`same`; older means the PC stopped
+    delivering, so the server builds now), or no payload for this slate yet and
+    still inside _PC_WAIT_S of first noticing."""
+    import boardshare
+    try:
+        on = boardshare.pc_status().get("state") in ("on", "behind")
+    except Exception as e:
+        errlog.note("NFLP-pc", e)
+        on = False
+    if not on:
+        _pc_wait[0] = 0.0
+        return False
+    if cur and same:
+        # the PC's payload for this slate: current, or the PC stopped delivering
+        _pc_wait[0] = 0.0
+        return time.time() - (cur.get("built_ts") or 0) < _PC_STALE_S
+    if not _pc_wait[0]:
+        _pc_wait[0] = time.time()
+    return time.time() - _pc_wait[0] < _PC_WAIT_S
+
+
+def pc_build():
+    """PC edition (presets.pc_build's rules): build and PUBLISH, never log --
+    the ledger is the server's, and its tick() files an adopted payload's
+    slips. Rides the week's slate sims (the boards pass builds them too).
+    Returns the payload, or {"skipped": why} when there is nothing to build."""
+    import boardshare
+    import clock
+    import nfl_game_sim
+    d = clock.today_et()
+    if not (d.month >= 8 or d.month <= 2):
+        return {"skipped": "out of season"}
+    week, pre = _week()
+    games = nfl_game_sim._slate_sims(week, pre, _N)
+    sig = slate_sig(games)
+    if not sig:
+        return {"skipped": "nothing pre-game left this week"}
+    cur, _age = boardshare.get(NAME, None)
+    if (cur and cur.get("sig") == sig and cur.get("rev") == REV and cur.get("week") == week
+            and bool(cur.get("preseason")) == bool(pre)
+            and time.time() - (cur.get("built_ts") or 0) < _STALE_S):
+        return cur
+    payload = build_all(week, pre, games, sig)
+    boardshare.put(NAME, payload)
+    return payload
+
+
 def tick(force=False):
     """Recorder-cadence entry point, August through February. Cheap when
     the slate and the rev match and the build is under _STALE_S old (one
@@ -468,6 +529,12 @@ def tick(force=False):
             boardshare.put(NAME, cur)
         return 0
     if _yield_cb():
+        return 0
+    same = bool(cur and cur.get("rev") == REV and cur.get("week") == week
+                and bool(cur.get("preseason")) == bool(pre))
+    if not force and _pc_covers(cur, same):
+        if same and ensure_logged(cur):
+            boardshare.put(NAME, cur)
         return 0
     import jobs
     try:

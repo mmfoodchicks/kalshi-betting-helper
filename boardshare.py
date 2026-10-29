@@ -43,6 +43,83 @@ def _path(name, ext):
     return os.path.join(_DIR, f"{safe}.{ext}")
 
 
+# ---- The PC builds; the server serves ---------------------------------------
+# The owner (2026-10-29): "the website should only be housing the data the pc
+# [builds] and takes over as a failsafe if the pc is off". The PC runs every
+# board builder the server serves (pc_worker's boards loop, every few minutes)
+# and uploads each one, but the server still rebuilt any board the moment its
+# copy passed the board's TTL -- inside whichever web worker the request landed
+# on, in a thread -- because the PC's cycle can sit for 13-45 minutes on one
+# tournament build. Those in-process builds cost a worker tens to ~175 MB each
+# (measured one per fresh process: CFB 175, tennis 130, NFL DFS 111, soccer 83)
+# and the worker keeps most of it until it recycles. While the PC is on, a copy
+# on disk younger than PC_GRACE_S is now served as is; the server builds only
+# when the PC is off or its copy has aged past the grace (a PC that is up but
+# stuck still gets covered). The PC's own process never sees itself "on" (it
+# writes no pc-status file), so it keeps building on every board's own TTL.
+PC_GRACE_S = 1800
+# The PC rebuilds a board once ITS copy passes the board's TTL, and the fresh
+# upload lands a pass period, a build and an upload later (up to ~8 min). The
+# upload keeps the PC's age (X-Art-Age), so at max(ttl, PC_GRACE_S) the four
+# TTL-1800 boards -- NFL, DFS, CFB, futures, the heaviest builds -- had no
+# slack: past 1,800 s every request built one here until the PC's copy landed,
+# about twice an hour in season (Fable's review r3). The slack covers that gap.
+PC_SLACK_S = 720
+
+
+def pc_grace(ttl):
+    """How old a disk copy may be and still be served instead of built here:
+    the board's own TTL; while the PC is on, its TTL plus PC_SLACK_S, and never
+    under PC_GRACE_S."""
+    if pc_status().get("state") in ("on", "behind"):
+        return max(ttl + PC_SLACK_S, PC_GRACE_S)
+    return ttl
+
+
+def mtime(name):
+    try:
+        return os.stat(_path(name, "pkl")).st_mtime
+    except OSError:
+        return None
+
+
+def held(name, ts, max_age):
+    """True when the disk copy is the one already in memory (its file time within
+    2 s of `ts`, which adopting a disk copy stamps as now - age) and is no older
+    than max_age: serve memory instead of unpickling the same board on every
+    request past the TTL."""
+    mt = mtime(name)
+    return mt is not None and abs(mt - ts) < 2 and time.time() - mt <= max_age
+
+
+def _short_lived(val):
+    """A placeholder or an empty board ("build failed, retried shortly", "no
+    games this week"): it keeps its own short life, never the PC's grace --
+    matchups' failed-build placeholder says "tried again within two minutes"
+    and would otherwise have read on for up to 17 (Fable's review r2)."""
+    return isinstance(val, dict) and bool(val.get("placeholder") or val.get("empty"))
+
+
+def adopt(name, mem, key, ttl):
+    """The board to serve WITHOUT building, or None when it is this server's to
+    build: memory younger than `ttl`; else the disk copy (a sibling's build or
+    the PC's upload) younger than pc_grace(ttl) -- a placeholder or an empty
+    board only within its own `ttl`. `mem` is the module's own {key: (ts, val)}
+    cache."""
+    now = time.time()
+    hit = mem.get(key)
+    if hit and hit[1] is not None and now - hit[0] < ttl:
+        return hit[1]
+    grace = pc_grace(ttl)
+    if hit and hit[1] is not None and not _short_lived(hit[1]) and held(name, hit[0], grace):
+        return hit[1]
+    disk, age = get(name, grace)
+    if disk is None or (_short_lived(disk) and age >= ttl):
+        return None
+    mem[key] = (now - age, disk)
+    return disk
+
+
 def get(name, max_age):
     """(payload, age_seconds) published by any worker, or (None, None)."""
     try:
@@ -88,6 +165,17 @@ def put(name, payload, age=0):
         errlog.note("BOARD-write", e, path=str(name))
 
 
+# The claims THIS process holds: its builds in flight. A PC boards pass is a
+# process that exits after its upload, and its builders run in daemon threads
+# that die with it, so it waits on these first (pc_worker.boards_main).
+_HELD = set()
+
+
+def held_claims():
+    """The boards this process has claimed and not yet released."""
+    return set(_HELD)
+
+
 def claim(name):
     """True in the ONE process that should build this board right now. A claim
     left by a dead builder is taken over once it is CLAIM_TIMEOUT old."""
@@ -97,18 +185,22 @@ def claim(name):
         try:
             fd = os.open(p, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             os.close(fd)
+            _HELD.add(name)
             return True
         except FileExistsError:
             if time.time() - os.stat(p).st_mtime > CLAIM_TIMEOUT:
                 os.utime(p, None)
+                _HELD.add(name)
                 return True
             return False
     except Exception as e:
         errlog.note("BOARD-claim", e, path=str(name))
+        _HELD.add(name)
         return True                 # cannot coordinate -> single-worker behaviour
 
 
 def release(name):
+    _HELD.discard(name)
     try:
         os.remove(_path(name, "lock"))
     except OSError:
@@ -130,13 +222,10 @@ def nonblocking(name, ttl, mem, key, build, note_id=None):
     a board could stay "building..." forever with the reason lost."""
     import threading
     now = time.time()
+    got = adopt(name, mem, key, ttl)         # fresh here, a sibling's, or the PC's
+    if got is not None:
+        return got
     hit = mem.get(key)
-    if hit and now - hit[0] < ttl and hit[1] is not None:
-        return hit[1]
-    disk, age = get(name, ttl)
-    if disk is not None:                     # a sibling already built it
-        mem[key] = (now - age, disk)
-        return disk
     flight = ("_bs_flight", name)
     if not mem.get(flight) and claim(name):
         mem[flight] = (now, True)

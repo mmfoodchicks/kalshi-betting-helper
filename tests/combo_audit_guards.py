@@ -3960,37 +3960,6 @@ ck("the retention penalty is reserved for below-any-starter usage",
 
 print()
 print("=" * 72)
-print("The crypto tab stops recommending trades its own record says lose")
-print("=" * 72)
-import odds as _OD
-
-ck("recommendation bars are per-timeframe and hourly is OFF",
-   _OD._MIN_EDGE_TF.get("hourly") is None and (_OD._MIN_EDGE_TF.get("15M") or 0) >= 8,
-   "backtest of 429 recommended trades at recorded asks: hourly lost at EVERY "
-   "edge size (-8.4/-9.6/-6.2c per contract by bucket) -- no threshold fixes a "
-   "fair value that gets wronger as it gets more confident; 15M turns positive "
-   "at an 8c bar (+2.7/+5.2c)")
-ck("the timeframe is read off the series, not guessed",
-   _OD._timeframe_of({"series_ticker": "KXBTC15M"}) == "15M"
-   and _OD._timeframe_of({"series_ticker": "KXBTCD"}) == "daily"
-   and _OD._timeframe_of({"series_ticker": "KXBTC"}) == "hourly")
-_oc = [{"close": 100 + 0.01 * i} for i in range(130)]
-_om = {"strike_type": "greater_or_equal", "floor": 60.0, "cap": None,
-       "yes_ask": 50, "no_ask": 60, "series_ticker": "KXBTC"}
-_s1 = _OD.kalshi_signal(101.3, _oc, _om, 40)
-ck("an hourly market with a screaming 'edge' still gets HOLD, and says why",
-   _s1["recommendation"] == "HOLD" and "paused" in _s1["rationale"])
-_s2 = _OD.kalshi_signal(101.3, _oc, dict(_om, series_ticker="KXBTC15M"), 10)
-ck("the same market as a 15M series is recommendable",
-   _s2["recommendation"] == "BUY YES")
-_s3 = _OD.kalshi_signal(101.3, _oc, dict(_om, series_ticker="KXBTC15M", yes_ask=93), 10)
-ck("a 6-cent 15M edge sits below the measured 8-cent bar",
-   _s3["recommendation"] == "HOLD",
-   "the 5-8c bucket LOST 6.4c a contract; the old 5c bar was inside the "
-   "model's own error")
-
-print()
-print("=" * 72)
 print("The NFL DFS slate decides its own season, stacks, and loyalty")
 print("=" * 72)
 import nfl_dfs as _ND
@@ -6266,8 +6235,9 @@ import kalshi_nfl as _knf
 for _mod, _nm in ((_ngs, "slate"), (_nds, "DFS")):
     _src = _insp2.getsource(_mod.board)
     ck(f"the NFL {_nm} board adopts a sibling's build before starting its own",
-       _src.index("boardshare.get") < _src.index("boardshare.claim"),
-       "disk first, claim second: the cheap answer beats the duplicate build")
+       _src.index("boardshare.adopt(") < _src.index("boardshare.claim"),
+       "disk first, claim second: the cheap answer beats the duplicate build "
+       "(boardshare.adopt: memory, a sibling's copy, or the PC's within its grace)")
     ck(f"...publishes what it builds", "boardshare.put" in _src)
     ck(f"...and releases its claim on every path",
        "boardshare.release" in _src.split("finally:")[-1])
@@ -8606,11 +8576,12 @@ ck("the PC re-simulates when its own copy is nearly as stale as the ask",
    "os.remove(path)" in _pw32 and "> 1500" in _pw32,
    "answering from an aging local pickle re-stamps old work as fresh at "
    "the upload door - the 'simmed in 1s' no-op cycles")
-ck("game sims ship BEFORE the boards wait loop, not after",
+ck("game sims ship BEFORE anything long in the cycle (the boards run on a pass of their own now)",
    _pw32.index('_sync_kind(url, tok, "gamesim")')
-   < _pw32.index('("boards", _task_boards)'),
-   "the boards task can sit in its wait loop for five minutes while a user "
-   "watches the server re-simulate games the PC already finished")
+   < _pw32.index('("showdown tourney"')
+   and '("boards", _task_boards)' not in _pw32,
+   "the boards task could sit in its wait loop for five minutes while a user "
+   "watched the server re-simulate games the PC already finished")
 
 print()
 print("=" * 72)
@@ -9551,9 +9522,8 @@ ck("re-opening a feed can never stack a second timer",
    "the open path clears any survivor before arming its own interval")
 ck("the tennis live poll fires only while tennis is actually on screen",
    '!$("tab-tennis").classList.contains("hidden")) loadTennis()' in _js46)
-ck("the crypto refresher and update watcher idle when the app is hidden",
-   '!document.hidden && !$("tab-crypto")' in _js46
-   and "if (document.hidden) return;    // a backgrounded phone needs no"
+ck("the update watcher idles when the app is hidden",
+   "if (document.hidden) return;    // a backgrounded phone needs no"
    in _js46)
 
 print()
@@ -11240,7 +11210,11 @@ ck("the college maker builds a priced, ticketed slip off the sims store, "
 # on the server: the placeholder overwrote the PC's upload on the first
 # Saturday and the tab read "could not be built" over a slate on disk)
 import time as _t64
-_obd64, _obb64 = _bs64._DIR, _cb64._build_board
+# The PC is OFF here, as the scenario says. With it on, a TTL-1800 board is served to TTL + PC_SLACK_S without a
+# rebuild (the PCF section pins that), and an earlier guard's token call stamps the real status file "on" for five
+# minutes -- this guard read that ambient state the day the slack shipped.
+_obd64, _obb64, _ops64 = _bs64._DIR, _cb64._build_board, _bs64.pc_status
+_bs64.pc_status = lambda path=None: {"state": "off", "seen_s": None, "behind": None}
 _bs64._DIR = _tf64.mkdtemp()
 _k64 = ("cfb_slate", 2026, 1)
 _cb64._cache.pop(_k64, None)
@@ -11258,7 +11232,7 @@ try:
     _ss64 = _cb64._slate_sims(1, 300)
 finally:
     _cb64._build_board = _obb64
-    _bs64._DIR = _obd64
+    _bs64._DIR, _bs64.pc_status = _obd64, _ops64
     _cb64._cache.pop(_k64, None)
 ck("the last good board is served at once while a rebuild runs, and a failed "
    "rebuild re-serves it with the reason instead of a 'could not be built' card",
@@ -12576,7 +12550,9 @@ ck("/api/nfl/presets serves the recipes, their records and the crown, kicks a fi
    '@app.route("/api/nfl/presets")' in _apy11
    and "nfl_presets.best_today(payload, records)" in _apy11
    and 'boardshare.claim(nfl_presets.NAME + "_kick")' in _apy11
-   and "> nfl_presets._STALE_S" in _apy11
+   # stale past _STALE_S with the PC off, past its _PC_STALE_S with it on (the PCF section's route matrix)
+   and "limit = nfl_presets._PC_STALE_S if pc_on else nfl_presets._STALE_S" in _apy11
+   and '(payload.get("built_ts") or 0) > limit' in _apy11
    and "any(f > _now for f in firsts.values())" in _apy11
    and '"first_starts": firsts' in _apy11[_apy11.index('@app.route("/api/nfl/presets")'):][:4000])
 _mrec11 = open(_os.path.join(_root, "mlb_recorder.py")).read()
@@ -15673,7 +15649,6 @@ finally:
 import sports as _sp17
 import bestbets as _bb17
 import kalshi as _kl17
-import odds as _od17
 import store as _st17
 import sliplog as _sl17
 import tempfile as _tf17
@@ -15741,14 +15716,7 @@ ck("every fee-inclusive ROI divides by the cash deployed, price plus fee, in the
    'stake = sum(p["price_cents"] + _fee_cents(p["price_cents"]' in _src17
    and "staked = sum(c + _fee_cents(c" in _src17,
    "a win at 55c with a 2c fee is 43c on 57c of cash = 75.4%, not 43c on 55c = 78.2%")
-# 3. the sell screen: gross price gain and net after the exit fee, never 'locked in'
-_sg17 = _od17.sell_guidance("YES", 40.0, 60.0, 40.0, yes_bid=60.0)
-ck("the sell screen separates gross price gain from the net after the exit fee, and never calls the gross figure locked in",
-   _sg17.get("pnl_gross_cents") == 20.0
-   and abs((_sg17.get("exit_fee_cents") or 0) - _kl17.taker_fee_cents(60)) < 0.05
-   and abs(_sg17["pnl_cents"] - (20.0 - _kl17.taker_fee_cents(60))) < 0.1
-   and "lock in" not in _sg17["headline"].lower() and "after" in _sg17["headline"].lower()
-   and "locked in" not in _js17)
+# 3. (the sell screen was the crypto tracker's; removed with it, 2026-10-29)
 # 4. a scalar settlement is a value, not a scratch
 _oldgm17, _olddb17 = _kl17.get_market, _st17.DB_PATH
 try:
@@ -23729,6 +23697,759 @@ ck("the tab shows the PC's report beside a queued request and a scheduled build'
    and _jsrc_mq.count("${_dfsTourneyTried(d)}") == 2
    and '${p.attempt ? ` <span style="color:#e0a656">(⚠ not built: ${escapeHtml(p.attempt.why || "no reason given")})</span>` : ""}' in _jsrc_mq,
    _nout_mq)
+
+print("=" * 72)
+print("CR. Every crypto feature removed (2026-10-29, the owner: 'completely kill all the crypto shit')")
+print("=" * 72)
+# Why it mattered beyond tidiness: every app open called /api/recorder/backtest,
+# which read every row the 90-second quote recorder had ever written as a dict
+# (~1.39 KB a row, measured) into a web worker. The MEM-high peaks grew 17.6 MB a
+# day in step with that table, to 1,766 MB of one worker at 2,047/2,048 MB.
+_cr_root = _root
+_cr_gone = ("recorder.py", "prices.py", "odds.py", "deribit.py", "crypto_futures.py", "backtest.py")
+ck("the crypto modules are gone", not any(_os.path.exists(_os.path.join(_cr_root, f)) for f in _cr_gone),
+   str([f for f in _cr_gone if _os.path.exists(_os.path.join(_cr_root, f))]))
+import re as _re_cr
+_cr_imp = _re_cr.compile(r"^\s*(?:import|from)\s+(recorder|prices|odds|deribit|crypto_futures|backtest)\b"
+                         r"|__import__\(['\"](?:recorder|prices|odds|deribit|crypto_futures|backtest)['\"]\)", _re_cr.M)
+_cr_users = sorted(f for f in _os.listdir(_cr_root) if f.endswith(".py")
+                   and _cr_imp.search(open(_os.path.join(_cr_root, f), encoding="utf-8").read()))
+ck("no module imports one of them", not _cr_users, str(_cr_users))
+_cr_app = __import__("app")
+_cr_rules = {r.rule for r in _cr_app.app.url_map.iter_rules()}
+_cr_dead = ("/api/coins", "/api/quote", "/api/markets", "/api/kalshi/meta", "/api/kalshi/scan", "/api/backtest",
+            "/api/recorder/status", "/api/recorder/backtest", "/api/stats")
+ck("no route serves them", not (_cr_rules & set(_cr_dead)) and not any(r.startswith("/api/markets/") for r in _cr_rules),
+   str(sorted(_cr_rules & set(_cr_dead))))
+_cr_js = open(_os.path.join(_cr_root, "static", "app.js"), encoding="utf-8").read()
+_cr_html = open(_os.path.join(_cr_root, "templates", "index.html"), encoding="utf-8").read()
+ck("the page asks for none of them and has no crypto tab",
+   not any(u in _cr_js for u in ("/api/recorder", "/api/coins", "/api/kalshi/", "/api/markets", "/api/quote",
+                                 "/api/backtest", "/api/stats"))
+   and "tab-crypto" not in _cr_js and "tab-crypto" not in _cr_html and 'data-tab="crypto"' not in _cr_html)
+import calibrate as _cal_cr, bestbets as _bb_cr, combine as _cmb_cr, mfutures as _mf_cr, tiers as _ti_cr
+import kalshi as _kal_cr, simulate as _sim_cr
+ck("no model, board or gate still carries a crypto piece",
+   "crypto" not in _cal_cr._MODELS and not hasattr(_cal_cr, "crypto")
+   and "crypto" not in _cmb_cr.CATEGORIES and "crypto" not in _cmb_cr.CATEGORY_TYPES
+   and not hasattr(_cmb_cr, "_crypto_legs") and not hasattr(_bb_cr, "_crypto_rows")
+   and "crypto" not in _mf_cr._OTHER and not hasattr(_mf_cr, "_collect_crypto")
+   and not ({"vol_edge", "deribit", "backtest", "recorder_backtest"} & set(_ti_cr.FEATURE_MIN))
+   and not hasattr(_kal_cr, "get_open_markets") and not hasattr(_kal_cr, "SCANNABLE_COINS"))
+# the commodity price sim kept the one piece of the crypto engine it used
+import math as _m_cr, statistics as _st_cr
+_cr_c = [{"close": 100.0 * _m_cr.exp(0.004 * _m_cr.sin(i) + 0.001 * i)} for i in range(150)]
+_cr_cl = [c["close"] for c in _cr_c][-120:]
+_cr_r = [_m_cr.log(b / a) for a, b in zip(_cr_cl, _cr_cl[1:])]
+_cr_mu, _cr_sd, _cr_n = _sim_cr._gbm_params(_cr_c)
+ck("the commodity price sim's drift and volatility are the old engine's (last 120 closes, mean and pstdev of log returns)",
+   _cr_n == 119 and abs(_cr_mu - _st_cr.fmean(_cr_r)) < 1e-15 and abs(_cr_sd - _st_cr.pstdev(_cr_r)) < 1e-15
+   and _sim_cr._gbm_params(_cr_c[:5]) == (0.0, 0.0, 4)
+   and _sim_cr.price_sim(100.0, _cr_c, 3, n=400).get("n") == 400)
+# the one-time drop: on a ledger DB that still holds the crypto tables (built as
+# the old code built them), off the request path, secure_delete off FIRST
+import store as _store_cr, sqlite3 as _sq_cr, tempfile as _tf_cr, shutil as _sh_cr
+_cr_tmp = _tf_cr.mkdtemp()
+_cr_old_db = _store_cr.DB_PATH
+_cr_old_conn = _store_cr._conn
+_cr_trace = []
+try:
+    _store_cr.DB_PATH = _os.path.join(_cr_tmp, "markets.db")
+    _store_cr.init_db()
+    _cr_have0 = {r[0] for r in _sq_cr.connect(_store_cr.DB_PATH).execute(
+        "SELECT name FROM sqlite_master WHERE type='table'")}
+    _c0 = _sq_cr.connect(_store_cr.DB_PATH)
+    _c0.execute("CREATE TABLE quote_samples (id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER, ticker TEXT, coin TEXT,"
+                " timeframe TEXT, spot REAL, fair_yes REAL)")
+    _c0.execute("CREATE TABLE resolved_markets (ticker TEXT PRIMARY KEY, outcome TEXT)")
+    _c0.execute("CREATE TABLE markets (id INTEGER PRIMARY KEY AUTOINCREMENT, coin TEXT NOT NULL)")
+    _c0.executemany("INSERT INTO quote_samples (ts, ticker, coin, timeframe, spot, fair_yes) VALUES (?,?,?,?,?,?)",
+                    [(i, f"KXBTCD-T{i % 40}", "BTC", "hourly", 1.0e5, 50.0) for i in range(5000)])
+    _c0.execute("INSERT INTO bets (created_at, kind, description, stake, price_cents) VALUES (1, 'baseball', 'x', 5, 40)")
+    _c0.commit()
+    _c0.execute("PRAGMA wal_checkpoint(TRUNCATE)")     # every page in the main file, so its size means something
+    _c0.close()
+
+    def _cr_conn():
+        c = _cr_old_conn()
+        c.set_trace_callback(_cr_trace.append)
+        return c
+    _store_cr._conn = _cr_conn
+    _cr_size0 = _os.path.getsize(_store_cr.DB_PATH)
+    _cr_gone1 = _store_cr.drop_crypto_tables()
+    _cr_size1 = _os.path.getsize(_store_cr.DB_PATH)
+    _cr_gone2 = _store_cr.drop_crypto_tables()
+    _c1 = _sq_cr.connect(_store_cr.DB_PATH)
+    _cr_left = {r[0] for r in _c1.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    _cr_bets = _c1.execute("SELECT COUNT(*) FROM bets").fetchone()[0]
+    _c1.close()
+    _cr_wal = _os.path.getsize(_store_cr.DB_PATH + "-wal") if _os.path.exists(_store_cr.DB_PATH + "-wal") else 0
+finally:
+    _store_cr._conn = _cr_old_conn
+    _store_cr.DB_PATH = _cr_old_db
+    _sh_cr.rmtree(_cr_tmp, ignore_errors=True)
+ck("a fresh ledger DB no longer creates the crypto tracker's table",
+   not ({"markets", "quote_samples", "resolved_markets"} & _cr_have0) and "bets" in _cr_have0, str(sorted(_cr_have0)))
+_cr_info = dict(_store_cr.LAST_CRYPTO_DROP)
+ck("the drop takes exactly the three crypto tables, once, and leaves the ledgers and their rows; it records what it "
+   "found and freed for the ledger note (the real row count was never exported)",
+   sorted(_cr_gone1) == ["markets", "quote_samples", "resolved_markets"] and _cr_gone2 == []
+   and _cr_info.get("rows", {}).get("quote_samples") == 5000 and _cr_info.get("mb_after") is not None
+   and _cr_info["mb_after"] < _cr_info["mb_before"]
+   and not ({"markets", "quote_samples", "resolved_markets"} & _cr_left) and _cr_bets == 1,
+   f"{_cr_gone1} {_cr_gone2} {sorted(_cr_left)} bets={_cr_bets}")
+_cr_sd_i = next((i for i, q in enumerate(_cr_trace) if "secure_delete=OFF" in q.replace(" ", "")), None)
+_cr_dr_i = next((i for i, q in enumerate(_cr_trace) if q.upper().startswith("DROP TABLE")), None)
+_cr_vac_i = next((i for i, q in enumerate(_cr_trace) if q.strip().upper() == "VACUUM"), None)
+ck("secure_delete is OFF before the first DROP, a VACUUM after it hands the space back, and the WAL is truncated",
+   _cr_sd_i is not None and _cr_dr_i is not None and _cr_sd_i < _cr_dr_i
+   and _cr_vac_i is not None and _cr_vac_i > _cr_dr_i and _cr_size1 < _cr_size0 * 0.6
+   and any("wal_checkpoint(TRUNCATE)" in q for q in _cr_trace) and _cr_wal == 0,
+   "Debian's SQLite (the server's) zeroes every freed page: a 1M-row copy of quote_samples wrote 181 MB "
+   f"through the WAL on a 1 GB disk; off, 0.20 MB. Drop + VACUUM of a 193 MB copy: 0.29 s, 13 MB left, WAL peak 13 MB. "
+   f"trace={_cr_trace[:8]} wal={_cr_wal} size {_cr_size0}->{_cr_size1}")
+_cr_ens = _insp.getsource(_cr_app._ensure_recorder)
+ck("only the background owner drops them, in its own thread, and the ledger says so once",
+   _cr_ens.index("if not _BG_OWNER") < _cr_ens.index("target=_drop_crypto_tables")
+   and '"STORE-crypto-drop"' in _insp.getsource(_cr_app._drop_crypto_tables)
+   and "if gone:" in _insp.getsource(_cr_app._drop_crypto_tables))
+
+print("=" * 72)
+print("PCF. The PC builds, the server serves (2026-10-29): a PC copy within the grace is served, never rebuilt here")
+print("=" * 72)
+import boardshare as _bs_pf, time as _t_pf, json as _js_pf, tempfile as _tf_pf, shutil as _sh_pf, pickle as _pk_pf
+_pf_tmp = _tf_pf.mkdtemp()
+_pf_old_dir, _pf_old_status = _bs_pf._DIR, _bs_pf.PC_STATUS_PATH
+_pf_old_get = _bs_pf.get
+_pf_status = _os.path.join(_pf_tmp, "pc-status.json")
+
+
+_pf_old_srv = _os.environ.get("RENDER_GIT_COMMIT")
+_os.environ["RENDER_GIT_COMMIT"] = "a" * 40          # this "server's" commit, so the PC can be behind it
+
+
+def _pf_pc(state):
+    if state == "off":
+        if _os.path.exists(_pf_status):
+            _os.remove(_pf_status)
+        return
+    with open(_pf_status, "w") as fh:
+        _js_pf.dump({"ts": _t_pf.time(), "commit": ("a" if state == "on" else "b") * 40}, fh)
+
+
+def _pf_put(name, payload, age):
+    _bs_pf.put(name, payload, age=age)
+
+
+_pf_loads = []
+try:
+    _bs_pf._DIR = _os.path.join(_pf_tmp, "boards")
+    _bs_pf.PC_STATUS_PATH = _pf_status
+
+    def _pf_get(name, max_age):
+        got = _pf_old_get(name, max_age)
+        if got[0] is not None:
+            _pf_loads.append(name)
+        return got
+    _bs_pf.get = _pf_get
+    _pf_put("pf_board", {"v": "pc"}, age=1000)
+    _pf_pc("off")
+    _pf_off = (_bs_pf.pc_grace(600), _bs_pf.adopt("pf_board", {}, "k", 600))
+    _pf_pc("on")
+    _pf_mem = {}
+    _pf_on = (_bs_pf.pc_grace(600), _bs_pf.pc_grace(6 * 3600), _bs_pf.adopt("pf_board", _pf_mem, "k", 600))
+    _n_after_first = len(_pf_loads)
+    _pf_again = _bs_pf.adopt("pf_board", _pf_mem, "k", 600)
+    _n_after_second = len(_pf_loads)
+    _pf_put("pf_board", {"v": "pc2"}, age=300)                 # the PC's next upload
+    _pf_newer = _bs_pf.adopt("pf_board", _pf_mem, "k", 600)
+    _pf_pc("behind")
+    _pf_behind = (_bs_pf.pc_status().get("state"), _bs_pf.pc_grace(600))
+    _pf_pc("on")
+    _pf_put("pf_old", {"v": "old"}, age=2000)
+    _pf_old = _bs_pf.adopt("pf_old", {}, "k", 600)
+    # a TTL-1800 board (NFL, DFS, CFB, futures): the PC rebuilds it once ITS copy passes 1,800 s and the upload
+    # lands minutes later, so with the PC on the server serves it to TTL + PC_SLACK_S instead of building it then
+    _pf_put("pf_ttl1800", {"v": "pc"}, age=1800 + 300)
+    _pf_slack = {"on, 35 min old": _bs_pf.adopt("pf_ttl1800", {}, "k", 1800)}
+    _pf_put("pf_ttl1800", {"v": "pc"}, age=1800 + _bs_pf.PC_SLACK_S + 60)
+    _pf_slack["on, past the slack"] = _bs_pf.adopt("pf_ttl1800", {}, "k", 1800)
+    _pf_pc("off")
+    _pf_put("pf_ttl1800", {"v": "pc"}, age=1800 + 300)
+    _pf_slack["off, 35 min old"] = _bs_pf.adopt("pf_ttl1800", {}, "k", 1800)
+    _pf_pc("on")
+    # nonblocking: within the grace no build starts; past it, the server builds
+    _pf_builds = []
+    _pf_nb_mem = {}
+    _pf_nb = _bs_pf.nonblocking("pf_board", 600, _pf_nb_mem, "k", lambda: _pf_builds.append(1) or {"v": "srv"})
+    _pf_nb_mem2 = {}
+    _bs_pf.nonblocking("pf_old", 600, _pf_nb_mem2, "k", lambda: _pf_builds.append(2) or {"v": "srv"})
+    for _ in range(100):
+        if _pf_builds:
+            break
+        _t_pf.sleep(0.05)
+    # the Kalshi indexes are where every NFL and college ask is read (ladders, implied, the makers' legs): with
+    # the PC on they keep their own TTL -- a copy within it is served, an older one is fetched here, never a
+    # PC copy up to the board grace old (Fable's review r2, MAJOR 1)
+    import kalshi_nfl as _knfl_pf, kalshi_cfb as _kcfb_pf
+    _pf_idx_state = _bs_pf.pc_status().get("state")
+    _pf_idx_res = {}
+    for _pf_km, _pf_kkey in ((_knfl_pf, "kalshi_nfl_idx"), (_kcfb_pf, _kcfb_pf._BOARD_KEY)):
+        _pf_kbuilt = []
+        _pf_ksaved = (_pf_km._build, dict(_pf_km._cache))
+        _pf_km._build = lambda _b=_pf_kbuilt: _b.append(1) or {"X": {"pair": frozenset({"A", "B"})}}
+        try:
+            _pf_km._cache.update(data=None, ts=0.0)
+            _pf_put(_pf_kkey, {"PC": {"pair": frozenset({"KC", "BUF"})}}, age=_pf_km._TTL - 60)
+            _pf_kfresh = (_pf_km.index(), len(_pf_kbuilt))
+            _pf_km._cache.update(data=None, ts=0.0)
+            _pf_put(_pf_kkey, {"PC": {"pair": frozenset({"KC", "BUF"})}}, age=_pf_km._TTL + 300)
+            _pf_idx_res[_pf_kkey] = (_pf_kfresh, (_pf_km.index(), len(_pf_kbuilt)),
+                                     _pf_km._TTL + 300 < _bs_pf.pc_grace(_pf_km._TTL))
+        finally:
+            _pf_km._build = _pf_ksaved[0]
+            _pf_km._cache.clear()
+            _pf_km._cache.update(_pf_ksaved[1])
+finally:
+    _bs_pf.get = _pf_old_get
+    _bs_pf._DIR, _bs_pf.PC_STATUS_PATH = _pf_old_dir, _pf_old_status
+    _sh_pf.rmtree(_pf_tmp, ignore_errors=True)
+    if _pf_old_srv is None:
+        _os.environ.pop("RENDER_GIT_COMMIT", None)
+    else:
+        _os.environ["RENDER_GIT_COMMIT"] = _pf_old_srv
+ck("PC off: a board past its TTL is the server's to build, exactly as before",
+   _pf_off == (600, None), str(_pf_off))
+ck("PC on (or behind): a copy within 30 minutes is served, a longer TTL keeps its own plus the PC's slack",
+   _pf_on[0] == _bs_pf.PC_GRACE_S == 1800 and _pf_on[1] == 6 * 3600 + _bs_pf.PC_SLACK_S and _pf_on[2] == {"v": "pc"}
+   and _pf_behind == ("behind", 1800), f"{_pf_on} {_pf_behind}")
+ck("a TTL-1800 board is served past its TTL while the PC rebuilds it (the PC starts at 1,800 s on its own clock "
+   "and its upload lands minutes later), and built here past the slack or with the PC off",
+   _pf_slack == {"on, 35 min old": {"v": "pc"}, "on, past the slack": None, "off, 35 min old": None}
+   and _bs_pf.PC_SLACK_S == 720, str(_pf_slack))
+ck("the same file is unpickled once, a newer upload replaces it",
+   _n_after_first == 1 and _n_after_second == 1 and _pf_again == {"v": "pc"} and _pf_newer == {"v": "pc2"},
+   f"loads {_pf_loads}")
+ck("past the grace the server builds (the PC up but stuck is still covered)",
+   _pf_old is None and _pf_builds == [2] and _pf_nb == {"v": "pc2"}, f"builds {_pf_builds} nb {_pf_nb}")
+ck("the Kalshi NFL and college indexes keep their own TTL with the PC on: a copy within it is served, an older "
+   "one (still inside the board grace) is fetched here -- they are the price source, not a board",
+   _pf_idx_state == "on" and sorted(_pf_idx_res) == ["kalshi_cfb_idx", "kalshi_nfl_idx"]
+   and all(v == (({"PC": {"pair": frozenset({"KC", "BUF"})}}, 0), ({"X": {"pair": frozenset({"A", "B"})}}, 1), True)
+           for v in _pf_idx_res.values()), f"{_pf_idx_state} {_pf_idx_res}")
+_pf_src = {m: open(_os.path.join(_root, m), encoding="utf-8").read()
+           for m in ("nfl_game_sim.py", "nfl_dfs_sim.py", "cfb_board.py", "mfutures.py", "kalshi_nfl.py",
+                     "kalshi_cfb.py")}
+ck("every hand-rolled board builder adopts through the same rule, and the two Kalshi indexes read their own TTL",
+   all("boardshare.adopt(" in _pf_src[m] for m in ("nfl_game_sim.py", "nfl_dfs_sim.py", "cfb_board.py", "mfutures.py"))
+   and all("pc_grace" not in _pf_src[m] for m in ("kalshi_nfl.py", "kalshi_cfb.py"))
+   and 'boardshare.get("kalshi_nfl_idx", _TTL)' in _pf_src["kalshi_nfl.py"]
+   and "boardshare.get(_BOARD_KEY, _TTL)" in _pf_src["kalshi_cfb.py"]
+   and "boardshare.get(name, boardshare.pc_grace(_SIMS_TTL))" in _pf_src["nfl_game_sim.py"])
+# a placeholder or an empty board keeps its own short life with the PC on: matchups' failed build is published
+# backdated to TTL - _RETRY_S and says "tried again within two minutes" -- under the grace it read on for 17 more
+_pf_tmp7 = _tf_pf.mkdtemp()
+_pf_sl_old = (_bs_pf._DIR, _bs_pf.PC_STATUS_PATH)
+try:
+    _bs_pf._DIR = _os.path.join(_pf_tmp7, "boards")
+    _bs_pf.PC_STATUS_PATH = _os.path.join(_pf_tmp7, "pc-status.json")
+    with open(_bs_pf.PC_STATUS_PATH, "w") as fh:
+        _js_pf.dump({"ts": _t_pf.time(), "commit": ""}, fh)
+    _pf_ph = {"players": [], "games": [], "notes": ["failed"], "placeholder": True}
+    _bs_pf.put("pf_ph", _pf_ph, age=900 - 120)
+    _pf_sl = {"state": _bs_pf.pc_status().get("state"), "placeholder within its TTL": _bs_pf.adopt("pf_ph", {}, "k", 900)}
+    _bs_pf.put("pf_ph", _pf_ph, age=900 + 60)
+    _pf_sl["placeholder past its TTL"] = _bs_pf.adopt("pf_ph", {}, "k", 900)
+    _pf_sl["...held in memory"] = _bs_pf.adopt("pf_ph", {"k": (_bs_pf.mtime("pf_ph"), _pf_ph)}, "k", 900)
+    _bs_pf.put("pf_empty", {"games": [], "empty": True}, age=600 + 60)
+    _pf_sl["empty past its TTL"] = _bs_pf.adopt("pf_empty", {}, "k", 600)
+    _bs_pf.put("pf_full", {"players": [1]}, age=900 + 60)
+    _pf_sl["full past its TTL"] = _bs_pf.adopt("pf_full", {}, "k", 900)
+finally:
+    _bs_pf._DIR, _bs_pf.PC_STATUS_PATH = _pf_sl_old
+    _sh_pf.rmtree(_pf_tmp7, ignore_errors=True)
+ck("with the PC on, a placeholder or an empty board is served only within its own TTL; a real board keeps the grace",
+   _pf_sl == {"state": "on", "placeholder within its TTL": _pf_ph, "placeholder past its TTL": None,
+              "...held in memory": None, "empty past its TTL": None, "full past its TTL": {"players": [1]}},
+   str(_pf_sl))
+# the upload keeps a board's age on the PC (X-Art-Age); other kinds keep the upload's moment
+import artifacts as _art_pf, gzip as _gz_pf
+_pf_app = __import__("app")
+_pf_tmp2 = _tf_pf.mkdtemp()
+_pf_old_tok, _pf_old_dir2 = _pf_app._SIM_TOKEN, _bs_pf._DIR
+_pf_old_deep = __import__("deep_cache").CACHE_DIR
+try:
+    _pf_app._SIM_TOKEN = "guard-token"
+    _bs_pf._DIR = _os.path.join(_pf_tmp2, "boards")
+    __import__("deep_cache").CACHE_DIR = _os.path.join(_pf_tmp2, "deep")
+    _pf_c = _pf_app.app.test_client()
+    _pf_body = _gz_pf.compress(_pk_pf.dumps({"v": 1}))
+
+    def _pf_up(kind, name, age=None):
+        h = {"X-Sim-Token": "guard-token", "Content-Encoding": "gzip"}
+        if age is not None:
+            h["X-Art-Age"] = str(age)
+        r = _pf_c.post(f"/api/art/upload?kind={kind}&name={name}&schema={_art_pf.SCHEMA}", data=_pf_body, headers=h)
+        return r.status_code, _t_pf.time() - _os.stat(_os.path.join(_art_pf.dir_for(kind), name)).st_mtime
+    _pf_u1 = _pf_up("boards", "pf_a.pkl", 600)
+    _pf_u2 = _pf_up("boards", "pf_b.pkl")
+    _pf_u3 = _pf_up("deep", "pf_c.pkl", 600)
+    _pf_u4 = _pf_up("boards", "pf_d.pkl", 10 ** 9)
+finally:
+    _pf_app._SIM_TOKEN = _pf_old_tok
+    _bs_pf._DIR = _pf_old_dir2
+    __import__("deep_cache").CACHE_DIR = _pf_old_deep
+    _sh_pf.rmtree(_pf_tmp2, ignore_errors=True)
+ck("a PC board keeps its age through the upload; no header, or another store, keeps the upload's moment; capped at 8 days",
+   _pf_u1[0] == 200 and 595 <= _pf_u1[1] <= 610 and _pf_u2[0] == 200 and _pf_u2[1] < 5
+   and _pf_u3[0] == 200 and _pf_u3[1] < 5 and _pf_u4[0] == 200 and abs(_pf_u4[1] - 8 * 86400) < 10,
+   f"{_pf_u1} {_pf_u2} {_pf_u3} {_pf_u4}")
+# the PC: X-Art-Age on every upload, the boards on a timer of their own, the cycle without them
+import pc_worker as _pcw_pf, pc_loop as _pcl_pf
+_pf_tmp3 = _tf_pf.mkdtemp()
+_pf_calls = []
+_pf_old = (_pcw_pf._api, _bs_pf._DIR)
+try:
+    _bs_pf._DIR = _os.path.join(_pf_tmp3, "boards")
+    _os.makedirs(_bs_pf._DIR)
+    with open(_os.path.join(_bs_pf._DIR, "pf_x.pkl"), "wb") as fh:
+        _pk_pf.dump({"v": 1}, fh)
+    _t0 = _t_pf.time() - 120
+    _os.utime(_os.path.join(_bs_pf._DIR, "pf_x.pkl"), (_t0, _t0))
+
+    def _pf_api(url, tok, path, data=None, headers=None, timeout=90):
+        _pf_calls.append((path, dict(headers or {})))
+        if path.startswith("/api/art/have"):
+            return {"have": {}, "schema": _art_pf.SCHEMA}
+        return {"adopted": True}
+    _pcw_pf._api = _pf_api
+    _pf_sent = _pcw_pf._sync_kind("http://x", "t", "boards")
+finally:
+    _pcw_pf._api, _bs_pf._DIR = _pf_old
+    _sh_pf.rmtree(_pf_tmp3, ignore_errors=True)
+_pf_up_h = [h for p_, h in _pf_calls if p_.startswith("/api/art/upload")]
+ck("the PC sends each board's age with its upload",
+   _pf_sent == 1 and _pf_up_h and 118 <= float(_pf_up_h[0].get("X-Art-Age", -1)) <= 125, str(_pf_up_h))
+_pf_cyc = _insp.getsource(_pcw_pf._cycle)
+_pf_bm = []
+_pf_old_bm = (_pcw_pf._config, _pcw_pf._task_boards, _pcw_pf._sync_kind)
+try:
+    _pcw_pf._config = lambda: ("http://x", "t")
+
+    def _pf_tb():
+        _pf_bm.append("boards")
+        raise RuntimeError("one builder blew up")
+    _pcw_pf._task_boards = _pf_tb
+    _pcw_pf._sync_kind = lambda url, tok, kind: _pf_bm.append(f"sync {kind}") or 0
+    try:
+        _pcw_pf.boards_main()
+        _pf_bm_raised = False
+    except RuntimeError:
+        _pf_bm_raised = True
+finally:
+    _pcw_pf._config, _pcw_pf._task_boards, _pcw_pf._sync_kind = _pf_old_bm
+ck("the PC's boards run alone on their own pass and still upload when a builder fails; the cycle no longer waits on them",
+   _pf_bm == ["boards", "sync boards"] and _pf_bm_raised and '("boards", _task_boards)' not in _pf_cyc
+   and '"--boards" in sys.argv[1:]' in open(_os.path.join(_root, "pc_worker.py"), encoding="utf-8").read(),
+   str(_pf_bm))
+# the pass is a process that exits after its upload, and its builders run in daemon threads that die with it:
+# it uploads what is done, waits for the builds IT claimed, uploads again, and frees one it gives up on so the
+# next pass may claim it at once rather than after CLAIM_TIMEOUT (Fable's review r3)
+import threading as _th_jm
+_pf_tmp9 = _tf_pf.mkdtemp()
+_pf_jm_old = (_pcw_pf._config, _pcw_pf._task_boards, _pcw_pf._sync_kind, _pcw_pf._BOARDS_JOIN_S, _bs_pf._DIR,
+              set(_bs_pf._HELD))
+_pf_jm_stop, _pf_jm_threads, _pf_jm_log = _th_jm.Event(), [], []
+try:
+    _bs_pf._DIR = _os.path.join(_pf_tmp9, "boards")
+    _bs_pf._HELD.clear()
+    _pcw_pf._config = lambda: ("http://x", "t")
+    _pcw_pf._BOARDS_JOIN_S = 4
+
+    def _pf_jm_build(name, secs):
+        def _bg():
+            try:
+                if not _pf_jm_stop.wait(secs):
+                    _pf_jm_log.append(("built", name))
+            finally:
+                _bs_pf.release(name)
+        th = _th_jm.Thread(target=_bg, daemon=True)
+        _pf_jm_threads.append(th)
+        th.start()
+
+    def _pf_jm_tb():
+        for name, secs in (("pf_slow", 1.0), ("pf_stuck", 60.0)):
+            if _bs_pf.claim(name):
+                _pf_jm_build(name, secs)
+    _pcw_pf._task_boards = _pf_jm_tb
+    _pcw_pf._sync_kind = lambda url, tok, kind: _pf_jm_log.append(("sync", tuple(sorted(_bs_pf.held_claims())))) or 0
+    _pf_jm_t0 = _t_pf.time()
+    _pcw_pf.boards_main()
+    _pf_jm = (list(_pf_jm_log), _t_pf.time() - _pf_jm_t0, _os.path.exists(_bs_pf._path("pf_stuck", "lock")),
+              _bs_pf.held_claims(), _bs_pf.claim("pf_stuck"))
+    _bs_pf.release("pf_stuck")
+    _pf_jm_log2 = []                                     # nothing in flight: one upload, no wait
+    _pcw_pf._task_boards = lambda: None
+    _pcw_pf._sync_kind = lambda url, tok, kind: _pf_jm_log2.append(kind) or 0
+    _pf_jm_t1 = _t_pf.time()
+    _pcw_pf.boards_main()
+    _pf_jm2 = (_pf_jm_log2, _t_pf.time() - _pf_jm_t1)
+finally:
+    _pf_jm_stop.set()
+    for _pf_jm_th in _pf_jm_threads:
+        _pf_jm_th.join(5)
+    (_pcw_pf._config, _pcw_pf._task_boards, _pcw_pf._sync_kind, _pcw_pf._BOARDS_JOIN_S, _bs_pf._DIR) = _pf_jm_old[:5]
+    _bs_pf._HELD.clear()
+    _bs_pf._HELD.update(_pf_jm_old[5])
+    _sh_pf.rmtree(_pf_tmp9, ignore_errors=True)
+ck("a boards pass uploads what is done, waits for the builds it claimed, uploads again, and frees one it gave up on",
+   _pf_jm[0] == [("sync", ("pf_slow", "pf_stuck")), ("built", "pf_slow"), ("sync", ())]
+   and 3.5 < _pf_jm[1] < 9 and _pf_jm[2:] == (False, set(), True)
+   and _pf_jm2[0] == ["boards"] and _pf_jm2[1] < 1.5, f"{_pf_jm} {_pf_jm2}")
+ck("...within the server's grace and the loop's kill: the first upload's boards are replaced before they pass "
+   "PC_GRACE_S, and the last upload lands before BOARDS_TIMEOUT_S",
+   _pcw_pf._BOARDS_JOIN_S + 30 + _pcl_pf.BOARDS_S < _bs_pf.PC_GRACE_S
+   and _pcw_pf._BOARDS_JOIN_S + 300 <= _pcl_pf.BOARDS_TIMEOUT_S, str(_pcw_pf._BOARDS_JOIN_S))
+_pf_old_popen = _pcl_pf.subprocess.Popen
+_pf_runs = []
+
+
+class _PfPass:
+    """A boards pass that never ends on its own."""
+    def __init__(self, cmd, **kw):
+        _pf_runs.append(self)
+        self.arg, self.cwd_ok = cmd[-1], kw.get("cwd") == _pcl_pf._HERE
+        self.waits, self.killed, self.listed = [], False, []
+
+    def wait(self, timeout=None):
+        self.waits.append(timeout)
+        self.listed.append(_pcl_pf._BOARDS_PROC[0] is self)       # where _stop_boards finds it
+        if timeout is not None and not self.killed:
+            raise _pcl_pf.subprocess.TimeoutExpired("pc_worker.py", timeout)
+        return -9
+
+    def kill(self):
+        self.killed = True
+
+
+try:
+    _pcl_pf.subprocess.Popen = _PfPass
+    _pf_pass = _pcl_pf._boards_pass()
+finally:
+    _pcl_pf.subprocess.Popen = _pf_old_popen
+_pf_rv = [(p.arg, p.cwd_ok, p.waits, p.killed, p.listed) for p in _pf_runs]
+ck("the loop runs a boards pass every 5 minutes on a daemon thread, killed past 30 minutes",
+   _pcl_pf.BOARDS_S == 300 and _pf_pass is None and _pcl_pf._BOARDS_PROC[0] is None
+   and _pf_rv == [("--boards", True, [1800, None], True, [True, True])]
+   and "threading.Thread(target=_boards_loop, daemon=True).start()" in _insp.getsource(_pcl_pf.main),
+   str(_pf_rv))
+# an update stops the pass in flight: left alone, the old code's pass ran on beside the new loop's for up to 30 min
+_pf_sleeper = _pf_old_popen([sys.executable, "-c", "import time; time.sleep(120)"])
+_pcl_pf._BOARDS_PROC[0] = _pf_sleeper
+try:
+    _pf_t0 = _t_pf.time()
+    _pcl_pf._stop_boards()
+    _pf_stop = (_pf_sleeper.poll() is not None, _t_pf.time() - _pf_t0 < 15)
+finally:
+    if _pf_sleeper.poll() is None:
+        _pf_sleeper.kill()
+        _pf_sleeper.wait()
+    _pcl_pf._BOARDS_PROC[0] = None
+_pcl_pf._stop_boards()                                   # nothing running: a no-op
+_pf_main = _insp.getsource(_pcl_pf.main)
+_pf_upd = _pf_main[_pf_main.find("if _apply_update():"):]
+ck("an update stops the boards pass in flight before the loop exits for the restart",
+   _pf_stop == (True, True) and "if _apply_update():" in _pf_main
+   and -1 < _pf_upd.find("_stop_boards()") < _pf_upd.find("sys.exit(0)"), str(_pf_stop))
+# every worker watches its own size and ledgers what it is doing past the line
+_pf_ens = _insp.getsource(_pf_app._ensure_recorder)
+ck("every worker starts its own memory watch (before the background-owner gate), never in a test process",
+   _pf_ens.index("_start_worker_watch()") < _pf_ens.index("if not _BG_OWNER")
+   and _os.environ.get("VIGIL_NO_BG") and (_pf_app._start_worker_watch() is None) and not _pf_app._worker_watch_on[0])
+import threading as _th_pf
+_pf_now = _t_pf.time()
+_pf_app._inflight_req[-1] = ("/api/some/route", _pf_now - 7)
+_pf_saved_recent = list(_pf_app._recent_req)
+_pf_app._recent_req[:] = [("/api/old/route", _pf_now - 100, _pf_now - 90),
+                          ("/api/recorder/backtest", _pf_now - 21, _pf_now - 3)]
+try:
+    _pf_msg, _pf_det = _pf_app._worker_mem_line(1712.4, now=_pf_now, rss=48.0, since=_pf_now - 25)
+finally:
+    _pf_app._inflight_req.pop(-1, None)
+    _pf_app._recent_req[:] = _pf_saved_recent
+ck("the alarm names the peak and the size now, the requests in flight, the ones that FINISHED in the window, "
+   "and every thread's frames",
+   _pf_msg.startswith("1712MB peak (48MB now) pid") and "in flight: /api/some/route 7s" in _pf_msg
+   and "finished: /api/recorder/backtest 18s" in _pf_msg and "/api/old/route" not in _pf_msg and "owner=" in _pf_msg
+   and f"[{_th_pf.current_thread().name}]" in _pf_det and "_worker_mem_line" in _pf_det
+   and _pf_app._WORKER_WARN_MB == 600, _pf_msg + " | " + _pf_det[:200])
+# the peak is real and resettable here (Linux): a transient 120 MB shows in the peak, then a reset clears it
+_pf_rss0, _pf_pk0 = _pf_app._self_mem_mb()
+_pf_app._reset_peak()
+_pf_blob = bytearray(120 * 1024 * 1024)
+_pf_blob[::4096] = b"\x01" * len(_pf_blob[::4096])
+del _pf_blob
+_pf_rss1, _pf_pk1 = _pf_app._self_mem_mb()
+_pf_app._reset_peak()
+_pf_rss2, _pf_pk2 = _pf_app._self_mem_mb()
+ck("the alarm reads the peak since its last look (a transient the sampler never saw), and the look resets it",
+   _pf_app._hwm_reset_ok[0] and _pf_pk1 - _pf_rss1 > 90 and _pf_pk2 - _pf_rss2 < 30,
+   f"rss/peak {(_pf_rss1, _pf_pk1)} after reset {(_pf_rss2, _pf_pk2)}")
+_pf_app._recent_req[:] = []
+_pf_c2 = _pf_app.app.test_client()
+_pf_c2.get("/healthz")
+ck("every finished request lands in the recent ring (kept to the last 40) and leaves the in-flight map",
+   _pf_app._recent_req and _pf_app._recent_req[-1][0] == "/healthz" and not _pf_app._inflight_req
+   and _pf_app._RECENT_KEEP == 40, str(_pf_app._recent_req[-1:]))
+import errlog as _el_pf
+_pf_tmp4 = _tf_pf.mkdtemp()
+_pf_el_old = (_el_pf._DB, _el_pf._init_done)
+try:
+    _el_pf._DB, _el_pf._init_done = _os.path.join(_pf_tmp4, "e.db"), False
+    _el_pf._last_write.pop("PF-detail", None)
+    _el_pf.note("PF-detail", msg="m", detail="thread stacks here")
+    _pf_row = [r for r in _el_pf.recent(limit=5, code="PF-detail", hours=1)]
+finally:
+    _el_pf._DB, _el_pf._init_done = _pf_el_old
+    _sh_pf.rmtree(_pf_tmp4, ignore_errors=True)
+ck("the ledger keeps a note's detail where a traceback goes",
+   _pf_row and _pf_row[0].get("tb") == "thread stacks here" and _pf_row[0].get("msg") == "m", str(_pf_row)[:200])
+
+# the nightlies: the PC first, then one niced child -- never inline in a web worker
+import deep_cache as _dc_pf
+_pf_gm = []
+_pf_tmp5 = _tf_pf.mkdtemp()
+_pf_dc_old = (_dc_pf.CACHE_DIR, _dc_pf.load)
+try:
+    _dc_pf.CACHE_DIR = _pf_tmp5
+    _dc_pf._gen_memo.clear()
+    _dc_pf.save("pf_job", {"x": list(range(1000))})
+
+    def _pf_load(key, max_age=None):
+        _pf_gm.append(key)
+        return _pf_dc_old[1](key, max_age)
+    _dc_pf.load = _pf_load
+    _pf_s1 = [_dc_pf.is_stale_daily("pf_job") for _ in range(5)]
+    _n_gm1 = len(_pf_gm)
+    _t5 = _t_pf.time() + 5
+    _os.utime(_dc_pf._path("pf_job"), (_t5, _t5))           # a new version of the file
+    _dc_pf.is_stale_daily("pf_job")
+    _n_gm2 = len(_pf_gm)
+    _pf_none = _dc_pf.generated_at("pf_missing")
+finally:
+    _dc_pf.CACHE_DIR, _dc_pf.load = _pf_dc_old
+    _dc_pf._gen_memo.clear()
+    _sh_pf.rmtree(_pf_tmp5, ignore_errors=True)
+ck("the daily staleness check unpickles a deep payload once per file version, not on every pass and poll",
+   _n_gm1 == 1 and _n_gm2 == 2 and _pf_s1 == [False] * 5 and _pf_none is None, f"loads {_pf_gm}")
+try:
+    _pf_rc = _dc_pf.run_child("statistics", "fmean", [1.0, 2.0, 6.0])
+except Exception as _e_rc0:                 # a broken child is a red guard, never a crashed suite
+    _pf_rc = f"{type(_e_rc0).__name__}: {_e_rc0}"[:300]
+try:
+    _dc_pf.run_child("math", "sqrt", -1.0)
+    _pf_rc_raised = False
+except RuntimeError as _e_rc:
+    _pf_rc_raised = "ValueError" in str(_e_rc)
+ck("a deep job's child returns its value and a failure raises (the scheduler records it as an error)",
+   _pf_rc == 3.0 and _pf_rc_raised, str(_pf_rc))
+# the pickle has the real stdout to itself: one stray print in a nightly or its imports was an UnpicklingError
+# every night the PC was off, the output lost in stderr's last 300 characters (Fable's review r2)
+_pf_tmp8 = _tf_pf.mkdtemp()
+with open(_os.path.join(_pf_tmp8, "pf_noisy_job.py"), "w") as fh:
+    fh.write("import os\nprint('imported')\n\n\ndef run(x):\n    print('a stray line')\n"
+             "    os.write(1, b'and one straight to fd 1\\n')\n    return {'x': x * 2}\n")
+_pf_pp_old = _os.environ.get("PYTHONPATH")
+_os.environ["PYTHONPATH"] = _pf_tmp8 + (_os.pathsep + _pf_pp_old if _pf_pp_old else "")
+try:
+    _pf_noisy = _dc_pf.run_child("pf_noisy_job", "run", 21)
+except Exception as _e_noisy:
+    _pf_noisy = f"{type(_e_noisy).__name__}: {_e_noisy}"
+finally:
+    if _pf_pp_old is None:
+        _os.environ.pop("PYTHONPATH", None)
+    else:
+        _os.environ["PYTHONPATH"] = _pf_pp_old
+    _sh_pf.rmtree(_pf_tmp8, ignore_errors=True)
+ck("a deep job that prints (on import, in the job, or straight to fd 1) still hands back its value",
+   _pf_noisy == {"x": 42}, str(_pf_noisy)[:300])
+_pf_app._register_deep_sims()
+_pf_expect = {"f1": ("racing_sim", "sim_f1", (3000,), {}), "nascar": ("racing_sim", "sim_nascar", (3000,), {}),
+              "nfl": ("pro_sim", "project", ("nfl", 4000), {}), "nfl_season": ("nfl_season", "run_season", (), {"n": 4000}),
+              "cfb": ("cfb", "run_season", (), {"n": 4000}), "model_trust": ("model_trust", "refresh", (), {})}
+_pf_old_pf, _pf_old_rc = _pf_app._deep_pc_first, _dc_pf.run_child
+_pf_child_calls = []
+try:
+    _pf_app._deep_pc_first = lambda key="mlb_deep": True
+    _pf_def = {k: _dc_pf._jobs[k]["run"]() is _dc_pf.DEFERRED for k in _pf_expect}
+    _pf_app._deep_pc_first = lambda key="mlb_deep": False
+
+    def _pf_fake_child(module, func, *a, **kw):
+        _pf_child_calls.append((module, func, a, kw, _dc_pf.HEAVY_BUILD._value == 0))
+        return {"ran": func}
+    _dc_pf.run_child = _pf_fake_child
+    import model_trust as _mt_pf
+    _pf_mt_load = _mt_pf.load
+    _mt_pf.load = lambda: {"weights": "pf"}
+    try:
+        _pf_ran = {k: _dc_pf._jobs[k]["run"]() for k in _pf_expect}
+    finally:
+        _mt_pf.load = _pf_mt_load
+finally:
+    _pf_app._deep_pc_first, _dc_pf.run_child = _pf_old_pf, _pf_old_rc
+_pf_got = {c[1] if c[0] != "racing_sim" else c[1]: c for c in _pf_child_calls}
+ck("the eight inline nightlies hand off to the PC first, then run in one niced child under the heavy-build gate",
+   all(_pf_def.values())
+   and [(c[0], c[1], c[2], c[3]) for c in _pf_child_calls] == [v for v in _pf_expect.values()]
+   and all(c[4] for c in _pf_child_calls) and _pf_ran["model_trust"] == {"weights": "pf"}
+   and "_pc_or_child(\"nhl_deep\"" in _insp.getsource(_pf_app._register_deep_sims)
+   and "_pc_or_child(\"nba_deep\"" in _insp.getsource(_pf_app._register_deep_sims),
+   f"deferred {_pf_def} calls {_pf_child_calls}")
+ck("soccer is on the PC's boards pass", '_add("soccer", lambda: __import__("soccer").board())'
+   in _insp.getsource(_pcw_pf._task_boards))
+# the tournament list reads each board once per file version in a worker
+_pf_tmp6 = _tf_pf.mkdtemp()
+_pf_tl_old = (_bs_pf._DIR, _bs_pf.get)
+_pf_tl_loads = []
+try:
+    _bs_pf._DIR = _os.path.join(_pf_tmp6, "boards")
+    _bs_pf.get = _pf_tl_old[1]
+    _bs_pf.put("cl_tourney_nfl_1", {"kind": "classic", "draft_group_id": 1, "built_ts": 100,
+                                    "contests": [{"name": "Millionaire"}], "slate": {"games": 10}})
+    _bs_pf.put("sd_tourney_nfl_2", {"kind": "showdown", "draft_group_id": 2, "built_ts": 200,
+                                    "contest": {"name": "SNF"}, "slate": {"teams": ["A", "B"]}})
+
+    def _pf_tl_get(name, max_age):
+        _pf_tl_loads.append(name)
+        return _pf_tl_old[1](name, max_age)
+    _bs_pf.get = _pf_tl_get
+    _pf_app._tourney_rows.clear()
+    _pf_tc = _pf_app.app.test_client()
+    _pf_r1 = _pf_tc.get("/api/dfs/tourney/list?sport=nfl").get_json()
+    _pf_r2 = _pf_tc.get("/api/dfs/tourney/list?sport=nfl").get_json()
+    _n_tl = len(_pf_tl_loads)
+    _t6 = _t_pf.time() + 3
+    _os.utime(_os.path.join(_bs_pf._DIR, "cl_tourney_nfl_1.pkl"), (_t6, _t6))
+    _pf_tc.get("/api/dfs/tourney/list?sport=nfl")
+    _n_tl2 = len(_pf_tl_loads)
+finally:
+    _bs_pf._DIR, _bs_pf.get = _pf_tl_old
+    _pf_app._tourney_rows.clear()
+    _sh_pf.rmtree(_pf_tmp6, ignore_errors=True)
+ck("the tournament list unpickles each board once per version, and the rows read the same either way",
+   _n_tl == 2 and _n_tl2 == 3 and [b["dg"] for b in _pf_r1["boards"]] == [2, 1]
+   and [{k: v for k, v in b.items() if k != "age_s"} for b in _pf_r1["boards"]]
+   == [{k: v for k, v in b.items() if k != "age_s"} for b in _pf_r2["boards"]],
+   f"loads {_pf_tl_loads}")
+
+# the NFL and UFC recipes: built on the PC (never logged there), filed and served here while it delivers
+import nfl_presets as _np_pf, ufc_presets as _up_pf, clock as _clk_pf, nfl_track as _ntr_pf, ufc_combo as _uc_pf
+import datetime as _dt_pf
+
+
+def _pf_presets_run(mod, state, cur, waited=0.0, force=False):
+    """One tick of `mod` with every input stubbed: returns (built, logged)."""
+    built, logged = [], []
+    saved = {"status": _bs_pf.pc_status, "get": _bs_pf.get, "put": _bs_pf.put,
+             "build": mod.build_all, "log": mod.ensure_logged, "wait": mod._pc_wait[0]}
+    if mod is _np_pf:
+        saved.update(today=_clk_pf.today_et, blocked=_ntr_pf.espn_blocked, week=mod._week, sims=mod.cached_sims,
+                     sig=mod.slate_sig, yld=mod._yield_cb)
+    else:
+        saved.update(board=_uc_pf._board, sig=mod.card_sig, mk=_uc_pf.markets)
+    try:
+        _bs_pf.pc_status = lambda path=None: {"state": state}
+        _bs_pf.get = lambda name, max_age: ((cur, 1.0) if name == mod.NAME and cur else (None, None))
+        _bs_pf.put = lambda name, payload, age=0: None
+        mod.build_all = lambda *a, **k: built.append(1) or {"built_ts": _t_pf.time(), "rev": mod.REV}
+        mod.ensure_logged = lambda payload: logged.append(payload) and False
+        mod._pc_wait[0] = waited
+        if mod is _np_pf:
+            _clk_pf.today_et = lambda: _dt_pf.date(2026, 10, 29)
+            _ntr_pf.espn_blocked = lambda: False
+            mod._week = lambda: (8, False)
+            mod.cached_sims = lambda week, pre: [{"g": 1}]
+            mod.slate_sig = lambda games: "sig-new"
+            mod._yield_cb = lambda: False
+        else:
+            _uc_pf._board = lambda: {"bouts": [1]}
+            mod.card_sig = lambda board: "sig-new"
+            _uc_pf.markets = lambda: {}
+        mod.tick(force=force)
+    finally:
+        _bs_pf.pc_status, _bs_pf.get, _bs_pf.put = saved["status"], saved["get"], saved["put"]
+        mod.build_all, mod.ensure_logged, mod._pc_wait[0] = saved["build"], saved["log"], saved["wait"]
+        if mod is _np_pf:
+            _clk_pf.today_et, _ntr_pf.espn_blocked, mod._week = saved["today"], saved["blocked"], saved["week"]
+            mod.cached_sims, mod.slate_sig, mod._yield_cb = saved["sims"], saved["sig"], saved["yld"]
+        else:
+            _uc_pf._board, mod.card_sig, _uc_pf.markets = saved["board"], saved["sig"], saved["mk"]
+    return len(built), len(logged)
+
+
+for _pf_mod, _pf_nm in ((_np_pf, "NFL"), (_up_pf, "UFC")):
+    _pf_cur = {"sig": "sig-old", "rev": _pf_mod.REV, "week": 8, "preseason": False, "built_ts": _t_pf.time() - 600}
+    _pf_old_cur = dict(_pf_cur, built_ts=_t_pf.time() - 50 * 60)
+    _pf_res = {
+        "on, the PC's payload 10 min old": _pf_presets_run(_pf_mod, "on", _pf_cur),
+        "behind, 10 min old": _pf_presets_run(_pf_mod, "behind", _pf_cur),
+        "off": _pf_presets_run(_pf_mod, "off", _pf_cur),
+        "on, 50 min old": _pf_presets_run(_pf_mod, "on", _pf_old_cur),
+        "on, none yet, just noticed": _pf_presets_run(_pf_mod, "on", None),
+        "on, none after 16 min": _pf_presets_run(_pf_mod, "on", None, waited=_t_pf.time() - 16 * 60),
+        "on, forced": _pf_presets_run(_pf_mod, "on", _pf_cur, force=True),
+    }
+    ck(f"the {_pf_nm} recipes: served and filed from the PC while it delivers, built here with the PC off, "
+       "past 45 minutes, after 15 minutes with none, or when forced",
+       _pf_res == {"on, the PC's payload 10 min old": (0, 1), "behind, 10 min old": (0, 1), "off": (1, 1),
+                   "on, 50 min old": (1, 1), "on, none yet, just noticed": (0, 0),
+                   "on, none after 16 min": (1, 1), "on, forced": (1, 1)}, str(_pf_res))
+    ck("...and the PC builds them without touching a ledger",
+       "ensure_logged" not in _insp.getsource(_pf_mod.pc_build)
+       and f'__import__("{_pf_mod.__name__}").pc_build()' in _insp.getsource(_pcw_pf._task_boards))
+
+
+def _pf_route(sport, state, age_min=None, waited_min=None):
+    """One GET of /api/<sport>/presets with its inputs stubbed: (status, kicked a build in this worker)."""
+    mod = _np_pf if sport == "nfl" else _up_pf
+    now, kicks = _t_pf.time(), []
+    cur = None if age_min is None else {"built_ts": now - age_min * 60, "week": 8, "presets": {}, "rev": mod.REV}
+    saved = (_bs_pf.pc_status, _bs_pf.get, _bs_pf.claim, mod.records, mod.best_wins, mod.best_today,
+             mod._pc_wait[0], _ntr_pf._state.get("week", "unset"))
+    try:
+        _bs_pf.pc_status = lambda path=None: {"state": state}
+        _bs_pf.get = lambda name, max_age: ((cur, now - cur["built_ts"]) if cur and name == mod.NAME else (None, None))
+        _bs_pf.claim = lambda name: kicks.append(name) or False          # record the kick, start nothing
+        mod.records, mod.best_wins, mod.best_today = (lambda: {}), (lambda: {}), (lambda payload, recs: None)
+        mod._pc_wait[0] = 0.0 if waited_min is None else now - waited_min * 60
+        _ntr_pf._state["week"] = 9                    # the recorder has moved on: the payload's age alone decides
+        r = _pf_app.app.test_client().get(f"/api/{sport}/presets")
+    finally:
+        (_bs_pf.pc_status, _bs_pf.get, _bs_pf.claim, mod.records, mod.best_wins, mod.best_today,
+         mod._pc_wait[0]) = saved[:7]
+        if saved[7] == "unset":
+            _ntr_pf._state.pop("week", None)
+        else:
+            _ntr_pf._state["week"] = saved[7]
+    return r.status_code, kicks == [mod.NAME + "_kick"]
+
+
+_pf_rk = {
+    "NFL on, 40 min old": _pf_route("nfl", "on", 40), "NFL behind, 40 min old": _pf_route("nfl", "behind", 40),
+    "NFL off, 40 min old": _pf_route("nfl", "off", 40), "NFL on, 50 min old": _pf_route("nfl", "on", 50),
+    "NFL on, none, just noticed": _pf_route("nfl", "on"), "NFL on, none for 16 min": _pf_route("nfl", "on", None, 16),
+    "NFL off, none": _pf_route("nfl", "off"),
+    "UFC on, none, just noticed": _pf_route("ufc", "on"), "UFC on, none for 16 min": _pf_route("ufc", "on", None, 16),
+    "UFC off, none": _pf_route("ufc", "off"), "UFC on, 50 min old": _pf_route("ufc", "on", 50),
+}
+ck("the recipes tab waits for the PC too: with it on, the NFL kick waits 45 minutes (not 30) and a missing payload "
+   "15; with it off both routes kick exactly as before (Fable's review r2, MAJOR 2)",
+   _pf_rk == {"NFL on, 40 min old": (200, False), "NFL behind, 40 min old": (200, False),
+              "NFL off, 40 min old": (200, True), "NFL on, 50 min old": (200, True),
+              "NFL on, none, just noticed": (202, False), "NFL on, none for 16 min": (202, True),
+              "NFL off, none": (202, True), "UFC on, none, just noticed": (202, False),
+              "UFC on, none for 16 min": (202, True), "UFC off, none": (202, True),
+              "UFC on, 50 min old": (200, False)}, str(_pf_rk))
 
 print("=" * 72)
 print("MX. The matchup upgrade (2026-10-23): prop math, the NBA engine, the NFL matchup data and model,")

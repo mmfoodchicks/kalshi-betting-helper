@@ -1,11 +1,11 @@
 """Vigil -- the Flask backend: every route, and the background jobs ONE worker owns.
 
-What started as a Kalshi crypto helper (the /api/coins, /api/quote and
-/api/markets routes are still here) is now a multi-sport betting workbench:
-MLB (slate, sims, combo maker, locked presets, DFS), NFL (drive engine,
-parlays, DFS, season futures), NBA/NHL/CFB season engines, golf, tennis, UFC,
-racing, LoL, crypto/commodities/climate/weather markets, cross-sport Best Bets
-and futures -- each priced against Kalshi and graded into its own ledger.
+A multi-sport betting workbench: MLB (slate, sims, combo maker, locked
+presets, DFS), NFL (drive engine, parlays, DFS, season futures), NBA/NHL/CFB
+season engines, golf, tennis, UFC, racing, LoL, soccer, climate/weather
+markets, cross-sport Best Bets and futures -- each priced against Kalshi and
+graded into its own ledger. (It started as a Kalshi crypto helper; every
+crypto feature was removed on 2026-10-29.)
 
 Layout: request plumbing (auth, the error-ledger hooks, tiers), the background
 owner (one gunicorn worker claims the recorders, the warmer and the deep
@@ -29,10 +29,7 @@ import threading
 from flask import Flask, g, jsonify, request, render_template, Response
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-import prices
-import odds
 import store
-import kalshi
 import baseball
 import tiers
 import errlog
@@ -666,6 +663,22 @@ def api_art_upload():
         errlog.note("PCUP-art-write", e)
         return jsonify({"error": f"write failed: {type(e).__name__}",
                         "adopted": False}), 500
+    if kind == "boards":
+        # A board keeps the age it had on the PC (X-Art-Age), not the upload's
+        # moment: boardshare's PC grace serves a copy by its age, and an upload
+        # stamped "now" made a PC board up to a cycle old -- or a placeholder the
+        # PC published backdated to expire in minutes -- read as brand new.
+        try:
+            a = float(request.headers.get("X-Art-Age") or 0)
+        except ValueError:
+            a = 0.0
+        if a > 0:
+            a = min(a, 8 * 86400.0)
+            t = time.time() - a
+            try:
+                os.utime(os.path.join(artifacts.dir_for(kind), name), (t, t))
+            except OSError as e:
+                errlog.note("PCUP-art-age", e)
     return jsonify({"ok": True, "adopted": True, "kind": kind, "name": name,
                     "bytes": len(data)})
 
@@ -868,6 +881,117 @@ def _start_mem_watchdog():
             except Exception as _e:
                 errlog.note("APP-memwatch", _e)
     threading.Thread(target=_loop, daemon=True).start()
+
+
+# The instance watchdog names the fat PROCESS; it cannot say what that process
+# was doing. Every worker now watches its own size and, past _WORKER_WARN_MB,
+# ledgers what it holds at that moment: the requests in flight (path, seconds)
+# and every thread's innermost frames. The Sep-Oct 2026 worker peaks (1.0 to
+# 1.77 GB) took a day of reconstruction from the job timeline and a synthetic
+# replay to pin on one route (/api/recorder/backtest, every app open); the next
+# one is a single ledger row. Workers sit at 65-360 MB in the 6-hourly snapshots.
+#
+# It reads the PEAK since its last look (VmHWM, reset each look through
+# /proc/self/clear_refs), not the size at that instant: the backtest's 1.5 GB
+# lasted ~18 s and was handed back before the request ended (both reviews
+# measured RSS back near 30-50 MB after the call), so a 20-second sampler of
+# VmRSS could miss it whole. And it names the requests that FINISHED in the
+# window as well as those still in flight -- the culprit is usually gone by
+# the time the alarm reads.
+_WORKER_WARN_MB = float(os.environ.get("VIGIL_WORKER_WARN_MB") or 600)
+_inflight_req = {}             # thread ident -> (path, start), this worker's requests now
+_recent_req = []               # (path, start, end) of the last _RECENT_KEEP finished requests
+_RECENT_KEEP = 40
+_worker_watch_on = [False]
+_hwm_reset_ok = [True]         # False once clear_refs is refused: fall back to VmRSS
+
+
+@app.before_request
+def _inflight_start():
+    _inflight_req[threading.get_ident()] = (request.path, time.time())
+
+
+@app.teardown_request
+def _inflight_end(_exc=None):
+    got = _inflight_req.pop(threading.get_ident(), None)
+    if got:
+        _recent_req.append((got[0], got[1], time.time()))
+        del _recent_req[:-_RECENT_KEEP]
+
+
+def _self_mem_mb():
+    """(rss, peak) of this process in MB; the peak is VmHWM, since the last reset."""
+    rss = peak = 0.0
+    with open("/proc/self/status") as f:
+        for ln in f:
+            if ln.startswith("VmRSS"):
+                rss = int(ln.split()[1]) / 1024
+            elif ln.startswith("VmHWM"):
+                peak = int(ln.split()[1]) / 1024
+    return rss, max(rss, peak)
+
+
+def _reset_peak():
+    """Start a fresh peak window (VmHWM := current RSS). Refused -> peak tracking off."""
+    try:
+        with open("/proc/self/clear_refs", "w") as fh:
+            fh.write("5")
+    except OSError:
+        _hwm_reset_ok[0] = False
+
+
+def _thread_tops(depth=3):
+    """One line a thread: its name and innermost `depth` frames, innermost first."""
+    import sys
+    import traceback
+    names = {t.ident: t.name for t in threading.enumerate()}
+    out = []
+    for ident, frame in sys._current_frames().items():
+        fs = traceback.extract_stack(frame)[-depth:]
+        out.append(f"[{names.get(ident, ident)}] " + " < ".join(
+            f"{os.path.basename(f.filename)}:{f.lineno} {f.name}" for f in reversed(fs)))
+    return out
+
+
+def _worker_mem_line(mb, now=None, rss=None, since=None):
+    """(msg, detail) of a MEM-worker note: the peak (and the size now), pid,
+    uptime, the requests in flight and the ones that finished since `since` in
+    the message; every thread's frames in the detail."""
+    now = time.time() if now is None else now
+    reqs = "; ".join(f"{p} {now - t0:.0f}s" for p, t0 in list(_inflight_req.values())[:8]) or "none"
+    since = now - _MEM_WATCH_S - 5 if since is None else since
+    done = "; ".join(f"{p} {t1 - t0:.0f}s" for p, t0, t1 in list(_recent_req)[::-1] if t1 >= since)[:300] or "none"
+    msg = (f"{mb:.0f}MB peak{'' if rss is None else f' ({rss:.0f}MB now)'} pid{os.getpid()} "
+           f"up {now - _PROC_START:.0f}s owner={int(bool(_BG_OWNER))}; in flight: {reqs}; finished: {done}")
+    return msg, "\n".join(_thread_tops())
+
+
+def _start_worker_watch():
+    """This worker's RSS every _MEM_WATCH_S; one MEM-worker note per surge past
+    _WORKER_WARN_MB. Never in a VIGIL_NO_BG process (the tests)."""
+    if _worker_watch_on[0] or os.environ.get("VIGIL_NO_BG"):
+        return
+    _worker_watch_on[0] = True
+
+    def _loop():
+        last = 0.0
+        _reset_peak()
+        while True:
+            t_window = time.time()
+            time.sleep(_MEM_WATCH_S)
+            try:
+                rss, peak = _self_mem_mb()
+                mb = peak if _hwm_reset_ok[0] else rss
+                if _hwm_reset_ok[0]:
+                    _reset_peak()
+                if mb < _WORKER_WARN_MB or time.time() - last < 600:
+                    continue
+                last = time.time()
+                msg, detail = _worker_mem_line(mb, rss=rss, since=t_window)
+                errlog.note("MEM-worker", msg=msg, detail=detail)
+            except Exception as _e:
+                errlog.note("APP-workerwatch", _e)
+    threading.Thread(target=_loop, daemon=True, name="worker-mem-watch").start()
 
 
 @app.route("/api/errors")
@@ -1127,13 +1251,16 @@ def _ensure_recorder():
             _register_deep_sims()
         except Exception as _e:
             errlog.note("APP-ensure_recorder", _e)
+        try:
+            _start_worker_watch()               # every worker, not just the owner
+        except Exception as _e:
+            errlog.note("APP-ensure_recorder-7", _e)
         if not _BG_OWNER:
             return          # a sibling worker owns the recorders and the sims
-        try:
-            import recorder
-            recorder.start_background()
-        except Exception as _e:
-            errlog.note("APP-ensure_recorder-2", _e)
+        # The removed crypto features' tables, dropped once off the request
+        # path (store.drop_crypto_tables): the first drop frees ~1M rows.
+        threading.Thread(target=_drop_crypto_tables, daemon=True,
+                         name="drop-crypto-tables").start()
         try:
             import mlb_recorder
             mlb_recorder.start_background()
@@ -1151,6 +1278,21 @@ def _ensure_recorder():
             _start_mem_watchdog()
         except Exception as _e:
             errlog.note("APP-ensure_recorder-6", _e)
+
+
+def _drop_crypto_tables():
+    """store.drop_crypto_tables, once per background owner, noted in the ledger
+    the one time it drops anything (STORE-crypto-drop), so the drop on the
+    server can be read off the error-log snapshot."""
+    try:
+        gone = store.drop_crypto_tables()
+        if gone:
+            info = store.LAST_CRYPTO_DROP
+            rows = ", ".join(f"{t} {n:,} rows" for t, n in (info.get("rows") or {}).items())
+            errlog.note("STORE-crypto-drop", msg=f"dropped the removed crypto features' tables ({rows}); "
+                                                 f"markets.db {info.get('mb_before')} -> {info.get('mb_after')} MB")
+    except Exception as _e:
+        errlog.note("STORE-crypto-drop-fail", _e)
 
 
 # An instance that sees only health probes must STILL run its nightlies. The
@@ -1480,8 +1622,7 @@ def _register_deep_sims():
     which is how "I hit rerun now and nothing happens" happened 2 clicks in 3."""
     import deep_cache
     if "mlb_deep" in deep_cache._jobs:      # already registered in this worker;
-        _deep_refresh()                     # re-registering would blank a live
-        return                              # job's running flag
+        return                              # re-registering would blank a live job's running flag
 
     def run_mlb():
         import deep_season
@@ -1548,27 +1689,37 @@ def _register_deep_sims():
             errlog.note("APP-run_mlb-3", _e)
         return {"agg": agg, "season": season}
 
+    # The nightlies below ran INLINE in the background owner's scheduler
+    # thread -- a web worker -- with no hand-off to the PC, and the PC re-runs
+    # a key only once the server's copy is 19 h old, so the server's
+    # midnight-ET pass ran most of them itself every night (Fable's
+    # server-memory review, 2026-10-29). Now: the PC first (the request marker
+    # makes them due on its next cycle), and with the PC off -- or 45 minutes
+    # without a delivery -- one niced child under the heavy-build gate, the
+    # way the pro seasons and the matchup jobs already run.
+    def _pc_or_child(key, module, func, *args, **kwargs):
+        if _deep_pc_first(key):
+            return deep_cache.DEFERRED
+        import jobs
+        with deep_cache.HEAVY_BUILD, jobs.timed(f"deep:{key}"):
+            return deep_cache.run_child(module, func, *args, **kwargs)
+
     def run_f1():
-        import racing_sim
-        return racing_sim.sim_f1(3000)
+        return _pc_or_child("f1", "racing_sim", "sim_f1", 3000)
 
     def run_nascar():
-        import racing_sim
-        return racing_sim.sim_nascar(3000)
+        return _pc_or_child("nascar", "racing_sim", "sim_nascar", 3000)
 
     def run_pro(league):
         def run():
-            import pro_sim
-            return pro_sim.project(league, 4000)
+            return _pc_or_child(league, "pro_sim", "project", league, 4000)
         return run
 
     def run_nfl_season():
-        import nfl_season
-        return nfl_season.run_season(n=4000)
+        return _pc_or_child("nfl_season", "nfl_season", "run_season", n=4000)
 
     def run_cfb():
-        import cfb
-        return cfb.run_season(n=4000)
+        return _pc_or_child("cfb", "cfb", "run_season", n=4000)
 
     def run_nfl_deep():
         """The play-by-play NFL season (nfl_deep_season): the PC first, one
@@ -1604,9 +1755,9 @@ def _register_deep_sims():
         import pro_sim
         if not pro_sim.in_season("nhl"):
             return None
-        import clock
         import nhl_deep_data
-        return nhl_deep_data.update(nhl_deep_data.season_of(clock.today_et().isoformat()))
+        return _pc_or_child("nhl_deep", "nhl_deep_data", "update",
+                            nhl_deep_data.season_of(clock.today_et().isoformat()))
 
     def run_nba_deep():
         """The NBA deep engine's season state (nba_deep_data.update): the
@@ -1618,9 +1769,9 @@ def _register_deep_sims():
         import pro_sim
         if not pro_sim.in_season("nba"):
             return None
-        import clock
         import nba_deep_data
-        return nba_deep_data.update(nba_deep_data.season_of(clock.today_et().isoformat()))
+        return _pc_or_child("nba_deep", "nba_deep_data", "update",
+                            nba_deep_data.season_of(clock.today_et().isoformat()))
 
     def run_pro_season(league):
         """The NBA / NHL season through the real formats (pro_season_job):
@@ -1683,7 +1834,8 @@ def _register_deep_sims():
         """Re-measure how far each sport's model may depart from the market, by
         replaying point-in-time history. Stores the fitted blend weights."""
         import model_trust
-        model_trust.refresh()
+        if _pc_or_child("model_trust", "model_trust", "refresh") is deep_cache.DEFERRED:
+            return deep_cache.DEFERRED        # the PC runs the full fit (pc_worker._mt)
         return model_trust.load()
 
     if not baseball.MLB_SIMS_PAUSED:
@@ -1742,8 +1894,9 @@ def _register_deep_sims():
     # nhl_season above (pro_sim's 8-seed bracket had no play-in, no wildcards
     # and its futures were matched to series Kalshi does not list).
     deep_cache.register("nfl", run_pro("nfl"))
-    # Restore the MLB deep run from disk so a restart doesn't lose it.
-    _deep_refresh()
+    # The MLB deep run is read from disk on first use: every reader calls
+    # _deep_refresh() before it reads _deep. Loading it here put a several-MB
+    # copy in every worker at boot, MLB paused or not (Fable's review, 2026-10-29).
 
 
 def _deep_refresh():
@@ -1807,31 +1960,6 @@ def _bootstrap_recorder():
     _ensure_recorder()
 
 
-def _minutes_to_close(close_time):
-    return max(0.0, (close_time - time.time()) / 60.0)
-
-
-def _signal_for(coin, threshold, direction, close_time, yes_price_cents):
-    spot = prices.get_spot(coin)
-    candles = prices.get_candles(coin, granularity=60)
-    mins = _minutes_to_close(close_time)
-    sig = odds.compute_signal(spot, candles, threshold, direction, mins, yes_price_cents)
-    return sig
-
-
-def _auto_resolve(market):
-    """Resolve a market if its window has closed and it isn't resolved yet."""
-    if market["resolved"]:
-        return market
-    if time.time() < market["close_time"]:
-        return market
-    try:
-        price = prices.get_price_at(market["coin"], market["close_time"])
-    except Exception:
-        return market
-    return store.resolve_market(market["id"], price) or market
-
-
 @app.route("/")
 def index():
     # Cache-bust static assets by their on-disk mtime, so a `git pull` alone
@@ -1852,206 +1980,13 @@ def service_worker():
     return resp
 
 
-@app.route("/api/coins")
-def api_coins():
-    return jsonify(sorted(prices.SUPPORTED_COINS.keys()))
-
-
-@app.route("/api/quote")
-def api_quote():
-    """Ad-hoc signal without saving — for the live preview as you type."""
-    try:
-        coin = request.args.get("coin", "BTC").upper()
-        threshold = float(request.args["threshold"])
-        direction = request.args.get("direction", "above")
-        close_time = float(request.args["close_time"])
-        yp = request.args.get("yes_price_cents")
-        yes_price = float(yp) if yp not in (None, "", "null") else None
-    except (KeyError, ValueError) as e:
-        return jsonify({"error": f"bad params: {e}"}), 400
-    try:
-        sig = _signal_for(coin, threshold, direction, close_time, yes_price)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 502
-    sig["coin"] = coin
-    sig["close_time"] = close_time
-    return jsonify(sig)
-
-
-@app.route("/api/markets", methods=["POST"])
-def api_create_market():
-    data = request.get_json(force=True, silent=True) or {}
-    try:
-        coin = str(data["coin"]).upper()
-        threshold = float(data["threshold"])
-        direction = data.get("direction", "above")
-        close_time = float(data["close_time"])
-        yp = data.get("yes_price_cents")
-        yes_price = float(yp) if yp not in (None, "", "null") else None
-    except (KeyError, ValueError, TypeError) as e:
-        return jsonify({"error": f"bad params: {e}"}), 400
-    if direction not in ("above", "below"):
-        return jsonify({"error": "direction must be 'above' or 'below'"}), 400
-
-    ticker = data.get("kalshi_ticker") or None
-    side = data.get("position_side")
-    side = side.upper() if side in ("yes", "no", "YES", "NO") else None
-    ec = data.get("entry_cost_cents")
-    entry_cost = float(ec) if ec not in (None, "", "null") else None
-
-    try:
-        sig = _signal_for(coin, threshold, direction, close_time, yes_price)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 502
-
-    market_id = store.add_market(
-        coin, threshold, direction, close_time, yes_price,
-        snap_prob_yes=sig["prob_yes"],
-        snap_recommendation=sig["recommendation"],
-        snap_spot=sig["spot"],
-        kalshi_ticker=ticker, position_side=side, entry_cost_cents=entry_cost,
-    )
-    return jsonify({"id": market_id}), 201
-
-
-@app.route("/api/markets/<int:market_id>/position", methods=["POST"])
-def api_set_position(market_id):
-    """Record (or clear) a held position so the app can advise when to sell."""
-    data = request.get_json(force=True, silent=True) or {}
-    side = data.get("position_side")
-    side = side if side in ("YES", "NO", "yes", "no") else None
-    ec = data.get("entry_cost_cents")
-    try:
-        entry_cost = float(ec) if ec not in (None, "", "null") else None
-    except (ValueError, TypeError):
-        return jsonify({"error": "bad entry_cost_cents"}), 400
-    store.set_position(market_id, side, entry_cost)
-    return jsonify({"ok": True})
-
-
-@app.route("/api/markets")
-def api_list_markets():
-    out = []
-    for m in store.list_markets():
-        m = _auto_resolve(m)
-        item = dict(m)
-        if not m["resolved"]:
-            try:
-                sig = _signal_for(m["coin"], m["threshold"], m["direction"],
-                                  m["close_time"], m["yes_price_cents"])
-                item["signal"] = sig
-            except Exception as e:
-                item["signal_error"] = str(e)
-                sig = None
-
-            # Live Kalshi bid/ask if this market came from the scanner.
-            live = None
-            if m.get("kalshi_ticker"):
-                try:
-                    live = kalshi.get_market(m["kalshi_ticker"])
-                    item["kalshi_live"] = live
-                except Exception as _e:
-                    errlog.note("APP-api_list_markets", _e)
-
-            # Sell guidance for a held position.
-            if sig and m.get("position_side") and m.get("entry_cost_cents") is not None:
-                item["position"] = odds.sell_guidance(
-                    m["position_side"], m["entry_cost_cents"],
-                    sig["fair_yes_cents"], sig["fair_no_cents"],
-                    yes_bid=(live or {}).get("yes_bid"),
-                    no_bid=(live or {}).get("no_bid"),
-                    yes_ask=(live or {}).get("yes_ask"),
-                    no_ask=(live or {}).get("no_ask"),
-                    minutes_to_close=sig.get("minutes_to_close"),
-                    ticker=m.get("ticker") or m.get("kalshi_ticker"),
-                )
-        out.append(item)
-    return jsonify(out)
-
-
-@app.route("/api/markets/<int:market_id>", methods=["DELETE"])
-def api_delete_market(market_id):
-    store.delete_market(market_id)
-    return jsonify({"ok": True})
-
-
-@app.route("/api/kalshi/meta")
-def api_kalshi_meta():
-    return jsonify({"coins": kalshi.SCANNABLE_COINS, "timeframes": kalshi.TIMEFRAMES})
-
-
-@app.route("/api/kalshi/scan")
-def api_kalshi_scan():
-    """Pull live open Kalshi contracts for a coin+timeframe and run the model
-    on each, returning them ranked by edge (best opportunities first)."""
-    coin = request.args.get("coin", "BTC").upper()
-    timeframe = request.args.get("timeframe", "hourly")
-    try:
-        markets = kalshi.get_open_markets(coin, timeframe)
-    except Exception as e:
-        return jsonify({"error": f"kalshi fetch failed: {e}"}), 502
-    if not markets:
-        return jsonify({"coin": coin, "timeframe": timeframe, "markets": []})
-
-    try:
-        spot = prices.get_spot(coin)
-        candles = prices.get_candles(coin, granularity=60)
-    except Exception as e:
-        return jsonify({"error": f"price feed failed: {e}"}), 502
-
-    enriched = []
-    for m in markets:
-        mins = _minutes_to_close(m["close_time"]) if m["close_time"] else 0.0
-        sig = odds.kalshi_signal(spot, candles, m, mins, calibrated=True)
-        item = dict(m)
-        item["minutes_to_close"] = round(mins, 2)
-        item["signal"] = sig
-        # Best available edge on either side, for ranking.
-        edges = [e for e in (sig["edge_yes_cents"], sig["edge_no_cents"]) if e is not None]
-        item["best_edge"] = max(edges) if edges else None
-        enriched.append(item)
-
-    enriched.sort(key=lambda x: (x["best_edge"] is None, -(x["best_edge"] or 0)))
-
-    # Volatility edge: what move is the strike ladder pricing vs realized? (Pro+)
-    vol = None
-    tier = _tier()
-    if markets and tiers.has_feature(tier, "vol_edge"):
-        close = max((m["close_time"] for m in markets if m["close_time"]), default=None)
-        mins = _minutes_to_close(close) if close else 0.0
-        vol = odds.vol_edge(spot, candles, markets, mins)
-        # Cross-check against Deribit's DVOL (the sharp options market, BTC/ETH).
-        if vol and tiers.has_feature(tier, "deribit"):
-            import deribit
-            dvol = deribit.get_dvol(coin)
-            if dvol:
-                vol["deribit_dvol_pct"] = dvol
-                ki = vol.get("implied_annual_pct")
-                src = "Kalshi-implied" if ki else "recent realized"
-                if not ki:
-                    ki = vol.get("realized_annual_pct")
-                if ki:
-                    r = ki / dvol
-                    vol["deribit_ratio"] = round(r, 2)
-                    if r >= 1.15:
-                        vol["deribit_note"] = (f"{src} vol ({ki}%) is RICHER than Deribit ({dvol}%) "
-                                               f"- favorites/near-money look cheap on Kalshi.")
-                    elif r <= 0.87:
-                        vol["deribit_note"] = (f"{src} vol ({ki}%) is CHEAPER than Deribit ({dvol}%) "
-                                               f"- the wings/longshots look cheap on Kalshi.")
-                    else:
-                        vol["deribit_note"] = f"{src} vol ({ki}%) is in line with Deribit ({dvol}%)."
-
-    return jsonify({"coin": coin, "timeframe": timeframe, "spot": round(spot, 2),
-                    "markets": enriched, "vol": vol})
-
-
 @app.route("/api/simulate/price")
 def api_simulate_price():
-    """Monte Carlo a coin or commodity forward; return the outcome distribution."""
+    """Monte Carlo a commodity forward; return the outcome distribution."""
     import simulate
-    kind = request.args.get("kind", "crypto")
-    key = request.args.get("key", "BTC")
+    import commodities
+    kind = "commodity"
+    key = request.args.get("key") or next(iter(commodities.COMMODITIES))
     try:
         horizon = float(request.args.get("horizon", 60))
         th = request.args.get("threshold")
@@ -2060,13 +1995,8 @@ def api_simulate_price():
     except ValueError:
         return jsonify({"error": "bad params"}), 400
     try:
-        if kind == "commodity":
-            import commodities
-            spot = commodities.get_spot(key)
-            candles = commodities.get_candles(key)  # daily -> horizon in days
-        else:
-            spot = prices.get_spot(key.upper())
-            candles = prices.get_candles(key.upper(), granularity=60)  # horizon in minutes
+        spot = commodities.get_spot(key)
+        candles = commodities.get_candles(key)  # daily -> horizon in days
     except Exception as e:
         return jsonify({"error": f"feed failed: {e}"}), 502
     n = tiers.cap_sims(_tier(), request.args.get("sims", 20000))
@@ -2329,8 +2259,7 @@ def _tourney_pending():
     for dg, r in sorted(_tourney_requests().items(), key=lambda kv: kv[1].get("ts") or 0):
         if not _tourney_req_live(r, now):
             continue
-        payload, _age = _tourney_board(r.get("sport") or "nfl", dg)
-        if payload and (payload.get("built_ts") or 0) >= (r.get("ts") or 0):
+        if (_tourney_built_ts(r.get("sport") or "nfl", dg) or 0) >= (r.get("ts") or 0):
             continue
         try:
             row = dict(r, dg=int(dg))
@@ -2371,6 +2300,29 @@ def _tourney_last_attempt(dg, payload, queued):
     if queued and a.get("req_ts") == queued[0].get("ts"):
         return None
     return {"ts": a.get("ts"), "why": a.get("why"), "scheduled": not a.get("req_ts")}
+
+
+_tourney_built = {}          # board file -> (mtime, built_ts), this worker's
+
+
+def _tourney_built_ts(sport, dg):
+    """The built_ts of a slate's tournament board (either kind), or None, reading
+    each board file once per version: the queue asks it of every live request on
+    every poll of the tab, and a board is 0.5-1.2 MB of pickle (Fable's review)."""
+    import boardshare
+    for k in _TOURNEY_KINDS:
+        name = f"{k}_tourney_{sport}_{dg}"
+        mt = boardshare.mtime(name)
+        if mt is None:
+            continue
+        hit = _tourney_built.get(name)
+        if hit and hit[0] == mt:
+            return hit[1]
+        payload, _age = boardshare.get(name, None)
+        if payload:
+            _tourney_built[name] = (mt, payload.get("built_ts"))
+            return payload.get("built_ts")
+    return None
 
 
 def _tourney_board(sport, dg):
@@ -2596,6 +2548,9 @@ def api_dfs_tourney_attempt():
     return jsonify({"recorded": _tourney_json_save(_TOURNEY_ATTEMPTS, tries)})
 
 
+_tourney_rows = {}          # board file -> (mtime, list row), this worker's
+
+
 @app.route("/api/dfs/tourney/list")
 def api_dfs_tourney_list():
     """Every tournament board on file for a sport, newest first, plus the
@@ -2617,8 +2572,17 @@ def api_dfs_tourney_list():
             return 0.0
     # The newest twelve files only (the list shows twelve): the boards are
     # kept eight days now (boardshare._KEEP_LONG), and each one read here is
-    # unpickled in a web worker on every load of the tab.
-    for fn in sorted(names, key=_mtime, reverse=True)[:12]:
+    # unpickled in a web worker -- once per file version now (_tourney_rows:
+    # the list needs a dozen fields of a ~0.5-1.2 MB board; Fable's review).
+    newest = sorted(names, key=_mtime, reverse=True)[:12]
+    for fn in [k for k in _tourney_rows if k not in newest]:
+        _tourney_rows.pop(fn, None)
+    for fn in newest:
+        mt = _mtime(fn)
+        hit = _tourney_rows.get(fn)
+        if hit and hit[0] == mt:
+            rows.append(dict(hit[1], age_s=int(time.time() - mt)))
+            continue
         payload, age = boardshare.get(fn[:-4], None)
         if not payload:
             continue
@@ -2633,6 +2597,7 @@ def api_dfs_tourney_list():
                          "n_contests": len(cs), "starts": c.get("starts"),
                          "worlds": payload.get("worlds"), "built_ts": payload.get("built_ts"),
                          "age_s": int(age or 0)})
+            _tourney_rows[fn] = (mt, rows[-1])
             continue
         c = payload.get("contest") or {}
         rows.append({"dg": payload.get("draft_group_id"), "kind": "showdown",
@@ -2641,6 +2606,7 @@ def api_dfs_tourney_list():
                      "label": " vs ".join(sl.get("teams") or []) or str(payload.get("draft_group_id")),
                      "starts": c.get("starts"), "worlds": payload.get("worlds"),
                      "built_ts": payload.get("built_ts"), "age_s": int(age or 0)})
+        _tourney_rows[fn] = (mt, rows[-1])
     rows.sort(key=lambda r: -(r.get("built_ts") or 0))
     return jsonify({"sport": sport, "boards": rows[:12], "pending": _tourney_pending()})
 
@@ -3069,44 +3035,6 @@ def api_baseball_today():
                     "deep_blend": blend})
 
 
-@app.route("/api/backtest")
-def api_backtest():
-    """Replay history to measure how well the crypto model predicts reality."""
-    locked = _locked("backtest")
-    if locked:
-        return locked
-    import backtest
-    coin = request.args.get("coin", "BTC").upper()
-    try:
-        horizon = int(request.args.get("horizon", 15))
-    except ValueError:
-        horizon = 15
-    horizon = max(1, min(120, horizon))
-    try:
-        result = backtest.run(coin, horizon_min=horizon)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 502
-    return jsonify(result)
-
-
-@app.route("/api/recorder/status")
-def api_recorder_status():
-    import recorder
-    return jsonify(recorder.status())
-
-
-@app.route("/api/recorder/backtest")
-def api_recorder_backtest():
-    """Realized P&L of the edge strategy at real recorded Kalshi prices."""
-    import recorder
-    coin = request.args.get("coin") or None
-    timeframe = request.args.get("timeframe") or None
-    try:
-        return jsonify(recorder.backtest(coin=coin, timeframe=timeframe))
-    except Exception as e:
-        return jsonify({"error": str(e)}), 502
-
-
 @app.route("/api/bets", methods=["GET"])
 def api_list_bets():
     return jsonify(store.list_bets())
@@ -3362,7 +3290,7 @@ def api_combine_meta():
 
 @app.route("/api/combine")
 def api_combine():
-    """Cross-category parlay (MLB + daily crypto + UFC/tennis/golf),
+    """Cross-category parlay (MLB, NFL, NBA, NHL, UFC, tennis, golf),
     tuned to a target per-leg confidence."""
     import combine
     date = request.args.get("date") or clock.today_et().isoformat()
@@ -4552,8 +4480,9 @@ def api_ufc_presets():
     if not payload:
         # First call before the recorder's first tick (fresh deploy, or the
         # board is still simulating): build once in a claimed background
-        # thread; the client polls.
-        if boardshare.claim(ufc_presets.NAME + "_kick"):
+        # thread; the client polls. While the PC is on, its first payload is
+        # given _PC_WAIT_S before this worker builds one (ufc_presets._pc_covers).
+        if not ufc_presets._pc_covers(None, False) and boardshare.claim(ufc_presets.NAME + "_kick"):
             def _bg():
                 try:
                     ufc_presets.tick(force=True)
@@ -4612,15 +4541,24 @@ def api_nfl_presets():
     # has passed and the recorder still says the same week, a rebuild would
     # simulate sixteen finished games to conclude there is nothing to build,
     # once per half hour for as long as the tab stays open.
+    #
+    # While the PC is on its payload is the one to wait for (nfl_presets.
+    # _pc_covers): the PC rebuilds at _STALE_S and uploads at the end of its
+    # boards pass, so the copy here routinely reads 30-35 minutes old, and a
+    # kick at _STALE_S built in this web worker exactly what the PC was about
+    # to deliver (Fable's review r2, MAJOR 2). The PC's limit is _PC_STALE_S,
+    # and a missing payload waits _PC_WAIT_S for the PC's first one.
     import nfl_track
+    pc_on = _pc_status().get("state") in ("on", "behind")
     if payload:
         _now = time.time()
         _wk = nfl_track._state.get("week")
-        stale = (_now - (payload.get("built_ts") or 0) > nfl_presets._STALE_S
+        limit = nfl_presets._PC_STALE_S if pc_on else nfl_presets._STALE_S
+        stale = (_now - (payload.get("built_ts") or 0) > limit
                  and (any(f > _now for f in firsts.values())
                       or _wk is None or _wk != payload.get("week")))
     else:
-        stale = True
+        stale = not nfl_presets._pc_covers(None, False)
     if stale:
         if boardshare.claim(nfl_presets.NAME + "_kick"):
             def _bg():
@@ -5036,9 +4974,8 @@ def api_baseball_deep_history_restore():
 
 @app.route("/api/commodities/meta")
 def api_commodities_meta():
-    """Commodity list for the SIMULATOR tab's price sim. The Commodities scanner
-    tab is gone, but the sim still offers commodities alongside crypto, and this
-    is what fills that dropdown."""
+    """Commodity list for the SIMULATOR tab's price sim (the Commodities
+    scanner tab is gone; this fills the sim's dropdown)."""
     import commodities
     return jsonify({k: v["label"] for k, v in commodities.COMMODITIES.items()})
 
@@ -5046,7 +4983,7 @@ def api_commodities_meta():
 @app.route("/api/bestbets")
 def api_bestbets():
     """Cross-sport Best Bets: every positive net-of-fee edge across all our
-    models (MLB slate/props, season futures, UFC, tennis, crypto, arbitrage),
+    models (MLB slate/props, season futures, UFC, tennis, arbitrage),
     ranked by the edge you'd actually bank. Sources degrade independently."""
     import bestbets
     date = request.args.get("date") or clock.today_et().isoformat()
@@ -5532,11 +5469,6 @@ def api_baseball_presets():
                     "best_wins": best_wins, "built_ts": int(time.time() - age),
                     "first_starts": firsts, "quoting": _preset_quoting(payload),
                     "best": presets.best_today(payload, records)})
-
-
-@app.route("/api/stats")
-def api_stats():
-    return jsonify(store.stats())
 
 
 if __name__ == "__main__":
