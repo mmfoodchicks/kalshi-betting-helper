@@ -26,6 +26,7 @@ import concurrent.futures as _cf
 
 import racing                       # reuse racing._get_json (ESPN-friendly getter)
 import errlog
+import predlog
 
 _CORE = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl"
 _SITE = "https://site.api.espn.com/apis/site/v2/sports/football/nfl"
@@ -158,7 +159,9 @@ def _parse_events(events):
             "away_name": away["team"].get("shortDisplayName"),
             # London, Munich, Mexico City, Sao Paulo: the "home" side has no
             # crowd, and the DFS game engine plays these with home field off
-            "neutral": bool(comp.get("neutralSite"))})
+            "neutral": bool(comp.get("neutralSite")),
+            # DraftKings' pre-game moneyline, de-vigged (shadow bucket nfl_book)
+            "book": predlog.book_probs(comp)})
     return out
 
 

@@ -52,11 +52,32 @@ def load():
     return payload if isinstance(payload, dict) and "weights" in payload else _blank()
 
 
+def _record(sport):
+    """The measured record for a sport: this machine's deep store first, then
+    the shared calibration file the server writes and the PC fetches
+    (calibrate.compute_params' "trust"). The PC fits its own and nothing
+    shipped the server's to it, so a PC whose store lacked a sport (its first
+    cycle, a failed backtest, a wiped pc-deepcache) anchored the NBA/NHL
+    headlines at the default 0.20 while the server's fallback build read
+    0.066 -- the board's numbers depended on who built it (Fable's build
+    review, 2026-10-29). None when neither has one."""
+    rec = (load().get("weights") or {}).get(sport)
+    if rec:
+        return rec
+    try:
+        import calibrate
+        rec = ((calibrate.file_params() or {}).get("trust") or {}).get(sport)
+    except Exception as e:
+        errlog.note("TRUST-file", e)
+        rec = None
+    return rec if isinstance(rec, dict) else None
+
+
 def weight(sport, default=None):
     """The measured model weight for a sport, shrunk toward the cautious default
     by how much evidence backs it. Falls back to `default`/_DEFAULT when we've
     never measured that sport."""
-    rec = (load().get("weights") or {}).get(sport)
+    rec = _record(sport)
     base = _DEFAULT if default is None else default
     if not rec:
         return base
@@ -69,6 +90,54 @@ def weight(sport, default=None):
     conf = n / float(n + _PRIOR_N)
     out = conf * float(w) + (1 - conf) * base
     return round(max(_FLOOR, min(_CEIL, out)), 3)
+
+
+def anchor(p_model, home_cents, away_cents, sport):
+    """A board's headline on its measured weight: w x model + (1 - w) x
+    Kalshi's de-vigged price, w = weight(sport). (p, w, p_market) for the HOME
+    side, or None when the book is not two-sided (the model's own figure then
+    stands, as before).
+
+    The NBA and NHL boards never read their weight (2026-10-29,
+    research/reports/accuracy_gaps.md 13.1, agreed with a Fable agent): the
+    backtests had measured both models well behind the closing price (nba log
+    loss 0.591 vs the market's 0.551 on 304 games, nhl 0.691 vs 0.664 on 310),
+    and live in 2026-27 the NBA headline read a coin flip (Brier 0.2504
+    against Kalshi's 0.2200 on 106 games) while its card showed model-vs-ask
+    edges on every game. College and UFC already apply theirs. The weight is
+    only ever moved by refresh() -- never by hand."""
+    try:
+        h, a = float(home_cents), float(away_cents)
+        p = float(p_model)
+    except (TypeError, ValueError):
+        return None
+    if not (0.0 < h < 100.0 and 0.0 < a < 100.0):
+        return None
+    pm = h / (h + a)
+    w = weight(sport)
+    if _record(sport) is None:
+        errlog.note("TRUST-default", msg=f"{sport}: no measured weight here or in the shared file; "
+                                         f"the headline anchors at the default {w}")
+    return w * p + (1.0 - w) * pm, w, pm
+
+
+def rung(p_model, w, yes_cents, no_cents=None):
+    """A spread or total rung on the same weight as its game's moneyline:
+    w x model + (1 - w) x the rung's de-vigged YES price, yes / (yes + no) off
+    its two asks (the moneyline's convention), in percent. A one-sided rung
+    falls back to its YES ask, which is the more generous of the two to the
+    model's edge by about half the spread -- and w = 1 (no anchor) is the
+    model alone, as before."""
+    fair = None
+    try:
+        y, nn = float(yes_cents), float(no_cents)
+        if 0.0 < y < 100.0 and 0.0 < nn < 100.0:
+            fair = 100.0 * y / (y + nn)
+    except (TypeError, ValueError):
+        fair = None
+    if fair is None:
+        fair = float(yes_cents)
+    return w * float(p_model) * 100.0 + (1.0 - w) * fair
 
 
 def record(sport, fitted_weight, n, source, extra=None):

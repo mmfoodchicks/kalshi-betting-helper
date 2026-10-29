@@ -16,6 +16,7 @@ Design:
 Nothing here changes a prediction — it only records and grades, so calibration
 accrues honestly from real outcomes.
 """
+import math
 import os
 import re as _re
 import sqlite3
@@ -216,6 +217,73 @@ def iso_ts(s):
         return None
 
 
+# ---- A sportsbook's line beside Kalshi's (shadow buckets *_book) ---------------
+# research/reports/accuracy_gaps.md C1 / 13.1, agreed with a Fable agent: the
+# closing book line beat every model and stack in both football codes
+# (game_xref.md), and our NFL sim beats Kalshi's LOG-TIME price while losing to
+# the close -- so which of the two is the better level to anchor to is a live
+# question, read at 10 dates and 150 games a league (13.2). ESPN's scoreboard
+# carries DraftKings' moneyline on every NFL, college, NBA and NHL game; on an
+# upcoming game `close` is the LATEST line (it moves until the start; `open` is
+# the opener). The schedules that read it are cached (5 min NBA/NHL, 30 college,
+# 60 NFL), so the book can be older than the Kalshi price beside it: that only
+# handicaps the book in the comparison.
+_BOOKS = ("draftkings", "espnbet")
+
+
+def _american(v):
+    """An American moneyline ("-115", "+195", "EVEN") as its implied
+    probability, vig still in it, or None."""
+    if isinstance(v, str) and v.strip().upper() == "EVEN":
+        return 0.5
+    try:
+        x = float(str(v).replace("+", "").strip())
+    except (TypeError, ValueError):
+        return None
+    if x >= 100:
+        return 100.0 / (x + 100.0)
+    if x <= -100:
+        return -x / (-x + 100.0)
+    return None
+
+
+def book_probs(comp):
+    """The pre-game sportsbook moneyline on an ESPN scoreboard competition,
+    de-vigged: {"home": p, "away": p, "book": provider} or None.
+
+    Only a game ESPN still calls "pre", and only DraftKings or ESPN BET --
+    never a "Live Odds" provider, whose numbers are in-game. A pair whose
+    implied sum is under 1 or over 1.25 is not one book's two-way price."""
+    if ((comp.get("status") or {}).get("type") or {}).get("state") != "pre":
+        return None
+    for o in comp.get("odds") or []:
+        name = str((o.get("provider") or {}).get("name") or "")
+        key = name.lower().replace(" ", "")
+        if "live" in key or not any(b in key for b in _BOOKS):
+            continue
+        ml = o.get("moneyline") or {}
+        ph = _american(((ml.get("home") or {}).get("close") or {}).get("odds"))
+        pa = _american(((ml.get("away") or {}).get("close") or {}).get("odds"))
+        if ph is None or pa is None or not (1.0 <= ph + pa <= 1.25):
+            continue
+        return {"home": ph / (ph + pa), "away": pa / (ph + pa), "book": name}
+    return None
+
+
+def book_row(ticker, book, side, close, mkt, start, now=None):
+    """The book's de-vigged chance for `side` ("home"/"away") as a shadow row
+    in log_many's shape, logged at the same moment as the model's row for the
+    same ticker -- or None: no book line, no Kalshi price beside it (the 13.2
+    read compares the two in the SAME row; vs_market would fall back to the
+    model row's price, taken at another moment), or a start unknown or passed
+    (the schedule is cached, so a game it still calls "pre" may have begun)."""
+    p = (book or {}).get(side)
+    now = time.time() if now is None else now
+    if not ticker or p is None or mkt is None or not start or now >= start:
+        return None
+    return (ticker, p, close, mkt, start)
+
+
 # ---- Carried predictions: the PC's builds reach the record ------------------
 # Six boards log inside their builders (basket, hockey, nfl_game_sim, cfb_board,
 # soccer; golf). When the PC builds them, log_many writes the PC's own
@@ -229,10 +297,13 @@ def iso_ts(s):
 # as everywhere here, so a row the server already logged from its own build is
 # a no-op. Only rows whose event START is known and still ahead are logged: the
 # carry lands minutes after its build, and a forecast filed after kickoff is
-# not a pre-game forecast.
+# not a pre-game forecast. Golf joined 2026-10-29 (accuracy_gaps.md C2) with
+# ESPN's event date as its start, midnight ET of round one's day.
 CARRY_MODELS = {"nba": False, "wnba": False, "nba_deep": True, "nhl": False, "nhl_deep": True,
                 "nfl": False, "nfl_pre": False, "nfl_deep": True, "cfb": False, "cfb_ats": False,
-                "cfb_total": False, "soccer": False, "soccer_dk": True, "soccer_btts": False}   # model -> shadow?
+                "cfb_total": False, "soccer": False, "soccer_dk": True, "soccer_btts": False,
+                "nba_book": True, "wnba_book": True, "nhl_book": True, "nfl_book": True,
+                "cfb_book": True, "golf": False}   # model -> shadow?
 CARRY_PREFIX = "plcarry_"
 _TICKER_OK = _re.compile(r"^KX[A-Z0-9][A-Z0-9._-]{3,90}$")
 
@@ -452,7 +523,12 @@ def vs_market(model):
     enough has settled to say anything; `n` is small at first and grows daily.
 
     Read it the way the odds benchmark is read: `edge` positive means our number
-    carried information the price did not."""
+    carried information the price did not.
+
+    `mkt` is the market's own probability in the convention its bucket can
+    read: the two-ask de-vig (`devig`) for two-sided markets (every game
+    moneyline, the NBA/NHL rungs), the YES mid of a two-sided book for golf's
+    one-market-a-player make-cut rows -- half a vig split apart."""
     import math
     with _lock, _conn() as c:
         rows = [(r["prob"], r["mkt"], float(r["outcome"])) for r in c.execute(
@@ -481,6 +557,45 @@ def vs_market(model):
             "model_brier": round(sum((p - y) ** 2 for p, m, y in rows) / len(rows), 4),
             "market_brier": round(sum((m - y) ** 2 for p, m, y in rows) / len(rows), 4),
             "beats_market": ours < mkt}
+
+
+def _ll(q, y):
+    q = min(0.999, max(0.001, float(q)))
+    return -math.log(q if y else 1 - q)
+
+
+def by_series(model, min_n=30):
+    """vs_market split by the ticker's series (the text before its first "-"):
+    {series: {n, ready[, model_logloss, market_logloss, edge, model_brier,
+    market_brier]}}, the same scores and floor as vs_market. Tennis is six
+    tours in one bucket (ATP, WTA, both Challengers, ITF men and women) and a
+    tour can lose while the bucket wins (accuracy_gaps.md 13.1); the 13.2
+    tennis read takes its tours from here. Sums in SQL: the bucket holds
+    tens of thousands of graded rows."""
+    sql = ("SELECT substr(ticker, 1, instr(ticker || '-', '-') - 1) AS series, COUNT(*) AS n, "
+           "SUM(_ll(prob, outcome)) AS lm, SUM(_ll(mkt, outcome)) AS lk, "
+           "SUM((prob - outcome) * (prob - outcome)) AS bm, SUM((mkt - outcome) * (mkt - outcome)) AS bk "
+           "FROM (SELECT ticker, prob, mkt, outcome FROM predictions WHERE model=? AND graded=1 "
+           "      AND outcome IS NOT NULL AND mkt IS NOT NULL "
+           "      UNION ALL "
+           "      SELECT s.ticker, s.prob, COALESCE(s.mkt, p.mkt), p.outcome FROM shadow s "
+           "      JOIN predictions p ON p.ticker = s.ticker WHERE s.model=? AND p.graded=1 "
+           "      AND p.outcome IS NOT NULL AND COALESCE(s.mkt, p.mkt) IS NOT NULL) "
+           "GROUP BY series")
+    with _lock, _conn() as c:
+        c.create_function("_ll", 2, _ll, deterministic=True)
+        rows = c.execute(sql, (model, model)).fetchall()
+    out = {}
+    for r in rows:
+        n = r["n"]
+        if n < min_n:
+            out[r["series"]] = {"n": n, "ready": False}
+            continue
+        out[r["series"]] = {"n": n, "ready": True,
+                            "model_logloss": round(r["lm"] / n, 4), "market_logloss": round(r["lk"] / n, 4),
+                            "edge": round((r["lk"] - r["lm"]) / n, 4),
+                            "model_brier": round(r["bm"] / n, 4), "market_brier": round(r["bk"] / n, 4)}
+    return out
 
 
 def results(tickers):
@@ -615,10 +730,21 @@ def status():
 
 # ---- Harvest: piggyback on the sims' (cached) boards -----------------------
 def _harvest_tennis():
+    """Pre-match rows only (research/reports/accuracy_gaps.md 13.1, agreed with a
+    Fable agent): the logged figure is the board's confidence BLEND of the model
+    and Kalshi's price (tennis_prices: w x model + (1 - w) x market), so a match
+    first seen in play filed a live price as a pre-match number. `in_play` is
+    Kalshi's scheduled start passed. The PURE model figure goes beside the blend
+    to the shadow bucket "tennis_model", so the record can tell the model's
+    skill from the market's."""
     import tennis_prices
     board = tennis_prices.board() or {}
-    rows = []
+    rows, pure = [], []
     for m in board.get("matches", []):
+        # a match without a readable start proves nothing pre-match (the rule in
+        # book_row, _carry_row and mx_record): `in_play` reads False for it
+        if m.get("in_play") or not m.get("start_epoch"):
+            continue
         ct = m.get("close_epoch") or m.get("close_time")
         for side in ("a", "b"):
             p = m.get(side) or {}
@@ -626,9 +752,14 @@ def _harvest_tennis():
             fair = p.get("fair_win_raw", p.get("fair_win"))
             mk = p.get("mkt_win")
             if p.get("ticker") and fair is not None:
-                rows.append((p["ticker"], fair / 100.0, ct,
-                             (mk / 100.0) if mk is not None else None))
-    return log_many("tennis", rows)
+                mkt = (mk / 100.0) if mk is not None else None
+                rows.append((p["ticker"], fair / 100.0, ct, mkt))
+                if p.get("model_win") is not None:
+                    pure.append((p["ticker"], p["model_win"] / 100.0, ct, mkt))
+    n = log_many("tennis", rows)
+    if pure:
+        log_shadow("tennis_model", pure)
+    return n
 
 
 def _harvest_ufc():
@@ -638,16 +769,32 @@ def _harvest_ufc():
     if not board:
         return 0
     ufc_prices.attach(board)
-    rows = []
+    rows, pure = [], []
+    now = time.time()
     for bt in board.get("bouts", []):
         for side in ("a", "b"):
             f = bt.get(side) or {}
             fair = f.get("fair_win_raw", f.get("fair_win"))
             mk = f.get("mkt_win")
-            if f.get("ticker") and fair is not None:
-                rows.append((f["ticker"], fair / 100.0, f.get("close_time"),
-                             (mk / 100.0) if mk is not None else None))
-    return log_many("ufc", rows)
+            # Pre-fight only (accuracy_gaps.md 13.1): Kalshi's UFC close_time is an
+            # administrative backstop weeks after the card (_event_ts), so the
+            # card's day off the ticker -- midnight ET of fight night -- is the
+            # cutoff; a fight first seen on its own card day is not logged.
+            ev = _event_ts(f.get("ticker"))
+            if f.get("ticker") and fair is not None and ev and now < ev:
+                mkt = (mk / 100.0) if mk is not None else None
+                # the cutoff rides as the fifth element, so the closing snapshot
+                # stops there whatever the ticker's format becomes
+                rows.append((f["ticker"], fair / 100.0, f.get("close_time"), mkt, ev))
+                # the logged figure is ufc_prices' blend toward the market (at
+                # the measured 0.05 it is nearly Kalshi's own), so the model's
+                # raw figure goes beside it, as tennis's does
+                if f.get("win_pct") is not None:
+                    pure.append((f["ticker"], f["win_pct"] / 100.0, f.get("close_time"), mkt, ev))
+    n = log_many("ufc", rows)
+    if pure:
+        log_shadow("ufc_model", pure)
+    return n
 
 
 _HARVESTERS = (_harvest_tennis, _harvest_ufc, _harvest_carried)

@@ -36,6 +36,28 @@ SLEEPER_STATS = ("pass_yd", "rush_yd", "rec_yd", "rec", "rec_tgt", "rush_att", "
                  "pass_td", "rush_td", "rec_td", "pts_ppr")
 _last = [0.0]
 
+# ESPN's weekly projection beside Sleeper's (research/reports/accuracy_gaps.md N1,
+# agreed with a Fable agent 2026-10-29): kept and frozen by the same rule, read by
+# NOTHING until the registered read after week 18 + 48 h (0.5 Sleeper + 0.5 ESPN
+# against Sleeper alone on Sleeper's box, weeks 10-18). The fantasy API serves
+# ~16 KB a player (rankings, outlooks), so it is read in pages of 50 sorted by
+# the week's projection, stopping under PROJ_FLOOR, at most every ESPN_EVERY_S --
+# week 9 measured 289 players at 1+ points, ~4 MB over 7 pages, ~4 s. A staler
+# ESPN figure than Sleeper's only handicaps ESPN in that test.
+_ESPN_PROJ = ("https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/{season}"
+              "/segments/0/leaguedefaults/3?scoringPeriodId={week}&view=kona_player_info")
+# ESPN's stat ids for the components SLEEPER_STATS keeps. Checked 2026-10-29: with
+# the 2-pt tries (19, 26, 44), interceptions (20) and fumbles lost (72) they
+# rebuild ESPN's own PPR total (appliedTotal, league default 3) to 0.01 for a QB,
+# an RB, a WR and a TE.
+ESPN_STATS = {"pass_att": "0", "pass_yd": "3", "pass_td": "4", "rush_att": "23",
+              "rush_yd": "24", "rush_td": "25", "rec": "53", "rec_yd": "42",
+              "rec_td": "43", "rec_tgt": "58"}
+ESPN_POS = {1: "QB", 2: "RB", 3: "WR", 4: "TE"}
+ESPN_EVERY_S = 3 * 3600
+ESPN_PAGE, ESPN_PAGES, PROJ_FLOOR = 50, 10, 0.5
+_espn_last = [0.0]
+
 
 def espn_games(payload):
     """(season, week, {frozenset of the two team codes: {"kickoff", "state",
@@ -60,15 +82,17 @@ def espn_games(payload):
     return season, week, out
 
 
-def snapshot(now=None, payload=None, index=None, ladders=None, sleeper=None, forecast=None, sims=None):
+def snapshot(now=None, payload=None, index=None, ladders=None, sleeper=None, forecast=None, sims=None,
+             espn=None):
     """One logging pass: every game still ahead of its kickoff gets its props
-    rewritten, every player of its two teams his Sleeper projection, and,
-    inside nfl_weather.FORECAST_AHEAD_S, its stadium's kickoff forecast;
-    every other game keeps what it had. Returns {"key", "updated", "frozen",
-    "games", "sleeper", "weather"}. `payload`, `index`, `ladders` (a suffix ->
-    props function), `sleeper` (Sleeper's projection rows) and `forecast` (a
-    game -> forecast function) are for tests; production reads ESPN,
-    kalshi_nfl, Sleeper and weather.py."""
+    rewritten, every player of its two teams his Sleeper projection (and
+    ESPN's, `_espn`), and, inside nfl_weather.FORECAST_AHEAD_S, its stadium's
+    kickoff forecast; every other game keeps what it had. Returns {"key",
+    "updated", "frozen", "games", "sleeper", "espn", "weather"}. `payload`,
+    `index`, `ladders` (a suffix -> props function), `sleeper` (Sleeper's
+    projection rows), `espn` (espn_projections' rows) and `forecast` (a game
+    -> forecast function) are for tests; production reads ESPN, kalshi_nfl,
+    Sleeper and weather.py."""
     import deep_cache
     import kalshi_nfl
     import nfl_preseason as pre
@@ -107,6 +131,7 @@ def snapshot(now=None, payload=None, index=None, ladders=None, sleeper=None, for
             store["sleeper"][kalshi_nfl._norm(name)] = {
                 "name": name, "team": team, "pos": pl.get("position"), "ts": round(now),
                 "stats": {k: st[k] for k in SLEEPER_STATS if st.get(k) is not None}}
+    espn_n = _espn(store, payload, live, now, int(season), int(week), espn) if live else 0
     for suffix, e in (idx or {}).items():
         g = games.get(e.get("pair"))
         if not g or not g.get("kickoff"):
@@ -133,7 +158,76 @@ def snapshot(now=None, payload=None, index=None, ladders=None, sleeper=None, for
     if md and store.get("drift"):
         deep_cache.save(DRIFT_KEY, dict(store["drift"], week_key=key))
     return {"key": key, "updated": updated, "frozen": frozen, "games": len(store["games"]),
-            "sleeper": len(store["sleeper"]), "weather": wx_n, "model_rungs": md}
+            "sleeper": len(store["sleeper"]), "espn": espn_n, "weather": wx_n, "model_rungs": md}
+
+
+def espn_projections(season, week, get=None):
+    """[{"name", "team_id", "pos", "stats"}]: ESPN's projection for `week` of
+    every QB, RB, WR and TE it projects at PROJ_FLOOR+ PPR points, best first;
+    `stats` in SLEEPER_STATS' names. `get(url, headers)` is for tests."""
+    import json
+    import racing
+    get = get or (lambda url, hdr: racing._get_json(url, timeout=20, headers=hdr))
+    sid = f"11{int(season)}{int(week)}"      # source 1 (projected), split 1 (one week)
+    url = _ESPN_PROJ.format(season=int(season), week=int(week))
+    out = []
+    for page in range(ESPN_PAGES):
+        flt = {"players": {"filterSlotIds": {"value": [0, 2, 4, 6]},
+                           "filterStatsForTopScoringPeriodIds": {"value": 1, "additionalValue": [sid]},
+                           "limit": ESPN_PAGE, "offset": page * ESPN_PAGE,
+                           "sortAppliedStatTotal": {"sortAsc": False, "sortPriority": 1, "value": sid}}}
+        players = (get(url, {"X-Fantasy-Filter": json.dumps(flt)}) or {}).get("players") or []
+        low = False
+        for p in players:
+            pl = p.get("player") or {}
+            st = next((x for x in pl.get("stats") or [] if str(x.get("id")) == sid), None)
+            pos = ESPN_POS.get(pl.get("defaultPositionId"))
+            pts = (st or {}).get("appliedTotal")
+            if pts is not None and pts < PROJ_FLOOR:
+                low = True
+            if not st or not pos or not pl.get("fullName") or pts is None or pts < PROJ_FLOOR:
+                continue
+            raw = st.get("stats") or {}
+            stats = {k: round(float(raw[i]), 3) for k, i in ESPN_STATS.items() if raw.get(i) is not None}
+            stats["pts_ppr"] = round(float(pts), 3)
+            out.append({"name": pl["fullName"], "team_id": str(pl.get("proTeamId")),
+                        "pos": pos, "stats": stats})
+        if low or len(players) < ESPN_PAGE:
+            break
+    return out
+
+
+def _espn(store, payload, live, now, season, week, rows=None):
+    """ESPN's projection for every player of a team still ahead of its kickoff,
+    beside Sleeper's under the same name key; ESPN's team ids are read off the
+    week's own scoreboard (a bye team is not on it, and has nothing to keep).
+    At most one read every ESPN_EVERY_S. Returns how many were written."""
+    import kalshi_nfl
+    if rows is None:
+        if now - _espn_last[0] < ESPN_EVERY_S:
+            return 0
+        _espn_last[0] = now
+        try:
+            rows = espn_projections(season, week)
+        except Exception as e:
+            errlog.note("NFLPROPS-espn", e)
+            return 0
+    tid = {}
+    for e in payload.get("events") or []:
+        for x in ((e.get("competitions") or [{}])[0]).get("competitors") or []:
+            t = x.get("team") or {}
+            if t.get("id") is not None and t.get("abbreviation"):
+                tid[str(t["id"])] = kalshi_nfl._canon(t["abbreviation"])
+    kept = store.setdefault("espn", {})
+    n = 0
+    for r in rows:
+        team = tid.get(str(r.get("team_id")))
+        if team not in live or not r.get("name"):
+            continue
+        kept[kalshi_nfl._norm(r["name"])] = {"name": r["name"], "team": team, "pos": r.get("pos"),
+                                             "ts": round(now), "stats": r.get("stats") or {}}
+        n += 1
+    return n
 
 
 # THE MODEL BESIDE THE MARKET, for the record nothing but the moneyline had

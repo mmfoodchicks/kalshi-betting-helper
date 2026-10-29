@@ -429,6 +429,18 @@ def compute_params():
         out["mx"] = mx_record.fit_all(prev=(file_params() or {}).get("mx"))
     except Exception as e:
         errlog.note("CAL-params-mx", e)
+    try:
+        import model_trust
+        # the measured trust weights travel with the file (model_trust._record):
+        # a machine whose own store lacks a sport anchors at the server's
+        # measurement, not the default. Plain numbers only, so the file's JSON
+        # never depends on what a backtest put in its record's extras.
+        out["trust"] = {sp: {"weight": float(r["weight"]), "n": int(r.get("n") or 0),
+                             "at": float(r.get("at") or 0.0)}
+                        for sp, r in (model_trust.load().get("weights") or {}).items()
+                        if isinstance(r, dict) and r.get("weight") is not None}
+    except Exception as e:
+        errlog.note("CAL-params-trust", e)
     return out
 
 

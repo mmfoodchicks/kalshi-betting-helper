@@ -236,14 +236,16 @@ def _board_rows(b, sport_label):
             # _SPREAD_UNIT dict: a NameError armed to fire on the first day an
             # NBA/NHL board carried a spread edge, i.e. opening night.
             unit = "goals" if "NHL" in sport_label else "points"
+            # `pct` is the board's headline (the model on its measured trust,
+            # model_trust.anchor) -- the same figure the moneyline reads
             row = _row(sport_label, "Spread",
                        _ce.spread_label(s["team"], s["line"], unit),
-                       mu, s["model_pct"], s["cents"], "med")
+                       mu, s.get("pct", s["model_pct"]), s["cents"], "med")
             if row:
                 rows.append(row)
         for t in (g.get("total_edges") or [])[:3]:
             row = _row(sport_label, "Total", f"Over {t['line']}", mu,
-                       t["model_pct"], t["cents"], "med")
+                       t.get("pct", t["model_pct"]), t["cents"], "med")
             if row:
                 rows.append(row)
     rows.sort(key=lambda x: -x["net_edge"])

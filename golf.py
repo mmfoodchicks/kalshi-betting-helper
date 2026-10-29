@@ -31,6 +31,7 @@ import random
 import time as _t
 
 import clock
+import predlog
 import racing
 import errlog
 
@@ -95,6 +96,9 @@ def field(tour="pga"):
             "position": pos, "missed": missed})
     return {
         "event": e.get("name"), "state": state, "round_now": round_now,
+        # ESPN dates the event at midnight ET of round one's day ("...T04:00Z"):
+        # the record's pre-event cutoff (predlog: day-only events stop the night before)
+        "start": predlog.iso_ts(e.get("date")),
         "n_rounds": int(tinfo.get("numberOfRounds") or 4),
         "cut_round": int(tinfo.get("cutRound") or 2),
         "major": bool(tinfo.get("major")),
@@ -346,6 +350,7 @@ def simulate(tour="pga", n=3000, seed=None):
             "make_cut_pct": round(100 * made[i] / n, 1)})
     out.sort(key=lambda r: -r["win_pct"])
     return {"event": fd["event"], "course": fd["course"]["name"], "state": fd["state"],
+            "start": fd.get("start"),
             "round_now": round_now, "n_rounds": n_rounds, "cut_round": cut_round,
             "cut_ahead": cut_ahead, "major": fd["major"],
             "conditions": cond, "n_sims": n, "players": out,
@@ -400,8 +405,14 @@ def _price_board(sim):
         if not p:
             continue
         cents = kalshi._cents(m.get("yes_ask_dollars"))
+        bid = kalshi._cents(m.get("yes_bid_dollars"))
         mc_rows.append({"player": p["name"], "model_pct": p["make_cut_pct"],
                         "cents": cents, "ticker": m.get("ticker"),
+                        # the market's own figure for the record: the YES mid of a
+                        # two-sided book (a one-sided ask is an upper bound, not a price)
+                        "mkt": ((bid + cents) / 200.0 if bid is not None and cents is not None
+                                and 0 < bid <= cents < 100 else None),
+                        "close": kalshi._parse_time(m.get("close_time")),
                         "edge": round(p["make_cut_pct"] - cents, 1) if cents is not None else None})
     mc_rows.sort(key=lambda r: -(r["edge"] if r["edge"] is not None else -99))
 
@@ -447,16 +458,25 @@ def _build_board(tour="pga", n=3000):
         priced = _price_board(sim)
     except Exception:
         priced = {"make_cut": [], "h2h": []}
-    # Log make-cut model probs for the calibrator (dedups by ticker).
-    try:
-        import predlog
-        rows = [(r["ticker"], r["model_pct"] / 100.0, None)
-                for r in priced["make_cut"] if r.get("ticker")]
-        if rows:
+    # Log make-cut model probs for the calibrator (dedups by ticker), with the
+    # market and the close beside them (accuracy_gaps.md C2: 358 graded rows
+    # carried no price, so the record could not say whether golf beats Kalshi).
+    # Before the first round only: once play starts the sim reads the live
+    # leaderboard, and a first sighting then is not a pre-event forecast. The
+    # event's start rides as the fifth element and the rows ride beside the
+    # board (predlog.carry): the PC builds this board, and its own predlog is
+    # never graded.
+    start = sim.get("start")
+    rows = ([(r["ticker"], r["model_pct"] / 100.0, r.get("close"), r.get("mkt"), start)
+             for r in priced["make_cut"] if r.get("ticker")]
+            if sim.get("state") == "pre" and start and _t.time() < start else [])
+    if rows:
+        try:
             predlog.init_db()
             predlog.log_many("golf", rows)
-    except Exception as _e:
-        errlog.note("GOLF-build_board", _e)
+        except Exception as _e:
+            errlog.note("GOLF-build_board", _e)
+        predlog.carry(f"golf_{tour}", [("golf", rows)])
     players = [{k: p[k] for k in ("name", "to_par", "position", "scoring_avg",
                                   "win_pct", "top5_pct", "top10_pct", "top20_pct",
                                   "make_cut_pct")} for p in sim["players"]]

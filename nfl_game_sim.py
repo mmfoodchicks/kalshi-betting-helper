@@ -1171,7 +1171,7 @@ def _build_board(season, week, n=2400, preseason=False):
     except Exception:
         cal = lambda p: p
 
-    out, log_rows, deep_rows = [], [], []
+    out, log_rows, deep_rows, book_rows = [], [], [], []
 
     def _regular_sims():
         # Every regular-season sim is built on KALSHI'S OWN LINES (spread,
@@ -1195,6 +1195,7 @@ def _build_board(season, week, n=2400, preseason=False):
             lad = _game_ladders(idx, h["abbr"], a["abbr"])
             sim = simulate_game(h, a, n=n, ladders=lad,
                                 prop_lad=(lad or {}).get("props"))
+            sim["_book"] = h.get("book")       # the book's line, for nfl_book only
             if profs and h["abbr"] in profs and a["abbr"] in profs:
                 try:
                     import nfl_deep_sim
@@ -1276,6 +1277,11 @@ def _build_board(season, week, n=2400, preseason=False):
                             deep_rows.append((tk, deep["p_home"] if side == "home" else deep["p_away"],
                                               px.get("close"), predlog.devig(own, opp),
                                               _iso_ts(g.get("date"))))
+                        # DraftKings' line at the same moment (accuracy_gaps.md C1)
+                        br = predlog.book_row(tk, sim.get("_book"), side, px.get("close"),
+                                              predlog.devig(own, opp), _iso_ts(g.get("date")))
+                        if br and not preseason:
+                            book_rows.append(br)
 
         # Model pick (calibrated) + default same-game parlay.
         pick_home = ph >= 0.5
@@ -1319,11 +1325,14 @@ def _build_board(season, week, n=2400, preseason=False):
                 # predictions (first write wins per ticker), so log_many here
                 # recorded nothing -- log_shadow keys on (ticker, model)
                 predlog.log_shadow("nfl_deep", deep_rows)
+            if book_rows:
+                predlog.log_shadow("nfl_book", book_rows)
         except Exception as _e:
             errlog.note("NFLG-build_board", _e)
         # the same rows beside the board: a PC build's only way into the record
         predlog.carry(f"nfl_slate_{season}_w{week}_{int(bool(preseason))}",
-                      [("nfl_pre" if preseason else "nfl", log_rows), ("nfl_deep", deep_rows)])
+                      [("nfl_pre" if preseason else "nfl", log_rows), ("nfl_deep", deep_rows),
+                       ("nfl_book", book_rows)])
     out.sort(key=lambda g: g["date"] or "")
     note = ("Drive-level Monte Carlo seeded by Sleeper's matchup-adjusted "
             "projections: alternating possessions with game script, short "

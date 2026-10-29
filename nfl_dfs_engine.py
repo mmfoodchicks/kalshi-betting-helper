@@ -19,9 +19,12 @@ Here the game is played first, then dealt:
   1. LEVEL. Each team's expected points are the Sleeper drive model's
      (nfl_game_sim: this week's projections, personnel and calibration) and
      the deep engine's own (the units against each other), blended at
-     nfl_game_sim._DEEP_WEIGHT -- the weight the slate's headline already uses
-     and the out-of-sample record supports (research/reports/
-     nfl_deep_validation.md). The deep engine's offences are re-levelled
+     DEEP_WEIGHT (0.30) -- the weight this engine passed its pre-registered
+     2025 test with (research/reports/nfl_dfs_engine.md). It was the slate
+     headline's weight read live until 2026-10-29; it is pinned here so the
+     headline's weight can be judged on the live record
+     (research/reports/accuracy_gaps.md 13.2) without moving a tested
+     board. The deep engine's offences are re-levelled
      until it plays at that target (the `level_off` lever, elasticity
      nfl_deep_data._ENGINE_PTS_ELASTICITY).
   2. GAME. nfl_deep_sim.play_game, once per world: possessions, the clock,
@@ -95,6 +98,10 @@ _STEP_CLAMP = (0.75, 1.33)
 # against 14.07). These 63 games had been read once before, by the flawed
 # first pass, whose verdict was the same (research/reports/nfl_dfs_engine.md).
 ATT_WEIGHT = 1.0
+# The scoring level's deep share: the weight the engine was TESTED at (the module
+# docstring, step 1). Its own constant, never nfl_game_sim._DEEP_WEIGHT, which is
+# the slate headline's and may move on the live record.
+DEEP_WEIGHT = 0.30
 # The 2024 rule's choice, frozen BEFORE the 2026 test reads a game: the
 # harness refuses any other weight for seasons >= 2025. On 2024 (256 games,
 # the same seeds; the w = 0 arm reproduces the ENV grid's 0.14 arm exactly),
@@ -291,8 +298,7 @@ def blend_targets(drive, deep, weight=None):
     """Each team's points target: the drive model's and the deep engine's at
     the slate's deep weight. Either missing -> the other alone."""
     if weight is None:
-        import nfl_game_sim
-        weight = float(nfl_game_sim._DEEP_WEIGHT)
+        weight = DEEP_WEIGHT
     out = []
     for d, e in zip(drive or (None, None), deep):
         out.append(e if d is None else (d if e is None else (1.0 - weight) * float(d) + weight * float(e)))
@@ -595,7 +601,7 @@ def week_context(season, week, workers=1):
             drive[_sleeper_abbr(a["abbr"])] = float(sim["exp_away"])
     except Exception as e:
         errlog.note("NFLENG-drive", e)
-    return {"T": T, "profiles": profiles, "drive": drive, "weight": float(nfl_game_sim._DEEP_WEIGHT),
+    return {"T": T, "profiles": profiles, "drive": drive, "weight": DEEP_WEIGHT,
             "workers": int(workers or 1)}
 
 
@@ -608,13 +614,12 @@ def _sleeper_abbr(ab):
 def sim_stamp(n=None, seed=None, ctx=None):
     """What a board built on these worlds records."""
     import nfl_deep_sim as E
-    import nfl_game_sim
     import nfl_usage
     from nfl_dfs_csim import PARAMS
     T = (ctx or {}).get("T") or E.tables()
     return {"model": SIM_MODEL, "version": SIM_MODEL_VERSION, "projections": "sleeper-weekly (usage shares), "
             "drive model + deep engine (team level)",
-            "deep_weight": (ctx or {}).get("weight") or float(nfl_game_sim._DEEP_WEIGHT),
+            "deep_weight": (ctx or {}).get("weight") or DEEP_WEIGHT,
             "anchor": {"n": ANCHOR_N, "iters": ANCHOR_ITERS},
             "engine": {"form_sd": E._FORM_SD, "hfa_yds": E._HFA_YDS, "env_sd": ENV_SD,
                        "kickoff_era": getattr(T, "kickoff_era", None)},

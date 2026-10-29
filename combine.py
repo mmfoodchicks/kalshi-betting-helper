@@ -424,7 +424,9 @@ def _tennis_legs(tours=None, eligible_only=True, allow_live=False, window=None):
 def _board_legs(b, category, prefix):
     """Model legs from any engine board with the shared game shape (basketball /
     hockey): moneylines, Kalshi exact-line spreads/totals, top player props —
-    all at the SIM's probability, not the de-vig market read."""
+    the game legs at the board's headline (the sim on its measured trust
+    against Kalshi's price, model_trust.anchor; the sim alone where the book is
+    one-sided), the props at the sim's."""
     legs = []
     for g in (b or {}).get("games") or []:
         if g.get("state") == "post":
@@ -445,9 +447,9 @@ def _board_legs(b, category, prefix):
         for s in (g.get("spread_edges") or [])[:2]:
             import combo_engine as _ce
             leg(_ce.spread_label(s["team"], s["line"]).replace(" runs", ""),
-                s["model_pct"], s["cents"], "Spread")
+                s.get("pct", s["model_pct"]), s["cents"], "Spread")
         for t in (g.get("total_edges") or [])[:2]:
-            leg(f"Over {t['line']}", t["model_pct"], t["cents"], "Total",
+            leg(f"Over {t['line']}", t.get("pct", t["model_pct"]), t["cents"], "Total",
                 avg=g.get("exp_total"), unit="points")
         for p in (g.get("props") or [])[:3]:
             line_txt = "" if p["line"] == 0.5 else f"{p['line']}+ "

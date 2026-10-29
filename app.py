@@ -2956,6 +2956,9 @@ def api_sharp():
             models[m] = {**counts,
                          "vs_market": predlog.vs_market(m),
                          "close": predlog.close_report(m)}
+            if m in ("tennis", "tennis_model"):
+                # six tours in one bucket; one can lose while the bucket wins
+                models[m]["by_series"] = predlog.by_series(m)
         return jsonify({"models": models, "trust": model_trust.report()})
     except Exception as e:
         return jsonify({"error": f"sharp report failed: {e}"}), 502

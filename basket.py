@@ -23,6 +23,7 @@ home-court edge and season labeling.
             calibrator fits a per-league temperature on the graded history.
 """
 import math
+import model_trust
 import predlog
 import random
 import re
@@ -278,7 +279,8 @@ def schedule(lg, date=None):
                 "away_name": away["team"].get("shortDisplayName"),
                 "date": e.get("date"), "state": st.get("state"),
                 "detail": st.get("shortDetail"),
-                "home_score": home.get("score"), "away_score": away.get("score")})
+                "home_score": home.get("score"), "away_score": away.get("score"),
+                "book": predlog.book_probs(comp)})
         return out
     return racing._cached(("bk_sched", lg, ymd), 300, build) or []
 
@@ -338,12 +340,14 @@ def _kalshi_index(lg):
             if t and line is not None:
                 ev(m)["spreads"].append({"city": t.group(1).strip().lower(),
                                          "line": float(line),
-                                         "cents": _k._cents(m.get("yes_ask_dollars"))})
+                                         "cents": _k._cents(m.get("yes_ask_dollars")),
+                                         "no_cents": _k._cents(m.get("no_ask_dollars"))})
         for m in fetch(cfg["kx_total"]):
             line = m.get("floor_strike")
             if line is not None:
                 ev(m)["totals"].append({"line": float(line),
-                                        "cents": _k._cents(m.get("yes_ask_dollars"))})
+                                        "cents": _k._cents(m.get("yes_ask_dollars")),
+                                        "no_cents": _k._cents(m.get("no_ask_dollars"))})
         return idx
     return racing._cached(("bk_kalshi", lg), 120, build) or {}
 
@@ -640,7 +644,7 @@ def _build_board(lg, date, n=3000):
     except Exception:
         cal = lambda p: p
 
-    games, log_rows, deep_rows = [], [], []
+    games, log_rows, deep_rows, book_rows = [], [], [], []
     # The deep layer's figures for the date, once, for today and later only (a
     # past date shows one only if it was kept from that day).
     deep_figs = {}
@@ -691,6 +695,26 @@ def _build_board(lg, date, n=3000):
             kx = {"home_cents": (mk["home_ml"] or {}).get("cents"),
                   "away_cents": (mk["away_ml"] or {}).get("cents")}
             row["kalshi"] = kx
+            # The headline on the board's MEASURED weight (model_trust.anchor; 2026-10-29,
+            # research/reports/accuracy_gaps.md 13.1): the backtests measured this model
+            # well behind the closing price and the board never read it. The model's own
+            # figure stays on the card (p_home_ours) and in predlog (raw_ph, below), so the
+            # record keeps grading the model; the edges read the headline.
+            # The rungs read the league's weight even when the moneyline is
+            # one-sided (the trust is the model's, not the book's): with the
+            # anchor alone deciding, a one-sided moneyline left every rung at
+            # the raw model's full edge (Fable's build review).
+            try:
+                w_m = model_trust.weight(cfg["cal"])
+                an = model_trust.anchor(ph, kx["home_cents"], kx["away_cents"], cfg["cal"])
+            except Exception as _e:
+                errlog.note("BK-anchor", _e)
+                w_m, an = 1.0, None
+            if an:
+                row["p_home_ours"], row["p_away_ours"] = round(ph, 4), round(1 - ph, 4)
+                ph, _w, _pm = an
+                row.update(p_home=round(ph, 4), p_away=round(1 - ph, 4),
+                           anchor={"w_model": round(_w, 3), "p_home_market": round(_pm, 4)})
             if kx["home_cents"] is not None:
                 row["edge_home"] = round(ph * 100 - kx["home_cents"], 1)
             if kx["away_cents"] is not None:
@@ -704,18 +728,20 @@ def _build_board(lg, date, n=3000):
                     p = sum(1 for x in margins if x > s["line"]) / nn
                 else:
                     p = sum(1 for x in margins if x < -s["line"]) / nn
+                pct = model_trust.rung(p, w_m, s["cents"], s.get("no_cents"))
                 sp_edges.append({"side": s["side"], "line": s["line"],
                                  "team": row["home" if s["side"] == "home" else "away"],
-                                 "cents": s["cents"], "model_pct": round(p * 100, 1),
-                                 "edge": round(p * 100 - s["cents"], 1)})
+                                 "cents": s["cents"], "model_pct": round(p * 100, 1), "pct": round(pct, 1),
+                                 "edge": round(pct - s["cents"], 1)})
             tot_edges = []
             for t in mk["totals"]:
                 if t.get("cents") is None:
                     continue
                 p = sum(1 for x in totals if x > t["line"]) / nn
+                pct = model_trust.rung(p, w_m, t["cents"], t.get("no_cents"))
                 tot_edges.append({"line": t["line"], "cents": t["cents"],
-                                  "model_pct": round(p * 100, 1),
-                                  "edge": round(p * 100 - t["cents"], 1)})
+                                  "model_pct": round(p * 100, 1), "pct": round(pct, 1),
+                                  "edge": round(pct - t["cents"], 1)})
             sp_edges.sort(key=lambda r: -abs(r["edge"]))
             tot_edges.sort(key=lambda r: -abs(r["edge"]))
             row["spread_edges"] = sp_edges[:6]
@@ -735,6 +761,10 @@ def _build_board(lg, date, n=3000):
                     if deep:
                         deep_rows.append((ml["ticker"], deep["p_home"] if side == "home" else deep["p_away"],
                                           ml.get("close"), predlog.devig(own, opp), predlog.iso_ts(g.get("date"))))
+                    br = predlog.book_row(ml["ticker"], g.get("book"), side, ml.get("close"),
+                                          predlog.devig(own, opp), predlog.iso_ts(g.get("date")))
+                    if br:
+                        book_rows.append(br)
 
         pick_home = ph >= 0.5
         row["pick"] = {"team": row["home" if pick_home else "away"],
@@ -752,10 +782,13 @@ def _build_board(lg, date, n=3000):
             predlog.log_many(cfg["cal"], log_rows)
             if deep_rows:
                 predlog.log_shadow("nba_deep", deep_rows)
+            if book_rows:
+                predlog.log_shadow(f"{lg}_book", book_rows)
         except Exception as _e:
             errlog.note("BK-build_board", _e)
         # the same rows beside the board: a PC build's only way into the record
-        predlog.carry(f"bk_{lg}_{date}", [(cfg["cal"], log_rows), ("nba_deep", deep_rows)])
+        predlog.carry(f"bk_{lg}_{date}", [(cfg["cal"], log_rows), ("nba_deep", deep_rows),
+                                          (f"{lg}_book", book_rows)])
     games.sort(key=lambda x: x["date"] or "")
     return {"date": date, "n_games": len(games), "games": games, "n_sims": n,
             "league": lg, "deep_weight": _DEEP_WEIGHT if deep_figs else None,

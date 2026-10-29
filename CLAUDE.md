@@ -618,8 +618,9 @@ data-only `sim-history` branch (which never deploys):
   `plcarry_<key>`); the boards sync ships them and the server logs them from its copy
   (`predlog._harvest_carried`), only rows whose event START is known and still ahead. Before
   this a PC-built board reached the server's record only when the server rebuilt it as the
-  fallback. Golf carries nothing (no start time, no registered bucket). NBA/NHL/soccer rows now
-  log their start, so their closing snapshots run to the start, not midnight ET of the day.
+  fallback. Golf carries too since the accuracy batch (below), its start ESPN's event date
+  (midnight ET of round one's day). NBA/NHL/soccer rows now log their start, so their closing
+  snapshots run to the start, not midnight ET of the day.
 - **NFL and college game models against the market** (2026-10-29,
   `research/reports/game_xref.md`: a Fable agent's study, its figures reproduced from its rows by
   the orchestrator and every item agreed, section 8).
@@ -649,6 +650,48 @@ data-only `sim-history` branch (which never deploys):
   - Registered for later (section 8.4): the college unpriced total (item 5), the anchored sigma
     and engine dispersion (6), the NFL late-season PD blend (7), the NFL total level off Kalshi's
     ladder (8). Never hand-set a margin expansion or a total shrink.
+- **The accuracy batch** (2026-10-29; the owner: "look through and talk through any updates we
+  don't have that would give us better simulation accuracy"; a Fable agent's survey and the
+  orchestrator's, reconciled in `research/reports/accuracy_gaps.md` section 13, the build in 13.4,
+  guards `tests/guards_accuracy.py`, section AG).
+  - **The book beside Kalshi.** `predlog.book_probs` reads DraftKings' (or ESPN BET's) pre-game
+    moneyline off the ESPN competition each schedule parser already holds (ESPN calls the latest
+    pre-game line `close`; never a "live" provider, never a game past "pre"), and `book_row`
+    refuses a start unknown or passed (the schedules are cached) and a row with no Kalshi price
+    beside it (the read compares the two in the same row). The NBA, NHL, NFL (regular season)
+    and college boards log it beside the model's row, same pass, same Kalshi price, to shadow buckets
+    `nba_book`, `nhl_book`, `nfl_book`, `cfb_book`, carried. Nothing reads them until the registered
+    13.2 read (10 dates and 150 games a league): only there may the book replace Kalshi as a level.
+  - **NBA and NHL headlines on the measured weight.** The win% is `model_trust.anchor`: w x model +
+    (1 - w) x Kalshi's de-vigged moneyline, w = `model_trust.weight(league)` (backtested; moved only by
+    `refresh()`, never by hand). Spread and total rungs read the same w against their own de-vigged
+    price (`model_trust.rung`, the YES ask where one-sided) even when the moneyline is one-sided;
+    best bets and the cross-sport combo read the rung headline (`pct`). The model's own figure stays
+    on the card (`p_home_ours`, `model_pct`) and is what predlog logs -- the record grades the model,
+    not the headline. The weights travel in the shared calibration file (`calibrate.compute_params`
+    "trust", plain numbers): `model_trust._record` reads this machine's store, then the file, so a PC
+    without its own record anchors at the server's measurement; an anchor served the 0.20 default
+    is ledgered `TRUST-default`.
+  - **The record's plumbing.** UFC rows carry Kalshi's de-vigged price (`mkt_win`); a fight is logged
+    only before its card's day (the ticker's day, `_event_ts` -- UFC close_time is a backstop weeks
+    later), and the raw model goes beside the blend to shadow `ufc_model`. Tennis logs pre-match
+    rows only (`in_play` or no readable start skipped; the start is Kalshi's `occurrence_datetime`,
+    on the raw `/markets` rows -- `kalshi.markets_for_series` does not return it), the raw model to
+    shadow `tennis_model`, and `/api/sharp` splits
+    both tennis buckets by series (`predlog.by_series`, SQL sums). Golf rows carry the two-sided YES
+    mid, Kalshi's close and the start, logged before round one only, and carried. Racing has no
+    bucket: deferred to the 2027 openers (13.4: the boards keep only the model's top drivers and
+    match prices by name).
+  - **ESPN's projections beside Sleeper's** (N1): `nfl_props_log` keeps them in `store["espn"]`
+    (same name key and freeze; pages of 50 sorted by the week's projection, stopped under 0.5
+    points, at most every 3 h; stat ids checked by rebuilding ESPN's PPR to 0.01 on four players).
+    Read by nothing until the registered read after week 18 + 48 h.
+  - **The DFS engine's own weight**: `nfl_dfs_engine.DEEP_WEIGHT` 0.30, the weight it was tested
+    at, so `nfl_game_sim._DEEP_WEIGHT` can be judged on the live record (13.2) without moving it.
+  - **Registered reads, dates fixed** (13.2): B1 NBA last-season prior on or after 2027-01-02; B4/H2
+    deep weights at 400 graded shadow games a league; NFL deep weight at 200 graded `nfl_deep`
+    games (asymmetric: a null sends it to 0); C1 at 10 dates and 150 games; N1 after week 18 + 48 h;
+    N2 weeks 10-16; G2 and C3 replays (C3 before 2026-12-06); tennis blend per series in December.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 

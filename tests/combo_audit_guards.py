@@ -21406,13 +21406,14 @@ try:
         return {"venue": g.get("venue"), "roof": "outdoors", "wind_mph": 14.0, "temp_f": 61, "precip_pct": 10}
     try:
         _uw_s1 = _npl_uw.snapshot(now=_uw_now, payload=_uw_payload, index=_uw_index, ladders=_uw_lad,
-                                  sleeper=_uw_sleeper, forecast=_uw_forecast)
+                                  sleeper=_uw_sleeper, forecast=_uw_forecast, espn=[])
         _uw_st1, _ = _dc_uw.load(_npl_uw.KEY.format(season=2026, week=7))
         _uw_g1 = _json_uw.loads(_json_uw.dumps(_uw_st1, default=list))
         # an hour later, after every kickoff: nothing written is rewritten
         _uw_s2 = _npl_uw.snapshot(now=_uw_now + 3 * 3600, payload=_uw_payload, index=_uw_index,
                                   ladders=lambda s: {("rec_yd", "rashee rice"): {"name": "Rashee Rice", "rungs": [(49.5, 0.99)]}},
-                                  sleeper=[dict(_uw_sleeper[0], stats={"rec_yd": 5.0})], forecast=_uw_forecast)
+                                  sleeper=[dict(_uw_sleeper[0], stats={"rec_yd": 5.0})], forecast=_uw_forecast,
+                                  espn=[])
         _uw_st2, _ = _dc_uw.load(_npl_uw.KEY.format(season=2026, week=7))
         _uw_latest, _ = _dc_uw.load(_npl_uw.LATEST)
     finally:
@@ -22811,12 +22812,12 @@ try:
     _k_ab._parse_time = lambda s: _ab_kos.get(str(s).split(":")[-1]) if str(s or "").startswith("ko:") else _ab_pt0(s)
     _el_ab.note = lambda code, exc=None, msg="", path=None: _ab_notes.append((code, msg, path))
     _ab_s1 = _npl_ab.snapshot(now=_ab_now, payload=_ab_payload, index=_ab_idx, ladders=lambda s: {}, sleeper=[],
-                              forecast=lambda g: {}, sims=_ab_sims(0.60))
+                              forecast=lambda g: {}, sims=_ab_sims(0.60), espn=[])
     _ab_s2 = _npl_ab.snapshot(now=_ab_now + 1800, payload=_ab_payload, index=_ab_idx, ladders=lambda s: {}, sleeper=[],
-                              forecast=lambda g: {}, sims=_ab_sims(0.55))
+                              forecast=lambda g: {}, sims=_ab_sims(0.55), espn=[])
     _ab_st2, _ = _dc_ab.load(_npl_ab.KEY.format(season=2026, week=7))
     _ab_s3 = _npl_ab.snapshot(now=_ab_now + 3 * 3600, payload=_ab_payload, index=_ab_idx, ladders=lambda s: {}, sleeper=[],
-                              forecast=lambda g: {}, sims=_ab_sims(0.99))
+                              forecast=lambda g: {}, sims=_ab_sims(0.99), espn=[])
     _ab_st3, _ = _dc_ab.load(_npl_ab.KEY.format(season=2026, week=7))
     _ab_one = _npl_ab.drift({"model": {"S0": _ab_st2["model"]["S0"]}}, _ab_now + 1800)
     _ab_dk, _ = _dc_ab.load(_npl_ab.DRIFT_KEY)
@@ -24582,6 +24583,16 @@ try:
 except Exception as _rc_e:                 # a guard file that cannot run is a failed guard, never a skipped one
     import traceback as _rc_tb
     ck("guards_records runs to the end", False, f"{type(_rc_e).__name__}: {_rc_e} " + _rc_tb.format_exc()[-600:])
+
+print("=" * 72)
+print("AG. The accuracy batch (2026-10-29, research/reports/accuracy_gaps.md 13.1): the book's line beside Kalshi's,")
+print("    the NBA/NHL headline on its measured weight, the record's plumbing, ESPN's projections (tests/guards_accuracy.py)")
+print("=" * 72)
+try:
+    __import__("guards_accuracy").run(ck)
+except Exception as _ag_e:                 # a guard file that cannot run is a failed guard, never a skipped one
+    import traceback as _ag_tb
+    ck("guards_accuracy runs to the end", False, f"{type(_ag_e).__name__}: {_ag_e} " + _ag_tb.format_exc()[-600:])
 
 print("=" * 72)
 print("MX. The matchup upgrade (2026-10-23): prop math, the NBA engine, the NFL matchup data and model,")

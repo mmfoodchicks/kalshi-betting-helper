@@ -313,17 +313,24 @@ def run(ck):
        "the build nothing",
        h3 == 1 and lal == (0.6,) and n_fail == 0, str((h3, lal, n_fail)))
     srcs = {m: open(os.path.join(_ROOT, f"{m}.py"), encoding="utf-8").read()
-            for m in ("basket", "hockey", "nfl_game_sim", "cfb_board", "soccer")}
+            for m in ("basket", "hockey", "nfl_game_sim", "cfb_board", "soccer", "golf")}
+    flat = {m: " ".join(v.split()) for m, v in srcs.items()}
     ck("every board that logs inside its builder carries the same rows -- NBA/WNBA, NHL, NFL, college (moneyline and ATS; "
-       "its total is Kalshi's since 2026-10-29), soccer -- with the start as the fifth element (golf has none to carry: no "
-       "start time, no registered bucket)",
-       'predlog.carry(f"bk_{lg}_{date}", [(cfg["cal"], log_rows), ("nba_deep", deep_rows)])' in srcs["basket"]
-       and 'predlog.carry(f"nhl_{date}", [("nhl", log_rows), ("nhl_deep", deep_rows)])' in srcs["hockey"]
-       and '[("nfl_pre" if preseason else "nfl", log_rows), ("nfl_deep", deep_rows)])' in srcs["nfl_game_sim"]
-       and 'predlog.carry(f"cfb_slate_{season}_w{week}", [("cfb", log_rows), ("cfb_ats", ats_rows)])' in srcs["cfb_board"]
-       and '[("soccer", log_rows), ("soccer_dk", dk_rows), ("soccer_btts", btts_rows)])' in srcs["soccer"]
-       and srcs["basket"].count('predlog.iso_ts(g.get("date"))') == 2
-       and srcs["hockey"].count('predlog.iso_ts(g.get("date"))') == 2
+       "its total is Kalshi's since 2026-10-29), soccer, and golf since the accuracy batch (its start ESPN's event date) -- "
+       "with the start as the fifth element; the book's line rides with them (accuracy_gaps.md 13.1, shadows *_book)",
+       'predlog.carry(f"bk_{lg}_{date}", [(cfg["cal"], log_rows), ("nba_deep", deep_rows), (f"{lg}_book", book_rows)])'
+       in flat["basket"]
+       and 'predlog.carry(f"nhl_{date}", [("nhl", log_rows), ("nhl_deep", deep_rows), ("nhl_book", book_rows)])'
+       in flat["hockey"]
+       and '[("nfl_pre" if preseason else "nfl", log_rows), ("nfl_deep", deep_rows), ("nfl_book", book_rows)])'
+       in flat["nfl_game_sim"]
+       and 'predlog.carry(f"cfb_slate_{season}_w{week}", [("cfb", log_rows), ("cfb_ats", ats_rows), ("cfb_book", book_rows)])'
+       in flat["cfb_board"]
+       and '[("soccer", log_rows), ("soccer_dk", dk_rows), ("soccer_btts", btts_rows)])' in flat["soccer"]
+       and 'predlog.carry(f"golf_{tour}", [("golf", rows)])' in flat["golf"]
+       # the start rides on the model's row, the deep engine's and the book's
+       and srcs["basket"].count('predlog.iso_ts(g.get("date"))') == 3
+       and srcs["hockey"].count('predlog.iso_ts(g.get("date"))') == 3
        and srcs["soccer"].count(", ko))") == 3
        and predlog._harvest_carried in predlog._HARVESTERS
        and predlog.iso_ts("2026-10-29T23:30Z") == 1793316600.0 and predlog.iso_ts("junk") is None)

@@ -190,6 +190,7 @@ def week_games(season, week):
             th["date"], ta["date"] = g.get("date"), g.get("date")
             th["name"], ta["name"] = g.get("home_name") or h, g.get("away_name") or a
             th["state"], ta["state"] = g.get("state"), g.get("state")
+            th["book"], ta["book"] = g.get("book"), g.get("book")
             out.append((th, ta))
     if out:
         return out

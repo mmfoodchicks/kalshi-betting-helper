@@ -3507,7 +3507,10 @@ function _basketEdges(rows, kind) {
   if (!rows || !rows.length) return "";
   const chips = rows.slice(0, 4).map((r) => {
     const lbl = kind === "total" ? `O${r.line}` : `${r.team} −${r.line}`;
-    return `<span class="chip">${lbl} <b>${r.model_pct}%</b> vs ${r.cents}¢ <b class="${r.edge >= 0 ? "ev pos" : "ev neg"}">${r.edge >= 0 ? "+" : ""}${r.edge}</b></span>`;
+    // `pct`: the model weighed against Kalshi's price by its measured trust (model_trust.anchor);
+    // the model's own figure stays in the tooltip
+    const shown = r.pct != null ? r.pct : r.model_pct;
+    return `<span class="chip" title="our model alone: ${r.model_pct}%">${lbl} <b>${shown}%</b> vs ${r.cents}¢ <b class="${r.edge >= 0 ? "ev pos" : "ev neg"}">${r.edge >= 0 ? "+" : ""}${r.edge}</b></span>`;
   }).join(" ");
   return `<div class="small" style="margin:3px 0">${kind === "total" ? "Totals" : "Spreads"} (Kalshi lines): ${chips}</div>`;
 }
@@ -3539,6 +3542,7 @@ function basketGameCard(g) {
     <div class="winbar"><div class="fill" style="width:${ph}%"></div>
       <div class="lbl">${g.away} ${pa}% ${_nflEdgeChip(kx.away_cents, g.edge_away)} - ${_nflEdgeChip(kx.home_cents, g.edge_home)} ${ph}% ${g.home}</div></div>
     ${g.p_home_deep != null ? `<div class="small" style="color:var(--muted);margin-top:2px" title="Two models. Possession model: points for/against and pace from the standings through the possession Monte Carlo (the graded record behind the pick). Deep engine: the play-by-play simulation (nba_deep_sim) -- possession by possession on the real clock, how the ball came deciding the shot, offensive rebounds, free-throw trips, the clutch and garbage time, the period's last possession, both teams' units from this season's play-by-play. Shown beside the board's model, NOT blended into the win% above: the frozen 2025-26 test did not earn it a weight. Its probability is graded on its own (shadow bucket nba_deep).">🧬 possession model ${g.away} <b>${pct1(g.p_away_model)}%</b> – <b>${pct1(g.p_home_model)}%</b> ${g.home} · play-by-play deep engine ${g.away} <b>${pct1(g.p_away_deep)}%</b> – <b>${pct1(g.p_home_deep)}%</b> ${g.home} <span class="small">(OT ${pct1(g.p_ot_deep)}%)</span> · deep score ${g.away} ${g.exp_away_deep} – ${g.exp_home_deep} ${g.home}</div>` : ""}
+    ${g.anchor ? `<div class="small" style="color:var(--muted);margin-top:2px" title="The win% above weighs our model against Kalshi's de-vigged price by the trust the model has MEASURED against closing prices (model_trust, point-in-time backtests; the weight moves only with that measurement). Our model's own number is beside it and is what the record grades.">⚖️ our model ${g.away} <b>${pct1(g.p_away_ours)}%</b> – <b>${pct1(g.p_home_ours)}%</b> ${g.home} · Kalshi ${g.home} ${pct1(g.anchor.p_home_market)}% · the headline weighs our model at ${Math.round(g.anchor.w_model * 100)}%</div>` : ""}
     ${_basketEdges(g.spread_edges, "spread")}
     ${_basketEdges(g.total_edges, "total")}
     <div class="nfl-pls">${players}</div>
@@ -3643,6 +3647,7 @@ function nhlGameCard(g) {
     <div class="winbar"><div class="fill" style="width:${ph}%"></div>
       <div class="lbl">${g.away} ${pa}% ${_nflEdgeChip(kx.away_cents, g.edge_away)} - ${_nflEdgeChip(kx.home_cents, g.edge_home)} ${ph}% ${g.home}</div></div>
     ${g.p_home_deep != null ? `<div class="small" style="color:var(--muted);margin-top:2px" title="The win% above blends two models. Shot-event model: goals for/against from the standings through the shot-event engine (the graded record behind the pick). Deep engine: the play-by-play simulation (nhl_deep_sim) -- every shot attempt and penalty in continuous time, strength states, delayed penalties, the goalie pull, 3-on-3 and the shootout, both teams' units from this season's play-by-play. Blended at ${Math.round((g.deep_weight || 0) * 100)}% deep, the weight a rule written before the runs chose on 2024-25 and a frozen 2025-26 test confirmed.">🧬 shot-event model ${g.away} <b>${pct1(g.p_away_model)}%</b> – <b>${pct1(g.p_home_model)}%</b> ${g.home} · play-by-play deep engine ${g.away} <b>${pct1(g.p_away_deep)}%</b> – <b>${pct1(g.p_home_deep)}%</b> ${g.home} <span class="small">(OT ${pct1(g.p_ot_deep)}%)</span> · deep score ${g.away} ${g.exp_away_deep} – ${g.exp_home_deep} ${g.home}</div>` : ""}
+    ${g.anchor ? `<div class="small" style="color:var(--muted);margin-top:2px" title="The win% above weighs our model against Kalshi's de-vigged price by the trust the model has MEASURED against closing prices (model_trust, point-in-time backtests; the weight moves only with that measurement). Our model's own number is beside it and is what the record grades.">⚖️ our model ${g.away} <b>${pct1(g.p_away_ours)}%</b> – <b>${pct1(g.p_home_ours)}%</b> ${g.home} · Kalshi ${g.home} ${pct1(g.anchor.p_home_market)}% · the headline weighs our model at ${Math.round(g.anchor.w_model * 100)}%</div>` : ""}
     ${_basketEdges(g.spread_edges, "spread")}
     ${_basketEdges(g.total_edges, "total")}
     <div class="nfl-pls">${players}</div>

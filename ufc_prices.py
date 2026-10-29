@@ -72,7 +72,7 @@ def _model_weight_cap():
         errlog.note("UFCP-model_weight_cap", _e)
     try:
         import calibrate
-        _t_, _q0_, n = calibrate._params("ufc")
+        n = calibrate._params("ufc")[-1]      # (t, q0, b, n): a 3-name unpack raised, so n read 0
     except Exception:
         n = 0
     # Market-leaning like model_trust._DEFAULT, for the same reason: this
@@ -126,6 +126,10 @@ def attach(board):
                 fade_a, fade_b = model_a_fav, not model_a_fav
         for f, c, mk, rec, fade in ((fa, ca, mkt_a, ra, fade_a), (fb, cb, mkt_b, rb, fade_b)):
             f["kalshi_cents"] = c
+            # the de-vigged market beside the fair figure: predlog's UFC rows read it
+            # (`mkt_win`), and without it 411 graded fights could never be judged
+            # against Kalshi (research/reports/accuracy_gaps.md C2)
+            f["mkt_win"] = round(mk, 1) if mk is not None else None
             f["confidence"] = round(w, 2)
             f["fades_market"] = bool(fade)
             if rec:

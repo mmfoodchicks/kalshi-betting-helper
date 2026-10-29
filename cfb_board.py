@@ -144,7 +144,9 @@ def _week_games(season, week):
                 continue
             out.append({"id": e.get("id"), "date": e.get("date"), "state": state,
                         "neutral": bool(comp.get("neutralSite")),
-                        "home": h, "away": a})
+                        "home": h, "away": a,
+                        # DraftKings' pre-game moneyline, de-vigged (cfb_book)
+                        "book": predlog.book_probs(comp)})
         return out
     return racing._cached(("cfb_week", season, week, 1), 1800, build) or []
 
@@ -359,7 +361,7 @@ def _build_board(season, week, n=_N):
         cal = lambda p: p
     w_model = _model_weight()
     out, sims, log_rows = [], [], []
-    ats_rows = []
+    ats_rows, book_rows = [], []
     for g in games:
         h, a = g["home"], g["away"]
         rh, ra = R.get(h["id"], 0.0), R.get(a["id"], 0.0)
@@ -473,12 +475,17 @@ def _build_board(season, week, n=_N):
                                  "ask_over": tot["ask"], "ask_under": tot["no_ask"],
                                  "ticker": tot["ticker"]}
             if pre:
-                for tk, p, own, opp in (
-                        (px.get("home_ticker"), raw, px.get("home_cents"), px.get("away_cents")),
-                        (px.get("away_ticker"), 1 - raw, px.get("away_cents"), px.get("home_cents"))):
+                for side, tk, p, own, opp in (
+                        ("home", px.get("home_ticker"), raw, px.get("home_cents"), px.get("away_cents")),
+                        ("away", px.get("away_ticker"), 1 - raw, px.get("away_cents"), px.get("home_cents"))):
                     if tk:
                         log_rows.append((tk, p, px.get("close"), predlog.devig(own, opp),
                                          _iso_ts(g.get("date"))))
+                        # DraftKings' line at the same moment (accuracy_gaps.md C1)
+                        br = predlog.book_row(tk, g.get("book"), side, px.get("close"),
+                                              predlog.devig(own, opp), _iso_ts(g.get("date")))
+                        if br:
+                            book_rows.append(br)
         pick_home = ph >= 0.5
         card["pick"] = {"team": h["abbr"] if pick_home else a["abbr"],
                         "name": h["name"] if pick_home else a["name"],
@@ -493,6 +500,8 @@ def _build_board(season, week, n=_N):
         try:
             predlog.init_db()
             predlog.log_many("cfb", log_rows)
+            if book_rows:
+                predlog.log_shadow("cfb_book", book_rows)
         except Exception as _e:
             errlog.note("CFB-build_board", _e)
     # The ATS forecasts file under their own model: coin-flip-shaped numbers
@@ -506,7 +515,8 @@ def _build_board(season, week, n=_N):
         except Exception as _e:
             errlog.note("CFB-build_board-lines", _e)
     # the same rows beside the board: a PC build's only way into the record
-    predlog.carry(f"cfb_slate_{season}_w{week}", [("cfb", log_rows), ("cfb_ats", ats_rows)])
+    predlog.carry(f"cfb_slate_{season}_w{week}", [("cfb", log_rows), ("cfb_ats", ats_rows),
+                                                 ("cfb_book", book_rows)])
     out.sort(key=lambda g: g["date"] or "")
     # Pick'em confidence: rank the straight-up picks by probability, surest
     # first. `confidence` is the points a standard confidence pool assigns

@@ -39,12 +39,12 @@ _UA_ALT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 SERIES = {1: "Cup", 2: "Xfinity", 3: "Trucks"}
 
 
-def _get_json(url, timeout=12):
+def _get_json(url, timeout=12, headers=None):
     for ua in (_UA, _UA_ALT):
         req = urllib.request.Request(url, headers={
             "User-Agent": ua,
             "Accept": "application/json, text/plain, */*",
-            "Accept-Language": "en-US,en;q=0.9"})
+            "Accept-Language": "en-US,en;q=0.9", **(headers or {})})
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 return json.loads(resp.read().decode("utf-8"))
