@@ -46,8 +46,12 @@ predlog.pairs(model), the universal prediction log, so a sport starts
 calibrating the moment its graded history clears its floor in _MODELS. A model
 with no graded data is a no-op.
 """
+import json
 import math
+import os
 import time as _t
+
+import errlog
 
 
 def _logit(p):
@@ -350,9 +354,132 @@ _cache = {}          # model -> (params, fitted_at)
 _TTL = 6 * 3600      # refit a few times a day; graded history changes slowly
 
 
+# ---- One fit, shared by every process (2026-10-29) ---------------------------
+# _params used to fit from predlog in whichever process asked. Once the PC built
+# the boards that went wrong twice over: the PC's predlog.db is never graded
+# (predlog.start runs only in app.py), so every calibrate.apply on the PC was
+# the identity -- and since 19cf29c the server serves the PC's copy, so the site
+# showed uncalibrated NFL / college / NBA / NHL games and the PC-built recipes
+# ran on the hand-set blend; and three web workers each refit every model
+# every six hours. Now the background owner fits ONCE, in a niced child
+# (write_params), into a file beside predlog.db; every process reads that file;
+# the PC fetches it from the server before it builds (pc_worker._fetch_params)
+# and writes it where this module reads it, so its subprocesses (the matchups
+# child, the soccer refit) see it too. No file, or one older than
+# PARAMS_MAX_AGE_S: the old per-process fit, exactly as before.
+PARAMS_SCHEMA = 1
+PARAMS_MAX_AGE_S = 48 * 3600
+PARAMS_REFRESH_S = 6 * 3600
+
+
+def params_path():
+    import predlog
+    return os.environ.get("CALIB_PARAMS") or os.path.join(
+        os.path.dirname(os.path.abspath(predlog._DB)), "calib_params.json")
+
+
+_file_memo = {"path": None, "mt": None, "data": None}
+
+
+def file_params():
+    """The shared params when the file is valid and young enough, else None."""
+    p = params_path()
+    try:
+        mt = os.stat(p).st_mtime
+    except OSError:
+        return None
+    if _file_memo["path"] != p or _file_memo["mt"] != mt:
+        try:
+            with open(p) as fh:
+                data = json.load(fh)
+        except (OSError, ValueError) as e:
+            errlog.note("CAL-params-read", e)
+            data = None
+        if not isinstance(data, dict) or data.get("schema") != PARAMS_SCHEMA:
+            data = None
+        _file_memo.update(path=p, mt=mt, data=data)
+    data = _file_memo["data"]
+    if not data or _t.time() - float(data.get("ts") or 0) > PARAMS_MAX_AGE_S:
+        return None
+    return data
+
+
+def compute_params():
+    """Every registered calibration, the combo maker's fitted blend weights and
+    the matchups record's tuning (mx_record.fit_all), fitted once."""
+    models = {}
+    for m, spec in _MODELS.items():
+        try:
+            models[m] = list(_fit(spec[0](), spec[1], spec[2] if len(spec) > 2 else None))
+        except Exception as e:
+            errlog.note("CAL-params-fit", e, path=m)
+    blend = {}
+    try:
+        import combo_engine
+        for b in sorted(set(combo_engine._TRUST_BUCKET.values())):
+            got = _blend_fit(b)
+            blend[b] = list(got) if got else None
+    except Exception as e:
+        errlog.note("CAL-params-blend", e)
+    out = {"schema": PARAMS_SCHEMA, "ts": _t.time(), "commit": (os.environ.get("RENDER_GIT_COMMIT") or "")[:12],
+           "models": models, "blend": blend}
+    try:
+        import mx_record
+        # the last file's block: each stat's tuning decision is sticky (mx_record.fit_stat)
+        out["mx"] = mx_record.fit_all(prev=(file_params() or {}).get("mx"))
+    except Exception as e:
+        errlog.note("CAL-params-mx", e)
+    return out
+
+
+def install_params(data):
+    """Write `data` where file_params() reads it (atomically). The server's
+    write_params and the PC's fetch both land here. A replace that fails
+    (Windows, the target open in a build child) leaves no tmp behind."""
+    p = params_path()
+    os.makedirs(os.path.dirname(p) or ".", exist_ok=True)
+    tmp = f"{p}.{os.getpid()}.tmp"
+    try:
+        with open(tmp, "w") as fh:
+            json.dump(data, fh)
+        os.replace(tmp, p)
+    finally:
+        if os.path.exists(tmp):
+            try:
+                os.remove(tmp)
+            except OSError as e:
+                errlog.note("CAL-params-tmp", e)
+    _file_memo["mt"] = None
+
+
+def write_params():
+    """Fit everything once and install it; the background owner runs this in a
+    niced child (deep_cache.run_child) every PARAMS_REFRESH_S. Returns a small
+    summary for the child's pickle."""
+    out = compute_params()
+    install_params(out)
+    return {"models": len(out["models"]), "blend": sum(1 for v in out["blend"].values() if v),
+            "mx": bool(out.get("mx"))}
+
+
+def params_due():
+    """True when the shared file is missing or older than PARAMS_REFRESH_S."""
+    try:
+        return _t.time() - os.stat(params_path()).st_mtime > PARAMS_REFRESH_S
+    except OSError:
+        return True
+
+
 def _params(model):
     """Cached (t, q0, b, n) for a registered model. (1.0, 0.5, 0.0, 0) = no
-    correction."""
+    correction. The shared file first (above); a model it does not list (one
+    registered after the file was fitted) fits itself here, as before, until
+    the next refresh lists it."""
+    fp = file_params()
+    if fp is not None:
+        got = (fp.get("models") or {}).get(model)
+        if got and len(got) == 4:
+            return tuple(got)
     hit = _cache.get(model)
     if hit and _t.time() - hit[1] < _TTL:
         return hit[0]
@@ -485,16 +612,27 @@ def blend_weight(model):
     """(w, n) -- the weight on the MODEL (0..1) that minimises log-loss when its
     logged probabilities are logit-blended against the de-vigged market it was
     logged next to, over this model's own graded record. None before the floors
-    (>= 150 graded across >= 10 distinct days) are met."""
+    (>= 150 graded across >= 10 distinct days) are met. The shared file first
+    (file_params), as for the calibrations."""
+    fp = file_params()
+    if fp is not None and model in (fp.get("blend") or {}):
+        got = fp["blend"][model]
+        return tuple(got) if got and len(got) == 2 else None
     hit = _blend_cache.get(model)
     if hit and _t.time() - hit[1] < _TTL:
         return hit[0]
+    out = _blend_fit(model)
+    _blend_cache[model] = (out, _t.time())
+    return out
+
+
+def _blend_fit(model):
+    """The fit behind blend_weight, uncached."""
     out = None
     try:
         rows = _blend_rows(model)
         days = {d for _p, _m, _o, d in rows}
         if len(rows) >= _BLEND_N_FLOOR and len(days) >= _BLEND_DAY_FLOOR:
-            import math
             def loss(w):
                 tot = 0.0
                 for p, m, y, _d in rows:
@@ -508,5 +646,4 @@ def blend_weight(model):
             out = (best, len(rows))
     except Exception:
         out = None
-    _blend_cache[model] = (out, _t.time())
     return out

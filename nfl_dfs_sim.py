@@ -135,6 +135,7 @@ def weekly_games(season, week):
         # leans 30% toward what he has actually been getting (nfl_usage; the
         # pre-registered test, research/reports/nfl_usage.md). Team totals
         # stay Sleeper's. Any failure leaves Sleeper's lines, in the ledger.
+        usage, usage_err = None, None
         try:
             import nfl_usage
             usage = nfl_usage.apply(pairs, int(season), int(week))
@@ -142,6 +143,21 @@ def weekly_games(season, week):
                 g["usage"] = usage
         except Exception as _e:
             errlog.note("USAGE-weekly", _e)
+            usage_err = f"failed: {type(_e).__name__}"
+        # The WR/RB matchup terms' DFS hook (nfl_matchup.apply), right after
+        # usage as its contract says: each line moves by the VALIDATED matchup
+        # factors only, team totals preserved. Nothing receiving or rushing beat
+        # Sleeper's line on the pre-registered test (research/reports/
+        # nfl_matchup_model.md), so today it moves nothing and says why; a term
+        # that earns weight in coefs.json reaches every DFS path from here.
+        try:
+            import nfl_matchup
+            mx = nfl_matchup.apply(pairs, int(season), int(week))
+        except Exception as _e:
+            errlog.note("NFLM-weekly", _e)
+            mx = {"applied": False, "reason": f"failed: {type(_e).__name__}"}
+        weekly_stamps[(str(season), int(week))] = {"usage": _usage_note(usage, usage_err, season, week),
+                                                    "matchup": mx, "built_ts": int(_time.time())}
         _orient(games, season, week)
         # Stage 2C: every player also carries `recon`, his line with the
         # team's passing books balanced (nfl_recon), and every game a
@@ -876,6 +892,43 @@ MODELS = ("legacy", "constrained", "engine")
 # landed, its own expectation, the box means), for the board's stamp. Keyed
 # like the pool cache minus `n`; the pool itself stays {name: entry}.
 engine_reports = {}
+
+# What the weekly lines' own adjustments DID on the last build of each
+# (season, week): the recent-usage update (players moved, or why it did not
+# apply) and the WR/RB matchup hook. sim_stamp() says which RULE a board runs;
+# this says what happened, so a board built on Sleeper's bare lines -- the PC's
+# box-score fetch failing, its ledger out of sight on the PC -- cannot read as
+# "usage shares" (2026-10-29: every board stamped the rule, applied or not).
+weekly_stamps = {}
+
+
+def _usage_note(usage, err, season, week):
+    import nfl_usage
+    if usage:
+        return dict(usage, applied=True)
+    if err:
+        return {"applied": False, "reason": f"{err} (USAGE-weekly in the ledger): Sleeper's own lines"}
+    if int(week) <= nfl_usage.MIN_G or (int(season), int(week)) < nfl_usage.FIRST:
+        return {"applied": False, "reason": f"not in effect (from {nfl_usage.FIRST[0]} week {nfl_usage.FIRST[1]}, "
+                                            f"never in weeks 1-{nfl_usage.MIN_G})"}
+    return {"applied": False, "reason": "Sleeper's box scores could not be read (USAGE-fetch in the ledger): "
+                                        "Sleeper's own lines"}
+
+
+def week_stamp(week, preseason=False, season=None):
+    """The weekly inputs a DFS board was built on (weekly_stamps), for its
+    payload's `inputs`. Never raises."""
+    try:
+        if preseason:
+            return {"usage": {"applied": False, "reason": "preseason: exhibition lines are modelled on their own"},
+                    "matchup": {"applied": False, "reason": "preseason"}}
+        got = weekly_stamps.get((str(season or _season()), int(week)))
+        if got:
+            return got
+        return {"usage": {"applied": None, "reason": "no weekly build of this week in this process"}}
+    except Exception as e:
+        errlog.note("NFLDFS-week-stamp", e)
+        return None
 
 
 def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="legacy", seed=None, xside=0.0, discrete=False,

@@ -207,6 +207,100 @@ def devig(own_cents, opp_cents):
     return a / (a + b)
 
 
+def iso_ts(s):
+    """ESPN's start time ('2026-10-29T23:30Z') as an epoch, or None."""
+    import kalshi
+    try:
+        return kalshi._parse_time(s) if s else None
+    except (ValueError, TypeError):
+        return None
+
+
+# ---- Carried predictions: the PC's builds reach the record ------------------
+# Six boards log inside their builders (basket, hockey, nfl_game_sim, cfb_board,
+# soccer; golf). When the PC builds them, log_many writes the PC's own
+# predlog.db, which nothing grades -- predlog.start runs only in app.py -- and
+# since 19cf29c the server serves the PC's copy instead of rebuilding, so the
+# server's record for those sports grew only when it built as the fallback
+# (found 2026-10-29, Fable's review agreed). Each builder now also CARRIES the
+# rows it logs beside its board (`carry`), the boards sync ships them like any
+# board, and the server logs them from the copy it holds (_harvest_carried):
+# one mechanism, the boards' own door, no PC-side bookkeeping. First write wins
+# as everywhere here, so a row the server already logged from its own build is
+# a no-op. Only rows whose event START is known and still ahead are logged: the
+# carry lands minutes after its build, and a forecast filed after kickoff is
+# not a pre-game forecast.
+CARRY_MODELS = {"nba": False, "wnba": False, "nba_deep": True, "nhl": False, "nhl_deep": True,
+                "nfl": False, "nfl_pre": False, "nfl_deep": True, "cfb": False, "cfb_ats": False,
+                "cfb_total": False, "soccer": False, "soccer_dk": True, "soccer_btts": False}   # model -> shadow?
+CARRY_PREFIX = "plcarry_"
+_TICKER_OK = _re.compile(r"^KX[A-Z0-9][A-Z0-9._-]{3,90}$")
+
+
+def carry(key, groups):
+    """Publish a builder's prediction rows beside its board for the server to
+    log (see above). `groups`: [(model, rows)], rows in log_many's shape with
+    the event start as the fifth element. Never raises; returns rows carried."""
+    try:
+        import boardshare
+        g = [[m, [list(r) for r in rows]] for m, rows in groups if rows and m in CARRY_MODELS]
+        if not g:
+            return 0
+        boardshare.put(CARRY_PREFIX + str(key), {"ts": time.time(), "groups": g})
+        return sum(len(r) for _m, r in g)
+    except Exception as e:
+        errlog.note("PRED-carry", e, path=str(key))
+        return 0
+
+
+def _carry_row(r, now):
+    """A carried row fit to log: a Kalshi ticker, 0 < p < 1, a known start
+    still ahead. Returns log_many's 5-tuple or None."""
+    if not isinstance(r, (list, tuple)) or len(r) < 5:
+        return None
+    tk, p, ct, mk, ev = r[0], r[1], r[2], r[3], r[4]
+    if not isinstance(tk, str) or not _TICKER_OK.match(tk):
+        return None
+    try:
+        p = float(p)
+        ev = float(ev)
+    except (TypeError, ValueError):
+        return None
+    if not (0.0 < p < 1.0) or ev <= now:
+        return None
+    return (tk, p, ct, mk, int(ev))
+
+
+_carry_seen = {}          # carry name -> the file version already logged
+
+
+def _harvest_carried():
+    """Log every carried file version not yet logged (harvest() runs it with the
+    other harvesters). A file that fails is ledgered and retried next pass."""
+    import boardshare
+    now = time.time()
+    total = 0
+    listed = boardshare.names(CARRY_PREFIX)
+    for name in [n for n in _carry_seen if n not in dict(listed)]:
+        _carry_seen.pop(name, None)            # swept from disk: the memo follows the listing
+    for name, mt in listed:
+        if _carry_seen.get(name) == mt:
+            continue
+        try:
+            d, _age = boardshare.get(name, 3 * 86400)
+            for model, rows in (d or {}).get("groups") or []:
+                if model not in CARRY_MODELS:
+                    continue
+                ok = [x for x in (_carry_row(r, now) for r in rows or []) if x]
+                if ok:
+                    total += (log_shadow if CARRY_MODELS[model] else log_many)(model, ok)
+        except Exception as e:
+            errlog.note("PRED-carry-log", e, path=name)
+            continue
+        _carry_seen[name] = mt
+    return total
+
+
 _TICKER_MON = {"JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
                "JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12}
 _EVT_RE = _re.compile(r"-(\d{2})([A-Z]{3})(\d{2})(\d{4})?")
@@ -279,6 +373,25 @@ def snapshot_closes(limit=40):
                           "WHERE ticker=? AND graded=0", (px / 100.0, int(now), tk))
             n += 1
     return n
+
+
+def prices_for(tickers):
+    """{ticker: P(YES)} as predlog last saw each ticker's market PRE-GAME: the
+    closing snapshot (close_mkt, the YES mid before the start) when one was
+    taken, else the de-vigged price at log time. Tickers without a row, or
+    without a price, are absent. Chunked IN queries: a book's own tickers,
+    never the table."""
+    out = {}
+    tks = [t for t in dict.fromkeys(tickers or ()) if isinstance(t, str) and t]
+    with _lock, _conn() as c:
+        for i in range(0, len(tks), 500):
+            chunk = tks[i:i + 500]
+            marks = ",".join("?" for _ in chunk)
+            for r in c.execute(f"SELECT ticker, mkt, close_mkt FROM predictions WHERE ticker IN ({marks})", chunk):
+                p = r["close_mkt"] if r["close_mkt"] is not None else r["mkt"]
+                if p is not None and 0.0 < p < 1.0:
+                    out[r["ticker"]] = float(p)
+    return out
 
 
 def close_report(model):
@@ -537,7 +650,7 @@ def _harvest_ufc():
     return log_many("ufc", rows)
 
 
-_HARVESTERS = (_harvest_tennis, _harvest_ufc)
+_HARVESTERS = (_harvest_tennis, _harvest_ufc, _harvest_carried)
 
 
 def harvest():

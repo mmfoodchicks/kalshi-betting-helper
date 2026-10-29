@@ -1735,6 +1735,9 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
             # simulator the way a tournament board already can
             "simulator": nfl_dfs_sim.sim_stamp(n=_SD_SIMS, preseason=preseason,
                                                discrete=nfl_dfs_sim.SD_DISCRETE),
+            # what the weekly lines' adjustments DID on this build (recent usage, the
+            # WR/RB matchup hook), beside the rule above
+            "inputs": nfl_dfs_sim.week_stamp(week, preseason),
             "unmatched": unmatched[:20], "n_pool": len(ents),
             "excluded": excluded[:40], "n_excluded": len(excluded),
             "roster_source": roster_state(),
@@ -1974,6 +1977,7 @@ def build(csv_text, week=None, objective="projection", stack=True, contest=None,
             "unmatched": unmatched[:20],
             "excluded": excluded[:40], "n_excluded": len(excluded),
             "roster_source": roster_state(),
+            "inputs": nfl_dfs_sim.week_stamp(week, preseason),
             "n_pool": len(players),
             "note": "Projections pinned to Sleeper; floor/ceiling + QB-WR correlation from the "
                     "game sim. Ownership is a model estimate of the field. In season the "

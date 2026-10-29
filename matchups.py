@@ -50,12 +50,14 @@ TTL = 900
 # tails of thresholds nobody prices.
 _TAIL = 0.02
 
-_LINE_KEYS = ("k", "p", "p_lo", "p_hi", "labels", "fit_side")
+# p_raw / tuning: the engine's own figure and the tuning that moved it (mx_record) --
+# the record harvests the index, and without them a tuned figure read as the engine's
+_LINE_KEYS = ("k", "p", "p_lo", "p_hi", "labels", "fit_side", "p_raw", "tuning")
 _MARKET_KEYS = ("ticker", "yes_bid", "yes_ask", "no_bid", "no_ask", "ts")
 _VALUE_KEYS = ("best_side", "ev_yes", "ev_no", "ev_interval", "roi_yes", "roi_no", "edge", "p_market",
                "market_kind", "fee_assumed", "believable", "quote_age_s")
 _TOP_KEYS = ("sport", "built_ts", "as_of", "provenance", "games", "notes", "definitions", "timing_s", "week",
-             "season", "market_record")
+             "season", "market_record", "tuning")
 _PLAYER_KEYS = ("player_id", "name", "team", "opp", "game_id", "pos", "status")
 
 _MEM = {}          # boardshare.nonblocking's per-worker cache, pruned to _MEM_KEEP slates
@@ -184,6 +186,20 @@ def market_record(sport):
             if a.get("n"):
                 out["*"] = {"model_ll": a["model"]["ll"], "market_ll": a["market"]["ll"], "n": a["n"], "season": season,
                             "basis": "sampled Kalshi prop rungs, last pre-kickoff hourly price, frozen pre-kickoff lines"}
+    # The tab's OWN graded record (mx_record) takes over a stat once it is decided
+    # -- past its floors and by 2 SE clustered by game, either way: the mute then
+    # lifts where the engine earned it and holds where Kalshi did. An undecided
+    # stat keeps the research figure above as its prior.
+    try:
+        import mx_record
+        for st, v in (mx_record.market_verdicts(sport) or {}).items():
+            if isinstance(v, dict) and v.get("decided") and v.get("model_ll") is not None:
+                out[st] = {"model_ll": v["model_ll"], "market_ll": v["market_ll"], "n": v.get("n"), "season": "live",
+                           "live": True, "decided": v["decided"],
+                           "basis": f"this tab's own graded record: {v.get('n')} lines over {v.get('games')} games, the "
+                                    "last pre-game sighting within 2 h of the start, believable books"}
+    except Exception as e:
+        errlog.note("MX-record-live", e, path=sport)
     return out
 
 
@@ -240,14 +256,24 @@ def publish(sport, key, payload, with_index=True):
 
 
 def produce(sport, key):
-    """The sport's full payload for `key` (runs in the child)."""
+    """The sport's full payload for `key` (runs in the child, or in the PC's
+    pc_board), with the tuning its own graded record earned (mx_record): the
+    engine's figure stays on every line as p_raw."""
     if sport == "nba":
         import nba_matchup
-        return nba_matchup.board(key)
-    if sport == "nfl":
+        payload = nba_matchup.board(key)
+    elif sport == "nfl":
         import nfl_matchup
-        return nfl_matchup.board_for_date(key)
-    raise ValueError(f"no matchup engine for {sport!r}")
+        payload = nfl_matchup.board_for_date(key)
+    else:
+        raise ValueError(f"no matchup engine for {sport!r}")
+    if isinstance(payload, dict) and payload.get("players"):
+        try:
+            import mx_record
+            mx_record.apply_tuning(payload, sport)
+        except Exception as e:                  # a tuning that fails leaves the engine's board
+            errlog.note("MX-tuning", e, path=f"{sport} {key}")
+    return payload
 
 
 def _child(raw):

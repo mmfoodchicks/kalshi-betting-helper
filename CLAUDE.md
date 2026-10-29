@@ -70,7 +70,12 @@ data-only `sim-history` branch (which never deploys):
 - `.github/workflows/error-log.yml` — the error ledger + an instance memory
   snapshot. Fire it (`actions_run_trigger`, ref = the work branch), then
   `git fetch origin sim-history` and read `errors/latest.json` and
-  `errors/mem-latest.json`.
+  `errors/mem-latest.json`. Since 2026-10-29 it also pulls the records:
+  `errors/sharp-latest.json` (every predlog bucket against the Kalshi price it
+  was logged beside), `nfl-record-latest.json`, `cfb-record-latest.json`,
+  `mx-record-{nba,nfl}-latest.json` (the Matchups record) and
+  `calib-params-latest.json` (the shared calibration file) -- read them before
+  judging any model change against the live record.
 - `.github/workflows/nightly-history.yml` — nightly deep-sim history.
 - `/healthz` and `/robots.txt` are the only anonymous routes; everything else is
   behind HTTP Basic auth. `X-Sim-Token` (SIM_TOKEN) is the automation door.
@@ -559,6 +564,91 @@ data-only `sim-history` branch (which never deploys):
   - `matchups.nfl_data_job` refreshes the rushing aux beside the matchup stores (prior seasons
     backfilled one at a time, a weekly retry marker). Guards: `tests/guards_nfl_rush_{data,model}.py`
     in the MX section.
+- **The Matchups record** (2026-10-29, `mx_record.py`; design and build reviewed by a Fable
+  agent, `research/reviews/matchups_record.md`). The owner: "add a record to the match up tab
+  for both nfl and NBA ... grade itself and tune itself based on results."
+  - **What it keeps**: the background owner reads the published Matchups INDEX (whoever built
+    it) every 10 minutes and keeps ONE row per Kalshi ticker: the first pre-game sighting (never
+    changed) and the last (the close, until the start). A sighting's moment is the LATEST of its
+    quote, its build and the published file's mtime (the server's clock: a PC whose clock runs slow
+    cannot pass a build after the start off as pre-game); a game without a readable start proves
+    nothing pre-game. Kalshi's figure is kept only off a fresh quote (600 s). Standard series
+    only (a *PROT twin's scalar is a refund). Kept: the engine's figure (`p_raw` when tuned),
+    Kalshi's de-vigged mid off a believable two-sided book, the labels as a bitmask, and for a +EV
+    line on a fresh quote the cost on the side its labels read (`label_side`: the NFL's strong-fit
+    side, else the larger-EV side, else YES -- grading NFL picks on best_side graded a fit-side NO
+    on YES).
+  - **Grading**: one `/markets?event_ticker=` call per event, paced, oldest first; an event tried
+    and unsettled waits `RETRY_S` (1,800 s), and the first refused fetch ends the pass (it was already
+    retried three times: the rest would be ~120 requests into a rate limit). yes/no is scored at grade
+    time (log loss, Brier, the one-contract result fee in); SCALAR -- a player who never played,
+    settled at the pre-game fair price -- is a void, counted, never scored; seven days unanswered is
+    dead. Dates are Mountain-time sports days (`_DAY`, game_ts - 7 h: UTC dates split one NBA night
+    in two and doubled the date floors).
+  - **Tuning**: per sport x stat, a Platt on the engine's figure, fitted on graded closes within
+    2 h of the start, each rung weighted 1/rungs (a ladder is ONE forecast); adopted only when it
+    beats the engine OUT OF SAMPLE (forward chaining over dates, > 0.001 nats and > 2 SE clustered
+    by game, over at least 30 scored games -- right after the date floor the chain scores a day or
+    two, and 2 SE over 4 games adopted a calibrated engine 6.5% of looks) past 300 ladders over more
+    than 10 dates, damped by days/30, refused unless increasing. The decision is STICKY (a look
+    comes every 6 h all season): a tuned stat keeps its Platt while the gain stays above 0 and 1 SE. The
+    blend with Kalshi's mid is fitted and REPORTED, never applied (priced against the mid it was
+    fitted to, its EV is ~0 by construction). Applied at build time (`matchups.produce`, server
+    child and PC alike) with each engine's own value and label helpers; the index carries `p_raw`
+    and `tuning`. A synthetic season (96,000 rungs) fits in ~11 s a stat in pure Python
+    (`_agg`: equal rows are one weighted row, exactly).
+  - **Kalshi's side**: a stat whose live engine-vs-book record is DECIDED (`mx_record._decide`: 10
+    dates AND 30 games, 2 SE by game) replaces the static research figure in
+    `matchups.market_record`, either way -- the "market better" mute lifts where the engine earned it
+    and holds where Kalshi did. The tab's bold call is that same decision, never a looser one.
+  - `/api/matchups/record?sport=` is SQL sums over per-row scores (never a fetchall); the tab's
+    Record view. The fit runs inside `calibrate.write_params` (next item). Guards:
+    `tests/guards_records.py` (the RC section).
+- **One calibration, every process** (2026-10-29, `calibrate.write_params`). The PC's predlog.db
+  is never graded (`predlog.start` runs in app.py only), so every `calibrate.apply` on the PC was
+  the identity -- and the server serves the PC's boards (uncalibrated NFL / college / NBA / NHL
+  games). The background owner now fits every registered calibration, the combo maker's blend
+  weights and the Matchups tuning ONCE every 6 h, in a niced child under the heavy-build gate
+  (`mx_record.tick`), into `calib_params.json` beside predlog.db (gitignored); every process reads
+  that file (`file_params`), and the PC fetches it before each cycle and boards pass
+  (`pc_worker._fetch_params`, `/api/calibration/params`). No file, or one past 48 h, or a model
+  registered after the file was fitted: the old per-process fit.
+- **Carried predictions** (2026-10-29). The boards that log inside their builders (NBA/WNBA,
+  NHL, NFL, college, soccer) also carry those rows beside the board (`predlog.carry`,
+  `plcarry_<key>`); the boards sync ships them and the server logs them from its copy
+  (`predlog._harvest_carried`), only rows whose event START is known and still ahead. Before
+  this a PC-built board reached the server's record only when the server rebuilt it as the
+  fallback. Golf carries nothing (no start time, no registered bucket). NBA/NHL/soccer rows now
+  log their start, so their closing snapshots run to the start, not midnight ET of the day.
+- **NFL and college game models against the market** (2026-10-29,
+  `research/reports/game_xref.md`: a Fable agent's study, its figures reproduced from its rows by
+  the orchestrator and every item agreed, section 8).
+  - **Cross-referencing adds nothing to the price.** The drive sim, the PD ratings, ESPN FPI and
+    Sleeper's points, alone or stacked, add nothing to the closing line for either sport (every
+    stack failed walk-forward). Do not add them as features.
+  - **College** (`cfb_board`): the drive engine compressed every margin (actual on engine slope
+    1.37-1.44) and played every game at 27.5 +/- margin/2 a side (a 56-point total, SD 2.3,
+    correlation -0.09 with the real one). The headline is now Phi(fair margin / 18) when priced
+    (-0.016 +/- 0.002 nats, 4+ SE each season) and the calibrated Phi(model margin / 18) when not
+    (the "cfb" calibrator is fitted on that figure). The simulated margins are centred on that
+    margin and the totals on Kalshi's implied total (`kalshi_cfb.implied_total`), with unbiased
+    integer rounding (`_centre`: a fractional shift leaves every whole-number rung where it was),
+    before the ladders, the ATS cover, the maker's legs and the expected score read them. The
+    card's total is Kalshi's (`exp_total_src`). No total lean is filed (`cfb_tot` keeps its history)
+    and `cfb_total` is no longer logged. The ATS pick is now the model's lean at its weight (51.0%
+    on 2024-26, no edge either way) instead of the underdog 95% of the time. The season sim (CFP
+    odds) still plays the compressed engine: untested, unchanged.
+  - **NFL**: the drive sim trails the closing favourite by 2-3 points over 2024-26 (65.0% vs
+    67.6%; 2026's first 107 games 59.8% vs 63.5%), and no tuning closed it (a fitted temperature
+    and margin/total scalings each made the next season worse). The market anchor (0.3 sim +
+    0.7 close) FAILED its own rule (2026 reversed inside 1 SE) and is a registered test (section
+    8.3: weeks 9-18, read once, not before 2027-01-12). The NFL record shows Kalshi's favourite
+    and log loss on the same games (`store.market_benchmark`). The combo maker's game legs lean
+    on the market: `nfl:Spread` 0.3 and `nfl:Total` 0.2 (the sim's walk-forward weights beside
+    the close were ~0 and negative); the moneyline keeps its live fitted weight.
+  - Registered for later (section 8.4): the college unpriced total (item 5), the anchored sigma
+    and engine dispersion (6), the NFL late-season PD blend (7), the NFL total level off Kalshi's
+    ladder (8). Never hand-set a margin expansion or a total shrink.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 

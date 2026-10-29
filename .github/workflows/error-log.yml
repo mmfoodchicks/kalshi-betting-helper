@@ -174,6 +174,25 @@ jobs:
               fi
             done
           fi
+          # The records, so a model change can be checked against the live
+          # record from this branch (2026-10-29): every predlog bucket against
+          # the Kalshi price it was logged beside (/api/sharp), the NFL and
+          # college pick ledgers, the Matchups tab's graded record per sport,
+          # and the shared calibration file the PC fetches. Volatile stamps are
+          # dropped so an unchanged record is not a new commit. Best-effort.
+          for spec in "sharp:/api/sharp" "nfl-record:/api/nfl/record" "cfb-record:/api/cfb/record" \
+                      "mx-record-nba:/api/matchups/record?sport=nba" "mx-record-nfl:/api/matchups/record?sport=nfl" \
+                      "calib-params:/api/calibration/params"; do
+            curl -sS -o /tmp/rec.json --max-time 60 "${AUTH[@]}" "$APP_URL${spec#*:}" || true
+            NAME="${spec%%:*}" python3 - <<'PY' || true
+          import json, os
+          d = json.load(open("/tmp/rec.json"))
+          if isinstance(d, dict) and "error" not in d:
+              d.pop("generated_ts", None)
+              json.dump(d, open(os.path.join(os.environ["ERRORS_DIR"], f"{os.environ['NAME']}-latest.json"), "w"),
+                        indent=1, sort_keys=True)
+          PY
+          done
           # The NFL prop log (nfl_props_log): Kalshi's player-prop ladders,
           # Sleeper's projections and the kickoff forecasts, each game frozen
           # five minutes before its kickoff -- the data the prop-anchor test

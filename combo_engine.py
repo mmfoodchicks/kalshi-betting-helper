@@ -382,7 +382,14 @@ def _clamp_to_market(p, p_model, ref, q):
 _MODEL_TRUST = {"ML": 1.0, "Total": 0.7, "Ks": 0.7, "Run line": 0.7,
                 "RFI": 0.5, "Hit": 0.5, "Bases": 0.5, "SB": 0.4,
                 "HR": 0.35, "HRR": 0.35, "RBI": 0.35,
-                "nfl:ML": 1.0, "nfl:Spread": 0.7, "nfl:Total": 0.7,
+                # NFL game legs (2026-10-29, research/reports/game_xref.md 2,
+                # agreed with a Fable agent): beside the closing line the drive
+                # sim's margin earned walk-forward weights of +0.25 then -0.06
+                # and its total a NEGATIVE one (2024-26, 651 games); 0.7 had no
+                # measurement behind it. 0.3 / 0.2 are w ~0.14 / ~0.10 at the
+                # reference quality. The moneyline keeps 1.0 as its prior only:
+                # its live fitted weight (predlog "nfl", Kalshi-priced) takes over.
+                "nfl:ML": 1.0, "nfl:Spread": 0.3, "nfl:Total": 0.2,
                 "nfl:TD": 0.4,
                 # NFL yardage and reception props ran on the 0.6 default
                 # silently; explicit now, with the measurement behind it.

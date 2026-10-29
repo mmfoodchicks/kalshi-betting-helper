@@ -362,6 +362,30 @@ def implied_margin(idx, suffix, home_code):
     return None
 
 
+def implied_total(idx, suffix):
+    """The market's own expected total off the total ladder's LIVE rungs,
+    de-vigged and interpolated to the 50% line (implied_margin's rule); None
+    without two quoted rungs that bracket it. The card's total and the
+    simulated totals are centred on it (cfb_board): the engine's own total is
+    27.5 +/- margin/2 a side, a 55-point game every time (research/reports/
+    game_xref.md 3.2: SD 2.3 across games, correlation -0.09 with the real
+    total, MAE 13.67 against the closing total's 12.43)."""
+    g = (idx or {}).get(suffix) or {}
+    q = g.get("q") or {}
+    pts = []
+    for n in (g.get("total") or {}):
+        p = _yes_prob(q, ("total", n, True), ("total", n, False))
+        if p is not None:
+            pts.append((n - 0.5, p))
+    if len(pts) < 2:
+        return None
+    pts.sort()
+    for (t0, p0), (t1, p1) in zip(pts, pts[1:]):
+        if (p0 - 0.5) * (p1 - 0.5) <= 0 and p0 != p1:
+            return round(t0 + (0.5 - p0) * (t1 - t0) / (p1 - p0), 1)
+    return None
+
+
 def spread_rung(idx, suffix, home_code, away_code, margin):
     """The LIVE booked spread rung nearest a home margin: the ticket the ATS
     pick is made on, so the pick is tradeable and the record grades on

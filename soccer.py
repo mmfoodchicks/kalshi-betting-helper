@@ -1278,16 +1278,19 @@ def _build_board():
         # the BTTS figure goes on the record in its own bucket against
         # Kalshi's mid on a readable book, so the live record can re-judge
         # a figure the held-out test turned down
+        # the kickoff rides as the fifth element: the server logs a carried
+        # row only while its match is still ahead (predlog.carry)
+        ko = _ko_ts(row.get("kickoff"))
         b = row.get("btts")
         if b and b.get("model_pct") is not None and b.get("readable"):
-            btts_rows.append((b["ticker"], b["model_pct"] / 100.0, b.get("close"), b["mid"] / 100.0))
+            btts_rows.append((b["ticker"], b["model_pct"] / 100.0, b.get("close"), b["mid"] / 100.0, ko))
         for side in ("home", "draw", "away"):
             mk = row[side]["kalshi"]
             p = (row.get("model") or {}).get(f"p_{side}")
             if mk and mk.get("ticker") and p and row.get("fair"):
-                log_rows.append((mk["ticker"], p, mk.get("close"), row["fair"][side]))
+                log_rows.append((mk["ticker"], p, mk.get("close"), row["fair"][side], ko))
                 if row.get("dk"):
-                    dk_rows.append((mk["ticker"], row["dk"][side], mk.get("close"), row["fair"][side]))
+                    dk_rows.append((mk["ticker"], row["dk"][side], mk.get("close"), row["fair"][side], ko))
     if log_rows or btts_rows:
         try:
             import predlog
@@ -1300,6 +1303,9 @@ def _build_board():
                 predlog.log_many("soccer_btts", btts_rows)
         except Exception as e:
             errlog.note("SOC-predlog", e)
+        # the same rows beside the board: a PC build's only way into the record
+        import predlog
+        predlog.carry("soccer", [("soccer", log_rows), ("soccer_dk", dk_rows), ("soccer_btts", btts_rows)])
     n_btts = sum(1 for g in games if g.get("btts"))
     # how spread out the BTTS figure is beside Kalshi's, over this build's
     # readable books: the recalibration that beat the league average is

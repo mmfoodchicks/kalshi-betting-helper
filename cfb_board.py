@@ -15,13 +15,32 @@
   PICK'EM Every card carries the straight-up pick with its probability and a
          confidence RANK across the week (the surest pick ranks 1), plus the
          against-the-spread pick at the rung Kalshi books nearest its own
-         line, and the total lean at Kalshi's total: P(cover) and P(over)
-         are read off the simulated margins and totals, never off the
-         moneyline.
+         line: P(cover) is read off the simulated margins, never off the
+         moneyline. Kalshi's total is shown as the market's; there is no
+         total lean (2026-10-29, below).
   RECORD cfb_track logs the pre-game pick and grades it off the final, in
-         the same ledger as the NFL picks under league "cfb"; the ATS and
-         total picks file as Kalshi tickets (leagues cfb_ats / cfb_tot) and
-         grade on Kalshi's own settlement.
+         the same ledger as the NFL picks under league "cfb"; the ATS picks
+         file as Kalshi tickets (league cfb_ats) and grade on Kalshi's own
+         settlement (the cfb_tot book holds the leans filed before
+         2026-10-29).
+
+THE ENGINE'S LEVEL (2026-10-29, research/reports/game_xref.md, reviewed by
+a Fable agent and reproduced from its rows). The drive engine turns a margin
+into a game with the margin COMPRESSED (the real margin on the engine's: slope
+1.37-1.44, 1.7 points nearer zero on average, 5.3 in cross-division games)
+and every total at 27.5 +/- margin/2 a side. Every engine-derived figure was
+wrong the same way: the headline under-confident (favourites at 0.75 won
+86%), the card's edges wrong-signed on every favourite, the ATS pick the
+underdog in 94.8% of games with a line of 3+, the total a constant 56. The
+ratings themselves are calibrated through Phi(margin / 18). So the headline
+is Phi(fair margin / 18) when priced (-0.016 +/- 0.002 nats against the
+engine's win rate, 4+ SE in each of 2024, 2025, 2026; the same accuracy) and
+the calibrated Phi(model margin / 18) when not (-0.012 +/- 0.002, the same
+sign each season); the simulated margins are centred on that margin and the
+totals on Kalshi's implied total (when booked) before anything reads them --
+the ladders, the ATS cover, the combo maker's legs, the expected score. The
+engine keeps what it is good for: the spread of outcomes around those levels
+and the correlation between margin and total.
 
 Board and sims are published through boardshare, so the PC builds them on
 its own cores and the server adopts (pc_worker._task_boards); the server
@@ -183,13 +202,39 @@ def _iso_ts(s):
 
 
 # ---- One game through the drive engine --------------------------------------
+def _centre(xs, target, rng, no_zero=False):
+    """Whole-number outcomes `xs` moved so their mean is `target`: each by
+    floor(d) or floor(d) + 1, the second with probability frac(d), so the
+    shift is unbiased AND every outcome stays a whole number. A fractional
+    shift would leave every whole-number rung where it was (P(m + 0.4 >= 4)
+    is P(m >= 4) for whole m) and smear nothing onto the key numbers.
+    `no_zero`: a margin a shift lands on 0 goes to +1 or -1 at even odds (a
+    college game cannot end level)."""
+    n = len(xs)
+    if not n:
+        return list(xs)
+    d = target - sum(xs) / n
+    f = _math.floor(d)
+    frac = d - f
+    out = []
+    for x in xs:
+        y = x + f + (1 if rng.random() < frac else 0)
+        if no_zero and y == 0:
+            y = 1 if rng.random() < 0.5 else -1
+        out.append(y)
+    return out
+
+
 def simulate_game(home, away, r_home, r_away, neutral=False, n=_N, seed=None,
-                  ladders=None):
+                  ladders=None, center_margin=None, center_total=None):
     """Correlated Monte Carlo of one game from two ratings (margin points a
     game, cfb.inseason_ratings). `home`/`away` are {"abbr", "name"} where
     abbr is the code the candidate legs' krefs price under (Kalshi's when
-    the game is matched). Returns win prob, expected score, ladders and the
-    bitmask candidate legs; `_margins` rides along for the cover math."""
+    the game is matched). `center_margin` / `center_total` move the
+    simulated margins / totals to that mean before anything reads them (the
+    module docstring: the engine compresses margins and its total is a
+    constant). Returns win prob, expected score, ladders and the bitmask
+    candidate legs; `_margins` rides along for the cover math."""
     import nfl_game_sim
     # crc32, not hash(): str hashing is salted per process, so the "same"
     # seed gave every worker, the PC and each guard run a different slate
@@ -198,16 +243,17 @@ def simulate_game(home, away, r_home, r_away, neutral=False, n=_N, seed=None,
                         else zlib.crc32(f"{away['abbr']}@{home['abbr']}".encode()))
     rh, ra = cfb._rates_for(r_home, r_away, 0.0 if neutral else 1.0)
     margins, totals = [], []
-    pts_h = pts_a = 0.0
-    hw = 0
     for _ in range(n):
         ph, pa = cfb._play(rh, ra, rng)
-        if ph > pa:
-            hw += 1
         margins.append(ph - pa)
         totals.append(ph + pa)
-        pts_h += ph
-        pts_a += pa
+    if center_margin is not None:
+        margins = _centre(margins, center_margin, rng, no_zero=True)
+    if center_total is not None:
+        totals = _centre(totals, center_total, rng)
+    hw = sum(1 for m in margins if m > 0)
+    pts_h = sum(t + m for m, t in zip(margins, totals)) / 2.0
+    pts_a = sum(t - m for m, t in zip(margins, totals)) / 2.0
     p_home = hw / n
     mean_total = sum(totals) / n
     total_ladder = []
@@ -313,7 +359,7 @@ def _build_board(season, week, n=_N):
         cal = lambda p: p
     w_model = _model_weight()
     out, sims, log_rows = [], [], []
-    ats_rows, tot_rows = [], []
+    ats_rows = []
     for g in games:
         h, a = g["home"], g["away"]
         rh, ra = R.get(h["id"], 0.0), R.get(a["id"], 0.0)
@@ -330,13 +376,22 @@ def _build_board(season, week, n=_N):
             rh_s, ra_s = rh + shift / 2.0, ra - shift / 2.0
         else:
             fair_margin, rh_s, ra_s = model_margin, rh, ra
+        # Kalshi's own total, when its ladder brackets 50%: the card's total and
+        # the centre of the simulated totals (the module docstring)
+        mkt_total = kalshi_cfb.implied_total(idx, suffix) if suffix else None
         sim = simulate_game({"abbr": hc, "name": h["name"]},
                             {"abbr": ac, "name": a["name"]},
-                            rh_s, ra_s, neutral=g["neutral"], n=n, ladders=lad)
+                            rh_s, ra_s, neutral=g["neutral"], n=n, ladders=lad,
+                            center_margin=fair_margin, center_total=mkt_total)
         # The RAW model's number, for the calibrator and the record: the
         # ratings' margin through the engine's margin SD, no market in it.
         raw = 0.5 * (1 + _math.erf(model_margin / (_MARGIN_SD * _math.sqrt(2))))
-        ph = cal(sim["p_home"]) if mkt_margin is None else sim["p_home"]
+        # The headline reads the level through the same curve, never the
+        # engine's win rate (compressed: the module docstring). Unpriced, the
+        # calibrator applies -- it is fitted on this very figure (predlog
+        # "cfb" logs `raw`), where it used to be applied to the engine's.
+        ph = (cal(raw) if mkt_margin is None
+              else 0.5 * (1 + _math.erf(fair_margin / (_MARGIN_SD * _math.sqrt(2)))))
         dh, da = h.get("div") or "fbs", a.get("div") or "fbs"
         card = {"home": h["abbr"], "away": a["abbr"],
                 "home_name": h["name"], "away_name": a["name"],
@@ -357,6 +412,8 @@ def _build_board(season, week, n=_N):
                 "p_home_raw": round(raw, 4),
                 "exp_home": sim["exp_home"], "exp_away": sim["exp_away"],
                 "exp_total": sim["exp_total"], "mean_margin": sim["mean_margin"],
+                # "kalshi": the total IS the market's (the engine's own is a constant)
+                "exp_total_src": "kalshi" if mkt_total is not None else "engine",
                 "spread_ladder": sim["spread_ladder"],
                 "total_ladder": ([r for r in sim["total_ladder"]
                                   if 20 <= r["over_pct"] <= 80][:5]
@@ -406,22 +463,15 @@ def _build_board(season, week, n=_N):
                                      rung["close"], rung["mkt"], _iso_ts(g.get("date"))))
             tot = kalshi_cfb.total_rung(idx, suffix)
             if tot:
-                # The total at Kalshi's own line: how often the simulated
-                # totals clear it, and the lean that follows.
-                n_t = len(sim["_totals"]) or 1
-                over = sum(1 for t in sim["_totals"] if t > tot["line"]) / n_t
-                lean_over = over >= 0.5
-                card["total"] = {"line": tot["line"], "over_pct": round(100.0 * over, 1),
-                                 "lean": "over" if lean_over else "under",
-                                 "pct": round(100.0 * (over if lean_over else 1.0 - over), 1),
-                                 "mkt_pct": round(100.0 * (tot["mkt"] if lean_over
-                                                           else 1.0 - tot["mkt"]), 1),
-                                 "side": "yes" if lean_over else "no",
-                                 "ask": tot["ask"] if lean_over else tot["no_ask"],
+                # Kalshi's total, shown as the market's. No lean: the engine's
+                # total carried no information (a 55-point game every time; its
+                # leans hit 50.1% / 51.2% on 2024-26), and centred on Kalshi's
+                # it carries none by construction -- so nothing is filed as a
+                # pick (cfb_track reads `side` / `pct`) or logged as a forecast.
+                card["total"] = {"line": tot["line"], "market_total": mkt_total,
+                                 "mkt_over_pct": round(100.0 * tot["mkt"], 1),
+                                 "ask_over": tot["ask"], "ask_under": tot["no_ask"],
                                  "ticker": tot["ticker"]}
-                if pre and tot["ticker"]:
-                    tot_rows.append((tot["ticker"], min(0.999, max(0.001, over)),
-                                     tot["close"], tot["mkt"], _iso_ts(g.get("date"))))
             if pre:
                 for tk, p, own, opp in (
                         (px.get("home_ticker"), raw, px.get("home_cents"), px.get("away_cents")),
@@ -445,16 +495,18 @@ def _build_board(season, week, n=_N):
             predlog.log_many("cfb", log_rows)
         except Exception as _e:
             errlog.note("CFB-build_board", _e)
-    # The ATS and total forecasts file under their own models: they are
-    # coin-flip-shaped numbers at a line, and mixing them into the moneyline
-    # bucket would bend the calibrator that bucket fits (calibrate "cfb").
-    for model, rows in (("cfb_ats", ats_rows), ("cfb_total", tot_rows)):
-        if rows:
-            try:
-                predlog.init_db()
-                predlog.log_many(model, rows)
-            except Exception as _e:
-                errlog.note("CFB-build_board-lines", _e)
+    # The ATS forecasts file under their own model: coin-flip-shaped numbers
+    # at a line, and mixing them into the moneyline bucket would bend the
+    # calibrator that bucket fits (calibrate "cfb"). The total is Kalshi's
+    # since 2026-10-29: nothing of ours to file (cfb_total keeps its history).
+    if ats_rows:
+        try:
+            predlog.init_db()
+            predlog.log_many("cfb_ats", ats_rows)
+        except Exception as _e:
+            errlog.note("CFB-build_board-lines", _e)
+    # the same rows beside the board: a PC build's only way into the record
+    predlog.carry(f"cfb_slate_{season}_w{week}", [("cfb", log_rows), ("cfb_ats", ats_rows)])
     out.sort(key=lambda g: g["date"] or "")
     # Pick'em confidence: rank the straight-up picks by probability, surest
     # first. `confidence` is the points a standard confidence pool assigns

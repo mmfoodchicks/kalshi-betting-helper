@@ -177,6 +177,15 @@ try:
         predlog.start()
 except Exception as _e:
     errlog.note("APP-mod-2", _e)
+# The Matchups record (mx_record): harvest the published boards, grade them off
+# Kalshi's settlement, and refit the shared calibration file (calibrate
+# .write_params, in a niced child) when it is due. The owner only.
+try:
+    import mx_record
+    if _BG_OWNER:
+        mx_record.start()
+except Exception as _e:
+    errlog.note("APP-mod-mx", _e)
 
 
 @app.after_request
@@ -2888,6 +2897,37 @@ def _prop_types():
     return got or None
 
 
+@app.route("/api/calibration/params")
+def api_calibration_params():
+    """The shared calibration file (calibrate.write_params: every registered
+    calibration, the combo maker's blend weights, the Matchups tuning and its
+    verdicts), fitted once on the server. The PC fetches it before it builds
+    (pc_worker._fetch_params), so a PC-built board is calibrated exactly as a
+    server-built one. 404 until the first fit lands."""
+    import calibrate
+    data = calibrate.file_params()
+    if not data:
+        return jsonify({"error": "no calibration fitted yet"}), 404
+    return jsonify(data)
+
+
+@app.route("/api/matchups/record")
+def api_matchups_record():
+    """The Matchups tab's own record for one sport (mx_record.record): graded
+    lines, the engine against Kalshi on the same lines, the tab's +EV and
+    high-probability picks, calibration, and the tuning each stat has earned.
+    SQL sums over per-row scores -- nothing reads the table into memory."""
+    import mx_record
+    sport = request.args.get("sport", "nba")
+    if sport not in mx_record.SPORTS:
+        return jsonify({"error": "sport must be nba or nfl"}), 400
+    try:
+        return jsonify(mx_record.record(sport))
+    except Exception as e:
+        errlog.note("APP-mx-record", e)
+        return jsonify({"error": f"record failed: {type(e).__name__}"}), 502
+
+
 @app.route("/api/calibration")
 def api_calibration():
     """Site-wide calibration audit: per-model temperature, sample size, and
@@ -3920,7 +3960,13 @@ def api_nfl_record():
         nfl_track.grade_due()
     except Exception as _e:
         errlog.note("APP-api_nfl_record", _e)
-    return jsonify(store.nfl_record())
+    out = store.nfl_record()
+    try:
+        # the market's own record on the same games (store.market_benchmark)
+        out["regular"]["market"] = store.market_benchmark("nfl")
+    except Exception as _e:
+        errlog.note("APP-nfl-benchmark", _e)
+    return jsonify(out)
 
 
 def _nfl_pre_flag(payload):

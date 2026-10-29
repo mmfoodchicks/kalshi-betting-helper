@@ -16,6 +16,9 @@ and "cfb_tot", filed under the Kalshi TICKET they are (game_id = ticker,
 pick_side yes/no) and graded off Kalshi's own settlement through predlog,
 which logs the same tickers under models cfb_ats / cfb_total -- no
 scoreboard read, no push rule to get wrong (every rung is a half-point).
+Since 2026-10-29 the board files no total lean (cfb_board: the engine's
+total carried no information and the card's total is Kalshi's), so the
+cfb_tot book holds the leans filed before then and grades them out.
 The straight-up pick carries its own moneyline ticket too and grades the
 same way, so the record fills while ESPN's WAF has the scoreboard parked
 (every pass of 2026-09-06); the scoreboard pass still grades rows the
@@ -116,7 +119,9 @@ def record_from_board(data):
         store.record_nfl_pick(
             gid, date, week, False, side, home if pick_home else away,
             ph if pick_home else 1 - ph, price,
-            pred_total=g.get("exp_total"),
+            # the record's "Sim totals" measures the SIM: a card whose total
+            # is Kalshi's (cfb_board, 2026-10-29) files none
+            pred_total=g.get("exp_total") if g.get("exp_total_src", "engine") == "engine" else None,
             prob_raw=(raw if pick_home else 1 - raw) if raw is not None else None,
             league=LEAGUE, ticker=ticker, div=gdiv)
         store.update_nfl_close(gid, price, side, league=LEAGUE)

@@ -1530,6 +1530,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
             "simulator": simulator_stamp(model, int(n_sims), seed, preseason, discrete=sd_discrete),
             "model": model, "seed": (int(seed) if seed is not None else None),
             "engine_report": _engine_report(model, week, teams, seed),
+            "inputs": inputs_stamp(week, preseason),
             "pool_sig": pool_sig_rich(slate["csv"]), "pool_sig_kind": "rich",
             "contest": {k: contest.get(k) for k in ("id", "name", "entry_fee", "prize_pool",
                                                     "first_prize", "places_paid", "max_entries",
@@ -2839,6 +2840,19 @@ def world_split(n_worlds, opt_worlds):
     return range(0, gen), range(gen, n)
 
 
+def inputs_stamp(week, preseason=False):
+    """What the weekly lines' adjustments did on this build (nfl_dfs_sim
+    .week_stamp: the recent-usage update and the WR/RB matchup hook), for the
+    board's `inputs`. A separate field from `simulator`, which names the rule;
+    never raises -- a stamp must not cost a 45-minute build."""
+    try:
+        import nfl_dfs_sim
+        return nfl_dfs_sim.week_stamp(week, preseason)
+    except Exception as e:
+        errlog.note("TOURN-inputs", e)
+        return None
+
+
 def simulator_stamp(model, n, seed=None, preseason=False, discrete=False):
     """The stamp of whichever game simulator made a board's worlds."""
     import nfl_dfs_sim
@@ -3173,6 +3187,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
             "model": model, "seed": (int(seed) if seed is not None else None),
             "simulator": simulator_stamp(model, int(n_sims), seed, preseason),
             "engine_report": _engine_report(model, week, slate_teams, seed),
+            "inputs": inputs_stamp(week, preseason),
             "probes_configured": int(len(probes)),
             "candidate_draws": rep_c,
             "max_per_game": CL_MAX_PER_GAME, "max_per_team": CL_MAX_PER_TEAM,

@@ -11150,17 +11150,43 @@ ck("the ATS pick is who covers at the rung Kalshi books nearest its line, as a "
    and _ind64["ats"]["mkt_pct"] == (49.5 if _ind64["ats"]["side"] == "yes" else 50.5)
    and "ats" not in _app64,
    str((_ind64 or {}).get("ats")))
-ck("the total lean is read off the simulated totals at Kalshi's own total (the "
-   "rung nearest 50%: 52 at 55/46, not 56 at 40/61), as a ticket",
+_it64 = _kc64.implied_total(_idx64, "26SEP05UNTIND")
+ck("Kalshi's total is shown as the market's -- the rung nearest 50% (52 at 55/46, not 56 at 40/61), its over "
+   "chance and asks -- with no lean and nothing to file: the engine's own total is 27.5 +/- margin/2 a side, a "
+   "55-point game every time (research/reports/game_xref.md 3.2; its leans hit 50.1% / 51.2%)",
    _ind64 and _ind64.get("total") and _ind64["total"]["line"] == 51.5
    and _ind64["total"]["ticker"] == "KXNCAAFTOTAL-26SEP05UNTIND-52"
-   and _ind64["total"]["lean"] in ("over", "under")
-   and _ind64["total"]["side"] == ("yes" if _ind64["total"]["lean"] == "over" else "no")
-   and _ind64["total"]["ask"] == (55.0 if _ind64["total"]["lean"] == "over" else 46.0)
-   and abs(_ind64["total"]["pct"] - max(_ind64["total"]["over_pct"],
-                                        100 - _ind64["total"]["over_pct"])) < 0.11
+   and _ind64["total"]["ask_over"] == 55.0 and _ind64["total"]["ask_under"] == 46.0
+   and _ind64["total"]["market_total"] == _it64 and 0 < _ind64["total"]["mkt_over_pct"] < 100
+   and not {"lean", "side", "pct", "over_pct"} & set(_ind64["total"])
    and "total" not in _app64,
    str((_ind64 or {}).get("total")))
+_phi64 = lambda m: 0.5 * (1 + _math.erf(m / (18.0 * _math.sqrt(2))))
+ck("the headline reads the level through the ratings' own curve, never the engine's win rate (compressed: "
+   "favourites at 0.75 won 86%): Phi(fair margin / 18) when priced (-0.016 +/- 0.002 nats, 4+ SE each season), "
+   "the calibrated Phi(model margin / 18) when not; the simulated margins are centred on that margin and the "
+   "totals on Kalshi's implied total, so the expected score, the ladders, the cover and the maker's legs all read "
+   "the same level",
+   _ind64 and abs(_ind64["p_home"] - _phi64(_ind64["fair_margin"])) < 0.003
+   and abs(_app64["p_home"] - _app64["p_home_raw"]) < 1e-9
+   and abs(_ind64["mean_margin"] - _ind64["fair_margin"]) < 0.25
+   and abs(_app64["mean_margin"] - _app64["model_margin"]) < 0.25
+   and _it64 is not None and _ind64["exp_total_src"] == "kalshi" and abs(_ind64["exp_total"] - _it64) < 0.25
+   and _app64["exp_total_src"] == "engine"
+   and abs(_ind64["exp_home"] - (_it64 + _ind64["fair_margin"]) / 2) < 0.3,
+   str({k: (_ind64 or {}).get(k) for k in ("p_home", "fair_margin", "mean_margin", "exp_total", "exp_home")})
+   + f" implied {_it64}")
+import random as _rnd64
+_cr64 = _rnd64.Random(5)
+_cm64 = _cb64._centre([3, -7, 14, 10, -3, 7, 21, 1, -1, 6] * 200, 2.37, _cr64, no_zero=True)
+_cm64b = _cb64._centre([3, 7, 10, 14] * 500, 5.0, _rnd64.Random(6))
+ck("...the centring keeps every outcome a whole number (a fractional shift would leave every whole-number rung where "
+   "it was: P(m + 0.4 >= 4) is P(m >= 4)), is unbiased, and never leaves a college margin level",
+   all(isinstance(x, int) for x in _cm64) and abs(sum(_cm64) / len(_cm64) - 2.37) < 0.05
+   and 0 not in _cm64 and abs(sum(_cm64b) / len(_cm64b) - 5.0) < 0.05
+   and sorted(set(_cm64b)) == sorted({x + d for x in (3, 7, 10, 14) for d in (-4, -3)} & set(_cm64b))
+   and _cb64._centre([], 3.0, _cr64) == [],
+   str(sorted(set(_cm64b))))
 ck("the pick'em rank orders the week by confidence with pool points",
    sorted(g["pick"]["rank"] for g in _b64["games"]) == [1, 2, 3]
    and {g["pick"]["confidence"] for g in _b64["games"]} == {1, 2, 3}
@@ -11169,17 +11195,16 @@ _lg64 = {m: rows for m, rows in _logs64}
 _atsp64 = (_ind64["ats"]["pct"] / 100.0 if _ind64["ats"]["side"] == "yes"
            else 1 - _ind64["ats"]["pct"] / 100.0)
 ck("the raw model probability is logged under predlog 'cfb' for the priced "
-   "pre-game legs only, kickoff attached; the ATS and total forecasts under their "
-   "own models as the YES side of the ticket; the sims store is written for the maker",
+   "pre-game legs only, kickoff attached; the ATS forecast under its own model as "
+   "the YES side of the ticket, the total under none (Kalshi's since 2026-10-29); "
+   "the sims store is written for the maker",
    _logs64 and _logs64[0][0] == "cfb" and len(_logs64[0][1]) == 2
    and all(r[4] for r in _logs64[0][1])
    and abs(_logs64[0][1][0][1] - _ind64["p_home_raw"]) < 1e-4    # the card rounds to 4 dp
-   and set(_lg64) == {"cfb", "cfb_ats", "cfb_total"}
+   and set(_lg64) == {"cfb", "cfb_ats"}
    and len(_lg64["cfb_ats"]) == 1 and _lg64["cfb_ats"][0][0] == _ind64["ats"]["ticker"]
    and abs(_lg64["cfb_ats"][0][1] - _atsp64) < 1e-3
    and abs(_lg64["cfb_ats"][0][3] - 0.495) < 0.01 and _lg64["cfb_ats"][0][4]
-   and len(_lg64["cfb_total"]) == 1 and _lg64["cfb_total"][0][0] == _ind64["total"]["ticker"]
-   and abs(_lg64["cfb_total"][0][1] - _ind64["total"]["over_pct"] / 100.0) < 1e-3
    and "cfb_parlay_sims_2026_w1_300" in _puts64
    and [s["pair"] for s in _puts64["cfb_parlay_sims_2026_w1_300"]][:1] == ["UNT@IU"])
 # --- the combo maker on that slate
@@ -11254,9 +11279,12 @@ try:
     _ats64 = _st64.ungraded_nfl_picks(league="cfb_ats")
     _tot64 = _st64.ungraded_nfl_picks(league="cfb_tot")
     ck("college picks land in the football ledger under league cfb, pre-game "
-       "and priced only, and the NFL book does not see them; the ATS and total "
-       "picks file as their Kalshi tickets at the pick side's ask",
-       _n64 == 3 and len(_rows64) == 1 and _rows64[0]["game_id"] == "2026-09-05_UNT@IU"
+       "and priced only, and the NFL book does not see them; the ATS pick files "
+       "as its Kalshi ticket at the pick side's ask, the total files nothing "
+       "(Kalshi's since 2026-10-29), and a card whose total is Kalshi's gives the "
+       "record's Sim totals no predicted total",
+       _n64 == 2 and len(_rows64) == 1 and _rows64[0]["game_id"] == "2026-09-05_UNT@IU"
+       and _rows64[0]["pred_total"] is None
        and _rows64[0]["league"] == "cfb" and _rows64[0]["pick_side"] == "home"
        and _rows64[0]["ticker"] == "KXNCAAFGAME-26SEP05UNTIND-IND"
        and _rows64[0]["price_cents"] == 93.0 and _st64.ungraded_nfl_picks() == []
@@ -11266,11 +11294,11 @@ try:
        and _ats64[0]["close_price"] == _ind64["ats"]["ask"]
        and _ats64[0]["pick_name"] == f"{_ind64['ats']['team']} {_ind64['ats']['spread']}"
        and abs(_ats64[0]["prob"] - _ind64["ats"]["pct"] / 100.0) < 1e-6
-       and len(_tot64) == 1 and _tot64[0]["game_id"] == _ind64["total"]["ticker"]
-       and _tot64[0]["pred_total"] == _ind64["exp_total"]
-       and _tot64[0]["pick_name"].split(" ")[0] in ("Over", "Under")
-       and _tot64[0]["pick_name"].endswith(" 51.5"),
+       and _tot64 == [],
        f"{_n64} {_ats64} {_tot64}")
+    # a total pick filed before 2026-10-29 still grades off its ticket's settlement
+    _st64.record_nfl_pick(_ind64["total"]["ticker"], "2026-09-05", 1, False, "yes", "Over 51.5", 0.56, 55.0,
+                          pred_total=56.0, league="cfb_tot", div="fbs")
     _st64.update_nfl_close("2026-09-05_UNT@IU", 95.0, "home", league="cfb")
     _fin64 = {("IU", "UNT"): (38.0, 10.0)}
     _gr64 = _ct64._grade_rows(_st64.ungraded_nfl_picks(league="cfb"), _fin64)
@@ -11312,7 +11340,7 @@ try:
         _ct64._finals_for = _ofin64
     _su2_64 = [r for r in _st64.nfl_pick_rows("cfb") if r["game_id"] == "2026-09-06_SMU@TCU"][0]
     _totr64 = _st64.nfl_pick_rows("cfb_tot")[0]
-    _ov64 = _ind64["total"]["side"] == "yes"
+    _ov64 = True                       # the row filed above: Over 51.5
     ck("the total pick grades off the ticket's settlement (NO settled: the Over "
        "lost, an Under pick won), a void market voids the ATS pick, and the College "
        "record carries all three books plus the totals' lean against the line",
@@ -11331,7 +11359,7 @@ try:
        and _rec64b["totals"]["lean"] == {
            "n": 1, "over_picks": 1 if _ov64 else 0, "under_picks": 0 if _ov64 else 1,
            "over_pick_pct": 100.0 if _ov64 else 0.0, "overs_hit_pct": 0.0, "graded": 1,
-           "vs_line_avg": round(_ind64["exp_total"] - 51.5, 2)}
+           "vs_line_avg": round(56.0 - 51.5, 2)}
        and _rec64b["regular"]["wins"] == 2
        and set(_rec64b) == {"regular", "ats", "totals", "market", "divisions", "div"}
        and "STORE-nfl-ticker" in open(_os.path.join(_root, "store.py")).read(),
@@ -11498,7 +11526,7 @@ ck("the record sits at the top of the College page with all three books and the 
    and "el.innerHTML = cfbRecordHtml(d)" in _js64
    and "ATS at Kalshi's rung:" in _js64 and "Totals at Kalshi's line:" in _js64
    and "leaned Over on" in _js64 and "<th>ATS pick</th><th>O/U</th>" in _js64
-   and "g.ats.spread" in _js64 and "g.total.lean" in _js64)
+   and "g.ats.spread" in _js64 and "g.total.mkt_over_pct" in _js64 and "g.total.lean" not in _js64)
 # --- "I can't open the app": the service worker was eating the auth challenge
 _sw64 = open(_os.path.join(_root, "static", "sw.js")).read()
 ck("an auth challenge reaches the BROWSER instead of being answered from cache: "
@@ -24032,9 +24060,10 @@ ck("the PC sends each board's age with its upload",
    _pf_sent == 1 and _pf_up_h and 118 <= float(_pf_up_h[0].get("X-Art-Age", -1)) <= 125, str(_pf_up_h))
 _pf_cyc = _insp.getsource(_pcw_pf._cycle)
 _pf_bm = []
-_pf_old_bm = (_pcw_pf._config, _pcw_pf._task_boards, _pcw_pf._sync_kind)
+_pf_old_bm = (_pcw_pf._config, _pcw_pf._task_boards, _pcw_pf._sync_kind, _pcw_pf._fetch_params)
 try:
     _pcw_pf._config = lambda: ("http://x", "t")
+    _pcw_pf._fetch_params = lambda url, tok: _pf_bm.append("params")
 
     def _pf_tb():
         _pf_bm.append("boards")
@@ -24047,9 +24076,10 @@ try:
     except RuntimeError:
         _pf_bm_raised = True
 finally:
-    _pcw_pf._config, _pcw_pf._task_boards, _pcw_pf._sync_kind = _pf_old_bm
-ck("the PC's boards run alone on their own pass and still upload when a builder fails; the cycle no longer waits on them",
-   _pf_bm == ["boards", "sync boards"] and _pf_bm_raised and '("boards", _task_boards)' not in _pf_cyc
+    _pcw_pf._config, _pcw_pf._task_boards, _pcw_pf._sync_kind, _pcw_pf._fetch_params = _pf_old_bm
+ck("the PC's boards run alone on their own pass (the server's calibration fetched first) and still upload when a "
+   "builder fails; the cycle no longer waits on them",
+   _pf_bm == ["params", "boards", "sync boards"] and _pf_bm_raised and '("boards", _task_boards)' not in _pf_cyc
    and '"--boards" in sys.argv[1:]' in open(_os.path.join(_root, "pc_worker.py"), encoding="utf-8").read(),
    str(_pf_bm))
 # the pass is a process that exits after its upload, and its builders run in daemon threads that die with it:
@@ -24058,12 +24088,13 @@ ck("the PC's boards run alone on their own pass and still upload when a builder 
 import threading as _th_jm
 _pf_tmp9 = _tf_pf.mkdtemp()
 _pf_jm_old = (_pcw_pf._config, _pcw_pf._task_boards, _pcw_pf._sync_kind, _pcw_pf._BOARDS_JOIN_S, _bs_pf._DIR,
-              set(_bs_pf._HELD))
+              set(_bs_pf._HELD), _pcw_pf._fetch_params)
 _pf_jm_stop, _pf_jm_threads, _pf_jm_log = _th_jm.Event(), [], []
 try:
     _bs_pf._DIR = _os.path.join(_pf_tmp9, "boards")
     _bs_pf._HELD.clear()
     _pcw_pf._config = lambda: ("http://x", "t")
+    _pcw_pf._fetch_params = lambda url, tok: False
     _pcw_pf._BOARDS_JOIN_S = 4
 
     def _pf_jm_build(name, secs):
@@ -24099,6 +24130,7 @@ finally:
     for _pf_jm_th in _pf_jm_threads:
         _pf_jm_th.join(5)
     (_pcw_pf._config, _pcw_pf._task_boards, _pcw_pf._sync_kind, _pcw_pf._BOARDS_JOIN_S, _bs_pf._DIR) = _pf_jm_old[:5]
+    _pcw_pf._fetch_params = _pf_jm_old[6]
     _bs_pf._HELD.clear()
     _bs_pf._HELD.update(_pf_jm_old[5])
     _sh_pf.rmtree(_pf_tmp9, ignore_errors=True)
@@ -24450,6 +24482,106 @@ ck("the recipes tab waits for the PC too: with it on, the NFL kick waits 45 minu
               "NFL off, none": (202, True), "UFC on, none, just noticed": (202, False),
               "UFC on, none for 16 min": (202, True), "UFC off, none": (202, True),
               "UFC on, 50 min old": (200, False)}, str(_pf_rk))
+
+print("=" * 72)
+print("WX. The DFS builder's weekly inputs (2026-10-29): recent usage and the WR/RB matchup hook, stamped per build")
+print("=" * 72)
+# The owner: "make sure the WR and RB update feeds in to the dfs builder". Every DFS path (the week board, the
+# lineup sheets, the tournament boards on every model) reads nfl_dfs_sim.player_pool -> weekly_games. The usage
+# update ran there, but every board stamped the RULE ("usage shares") whether or not it ran; a PC build that fell
+# back to Sleeper's bare lines (its box-score fetch failing, its ledger on the PC) read exactly like one that moved
+# 544 lines (live week 8, 2026-10-29: 342 of 366 projections moved, team totals unchanged).
+import nfl_dfs_sim as _wx_ns, nfl_usage as _wx_nu, nfl_matchup as _wx_nm, nfl_recon as _wx_nr, dfs_tourney as _wx_dt
+
+
+def _wx_rows():
+    def row(pid, first, last, pos, team, opp, gid, pts, tgt, car):
+        return {"player_id": pid, "player": {"first_name": first, "last_name": last, "position": pos},
+                "team": team, "opponent": opp, "game_id": gid,
+                "stats": {"pts_ppr": pts, "rec_tgt": tgt, "rush_att": car, "rec": tgt * 0.6, "rec_yd": tgt * 7.0,
+                          "rush_yd": car * 4.2}}
+    return [row("1", "Wide", "One", "WR", "AAA", "BBB", "g1", 15.0, 8.0, 0.0),
+            row("2", "Wide", "Two", "WR", "AAA", "BBB", "g1", 9.0, 5.0, 0.0),
+            row("3", "Run", "Back", "RB", "AAA", "BBB", "g1", 12.0, 2.0, 15.0),
+            row("4", "Other", "Wide", "WR", "BBB", "AAA", "g1", 11.0, 7.0, 0.0)]
+
+
+def _wx_build(week, usage_fn, mx_fn=None):
+    """One weekly_games build with Sleeper, the schedule and the reconciliation stubbed; returns
+    (games, the call order, week_stamp)."""
+    calls = []
+    saved = (_wx_ns._get, _wx_nu.apply, _wx_nm.apply, _wx_nr.reconcile_games, _wx_ns._orient)
+    try:
+        _wx_ns._get = lambda url: _wx_rows()
+        _wx_nu.apply = lambda pairs, s, w: calls.append("usage") or usage_fn(pairs, s, w)
+        _wx_nm.apply = (lambda pairs, s, w: calls.append("matchup") or (mx_fn or saved[2])(pairs, s, w))
+        _wx_nr.reconcile_games = lambda games: calls.append("recon")
+        _wx_ns._orient = lambda games, s, w: None
+        _wx_ns._cache.pop(("nfl_sleeper", "2026", week), None)
+        _wx_ns.weekly_stamps.pop(("2026", week), None)
+        g = _wx_ns.weekly_games("2026", week)
+        return g, calls, _wx_ns.week_stamp(week, season="2026")
+    finally:
+        (_wx_ns._get, _wx_nu.apply, _wx_nm.apply, _wx_nr.reconcile_games, _wx_ns._orient) = saved
+        _wx_ns._cache.pop(("nfl_sleeper", "2026", week), None)
+        _wx_ns.weekly_stamps.pop(("2026", week), None)
+
+
+_wx_ok = _wx_build(8, lambda pairs, s, w: {"players_moved": 3, "mean_abs_ppr_shift": 0.5})
+ck("the weekly lines run recent usage, then the WR/RB matchup hook, then the reconciliation the engine reads -- "
+   "the hook's own contract ('called right after nfl_usage.apply')",
+   _wx_ok[0] and _wx_ok[1] == ["usage", "matchup", "recon"], str(_wx_ok[1]))
+ck("...and the build records what they DID: usage applied (lines moved), the matchup hook at weight 0 with the "
+   "committed model's reason (nothing receiving or rushing beat Sleeper; passing TDs only, team totals kept)",
+   _wx_ok[2]["usage"] == {"players_moved": 3, "mean_abs_ppr_shift": 0.5, "applied": True}
+   and _wx_ok[2]["matchup"]["applied"] is False and _wx_ok[2]["matchup"]["markets"] == ["ptd"]
+   and "weight 0" in _wx_ok[2]["matchup"]["reason"]
+   and _wx_nm.load_coefs()["dfs_hook"] == {"ships": False, "team_totals_free": False}, str(_wx_ok[2])[:300])
+_wx_early = _wx_build(2, lambda pairs, s, w: None)
+_wx_down = _wx_build(8, lambda pairs, s, w: None)
+
+
+def _wx_raise(pairs, s, w):
+    raise RuntimeError("sleeper down")
+
+
+_wx_err = _wx_build(8, _wx_raise)
+_wx_mxe = _wx_build(8, lambda pairs, s, w: {"players_moved": 1, "mean_abs_ppr_shift": 0.1}, mx_fn=_wx_raise)
+ck("a build on Sleeper's bare lines says so and why: not in effect (weeks 1-2), the box scores unreadable, or the "
+   "update failing -- and a failing matchup hook leaves the board built with its reason",
+   _wx_early[2]["usage"]["applied"] is False and "not in effect" in _wx_early[2]["usage"]["reason"]
+   and _wx_down[2]["usage"]["applied"] is False and "box scores could not be read" in _wx_down[2]["usage"]["reason"]
+   and _wx_err[0] and _wx_err[2]["usage"]["applied"] is False and "RuntimeError" in _wx_err[2]["usage"]["reason"]
+   and _wx_mxe[0] and _wx_mxe[2]["usage"]["applied"] is True
+   and _wx_mxe[2]["matchup"] == {"applied": False, "reason": "failed: RuntimeError"},
+   str([_wx_early[2], _wx_down[2], _wx_err[2], _wx_mxe[2]])[:400])
+_wx_ws_old = _wx_ns.week_stamp
+try:
+    _wx_ns.week_stamp = _wx_raise
+    _wx_in_bad = _wx_dt.inputs_stamp(8)
+finally:
+    _wx_ns.week_stamp = _wx_ws_old
+_wx_src_dt = open(_os.path.join(_root, "dfs_tourney.py"), encoding="utf-8").read()
+_wx_src_nd = open(_os.path.join(_root, "nfl_dfs.py"), encoding="utf-8").read()
+_wx_js = open(_os.path.join(_root, "static", "app.js"), encoding="utf-8").read()
+ck("every DFS payload carries what its build's inputs did -- both tournament boards, both lineup sheets -- beside "
+   "the rule's stamp, never instead of it; a stamp that fails costs the build nothing",
+   _wx_src_dt.count('"inputs": inputs_stamp(week, preseason),') == 2
+   and _wx_src_nd.count('"inputs": nfl_dfs_sim.week_stamp(week, preseason),') == 2
+   and _wx_in_bad is None and _wx_ns.week_stamp(1, preseason=True)["usage"]["applied"] is False
+   and _wx_ns.week_stamp("bad") is None
+   and _wx_js.count("${_nflInputsHtml(d.inputs)}") == 3)
+
+print("=" * 72)
+print("RC. The records reach the server (2026-10-29): one shared calibration file (the PC fetches it), the rows a PC")
+print("    build carries beside its board, and the Matchups tab's own graded, self-tuning record (tests/guards_records.py)")
+print("=" * 72)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    __import__("guards_records").run(ck)
+except Exception as _rc_e:                 # a guard file that cannot run is a failed guard, never a skipped one
+    import traceback as _rc_tb
+    ck("guards_records runs to the end", False, f"{type(_rc_e).__name__}: {_rc_e} " + _rc_tb.format_exc()[-600:])
 
 print("=" * 72)
 print("MX. The matchup upgrade (2026-10-23): prop math, the NBA engine, the NFL matchup data and model,")

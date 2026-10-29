@@ -3996,14 +3996,14 @@ function cfbSlateCard(g) {
   const ats = (g.ats
     ? `<div class="small">ATS at Kalshi's rung: <b>${escapeHtml(g.ats.name)} ${escapeHtml(g.ats.spread || "")}</b> covers <b>${g.ats.pct}%</b>${g.ats.mkt_pct != null ? ` <span style="color:var(--muted)">(market ${g.ats.mkt_pct}%${g.ats.ask != null ? `, ${g.ats.ask}¢` : ""}; its line ${_cfbMarginTxt(g.market_margin)})</span>` : ""}</div>` : "")
     + (g.total
-    ? `<div class="small">Total at Kalshi's ${g.total.line}: <b>${g.total.lean === "over" ? "Over" : "Under"}</b> <b>${g.total.pct}%</b>${g.total.mkt_pct != null ? ` <span style="color:var(--muted)">(market ${g.total.mkt_pct}%${g.total.ask != null ? `, ${g.total.ask}¢` : ""})</span>` : ""}</div>` : "");
+    ? `<div class="small">Kalshi's total ${g.total.line}: over <b>${g.total.mkt_over_pct}%</b>${g.total.ask_over != null ? ` <span style="color:var(--muted)">(over ${g.total.ask_over}¢ · under ${g.total.ask_under != null ? `${g.total.ask_under}¢` : "-"})</span>` : ""} <span style="color:var(--muted)">· no lean: the sim's own total carried no information</span></div>` : "");
   const level = g.market_margin != null
     ? `<div class="small" style="color:var(--muted)">margin: model ${g.model_margin > 0 ? "+" : ""}${g.model_margin} · market ${g.market_margin > 0 ? "+" : ""}${g.market_margin} (${g.market_src}) · blended ${g.fair_margin > 0 ? "+" : ""}${g.fair_margin} (model weight ${Math.round((g.model_weight || 0) * 100)}%)</div>`
     : `<div class="small" style="color:var(--muted)">margin: model ${g.model_margin > 0 ? "+" : ""}${g.model_margin} · no Kalshi line yet</div>`;
   return `<div class="bbgame nflcard">
     <div class="top"><div>
       <div class="matchup">${escapeHtml(g.away_name || g.away)} @ ${escapeHtml(g.home_name || g.home)}${divChip} <span class="small" style="color:var(--muted)">${(g.date || "").slice(0, 10)}${g.neutral ? " · neutral" : ""}</span> ${score}</div>
-      <div class="pick">Pick: <b>${escapeHtml(g.pick.name || g.pick.team)}</b> ${g.pick.pct}% <span class="small" style="color:var(--muted)">(#${g.pick.rank} · ${g.pick.confidence} pts)</span> · total <b>${g.exp_total}</b></div>
+      <div class="pick">Pick: <b>${escapeHtml(g.pick.name || g.pick.team)}</b> ${g.pick.pct}% <span class="small" style="color:var(--muted)">(#${g.pick.rank} · ${g.pick.confidence} pts)</span> · total <b>${g.exp_total}</b>${g.exp_total_src === "kalshi" ? ` <span class="small" style="color:var(--muted)">(Kalshi's)</span>` : ""}</div>
     </div></div>
     <div class="nfl-score"><span class="nfl-sc">${g.away} <b>${g.exp_away}</b></span><span class="nfl-scsep">-</span><span class="nfl-sc"><b>${g.exp_home}</b> ${g.home}</span></div>
     <div class="winbar"><div class="fill" style="width:${ph}%"></div>
@@ -4026,7 +4026,7 @@ function renderCFBPickem(d) {
       ? `${escapeHtml(g.ats.team)} ${escapeHtml(g.ats.spread || "")} <b>${g.ats.pct}%</b>${g.ats.mkt_pct != null ? ` <span style="color:var(--muted)">(mkt ${g.ats.mkt_pct}%)</span>` : ""}`
       : `<span style="color:var(--muted)">no line</span>`;
     const ou = g.total
-      ? `${g.total.lean === "over" ? "O" : "U"} ${g.total.line} <b>${g.total.pct}%</b>${g.total.mkt_pct != null ? ` <span style="color:var(--muted)">(mkt ${g.total.mkt_pct}%)</span>` : ""}`
+      ? `${g.total.line} <span style="color:var(--muted)">(Kalshi: over ${g.total.mkt_over_pct}%)</span>`
       : `<span style="color:var(--muted)">-</span>`;
     return `<tr><td>${g.pick.rank}</td><td><b>${g.pick.confidence}</b></td>
       <td>${escapeHtml(g.away)} @ ${escapeHtml(g.home)}${g.division && g.division !== "fbs" ? ` <span style="color:var(--muted)">${g.division === "cross" ? "·fbs/fcs" : "·fcs"}</span>` : ""}${g.state === "in" ? ' <span class="gg-live">🔴</span>' : ""}</td>
@@ -4036,7 +4036,7 @@ function renderCFBPickem(d) {
   }).join("");
   box.innerHTML = `<details class="simdetail" open><summary>🎯 <b>Pick'em</b> - ${games.length} games ranked by confidence</summary>
     <div style="overflow-x:auto"><table class="seasontbl"><thead><tr><th>#</th><th>pts</th><th>game</th><th>pick</th><th>win%</th><th>Kalshi</th><th>line</th><th>ATS pick</th><th>O/U</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <div class="small" style="color:var(--muted);margin-top:4px">pts = confidence-pool points (surest pick gets the most). win% is the blended sim; Kalshi is the pick's ask with the model's edge beside it. line = the market's own line off its traded rungs. ATS = who covers at the rung Kalshi books nearest that line, read off the simulated margins, with the market's own cover chance beside it; O/U = the lean at Kalshi's total, off the simulated totals. Early in the season the ratings are a regressed prior, so treat a big ATS lean on an underdog as the model's opinion, not a given.</div>
+    <div class="small" style="color:var(--muted);margin-top:4px">pts = confidence-pool points (surest pick gets the most). win% is the blended margin through the ratings' own curve (25% model, 75% Kalshi's line where it has one); Kalshi is the pick's ask with the model's edge beside it. line = the market's own line off its traded rungs. ATS = who covers at the rung Kalshi books nearest that line, read off the simulated margins (centred on the blended margin), with the market's own cover chance beside it; O/U = Kalshi's own total -- the sim's total carried no information, so there is no lean. Early in the season the ratings are a regressed prior, so treat a big ATS lean on an underdog as the model's opinion, not a given.</div>
   </details>`;
 }
 // Which division's tab is open. One build carries both, so the tab is a
@@ -6819,7 +6819,7 @@ function renderNflDfs(d) {
   return `<div class="combo hl prop">
     <div class="chead"><span class="ctag">🏈 NFL ${d.mode === "showdown" ? "showdown" : "lineup"} - ${objName}</span>
       <span class="small">Week ${d.week}${d.mode === "showdown" ? " · CPT + 5 FLEX" : ` · ${d.stack ? "QB stack" : "no stack"}`}</span></div>
-    ${stWarn}
+    ${stWarn}${_nflInputsHtml(d.inputs)}
     <div class="cnums" style="margin:4px 0">
       <span>salary <b>$${nf(d.salary)}</b>/$${nf(d.cap)}</span>
       <span>proj <b>${d.proj}</b></span>
@@ -7477,6 +7477,9 @@ async function loadNflRecord() {
     let html = "";
     if (reg.graded) html += pickRecordHtml(reg, "points");
     else if (reg.pending) html += `<span>Model track record: ${reg.pending} picks awaiting results…</span>`;
+    // Kalshi's own record on the same games: a hit rate means little without the market's beside it
+    const mb = reg.market || {};
+    if (mb.n) html += `<div class="small" style="margin-top:3px">Same ${mb.n} games: our picks won <b>${mb.model_pct}%</b>, Kalshi's favourite <b>${mb.fav_pct != null ? `${mb.fav_pct}%` : "-"}</b> · log loss ours <b>${mb.ll_model}</b> vs Kalshi's <b>${mb.ll_market}</b> <span style="color:var(--muted)">(lower is better; ${escapeHtml(mb.basis || "")})</span></div>`;
     if (pre.graded || pre.pending) {
       const line = pre.graded
         ? `Preseason (separate book - different distribution): <b>${pre.wins}-${pre.losses}</b>` +
@@ -8461,6 +8464,23 @@ function dfsTourneyCopy(list, i) {
   const txt = r.captain ? `CPT ${r.captain}; ${r.flex.join("; ")}` : (r.lineup || []).map((p) => `${p.slot} ${p.name}`).join("; ");
   try { navigator.clipboard.writeText(txt); } catch (e) { /* no clipboard: the row is on screen */ }
 }
+// What the weekly lines' own adjustments DID on this build (nfl_dfs_sim
+// .week_stamp, the payload's `inputs`): the recent-usage update -- who has
+// actually been getting targets and carries -- and the WR/RB matchup hook.
+// Every board used to stamp the RULE ("usage shares") whether or not it ran;
+// a build on Sleeper's bare lines now says so. Boards before 2026-10-29 carry
+// no `inputs` and say nothing.
+function _nflInputsHtml(inp) {
+  if (!inp || !inp.usage) return "";
+  const u = inp.usage, m = inp.matchup || {};
+  const uTxt = u.applied
+    ? `recent usage applied (${nf(u.players_moved || 0)} player lines moved, ${u.mean_abs_ppr_shift} pts on average)`
+    : (u.applied === false ? `<b style="color:#e0a656">⚠ recent usage not applied: ${escapeHtml(u.reason || "")}</b>` : escapeHtml(u.reason || ""));
+  const mTxt = m.applied
+    ? `WR/RB matchup terms applied (${nf(m.players_moved || 0)} players moved)`
+    : (m.reason ? `WR/RB matchup terms at weight 0 (${escapeHtml(m.reason)})` : "");
+  return `<div class="small" style="color:var(--muted);margin-top:4px">Projections: Sleeper's weekly lines · ${uTxt}${mTxt ? ` · ${mTxt}` : ""}</div>`;
+}
 // "Build requested by": the owner's Build on the PC, or the PC's own rules
 // with the reason (pc_worker._requested_by). A board built before 2026-10-22
 // carries neither and says nothing.
@@ -8502,7 +8522,7 @@ function renderDfsTourney(d) {
       : `PC on, updating after its current build${pc.task ? ` (${escapeHtml(pc.task)})` : ""}`)
     : `PC off${pc.seen_s != null ? ` (seen ${agoStr(pc.seen_s)})` : ""}`;
   if (d.status !== "ok") {
-    box.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ <b>Tournament</b> - ${escapeHtml(d.why || "not built yet")} · ${pcTxt}${_dfsTourneyQueued(d)}</div>${_dfsTourneyTried(d)}`;
+    box.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ <b>Tournament</b> - ${escapeHtml(d.why || "not built yet")} · ${pcTxt}${_dfsTourneyQueued(d)}</div>${_dfsTourneyTried(d)}${_nflInputsHtml(d.inputs)}`;
     return;
   }
   const classic = d.kind === "classic";
@@ -8598,7 +8618,7 @@ function renderDfsTourney(d) {
     ? ` Each simulated game is played snap by snap by the deep engine at the drive model's and its own blended level; every player's, defense's and kicker's points come off that one box score.`
     : (d.model ? ` Worlds: the ${escapeHtml(d.model)} model.` : "");
   box.innerHTML = `<div style="margin-top:10px;padding:8px 10px;border:1px solid var(--line,#333);border-radius:8px">
-    <div><b>🏟️ Tournament</b> <span class="small" style="color:var(--muted)">${escapeHtml(c.name || "")} · ${nf(c.max_entries)} entries · ${money(c.entry_fee)} · ${money(c.first_prize)} to 1st · built ${agoStr(d.age_s || 0)}${_dfsTourneyBy(d)} · ${pcTxt}</span>${_dfsTourneyQueued(d)}</div>${_dfsTourneyTried(d)}
+    <div><b>🏟️ Tournament</b> <span class="small" style="color:var(--muted)">${escapeHtml(c.name || "")} · ${nf(c.max_entries)} entries · ${money(c.entry_fee)} · ${money(c.first_prize)} to 1st · built ${agoStr(d.age_s || 0)}${_dfsTourneyBy(d)} · ${pcTxt}</span>${_dfsTourneyQueued(d)}</div>${_dfsTourneyTried(d)}${_nflInputsHtml(d.inputs)}
     ${contestBtns}
     <div class="small" style="color:var(--muted);margin-top:2px">${head}${worldsTxt} ${escapeHtml(fm.note || "")}${fieldOnly.length ? ` Our depth and roster gates keep us off ${fieldOnly.slice(0, 8).map(escapeHtml).join(", ")}${fieldOnly.length > 8 ? ` and ${fieldOnly.length - 8} more` : ""}; the field still plays them.` : ""}</div>
     ${exp ? `<div class="small" style="color:var(--muted);margin-top:2px">⚠️ <b>Experimental win, EV and ROI</b>: ${expWhy}. Top 1% and top 0.1% are the ranking columns; the raw numbers stay on the sheet for comparison while the tail estimator is validated.</div>` : ""}

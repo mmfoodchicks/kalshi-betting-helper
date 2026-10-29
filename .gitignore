@@ -67,3 +67,8 @@ research/data/nfl_rush/qb_games_2023_2026.csv.gz
 research/data/nfl_rush_model/inputs/nfl_props_*.json
 # ... and the decisive run's own dataset, built after the window: the same restricted columns
 research/data/nfl_rush_model/prospective_dataset/
+
+# the shared calibration fit (calibrate.params_path): fitted on the server,
+# fetched by the PC beside its predlog.db; never source
+calib_params.json
+mx_record.db*

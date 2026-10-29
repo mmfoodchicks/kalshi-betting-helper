@@ -1321,6 +1321,9 @@ def _build_board(season, week, n=2400, preseason=False):
                 predlog.log_shadow("nfl_deep", deep_rows)
         except Exception as _e:
             errlog.note("NFLG-build_board", _e)
+        # the same rows beside the board: a PC build's only way into the record
+        predlog.carry(f"nfl_slate_{season}_w{week}_{int(bool(preseason))}",
+                      [("nfl_pre" if preseason else "nfl", log_rows), ("nfl_deep", deep_rows)])
     out.sort(key=lambda g: g["date"] or "")
     note = ("Drive-level Monte Carlo seeded by Sleeper's matchup-adjusted "
             "projections: alternating possessions with game script, short "

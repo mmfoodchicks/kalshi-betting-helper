@@ -564,6 +564,40 @@ def nfl_record(league="nfl", div=None):
     return out
 
 
+def market_benchmark(league="nfl"):
+    """Kalshi's own record on the SAME graded straight-up games as a football
+    book's picks (regular season): how often the market's favourite won, and
+    the market's log loss beside the shown probability's. The owner read the
+    NFL book's ~60% as awful (2026-10-29); over 2024-26 the closing favourite
+    won 67.6% to the drive sim's 65.0%, and 63.5% of 2026's first 107 games
+    (research/reports/game_xref.md 1.1) -- a number means little without the
+    market's on the same games. Kalshi's price for the pick's side is
+    predlog's for that ticker (the pre-game closing snapshot, else the price
+    at log time); a game at exactly 50% has no favourite and counts only in
+    the log loss. {"n": 0} until a graded pick has a price."""
+    import math
+    import predlog
+    with _lock, _conn() as c:
+        rows = [(r["ticker"], int(r["won"]), float(r["prob"])) for r in c.execute(
+            "SELECT ticker, won, prob FROM nfl_picks WHERE graded=1 AND league=? AND COALESCE(preseason,0)=0 "
+            "AND ticker IS NOT NULL AND won IN (0,1) AND prob > 0 AND prob < 1", (league,)).fetchall()]
+    px = predlog.prices_for([t for t, _w, _p in rows])
+    got = [(w, p, px[t]) for t, w, p in rows if t in px]
+    if not got:
+        return {"n": 0}
+
+    def ll(p, y):
+        p = min(0.999, max(0.001, p))
+        return -math.log(p if y else 1.0 - p)
+    fav = [(w if m > 0.5 else 1 - w) for w, _p, m in got if m != 0.5]
+    return {"n": len(got), "model_pct": round(100.0 * sum(w for w, _p, _m in got) / len(got), 1),
+            "fav_n": len(fav), "fav_pct": round(100.0 * sum(fav) / len(fav), 1) if fav else None,
+            "ll_model": round(sum(ll(p, w) for w, p, _m in got) / len(got), 4),
+            "ll_market": round(sum(ll(m, w) for w, _p, m in got) / len(got), 4),
+            "basis": "the same graded games; Kalshi's pre-game closing mid for the pick's side "
+                     "(else its price when the pick was logged)"}
+
+
 # ---- Slip ledger (the correlation claim, graded) ---------------------------
 def log_slip(sport, date, key, n_legs, n_games, prob, indep_prob,
              market_payout_x, ev_pct, objective, legs_json, max_close,

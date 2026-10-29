@@ -728,11 +728,13 @@ def _build_board(lg, date, n=3000):
             for side, ml, p, own, opp in (("home", mk["home_ml"], raw_ph, _hc, _ac),
                                           ("away", mk["away_ml"], 1 - raw_ph, _ac, _hc)):
                 if ml and ml.get("ticker"):
+                    # the start rides as the fifth element: the server logs a
+                    # carried row only while its game is still ahead (predlog.carry)
                     log_rows.append((ml["ticker"], p, ml.get("close"),
-                                     predlog.devig(own, opp)))
+                                     predlog.devig(own, opp), predlog.iso_ts(g.get("date"))))
                     if deep:
                         deep_rows.append((ml["ticker"], deep["p_home"] if side == "home" else deep["p_away"],
-                                          ml.get("close"), predlog.devig(own, opp)))
+                                          ml.get("close"), predlog.devig(own, opp), predlog.iso_ts(g.get("date"))))
 
         pick_home = ph >= 0.5
         row["pick"] = {"team": row["home" if pick_home else "away"],
@@ -752,6 +754,8 @@ def _build_board(lg, date, n=3000):
                 predlog.log_shadow("nba_deep", deep_rows)
         except Exception as _e:
             errlog.note("BK-build_board", _e)
+        # the same rows beside the board: a PC build's only way into the record
+        predlog.carry(f"bk_{lg}_{date}", [(cfg["cal"], log_rows), ("nba_deep", deep_rows)])
     games.sort(key=lambda x: x["date"] or "")
     return {"date": date, "n_games": len(games), "games": games, "n_sims": n,
             "league": lg, "deep_weight": _DEEP_WEIGHT if deep_figs else None,

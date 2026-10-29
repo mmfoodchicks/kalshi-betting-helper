@@ -83,6 +83,22 @@ def mtime(name):
         return None
 
 
+def names(prefix):
+    """[(name, mtime)] of the published boards whose (safe) name starts with
+    `prefix` -- a directory listing, nothing unpickled."""
+    out = []
+    try:
+        for fn in os.listdir(_DIR):
+            if fn.startswith(prefix) and fn.endswith(".pkl"):
+                try:
+                    out.append((fn[:-4], os.stat(os.path.join(_DIR, fn)).st_mtime))
+                except OSError:
+                    continue                # swept between the listing and the stat
+    except OSError:
+        return []
+    return sorted(out)
+
+
 def held(name, ts, max_age):
     """True when the disk copy is the one already in memory (its file time within
     2 s of `ts`, which adopting a disk copy stamps as now - age) and is no older

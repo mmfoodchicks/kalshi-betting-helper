@@ -1157,8 +1157,36 @@ def main():
         _task_note(None)
 
 
+def _fetch_params(url, tok):
+    """The server's fitted calibration (calibrate.file_params: every model's
+    correction, the combo maker's blend weights, the Matchups tuning), written
+    where calibrate reads it -- in this process and in every child a build
+    starts (the matchups child, the soccer refit). Without it the PC calibrated
+    from its own predlog.db, which nothing grades: every calibrate.apply here
+    was the identity, and since the server serves the PC's boards, the site
+    showed uncalibrated NFL / college / NBA / NHL games (2026-10-29). A failed
+    fetch keeps the last copy (calibrate ignores one past PARAMS_MAX_AGE_S).
+    Returns True when a fresh copy was installed."""
+    import calibrate
+    try:
+        d = _api(url, tok, "/api/calibration/params", timeout=30)
+    except Exception as e:
+        print(f"[vigil-pc] calibration params not fetched ({type(e).__name__}: {e}) - keeping the last copy")
+        return False
+    if not isinstance(d, dict) or d.get("schema") != calibrate.PARAMS_SCHEMA or not isinstance(d.get("models"), dict):
+        print("[vigil-pc] calibration params: an answer this code cannot read - keeping the last copy")
+        return False
+    try:
+        calibrate.install_params(d)
+    except OSError as e:
+        print(f"[vigil-pc] calibration params not written ({e}) - keeping the last copy")
+        return False
+    return True
+
+
 def _cycle(url, tok):
     total = 0
+    _fetch_params(url, tok)
     _yield_point("MLB game sims")
     try:
         _task_mlb_sims(url, tok)
@@ -1230,6 +1258,7 @@ def boards_main():
     import boardshare
     url, tok = _config()
     t0 = time.time()
+    _fetch_params(url, tok)                 # the server's calibration, before anything builds
     try:
         _task_boards()
     finally:

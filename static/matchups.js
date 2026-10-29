@@ -205,7 +205,7 @@ function initMatchups() {
         <button class="subtab" data-mx="sport" data-val="nfl">🏈 NFL</button><button class="subtab" data-mx="sport" data-val="nba">🏀 NBA</button>
       </div>
       <div class="subtabs">
-        <button class="subtab" data-mx="view" data-val="scan">📈 Opportunities</button><button class="subtab" data-mx="view" data-val="player">🧩 Player</button><button class="subtab" data-mx="view" data-val="cmp">⚖️ Compare</button>
+        <button class="subtab" data-mx="view" data-val="scan">📈 Opportunities</button><button class="subtab" data-mx="view" data-val="player">🧩 Player</button><button class="subtab" data-mx="view" data-val="cmp">⚖️ Compare</button><button class="subtab" data-mx="view" data-val="record">📒 Record</button>
       </div>
       <input id="mxDate" type="date" style="width:auto" data-mx="date"/>
     </div>
@@ -396,7 +396,64 @@ function mxRender() {
     <details><summary>What the labels mean</summary>${Object.values(_MX_LABELS).concat(Object.values(_MX_QUALS)).map(([n, w]) => `<div><b>${_mxEsc(n)}</b>: ${_mxEsc(w)}</div>`).join("")}</details>`;
   if (_mx.view === "player") body.innerHTML = mxPlayerView();
   else if (_mx.view === "cmp") body.innerHTML = mxCompareView();
+  else if (_mx.view === "record") body.innerHTML = mxRecordView();
   else body.innerHTML = mxScanView(d);
+}
+
+// ---- Record: the tab graded against Kalshi's own settlement (mx_record) ---------
+// Every priced line's last pre-game figure is kept and graded when Kalshi settles it;
+// a player who never played is a void (settled at the pre-game price, never scored).
+// Each stat earns its own tuning only out of sample, and Kalshi's side of the ledger
+// decides the "market better" mute once a stat's record is decided.
+const _mxRec = {};
+async function _mxRecLoad(sport) {
+  const hit = _mxRec[sport];
+  if (hit && (hit.loading || Date.now() - hit.at < 300000)) return;
+  _mxRec[sport] = { loading: true, at: Date.now(), data: hit && hit.data };
+  try {
+    const r = await fetch(`/api/matchups/record?sport=${encodeURIComponent(sport)}`);
+    const d = await r.json();
+    _mxRec[sport] = { at: Date.now(), data: r.ok ? d : null, err: r.ok ? null : (d.error || `HTTP ${r.status}`) };
+  } catch (e) {
+    _mxRec[sport] = { at: Date.now(), data: null, err: "the record could not be loaded" };
+  }
+  if (_mx.view === "record" && _mx.sport === sport) mxRender();
+}
+function _mxRecVerdict(v) {
+  if (!v || !v.n) return "no believable books graded yet";
+  // bold only when DECIDED -- the same floors and 2-SE rule the "market better" mute reads (mx_record._decide)
+  const call = v.decided === "market_better" ? "<b>Kalshi better</b>"
+    : v.decided === "engine_better" ? "<b>engine better</b>" : "not decided yet";
+  return `${call}: engine ${_mxNum(v.ll_eng, 3)} vs Kalshi ${_mxNum(v.ll_mkt, 3)} (${_mxSigned(v.diff, 3)}${_mxOk(v.se) ? ` ± ${_mxNum(v.se, 3)}` : ""}, ${v.n} lines, ${v.games} games, ${v.days != null ? v.days : "-"} dates)`;
+}
+function _mxRecPicks(p) {
+  if (!p || !p.n) return "none yet";
+  return `${p.n} · won ${_mxPct((p.won || 0) / p.n)} · ROI ${_mxOk(p.roi) ? `${_mxSigned(100 * p.roi, 1)}%` : "-"}${_mxOk(p.se) ? ` ± ${_mxNum(100 * p.se, 1)}` : ""}`;
+}
+function mxRecordView() {
+  const sport = _mx.sport;
+  const hit = _mxRec[sport];
+  if (!hit || (!hit.data && !hit.err)) { _mxRecLoad(sport); return `<div class="empty">Loading the record…</div>`; }
+  _mxRecLoad(sport);
+  if (!hit.data) return `<div class="empty">${_mxEsc(hit.err || "No record yet.")}</div>`;
+  const d = hit.data, stats = d.stats || {}, tun = d.tuning || {};
+  const names = Object.keys(stats).filter((s) => s !== "*").sort();
+  if (!names.length) return `<div class="empty">Nothing graded yet. Every priced line is kept from now on and graded when Kalshi settles it; the record fills in after the first games finish.</div>`;
+  const row = (s, blk, label) => {
+    const c = blk.close || {}, t = tun[s] || {};
+    const small = ((c.n_eff || 0) < 300 || (c.days || 0) < 10) ? ` <span title="${_mxEsc((d.definitions || {}).small_sample || "")}" style="color:#e0a656">small sample</span>` : "";
+    const tt = t.family === "platt" ? `tuned (+${_mxNum(t.gain, 4)} ± ${_mxNum(t.se, 4)} nats a line out of sample)` : (t.why ? `engine as is: ${_mxEsc(t.why)}` : "engine as is");
+    const hp = c.picks_hp || {};
+    return `<tr><td><b>${_mxEsc(label)}</b>${small}</td><td>${blk.graded || 0}${blk.voids ? ` <span style="color:var(--muted)">(+${blk.voids} void)</span>` : ""}</td>
+      <td>${_mxRecVerdict(c.vs_market)}</td>
+      <td>${_mxRecPicks((c.picks_ev || {}).shown)}</td><td>${_mxRecPicks((c.picks_ev || {}).muted)}</td>
+      <td>${hp.n ? `${hp.n} · hit ${_mxPct(hp.hit)} vs ${_mxPct(hp.pred)} said` : "none yet"}</td><td>${tt}</td></tr>`;
+  };
+  const cal = (s) => (stats[s].calibration || []).map((b) => `<span style="margin-right:10px">${_mxPct(b.p)} said → ${_mxPct(b.hit)} hit (${b.n})</span>`).join("");
+  return `<div class="small" style="color:var(--muted);margin-bottom:6px">Every priced line's last pre-game figure (within 2 h of the start), graded when Kalshi settles it. Players who never played settle at the pre-game price and are counted as voids, never scored. Log loss: lower is better, on the same lines for the engine and Kalshi's de-vigged mid. Picks: one contract on the side and at the ask the tab showed, fee in; "muted" picks are +EV lines in a stat where Kalshi was the better forecaster.</div>
+    <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Stat</th><th>Graded</th><th>Engine vs Kalshi</th><th>+EV picks</th><th>+EV picks (muted)</th><th>High-probability picks</th><th>Tuning</th></tr></thead>
+    <tbody>${names.map((s) => row(s, stats[s], _mxStat(s))).join("")}${stats["*"] ? row("*", stats["*"], "All stats") : ""}</tbody></table></div>
+    <details style="margin-top:6px"><summary>Calibration of the engine's own figure, before any tuning (what it said, what happened)</summary>${names.map((s) => `<div class="small"><b>${_mxEsc(_mxStat(s))}</b>: ${cal(s) || "-"}</div>`).join("")}</details>`;
 }
 
 // ---- Opportunities: every line, ranked ---------------------------------------
