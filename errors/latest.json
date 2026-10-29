@@ -1,6 +1,17 @@
 {
  "errors": [
   {
+   "code": "STORE-crypto-drop",
+   "id": 2118,
+   "last_ts": 1793270871.7428286,
+   "msg": "dropped the removed crypto features' tables (quote_samples 1,138,502 rows, resolved_markets 40,543 rows, markets 0 rows); markets.db 255.7 -> 52.3 MB",
+   "n": 1,
+   "path": null,
+   "pid": 7,
+   "tb": "",
+   "ts": 1793270871.7428286
+  },
+  {
    "code": "NBADEEP-day",
    "id": 2117,
    "last_ts": 1793247750.4368658,
@@ -2155,154 +2166,33 @@
    "pid": 10113,
    "tb": "Traceback (most recent call last):\n  File \"/app/kalshi_nfl.py\", line 108, in _fetch\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
    "ts": 1792671154.1965263
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1921,
-   "last_ts": 1792662322.7440875,
-   "msg": "Rush Yds: the model sits -4.4 points off Kalshi's mid over 127 rungs in 12 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 9600,
-   "tb": "",
-   "ts": 1792662322.7440875
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1920,
-   "last_ts": 1792660508.9720106,
-   "msg": "Rush Yds: the model sits -4.2 points off Kalshi's mid over 116 rungs in 11 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 9600,
-   "tb": "",
-   "ts": 1792660508.9720106
-  },
-  {
-   "code": "MEM-high",
-   "id": 1919,
-   "last_ts": 1792660336.2392719,
-   "msg": "1906/2048MB: 1453.1MB pid9592 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 336.6MB pid9600 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 91.9MB pid9596 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 24.1MB pid10074 /usr/local/bin/python3.11 -c import os; os.nice(; 22.2MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
-   "n": 1,
-   "path": null,
-   "pid": 9600,
-   "tb": "",
-   "ts": 1792660336.2392719
-  },
-  {
-   "code": "UFCC-fights",
-   "id": 1918,
-   "last_ts": 1792655887.1607227,
-   "msg": "HTTPError: HTTP Error 503: Service Unavailable",
-   "n": 1,
-   "path": null,
-   "pid": 9579,
-   "tb": "Traceback (most recent call last):\n  File \"/app/ufc_combo.py\", line 99, in markets\n    for m in _series(\"KXUFCFIGHT\"):\n             ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/ufc_combo.py\", line 66, in _series\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 503: Service Unavailable\n",
-   "ts": 1792655887.1607227
-  },
-  {
-   "code": "KNFL-index-build",
-   "id": 1917,
-   "last_ts": 1792655279.6554048,
-   "msg": "RuntimeError: KXNFLPASSYDS: page 2 failed after 200 markets -- a partial series is not an index",
-   "n": 1,
-   "path": null,
-   "pid": 9579,
-   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi_nfl.py\", line 447, in index\n    built = _build()\n            ^^^^^^^^\n  File \"/app/kalshi_nfl.py\", line 240, in _build\n    for m in _fetch(series):\n             ^^^^^^^^^^^^^^\n  File \"/app/kalshi_nfl.py\", line 115, in _fetch\n    raise RuntimeError(f\"{series}: page {page + 1} failed after {len(out)} markets \"\nRuntimeError: KXNFLPASSYDS: page 2 failed after 200 markets -- a partial series is not an index\n",
-   "ts": 1792655279.6554048
-  },
-  {
-   "code": "KNFL-markets-fetch",
-   "id": 1916,
-   "last_ts": 1792655279.6480412,
-   "msg": "HTTPError: HTTP Error 503: Service Unavailable",
-   "n": 2,
-   "path": null,
-   "pid": 9579,
-   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi_nfl.py\", line 108, in _fetch\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 503: Service Unavailable\n",
-   "ts": 1792655264.9014843
-  },
-  {
-   "code": "UFCC-fights",
-   "id": 1915,
-   "last_ts": 1792654037.6263058,
-   "msg": "HTTPError: HTTP Error 503: Service Unavailable",
-   "n": 1,
-   "path": null,
-   "pid": 9579,
-   "tb": "Traceback (most recent call last):\n  File \"/app/ufc_combo.py\", line 99, in markets\n    for m in _series(\"KXUFCFIGHT\"):\n             ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/ufc_combo.py\", line 66, in _series\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 503: Service Unavailable\n",
-   "ts": 1792654037.6263058
-  },
-  {
-   "code": "KNFL-markets-fetch",
-   "id": 1914,
-   "last_ts": 1792653428.2972112,
-   "msg": "HTTPError: HTTP Error 503: Service Unavailable",
-   "n": 1,
-   "path": null,
-   "pid": 9579,
-   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi_nfl.py\", line 108, in _fetch\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 503: Service Unavailable\n",
-   "ts": 1792653428.2972112
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1913,
-   "last_ts": 1792651602.2334838,
-   "msg": "Rush Yds: the model sits -4.2 points off Kalshi's mid over 125 rungs in 11 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 9579,
-   "tb": "",
-   "ts": 1792651602.2334838
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1912,
-   "last_ts": 1792649743.8039796,
-   "msg": "Rush Yds: the model sits -4.0 points off Kalshi's mid over 125 rungs in 11 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 9579,
-   "tb": "",
-   "ts": 1792649743.8039796
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 1911,
-   "last_ts": 1792648914.2219834,
-   "msg": "Rush Yds: the model sits -4.0 points off Kalshi's mid over 124 rungs in 11 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 7586,
-   "tb": "",
-   "ts": 1792648914.2219834
   }
  ],
- "generated_at": 1793252660.3130934,
+ "generated_at": 1793270872.13011,
  "summary": [
   {
    "code": "NFL-DRIFT",
-   "first_ts": 1792648914.2219834,
+   "first_ts": 1792689004.6697168,
    "last_msg": "Receptions: the model sits -4.7 points off Kalshi's mid over 204 rungs in 5 games",
    "last_ts": 1792958007.3491502,
-   "n": 265,
-   "variants": 143
+   "n": 260,
+   "variants": 138
   },
   {
    "code": "MEM-high",
-   "first_ts": 1792660336.2392719,
+   "first_ts": 1792688797.1404092,
    "last_msg": "2047/2048MB: 1766.2MB pid51 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 138.6MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 109.0MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 22.8MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
    "last_ts": 1793229226.8063767,
-   "n": 17,
-   "variants": 17
+   "n": 16,
+   "variants": 16
   },
   {
    "code": "KNFL-markets-fetch",
-   "first_ts": 1792653428.2972112,
+   "first_ts": 1792671154.1965263,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
    "last_ts": 1793177007.0541716,
-   "n": 16,
-   "variants": 15
+   "n": 13,
+   "variants": 13
   },
   {
    "code": "KAL-candles",
@@ -2330,19 +2220,19 @@
   },
   {
    "code": "UFCC-fights",
-   "first_ts": 1792654037.6263058,
+   "first_ts": 1792783688.3237753,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
    "last_ts": 1793220439.8419366,
-   "n": 6,
-   "variants": 6
+   "n": 4,
+   "variants": 4
   },
   {
    "code": "KNFL-index-build",
-   "first_ts": 1792655279.6554048,
+   "first_ts": 1792890873.0622165,
    "last_msg": "RuntimeError: KXNFLRECYDS: page 2 failed after 200 markets -- a partial series is not an index",
    "last_ts": 1793165110.7172513,
-   "n": 4,
-   "variants": 4
+   "n": 3,
+   "variants": 3
   },
   {
    "code": "DK-contest",
@@ -2357,6 +2247,14 @@
    "first_ts": 1793247750.4368658,
    "last_msg": "JSONDecodeError: Expecting value: line 1 column 1 (char 0)",
    "last_ts": 1793247750.4368658,
+   "n": 1,
+   "variants": 1
+  },
+  {
+   "code": "STORE-crypto-drop",
+   "first_ts": 1793270871.7428286,
+   "last_msg": "dropped the removed crypto features' tables (quote_samples 1,138,502 rows, resolved_markets 40,543 rows, markets 0 rows); markets.db 255.7 -> 52.3 MB",
+   "last_ts": 1793270871.7428286,
    "n": 1,
    "variants": 1
   }
