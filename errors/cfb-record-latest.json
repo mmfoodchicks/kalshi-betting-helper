@@ -13,7 +13,7 @@
   "fees_included": true,
   "graded": 0,
   "losses": 0,
-  "pending": 1337,
+  "pending": 1341,
   "roi_bets": 0,
   "roi_edge_pct": null,
   "roi_pct": null,
@@ -127,7 +127,7 @@
     "fees_included": true,
     "graded": 0,
     "losses": 0,
-    "pending": 595,
+    "pending": 596,
     "roi_bets": 0,
     "roi_edge_pct": null,
     "roi_pct": null,
@@ -223,7 +223,7 @@
     "fees_included": true,
     "graded": 0,
     "losses": 0,
-    "pending": 576,
+    "pending": 579,
     "roi_bets": 0,
     "roi_edge_pct": null,
     "roi_pct": null,
@@ -289,7 +289,7 @@
  },
  "market": {
   "close": {
-   "n": 2,
+   "n": 6,
    "ready": false
   },
   "vs_market": {

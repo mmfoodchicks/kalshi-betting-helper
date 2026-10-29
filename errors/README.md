@@ -2,9 +2,9 @@
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `NFL-DRIFT` | 249 | 10-25 19:53 | Receptions: the model sits -4.7 points off Kalshi's mid over 204 rungs in 5 games |
-| `MEM-high` | 15 | 10-28 23:13 | 2047/2048MB: 1766.2MB pid51 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 138.6MB pid9 /usr/local/bin/python3.11 /us |
-| `KAL-candles` | 12 | 10-28 01:52 | HTTPError: HTTP Error 429: Too Many Requests |
+| `NFL-DRIFT` | 241 | 10-29 22:27 | Rec Yds: the model sits -4.1 points off Kalshi's mid over 260 rungs in 14 games |
+| `MEM-high` | 12 | 10-28 23:13 | 2047/2048MB: 1766.2MB pid51 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 138.6MB pid9 /usr/local/bin/python3.11 /us |
+| `KAL-candles` | 11 | 10-28 01:52 | HTTPError: HTTP Error 429: Too Many Requests |
 | `KNFL-markets-fetch` | 11 | 10-28 08:43 | HTTPError: HTTP Error 429: Too Many Requests |
 | `UFCC-rounds` | 10 | 10-29 03:39 | HTTPError: HTTP Error 429: Too Many Requests |
 | `SOC-kalshi` | 7 | 10-27 12:00 | HTTPError: HTTP Error 429: Too Many Requests |
