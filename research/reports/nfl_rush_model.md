@@ -1,6 +1,6 @@
 # The RB and QB rushing model: design and draft rule
 
-Status (2026-10-29): **REGISTERED 2026-10-29T02:13:45Z, rule block sha256 `92a99b8e791a7a98ec9e6da849ad9b07b751fd5cab6bd51c03f70d13fc0fbe61`** (`research/data/nfl_rush_model/prereg.json`, the file itself 907f0bed…; the frames val 906e9a7e…, test b3a28947…; 35 decisions), after the Sonnet, Opus and Fable round-4 confirmations. The window starts with week 8's Thursday game (2026-10-30 00:15 UTC). Next: `validate`, `check2026`, `export` once the registration commit is pushed; the prospective test after week 11 closes (Friday 2026-11-27 at the earliest; the runbook after the block).
+Status (2026-10-29): **REGISTERED 2026-10-29T02:13:45Z, rule block sha256 `92a99b8e791a7a98ec9e6da849ad9b07b751fd5cab6bd51c03f70d13fc0fbe61`** (`research/data/nfl_rush_model/prereg.json`, the file itself 907f0bed…; the frames val 906e9a7e…, test b3a28947…; 35 decisions), after the Sonnet, Opus and Fable round-4 confirmations; pushed in ed23ebd (02:57:13Z). **Result (section 9): no group passed its 2025 gate, in any of the 8 markets, so nothing ships and the prospective window has nothing to keep.** The board is unchanged: the owner declined the display-only breakdowns for now, so the export sits off its live path as `coefs_export.json`. Opus and Fable reviewed the results: the records are valid, the null reproduces to the digit and is not a defect, and it is a statement about POWER -- the 2025 gate could only have passed an effect two to three times the largest the training seasons carry.
 
 - No 2025 or 2026 OUTCOME has been read for this model. Those rows have been
   built, counted and audited for missing features (counts only; the audit
@@ -1859,3 +1859,61 @@ argued) is superseded: every list it ran re-ran here, and its five (G09, F06, H0
 
 A mutant counted "by a section that raised" fails a named `... ran to the end` check; the other
 sections still run.
+
+## 9. The results (2026-10-29, read once by the registered commands)
+
+`validate`, `check2026` and `export` ran at 03:01 UTC on 2026-10-29, after the registration commit
+(ed23ebd), in the repository with the registered frames and the registration-era stores, no `--force`,
+no refusal:
+
+- `research/data/nfl_rush_model/validate.json` (sha256 e8df86cb…): **no group accepted** in any of the
+  8 markets (RB carries, rushing yards, receptions, receiving yards, TD; QB rushing attempts, rushing
+  yards, TD). All 35 decisions rejected.
+- `check2026.json` (b2583913…): it walks only what 2025 accepted, so it scored nothing.
+- The export (0684544d…, stage provisional; the reviews call it `coefs.json`, the name `export` gave it)
+  is committed as `coefs_export.json`, the same bytes. `shipped` is empty; it carries the 2023-2025
+  refit dispersion, kernels and the two correlations (QB attempts vs his RB1's carries rho 0.086, n
+  1,315; an RB's rushing vs receiving yards rho -0.033, n 1,714). It is NOT at its live path,
+  `coefs.json`: there it would switch the board hook on with display-only content (section 5) -- prices
+  byte-identical, the NFL board 11% larger (7.31 -> 8.15 MB), about 1.7 s more a build, three more
+  Kalshi series fetched. The owner chose not to turn those breakdowns on (2026-10-29), so the board
+  reads nothing new. Turning them on later is one rename, `coefs_export.json` -> `coefs.json`, which
+  `load_coefs` checks against the records beside it.
+- `prospective` has nothing to keep and decides nothing. (Its own check reads `coefs.json`, so a run
+  of it would start from that rename in the registered tree.)
+
+**The closest steps** (d = candidate minus accepted threshold log loss, summed over the market's
+thresholds, on 2025's played rows; SE the larger of the game- and player-clustered; accepted only if
+d < -2 SE and below the per-threshold floor):
+
+| market | group | d | SE | d / SE |
+|---|---|---|---|---|
+| RB rushing yards | SHAPE | -0.0323 | 0.0254 | -1.27 |
+| RB receiving yards | SHAPE | -0.0140 | 0.0088 | -1.60 |
+| QB rushing yards | SPD | +0.0278 | 0.0195 | +1.42 (worse) |
+| RB carries | SPD | +0.0080 | 0.0061 | +1.31 (worse) |
+
+The full table is in validate.json (every step's d, both SEs, rows, games, calibration).
+
+**Reviewed** (research/reviews/nfl_rush_results_{opus,fable}.md), both AGREE:
+- Opus: the record chain holds (prereg 92a99b8e, 907f0bed, the code shas, validate -> check2026 ->
+  coefs); three d / SE pairs recomputed independently match to 1e-17; the 2025 rows are the played
+  rows of each universe, none dropped; check2026 did what Q5 says. `load_coefs` accepts the empty file
+  for the right reason and refuses every forged non-empty one tried.
+- Fable: the walk reproduces validate.json to the digit; 2025's features are populated like 2023-24's
+  (no join failure); Sleeper's revised 2025 line did not beat the terms by knowing the answer (on
+  2026's frozen rows the revised line is no closer than the frozen one). **Power** (effects planted
+  as y x exp(b z) in every season): RB rushing yards needs about 0.17-0.20 per SD to pass (a +1 SD
+  defense moving a 51-yard line to about 62), RB carries 0.12-0.15; QB rushing yards fails at 0.20.
+  The largest standardised term any group fits on 2023-24 is 0.079. So the honest sentence is "no
+  group passed its pre-registered test", never "the market cannot be beaten"; a future attempt needs
+  pooled seasons or a lower-variance statistic. Where the compound lost: 2025's rushing outcomes ran
+  under Sleeper's line and a narrower distribution on a biased mean paid at the top; QB attempts'
+  four-part compound is more dispersed than 2025's attempts. 15 of 29 term groups chose the largest
+  ridge penalty in their 2023 -> 2024 cross-validation (no training signal at all); the 14 with
+  training signal all read 0 or worse on 2025.
+- **Descriptive, for the owner:** on 2026 weeks 1-6's frozen pre-game rows, the outcomes sit UNDER
+  Sleeper's line on every rushing market (RB rushing yards -4.2 to -4.8 yards a row, carries -0.25 to
+  -0.39, QB rushing yards -1.2 to -1.8). The rule fixed the level at Sleeper's by decision, and the
+  NFL drift alarm already moves the combo maker's rushing legs to Kalshi's own number (NFL-DRIFT).
+

@@ -1,0 +1,96 @@
+{
+ "prereg_sha256": "92a99b8e791a7a98ec9e6da849ad9b07b751fd5cab6bd51c03f70d13fc0fbe61",
+ "prereg_utc": "2026-10-29T02:13:45Z",
+ "code": {
+  "nfl_rush.py": "86af21fab8a9279ca4edbc84b1524520b1644ec3ab0828c514a4b31c0cbebf50",
+  "prop_dist.py": "42e3a0ce7cd106b40458b4d70d3c59b9d4b5f005707e6d6ad5984d9afe20ef6a",
+  "research/nfl_rush_model_frame.py": "6d787c4c5b9b1255a2e17de7218478f5360312bc261b77a38d9dc1e0540eb0d7",
+  "research/nfl_rush_model_fit.py": "1daf3f32a3125f4db4eae537b6ccdd220a539bbfd3572791586cb00876d9bd9e",
+  "research/nfl_rush_model_rule.py": "6904a6a18c385420a3546225cce76d84addaf3b85ac743562c2c3e2f731ae2cf",
+  "nfl_rush_data.py": "247cc6256182d9ecca66384b5fe37112594671391828e5b53861e4083329ccd1",
+  "nfl_rush_profiles.py": "0d319ed09e7ea13598c952f63d672438f8da3dcd200b5aa8496add9e0af6f0c7",
+  "research/nfl_rush_dataset.py": "8b97b7af888b28f9da982021d7a888d76ec5b77a650bd0255c2e79e8cabdc8d3",
+  "nfl_matchup_data.py": "8511346956bb4ae2f77fb4832075e861fb4dd289b9384b484f5f8c4c5ec04d13",
+  "nfl_matchup_profiles.py": "d2007503a6d85dd5bf5b69d7e146c7d95fc6c49b09bc513859d19d0ca1014b8d",
+  "nfl_matchup.py": "de6ad576caad272092d399d240ea54f6e72fe600affdfe77c91d06081b4e512f",
+  "research/nfl_matchup_frame.py": "8e41776aef6e9187ebd4e4af7dff664d50521cb28250080f3256a654eb6307c2",
+  "research/nfl_matchup_fit.py": "0802b123bac34816bcf8412ec97dadac731f0be768c36a46c5e231f736cc7bbd",
+  "kalshi_nfl.py": "869db13ef0cb7af3136730455bd54618d4f75c10f05ce8e7c9e38cc40f6367c9",
+  "deep_cache.py": "ce5b3985600284d70cecab6bbbaa935a8b058cebd13277f7d458f7976b8e7d7f",
+  "kalshi.py": "7e3ce3fd7944bf23776a416a871a88309096491b6902aa981cd414837ec49e33",
+  "research/nfl_matchup_dataset.py": "fae01351c4fde90cf9f005e8969059eb68bfe521cbcc9a949c671b13aa2507f4"
+ },
+ "versions": {
+  "python": "3.11.17",
+  "numpy": "2.4.6"
+ },
+ "plumb": false,
+ "written_utc": "2026-10-29T03:01:28Z",
+ "rule": "Q5",
+ "fit": [
+  2023,
+  2024,
+  2025
+ ],
+ "eval": "2026 weeks 1-6, frozen rows",
+ "baseline": "fz (the frozen pre-kickoff capture) for 2026",
+ "validate_sha256": "e8df86cb4fcf20bbdde20185c9fc3dfbfa15a607861a7b35db63c9265b74a408",
+ "provisional": {
+  "RB": {
+   "rush_att": [],
+   "rush_yd": [],
+   "rec": [],
+   "rec_yd": [],
+   "td": []
+  },
+  "QB": {
+   "rush_att": [],
+   "rush_yd": [],
+   "td": []
+  }
+ },
+ "steps": {
+  "RB": {
+   "rush_att": [],
+   "rush_yd": [],
+   "rec": [],
+   "rec_yd": [],
+   "td": []
+  },
+  "QB": {
+   "rush_att": [],
+   "rush_yd": [],
+   "td": []
+  }
+ },
+ "dispersion": {
+  "RB": {
+   "rush_att": {
+    "alpha": 0.08334308728184625,
+    "n": 2543
+   },
+   "rush_yd": {
+    "cv": 0.5858619294771319,
+    "n": 2543
+   },
+   "rec": {
+    "alpha": 0.10890105563822845,
+    "n": 1909
+   },
+   "rec_yd": {
+    "cv": 0.8244234372649144,
+    "n": 1909
+   }
+  },
+  "QB": {
+   "rush_att": {
+    "alpha": 0.08987205206255384,
+    "n": 1317
+   },
+   "rush_yd": {
+    "cv": 0.6956266025176214,
+    "n": 1317
+   }
+  }
+ }
+}

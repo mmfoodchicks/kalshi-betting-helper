@@ -538,8 +538,19 @@ data-only `sim-history` branch (which never deploys):
     prospective window -- every game after the registration through week 11 (to 13 while under
     40 games), read from a registered tree after the window's last game + 48 h (the runbook is in
     the report). A real effect at the 2025 gate's edge survives that window about half the time.
+  - **The result (read 2026-10-29): NO group passed its 2025 gate, in any of the 8 markets** -- nothing
+    ships, the prospective window has nothing to keep (validate.json e8df86cb, report section 9).
+    Reviewed (Opus, Fable): valid records, reproduced to the digit, not a defect -- and a statement
+    about POWER: the gate needed ~0.17-0.20 per SD on RB rushing yards, two to three times the largest
+    term the training seasons carry. Say "no group passed its pre-registered test", never "the market
+    cannot be beaten"; a retry needs pooled seasons or a lower-variance statistic. Descriptively,
+    2026's rushing outcomes ran UNDER Sleeper's frozen line on every market (RB rushing yards -4 to
+    -5 a row).
   - **The board hook is inert until `research/data/nfl_rush_model/coefs.json` exists** (the board
-    byte-identical without it); `nfl_rush.load_coefs` refuses a file whose record chain breaks.
+    byte-identical without it); `nfl_rush.load_coefs` refuses a file whose record chain breaks. The
+    export ships nothing but would still switch on display-only content (+11% board, ~1.7 s a
+    build). The owner said not now (2026-10-29), so it is committed as `coefs_export.json` and the
+    breakdowns are one rename away.
   - **Custody**: the registered dataset's CSVs and both frames carry PFR/NGS-derived columns, and
     the 17 registration-era deep pickles hold raw feeds: none is in this public repo
     (`.gitignore`). prereg.json pins each by sha256 (the pickles also by content digest, so a
