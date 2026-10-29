@@ -1,0 +1,113 @@
+{
+ "definitions": {
+  "calibration": "the engine's own figure, before any tuning",
+  "close": "the last pre-game sighting, only when within 2 h of the start",
+  "dates": "Mountain-time sports days",
+  "decided": "engine vs Kalshi is called only past 10 dates and 30 games and beyond 2 SE clustered by game -- the rule the tab's 'market better' mute reads",
+  "graded": "lines Kalshi settled yes or no",
+  "log_loss": "lower is better; the engine and Kalshi's de-vigged mid on the SAME graded lines (believable two-sided books only)",
+  "picks": "+EV lines bought on the side and at the ask the tab showed, fee in, one contract each",
+  "small_sample": "fewer than 300 effective lines (a ladder counts once) or 10 dates",
+  "voids": "players who never played: Kalshi settled the line at the pre-game fair price; never scored"
+ },
+ "sport": "nfl",
+ "stats": {
+  "*": {
+   "calibration": [],
+   "close": {
+    "br_eng": null,
+    "days": 0,
+    "hit": null,
+    "ll_eng": null,
+    "n": 0,
+    "n_eff": 0,
+    "p": null,
+    "picks_ev": {
+     "muted": {
+      "n": 0,
+      "roi": null,
+      "se": null,
+      "won": null
+     },
+     "shown": {
+      "n": 0,
+      "roi": null,
+      "se": null,
+      "won": null
+     }
+    },
+    "picks_hp": {
+     "hit": null,
+     "n": 0,
+     "pred": null
+    },
+    "tuned": {
+     "ll_eng": null,
+     "ll_tun": null,
+     "n": 0
+    },
+    "vs_market": {
+     "days": 0,
+     "decided": null,
+     "diff": null,
+     "games": 0,
+     "ll_eng": null,
+     "ll_mkt": null,
+     "n": 0,
+     "se": null
+    }
+   },
+   "days": 0,
+   "first": {
+    "br_eng": null,
+    "days": 0,
+    "hit": null,
+    "ll_eng": null,
+    "n": 0,
+    "n_eff": 0,
+    "p": null,
+    "picks_ev": {
+     "muted": {
+      "n": 0,
+      "roi": null,
+      "se": null,
+      "won": null
+     },
+     "shown": {
+      "n": 0,
+      "roi": null,
+      "se": null,
+      "won": null
+     }
+    },
+    "picks_hp": {
+     "hit": null,
+     "n": 0,
+     "pred": null
+    },
+    "tuned": {
+     "ll_eng": null,
+     "ll_tun": null,
+     "n": 0
+    },
+    "vs_market": {
+     "days": 0,
+     "decided": null,
+     "diff": null,
+     "games": 0,
+     "ll_eng": null,
+     "ll_mkt": null,
+     "n": 0,
+     "se": null
+    }
+   },
+   "games": 0,
+   "graded": 0,
+   "n": 0,
+   "stat": "*",
+   "void_rate": {},
+   "voids": null
+  }
+ },
+ "tuning": {}
+}

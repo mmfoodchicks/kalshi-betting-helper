@@ -2144,20 +2144,9 @@
    "pid": 10609,
    "tb": "",
    "ts": 1792688797.1404092
-  },
-  {
-   "code": "KNFL-markets-fetch",
-   "id": 1923,
-   "last_ts": 1792679444.0397198,
-   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "n": 1,
-   "path": null,
-   "pid": 10132,
-   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi_nfl.py\", line 108, in _fetch\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
-   "ts": 1792679444.0397198
   }
  ],
- "generated_at": 1793278618.607268,
+ "generated_at": 1793286084.820333,
  "summary": [
   {
    "code": "NFL-DRIFT",
@@ -2185,11 +2174,11 @@
   },
   {
    "code": "KNFL-markets-fetch",
-   "first_ts": 1792679444.0397198,
+   "first_ts": 1792840734.6805632,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
    "last_ts": 1793177007.0541716,
-   "n": 12,
-   "variants": 12
+   "n": 11,
+   "variants": 11
   },
   {
    "code": "UFCC-rounds",
