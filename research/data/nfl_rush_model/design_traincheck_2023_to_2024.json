@@ -1,0 +1,237 @@
+{
+ "note": "fit 2023, scored on 2024 -- inside the fitting seasons, for design only",
+ "fit": {
+  "alpha": {
+   "rb_carries": {
+    "a": 4.368555384527343,
+    "b": -1.513630246808866
+   },
+   "rb_receptions": {
+    "a": 0.7020457215499666,
+    "b": -1.340108918648048
+   },
+   "qb_designed": {
+    "a": 0.8544634846909125,
+    "b": -0.695969120770682
+   },
+   "qb_sneak": {
+    "a": 0.5092003128023106,
+    "b": -1.724063556089201
+   },
+   "qb_scramble": {
+    "a": 1.135701849291034,
+    "b": -1.905931332358222
+   },
+   "kneel": {
+    "a": 0.287666164066097,
+    "b": 0.0
+   }
+  },
+  "kneels": {
+   "by_margin": [
+    [
+     -10,
+     0.4
+    ],
+    [
+     -5,
+     0.5956
+    ],
+    [
+     0,
+     0.9014
+    ],
+    [
+     5,
+     0.8676
+    ],
+    [
+     10,
+     1.1538
+    ]
+   ],
+   "n": {
+    "-10": 65,
+    "-5": 136,
+    "0": 142,
+    "5": 136,
+    "10": 65
+   },
+   "mean": 0.7868
+  },
+  "qb_prior": {
+   "designed_share": 0.28635851183765504,
+   "sneak_share": 0.161217587373168,
+   "scramble_share": 0.552423900789177,
+   "rows": 544
+  },
+  "kernel_n": {
+   "rb_run": 11714,
+   "rb_catch": 2477,
+   "qb_designed": 532,
+   "qb_sneak": 296,
+   "qb_scramble": 1035,
+   "kneel": 428
+  }
+ },
+ "rb_rush_yd": {
+  "rows": 837,
+  "carries_alpha_single": 0.0938628192229162,
+  "single_cv": 0.594786825340717,
+  "compound_minus_single": {
+   "d": -0.12036291672132471,
+   "se": 0.02266427460266898
+  },
+  "calibration": {
+   "lines 20-30": {
+    "n": 174,
+    "10+": {
+     "hit": 0.678,
+     "single_cv": 0.873,
+     "compound": 0.731
+    },
+    "15+": {
+     "hit": 0.569,
+     "single_cv": 0.727,
+     "compound": 0.61
+    },
+    "25+": {
+     "hit": 0.408,
+     "single_cv": 0.43,
+     "compound": 0.403
+    },
+    "40+": {
+     "hit": 0.264,
+     "single_cv": 0.155,
+     "compound": 0.202
+    }
+   },
+   "all": {
+    "n": 837,
+    "10+": {
+     "hit": 0.885,
+     "single_cv": 0.951,
+     "compound": 0.907
+    },
+    "15+": {
+     "hit": 0.83,
+     "single_cv": 0.888,
+     "compound": 0.853
+    },
+    "25+": {
+     "hit": 0.699,
+     "single_cv": 0.731,
+     "compound": 0.733
+    },
+    "40+": {
+     "hit": 0.551,
+     "single_cv": 0.513,
+     "compound": 0.549
+    }
+   },
+   "lines 50+": {
+    "n": 441,
+    "10+": {
+     "hit": 0.982,
+     "single_cv": 0.987,
+     "compound": 0.987
+    },
+    "15+": {
+     "hit": 0.961,
+     "single_cv": 0.964,
+     "compound": 0.971
+    },
+    "25+": {
+     "hit": 0.893,
+     "single_cv": 0.884,
+     "compound": 0.911
+    },
+    "40+": {
+     "hit": 0.76,
+     "single_cv": 0.716,
+     "compound": 0.762
+    }
+   }
+  }
+ },
+ "qb_rush_yd": {
+  "rows": 441,
+  "attempts_alpha_single": 0.1443483894723392,
+  "single_cv": 0.7005578018293857,
+  "compound_minus_single": {
+   "d": -0.18071051542143468,
+   "se": 0.0500002962024626
+  },
+  "calibration": {
+   "lines 10-20": {
+    "n": 217,
+    "10+": {
+     "hit": 0.558,
+     "single_cv": 0.56,
+     "compound": 0.464
+    },
+    "15+": {
+     "hit": 0.415,
+     "single_cv": 0.359,
+     "compound": 0.348
+    },
+    "25+": {
+     "hit": 0.272,
+     "single_cv": 0.131,
+     "compound": 0.191
+    },
+    "40+": {
+     "hit": 0.111,
+     "single_cv": 0.026,
+     "compound": 0.075
+    }
+   },
+   "all": {
+    "n": 441,
+    "10+": {
+     "hit": 0.646,
+     "single_cv": 0.645,
+     "compound": 0.583
+    },
+    "15+": {
+     "hit": 0.544,
+     "single_cv": 0.483,
+     "compound": 0.482
+    },
+    "25+": {
+     "hit": 0.39,
+     "single_cv": 0.276,
+     "compound": 0.327
+    },
+    "40+": {
+     "hit": 0.204,
+     "single_cv": 0.136,
+     "compound": 0.178
+    }
+   },
+   "lines 20-30": {
+    "n": 59,
+    "10+": {
+     "hit": 0.729,
+     "single_cv": 0.783,
+     "compound": 0.709
+    },
+    "15+": {
+     "hit": 0.644,
+     "single_cv": 0.629,
+     "compound": 0.59
+    },
+    "25+": {
+     "hit": 0.424,
+     "single_cv": 0.368,
+     "compound": 0.381
+    },
+    "40+": {
+     "hit": 0.136,
+     "single_cv": 0.144,
+     "compound": 0.175
+    }
+   }
+  }
+ }
+}

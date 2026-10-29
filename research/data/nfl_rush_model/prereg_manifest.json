@@ -1,0 +1,150 @@
+{
+ "prereg_sha256": "92a99b8e791a7a98ec9e6da849ad9b07b751fd5cab6bd51c03f70d13fc0fbe61",
+ "utc": "2026-10-29T02:13:45Z",
+ "files": {
+  "rush_frame_test.csv.gz": {
+   "sha256": "b3a289470aaf98653a7aae010a4702df432f5de940f17b345157c2f7c454e0bc",
+   "role": "the registered test frame",
+   "verified": true,
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/work/rush_frame_test.csv.gz"
+  },
+  "rush_frame_test.csv.gz.meta.json": {
+   "sha256": "3f6d57e992d86706eb0252f90f37587238dc62211cc5e25603c8ef91daa53a2a",
+   "verified": false,
+   "role": "the test frame's build record (prereg.json holds it)",
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/work/rush_frame_test.csv.gz.meta.json"
+  },
+  "rush_frame_val.csv.gz": {
+   "sha256": "906e9a7e184f5ece84ee6f7ede5ab3ab67da47ca2db1fbe8aab42914d42ee9df",
+   "role": "the registered val frame",
+   "verified": true,
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/work/rush_frame_val.csv.gz"
+  },
+  "rush_frame_val.csv.gz.meta.json": {
+   "sha256": "901e0d1baf624aedda8b4c88a8355829bc0558a666e6ffc062fbfa21ef638cf8",
+   "verified": false,
+   "role": "the val frame's build record (prereg.json holds it)",
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/work/rush_frame_val.csv.gz.meta.json"
+  },
+  "nfl_matchup_2019.pkl": {
+   "sha256": "889b5baeaea3211ee7170ec472f91153c387d4f139b45c32d0da9bc14154987d",
+   "digest": "c136144547a3840e04fc2cd372121ec821d0c9449564c5296f8c78aa43bcd099",
+   "role": "a store, aux or ids pickle",
+   "verified": true,
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/deep3/nfl_matchup_2019.pkl"
+  },
+  "nfl_matchup_2020.pkl": {
+   "sha256": "549545a2eaca3783c2477521316b6651050bbd46bd70978e2e2c8f58189a21bb",
+   "digest": "581d1d06b45ee5011a2b00233b333e3998557bf691d59225151fb5e4a45042e5",
+   "role": "a store, aux or ids pickle",
+   "verified": true,
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/deep3/nfl_matchup_2020.pkl"
+  },
+  "nfl_matchup_2021.pkl": {
+   "sha256": "81b2034ffeb0623c3b7b4f6cb062f4ac9b6c65afc440b04bb1a61cc491e87987",
+   "digest": "e2e19c65460d5220f29b2b87a0878f5580324fe755e040d2949d9116dbdf9a5f",
+   "role": "a store, aux or ids pickle",
+   "verified": true,
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/deep3/nfl_matchup_2021.pkl"
+  },
+  "nfl_matchup_2022.pkl": {
+   "sha256": "05df20704f3578b70ab970ffb0fbbb226e6185b62d9323aa15d9c5f9b86a0970",
+   "digest": "0a88f407e2c68ff9c4ef9aaf4c429980f96db8aed072f9ab204fb729b01bf375",
+   "role": "a store, aux or ids pickle",
+   "verified": true,
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/deep3/nfl_matchup_2022.pkl"
+  },
+  "nfl_matchup_2023.pkl": {
+   "sha256": "b59ee9dcc0aead6aaaa519ea66fb3893ae234ba0af440000f526942eaee0e767",
+   "digest": "71bc1d6b672b86d3e50135614aa03285b63bc497ffcad5e17944b6c17791ce52",
+   "role": "a store, aux or ids pickle",
+   "verified": true,
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/deep3/nfl_matchup_2023.pkl"
+  },
+  "nfl_matchup_2024.pkl": {
+   "sha256": "c55418be7b4e6dd183379d5856ed98aab70bd9fb9b89f12856f0ef4453098328",
+   "digest": "0eb984d7282ea6ffb1b64b85df41c2e3b67ec57695e4628498104f1ba637756b",
+   "role": "a store, aux or ids pickle",
+   "verified": true,
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/deep3/nfl_matchup_2024.pkl"
+  },
+  "nfl_matchup_2025.pkl": {
+   "sha256": "3e25b0dc49edab6820dc0fc122a06127460b724155b88ec2c65d3afedd6d6711",
+   "digest": "bea4e6714474b1e2c7b85d8937cdfdae4e2f057d5478a03eb594dd328fa1b6b9",
+   "role": "a store, aux or ids pickle",
+   "verified": true,
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/deep3/nfl_matchup_2025.pkl"
+  },
+  "nfl_matchup_2026.pkl": {
+   "sha256": "82c733ac23c483eda9239fddf1fdcb4e5dcff4561c4d356b5b1c8eeff682c1d6",
+   "digest": "a92eb238d225d6115ef8d2d723d4ed7be3b081c3cc698f821aa683653c40c9a1",
+   "role": "a store, aux or ids pickle",
+   "verified": true,
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/deep3/nfl_matchup_2026.pkl"
+  },
+  "nfl_matchup_ids.pkl": {
+   "sha256": "6944a0e6e58c80c8fc6a038af7dd63f2875698dc53d0f6c73bf0d3ffecded50e",
+   "digest": "cc67de8ac9def31d49edc6d630ca10fa6a2ec5063e98966229539c0f46811d9d",
+   "role": "a store, aux or ids pickle",
+   "verified": true,
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/deep3/nfl_matchup_ids.pkl"
+  },
+  "nfl_rush_aux_2019.pkl": {
+   "sha256": "b60d0ee63cfb7d1b63e0ed9350ad22dae46d484af568c9c1fc4b4248b8bf21a4",
+   "digest": "c4fb43aa66312fa4a361b0def9c95064d6017ac636f4b548bb4faa573bd0dfa3",
+   "role": "a store, aux or ids pickle",
+   "verified": true,
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/deep3/nfl_rush_aux_2019.pkl"
+  },
+  "nfl_rush_aux_2020.pkl": {
+   "sha256": "176b87b18b89cc447eecfee7ac00f17c5dc9745f22920a30099aa80dd4d6fa03",
+   "digest": "40859a7d3f361b2310aa90d6f8509a9e7a12514e00f2ea8111fbeca8ce02077f",
+   "role": "a store, aux or ids pickle",
+   "verified": true,
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/deep3/nfl_rush_aux_2020.pkl"
+  },
+  "nfl_rush_aux_2021.pkl": {
+   "sha256": "5f47309ab1c4a4e85a298e8668cfe01a3973d02d06c5a18bfecfc1e9df2339b7",
+   "digest": "78c5f517354b976474957d787dbead18ee66ca8e5c24d164f50d68958a615132",
+   "role": "a store, aux or ids pickle",
+   "verified": true,
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/deep3/nfl_rush_aux_2021.pkl"
+  },
+  "nfl_rush_aux_2022.pkl": {
+   "sha256": "abacae28683a649e410f57311dde2663fad91045f142127049b906658841497c",
+   "digest": "0309d570abdd14627b8873e0b2913493d440b0ddfaa0c4a6ff24e96d23a32981",
+   "role": "a store, aux or ids pickle",
+   "verified": true,
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/deep3/nfl_rush_aux_2022.pkl"
+  },
+  "nfl_rush_aux_2023.pkl": {
+   "sha256": "ceef6e0eea846dba567bd740fd1aa1298d91cd8e310bd48af97a1f608e58f137",
+   "digest": "3317575cd64f3528978ee36edafeada512b585a329b7e5a365820abecbd7fe57",
+   "role": "a store, aux or ids pickle",
+   "verified": true,
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/deep3/nfl_rush_aux_2023.pkl"
+  },
+  "nfl_rush_aux_2024.pkl": {
+   "sha256": "267428c310356544289ae05615f03a4cc30415636c13e48ed8ca5b87f08906a0",
+   "digest": "6ff34e606f48cb54d08a21315c9dc34e585b34fe93086d3cc919fd41710daee2",
+   "role": "a store, aux or ids pickle",
+   "verified": true,
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/deep3/nfl_rush_aux_2024.pkl"
+  },
+  "nfl_rush_aux_2025.pkl": {
+   "sha256": "9b219a5a157f79736d57e0083b01de3e7d6496348c21a65a9442cd3febb59a53",
+   "digest": "e5daff4cfbcf70ed97ddfcf4ffed7ebc118445d26be2aad5cd711735534a71f9",
+   "role": "a store, aux or ids pickle",
+   "verified": true,
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/deep3/nfl_rush_aux_2025.pkl"
+  },
+  "nfl_rush_aux_2026.pkl": {
+   "sha256": "0b1220d1bd55f687a5fdb49a1cf5e7a060ec05ae1a005db94e708c76a13a56fb",
+   "digest": "c046e6d363ffec3e24c217ab8c110883fd611863b3df588af4d1f0f2caafe00d",
+   "role": "a store, aux or ids pickle",
+   "verified": true,
+   "from": "/tmp/claude-0/-home-user-kalshi-betting-helper/2a51b1d4-3290-577b-b97b-fbbf27fce813/scratchpad/nfl_rush_model/deep3/nfl_rush_aux_2026.pkl"
+  }
+ },
+ "note": "the frames are refused unless they hash to these; a pickle is accepted by sha256 or, re-saved or rebuilt, by its content digest (prereg.json `stores`, every part)"
+}

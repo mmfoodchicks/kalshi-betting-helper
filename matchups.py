@@ -305,19 +305,133 @@ def nfl_data_job(log=None):
     participation after its postseason -- but the daily rule never builds them,
     so a fresh server or PC would serve profiles without them. A backfilled
     season's raw files are deleted once its store is built (the 2025
-    participation file alone is 49 MB; the server's disk is 1 GB)."""
+    participation file alone is 49 MB; the server's disk is 1 GB).
+
+    The rushing layer (nfl_rush_data) keeps an auxiliary store per season whose
+    pbp extras ALIGN to the matchup store's rows, so the two must come from the
+    same pbp download. A prior season is therefore backfilled when EITHER store
+    is missing or its aux was built on another matchup store. Its raw files are
+    removed first, so both stores are rebuilt from one fresh download: had the
+    files survived a killed run, the matchup store would see nothing changed
+    and keep rows the new pbp no longer has. Seasons go one at a time, each
+    season's files dropped before the next downloads (~77 MB at a time, not
+    ~154), and again in a `finally`, so a failed run never strands them; a
+    failed aux is retried the next day because it still does not match.
+    Keying the rushing backfill on the matchup store alone, as first proposed,
+    never built 2024-25's aux on an instance whose matchup backfill had already
+    run (research/reviews/nfl_rush_data_*.md)."""
     import clock
     import nfl_matchup_data as D
+    try:
+        import nfl_rush_data as R
+    except Exception as e:          # the matchup data never waits on the rushing layer
+        errlog.note("RUSH-import", e)
+        R = None
     cur = D._current_season()
     daily = D.default_seasons(cur, clock.today_et().month)
+
+    import deep_cache
+
+    def rush_due(s):
+        # missing, built on another store, or saved without a source the season should have (a
+        # failed download): an incomplete aux still "matches" its store, and was never retried
+        # (the data re-checks' Sonnet R1 / Opus R3)
+        if R is None:
+            return False
+        aux = R.load_aux(s)
+        return not R.aux_matches(aux, D.load_season(s)) or not R.aux_complete(aux)
+
+    def due(s):
+        if D.load_season(s) is None:
+            return True
+        if not rush_due(s):
+            return False
+        # a rebuild only the rushing layer asked for is tried at most once a week: a
+        # persistent failure would otherwise cost a ~77 MB download and a store rebuild
+        # every day (the data re-check's R3)
+        mark, _ts = deep_cache.load(_RUSH_TRY.format(season=s))
+        return not (mark and time.time() - float(mark.get("ts") or 0) < _RUSH_RETRY_S)
+
     # a season the daily rule reads anyway is not backfilled: before October the
     # previous season would be built twice and its raw files fetched twice
-    back = [s for s in (cur - 2, cur - 1) if s not in daily and D.load_season(s) is None]
-    out = {"backfill": None}
-    if back:
-        out["backfill"] = D.refresh(seasons=back, keep_raw=False, log=log)
-    out.update(D.refresh(seasons=daily, log=log))
+    prior = [s for s in (cur - 2, cur - 1) if s not in daily]
+    back = [s for s in prior if due(s)]
+    out = {"backfill": None, "rush": None}
+    rush = {}
+
+    def rush_refresh(seasons, keep_raw):
+        for s in seasons:
+            try:
+                rush[s] = R.refresh(seasons=[s], keep_raw=keep_raw, log=log)
+            except Exception as e:  # one season's failure never costs another's, nor the matchup data's
+                errlog.note("RUSH-refresh", e, path=str(s))
+                rush[s] = {"error": f"{type(e).__name__}: {e}"}
+
+    try:
+        # one season at a time, its files dropped before the next downloads: two seasons'
+        # pbp + participation + FTN held at once are ~154 MB, one is ~77
+        _drop_raw(D, R, back)
+        for s in back:
+            out["backfill"] = out["backfill"] or {}
+            had_store = D.load_season(s) is not None
+            if had_store:
+                deep_cache.save(_RUSH_TRY.format(season=s), {"ts": time.time()})
+            try:
+                out["backfill"][s] = D.refresh(seasons=[s], keep_raw=True, log=log)
+            except Exception as e:
+                if not had_store:
+                    raise           # the matchup data's own backfill fails the job, as it always did
+                # a rebuild of a healthy store, asked for only by the rushing layer, never costs the
+                # daily refresh (the data re-check's R2)
+                errlog.note("NFLM-backfill", e, path=str(s))
+                out["backfill"][s] = {"error": f"{type(e).__name__}: {e}"}
+                _drop_raw(D, R, [s])
+                continue
+            if R is not None:
+                rush_refresh([s], keep_raw=False)
+            _drop_raw(D, R, [s])
+        out.update(D.refresh(seasons=daily, log=log))
+        if R is not None:
+            rush_refresh(daily, keep_raw=True)
+            # the rushing model's comparables history, computed here (PC first, else this niced
+            # child) only when a shipped group reads it, so a board never pays its 103-136 s first
+            # build on Render's one core (the rule re-check's Opus minor)
+            try:
+                import nfl_rush
+                out["rush_vectors"] = nfl_rush.precompute_vectors(log=log)
+            except Exception as e:  # the vectors never cost the matchup data
+                errlog.note("NFLR-vectors", e)
+    finally:
+        _drop_raw(D, R, prior)
+        out["rush"] = rush if R is not None else None
     return out
+
+
+# The once-a-week marker of a rushing-only backfill attempt (a deep-store key, ~40 bytes).
+_RUSH_TRY = "nfl_rush_backfill_try_{season}"
+_RUSH_RETRY_S = 7 * 86400
+
+
+def _drop_raw(D, R, seasons):
+    """Remove the raw downloads of the seasons the daily rule does not read:
+    the matchup store's pbp / participation / FTN and the rushing layer's PFR /
+    injury / snap-count files. A file that is not there is the normal case; any
+    other failure to remove one is ledgered, because on the server's 1 GB disk a
+    stranded download is the next outage."""
+    import deep_cache
+    raw_dir = os.path.join(deep_cache.CACHE_DIR, "nfl_matchup_raw")
+    kinds = ("pbp", "participation", "ftn") + (("pfr_rush", "pfr_def", "pfr_pass", "injuries", "snaps") if R else ())
+    url_for = R.url_for if R is not None else D.url_for
+    for s in seasons:
+        for kind in kinds:
+            path = os.path.join(raw_dir, os.path.basename(url_for(kind, s)))
+            for p in (path, path + ".meta.json"):
+                try:
+                    os.remove(p)
+                except FileNotFoundError:
+                    pass
+                except OSError as e:
+                    errlog.note("RUSH-rm", e, path=p)
 
 
 # A build that failed, or produced a slate with no players (no book yet, no
@@ -419,6 +533,8 @@ def board(sport, key=None):
 def game(sport, key, game_id):
     """(full players of one game, age_s) as published with the index."""
     return boardshare.get(game_name(sport, key, str(game_id)), None)
+
+
 
 
 # ---- the live view: a player leaves the list once his game starts ----------------------------

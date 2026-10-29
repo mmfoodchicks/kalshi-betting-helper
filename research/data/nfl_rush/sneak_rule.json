@@ -1,0 +1,42 @@
+{
+ "rule": "The rule-coded QB sneak, used ONLY where FTN has no row for the play (FTN\n    starts in 2022, so this reaches 2021 -- a 2023 cutoff's two-seasons-back\n    prior -- and the ~0.3% of 2022 plays FTN missed). FTN's is_qb_sneak is the\n    only charted sneak flag (no pbp field or play description says \"sneak\",\n    rush_data_sources.md \u00a78.1). The rule: a QB designed run from under center\n    with 1-2 yards to go, up the middle or through a guard gap. Its agreement\n    with FTN on 2022-2025 is in research/reports/nfl_rush_data.md; every sneak\n    count says how many came from the rule (`counts`).",
+ "by_season": {
+  "2022": {
+   "qb_designed_runs_charted": 887,
+   "ftn_sneaks": 275,
+   "rule_sneaks": 263,
+   "both": 260,
+   "precision": 0.989,
+   "recall": 0.945
+  },
+  "2023": {
+   "qb_designed_runs_charted": 748,
+   "ftn_sneaks": 295,
+   "rule_sneaks": 282,
+   "both": 278,
+   "precision": 0.986,
+   "recall": 0.942
+  },
+  "2024": {
+   "qb_designed_runs_charted": 785,
+   "ftn_sneaks": 267,
+   "rule_sneaks": 252,
+   "both": 250,
+   "precision": 0.992,
+   "recall": 0.936
+  },
+  "2025": {
+   "qb_designed_runs_charted": 616,
+   "ftn_sneaks": 259,
+   "rule_sneaks": 233,
+   "both": 232,
+   "precision": 0.996,
+   "recall": 0.896
+  }
+ },
+ "license": {
+  "credit": "FTN Data via nflverse (CC BY-SA 4.0); nflverse-data (CC BY 4.0); Pro Football Reference advanced stats and snap counts via nflverse (credit Pro Football Reference / Sports Reference); participation through 2022: NFL NextGenStats via nflverse (for 2022 and earlier); NFL Next Gen Stats via nflverse (NFL-owned data, governed by the NFL's terms); NFL injury reports via nflverse; DynastyProcess db_playerids",
+  "share_alike": "tables derived from FTN charting are shared under CC BY-SA 4.0",
+  "terms": "research/reports/rush_data_sources.md \u00a712 and research/reports/matchup_data_sources.md"
+ }
+}

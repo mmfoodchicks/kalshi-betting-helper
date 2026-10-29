@@ -23732,11 +23732,11 @@ ck("the tab shows the PC's report beside a queued request and a scheduled build'
 
 print("=" * 72)
 print("MX. The matchup upgrade (2026-10-23): prop math, the NBA engine, the NFL matchup data and model,")
-print("    the Matchups tab's plumbing -- each guard file also runs alone (python3 tests/guards_<name>.py)")
+print("    the Matchups tab's plumbing, the rushing data layer and model (2026-10-24) -- each guard file also runs alone (python3 tests/guards_<name>.py)")
 print("=" * 72)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 for _mx_mod in ("guards_prop_math", "guards_nba_matchup", "guards_nfl_matchup_data", "guards_nfl_matchup_model",
-                "guards_matchups"):
+                "guards_matchups", "guards_nfl_rush_data", "guards_nfl_rush_model"):
     try:
         __import__(_mx_mod).run(ck)
     except Exception as _mx_e:            # a guard file that cannot run is a failed guard, never a skipped one

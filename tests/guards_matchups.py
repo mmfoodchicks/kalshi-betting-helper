@@ -53,12 +53,157 @@ def _mx_sort_default_ok(js):
             and '["yes", "YES"], ["no", "NO"]' in js and "localStorage.setItem(\"mxSortSide\"" in js)
 
 
+def _fake_d(calls, load_season, default_seasons=None, daily_raises=False, build_raises=()):
+    """A stand-in nfl_matchup_data for the deep job: records each refresh as ("D", seasons, keep_raw).
+    `build_raises`: seasons whose build fails AFTER their files were downloaded."""
+    import types
+
+    def refresh(seasons=None, keep_raw=True, log=None):
+        calls.append(("D", list(seasons), keep_raw))
+        if daily_raises and list(seasons) == [2026]:
+            raise RuntimeError("daily refresh failed")
+        _download(seasons, ("pbp", "participation", "ftn"), keep_raw or bool(set(seasons) & set(build_raises)))
+        if set(seasons) & set(build_raises):
+            raise RuntimeError("backfill build failed")
+        return {"seasons": {}}
+    return types.SimpleNamespace(
+        _current_season=lambda: 2026, SCHEMA=2, load_season=load_season,
+        default_seasons=default_seasons or (lambda cur, month: [cur] if month >= 10 else [cur - 1, cur]),
+        refresh=refresh, url_for=lambda kind, season=None: f"https://x/{kind}_{season}.csv")
+
+
+def _fake_r(calls, aux, fail=()):
+    """A stand-in nfl_rush_data: records ("R", seasons, keep_raw); `aux` gives the stored aux per season."""
+    import types
+
+    def refresh(seasons=None, keep_raw=True, log=None):
+        calls.append(("R", list(seasons), keep_raw))
+        if set(seasons) & set(fail):
+            _download(seasons, ("pfr_rush", "injuries", "snaps"), True)   # fetched, then the build failed
+            raise ValueError("bad source file")
+        _download(seasons, ("pfr_rush", "injuries", "snaps"), keep_raw)
+        return {"ok": seasons[0]}
+    return types.SimpleNamespace(
+        load_aux=aux, refresh=refresh, url_for=lambda kind, season=None: f"https://x/{kind}_{season}.csv",
+        aux_matches=lambda a, st: bool(a and st and a.get("store_built") == st.get("built")
+                                       and a.get("store_n") == st.get("n")),
+        aux_complete=lambda a: bool(a) and a.get("complete") is True)     # as strict as nfl_rush_data's
+
+
+_LEDGER = {}
+
+
+def _download(seasons, kinds, keep):
+    """What a real refresh leaves in the raw dir: its downloads (and their freshness records) when it keeps them."""
+    if not keep:
+        return
+    import deep_cache
+    raw = os.path.join(deep_cache.CACHE_DIR, "nfl_matchup_raw")
+    for s in seasons:
+        for k in kinds:
+            for suffix in ("", ".meta.json"):
+                with open(os.path.join(raw, f"{k}_{s}.csv{suffix}"), "w") as fh:
+                    fh.write("x")
+
+
+def _ledger_has_any(code):
+    """True / False when the real ledger can be read, None when it cannot (a guard never fails on that alone)."""
+    try:
+        import errlog
+        return any(r.get("code") == code for r in errlog.recent(limit=200))
+    except Exception:
+        return None
+
+
+def _ledger_has(code):
+    return code in _LEDGER.get("codes", ())
+
+
+def _run_job(fake_d, fake_r, plant=(), marks=None, store_dir=None):
+    """Run matchups.nfl_data_job against the fakes in a scratch deep store with a scratch error ledger.
+    `plant`: seasons whose raw files (and their freshness records) exist before the run; `marks` {season: days ago}
+    a rushing-only backfill was last tried; `store_dir` reuses a scratch deep store across runs. Returns (result or the
+    exception raised, files left in the raw dir, the planted files the job removed BEFORE its first refresh)."""
+    import deep_cache
+    import errlog
+    import matchups
+    tmp = store_dir or tempfile.mkdtemp(prefix="mx_job_")
+    raw = os.path.join(tmp, "nfl_matchup_raw")
+    os.makedirs(raw, exist_ok=True)
+    kinds = ("pbp", "participation", "ftn", "pfr_rush", "pfr_def", "pfr_pass", "injuries", "snaps")
+    for s in plant:
+        for k in kinds:
+            for suffix in ("", ".meta.json"):
+                with open(os.path.join(raw, f"{k}_{s}.csv{suffix}"), "w") as fh:
+                    fh.write("x")
+    pre = []
+    real_refresh = fake_d.refresh
+
+    def watched_refresh(seasons=None, **kw):
+        # every prior-season download on disk at the moment a prior season starts downloading
+        if set(seasons) <= {2024, 2025}:
+            pre.append(sorted(f for f in os.listdir(raw) if "_2024." in f or "_2025." in f))
+        return real_refresh(seasons=seasons, **kw)
+    fake_d.refresh = watched_refresh
+    saved = {m: sys.modules.get(m) for m in ("nfl_matchup_data", "nfl_rush_data", "nfl_rush")}
+    saved_dir, saved_db, saved_init = deep_cache.CACHE_DIR, errlog._DB, errlog._init_done
+    if marks:
+        import pickle as _pk
+        for s_, days in marks.items():
+            with open(os.path.join(tmp, f"nfl_rush_backfill_try_{s_}.pkl"), "wb") as fh:
+                t_ = time.time() - days * 86400
+                _pk.dump({"generated_at": t_, "payload": {"ts": t_}}, fh)     # deep_cache.save's record
+    saved_throttle = (dict(errlog._last_write), dict(errlog._pending))
+    errlog._last_write.clear()          # a note throttled by an earlier one would never reach this run's ledger
+    errlog._pending.clear()
+    sys.modules["nfl_matchup_data"] = fake_d
+    sys.modules["nfl_rush_data"] = None if fake_r == "broken" else fake_r
+    import types as _ty
+    vec_calls = _LEDGER.setdefault("vectors", [])
+    vec_calls.clear()
+
+    def _vectors(log=None):
+        vec_calls.append(1)
+        if _LEDGER.get("vectors_raise"):
+            raise RuntimeError("vectors failed")
+        return {"vectors": 0}
+    sys.modules["nfl_rush"] = _ty.SimpleNamespace(precompute_vectors=_vectors)
+    deep_cache.CACHE_DIR = tmp
+    errlog._DB, errlog._init_done = os.path.join(tmp, "errlog.db"), False
+    try:
+        try:
+            res = matchups.nfl_data_job()
+        except Exception as e:
+            res = e
+        _LEDGER["codes"] = {r.get("code") for r in errlog.recent(limit=50)}
+    finally:
+        for m, v in saved.items():
+            if v is not None:
+                sys.modules[m] = v
+            else:
+                sys.modules.pop(m, None)
+        deep_cache.CACHE_DIR, errlog._DB, errlog._init_done = saved_dir, saved_db, saved_init
+        errlog._last_write.clear()
+        errlog._last_write.update(saved_throttle[0])
+        errlog._pending.clear()
+        errlog._pending.update(saved_throttle[1])
+        fake_d.refresh = real_refresh
+    # what is left of the PRIOR seasons' downloads (the daily season's are kept on purpose)
+    left = sorted(f for f in os.listdir(raw) if "_2024." in f or "_2025." in f)
+    return res, left, pre
+
+
 def run(ck):
     import boardshare
     import matchups
     saved_dir, saved_put = boardshare._DIR, boardshare.put
     tmp = tempfile.mkdtemp(prefix="mx_guard_")
     boardshare._DIR = tmp
+    # the board checks hold in every month: out of season (June to October for the NBA) the real
+    # _in_season turned them into "out of season" placeholders and the suite red (found by the data
+    # re-check with the clock patched to September); the out-of-season check sets its own
+    saved_in_season = matchups._in_season
+    matchups._in_season = lambda sport: True
     try:
         order = []
 
@@ -273,24 +418,12 @@ def run(ck):
            "rather than leaving every +EV unqualified in silence",
            mb_ln and all("market_better" in ln["labels"] for ln in mb_ln) and mb_idx.get("market_record")
            and any("could not be read" in n for n in nr_idx["notes"]), str((mb_ln, nr_idx["notes"])))
-        import types
         f4 = []
-        fake4 = types.SimpleNamespace(
-            _current_season=lambda: 2026, SCHEMA=2, load_season=lambda s: None,
-            default_seasons=lambda cur, month: [cur - 1, cur],
-            refresh=lambda seasons=None, keep_raw=True, log=None: f4.append((list(seasons), keep_raw)) or {})
-        saved_mod4 = sys.modules.get("nfl_matchup_data")
-        sys.modules["nfl_matchup_data"] = fake4
-        try:
-            matchups.nfl_data_job()
-        finally:
-            if saved_mod4 is not None:
-                sys.modules["nfl_matchup_data"] = saved_mod4
-            else:
-                sys.modules.pop("nfl_matchup_data", None)
+        fake4 = _fake_d(f4, load_season=lambda s: None, default_seasons=lambda cur, month: [cur - 1, cur])
+        _run_job(fake4, _fake_r(f4, aux=lambda s: None))
         ck("nfl_matchup job (F4): before October, with both stores missing, the season the daily rule reads anyway is "
            "not backfilled too (it would be built and fetched twice, its raw files kept the second time)",
-           f4 == [([2024], False), ([2025, 2026], True)], str(f4))
+           [c for c in f4 if c[0] == "D"] == [("D", [2024], True), ("D", [2025, 2026], True)], str(f4))
 
         import app as A
         cl = A.app.test_client()
@@ -319,6 +452,7 @@ def run(ck):
            A._json_finite({"a": [float("nan"), 1.0, {"b": float("inf")}]}) == {"a": [None, 1.0, {"b": None}]}
            and math.isnan(float("nan")))
     finally:
+        matchups._in_season = saved_in_season
         boardshare._DIR, boardshare.put = saved_dir, saved_put
         for k in [k for k in matchups._MEM if (isinstance(k, str) and k.startswith("matchups_nba_2026-1"))
                   or (isinstance(k, tuple) and k[0] == "_mx_fail")]:
@@ -495,6 +629,61 @@ def run(ck):
        and '_add("matchups-nba", lambda: __import__("matchups").pc_board("nba"))' in inspect.getsource(pc_worker)
        and 'deep_cache.register("nba_matchup", run_nba_matchup, max_age=6 * 3600, cadence="age")' in inspect.getsource(A)
        and '_deep_pc_first("nba_matchup")' in inspect.getsource(A))
+    # the board-only Kalshi series (the rushing markets), kept out of the shared index
+    import kalshi_nfl as _KN
+
+    def _mk(series, ev, name, strike, ya, na):
+        return {"ticker": f"{series}-{ev}-X-{int(strike + 0.5)}", "event_ticker": f"{series}-{ev}",
+                "title": f"{name}: {int(strike + 0.5)}+ thing", "floor_strike": strike,
+                "yes_ask_dollars": f"{ya / 100:.2f}", "no_ask_dollars": f"{na / 100:.2f}",
+                "yes_bid_dollars": f"{(ya - 2) / 100:.2f}", "no_bid_dollars": f"{(na - 2) / 100:.2f}",
+                "close_time": "2026-11-08T18:00:00Z"}
+    feed = {"KXNFLRSHATT": [_mk("KXNFLRSHATT", "26NOV08AB", "Joe Back", 17.5, 40, 62)],
+            "KXNFLRRYDS": [_mk("KXNFLRRYDS", "26NOV08AB", "Joe Back", 89.5, 45, 57),
+                           _mk("KXNFLRRYDS", "26NOV08AB", "ATL Falcons D/ST", 0.5, 50, 52)],
+            "KXNFLLONGRSH": RuntimeError("page 2 failed")}
+    saved_fetch, saved_cache = _KN._fetch, dict(_KN._extra_cache)
+    pulled = []
+
+    def fake_fetch(series, max_pages=None):
+        pulled.append(series)
+        v = feed[series]
+        if isinstance(v, Exception):
+            raise v
+        return v
+    _KN._fetch = fake_fetch
+    _KN._extra_cache.update(ts=0.0, data=None)
+    try:
+        ex = _KN.extra_props()
+        ex2 = _KN.extra_props()
+    finally:
+        _KN._fetch = saved_fetch
+        _KN._extra_cache.clear()
+        _KN._extra_cache.update(saved_cache)
+    e = ex.get("26NOV08AB") or {}
+    import nfl_matchup as _NM
+    kl = _NM._kalshi_lines({}, "26NOV08AB", ts=5.0, extra=ex)
+    ck("the board's extra Kalshi series (rush attempts, rush + rec yards, longest rush) parse exactly as the shared "
+       "index's props (one parser), D/ST team markets dropped; a series whose pages fail is left out WHOLE and "
+       "ledgered; the read is cached; they reach the board's lines through _kalshi_lines(extra=) and never the "
+       "shared index the combo maker and the props recorder read",
+       set(e.get("players") or {}) == {("rush_att", "joe back", 17.5), ("rush_rec_yd", "joe back", 89.5)}
+       and kl.get(("rush_att", "joe back"), {}).get(18, {}).get("yes_ask") == 40
+       and kl.get(("rush_rec_yd", "joe back"), {}).get(90, {}).get("no_ask") == 57
+       and ex2 is ex and pulled.count("KXNFLRSHATT") == 1 and _ledger_has_any("KNFL-extra") is not False
+       and set(_KN.EXTRA_PROP_SERIES) & set(_KN._PROP_SERIES) == set(),
+       str((e.get("players"), kl, pulled)))
+    import nfl_rush_data as _RD
+    ck("the job's completeness test is the rushing layer's own, and strict: an aux saved before the 'complete' flag "
+       "existed, or none at all, is incomplete (the data confirmation's G1b)",
+       _RD.aux_complete({"schema": 2}) is False and _RD.aux_complete(None) is False
+       and _RD.aux_complete({"schema": 2, "complete": True}) is True
+       and "R.aux_complete(aux)" in inspect.getsource(matchups.nfl_data_job))
+    ck("the rushing layer's aux store rides the artifact contract: SCHEMA 7 names nfl_rush_aux_<season>.pkl, which the "
+       "nfl_matchup job builds beside the matchup store (pc_worker's job calls the same function, and its sync uploads "
+       "any deep-store file fresher than the server's)",
+       artifacts.SCHEMA >= 7 and "nfl_rush_aux_<season>.pkl" in art and "R.refresh(seasons=[s]" in inspect.getsource(
+           matchups.nfl_data_job))
     json.dumps(idx)            # the index is plain JSON
 
     # the live view (the owner, 2026-10-24): a player leaves the list once his game starts; the next day's
@@ -620,32 +809,118 @@ def run(ck):
        lv_ok is not False and '_mx.game = ""' in js_live and '"visibilitychange"' in js_live, str((lv_ok, lv_out)))
 
     # the NFL data job backfills the two seasons the profiles read back, once
-    import types
-    calls = []
-    fake = types.SimpleNamespace(
-        _current_season=lambda: 2026, SCHEMA=2,
-        load_season=lambda s: {"schema": 2} if s == 2025 else None,
-        default_seasons=lambda cur, month: [cur] if month >= 10 else [cur - 1, cur],
-        refresh=lambda seasons=None, keep_raw=True, log=None: calls.append((list(seasons), keep_raw)) or {"seasons": {}})
-    saved_mod = sys.modules.get("nfl_matchup_data")
-    sys.modules["nfl_matchup_data"] = fake
-    try:
-        matchups.nfl_data_job()
-        first = list(calls)
-        fake.load_season = lambda s: {"schema": 2}
-        calls.clear()
-        matchups.nfl_data_job()
-        second = list(calls)
-    finally:
-        if saved_mod is not None:
-            sys.modules["nfl_matchup_data"] = saved_mod
-        else:
-            sys.modules.pop("nfl_matchup_data", None)
     import clock
     daily = [2026] if clock.today_et().month >= 10 else [2025, 2026]
-    ck("nfl_matchup job: a season the profiles read back (two before the current) with no store is backfilled once, "
-       "its raw files dropped (keep_raw False); the daily refresh follows; with both stores present only the daily runs",
-       first == [([2024], False), (daily, True)] and second == [(daily, True)], str((first, second)))
+    calls = []
+    fake = _fake_d(calls, load_season=lambda s: {"schema": 2, "built": 1.0, "n": 5} if s == 2025 else None)
+    aux_ok = lambda s: {"store_built": 1.0, "store_n": 5, "complete": True}  # noqa: E731 -- matches the fake store
+    _run_job(fake, _fake_r(calls, aux=aux_ok))
+    first = [c for c in calls if c[0] == "D"]
+    fake.load_season = lambda s: {"schema": 2, "built": 1.0, "n": 5}
+    calls.clear()
+    _run_job(fake, _fake_r(calls, aux=aux_ok))
+    second = [c for c in calls if c[0] == "D"]
+    ck("nfl_matchup job: a season the profiles read back (two before the current) with no store is backfilled once "
+       "(its raw files kept until the rushing layer has read them, then removed); the daily refresh follows; with both "
+       "stores present and matching only the daily runs",
+       first == [("D", [2024], True), ("D", daily, True)] and second == [("D", daily, True)], str((first, second)))
+
+    # the rushing layer's aux is backfilled on ITS OWN status (review O1 / Opus M2 / Sonnet M1): an instance whose
+    # matchup backfill already ran (both stores present) must still build 2024-25's aux, from one fresh download
+    # the rushing checks run in every month (the data re-check's R5: gated on October they silently skipped
+    # January to September): the job reads the clock only for the daily rule's month
+    import clock as _clock
+    _saved_et = _clock.today_et
+    _clock.today_et = lambda: __import__("datetime").date(2026, 10, 24)
+    try:
+        rc = []
+        store = lambda s: {"schema": 2, "built": 7.0, "n": 9}            # noqa: E731
+        aux_ok_s = lambda s: {"store_built": 7.0, "store_n": 9, "complete": True}  # noqa: E731
+        fd = _fake_d(rc, load_season=store)
+        stale = {2024: None, 2025: {"store_built": 3.0, "store_n": 9}}  # missing, and built on another store
+        res, left, pre = _run_job(fd, _fake_r(rc, aux=lambda s: stale.get(s, {"store_built": 7.0, "store_n": 9,
+                                                                             "complete": True})),
+                                  plant=[2024, 2025])
+        ck("rushing aux (O1): with both matchup stores present, a missing or stale prior-season aux backfills the "
+           "season -- stale raw files removed FIRST (so the matchup store is rebuilt from the same download the aux "
+           "reads), one season at a time (no other prior season's files on disk while one downloads: ~77 MB, not "
+           "~154), the matchup store refreshed with its files kept, its aux built, its files dropped; the daily season "
+           "follows on both layers",
+           rc == [("D", [2024], True), ("R", [2024], False), ("D", [2025], True), ("R", [2025], False),
+                  ("D", [2026], True), ("R", [2026], True)] and pre == [[], []] and left == [], str((rc, pre, left)))
+        rc2 = []
+        boom = _fake_r(rc2, aux=lambda s: None, fail={2024})
+        res2, left2, _pre2 = _run_job(_fake_d(rc2, load_season=store), boom, plant=[2024, 2025])
+        ck("rushing aux (O1): one season's aux failure never costs another's, nor the matchup data's; it is ledgered "
+           "RUSH-refresh, reported in the job's result, and the prior seasons' raw files are still removed",
+           ("R", [2025], False) in rc2 and ("R", [2026], True) in rc2 and "error" in (res2.get("rush") or {}).get(2024, {})
+           and res2["rush"][2025] == {"ok": 2025} and left2 == [] and _ledger_has("RUSH-refresh"), str((rc2, res2, left2)))
+        rc3 = []
+        fd3 = _fake_d(rc3, load_season=store, daily_raises=True)
+        res3, left3, _pre3 = _run_job(fd3, _fake_r(rc3, aux=lambda s: None), plant=[2024, 2025])
+        ck("rushing aux (O1): a daily refresh that raises still leaves no prior-season raw file behind (the cleanup is a "
+           "finally: a stranded backfill is ~154 MB on a 1 GB disk), and the error still reaches the job",
+           isinstance(res3, RuntimeError) and left3 == [], str((res3, left3)))
+        rc5 = []
+        res5, left5, _pre5 = _run_job(_fake_d(rc5, load_season=lambda s: None if s == 2025 else store(s),
+                                              build_raises={2025}),
+                                      _fake_r(rc5, aux=lambda s: None), plant=[])
+        ck("rushing aux (O1): the matchup data's OWN backfill (no store) that fails after its download leaves no file "
+           "behind (the finally covers the season in flight), and the error reaches the job, as it always did",
+           isinstance(res5, RuntimeError) and left5 == [], str((rc5, res5, left5)))
+        rc6 = []
+        res6, left6, _pre6 = _run_job(_fake_d(rc6, load_season=store, build_raises={2025}),
+                                      _fake_r(rc6, aux=lambda s: None), plant=[])
+        ck("rushing aux (re-check R2): a rebuild of a HEALTHY matchup store that only the rushing layer asked for, when "
+           "it fails, is ledgered NFLM-backfill and never costs the daily refresh; its files still go",
+           isinstance(res6, dict) and "error" in res6["backfill"][2025] and ("D", [2026], True) in rc6
+           and ("R", [2026], True) in rc6 and ("R", [2025], False) not in rc6 and left6 == []
+           and _ledger_has("NFLM-backfill"), str((rc6, res6, left6)))
+        rc7 = []
+        res7, _l7, _p7 = _run_job(_fake_d(rc7, load_season=store), _fake_r(rc7, aux=lambda s: None),
+                                  plant=[], marks={2024: 0.5, 2025: 8.0})
+        ck("rushing aux (re-check R3): a rushing-only backfill is tried at most once a week -- a season tried half a "
+           "day ago waits, one tried eight days ago goes again -- so a persistent failure is not a daily 77 MB "
+           "download and rebuild",
+           [c for c in rc7 if c[1] != [2026]] == [("D", [2025], True), ("R", [2025], False)], str(rc7))
+        rc8 = []
+        _run_job(_fake_d(rc8, load_season=store),
+                 _fake_r(rc8, aux=lambda s: {"store_built": 7.0, "store_n": 9, "complete": s != 2025}), plant=[])
+        ck("rushing aux (re-checks Sonnet R1 / Opus R3): an aux that matches its store but was saved WITHOUT a source "
+           "its season should have (a failed download) is due again -- it was 'aligned' forever before",
+           [c for c in rc8 if c[1] != [2026]] == [("D", [2025], True), ("R", [2025], False)], str(rc8))
+        rc9, d9 = [], tempfile.mkdtemp(prefix="mx_job_keep_")
+        _run_job(_fake_d(rc9, load_season=store), _fake_r(rc9, aux=lambda s: None, fail={2024, 2025}), plant=[],
+                 store_dir=d9)
+        first9 = [c for c in rc9 if c[1] != [2026]]
+        rc9.clear()
+        _run_job(_fake_d(rc9, load_season=store), _fake_r(rc9, aux=lambda s: None, fail={2024, 2025}), plant=[],
+                 store_dir=d9)
+        ck("rushing aux (re-check R6): the weekly marker is WRITTEN by a failed rushing-only backfill -- the next day's "
+           "run, with nothing planted, skips both seasons (a marker never saved, or stamped 0, made the throttle inert: "
+           "the daily 77 MB download R3 was about)",
+           first9 == [("D", [2024], True), ("R", [2024], False), ("D", [2025], True), ("R", [2025], False)]
+           and [c for c in rc9 if c[1] != [2026]] == [], str((first9, rc9)))
+        rc10 = []
+        res10, _l10, _p10 = _run_job(_fake_d(rc10, load_season=store), _fake_r(rc10, aux=aux_ok_s), plant=[])
+        n_vec = len(_LEDGER.get("vectors") or [])
+        _LEDGER["vectors_raise"] = True
+        try:
+            res11, _l11, _p11 = _run_job(_fake_d([], load_season=store), _fake_r([], aux=aux_ok_s), plant=[])
+        finally:
+            _LEDGER["vectors_raise"] = False
+        ck("nfl_matchup job: the rushing model's comparables history is precomputed in the job (once, after the daily "
+           "rushing refresh) so a board never pays its first build; its failure is ledgered NFLR-vectors and never "
+           "costs the matchup data",
+           n_vec == 1 and isinstance(res10, dict) and res10.get("rush_vectors") == {"vectors": 0}
+           and isinstance(res11, dict) and "rush_vectors" not in res11 and _ledger_has("NFLR-vectors"),
+           str((n_vec, res10 if isinstance(res10, Exception) else res10.get("rush_vectors"), res11)))
+        rc4 = []
+        res4, _l4, _p4 = _run_job(_fake_d(rc4, load_season=store), "broken", plant=[])
+        ck("rushing aux (O1): a rushing layer that cannot be imported never stops the matchup data's own refresh",
+           [c for c in rc4 if c[0] == "D"] == [("D", [2026], True)] and res4.get("rush") is None, str((rc4, res4)))
+    finally:
+        _clock.today_et = _saved_et
     ck("nfl_matchup job is registered PC-first and runs on the server only in a niced child under the heavy-build gate",
        'deep_cache.register("nfl_matchup", run_nfl_matchup)' in inspect.getsource(A)
        and '_deep_pc_first("nfl_matchup")' in inspect.getsource(A)

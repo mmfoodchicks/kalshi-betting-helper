@@ -1,0 +1,4769 @@
+{
+ "decay_chosen": 0.75,
+ "decay_rule": "0.25 if r < 0.3, 0.5 if 0.3 <= r < 0.6, 0.75 if r >= 0.6 (the agreed rule, written before running)",
+ "license": {
+  "credit": "FTN Data via nflverse (CC BY-SA 4.0); nflverse-data (CC BY 4.0); Pro Football Reference advanced stats and snap counts via nflverse (credit Pro Football Reference / Sports Reference); participation through 2022: NFL NextGenStats via nflverse (for 2022 and earlier); NFL Next Gen Stats via nflverse (NFL-owned data, governed by the NFL's terms); NFL injury reports via nflverse; DynastyProcess db_playerids",
+  "share_alike": "tables derived from FTN charting are shared under CC BY-SA 4.0",
+  "terms": "research/reports/rush_data_sources.md \u00a712 and research/reports/matchup_data_sources.md"
+ },
+ "note": "Pearson r across units of consecutive full regular seasons (teams; RBs 100+ designed runs both seasons; QBs 200+ dropbacks both)",
+ "pairs": {
+  "2018->2019": {
+   "def_base_share": {
+    "n_units": 32,
+    "r": 0.323
+   },
+   "def_box_epa_dev": {
+    "n_units": 96,
+    "r": 0.338
+   },
+   "def_box_expl10_dev": {
+    "n_units": 96,
+    "r": 0.103
+   },
+   "def_box_expl20_dev": {
+    "n_units": 96,
+    "r": 0.255
+   },
+   "def_box_mean": {
+    "n_units": 32,
+    "r": 0.398
+   },
+   "def_box_op_heavy_dev": {
+    "n_units": 175,
+    "r": 0.212
+   },
+   "def_box_op_light_dev": {
+    "n_units": 175,
+    "r": 0.093
+   },
+   "def_box_sg_dev": {
+    "n_units": 64,
+    "r": 0.359
+   },
+   "def_box_stuff_dev": {
+    "n_units": 96,
+    "r": 0.223
+   },
+   "def_box_success_dev": {
+    "n_units": 96,
+    "r": 0.032
+   },
+   "def_box_ypc_dev": {
+    "n_units": 96,
+    "r": 0.068
+   },
+   "def_designed_runs_oe": {
+    "n_units": 32,
+    "r": 0.39
+   },
+   "def_designed_yds_oe": {
+    "n_units": 32,
+    "r": 0.406
+   },
+   "def_dime_share": {
+    "n_units": 32,
+    "r": 0.565
+   },
+   "def_dir_epa_dev": {
+    "n_units": 224,
+    "r": -0.088
+   },
+   "def_dir_expl10_dev": {
+    "n_units": 224,
+    "r": 0.059
+   },
+   "def_dir_expl20_dev": {
+    "n_units": 224,
+    "r": -0.088
+   },
+   "def_dir_stuff_dev": {
+    "n_units": 224,
+    "r": -0.056
+   },
+   "def_dir_success_dev": {
+    "n_units": 224,
+    "r": 0.008
+   },
+   "def_dir_ypc_dev": {
+    "n_units": 224,
+    "r": -0.06
+   },
+   "def_dl3_share": {
+    "n_units": 32,
+    "r": 0.66
+   },
+   "def_dl4_share": {
+    "n_units": 32,
+    "r": 0.651
+   },
+   "def_explosive_runs_oe": {
+    "n_units": 32,
+    "r": 0.089
+   },
+   "def_heavy_share": {
+    "n_units": 32,
+    "r": 0.428
+   },
+   "def_hit_sack_rate_oe": {
+    "n_units": 32,
+    "r": 0.547
+   },
+   "def_light_share": {
+    "n_units": 32,
+    "r": 0.54
+   },
+   "def_mtkl_pg": {
+    "n_units": 31,
+    "r": 0.565
+   },
+   "def_mtkl_rate": {
+    "n_units": 31,
+    "r": 0.686
+   },
+   "def_nickel_share": {
+    "n_units": 32,
+    "r": 0.504
+   },
+   "def_rb_catch": {
+    "n_units": 32,
+    "r": 0.004
+   },
+   "def_rb_epa": {
+    "n_units": 32,
+    "r": 0.145
+   },
+   "def_rb_expl10": {
+    "n_units": 32,
+    "r": 0.445
+   },
+   "def_rb_expl20": {
+    "n_units": 32,
+    "r": 0.12
+   },
+   "def_rb_fd": {
+    "n_units": 32,
+    "r": 0.335
+   },
+   "def_rb_line_yds": {
+    "n_units": 32,
+    "r": 0.364
+   },
+   "def_rb_stuff": {
+    "n_units": 32,
+    "r": 0.433
+   },
+   "def_rb_success": {
+    "n_units": 32,
+    "r": 0.294
+   },
+   "def_rb_sy_conv": {
+    "n_units": 32,
+    "r": 0.267
+   },
+   "def_rb_tgt_db": {
+    "n_units": 32,
+    "r": 0.116
+   },
+   "def_rb_yac_rec": {
+    "n_units": 32,
+    "r": 0.091
+   },
+   "def_rb_ypc": {
+    "n_units": 32,
+    "r": 0.125
+   },
+   "def_rb_ypt": {
+    "n_units": 32,
+    "r": 0.232
+   },
+   "def_red_zone_rushes_oe": {
+    "n_units": 32,
+    "r": 0.154
+   },
+   "def_rush_tds_oe": {
+    "n_units": 32,
+    "r": 0.203
+   },
+   "def_scramble_yds_oe": {
+    "n_units": 32,
+    "r": -0.198
+   },
+   "def_scrambles_oe": {
+    "n_units": 32,
+    "r": -0.077
+   },
+   "def_side_epa_dev": {
+    "n_units": 96,
+    "r": -0.131
+   },
+   "def_side_expl10_dev": {
+    "n_units": 96,
+    "r": 0.261
+   },
+   "def_side_expl20_dev": {
+    "n_units": 96,
+    "r": 0.057
+   },
+   "def_side_stuff_dev": {
+    "n_units": 96,
+    "r": -0.063
+   },
+   "def_side_success_dev": {
+    "n_units": 96,
+    "r": -0.004
+   },
+   "def_side_ypc_dev": {
+    "n_units": 96,
+    "r": -0.076
+   },
+   "def_yac": {
+    "n_units": 32,
+    "r": 0.448
+   },
+   "def_ybc": {
+    "n_units": 32,
+    "r": -0.025
+   },
+   "ol_gap_success_dev": {
+    "n_units": 96,
+    "r": 0.154
+   },
+   "ol_line_yds": {
+    "n_units": 32,
+    "r": 0.318
+   },
+   "ol_stuff": {
+    "n_units": 32,
+    "r": 0.233
+   },
+   "ol_success": {
+    "n_units": 32,
+    "r": 0.512
+   },
+   "ol_ybc": {
+    "n_units": 32,
+    "r": 0.331
+   },
+   "qb_dsg_expl10": {
+    "n_units": 7,
+    "r": -0.684
+   },
+   "qb_dsg_rate": {
+    "n_units": 25,
+    "r": 0.982
+   },
+   "qb_dsg_success": {
+    "n_units": 7,
+    "r": -0.625
+   },
+   "qb_dsg_yds_rate": {
+    "n_units": 25,
+    "r": 0.988
+   },
+   "qb_dsg_ypc": {
+    "n_units": 7,
+    "r": -0.486
+   },
+   "qb_gl_rate": {
+    "n_units": 25,
+    "r": 0.5
+   },
+   "qb_hit_sack_rate": {
+    "n_units": 25,
+    "r": 0.53
+   },
+   "qb_kneel_pg": {
+    "n_units": 25,
+    "r": 0.104
+   },
+   "qb_rpo_rate": {
+    "n_units": 25,
+    "r": null
+   },
+   "qb_rz_rate": {
+    "n_units": 25,
+    "r": 0.884
+   },
+   "qb_scr_expl10": {
+    "n_units": 19,
+    "r": 0.326
+   },
+   "qb_scr_rate": {
+    "n_units": 25,
+    "r": 0.865
+   },
+   "qb_scr_yds_db": {
+    "n_units": 25,
+    "r": 0.724
+   },
+   "qb_scr_ypa": {
+    "n_units": 19,
+    "r": 0.23
+   },
+   "qb_sneak_conv": {
+    "n_units": 1,
+    "r": null
+   },
+   "qb_sneak_rate": {
+    "n_units": 25,
+    "r": 0.508
+   },
+   "qb_td_rate": {
+    "n_units": 25,
+    "r": 0.679
+   },
+   "qb_x10_rate": {
+    "n_units": 25,
+    "r": 0.863
+   },
+   "rb_adot": {
+    "n_units": 26,
+    "r": 0.599
+   },
+   "rb_box_epa_dev": {
+    "n_units": 99,
+    "r": -0.088
+   },
+   "rb_box_expl10_dev": {
+    "n_units": 99,
+    "r": 0.123
+   },
+   "rb_box_expl20_dev": {
+    "n_units": 99,
+    "r": 0.09
+   },
+   "rb_box_stuff_dev": {
+    "n_units": 99,
+    "r": -0.061
+   },
+   "rb_box_success_dev": {
+    "n_units": 99,
+    "r": -0.024
+   },
+   "rb_box_ypc_dev": {
+    "n_units": 99,
+    "r": -0.125
+   },
+   "rb_btk": {
+    "n_units": 33,
+    "r": 0.27
+   },
+   "rb_carries_pg": {
+    "n_units": 43,
+    "r": 0.725
+   },
+   "rb_carry_share": {
+    "n_units": 43,
+    "r": 0.664
+   },
+   "rb_catch": {
+    "n_units": 26,
+    "r": 0.207
+   },
+   "rb_dir_epa_dev": {
+    "n_units": 211,
+    "r": 0.094
+   },
+   "rb_dir_expl10_dev": {
+    "n_units": 211,
+    "r": 0.188
+   },
+   "rb_dir_expl20_dev": {
+    "n_units": 211,
+    "r": 0.163
+   },
+   "rb_dir_share": {
+    "n_units": 231,
+    "r": 0.484
+   },
+   "rb_dir_stuff_dev": {
+    "n_units": 211,
+    "r": -0.052
+   },
+   "rb_dir_success_dev": {
+    "n_units": 211,
+    "r": -0.076
+   },
+   "rb_dir_ypc_dev": {
+    "n_units": 211,
+    "r": 0.198
+   },
+   "rb_early_touch_share": {
+    "n_units": 43,
+    "r": 0.661
+   },
+   "rb_epa": {
+    "n_units": 33,
+    "r": 0.03
+   },
+   "rb_expl10": {
+    "n_units": 33,
+    "r": 0.1
+   },
+   "rb_expl20": {
+    "n_units": 33,
+    "r": 0.193
+   },
+   "rb_fd": {
+    "n_units": 33,
+    "r": 0.103
+   },
+   "rb_gl_share": {
+    "n_units": 38,
+    "r": 0.597
+   },
+   "rb_line_yds": {
+    "n_units": 33,
+    "r": 0.43
+   },
+   "rb_pers_epa_dev": {
+    "n_units": 73,
+    "r": -0.208
+   },
+   "rb_pers_expl10_dev": {
+    "n_units": 73,
+    "r": -0.104
+   },
+   "rb_pers_expl20_dev": {
+    "n_units": 73,
+    "r": -0.266
+   },
+   "rb_pers_stuff_dev": {
+    "n_units": 73,
+    "r": 0.167
+   },
+   "rb_pers_success_dev": {
+    "n_units": 73,
+    "r": -0.022
+   },
+   "rb_pers_ypc_dev": {
+    "n_units": 73,
+    "r": -0.184
+   },
+   "rb_rb_carry_share": {
+    "n_units": 43,
+    "r": 0.656
+   },
+   "rb_ryoe": {
+    "n_units": 33,
+    "r": 0.145
+   },
+   "rb_rz_share": {
+    "n_units": 43,
+    "r": 0.717
+   },
+   "rb_sg_epa_dev": {
+    "n_units": 65,
+    "r": -0.058
+   },
+   "rb_sg_expl10_dev": {
+    "n_units": 65,
+    "r": 0.066
+   },
+   "rb_sg_expl20_dev": {
+    "n_units": 65,
+    "r": -0.129
+   },
+   "rb_sg_share": {
+    "n_units": 33,
+    "r": 0.548
+   },
+   "rb_sg_stuff_dev": {
+    "n_units": 65,
+    "r": 0.255
+   },
+   "rb_sg_success_dev": {
+    "n_units": 65,
+    "r": 0.057
+   },
+   "rb_sg_ypc_dev": {
+    "n_units": 65,
+    "r": -0.201
+   },
+   "rb_side_epa_dev": {
+    "n_units": 98,
+    "r": 0.014
+   },
+   "rb_side_expl10_dev": {
+    "n_units": 98,
+    "r": 0.211
+   },
+   "rb_side_expl20_dev": {
+    "n_units": 98,
+    "r": 0.278
+   },
+   "rb_side_share": {
+    "n_units": 99,
+    "r": 0.679
+   },
+   "rb_side_stuff_dev": {
+    "n_units": 98,
+    "r": 0.016
+   },
+   "rb_side_success_dev": {
+    "n_units": 98,
+    "r": -0.159
+   },
+   "rb_side_ypc_dev": {
+    "n_units": 98,
+    "r": 0.339
+   },
+   "rb_sit_all": {
+    "n_units": 43,
+    "r": 0.585
+   },
+   "rb_sit_early": {
+    "n_units": 43,
+    "r": 0.614
+   },
+   "rb_sit_goal_line": {
+    "n_units": 43,
+    "r": 0.497
+   },
+   "rb_sit_neutral": {
+    "n_units": 43,
+    "r": 0.609
+   },
+   "rb_sit_red_zone": {
+    "n_units": 43,
+    "r": 0.637
+   },
+   "rb_sit_short_yardage": {
+    "n_units": 43,
+    "r": 0.533
+   },
+   "rb_sit_third": {
+    "n_units": 43,
+    "r": 0.657
+   },
+   "rb_sit_two_minute": {
+    "n_units": 43,
+    "r": 0.645
+   },
+   "rb_snap_share": {
+    "n_units": 42,
+    "r": 0.568
+   },
+   "rb_stuff": {
+    "n_units": 33,
+    "r": 0.249
+   },
+   "rb_success": {
+    "n_units": 33,
+    "r": 0.407
+   },
+   "rb_sy_conv": {
+    "n_units": 15,
+    "r": -0.046
+   },
+   "rb_target_share": {
+    "n_units": 43,
+    "r": 0.737
+   },
+   "rb_targets_pg": {
+    "n_units": 43,
+    "r": 0.758
+   },
+   "rb_td": {
+    "n_units": 33,
+    "r": 0.423
+   },
+   "rb_tgt_per_db": {
+    "n_units": 43,
+    "r": 0.699
+   },
+   "rb_tgt_per_db_vs_man_dev": {
+    "n_units": 43,
+    "r": 0.126
+   },
+   "rb_tgt_per_db_vs_zone_dev": {
+    "n_units": 43,
+    "r": 0.114
+   },
+   "rb_third_touch_share": {
+    "n_units": 43,
+    "r": 0.607
+   },
+   "rb_two_minute_touch_share": {
+    "n_units": 43,
+    "r": 0.419
+   },
+   "rb_yac": {
+    "n_units": 33,
+    "r": 0.486
+   },
+   "rb_yac_rec": {
+    "n_units": 26,
+    "r": 0.226
+   },
+   "rb_ybc": {
+    "n_units": 33,
+    "r": 0.405
+   },
+   "rb_ypc": {
+    "n_units": 33,
+    "r": 0.229
+   },
+   "rb_ypt": {
+    "n_units": 26,
+    "r": 0.202
+   },
+   "tm_early_run": {
+    "n_units": 32,
+    "r": 0.233
+   },
+   "tm_lead_run": {
+    "n_units": 32,
+    "r": 0.181
+   },
+   "tm_neutral_run": {
+    "n_units": 32,
+    "r": 0.429
+   },
+   "tm_plays_pg": {
+    "n_units": 32,
+    "r": 0.331
+   },
+   "tm_qb_keep": {
+    "n_units": 32,
+    "r": 0.616
+   },
+   "tm_rz_run": {
+    "n_units": 32,
+    "r": 0.129
+   },
+   "tm_trail_run": {
+    "n_units": 32,
+    "r": 0.327
+   }
+  },
+  "2019->2020": {
+   "def_base_share": {
+    "n_units": 32,
+    "r": 0.491
+   },
+   "def_box_epa_dev": {
+    "n_units": 96,
+    "r": 0.142
+   },
+   "def_box_expl10_dev": {
+    "n_units": 96,
+    "r": 0.247
+   },
+   "def_box_expl20_dev": {
+    "n_units": 96,
+    "r": -0.134
+   },
+   "def_box_mean": {
+    "n_units": 32,
+    "r": 0.369
+   },
+   "def_box_op_heavy_dev": {
+    "n_units": 179,
+    "r": 0.123
+   },
+   "def_box_op_light_dev": {
+    "n_units": 179,
+    "r": 0.238
+   },
+   "def_box_sg_dev": {
+    "n_units": 64,
+    "r": 0.262
+   },
+   "def_box_stuff_dev": {
+    "n_units": 96,
+    "r": 0.296
+   },
+   "def_box_success_dev": {
+    "n_units": 96,
+    "r": 0.176
+   },
+   "def_box_ypc_dev": {
+    "n_units": 96,
+    "r": 0.128
+   },
+   "def_designed_runs_oe": {
+    "n_units": 32,
+    "r": 0.138
+   },
+   "def_designed_yds_oe": {
+    "n_units": 32,
+    "r": 0.209
+   },
+   "def_dime_share": {
+    "n_units": 32,
+    "r": 0.733
+   },
+   "def_dir_epa_dev": {
+    "n_units": 224,
+    "r": 0.128
+   },
+   "def_dir_expl10_dev": {
+    "n_units": 224,
+    "r": -0.056
+   },
+   "def_dir_expl20_dev": {
+    "n_units": 224,
+    "r": -0.011
+   },
+   "def_dir_stuff_dev": {
+    "n_units": 224,
+    "r": 0.104
+   },
+   "def_dir_success_dev": {
+    "n_units": 224,
+    "r": -0.075
+   },
+   "def_dir_ypc_dev": {
+    "n_units": 224,
+    "r": -0.055
+   },
+   "def_dl3_share": {
+    "n_units": 32,
+    "r": 0.862
+   },
+   "def_dl4_share": {
+    "n_units": 32,
+    "r": 0.871
+   },
+   "def_explosive_runs_oe": {
+    "n_units": 32,
+    "r": 0.045
+   },
+   "def_heavy_share": {
+    "n_units": 32,
+    "r": 0.296
+   },
+   "def_hit_sack_rate_oe": {
+    "n_units": 32,
+    "r": 0.467
+   },
+   "def_light_share": {
+    "n_units": 32,
+    "r": 0.334
+   },
+   "def_mtkl_pg": {
+    "n_units": 31,
+    "r": 0.144
+   },
+   "def_mtkl_rate": {
+    "n_units": 31,
+    "r": 0.162
+   },
+   "def_nickel_share": {
+    "n_units": 32,
+    "r": 0.625
+   },
+   "def_rb_catch": {
+    "n_units": 32,
+    "r": 0.027
+   },
+   "def_rb_epa": {
+    "n_units": 32,
+    "r": 0.334
+   },
+   "def_rb_expl10": {
+    "n_units": 32,
+    "r": 0.092
+   },
+   "def_rb_expl20": {
+    "n_units": 32,
+    "r": 0.399
+   },
+   "def_rb_fd": {
+    "n_units": 32,
+    "r": 0.348
+   },
+   "def_rb_line_yds": {
+    "n_units": 32,
+    "r": 0.609
+   },
+   "def_rb_stuff": {
+    "n_units": 32,
+    "r": 0.573
+   },
+   "def_rb_success": {
+    "n_units": 32,
+    "r": 0.546
+   },
+   "def_rb_sy_conv": {
+    "n_units": 32,
+    "r": -0.192
+   },
+   "def_rb_tgt_db": {
+    "n_units": 32,
+    "r": 0.206
+   },
+   "def_rb_yac_rec": {
+    "n_units": 32,
+    "r": 0.299
+   },
+   "def_rb_ypc": {
+    "n_units": 32,
+    "r": 0.476
+   },
+   "def_rb_ypt": {
+    "n_units": 32,
+    "r": 0.406
+   },
+   "def_red_zone_rushes_oe": {
+    "n_units": 32,
+    "r": -0.052
+   },
+   "def_rush_tds_oe": {
+    "n_units": 32,
+    "r": -0.034
+   },
+   "def_scramble_yds_oe": {
+    "n_units": 32,
+    "r": 0.167
+   },
+   "def_scrambles_oe": {
+    "n_units": 32,
+    "r": 0.317
+   },
+   "def_side_epa_dev": {
+    "n_units": 96,
+    "r": 0.074
+   },
+   "def_side_expl10_dev": {
+    "n_units": 96,
+    "r": 0.058
+   },
+   "def_side_expl20_dev": {
+    "n_units": 96,
+    "r": -0.009
+   },
+   "def_side_stuff_dev": {
+    "n_units": 96,
+    "r": 0.131
+   },
+   "def_side_success_dev": {
+    "n_units": 96,
+    "r": -0.19
+   },
+   "def_side_ypc_dev": {
+    "n_units": 96,
+    "r": 0.011
+   },
+   "def_yac": {
+    "n_units": 32,
+    "r": 0.371
+   },
+   "def_ybc": {
+    "n_units": 32,
+    "r": 0.392
+   },
+   "ol_gap_success_dev": {
+    "n_units": 96,
+    "r": 0.177
+   },
+   "ol_line_yds": {
+    "n_units": 32,
+    "r": 0.425
+   },
+   "ol_stuff": {
+    "n_units": 32,
+    "r": 0.155
+   },
+   "ol_success": {
+    "n_units": 32,
+    "r": 0.403
+   },
+   "ol_ybc": {
+    "n_units": 32,
+    "r": 0.344
+   },
+   "qb_dsg_expl10": {
+    "n_units": 7,
+    "r": 0.066
+   },
+   "qb_dsg_rate": {
+    "n_units": 27,
+    "r": 0.958
+   },
+   "qb_dsg_success": {
+    "n_units": 7,
+    "r": 0.561
+   },
+   "qb_dsg_yds_rate": {
+    "n_units": 27,
+    "r": 0.927
+   },
+   "qb_dsg_ypc": {
+    "n_units": 7,
+    "r": -0.275
+   },
+   "qb_gl_rate": {
+    "n_units": 27,
+    "r": 0.408
+   },
+   "qb_hit_sack_rate": {
+    "n_units": 27,
+    "r": 0.605
+   },
+   "qb_kneel_pg": {
+    "n_units": 27,
+    "r": -0.098
+   },
+   "qb_rpo_rate": {
+    "n_units": 27,
+    "r": null
+   },
+   "qb_rz_rate": {
+    "n_units": 27,
+    "r": 0.855
+   },
+   "qb_scr_expl10": {
+    "n_units": 23,
+    "r": 0.244
+   },
+   "qb_scr_rate": {
+    "n_units": 27,
+    "r": 0.734
+   },
+   "qb_scr_yds_db": {
+    "n_units": 27,
+    "r": 0.701
+   },
+   "qb_scr_ypa": {
+    "n_units": 23,
+    "r": 0.187
+   },
+   "qb_sneak_conv": {
+    "n_units": 1,
+    "r": null
+   },
+   "qb_sneak_rate": {
+    "n_units": 27,
+    "r": 0.677
+   },
+   "qb_td_rate": {
+    "n_units": 27,
+    "r": 0.49
+   },
+   "qb_x10_rate": {
+    "n_units": 27,
+    "r": 0.851
+   },
+   "rb_adot": {
+    "n_units": 25,
+    "r": 0.4
+   },
+   "rb_box_epa_dev": {
+    "n_units": 77,
+    "r": 0.205
+   },
+   "rb_box_expl10_dev": {
+    "n_units": 77,
+    "r": -0.027
+   },
+   "rb_box_expl20_dev": {
+    "n_units": 77,
+    "r": 0.059
+   },
+   "rb_box_stuff_dev": {
+    "n_units": 77,
+    "r": 0.136
+   },
+   "rb_box_success_dev": {
+    "n_units": 77,
+    "r": 0.041
+   },
+   "rb_box_ypc_dev": {
+    "n_units": 77,
+    "r": 0.132
+   },
+   "rb_btk": {
+    "n_units": 26,
+    "r": 0.16
+   },
+   "rb_carries_pg": {
+    "n_units": 36,
+    "r": 0.774
+   },
+   "rb_carry_share": {
+    "n_units": 36,
+    "r": 0.715
+   },
+   "rb_catch": {
+    "n_units": 25,
+    "r": 0.179
+   },
+   "rb_dir_epa_dev": {
+    "n_units": 169,
+    "r": -0.073
+   },
+   "rb_dir_expl10_dev": {
+    "n_units": 169,
+    "r": -0.008
+   },
+   "rb_dir_expl20_dev": {
+    "n_units": 169,
+    "r": 0.139
+   },
+   "rb_dir_share": {
+    "n_units": 182,
+    "r": 0.522
+   },
+   "rb_dir_stuff_dev": {
+    "n_units": 169,
+    "r": -0.007
+   },
+   "rb_dir_success_dev": {
+    "n_units": 169,
+    "r": 0.002
+   },
+   "rb_dir_ypc_dev": {
+    "n_units": 169,
+    "r": 0.042
+   },
+   "rb_early_touch_share": {
+    "n_units": 36,
+    "r": 0.745
+   },
+   "rb_epa": {
+    "n_units": 26,
+    "r": 0.29
+   },
+   "rb_expl10": {
+    "n_units": 26,
+    "r": 0.375
+   },
+   "rb_expl20": {
+    "n_units": 26,
+    "r": 0.446
+   },
+   "rb_fd": {
+    "n_units": 26,
+    "r": 0.536
+   },
+   "rb_gl_share": {
+    "n_units": 35,
+    "r": 0.661
+   },
+   "rb_line_yds": {
+    "n_units": 26,
+    "r": 0.289
+   },
+   "rb_pers_epa_dev": {
+    "n_units": 60,
+    "r": 0.174
+   },
+   "rb_pers_expl10_dev": {
+    "n_units": 60,
+    "r": 0.3
+   },
+   "rb_pers_expl20_dev": {
+    "n_units": 60,
+    "r": 0.216
+   },
+   "rb_pers_stuff_dev": {
+    "n_units": 60,
+    "r": -0.376
+   },
+   "rb_pers_success_dev": {
+    "n_units": 60,
+    "r": 0.021
+   },
+   "rb_pers_ypc_dev": {
+    "n_units": 60,
+    "r": 0.305
+   },
+   "rb_rb_carry_share": {
+    "n_units": 36,
+    "r": 0.72
+   },
+   "rb_ryoe": {
+    "n_units": 26,
+    "r": 0.395
+   },
+   "rb_rz_share": {
+    "n_units": 36,
+    "r": 0.742
+   },
+   "rb_sg_epa_dev": {
+    "n_units": 51,
+    "r": 0.1
+   },
+   "rb_sg_expl10_dev": {
+    "n_units": 51,
+    "r": -0.376
+   },
+   "rb_sg_expl20_dev": {
+    "n_units": 51,
+    "r": 0.068
+   },
+   "rb_sg_share": {
+    "n_units": 26,
+    "r": 0.871
+   },
+   "rb_sg_stuff_dev": {
+    "n_units": 51,
+    "r": 0.137
+   },
+   "rb_sg_success_dev": {
+    "n_units": 51,
+    "r": 0.175
+   },
+   "rb_sg_ypc_dev": {
+    "n_units": 51,
+    "r": -0.028
+   },
+   "rb_side_epa_dev": {
+    "n_units": 76,
+    "r": 0.118
+   },
+   "rb_side_expl10_dev": {
+    "n_units": 76,
+    "r": 0.244
+   },
+   "rb_side_expl20_dev": {
+    "n_units": 76,
+    "r": 0.25
+   },
+   "rb_side_share": {
+    "n_units": 78,
+    "r": 0.47
+   },
+   "rb_side_stuff_dev": {
+    "n_units": 76,
+    "r": 0.201
+   },
+   "rb_side_success_dev": {
+    "n_units": 76,
+    "r": 0.082
+   },
+   "rb_side_ypc_dev": {
+    "n_units": 76,
+    "r": 0.16
+   },
+   "rb_sit_all": {
+    "n_units": 36,
+    "r": 0.545
+   },
+   "rb_sit_early": {
+    "n_units": 36,
+    "r": 0.644
+   },
+   "rb_sit_goal_line": {
+    "n_units": 36,
+    "r": 0.623
+   },
+   "rb_sit_neutral": {
+    "n_units": 36,
+    "r": 0.64
+   },
+   "rb_sit_red_zone": {
+    "n_units": 36,
+    "r": 0.603
+   },
+   "rb_sit_short_yardage": {
+    "n_units": 36,
+    "r": 0.555
+   },
+   "rb_sit_third": {
+    "n_units": 36,
+    "r": 0.627
+   },
+   "rb_sit_two_minute": {
+    "n_units": 36,
+    "r": 0.621
+   },
+   "rb_snap_share": {
+    "n_units": 35,
+    "r": 0.516
+   },
+   "rb_stuff": {
+    "n_units": 26,
+    "r": 0.086
+   },
+   "rb_success": {
+    "n_units": 26,
+    "r": 0.348
+   },
+   "rb_sy_conv": {
+    "n_units": 13,
+    "r": 0.092
+   },
+   "rb_target_share": {
+    "n_units": 36,
+    "r": 0.642
+   },
+   "rb_targets_pg": {
+    "n_units": 36,
+    "r": 0.637
+   },
+   "rb_td": {
+    "n_units": 26,
+    "r": 0.292
+   },
+   "rb_tgt_per_db": {
+    "n_units": 36,
+    "r": 0.656
+   },
+   "rb_tgt_per_db_vs_man_dev": {
+    "n_units": 36,
+    "r": 0.342
+   },
+   "rb_tgt_per_db_vs_zone_dev": {
+    "n_units": 36,
+    "r": 0.252
+   },
+   "rb_third_touch_share": {
+    "n_units": 36,
+    "r": 0.29
+   },
+   "rb_two_minute_touch_share": {
+    "n_units": 36,
+    "r": 0.448
+   },
+   "rb_yac": {
+    "n_units": 26,
+    "r": 0.401
+   },
+   "rb_yac_rec": {
+    "n_units": 25,
+    "r": 0.376
+   },
+   "rb_ybc": {
+    "n_units": 26,
+    "r": 0.497
+   },
+   "rb_ypc": {
+    "n_units": 26,
+    "r": 0.561
+   },
+   "rb_ypt": {
+    "n_units": 25,
+    "r": 0.161
+   },
+   "tm_early_run": {
+    "n_units": 32,
+    "r": 0.493
+   },
+   "tm_lead_run": {
+    "n_units": 32,
+    "r": 0.306
+   },
+   "tm_neutral_run": {
+    "n_units": 32,
+    "r": 0.498
+   },
+   "tm_plays_pg": {
+    "n_units": 32,
+    "r": 0.053
+   },
+   "tm_qb_keep": {
+    "n_units": 32,
+    "r": 0.737
+   },
+   "tm_rz_run": {
+    "n_units": 32,
+    "r": 0.271
+   },
+   "tm_trail_run": {
+    "n_units": 32,
+    "r": 0.185
+   }
+  },
+  "2020->2021": {
+   "def_base_share": {
+    "n_units": 32,
+    "r": 0.755
+   },
+   "def_box_epa_dev": {
+    "n_units": 96,
+    "r": -0.019
+   },
+   "def_box_expl10_dev": {
+    "n_units": 96,
+    "r": -0.083
+   },
+   "def_box_expl20_dev": {
+    "n_units": 96,
+    "r": 0.184
+   },
+   "def_box_mean": {
+    "n_units": 32,
+    "r": 0.594
+   },
+   "def_box_op_heavy_dev": {
+    "n_units": 183,
+    "r": 0.204
+   },
+   "def_box_op_light_dev": {
+    "n_units": 183,
+    "r": 0.241
+   },
+   "def_box_sg_dev": {
+    "n_units": 64,
+    "r": 0.514
+   },
+   "def_box_stuff_dev": {
+    "n_units": 96,
+    "r": 0.188
+   },
+   "def_box_success_dev": {
+    "n_units": 96,
+    "r": 0.03
+   },
+   "def_box_ypc_dev": {
+    "n_units": 96,
+    "r": -0.064
+   },
+   "def_designed_runs_oe": {
+    "n_units": 32,
+    "r": -0.179
+   },
+   "def_designed_yds_oe": {
+    "n_units": 32,
+    "r": -0.19
+   },
+   "def_dime_share": {
+    "n_units": 32,
+    "r": 0.663
+   },
+   "def_dir_epa_dev": {
+    "n_units": 224,
+    "r": 0.176
+   },
+   "def_dir_expl10_dev": {
+    "n_units": 224,
+    "r": 0.034
+   },
+   "def_dir_expl20_dev": {
+    "n_units": 224,
+    "r": 0.099
+   },
+   "def_dir_stuff_dev": {
+    "n_units": 224,
+    "r": 0.123
+   },
+   "def_dir_success_dev": {
+    "n_units": 224,
+    "r": 0.069
+   },
+   "def_dir_ypc_dev": {
+    "n_units": 224,
+    "r": 0.122
+   },
+   "def_dl3_share": {
+    "n_units": 32,
+    "r": 0.705
+   },
+   "def_dl4_share": {
+    "n_units": 32,
+    "r": 0.707
+   },
+   "def_explosive_runs_oe": {
+    "n_units": 32,
+    "r": 0.249
+   },
+   "def_heavy_share": {
+    "n_units": 32,
+    "r": 0.648
+   },
+   "def_hit_sack_rate_oe": {
+    "n_units": 32,
+    "r": 0.217
+   },
+   "def_light_share": {
+    "n_units": 32,
+    "r": 0.629
+   },
+   "def_mtkl_pg": {
+    "n_units": 32,
+    "r": 0.323
+   },
+   "def_mtkl_rate": {
+    "n_units": 32,
+    "r": 0.336
+   },
+   "def_nickel_share": {
+    "n_units": 32,
+    "r": 0.667
+   },
+   "def_rb_catch": {
+    "n_units": 32,
+    "r": -0.118
+   },
+   "def_rb_epa": {
+    "n_units": 32,
+    "r": 0.325
+   },
+   "def_rb_expl10": {
+    "n_units": 32,
+    "r": 0.446
+   },
+   "def_rb_expl20": {
+    "n_units": 32,
+    "r": 0.037
+   },
+   "def_rb_fd": {
+    "n_units": 32,
+    "r": 0.085
+   },
+   "def_rb_line_yds": {
+    "n_units": 32,
+    "r": 0.456
+   },
+   "def_rb_stuff": {
+    "n_units": 32,
+    "r": 0.433
+   },
+   "def_rb_success": {
+    "n_units": 32,
+    "r": 0.155
+   },
+   "def_rb_sy_conv": {
+    "n_units": 32,
+    "r": 0.014
+   },
+   "def_rb_tgt_db": {
+    "n_units": 32,
+    "r": -0.035
+   },
+   "def_rb_yac_rec": {
+    "n_units": 32,
+    "r": -0.207
+   },
+   "def_rb_ypc": {
+    "n_units": 32,
+    "r": 0.44
+   },
+   "def_rb_ypt": {
+    "n_units": 32,
+    "r": 0.006
+   },
+   "def_red_zone_rushes_oe": {
+    "n_units": 32,
+    "r": 0.045
+   },
+   "def_rush_tds_oe": {
+    "n_units": 32,
+    "r": -0.02
+   },
+   "def_scramble_yds_oe": {
+    "n_units": 32,
+    "r": 0.347
+   },
+   "def_scrambles_oe": {
+    "n_units": 32,
+    "r": 0.182
+   },
+   "def_side_epa_dev": {
+    "n_units": 96,
+    "r": 0.233
+   },
+   "def_side_expl10_dev": {
+    "n_units": 96,
+    "r": 0.154
+   },
+   "def_side_expl20_dev": {
+    "n_units": 96,
+    "r": 0.229
+   },
+   "def_side_stuff_dev": {
+    "n_units": 96,
+    "r": 0.194
+   },
+   "def_side_success_dev": {
+    "n_units": 96,
+    "r": 0.033
+   },
+   "def_side_ypc_dev": {
+    "n_units": 96,
+    "r": 0.229
+   },
+   "def_yac": {
+    "n_units": 32,
+    "r": 0.238
+   },
+   "def_ybc": {
+    "n_units": 32,
+    "r": 0.481
+   },
+   "ol_gap_success_dev": {
+    "n_units": 96,
+    "r": 0.126
+   },
+   "ol_line_yds": {
+    "n_units": 32,
+    "r": 0.146
+   },
+   "ol_stuff": {
+    "n_units": 32,
+    "r": -0.055
+   },
+   "ol_success": {
+    "n_units": 32,
+    "r": 0.338
+   },
+   "ol_ybc": {
+    "n_units": 32,
+    "r": 0.339
+   },
+   "qb_dsg_expl10": {
+    "n_units": 5,
+    "r": null
+   },
+   "qb_dsg_rate": {
+    "n_units": 24,
+    "r": 0.96
+   },
+   "qb_dsg_success": {
+    "n_units": 5,
+    "r": null
+   },
+   "qb_dsg_yds_rate": {
+    "n_units": 24,
+    "r": 0.951
+   },
+   "qb_dsg_ypc": {
+    "n_units": 5,
+    "r": null
+   },
+   "qb_gl_rate": {
+    "n_units": 24,
+    "r": 0.315
+   },
+   "qb_hit_sack_rate": {
+    "n_units": 24,
+    "r": 0.652
+   },
+   "qb_kneel_pg": {
+    "n_units": 24,
+    "r": -0.081
+   },
+   "qb_rpo_rate": {
+    "n_units": 24,
+    "r": null
+   },
+   "qb_rz_rate": {
+    "n_units": 24,
+    "r": 0.613
+   },
+   "qb_scr_expl10": {
+    "n_units": 22,
+    "r": 0.349
+   },
+   "qb_scr_rate": {
+    "n_units": 24,
+    "r": 0.82
+   },
+   "qb_scr_yds_db": {
+    "n_units": 24,
+    "r": 0.756
+   },
+   "qb_scr_ypa": {
+    "n_units": 22,
+    "r": 0.455
+   },
+   "qb_sneak_conv": {
+    "n_units": 1,
+    "r": null
+   },
+   "qb_sneak_rate": {
+    "n_units": 24,
+    "r": 0.27
+   },
+   "qb_td_rate": {
+    "n_units": 24,
+    "r": 0.498
+   },
+   "qb_x10_rate": {
+    "n_units": 24,
+    "r": 0.812
+   },
+   "rb_adot": {
+    "n_units": 25,
+    "r": 0.344
+   },
+   "rb_box_epa_dev": {
+    "n_units": 80,
+    "r": 0.009
+   },
+   "rb_box_expl10_dev": {
+    "n_units": 80,
+    "r": -0.038
+   },
+   "rb_box_expl20_dev": {
+    "n_units": 80,
+    "r": -0.076
+   },
+   "rb_box_stuff_dev": {
+    "n_units": 80,
+    "r": 0.028
+   },
+   "rb_box_success_dev": {
+    "n_units": 80,
+    "r": -0.144
+   },
+   "rb_box_ypc_dev": {
+    "n_units": 80,
+    "r": 0.028
+   },
+   "rb_btk": {
+    "n_units": 27,
+    "r": 0.229
+   },
+   "rb_carries_pg": {
+    "n_units": 34,
+    "r": 0.687
+   },
+   "rb_carry_share": {
+    "n_units": 34,
+    "r": 0.542
+   },
+   "rb_catch": {
+    "n_units": 25,
+    "r": -0.076
+   },
+   "rb_dir_epa_dev": {
+    "n_units": 175,
+    "r": -0.12
+   },
+   "rb_dir_expl10_dev": {
+    "n_units": 175,
+    "r": -0.066
+   },
+   "rb_dir_expl20_dev": {
+    "n_units": 175,
+    "r": -0.02
+   },
+   "rb_dir_share": {
+    "n_units": 189,
+    "r": 0.461
+   },
+   "rb_dir_stuff_dev": {
+    "n_units": 175,
+    "r": -0.097
+   },
+   "rb_dir_success_dev": {
+    "n_units": 175,
+    "r": -0.046
+   },
+   "rb_dir_ypc_dev": {
+    "n_units": 175,
+    "r": -0.032
+   },
+   "rb_early_touch_share": {
+    "n_units": 34,
+    "r": 0.647
+   },
+   "rb_epa": {
+    "n_units": 27,
+    "r": 0.51
+   },
+   "rb_expl10": {
+    "n_units": 27,
+    "r": 0.578
+   },
+   "rb_expl20": {
+    "n_units": 27,
+    "r": 0.491
+   },
+   "rb_fd": {
+    "n_units": 27,
+    "r": 0.263
+   },
+   "rb_gl_share": {
+    "n_units": 33,
+    "r": 0.236
+   },
+   "rb_line_yds": {
+    "n_units": 27,
+    "r": -0.079
+   },
+   "rb_pers_epa_dev": {
+    "n_units": 58,
+    "r": 0.076
+   },
+   "rb_pers_expl10_dev": {
+    "n_units": 58,
+    "r": 0.144
+   },
+   "rb_pers_expl20_dev": {
+    "n_units": 58,
+    "r": -0.236
+   },
+   "rb_pers_stuff_dev": {
+    "n_units": 58,
+    "r": 0.226
+   },
+   "rb_pers_success_dev": {
+    "n_units": 58,
+    "r": -0.169
+   },
+   "rb_pers_ypc_dev": {
+    "n_units": 58,
+    "r": 0.099
+   },
+   "rb_rb_carry_share": {
+    "n_units": 34,
+    "r": 0.508
+   },
+   "rb_ryoe": {
+    "n_units": 27,
+    "r": 0.461
+   },
+   "rb_rz_share": {
+    "n_units": 34,
+    "r": 0.429
+   },
+   "rb_sg_epa_dev": {
+    "n_units": 53,
+    "r": -0.024
+   },
+   "rb_sg_expl10_dev": {
+    "n_units": 53,
+    "r": 0.219
+   },
+   "rb_sg_expl20_dev": {
+    "n_units": 53,
+    "r": 0.206
+   },
+   "rb_sg_share": {
+    "n_units": 27,
+    "r": 0.571
+   },
+   "rb_sg_stuff_dev": {
+    "n_units": 53,
+    "r": 0.139
+   },
+   "rb_sg_success_dev": {
+    "n_units": 53,
+    "r": -0.05
+   },
+   "rb_sg_ypc_dev": {
+    "n_units": 53,
+    "r": -0.028
+   },
+   "rb_side_epa_dev": {
+    "n_units": 80,
+    "r": -0.163
+   },
+   "rb_side_expl10_dev": {
+    "n_units": 80,
+    "r": -0.224
+   },
+   "rb_side_expl20_dev": {
+    "n_units": 80,
+    "r": 0.224
+   },
+   "rb_side_share": {
+    "n_units": 81,
+    "r": 0.463
+   },
+   "rb_side_stuff_dev": {
+    "n_units": 80,
+    "r": -0.148
+   },
+   "rb_side_success_dev": {
+    "n_units": 80,
+    "r": 0.029
+   },
+   "rb_side_ypc_dev": {
+    "n_units": 80,
+    "r": -0.065
+   },
+   "rb_sit_all": {
+    "n_units": 34,
+    "r": 0.446
+   },
+   "rb_sit_early": {
+    "n_units": 34,
+    "r": 0.461
+   },
+   "rb_sit_goal_line": {
+    "n_units": 34,
+    "r": 0.338
+   },
+   "rb_sit_neutral": {
+    "n_units": 34,
+    "r": 0.469
+   },
+   "rb_sit_red_zone": {
+    "n_units": 34,
+    "r": 0.456
+   },
+   "rb_sit_short_yardage": {
+    "n_units": 34,
+    "r": 0.343
+   },
+   "rb_sit_third": {
+    "n_units": 34,
+    "r": 0.681
+   },
+   "rb_sit_two_minute": {
+    "n_units": 34,
+    "r": 0.609
+   },
+   "rb_snap_share": {
+    "n_units": 34,
+    "r": 0.438
+   },
+   "rb_stuff": {
+    "n_units": 27,
+    "r": -0.26
+   },
+   "rb_success": {
+    "n_units": 27,
+    "r": 0.081
+   },
+   "rb_sy_conv": {
+    "n_units": 13,
+    "r": 0.598
+   },
+   "rb_target_share": {
+    "n_units": 34,
+    "r": 0.751
+   },
+   "rb_targets_pg": {
+    "n_units": 34,
+    "r": 0.677
+   },
+   "rb_td": {
+    "n_units": 27,
+    "r": -0.316
+   },
+   "rb_tgt_per_db": {
+    "n_units": 34,
+    "r": 0.574
+   },
+   "rb_tgt_per_db_vs_man_dev": {
+    "n_units": 34,
+    "r": 0.521
+   },
+   "rb_tgt_per_db_vs_zone_dev": {
+    "n_units": 34,
+    "r": 0.521
+   },
+   "rb_third_touch_share": {
+    "n_units": 34,
+    "r": 0.401
+   },
+   "rb_two_minute_touch_share": {
+    "n_units": 34,
+    "r": 0.523
+   },
+   "rb_yac": {
+    "n_units": 27,
+    "r": 0.385
+   },
+   "rb_yac_rec": {
+    "n_units": 25,
+    "r": 0.228
+   },
+   "rb_ybc": {
+    "n_units": 27,
+    "r": 0.29
+   },
+   "rb_ypc": {
+    "n_units": 27,
+    "r": 0.53
+   },
+   "rb_ypt": {
+    "n_units": 25,
+    "r": -0.124
+   },
+   "tm_early_run": {
+    "n_units": 32,
+    "r": 0.366
+   },
+   "tm_lead_run": {
+    "n_units": 31,
+    "r": 0.255
+   },
+   "tm_neutral_run": {
+    "n_units": 32,
+    "r": 0.539
+   },
+   "tm_plays_pg": {
+    "n_units": 32,
+    "r": 0.261
+   },
+   "tm_qb_keep": {
+    "n_units": 32,
+    "r": 0.691
+   },
+   "tm_rz_run": {
+    "n_units": 32,
+    "r": 0.32
+   },
+   "tm_trail_run": {
+    "n_units": 32,
+    "r": 0.269
+   }
+  },
+  "2021->2022": {
+   "def_base_share": {
+    "n_units": 32,
+    "r": 0.709
+   },
+   "def_box_epa_dev": {
+    "n_units": 96,
+    "r": -0.329
+   },
+   "def_box_expl10_dev": {
+    "n_units": 96,
+    "r": -0.148
+   },
+   "def_box_expl20_dev": {
+    "n_units": 96,
+    "r": 0.136
+   },
+   "def_box_mean": {
+    "n_units": 32,
+    "r": 0.655
+   },
+   "def_box_op_heavy_dev": {
+    "n_units": 166,
+    "r": 0.313
+   },
+   "def_box_op_light_dev": {
+    "n_units": 166,
+    "r": 0.123
+   },
+   "def_box_sg_dev": {
+    "n_units": 64,
+    "r": 0.621
+   },
+   "def_box_stuff_dev": {
+    "n_units": 96,
+    "r": -0.162
+   },
+   "def_box_success_dev": {
+    "n_units": 96,
+    "r": -0.125
+   },
+   "def_box_ypc_dev": {
+    "n_units": 96,
+    "r": -0.08
+   },
+   "def_designed_runs_oe": {
+    "n_units": 32,
+    "r": 0.229
+   },
+   "def_designed_yds_oe": {
+    "n_units": 32,
+    "r": 0.07
+   },
+   "def_dime_share": {
+    "n_units": 32,
+    "r": 0.73
+   },
+   "def_dir_epa_dev": {
+    "n_units": 224,
+    "r": -0.101
+   },
+   "def_dir_expl10_dev": {
+    "n_units": 224,
+    "r": -0.08
+   },
+   "def_dir_expl20_dev": {
+    "n_units": 224,
+    "r": 0.039
+   },
+   "def_dir_stuff_dev": {
+    "n_units": 224,
+    "r": 0.004
+   },
+   "def_dir_success_dev": {
+    "n_units": 224,
+    "r": -0.043
+   },
+   "def_dir_ypc_dev": {
+    "n_units": 224,
+    "r": -0.074
+   },
+   "def_dl3_share": {
+    "n_units": 32,
+    "r": 0.764
+   },
+   "def_dl4_share": {
+    "n_units": 32,
+    "r": 0.739
+   },
+   "def_explosive_runs_oe": {
+    "n_units": 32,
+    "r": -0.142
+   },
+   "def_heavy_share": {
+    "n_units": 32,
+    "r": 0.718
+   },
+   "def_hit_sack_rate_oe": {
+    "n_units": 32,
+    "r": 0.016
+   },
+   "def_light_share": {
+    "n_units": 32,
+    "r": 0.681
+   },
+   "def_mtkl_pg": {
+    "n_units": 32,
+    "r": -0.065
+   },
+   "def_mtkl_rate": {
+    "n_units": 32,
+    "r": 0.237
+   },
+   "def_nickel_share": {
+    "n_units": 32,
+    "r": 0.666
+   },
+   "def_pressure_pfr": {
+    "n_units": 32,
+    "r": 0.169
+   },
+   "def_rb_catch": {
+    "n_units": 32,
+    "r": 0.109
+   },
+   "def_rb_epa": {
+    "n_units": 32,
+    "r": 0.543
+   },
+   "def_rb_expl10": {
+    "n_units": 32,
+    "r": 0.622
+   },
+   "def_rb_expl20": {
+    "n_units": 32,
+    "r": 0.065
+   },
+   "def_rb_fd": {
+    "n_units": 32,
+    "r": 0.486
+   },
+   "def_rb_line_yds": {
+    "n_units": 32,
+    "r": 0.506
+   },
+   "def_rb_stuff": {
+    "n_units": 32,
+    "r": 0.592
+   },
+   "def_rb_success": {
+    "n_units": 32,
+    "r": 0.494
+   },
+   "def_rb_sy_conv": {
+    "n_units": 32,
+    "r": -0.07
+   },
+   "def_rb_tgt_db": {
+    "n_units": 32,
+    "r": 0.342
+   },
+   "def_rb_yac_rec": {
+    "n_units": 32,
+    "r": -0.019
+   },
+   "def_rb_ypc": {
+    "n_units": 32,
+    "r": 0.457
+   },
+   "def_rb_ypt": {
+    "n_units": 32,
+    "r": 0.347
+   },
+   "def_red_zone_rushes_oe": {
+    "n_units": 32,
+    "r": -0.001
+   },
+   "def_rush_tds_oe": {
+    "n_units": 32,
+    "r": -0.001
+   },
+   "def_scramble_yds_oe": {
+    "n_units": 32,
+    "r": 0.229
+   },
+   "def_scrambles_oe": {
+    "n_units": 32,
+    "r": 0.302
+   },
+   "def_side_epa_dev": {
+    "n_units": 96,
+    "r": -0.1
+   },
+   "def_side_expl10_dev": {
+    "n_units": 96,
+    "r": -0.047
+   },
+   "def_side_expl20_dev": {
+    "n_units": 96,
+    "r": 0.114
+   },
+   "def_side_stuff_dev": {
+    "n_units": 96,
+    "r": 0.145
+   },
+   "def_side_success_dev": {
+    "n_units": 96,
+    "r": 0.037
+   },
+   "def_side_ypc_dev": {
+    "n_units": 96,
+    "r": -0.021
+   },
+   "def_yac": {
+    "n_units": 32,
+    "r": 0.16
+   },
+   "def_ybc": {
+    "n_units": 32,
+    "r": 0.581
+   },
+   "ol_gap_success_dev": {
+    "n_units": 96,
+    "r": -0.115
+   },
+   "ol_line_yds": {
+    "n_units": 32,
+    "r": 0.299
+   },
+   "ol_stuff": {
+    "n_units": 32,
+    "r": 0.211
+   },
+   "ol_success": {
+    "n_units": 32,
+    "r": 0.203
+   },
+   "ol_ybc": {
+    "n_units": 32,
+    "r": 0.361
+   },
+   "qb_dsg_expl10": {
+    "n_units": 7,
+    "r": 0.373
+   },
+   "qb_dsg_rate": {
+    "n_units": 30,
+    "r": 0.924
+   },
+   "qb_dsg_success": {
+    "n_units": 7,
+    "r": 0.158
+   },
+   "qb_dsg_yds_rate": {
+    "n_units": 30,
+    "r": 0.877
+   },
+   "qb_dsg_ypc": {
+    "n_units": 7,
+    "r": 0.313
+   },
+   "qb_gl_rate": {
+    "n_units": 30,
+    "r": 0.579
+   },
+   "qb_hit_sack_rate": {
+    "n_units": 30,
+    "r": 0.692
+   },
+   "qb_kneel_pg": {
+    "n_units": 30,
+    "r": 0.146
+   },
+   "qb_rpo_rate": {
+    "n_units": 30,
+    "r": null
+   },
+   "qb_rz_rate": {
+    "n_units": 30,
+    "r": 0.825
+   },
+   "qb_scr_expl10": {
+    "n_units": 27,
+    "r": 0.19
+   },
+   "qb_scr_rate": {
+    "n_units": 30,
+    "r": 0.863
+   },
+   "qb_scr_yds_db": {
+    "n_units": 30,
+    "r": 0.841
+   },
+   "qb_scr_ypa": {
+    "n_units": 27,
+    "r": 0.325
+   },
+   "qb_sneak_conv": {
+    "n_units": 2,
+    "r": null
+   },
+   "qb_sneak_rate": {
+    "n_units": 30,
+    "r": 0.666
+   },
+   "qb_td_rate": {
+    "n_units": 30,
+    "r": 0.687
+   },
+   "qb_x10_rate": {
+    "n_units": 30,
+    "r": 0.866
+   },
+   "rb_adot": {
+    "n_units": 26,
+    "r": 0.512
+   },
+   "rb_box_epa_dev": {
+    "n_units": 87,
+    "r": 0.081
+   },
+   "rb_box_expl10_dev": {
+    "n_units": 87,
+    "r": 0.088
+   },
+   "rb_box_expl20_dev": {
+    "n_units": 87,
+    "r": 0.136
+   },
+   "rb_box_stuff_dev": {
+    "n_units": 87,
+    "r": 0.303
+   },
+   "rb_box_success_dev": {
+    "n_units": 87,
+    "r": -0.049
+   },
+   "rb_box_ypc_dev": {
+    "n_units": 87,
+    "r": 0.048
+   },
+   "rb_btk": {
+    "n_units": 29,
+    "r": 0.317
+   },
+   "rb_carries_pg": {
+    "n_units": 37,
+    "r": 0.78
+   },
+   "rb_carry_share": {
+    "n_units": 37,
+    "r": 0.775
+   },
+   "rb_catch": {
+    "n_units": 26,
+    "r": 0.035
+   },
+   "rb_dir_epa_dev": {
+    "n_units": 194,
+    "r": -0.003
+   },
+   "rb_dir_expl10_dev": {
+    "n_units": 194,
+    "r": -0.011
+   },
+   "rb_dir_expl20_dev": {
+    "n_units": 194,
+    "r": -0.027
+   },
+   "rb_dir_share": {
+    "n_units": 203,
+    "r": 0.63
+   },
+   "rb_dir_stuff_dev": {
+    "n_units": 194,
+    "r": 0.03
+   },
+   "rb_dir_success_dev": {
+    "n_units": 194,
+    "r": -0.048
+   },
+   "rb_dir_ypc_dev": {
+    "n_units": 194,
+    "r": -0.046
+   },
+   "rb_early_touch_share": {
+    "n_units": 37,
+    "r": 0.8
+   },
+   "rb_epa": {
+    "n_units": 29,
+    "r": 0.151
+   },
+   "rb_expl10": {
+    "n_units": 29,
+    "r": 0.525
+   },
+   "rb_expl20": {
+    "n_units": 29,
+    "r": 0.448
+   },
+   "rb_fd": {
+    "n_units": 29,
+    "r": 0.25
+   },
+   "rb_gl_share": {
+    "n_units": 37,
+    "r": 0.57
+   },
+   "rb_line_yds": {
+    "n_units": 29,
+    "r": 0.06
+   },
+   "rb_pers_epa_dev": {
+    "n_units": 60,
+    "r": -0.116
+   },
+   "rb_pers_expl10_dev": {
+    "n_units": 60,
+    "r": 0.147
+   },
+   "rb_pers_expl20_dev": {
+    "n_units": 60,
+    "r": -0.274
+   },
+   "rb_pers_stuff_dev": {
+    "n_units": 60,
+    "r": -0.003
+   },
+   "rb_pers_success_dev": {
+    "n_units": 60,
+    "r": -0.028
+   },
+   "rb_pers_ypc_dev": {
+    "n_units": 60,
+    "r": -0.059
+   },
+   "rb_rb_carry_share": {
+    "n_units": 37,
+    "r": 0.808
+   },
+   "rb_ryoe": {
+    "n_units": 29,
+    "r": 0.373
+   },
+   "rb_rz_share": {
+    "n_units": 37,
+    "r": 0.756
+   },
+   "rb_sg_epa_dev": {
+    "n_units": 58,
+    "r": -0.011
+   },
+   "rb_sg_expl10_dev": {
+    "n_units": 58,
+    "r": 0.249
+   },
+   "rb_sg_expl20_dev": {
+    "n_units": 58,
+    "r": 0.049
+   },
+   "rb_sg_share": {
+    "n_units": 29,
+    "r": 0.586
+   },
+   "rb_sg_stuff_dev": {
+    "n_units": 58,
+    "r": 0.14
+   },
+   "rb_sg_success_dev": {
+    "n_units": 58,
+    "r": -0.18
+   },
+   "rb_sg_ypc_dev": {
+    "n_units": 58,
+    "r": -0.019
+   },
+   "rb_side_epa_dev": {
+    "n_units": 87,
+    "r": -0.186
+   },
+   "rb_side_expl10_dev": {
+    "n_units": 87,
+    "r": -0.186
+   },
+   "rb_side_expl20_dev": {
+    "n_units": 87,
+    "r": -0.283
+   },
+   "rb_side_share": {
+    "n_units": 87,
+    "r": 0.581
+   },
+   "rb_side_stuff_dev": {
+    "n_units": 87,
+    "r": -0.277
+   },
+   "rb_side_success_dev": {
+    "n_units": 87,
+    "r": -0.086
+   },
+   "rb_side_ypc_dev": {
+    "n_units": 87,
+    "r": -0.266
+   },
+   "rb_sit_all": {
+    "n_units": 37,
+    "r": 0.706
+   },
+   "rb_sit_early": {
+    "n_units": 37,
+    "r": 0.777
+   },
+   "rb_sit_goal_line": {
+    "n_units": 37,
+    "r": 0.641
+   },
+   "rb_sit_neutral": {
+    "n_units": 37,
+    "r": 0.743
+   },
+   "rb_sit_red_zone": {
+    "n_units": 37,
+    "r": 0.729
+   },
+   "rb_sit_short_yardage": {
+    "n_units": 37,
+    "r": 0.605
+   },
+   "rb_sit_third": {
+    "n_units": 37,
+    "r": 0.56
+   },
+   "rb_sit_two_minute": {
+    "n_units": 37,
+    "r": 0.576
+   },
+   "rb_snap_share": {
+    "n_units": 37,
+    "r": 0.7
+   },
+   "rb_stuff": {
+    "n_units": 29,
+    "r": 0.154
+   },
+   "rb_success": {
+    "n_units": 29,
+    "r": 0.108
+   },
+   "rb_sy_conv": {
+    "n_units": 18,
+    "r": 0.273
+   },
+   "rb_target_share": {
+    "n_units": 37,
+    "r": 0.652
+   },
+   "rb_targets_pg": {
+    "n_units": 37,
+    "r": 0.618
+   },
+   "rb_td": {
+    "n_units": 29,
+    "r": 0.085
+   },
+   "rb_tgt_per_db": {
+    "n_units": 37,
+    "r": 0.558
+   },
+   "rb_tgt_per_db_vs_man_dev": {
+    "n_units": 37,
+    "r": 0.048
+   },
+   "rb_tgt_per_db_vs_zone_dev": {
+    "n_units": 37,
+    "r": 0.264
+   },
+   "rb_third_touch_share": {
+    "n_units": 37,
+    "r": 0.533
+   },
+   "rb_two_minute_touch_share": {
+    "n_units": 37,
+    "r": 0.594
+   },
+   "rb_yac": {
+    "n_units": 29,
+    "r": 0.221
+   },
+   "rb_yac_rec": {
+    "n_units": 26,
+    "r": 0.235
+   },
+   "rb_ybc": {
+    "n_units": 29,
+    "r": 0.449
+   },
+   "rb_ypc": {
+    "n_units": 29,
+    "r": 0.417
+   },
+   "rb_ypt": {
+    "n_units": 26,
+    "r": -0.13
+   },
+   "tm_early_run": {
+    "n_units": 32,
+    "r": 0.444
+   },
+   "tm_lead_run": {
+    "n_units": 31,
+    "r": 0.23
+   },
+   "tm_neutral_run": {
+    "n_units": 32,
+    "r": 0.483
+   },
+   "tm_plays_pg": {
+    "n_units": 32,
+    "r": 0.255
+   },
+   "tm_qb_keep": {
+    "n_units": 32,
+    "r": 0.742
+   },
+   "tm_rz_run": {
+    "n_units": 32,
+    "r": 0.286
+   },
+   "tm_trail_run": {
+    "n_units": 32,
+    "r": 0.299
+   }
+  },
+  "2022->2023": {
+   "def_base_share": {
+    "n_units": 32,
+    "r": 0.508
+   },
+   "def_blitz": {
+    "n_units": 32,
+    "r": 0.431
+   },
+   "def_box_epa_dev": {
+    "n_units": 96,
+    "r": 0.115
+   },
+   "def_box_expl10_dev": {
+    "n_units": 96,
+    "r": -0.168
+   },
+   "def_box_expl20_dev": {
+    "n_units": 96,
+    "r": 0.094
+   },
+   "def_box_mean": {
+    "n_units": 32,
+    "r": 0.184
+   },
+   "def_box_op_heavy_dev": {
+    "n_units": 162,
+    "r": -0.02
+   },
+   "def_box_op_light_dev": {
+    "n_units": 162,
+    "r": -0.059
+   },
+   "def_box_sg_dev": {
+    "n_units": 64,
+    "r": 0.261
+   },
+   "def_box_stuff_dev": {
+    "n_units": 96,
+    "r": 0.051
+   },
+   "def_box_success_dev": {
+    "n_units": 96,
+    "r": -0.096
+   },
+   "def_box_ypc_dev": {
+    "n_units": 96,
+    "r": -0.24
+   },
+   "def_designed_runs_oe": {
+    "n_units": 32,
+    "r": 0.155
+   },
+   "def_designed_yds_oe": {
+    "n_units": 32,
+    "r": 0.186
+   },
+   "def_dime_share": {
+    "n_units": 32,
+    "r": 0.45
+   },
+   "def_dir_epa_dev": {
+    "n_units": 224,
+    "r": 0.087
+   },
+   "def_dir_expl10_dev": {
+    "n_units": 224,
+    "r": 0.058
+   },
+   "def_dir_expl20_dev": {
+    "n_units": 224,
+    "r": 0.088
+   },
+   "def_dir_stuff_dev": {
+    "n_units": 224,
+    "r": -0.042
+   },
+   "def_dir_success_dev": {
+    "n_units": 224,
+    "r": 0.048
+   },
+   "def_dir_ypc_dev": {
+    "n_units": 224,
+    "r": 0.093
+   },
+   "def_dl3_share": {
+    "n_units": 32,
+    "r": 0.69
+   },
+   "def_dl4_share": {
+    "n_units": 32,
+    "r": 0.684
+   },
+   "def_explosive_runs_oe": {
+    "n_units": 32,
+    "r": 0.344
+   },
+   "def_heavy_share": {
+    "n_units": 32,
+    "r": 0.385
+   },
+   "def_hit_sack_rate_oe": {
+    "n_units": 32,
+    "r": 0.097
+   },
+   "def_light_share": {
+    "n_units": 32,
+    "r": 0.088
+   },
+   "def_mtkl_pg": {
+    "n_units": 32,
+    "r": 0.044
+   },
+   "def_mtkl_rate": {
+    "n_units": 32,
+    "r": -0.05
+   },
+   "def_nickel_share": {
+    "n_units": 32,
+    "r": 0.123
+   },
+   "def_pressure_pfr": {
+    "n_units": 32,
+    "r": 0.254
+   },
+   "def_rb_catch": {
+    "n_units": 32,
+    "r": 0.33
+   },
+   "def_rb_epa": {
+    "n_units": 32,
+    "r": 0.007
+   },
+   "def_rb_expl10": {
+    "n_units": 32,
+    "r": 0.435
+   },
+   "def_rb_expl20": {
+    "n_units": 32,
+    "r": -0.06
+   },
+   "def_rb_fd": {
+    "n_units": 32,
+    "r": 0.11
+   },
+   "def_rb_line_yds": {
+    "n_units": 32,
+    "r": 0.015
+   },
+   "def_rb_stuff": {
+    "n_units": 32,
+    "r": 0.016
+   },
+   "def_rb_success": {
+    "n_units": 32,
+    "r": -0.102
+   },
+   "def_rb_sy_conv": {
+    "n_units": 32,
+    "r": -0.098
+   },
+   "def_rb_tgt_db": {
+    "n_units": 32,
+    "r": 0.471
+   },
+   "def_rb_yac_rec": {
+    "n_units": 32,
+    "r": -0.21
+   },
+   "def_rb_ypc": {
+    "n_units": 32,
+    "r": 0.034
+   },
+   "def_rb_ypt": {
+    "n_units": 32,
+    "r": 0.126
+   },
+   "def_red_zone_rushes_oe": {
+    "n_units": 32,
+    "r": -0.034
+   },
+   "def_rush_tds_oe": {
+    "n_units": 32,
+    "r": -0.108
+   },
+   "def_scramble_yds_oe": {
+    "n_units": 32,
+    "r": 0.255
+   },
+   "def_scrambles_oe": {
+    "n_units": 32,
+    "r": -0.009
+   },
+   "def_side_epa_dev": {
+    "n_units": 96,
+    "r": 0.089
+   },
+   "def_side_expl10_dev": {
+    "n_units": 96,
+    "r": 0.189
+   },
+   "def_side_expl20_dev": {
+    "n_units": 96,
+    "r": 0.138
+   },
+   "def_side_stuff_dev": {
+    "n_units": 96,
+    "r": -0.041
+   },
+   "def_side_success_dev": {
+    "n_units": 96,
+    "r": 0.207
+   },
+   "def_side_ypc_dev": {
+    "n_units": 96,
+    "r": 0.102
+   },
+   "def_yac": {
+    "n_units": 32,
+    "r": 0.176
+   },
+   "def_ybc": {
+    "n_units": 32,
+    "r": -0.109
+   },
+   "ol_gap_success_dev": {
+    "n_units": 96,
+    "r": 0.154
+   },
+   "ol_line_yds": {
+    "n_units": 32,
+    "r": 0.567
+   },
+   "ol_stuff": {
+    "n_units": 32,
+    "r": 0.486
+   },
+   "ol_success": {
+    "n_units": 32,
+    "r": 0.305
+   },
+   "ol_ybc": {
+    "n_units": 32,
+    "r": 0.312
+   },
+   "qb_dsg_expl10": {
+    "n_units": 7,
+    "r": 0.708
+   },
+   "qb_dsg_rate": {
+    "n_units": 25,
+    "r": 0.972
+   },
+   "qb_dsg_success": {
+    "n_units": 7,
+    "r": 0.007
+   },
+   "qb_dsg_yds_rate": {
+    "n_units": 25,
+    "r": 0.98
+   },
+   "qb_dsg_ypc": {
+    "n_units": 7,
+    "r": -0.087
+   },
+   "qb_gl_rate": {
+    "n_units": 25,
+    "r": 0.678
+   },
+   "qb_hit_sack_rate": {
+    "n_units": 25,
+    "r": 0.673
+   },
+   "qb_kneel_pg": {
+    "n_units": 25,
+    "r": -0.386
+   },
+   "qb_rpo_rate": {
+    "n_units": 25,
+    "r": 0.171
+   },
+   "qb_rz_rate": {
+    "n_units": 25,
+    "r": 0.808
+   },
+   "qb_scr_blitz_dev": {
+    "n_units": 25,
+    "r": 0.114
+   },
+   "qb_scr_expl10": {
+    "n_units": 21,
+    "r": 0.357
+   },
+   "qb_scr_noblitz_dev": {
+    "n_units": 25,
+    "r": 0.197
+   },
+   "qb_scr_rate": {
+    "n_units": 25,
+    "r": 0.777
+   },
+   "qb_scr_yds_db": {
+    "n_units": 25,
+    "r": 0.769
+   },
+   "qb_scr_ypa": {
+    "n_units": 21,
+    "r": 0.381
+   },
+   "qb_sneak_conv": {
+    "n_units": 5,
+    "r": null
+   },
+   "qb_sneak_rate": {
+    "n_units": 25,
+    "r": 0.712
+   },
+   "qb_td_rate": {
+    "n_units": 25,
+    "r": 0.757
+   },
+   "qb_x10_rate": {
+    "n_units": 25,
+    "r": 0.906
+   },
+   "rb_adot": {
+    "n_units": 25,
+    "r": 0.39
+   },
+   "rb_box_epa_dev": {
+    "n_units": 90,
+    "r": -0.067
+   },
+   "rb_box_expl10_dev": {
+    "n_units": 90,
+    "r": 0.034
+   },
+   "rb_box_expl20_dev": {
+    "n_units": 90,
+    "r": -0.055
+   },
+   "rb_box_stuff_dev": {
+    "n_units": 90,
+    "r": 0.415
+   },
+   "rb_box_success_dev": {
+    "n_units": 90,
+    "r": 0.157
+   },
+   "rb_box_ypc_dev": {
+    "n_units": 90,
+    "r": 0.114
+   },
+   "rb_btk": {
+    "n_units": 30,
+    "r": 0.305
+   },
+   "rb_carries_pg": {
+    "n_units": 38,
+    "r": 0.554
+   },
+   "rb_carry_share": {
+    "n_units": 38,
+    "r": 0.636
+   },
+   "rb_catch": {
+    "n_units": 25,
+    "r": -0.147
+   },
+   "rb_chk_share": {
+    "n_units": 25,
+    "r": 0.37
+   },
+   "rb_dir_epa_dev": {
+    "n_units": 201,
+    "r": -0.031
+   },
+   "rb_dir_expl10_dev": {
+    "n_units": 201,
+    "r": -0.005
+   },
+   "rb_dir_expl20_dev": {
+    "n_units": 201,
+    "r": 0.008
+   },
+   "rb_dir_share": {
+    "n_units": 210,
+    "r": 0.448
+   },
+   "rb_dir_stuff_dev": {
+    "n_units": 201,
+    "r": 0.105
+   },
+   "rb_dir_success_dev": {
+    "n_units": 201,
+    "r": 0.028
+   },
+   "rb_dir_ypc_dev": {
+    "n_units": 201,
+    "r": 0.046
+   },
+   "rb_early_touch_share": {
+    "n_units": 38,
+    "r": 0.596
+   },
+   "rb_epa": {
+    "n_units": 30,
+    "r": 0.133
+   },
+   "rb_expl10": {
+    "n_units": 30,
+    "r": 0.159
+   },
+   "rb_expl20": {
+    "n_units": 30,
+    "r": 0.165
+   },
+   "rb_fd": {
+    "n_units": 30,
+    "r": -0.034
+   },
+   "rb_gl_share": {
+    "n_units": 35,
+    "r": 0.394
+   },
+   "rb_line_yds": {
+    "n_units": 30,
+    "r": 0.412
+   },
+   "rb_pers_epa_dev": {
+    "n_units": 62,
+    "r": -0.124
+   },
+   "rb_pers_expl10_dev": {
+    "n_units": 62,
+    "r": 0.044
+   },
+   "rb_pers_expl20_dev": {
+    "n_units": 62,
+    "r": 0.046
+   },
+   "rb_pers_stuff_dev": {
+    "n_units": 62,
+    "r": 0.204
+   },
+   "rb_pers_success_dev": {
+    "n_units": 62,
+    "r": -0.156
+   },
+   "rb_pers_ypc_dev": {
+    "n_units": 62,
+    "r": 0.062
+   },
+   "rb_rb_carry_share": {
+    "n_units": 38,
+    "r": 0.596
+   },
+   "rb_ryoe": {
+    "n_units": 30,
+    "r": 0.069
+   },
+   "rb_rz_share": {
+    "n_units": 38,
+    "r": 0.446
+   },
+   "rb_screen_share": {
+    "n_units": 25,
+    "r": 0.311
+   },
+   "rb_sg_epa_dev": {
+    "n_units": 60,
+    "r": -0.024
+   },
+   "rb_sg_expl10_dev": {
+    "n_units": 60,
+    "r": 0.233
+   },
+   "rb_sg_expl20_dev": {
+    "n_units": 60,
+    "r": 0.069
+   },
+   "rb_sg_share": {
+    "n_units": 30,
+    "r": 0.58
+   },
+   "rb_sg_stuff_dev": {
+    "n_units": 60,
+    "r": -0.096
+   },
+   "rb_sg_success_dev": {
+    "n_units": 60,
+    "r": -0.003
+   },
+   "rb_sg_ypc_dev": {
+    "n_units": 60,
+    "r": 0.041
+   },
+   "rb_side_epa_dev": {
+    "n_units": 90,
+    "r": -0.031
+   },
+   "rb_side_expl10_dev": {
+    "n_units": 90,
+    "r": -0.06
+   },
+   "rb_side_expl20_dev": {
+    "n_units": 90,
+    "r": -0.201
+   },
+   "rb_side_share": {
+    "n_units": 90,
+    "r": 0.537
+   },
+   "rb_side_stuff_dev": {
+    "n_units": 90,
+    "r": 0.34
+   },
+   "rb_side_success_dev": {
+    "n_units": 90,
+    "r": 0.053
+   },
+   "rb_side_ypc_dev": {
+    "n_units": 90,
+    "r": -0.003
+   },
+   "rb_sit_all": {
+    "n_units": 38,
+    "r": 0.443
+   },
+   "rb_sit_early": {
+    "n_units": 38,
+    "r": 0.522
+   },
+   "rb_sit_goal_line": {
+    "n_units": 38,
+    "r": 0.308
+   },
+   "rb_sit_neutral": {
+    "n_units": 38,
+    "r": 0.441
+   },
+   "rb_sit_red_zone": {
+    "n_units": 38,
+    "r": 0.376
+   },
+   "rb_sit_short_yardage": {
+    "n_units": 38,
+    "r": 0.488
+   },
+   "rb_sit_third": {
+    "n_units": 38,
+    "r": 0.571
+   },
+   "rb_sit_two_minute": {
+    "n_units": 38,
+    "r": 0.525
+   },
+   "rb_snap_share": {
+    "n_units": 38,
+    "r": 0.434
+   },
+   "rb_stuff": {
+    "n_units": 30,
+    "r": 0.228
+   },
+   "rb_success": {
+    "n_units": 30,
+    "r": 0.084
+   },
+   "rb_sy_conv": {
+    "n_units": 23,
+    "r": 0.352
+   },
+   "rb_target_share": {
+    "n_units": 38,
+    "r": 0.58
+   },
+   "rb_targets_pg": {
+    "n_units": 38,
+    "r": 0.595
+   },
+   "rb_td": {
+    "n_units": 30,
+    "r": -0.239
+   },
+   "rb_tgt_per_db": {
+    "n_units": 38,
+    "r": 0.359
+   },
+   "rb_tgt_per_db_vs_man_dev": {
+    "n_units": 38,
+    "r": 0.363
+   },
+   "rb_tgt_per_db_vs_zone_dev": {
+    "n_units": 38,
+    "r": 0.232
+   },
+   "rb_third_touch_share": {
+    "n_units": 38,
+    "r": 0.574
+   },
+   "rb_two_minute_touch_share": {
+    "n_units": 38,
+    "r": 0.252
+   },
+   "rb_yac": {
+    "n_units": 30,
+    "r": 0.276
+   },
+   "rb_yac_rec": {
+    "n_units": 25,
+    "r": 0.283
+   },
+   "rb_ybc": {
+    "n_units": 30,
+    "r": 0.224
+   },
+   "rb_ypc": {
+    "n_units": 30,
+    "r": 0.326
+   },
+   "rb_ypt": {
+    "n_units": 25,
+    "r": 0.15
+   },
+   "tm_early_run": {
+    "n_units": 32,
+    "r": 0.463
+   },
+   "tm_lead_run": {
+    "n_units": 31,
+    "r": 0.044
+   },
+   "tm_neutral_run": {
+    "n_units": 32,
+    "r": 0.564
+   },
+   "tm_plays_pg": {
+    "n_units": 32,
+    "r": 0.161
+   },
+   "tm_qb_keep": {
+    "n_units": 32,
+    "r": 0.893
+   },
+   "tm_rpo": {
+    "n_units": 32,
+    "r": 0.235
+   },
+   "tm_rz_run": {
+    "n_units": 32,
+    "r": 0.614
+   },
+   "tm_trail_run": {
+    "n_units": 31,
+    "r": 0.459
+   }
+  },
+  "2023->2024": {
+   "def_base_share": {
+    "n_units": 32,
+    "r": 0.46
+   },
+   "def_blitz": {
+    "n_units": 32,
+    "r": 0.627
+   },
+   "def_box_epa_dev": {
+    "n_units": 96,
+    "r": 0.141
+   },
+   "def_box_expl10_dev": {
+    "n_units": 96,
+    "r": 0.197
+   },
+   "def_box_expl20_dev": {
+    "n_units": 96,
+    "r": -0.086
+   },
+   "def_box_mean": {
+    "n_units": 32,
+    "r": 0.493
+   },
+   "def_box_op_heavy_dev": {
+    "n_units": 157,
+    "r": 0.115
+   },
+   "def_box_op_light_dev": {
+    "n_units": 157,
+    "r": 0.129
+   },
+   "def_box_sg_dev": {
+    "n_units": 64,
+    "r": 0.531
+   },
+   "def_box_stuff_dev": {
+    "n_units": 96,
+    "r": -0.021
+   },
+   "def_box_success_dev": {
+    "n_units": 96,
+    "r": 0.18
+   },
+   "def_box_ypc_dev": {
+    "n_units": 96,
+    "r": 0.17
+   },
+   "def_containment_proxy_oe": {
+    "n_units": 32,
+    "r": -0.21
+   },
+   "def_designed_runs_oe": {
+    "n_units": 32,
+    "r": 0.43
+   },
+   "def_designed_yds_oe": {
+    "n_units": 32,
+    "r": 0.24
+   },
+   "def_dime_share": {
+    "n_units": 32,
+    "r": 0.18
+   },
+   "def_dir_epa_dev": {
+    "n_units": 224,
+    "r": -0.081
+   },
+   "def_dir_expl10_dev": {
+    "n_units": 224,
+    "r": 0.028
+   },
+   "def_dir_expl20_dev": {
+    "n_units": 224,
+    "r": -0.084
+   },
+   "def_dir_stuff_dev": {
+    "n_units": 224,
+    "r": 0.081
+   },
+   "def_dir_success_dev": {
+    "n_units": 224,
+    "r": 0.005
+   },
+   "def_dir_ypc_dev": {
+    "n_units": 224,
+    "r": -0.098
+   },
+   "def_dl3_share": {
+    "n_units": 32,
+    "r": 0.702
+   },
+   "def_dl4_share": {
+    "n_units": 32,
+    "r": 0.697
+   },
+   "def_explosive_runs_oe": {
+    "n_units": 32,
+    "r": -0.063
+   },
+   "def_heavy_share": {
+    "n_units": 32,
+    "r": 0.44
+   },
+   "def_hit_sack_rate_oe": {
+    "n_units": 32,
+    "r": 0.27
+   },
+   "def_light_share": {
+    "n_units": 32,
+    "r": 0.381
+   },
+   "def_mtkl_pg": {
+    "n_units": 32,
+    "r": 0.138
+   },
+   "def_mtkl_rate": {
+    "n_units": 32,
+    "r": 0.157
+   },
+   "def_nickel_share": {
+    "n_units": 32,
+    "r": 0.272
+   },
+   "def_pressure": {
+    "n_units": 32,
+    "r": 0.432
+   },
+   "def_pressure_pfr": {
+    "n_units": 32,
+    "r": 0.262
+   },
+   "def_rb_catch": {
+    "n_units": 32,
+    "r": -0.236
+   },
+   "def_rb_epa": {
+    "n_units": 32,
+    "r": 0.063
+   },
+   "def_rb_expl10": {
+    "n_units": 32,
+    "r": 0.148
+   },
+   "def_rb_expl20": {
+    "n_units": 32,
+    "r": 0.226
+   },
+   "def_rb_fd": {
+    "n_units": 32,
+    "r": 0.11
+   },
+   "def_rb_line_yds": {
+    "n_units": 32,
+    "r": 0.121
+   },
+   "def_rb_stuff": {
+    "n_units": 32,
+    "r": 0.286
+   },
+   "def_rb_success": {
+    "n_units": 32,
+    "r": -0.038
+   },
+   "def_rb_sy_conv": {
+    "n_units": 32,
+    "r": -0.028
+   },
+   "def_rb_tgt_db": {
+    "n_units": 32,
+    "r": 0.142
+   },
+   "def_rb_yac_rec": {
+    "n_units": 32,
+    "r": 0.033
+   },
+   "def_rb_ypc": {
+    "n_units": 32,
+    "r": -0.083
+   },
+   "def_rb_ypt": {
+    "n_units": 32,
+    "r": -0.078
+   },
+   "def_red_zone_rushes_oe": {
+    "n_units": 32,
+    "r": 0.37
+   },
+   "def_rush_tds_oe": {
+    "n_units": 32,
+    "r": 0.11
+   },
+   "def_scramble_yds_oe": {
+    "n_units": 32,
+    "r": 0.109
+   },
+   "def_scrambles_oe": {
+    "n_units": 32,
+    "r": 0.226
+   },
+   "def_side_epa_dev": {
+    "n_units": 96,
+    "r": 0.057
+   },
+   "def_side_expl10_dev": {
+    "n_units": 96,
+    "r": 0.273
+   },
+   "def_side_expl20_dev": {
+    "n_units": 96,
+    "r": -0.099
+   },
+   "def_side_stuff_dev": {
+    "n_units": 96,
+    "r": 0.234
+   },
+   "def_side_success_dev": {
+    "n_units": 96,
+    "r": 0.276
+   },
+   "def_side_ypc_dev": {
+    "n_units": 96,
+    "r": 0.121
+   },
+   "def_yac": {
+    "n_units": 32,
+    "r": -0.028
+   },
+   "def_ybc": {
+    "n_units": 32,
+    "r": -0.041
+   },
+   "ol_gap_success_dev": {
+    "n_units": 96,
+    "r": 0.074
+   },
+   "ol_line_yds": {
+    "n_units": 32,
+    "r": 0.208
+   },
+   "ol_stuff": {
+    "n_units": 32,
+    "r": 0.161
+   },
+   "ol_success": {
+    "n_units": 32,
+    "r": 0.193
+   },
+   "ol_ybc": {
+    "n_units": 32,
+    "r": 0.36
+   },
+   "qb_dsg_expl10": {
+    "n_units": 5,
+    "r": null
+   },
+   "qb_dsg_rate": {
+    "n_units": 28,
+    "r": 0.952
+   },
+   "qb_dsg_success": {
+    "n_units": 5,
+    "r": null
+   },
+   "qb_dsg_yds_rate": {
+    "n_units": 28,
+    "r": 0.948
+   },
+   "qb_dsg_ypc": {
+    "n_units": 5,
+    "r": null
+   },
+   "qb_gl_rate": {
+    "n_units": 28,
+    "r": 0.623
+   },
+   "qb_hit_sack_rate": {
+    "n_units": 28,
+    "r": 0.663
+   },
+   "qb_kneel_pg": {
+    "n_units": 28,
+    "r": 0.056
+   },
+   "qb_rpo_rate": {
+    "n_units": 28,
+    "r": 0.487
+   },
+   "qb_rz_rate": {
+    "n_units": 28,
+    "r": 0.835
+   },
+   "qb_scr_blitz_dev": {
+    "n_units": 28,
+    "r": 0.339
+   },
+   "qb_scr_expl10": {
+    "n_units": 21,
+    "r": 0.001
+   },
+   "qb_scr_man_dev": {
+    "n_units": 28,
+    "r": -0.345
+   },
+   "qb_scr_noblitz_dev": {
+    "n_units": 28,
+    "r": 0.465
+   },
+   "qb_scr_nopress_dev": {
+    "n_units": 28,
+    "r": 0.25
+   },
+   "qb_scr_press_dev": {
+    "n_units": 28,
+    "r": 0.337
+   },
+   "qb_scr_rate": {
+    "n_units": 28,
+    "r": 0.7
+   },
+   "qb_scr_single_dev": {
+    "n_units": 28,
+    "r": -0.334
+   },
+   "qb_scr_two_dev": {
+    "n_units": 28,
+    "r": -0.211
+   },
+   "qb_scr_yds_db": {
+    "n_units": 28,
+    "r": 0.697
+   },
+   "qb_scr_yds_press": {
+    "n_units": 28,
+    "r": 0.745
+   },
+   "qb_scr_ypa": {
+    "n_units": 21,
+    "r": 0.247
+   },
+   "qb_scr_zone_dev": {
+    "n_units": 28,
+    "r": -0.13
+   },
+   "qb_sneak_conv": {
+    "n_units": 2,
+    "r": null
+   },
+   "qb_sneak_rate": {
+    "n_units": 28,
+    "r": 0.805
+   },
+   "qb_td_rate": {
+    "n_units": 28,
+    "r": 0.791
+   },
+   "qb_x10_rate": {
+    "n_units": 28,
+    "r": 0.729
+   },
+   "rb_adot": {
+    "n_units": 30,
+    "r": 0.47
+   },
+   "rb_box_epa_dev": {
+    "n_units": 94,
+    "r": 0.103
+   },
+   "rb_box_expl10_dev": {
+    "n_units": 94,
+    "r": -0.071
+   },
+   "rb_box_expl20_dev": {
+    "n_units": 94,
+    "r": -0.004
+   },
+   "rb_box_stuff_dev": {
+    "n_units": 94,
+    "r": 0.218
+   },
+   "rb_box_success_dev": {
+    "n_units": 94,
+    "r": -0.11
+   },
+   "rb_box_ypc_dev": {
+    "n_units": 94,
+    "r": 0.021
+   },
+   "rb_btk": {
+    "n_units": 33,
+    "r": 0.064
+   },
+   "rb_carries_pg": {
+    "n_units": 38,
+    "r": 0.759
+   },
+   "rb_carry_share": {
+    "n_units": 38,
+    "r": 0.681
+   },
+   "rb_catch": {
+    "n_units": 30,
+    "r": -0.185
+   },
+   "rb_chk_share": {
+    "n_units": 30,
+    "r": 0.2
+   },
+   "rb_dir_epa_dev": {
+    "n_units": 221,
+    "r": 0.115
+   },
+   "rb_dir_expl10_dev": {
+    "n_units": 221,
+    "r": 0.129
+   },
+   "rb_dir_expl20_dev": {
+    "n_units": 221,
+    "r": -0.002
+   },
+   "rb_dir_share": {
+    "n_units": 231,
+    "r": 0.493
+   },
+   "rb_dir_stuff_dev": {
+    "n_units": 221,
+    "r": 0.017
+   },
+   "rb_dir_success_dev": {
+    "n_units": 221,
+    "r": 0.099
+   },
+   "rb_dir_ypc_dev": {
+    "n_units": 221,
+    "r": 0.105
+   },
+   "rb_early_touch_share": {
+    "n_units": 38,
+    "r": 0.711
+   },
+   "rb_epa": {
+    "n_units": 33,
+    "r": 0.076
+   },
+   "rb_expl10": {
+    "n_units": 33,
+    "r": 0.31
+   },
+   "rb_expl20": {
+    "n_units": 33,
+    "r": 0.273
+   },
+   "rb_fd": {
+    "n_units": 33,
+    "r": 0.144
+   },
+   "rb_gl_share": {
+    "n_units": 36,
+    "r": 0.554
+   },
+   "rb_line_yds": {
+    "n_units": 33,
+    "r": 0.126
+   },
+   "rb_pers_epa_dev": {
+    "n_units": 65,
+    "r": 0.239
+   },
+   "rb_pers_expl10_dev": {
+    "n_units": 65,
+    "r": -0.054
+   },
+   "rb_pers_expl20_dev": {
+    "n_units": 65,
+    "r": -0.228
+   },
+   "rb_pers_stuff_dev": {
+    "n_units": 65,
+    "r": -0.179
+   },
+   "rb_pers_success_dev": {
+    "n_units": 65,
+    "r": 0.132
+   },
+   "rb_pers_ypc_dev": {
+    "n_units": 65,
+    "r": 0.129
+   },
+   "rb_rb_carry_share": {
+    "n_units": 38,
+    "r": 0.698
+   },
+   "rb_ryoe": {
+    "n_units": 33,
+    "r": -0.008
+   },
+   "rb_rz_share": {
+    "n_units": 38,
+    "r": 0.658
+   },
+   "rb_screen_share": {
+    "n_units": 30,
+    "r": 0.154
+   },
+   "rb_sg_epa_dev": {
+    "n_units": 66,
+    "r": 0.005
+   },
+   "rb_sg_expl10_dev": {
+    "n_units": 66,
+    "r": 0.119
+   },
+   "rb_sg_expl20_dev": {
+    "n_units": 66,
+    "r": -0.042
+   },
+   "rb_sg_share": {
+    "n_units": 33,
+    "r": 0.191
+   },
+   "rb_sg_stuff_dev": {
+    "n_units": 66,
+    "r": -0.241
+   },
+   "rb_sg_success_dev": {
+    "n_units": 66,
+    "r": 0.083
+   },
+   "rb_sg_ypc_dev": {
+    "n_units": 66,
+    "r": 0.183
+   },
+   "rb_side_epa_dev": {
+    "n_units": 99,
+    "r": -0.032
+   },
+   "rb_side_expl10_dev": {
+    "n_units": 99,
+    "r": 0.127
+   },
+   "rb_side_expl20_dev": {
+    "n_units": 99,
+    "r": 0.215
+   },
+   "rb_side_share": {
+    "n_units": 99,
+    "r": 0.61
+   },
+   "rb_side_stuff_dev": {
+    "n_units": 99,
+    "r": -0.107
+   },
+   "rb_side_success_dev": {
+    "n_units": 99,
+    "r": -0.041
+   },
+   "rb_side_ypc_dev": {
+    "n_units": 99,
+    "r": 0.139
+   },
+   "rb_sit_all": {
+    "n_units": 38,
+    "r": 0.702
+   },
+   "rb_sit_early": {
+    "n_units": 38,
+    "r": 0.676
+   },
+   "rb_sit_goal_line": {
+    "n_units": 38,
+    "r": 0.459
+   },
+   "rb_sit_neutral": {
+    "n_units": 38,
+    "r": 0.719
+   },
+   "rb_sit_red_zone": {
+    "n_units": 38,
+    "r": 0.584
+   },
+   "rb_sit_short_yardage": {
+    "n_units": 38,
+    "r": 0.484
+   },
+   "rb_sit_third": {
+    "n_units": 38,
+    "r": 0.756
+   },
+   "rb_sit_two_minute": {
+    "n_units": 38,
+    "r": 0.629
+   },
+   "rb_snap_share": {
+    "n_units": 38,
+    "r": 0.695
+   },
+   "rb_stuff": {
+    "n_units": 33,
+    "r": 0.286
+   },
+   "rb_success": {
+    "n_units": 33,
+    "r": -0.045
+   },
+   "rb_sy_conv": {
+    "n_units": 25,
+    "r": -0.139
+   },
+   "rb_target_share": {
+    "n_units": 38,
+    "r": 0.687
+   },
+   "rb_targets_pg": {
+    "n_units": 38,
+    "r": 0.655
+   },
+   "rb_td": {
+    "n_units": 33,
+    "r": 0.133
+   },
+   "rb_tgt_per_db": {
+    "n_units": 38,
+    "r": 0.511
+   },
+   "rb_tgt_per_db_vs_man_dev": {
+    "n_units": 38,
+    "r": 0.135
+   },
+   "rb_tgt_per_db_vs_zone_dev": {
+    "n_units": 38,
+    "r": 0.056
+   },
+   "rb_third_touch_share": {
+    "n_units": 38,
+    "r": 0.579
+   },
+   "rb_two_minute_touch_share": {
+    "n_units": 38,
+    "r": 0.526
+   },
+   "rb_yac": {
+    "n_units": 33,
+    "r": 0.177
+   },
+   "rb_yac_rec": {
+    "n_units": 30,
+    "r": 0.361
+   },
+   "rb_ybc": {
+    "n_units": 33,
+    "r": 0.047
+   },
+   "rb_ypc": {
+    "n_units": 33,
+    "r": 0.185
+   },
+   "rb_ypt": {
+    "n_units": 30,
+    "r": 0.331
+   },
+   "tm_early_run": {
+    "n_units": 32,
+    "r": 0.329
+   },
+   "tm_lead_run": {
+    "n_units": 31,
+    "r": 0.158
+   },
+   "tm_neutral_run": {
+    "n_units": 32,
+    "r": 0.476
+   },
+   "tm_plays_pg": {
+    "n_units": 32,
+    "r": 0.218
+   },
+   "tm_qb_keep": {
+    "n_units": 32,
+    "r": 0.653
+   },
+   "tm_rpo": {
+    "n_units": 32,
+    "r": 0.417
+   },
+   "tm_rz_run": {
+    "n_units": 32,
+    "r": 0.557
+   },
+   "tm_trail_run": {
+    "n_units": 31,
+    "r": 0.357
+   }
+  },
+  "2024->2025": {
+   "def_base_share": {
+    "n_units": 32,
+    "r": 0.378
+   },
+   "def_blitz": {
+    "n_units": 32,
+    "r": 0.597
+   },
+   "def_box_epa_dev": {
+    "n_units": 94,
+    "r": -0.148
+   },
+   "def_box_expl10_dev": {
+    "n_units": 94,
+    "r": -0.128
+   },
+   "def_box_expl20_dev": {
+    "n_units": 94,
+    "r": -0.069
+   },
+   "def_box_mean": {
+    "n_units": 32,
+    "r": 0.417
+   },
+   "def_box_op_heavy_dev": {
+    "n_units": 160,
+    "r": 0.006
+   },
+   "def_box_op_light_dev": {
+    "n_units": 160,
+    "r": -0.067
+   },
+   "def_box_sg_dev": {
+    "n_units": 64,
+    "r": 0.563
+   },
+   "def_box_stuff_dev": {
+    "n_units": 94,
+    "r": 0.045
+   },
+   "def_box_success_dev": {
+    "n_units": 94,
+    "r": -0.018
+   },
+   "def_box_ypc_dev": {
+    "n_units": 94,
+    "r": -0.23
+   },
+   "def_containment_proxy_oe": {
+    "n_units": 32,
+    "r": 0.276
+   },
+   "def_designed_runs_oe": {
+    "n_units": 32,
+    "r": 0.002
+   },
+   "def_designed_yds_oe": {
+    "n_units": 32,
+    "r": 0.083
+   },
+   "def_dime_share": {
+    "n_units": 32,
+    "r": 0.539
+   },
+   "def_dir_epa_dev": {
+    "n_units": 224,
+    "r": -0.035
+   },
+   "def_dir_expl10_dev": {
+    "n_units": 224,
+    "r": -0.058
+   },
+   "def_dir_expl20_dev": {
+    "n_units": 224,
+    "r": -0.033
+   },
+   "def_dir_stuff_dev": {
+    "n_units": 224,
+    "r": -0.022
+   },
+   "def_dir_success_dev": {
+    "n_units": 224,
+    "r": -0.055
+   },
+   "def_dir_ypc_dev": {
+    "n_units": 224,
+    "r": -0.059
+   },
+   "def_dl3_share": {
+    "n_units": 32,
+    "r": 0.815
+   },
+   "def_dl4_share": {
+    "n_units": 32,
+    "r": 0.803
+   },
+   "def_explosive_runs_oe": {
+    "n_units": 32,
+    "r": 0.282
+   },
+   "def_heavy_share": {
+    "n_units": 32,
+    "r": 0.642
+   },
+   "def_hit_sack_rate_oe": {
+    "n_units": 32,
+    "r": 0.46
+   },
+   "def_light_share": {
+    "n_units": 32,
+    "r": 0.47
+   },
+   "def_mtkl_pg": {
+    "n_units": 32,
+    "r": 0.254
+   },
+   "def_mtkl_rate": {
+    "n_units": 32,
+    "r": 0.224
+   },
+   "def_nickel_share": {
+    "n_units": 32,
+    "r": 0.615
+   },
+   "def_pressure": {
+    "n_units": 32,
+    "r": 0.545
+   },
+   "def_pressure_pfr": {
+    "n_units": 32,
+    "r": 0.409
+   },
+   "def_rb_catch": {
+    "n_units": 32,
+    "r": -0.14
+   },
+   "def_rb_epa": {
+    "n_units": 32,
+    "r": 0.347
+   },
+   "def_rb_expl10": {
+    "n_units": 32,
+    "r": 0.332
+   },
+   "def_rb_expl20": {
+    "n_units": 32,
+    "r": 0.231
+   },
+   "def_rb_fd": {
+    "n_units": 32,
+    "r": 0.468
+   },
+   "def_rb_line_yds": {
+    "n_units": 32,
+    "r": 0.393
+   },
+   "def_rb_stuff": {
+    "n_units": 32,
+    "r": 0.337
+   },
+   "def_rb_success": {
+    "n_units": 32,
+    "r": 0.252
+   },
+   "def_rb_sy_conv": {
+    "n_units": 32,
+    "r": 0.215
+   },
+   "def_rb_tgt_db": {
+    "n_units": 32,
+    "r": 0.288
+   },
+   "def_rb_yac_rec": {
+    "n_units": 32,
+    "r": -0.001
+   },
+   "def_rb_ypc": {
+    "n_units": 32,
+    "r": 0.318
+   },
+   "def_rb_ypt": {
+    "n_units": 32,
+    "r": 0.194
+   },
+   "def_red_zone_rushes_oe": {
+    "n_units": 32,
+    "r": 0.142
+   },
+   "def_rush_tds_oe": {
+    "n_units": 32,
+    "r": 0.246
+   },
+   "def_scramble_yds_oe": {
+    "n_units": 32,
+    "r": 0.353
+   },
+   "def_scrambles_oe": {
+    "n_units": 32,
+    "r": 0.46
+   },
+   "def_side_epa_dev": {
+    "n_units": 96,
+    "r": 0.003
+   },
+   "def_side_expl10_dev": {
+    "n_units": 96,
+    "r": -0.128
+   },
+   "def_side_expl20_dev": {
+    "n_units": 96,
+    "r": 0.024
+   },
+   "def_side_stuff_dev": {
+    "n_units": 96,
+    "r": 0.081
+   },
+   "def_side_success_dev": {
+    "n_units": 96,
+    "r": 0.007
+   },
+   "def_side_ypc_dev": {
+    "n_units": 96,
+    "r": -0.008
+   },
+   "def_yac": {
+    "n_units": 32,
+    "r": 0.239
+   },
+   "def_ybc": {
+    "n_units": 32,
+    "r": 0.524
+   },
+   "ol_gap_success_dev": {
+    "n_units": 96,
+    "r": -0.173
+   },
+   "ol_line_yds": {
+    "n_units": 32,
+    "r": 0.279
+   },
+   "ol_stuff": {
+    "n_units": 32,
+    "r": 0.544
+   },
+   "ol_success": {
+    "n_units": 32,
+    "r": 0.413
+   },
+   "ol_ybc": {
+    "n_units": 32,
+    "r": 0.275
+   },
+   "qb_dsg_expl10": {
+    "n_units": 6,
+    "r": 0.22
+   },
+   "qb_dsg_rate": {
+    "n_units": 28,
+    "r": 0.789
+   },
+   "qb_dsg_success": {
+    "n_units": 6,
+    "r": -0.177
+   },
+   "qb_dsg_yds_rate": {
+    "n_units": 28,
+    "r": 0.782
+   },
+   "qb_dsg_ypc": {
+    "n_units": 6,
+    "r": -0.182
+   },
+   "qb_gl_rate": {
+    "n_units": 28,
+    "r": 0.794
+   },
+   "qb_hit_sack_rate": {
+    "n_units": 28,
+    "r": 0.495
+   },
+   "qb_kneel_pg": {
+    "n_units": 28,
+    "r": -0.038
+   },
+   "qb_rpo_rate": {
+    "n_units": 28,
+    "r": 0.327
+   },
+   "qb_rz_rate": {
+    "n_units": 28,
+    "r": 0.768
+   },
+   "qb_scr_blitz_dev": {
+    "n_units": 28,
+    "r": 0.089
+   },
+   "qb_scr_expl10": {
+    "n_units": 22,
+    "r": -0.156
+   },
+   "qb_scr_man_dev": {
+    "n_units": 28,
+    "r": -0.144
+   },
+   "qb_scr_noblitz_dev": {
+    "n_units": 28,
+    "r": -0.063
+   },
+   "qb_scr_nopress_dev": {
+    "n_units": 28,
+    "r": 0.077
+   },
+   "qb_scr_press_dev": {
+    "n_units": 28,
+    "r": 0.213
+   },
+   "qb_scr_rate": {
+    "n_units": 28,
+    "r": 0.861
+   },
+   "qb_scr_single_dev": {
+    "n_units": 28,
+    "r": 0.324
+   },
+   "qb_scr_two_dev": {
+    "n_units": 28,
+    "r": 0.317
+   },
+   "qb_scr_yds_db": {
+    "n_units": 28,
+    "r": 0.861
+   },
+   "qb_scr_yds_press": {
+    "n_units": 28,
+    "r": 0.753
+   },
+   "qb_scr_ypa": {
+    "n_units": 22,
+    "r": 0.016
+   },
+   "qb_scr_zone_dev": {
+    "n_units": 28,
+    "r": -0.095
+   },
+   "qb_sneak_conv": {
+    "n_units": 5,
+    "r": null
+   },
+   "qb_sneak_rate": {
+    "n_units": 28,
+    "r": 0.812
+   },
+   "qb_td_rate": {
+    "n_units": 28,
+    "r": 0.792
+   },
+   "qb_x10_rate": {
+    "n_units": 28,
+    "r": 0.786
+   },
+   "rb_adot": {
+    "n_units": 26,
+    "r": 0.288
+   },
+   "rb_box_epa_dev": {
+    "n_units": 92,
+    "r": 0.235
+   },
+   "rb_box_expl10_dev": {
+    "n_units": 92,
+    "r": 0.504
+   },
+   "rb_box_expl20_dev": {
+    "n_units": 92,
+    "r": 0.422
+   },
+   "rb_box_stuff_dev": {
+    "n_units": 92,
+    "r": -0.111
+   },
+   "rb_box_success_dev": {
+    "n_units": 92,
+    "r": 0.191
+   },
+   "rb_box_ypc_dev": {
+    "n_units": 92,
+    "r": 0.478
+   },
+   "rb_btk": {
+    "n_units": 34,
+    "r": 0.063
+   },
+   "rb_carries_pg": {
+    "n_units": 36,
+    "r": 0.611
+   },
+   "rb_carry_share": {
+    "n_units": 36,
+    "r": 0.537
+   },
+   "rb_catch": {
+    "n_units": 26,
+    "r": 0.257
+   },
+   "rb_chk_share": {
+    "n_units": 26,
+    "r": 0.279
+   },
+   "rb_dir_epa_dev": {
+    "n_units": 222,
+    "r": 0.086
+   },
+   "rb_dir_expl10_dev": {
+    "n_units": 222,
+    "r": 0.112
+   },
+   "rb_dir_expl20_dev": {
+    "n_units": 222,
+    "r": 0.013
+   },
+   "rb_dir_share": {
+    "n_units": 238,
+    "r": 0.477
+   },
+   "rb_dir_stuff_dev": {
+    "n_units": 222,
+    "r": 0.131
+   },
+   "rb_dir_success_dev": {
+    "n_units": 222,
+    "r": -0.065
+   },
+   "rb_dir_ypc_dev": {
+    "n_units": 222,
+    "r": 0.106
+   },
+   "rb_early_touch_share": {
+    "n_units": 36,
+    "r": 0.651
+   },
+   "rb_epa": {
+    "n_units": 34,
+    "r": -0.032
+   },
+   "rb_expl10": {
+    "n_units": 34,
+    "r": 0.224
+   },
+   "rb_expl20": {
+    "n_units": 34,
+    "r": 0.248
+   },
+   "rb_fd": {
+    "n_units": 34,
+    "r": 0.198
+   },
+   "rb_gl_share": {
+    "n_units": 32,
+    "r": 0.313
+   },
+   "rb_line_yds": {
+    "n_units": 34,
+    "r": -0.035
+   },
+   "rb_pers_epa_dev": {
+    "n_units": 70,
+    "r": 0.181
+   },
+   "rb_pers_expl10_dev": {
+    "n_units": 70,
+    "r": 0.045
+   },
+   "rb_pers_expl20_dev": {
+    "n_units": 70,
+    "r": 0.525
+   },
+   "rb_pers_stuff_dev": {
+    "n_units": 70,
+    "r": -0.011
+   },
+   "rb_pers_success_dev": {
+    "n_units": 70,
+    "r": 0.259
+   },
+   "rb_pers_ypc_dev": {
+    "n_units": 70,
+    "r": 0.332
+   },
+   "rb_rb_carry_share": {
+    "n_units": 36,
+    "r": 0.57
+   },
+   "rb_ryoe": {
+    "n_units": 34,
+    "r": 0.107
+   },
+   "rb_rz_share": {
+    "n_units": 36,
+    "r": 0.286
+   },
+   "rb_screen_share": {
+    "n_units": 26,
+    "r": 0.414
+   },
+   "rb_sg_epa_dev": {
+    "n_units": 68,
+    "r": -0.355
+   },
+   "rb_sg_expl10_dev": {
+    "n_units": 68,
+    "r": -0.069
+   },
+   "rb_sg_expl20_dev": {
+    "n_units": 68,
+    "r": -0.04
+   },
+   "rb_sg_share": {
+    "n_units": 34,
+    "r": 0.606
+   },
+   "rb_sg_stuff_dev": {
+    "n_units": 68,
+    "r": -0.097
+   },
+   "rb_sg_success_dev": {
+    "n_units": 68,
+    "r": -0.196
+   },
+   "rb_sg_ypc_dev": {
+    "n_units": 68,
+    "r": -0.104
+   },
+   "rb_side_epa_dev": {
+    "n_units": 101,
+    "r": -0.033
+   },
+   "rb_side_expl10_dev": {
+    "n_units": 101,
+    "r": 0.06
+   },
+   "rb_side_expl20_dev": {
+    "n_units": 101,
+    "r": 0.072
+   },
+   "rb_side_share": {
+    "n_units": 102,
+    "r": 0.598
+   },
+   "rb_side_stuff_dev": {
+    "n_units": 101,
+    "r": 0.029
+   },
+   "rb_side_success_dev": {
+    "n_units": 101,
+    "r": -0.167
+   },
+   "rb_side_ypc_dev": {
+    "n_units": 101,
+    "r": 0.05
+   },
+   "rb_sit_all": {
+    "n_units": 36,
+    "r": 0.731
+   },
+   "rb_sit_early": {
+    "n_units": 36,
+    "r": 0.65
+   },
+   "rb_sit_goal_line": {
+    "n_units": 36,
+    "r": 0.551
+   },
+   "rb_sit_neutral": {
+    "n_units": 36,
+    "r": 0.687
+   },
+   "rb_sit_red_zone": {
+    "n_units": 36,
+    "r": 0.63
+   },
+   "rb_sit_short_yardage": {
+    "n_units": 36,
+    "r": 0.268
+   },
+   "rb_sit_third": {
+    "n_units": 36,
+    "r": 0.576
+   },
+   "rb_sit_two_minute": {
+    "n_units": 36,
+    "r": 0.558
+   },
+   "rb_snap_share": {
+    "n_units": 36,
+    "r": 0.733
+   },
+   "rb_stuff": {
+    "n_units": 34,
+    "r": 0.254
+   },
+   "rb_success": {
+    "n_units": 34,
+    "r": 0.144
+   },
+   "rb_sy_conv": {
+    "n_units": 21,
+    "r": -0.076
+   },
+   "rb_target_share": {
+    "n_units": 36,
+    "r": 0.644
+   },
+   "rb_targets_pg": {
+    "n_units": 36,
+    "r": 0.654
+   },
+   "rb_td": {
+    "n_units": 34,
+    "r": 0.392
+   },
+   "rb_tgt_per_db": {
+    "n_units": 36,
+    "r": 0.553
+   },
+   "rb_tgt_per_db_vs_man_dev": {
+    "n_units": 36,
+    "r": 0.316
+   },
+   "rb_tgt_per_db_vs_zone_dev": {
+    "n_units": 36,
+    "r": 0.336
+   },
+   "rb_third_touch_share": {
+    "n_units": 36,
+    "r": 0.404
+   },
+   "rb_two_minute_touch_share": {
+    "n_units": 36,
+    "r": 0.522
+   },
+   "rb_yac": {
+    "n_units": 34,
+    "r": -0.007
+   },
+   "rb_yac_rec": {
+    "n_units": 26,
+    "r": 0.458
+   },
+   "rb_ybc": {
+    "n_units": 34,
+    "r": 0.231
+   },
+   "rb_ypc": {
+    "n_units": 34,
+    "r": 0.15
+   },
+   "rb_ypt": {
+    "n_units": 26,
+    "r": 0.121
+   },
+   "tm_early_run": {
+    "n_units": 32,
+    "r": 0.405
+   },
+   "tm_lead_run": {
+    "n_units": 31,
+    "r": 0.284
+   },
+   "tm_neutral_run": {
+    "n_units": 32,
+    "r": 0.282
+   },
+   "tm_plays_pg": {
+    "n_units": 32,
+    "r": -0.048
+   },
+   "tm_qb_keep": {
+    "n_units": 32,
+    "r": 0.562
+   },
+   "tm_rpo": {
+    "n_units": 32,
+    "r": 0.478
+   },
+   "tm_rz_run": {
+    "n_units": 32,
+    "r": 0.475
+   },
+   "tm_trail_run": {
+    "n_units": 32,
+    "r": 0.08
+   }
+  }
+ },
+ "pooled_r": {
+  "def_base_share": 0.518,
+  "def_blitz": 0.552,
+  "def_box_epa_dev": 0.034,
+  "def_box_expl10_dev": 0.003,
+  "def_box_expl20_dev": 0.054,
+  "def_box_mean": 0.444,
+  "def_box_op_heavy_dev": 0.136,
+  "def_box_op_light_dev": 0.1,
+  "def_box_sg_dev": 0.444,
+  "def_box_stuff_dev": 0.089,
+  "def_box_success_dev": 0.026,
+  "def_box_ypc_dev": -0.035,
+  "def_containment_proxy_oe": 0.033,
+  "def_designed_runs_oe": 0.166,
+  "def_designed_yds_oe": 0.144,
+  "def_dime_share": 0.551,
+  "def_dir_epa_dev": 0.012,
+  "def_dir_expl10_dev": -0.002,
+  "def_dir_expl20_dev": 0.001,
+  "def_dir_stuff_dev": 0.027,
+  "def_dir_success_dev": -0.006,
+  "def_dir_ypc_dev": -0.019,
+  "def_dl3_share": 0.743,
+  "def_dl4_share": 0.736,
+  "def_explosive_runs_oe": 0.115,
+  "def_heavy_share": 0.508,
+  "def_hit_sack_rate_oe": 0.296,
+  "def_light_share": 0.446,
+  "def_mtkl_pg": 0.2,
+  "def_mtkl_rate": 0.25,
+  "def_nickel_share": 0.496,
+  "def_pressure": 0.489,
+  "def_pressure_pfr": 0.273,
+  "def_rb_catch": -0.004,
+  "def_rb_epa": 0.252,
+  "def_rb_expl10": 0.36,
+  "def_rb_expl20": 0.145,
+  "def_rb_fd": 0.277,
+  "def_rb_line_yds": 0.352,
+  "def_rb_stuff": 0.382,
+  "def_rb_success": 0.229,
+  "def_rb_sy_conv": 0.015,
+  "def_rb_tgt_db": 0.219,
+  "def_rb_yac_rec": -0.002,
+  "def_rb_ypc": 0.253,
+  "def_rb_ypt": 0.176,
+  "def_red_zone_rushes_oe": 0.089,
+  "def_rush_tds_oe": 0.057,
+  "def_scramble_yds_oe": 0.18,
+  "def_scrambles_oe": 0.2,
+  "def_side_epa_dev": 0.032,
+  "def_side_expl10_dev": 0.109,
+  "def_side_expl20_dev": 0.065,
+  "def_side_stuff_dev": 0.097,
+  "def_side_success_dev": 0.052,
+  "def_side_ypc_dev": 0.051,
+  "def_yac": 0.229,
+  "def_ybc": 0.258,
+  "ol_gap_success_dev": 0.057,
+  "ol_line_yds": 0.32,
+  "ol_stuff": 0.248,
+  "ol_success": 0.338,
+  "ol_ybc": 0.332,
+  "qb_dsg_expl10": 0.137,
+  "qb_dsg_rate": 0.934,
+  "qb_dsg_success": -0.015,
+  "qb_dsg_yds_rate": 0.922,
+  "qb_dsg_ypc": -0.143,
+  "qb_gl_rate": 0.557,
+  "qb_hit_sack_rate": 0.616,
+  "qb_kneel_pg": -0.042,
+  "qb_rpo_rate": 0.328,
+  "qb_rz_rate": 0.798,
+  "qb_scr_blitz_dev": 0.181,
+  "qb_scr_expl10": 0.187,
+  "qb_scr_man_dev": -0.244,
+  "qb_scr_noblitz_dev": 0.2,
+  "qb_scr_nopress_dev": 0.164,
+  "qb_scr_press_dev": 0.275,
+  "qb_scr_rate": 0.803,
+  "qb_scr_single_dev": -0.005,
+  "qb_scr_two_dev": 0.053,
+  "qb_scr_yds_db": 0.764,
+  "qb_scr_yds_press": 0.749,
+  "qb_scr_ypa": 0.263,
+  "qb_scr_zone_dev": -0.112,
+  "qb_sneak_rate": 0.636,
+  "qb_td_rate": 0.671,
+  "qb_x10_rate": 0.83,
+  "rb_adot": 0.429,
+  "rb_box_epa_dev": 0.068,
+  "rb_box_expl10_dev": 0.088,
+  "rb_box_expl20_dev": 0.082,
+  "rb_box_stuff_dev": 0.133,
+  "rb_box_success_dev": 0.009,
+  "rb_box_ypc_dev": 0.099,
+  "rb_btk": 0.201,
+  "rb_carries_pg": 0.699,
+  "rb_carry_share": 0.65,
+  "rb_catch": 0.039,
+  "rb_chk_share": 0.283,
+  "rb_dir_epa_dev": 0.01,
+  "rb_dir_expl10_dev": 0.048,
+  "rb_dir_expl20_dev": 0.039,
+  "rb_dir_share": 0.502,
+  "rb_dir_stuff_dev": 0.018,
+  "rb_dir_success_dev": -0.015,
+  "rb_dir_ypc_dev": 0.06,
+  "rb_early_touch_share": 0.687,
+  "rb_epa": 0.166,
+  "rb_expl10": 0.325,
+  "rb_expl20": 0.323,
+  "rb_fd": 0.209,
+  "rb_gl_share": 0.475,
+  "rb_line_yds": 0.172,
+  "rb_pers_epa_dev": 0.032,
+  "rb_pers_expl10_dev": 0.075,
+  "rb_pers_expl20_dev": -0.031,
+  "rb_pers_stuff_dev": 0.004,
+  "rb_pers_success_dev": 0.005,
+  "rb_pers_ypc_dev": 0.098,
+  "rb_rb_carry_share": 0.651,
+  "rb_ryoe": 0.221,
+  "rb_rz_share": 0.576,
+  "rb_screen_share": 0.293,
+  "rb_sg_epa_dev": -0.052,
+  "rb_sg_expl10_dev": 0.063,
+  "rb_sg_expl20_dev": 0.026,
+  "rb_sg_share": 0.565,
+  "rb_sg_stuff_dev": 0.034,
+  "rb_sg_success_dev": -0.016,
+  "rb_sg_ypc_dev": -0.022,
+  "rb_side_epa_dev": -0.045,
+  "rb_side_expl10_dev": 0.025,
+  "rb_side_expl20_dev": 0.079,
+  "rb_side_share": 0.562,
+  "rb_side_stuff_dev": 0.007,
+  "rb_side_success_dev": -0.041,
+  "rb_side_ypc_dev": 0.051,
+  "rb_sit_all": 0.594,
+  "rb_sit_early": 0.621,
+  "rb_sit_goal_line": 0.488,
+  "rb_sit_neutral": 0.615,
+  "rb_sit_red_zone": 0.574,
+  "rb_sit_short_yardage": 0.468,
+  "rb_sit_third": 0.633,
+  "rb_sit_two_minute": 0.595,
+  "rb_snap_share": 0.583,
+  "rb_stuff": 0.143,
+  "rb_success": 0.161,
+  "rb_sy_conv": 0.15,
+  "rb_target_share": 0.671,
+  "rb_targets_pg": 0.656,
+  "rb_td": 0.11,
+  "rb_tgt_per_db": 0.559,
+  "rb_tgt_per_db_vs_man_dev": 0.265,
+  "rb_tgt_per_db_vs_zone_dev": 0.254,
+  "rb_third_touch_share": 0.484,
+  "rb_two_minute_touch_share": 0.469,
+  "rb_yac": 0.277,
+  "rb_yac_rec": 0.31,
+  "rb_ybc": 0.306,
+  "rb_ypc": 0.343,
+  "rb_ypt": 0.101,
+  "tm_early_run": 0.39,
+  "tm_lead_run": 0.208,
+  "tm_neutral_run": 0.467,
+  "tm_plays_pg": 0.176,
+  "tm_qb_keep": 0.699,
+  "tm_rpo": 0.377,
+  "tm_rz_run": 0.379,
+  "tm_trail_run": 0.282
+ },
+ "tendency_metrics": [
+  "def_light_share",
+  "def_heavy_share",
+  "def_nickel_share",
+  "def_dime_share",
+  "def_dl3_share",
+  "rb_dir_share",
+  "rb_sg_share",
+  "qb_dsg_rate",
+  "qb_scr_rate",
+  "tm_neutral_run"
+ ],
+ "tendency_pooled_r": 0.602
+}

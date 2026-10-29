@@ -519,6 +519,35 @@ data-only `sim-history` branch (which never deploys):
     - Deep jobs `nba_matchup` (6 h) and `nfl_matchup` (daily; backfills once, with raw
       files dropped, any of the two prior seasons the daily rule does not read itself). Guards: `tests/guards_{prop_math,nba_matchup,nfl_matchup_data,nfl_matchup_model,matchups}.py`,
       run from combo_audit_guards' MX section.
+- **The NFL rushing model** (registered 2026-10-29 02:13:45 UTC; every piece reviewed by
+  Sonnet, Opus and Fable agents until all agreed, `research/reviews/nfl_rush_*`,
+  `research/reports/matchup_agreement_log.md`).
+  - **Data** (`nfl_rush_data.py`, `nfl_rush_profiles.py`, `research/nfl_rush_dataset.py`;
+    `research/reports/nfl_rush_data.md`): aux stores beside the matchup stores (on-field counts,
+    PFR advanced and snaps, NGS, injury reports), as-of RB and QB profiles shrunk by measured
+    split-half k. **Licence default**: PFR and NGS are DISPLAYED with credit and never enter a
+    fitted feature (`RP.SOURCE_OF`, `RP.restricted`); the owner's call on them is still open.
+  - **Model** (`nfl_rush.py`, `research/nfl_rush_model_{frame,fit,rule}.py`;
+    `research/reports/nfl_rush_model.md`): opportunities x efficiency as compound distributions
+    -- RB carries, yards and receiving; QB designed runs, scrambles, sneaks and kneels (sacks are
+    not rushing, kneels are) -- with Sleeper's line as the level (no intercept), walked up a
+    35-decision ladder (Sleeper -> overall defense -> RB/QB defense -> concept/front -> designed
+    vs scramble -> full).
+  - **The test** (`research/data/nfl_rush_model/prereg.json`, block 92a99b8e): chosen on 2025;
+    2026 weeks 1-6 can only block; then each kept group is KEPT or reverted ONCE by the
+    prospective window -- every game after the registration through week 11 (to 13 while under
+    40 games), read from a registered tree after the window's last game + 48 h (the runbook is in
+    the report). A real effect at the 2025 gate's edge survives that window about half the time.
+  - **The board hook is inert until `research/data/nfl_rush_model/coefs.json` exists** (the board
+    byte-identical without it); `nfl_rush.load_coefs` refuses a file whose record chain breaks.
+  - **Custody**: the registered dataset's CSVs and both frames carry PFR/NGS-derived columns, and
+    the 17 registration-era deep pickles hold raw feeds: none is in this public repo
+    (`.gitignore`). prereg.json pins each by sha256 (the pickles also by content digest, so a
+    fresh nflverse rebuild verifies); the owner holds the archive (sent 2026-10-29); the week-6
+    props log is on sim-history. Restore them into the WORKING tree before any command.
+  - `matchups.nfl_data_job` refreshes the rushing aux beside the matchup stores (prior seasons
+    backfilled one at a time, a weekly retry marker). Guards: `tests/guards_nfl_rush_{data,model}.py`
+    in the MX section.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 

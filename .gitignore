@@ -57,3 +57,13 @@ research/data/cl_own_smoke.json
 # Monday night 2026-10-19 showdown export (S7 prospective test): frozen locally for the scorer,
 # never committed -- it names every entrant (only the summary and the scored artifact are committed)
 research/data/dk_standings/contest-standings-196786690.csv.gz
+
+# The rushing model's registered dataset (research/reports/nfl_rush_model.md): its RB and QB
+# rows carry PFR- and NGS-derived columns, display-only by the licence default (Q10), so this
+# public repo holds only their sha256 (prereg.json) and the owner holds the files. The props
+# logs carry Kalshi's prices: their copies live on sim-history (props/nfl_props_<season>_wNN.json).
+research/data/nfl_rush/rb_games_2023_2026.csv.gz
+research/data/nfl_rush/qb_games_2023_2026.csv.gz
+research/data/nfl_rush_model/inputs/nfl_props_*.json
+# ... and the decisive run's own dataset, built after the window: the same restricted columns
+research/data/nfl_rush_model/prospective_dataset/

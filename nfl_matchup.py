@@ -1667,12 +1667,18 @@ def _hits(games, key, k, recent=10, stats=None):
     return h_all, h_rec, h_sim
 
 
-def _kalshi_lines(idx, suffix, ts=None):
+def _kalshi_lines(idx, suffix, ts=None, extra=None):
     """{(stat, norm name): {k: market block}} for a game's prop markets; `ts`
-    is when the index's quotes were read (kalshi_nfl's build time)."""
-    g = (idx or {}).get(suffix) or {}
-    q, tick = g.get("q") or {}, g.get("tick") or {}
+    is when the index's quotes were read (kalshi_nfl's build time). `extra`:
+    kalshi_nfl.extra_props() (the series only this board prices), same shape."""
     out = {}
+    for src in (idx, extra):
+        _lines_from((src or {}).get(suffix) or {}, ts, out)
+    return out
+
+
+def _lines_from(g, ts, out):
+    q, tick = g.get("q") or {}, g.get("tick") or {}
     for (stat, nm, line) in (g.get("players") or {}):
         yq, nq = q.get(("prop", stat, nm, line, False)), q.get(("prop", stat, nm, line, True))
         if not yq and not nq:
@@ -1684,7 +1690,6 @@ def _kalshi_lines(idx, suffix, ts=None):
             "no_bid": (nq or {}).get("bid"), "no_ask": (nq or {}).get("ask"), "ts": ts,
             "volume": (yq or {}).get("vol"), "oi": (yq or {}).get("oi"), "fee_type": "quadratic",
             "fee_multiplier": None}
-    return out
 
 
 KALSHI_PATH = os.path.join(MODEL_DIR, "kalshi.json")
@@ -1778,17 +1783,21 @@ def line_fallback_notes(games, lines, coefs):
 
 
 def board(season, week, rows=None, kalshi_idx=None, schedule=None, ctx=None, coefs=None, lines=None,
-          with_market=True, now=None, min_pts=0.5, only_from_ts=None, only_to_ts=None):
+          with_market=True, now=None, min_pts=0.5, only_from_ts=None, only_to_ts=None, rush_coefs=None, rush_env=None):
     """The matchup board for an NFL week (the payload contract,
     matchup_payload_contract.md): every player with a Sleeper projection in
     the week's games. Pure Python; reads the committed model, the deep store's
-    nflverse stores and (when with_market) Kalshi's index. Never raises."""
+    nflverse stores and (when with_market) Kalshi's index. Never raises.
+    `rush_coefs`: the RB / QB rushing model's committed coefficients (None:
+    nfl_rush.load_coefs(); False: off) -- with none the board is byte-identical
+    to the board without the hook (a guard builds both); `rush_env`: its
+    inputs, injected by the guards (None: built here, _rush_env)."""
     now = time.time() if now is None else now
     out = {"sport": "nfl", "season": int(season), "week": int(week), "built_ts": int(now), "as_of": None,
            "provenance": [], "games": [], "players": [], "model": {}}
     try:
         res = _board(out, int(season), int(week), rows, kalshi_idx, schedule, ctx, coefs, lines, with_market, now,
-                     min_pts, only_from_ts, only_to_ts)
+                     min_pts, only_from_ts, only_to_ts, rush_coefs=rush_coefs, rush_env=rush_env)
     except Exception as e:                  # a board that cannot build says so; it never takes the route down
         errlog.note("NFLM-board", e)
         out["error"] = f"{type(e).__name__}: {e}"
@@ -1809,8 +1818,40 @@ def _with_reason(b):
     return b
 
 
+def _first_market(m, blk, coefs, pos, base, ks_market, hist, gstats, ship, now):
+    """One of the first model's market blocks (its thresholds and Kalshi's rungs, the band, the hit
+    rates and the labels)."""
+    ks = sorted(set(THRESHOLDS.get(m, ())) | set(ks_market))
+    se = (blk.get("adj") or {}).get("se") or 0.0
+    if m == "dk_fp":
+        # no fitted coefficient sets the DK points spread's level: no band
+        ladder = {k: (p, None, None) for k, p in blk["dist"].ladder(ks).items()}
+    elif m == "td":
+        import prop_dist as PD
+        ladder = probs_with_band(lambda mu: PD.Poisson(mu), blk["adjusted"], se, ks)
+    else:
+        ladder = probs_with_band(lambda mu, m=m: market_dist(coefs, m, mu, pos, base), blk["adjusted"], se, ks)
+    sname = STAT_NAME[m]
+    shift = matchup_shift(blk.get("adj")) if m in MARKETS else 0.0
+    lines_out = []
+    for k in ks:
+        if k not in ladder:
+            continue
+        p, lo, hi = ladder[k]
+        h_all, h_rec, h_sim = _hits(hist, sname, k, stats=gstats)
+        mkt = ks_market.get(k)
+        val, labels, fside = line_labels(p, lo, hi, mkt, shift, (h_sim or {}).get("n_eff"), now=now)
+        lines_out.append({"k": k, "p": _r(p), "p_lo": _r(lo), "p_hi": _r(hi), "hit_all": h_all,
+                          "hit_recent": h_rec, "hit_similar_def": h_sim, "market": mkt, "value": val,
+                          "labels": labels, "fit_side": fside})
+    return {"stat": sname, "baseline_mean": _r(blk["baseline"], 3), "baseline_source": "sleeper",
+            "adjusted_mean": _r(blk["adjusted"], 3), "dist": blk["dist"].to_dict(),
+            "matchup_weight": "shipped" if m in ship else "0", "matchup_shift": _r(shift, 4),
+            "lines": lines_out}
+
+
 def _board(out, season, week, rows, kalshi_idx, schedule, ctx, coefs, lines, with_market, now, min_pts, only_from_ts,
-           only_to_ts=None):
+           only_to_ts=None, rush_coefs=None, rush_env=None):
     import datetime
     import kalshi_nfl
     coefs = coefs if coefs is not None else load_coefs()
@@ -1936,6 +1977,20 @@ def _board(out, season, week, rows, kalshi_idx, schedule, ctx, coefs, lines, wit
             {"source": "Kalshi player props (kalshi_nfl index)", "covers": "listed lines", "ts": int(now),
              "licence": "Kalshi developer terms"}]
     idx = kalshi_idx or {}
+    # the RB / QB rushing model: inert unless its committed model exists (byte-identical board)
+    import nfl_rush as NR
+    rc = None if rush_coefs is False else (rush_coefs if rush_coefs is not None else NR.load_coefs())
+    renv = None
+    if rc:
+        try:
+            renv = rush_env if rush_env is not None else _rush_env(rc, season, week, ctx, with_market, out)
+            if renv is not None:
+                _rush_board(out, rc, renv)
+        except Exception as e:      # the rushing hook never costs the board: the first model's markets stand
+            errlog.note("RUSH-board", e)
+            renv = None
+            out["notes"].append("RB / QB rushing model off for this board (it failed; ledgered RUSH-board): the "
+                                "first model's markets stand")
     for pid, r, pl, pos, base in players:
         team_s, opp_s = r["team"], r["opponent"]
         key = frozenset((kalshi_nfl._canon(team_s), kalshi_nfl._canon(opp_s)))
@@ -1958,39 +2013,14 @@ def _board(out, season, week, rows, kalshi_idx, schedule, ctx, coefs, lines, wit
         mk = player_markets(coefs, f, pos, base)
         gstats = [game_stats(ctx.P, ln) for _w, _s, _r, ln, _v in hist] if hist else None
         markets = []
-        kl = _kalshi_lines(idx, g.get("suffix"), ts=idx_ts) if g.get("suffix") else {}
+        kl = (_kalshi_lines(idx, g.get("suffix"), ts=idx_ts, extra=renv["extra"] if renv is not None else None)
+              if g.get("suffix") else {})
         nm = kalshi_nfl._norm(f"{pl.get('first_name', '')} {pl.get('last_name', '')}")
         for m, blk in mk.items():
             if blk.get("dist") is None:
                 continue
             ks_market = kl.get((KALSHI_STAT.get(m), nm), {}) if m in KALSHI_STAT else {}
-            ks = sorted(set(THRESHOLDS.get(m, ())) | set(ks_market))
-            se = (blk.get("adj") or {}).get("se") or 0.0
-            if m == "dk_fp":
-                # no fitted coefficient sets the DK points spread's level: no band
-                ladder = {k: (p, None, None) for k, p in blk["dist"].ladder(ks).items()}
-            elif m == "td":
-                import prop_dist as PD
-                ladder = probs_with_band(lambda mu: PD.Poisson(mu), blk["adjusted"], se, ks)
-            else:
-                ladder = probs_with_band(lambda mu, m=m: market_dist(coefs, m, mu, pos, base), blk["adjusted"], se, ks)
-            sname = STAT_NAME[m]
-            shift = matchup_shift(blk.get("adj")) if m in MARKETS else 0.0
-            lines_out = []
-            for k in ks:
-                if k not in ladder:
-                    continue
-                p, lo, hi = ladder[k]
-                h_all, h_rec, h_sim = _hits(hist, sname, k, stats=gstats)
-                mkt = ks_market.get(k)
-                val, labels, fside = line_labels(p, lo, hi, mkt, shift, (h_sim or {}).get("n_eff"), now=now)
-                lines_out.append({"k": k, "p": _r(p), "p_lo": _r(lo), "p_hi": _r(hi), "hit_all": h_all,
-                                  "hit_recent": h_rec, "hit_similar_def": h_sim, "market": mkt, "value": val,
-                                  "labels": labels, "fit_side": fside})
-            markets.append({"stat": sname, "baseline_mean": _r(blk["baseline"], 3), "baseline_source": "sleeper",
-                            "adjusted_mean": _r(blk["adjusted"], 3), "dist": blk["dist"].to_dict(),
-                            "matchup_weight": "shipped" if m in ship else "0", "matchup_shift": _r(shift, 4),
-                            "lines": lines_out})
+            markets.append(_first_market(m, blk, coefs, pos, base, ks_market, hist, gstats, ship, now))
         if f is not None:
             if pos in ("WR", "TE", "RB"):
                 notes.append("coverage splits are prior seasons only: nflverse publishes a season's participation "
@@ -1999,6 +2029,15 @@ def _board(out, season, week, rows, kalshi_idx, schedule, ctx, coefs, lines, wit
             if not ship:
                 notes.append("no matchup factor passed the pre-registered test: every market is Sleeper's line with "
                              "the fitted dispersion; factors print with effect 0")
+        rush_add = None
+        if renv is not None and pos in ("RB", "QB"):
+            try:
+                rush_add = _rush_player(rc, renv, season, week, pos, pid, team, opp, base, lines.get(team) or {},
+                                        defs.get(opp) or {}, kl, nm, markets, hist, gstats, now)
+            except Exception as e:      # one player's failure keeps his first-model markets, never the board's
+                errlog.note("NFLR-board-player", e)
+                notes.append("the rushing model could not price this player (ledgered NFLR-board-player): "
+                             "his markets are the first model's")
         status = STATUS.get(pl.get("injury_status"), "unknown")
         out["players"].append({
             "player_id": pid, "name": f"{pl.get('first_name', '')} {pl.get('last_name', '')}".strip(), "team": team_s,
@@ -2010,7 +2049,207 @@ def _board(out, season, week, rows, kalshi_idx, schedule, ctx, coefs, lines, wit
             "comparables": [{"date": f"{c['season']} week {c['week']}", "opp": c["opp"], "similarity": c["similarity"],
                              "weight": c["weight"], "stats": c["stats"], "why": c["why"]} for c in sel],
             "notes": notes})
+        if rush_add:
+            row = out["players"][-1]
+            row["breakdown"] = rush_add["breakdown"]
+            for k, v in rush_add["role"].items():
+                row["role"].setdefault(k, v)
+            for k, v in rush_add["opponent"].items():
+                row["opponent_profile"].setdefault(k, v)
+            row["notes"].extend(rush_add["notes"])
     return out
+
+
+# ---- the RB / QB rushing model's hook (nfl_rush; research/reports/nfl_rush_model.md "Integration plan") ----
+# Kalshi's stat names for the rushing model's markets: the index's (rush_yd, rec, rec_yd, td) and
+# kalshi_nfl.extra_props()'s (rush_att, rush_rec_yd, long_rush). The first model's KALSHI_STAT is untouched.
+RUSH_KALSHI_STAT = {"rush_att": "rush_att", "rush_yd": "rush_yd", "rec": "rec", "rec_yd": "rec_yd",
+                    "rush_rec_yd": "rush_rec_yd", "long_rush": "long_rush", "td": "td"}
+
+
+def _rush_env(rc, season, week, ctx, with_market, out):
+    """The rushing model's inputs for one board, built ONCE in the board's own (niced) child:
+    Kalshi's extra rushing series, the rushing layer's snapshot as of the week (through
+    nfl_rush.availability_view, as the research frame measured) and every team's blocks.
+    Measured 2026-10-24 on the live week-7 board (294 players, 76 RBs / QBs priced, Kalshi live, a
+    fresh niced process each): 5.6 s and 151 MB peak without the hook; 21.9 s and 219 MB with it
+    (the snapshot 2.3 s, the rest the compounds and their bands); with a comparables term, 26.8 s and
+    224 MB once the ~40 weekly vectors are stored -- their first build (103 s, 277 MB here; 136 s
+    under contention) is the deep job's (nfl_rush.precompute_vectors), never a board's
+    (research/reports/nfl_rush_model.md section 5). None -- and a slate note -- when the layer
+    cannot be read; RB / QB rows then keep the first model's markets. Kalshi's three extra series
+    are fetched on every build (the board's child is fresh): three calls every 15 minutes, accepted."""
+    import kalshi_nfl
+    import nfl_rush as NR
+    import nfl_rush_data as RD
+    import nfl_rush_profiles as RP
+    t0 = time.time()
+    if ctx is None or season not in (ctx.stores or {}):
+        out["notes"].append("RB / QB rushing model off for this board: no nflverse store (the first model's "
+                            "markets stand)")
+        return None
+    stores = ctx.stores
+    auxes = {s: RD.load_aux(s) for s in stores}
+    bad = [s for s in range(season - RP.BACK, season + 1)
+           if s in stores and not (RD.aux_matches(auxes.get(s), stores[s]) and RD.aux_complete(auxes.get(s)))]
+    if bad:
+        errlog.note("NFLR-board-aux", msg=f"no aligned, complete rushing aux for {bad}")
+        out["notes"].append(f"RB / QB rushing model off for this board: the rushing data layer's aux is missing or "
+                            f"incomplete for {bad} (the first model's markets stand)")
+        return None
+    env = {"extra": (kalshi_nfl.extra_props() or {}) if with_market else {}}
+    vs, va = NR.availability_view(stores, auxes, season)
+    S = RP.build(vs, va, season, week, ctx.pos)
+    tb = NR.team_blocks(S, sorted(stores[season]["teams"]))
+    env.update(S=S, tb=tb, lg=NR.league_means(tb), sl2g=(_ids() or {}).get("sleeper2gsis") or {})
+    if NR.comparables_shipped(rc):
+        # read the stored weekly vectors only: the deep job computes them (nfl_rush.precompute_vectors); a
+        # board on Render's one core never pays the 103-136 s first build
+        miss = []
+        env["hist"] = NR.vector_history(stores, auxes, ctx.pos, season, week, compute=False, missing=miss)
+        if miss:
+            errlog.note("NFLR-board-vectors", msg=f"{len(miss)} weekly comparables vectors not stored yet")
+            out["notes"].append(f"rushing comparables read {len(miss)} fewer weeks than they should (the deep job "
+                                "has not stored them yet)")
+        env["logs"] = NR.game_logs({s: st for s, st in stores.items() if s >= season - RP.BACK})
+        env["z"] = NR.standardize({t: NR.vec_of(b) for t, b in tb.items()})
+    env["seconds"] = round(time.time() - t0, 2)
+    return env
+
+
+def _rush_board(out, rc, env):
+    """The board-level pieces: the model's record, correlations on every game, provenance, the
+    slate note for provisional markets."""
+    import nfl_rush as NR
+    shipped = rc.get("shipped") or {}
+    statuses = {k: NR.ship_status(rc, k) for k in shipped}
+    out["model"]["rushing"] = {"prereg_sha256": rc.get("prereg_sha256"), "fit_seasons": rc.get("fit_seasons"),
+                               "markets": statuses, "snapshot_seconds": env.get("seconds"),
+                               "note": ("RB / QB markets come from the rushing model where its pre-registered test "
+                                        "shipped a group (research/reports/nfl_rush_model.md); elsewhere they are "
+                                        "Sleeper's lines at rung 1.")}
+    corr = NR.correlations(rc)
+    for g in out["games"]:
+        g["correlations"] = corr
+    out["provenance"].append({"source": "the rushing data layer (nfl_rush_profiles) over nflverse pbp, participation "
+                                        "(prior seasons only), FTN Data via nflverse and nflverse injury reports",
+                              "covers": "RB / QB rushing", "ts": int(out.get("built_ts") or 0),
+                              "licence": "CC BY 4.0 / CC BY-SA 4.0; PFR and NGS fields are display only"})
+    if "provisional" in statuses.values():
+        out["notes"].append("Rushing markets marked provisional passed the 2025 test and the 2026 weeks 1-6 check; "
+                            "the prospective window (2026 games after the registration through week 11, extended "
+                            "to week 13 if it holds under 40 games) decides whether they stay.")
+
+
+def _rush_lines(ks, ladder, ks_market, hist, sname, gstats, shift, now):
+    lines_out = []
+    for k in ks:
+        if k not in ladder:
+            continue
+        p, lo, hi = ladder[k]
+        h_all, h_rec, h_sim = _hits(hist, sname, k, stats=gstats) if (gstats and sname in gstats[0]) else (None, None, None)
+        mkt = ks_market.get(k)
+        val, labels, fside = line_labels(p, lo, hi, mkt, shift, (h_sim or {}).get("n_eff"), now=now)
+        lines_out.append({"k": k, "p": _r(p), "p_lo": _r(lo), "p_hi": _r(hi), "hit_all": h_all,
+                          "hit_recent": h_rec, "hit_similar_def": h_sim, "market": mkt, "value": val,
+                          "labels": labels, "fit_side": fside})
+    return lines_out
+
+
+def _rush_player(rc, env, season, week, pos, pid, team, opp, base, line, d_opp, kl, nm, markets, hist, gstats, now):
+    """Prices one RB / QB with the rushing model, editing `markets` IN PLACE: a market the model
+    ships for replaces the first model's block (or is added: rush attempts' Kalshi rungs, rush + rec,
+    the longest rush); a market it does not ship keeps the first model's block byte for byte, and
+    nothing new is priced. Returns the breakdown, the facts and the notes (attached whatever
+    shipped), or None when the player is outside the model (no id, no team)."""
+    import nfl_rush as NR
+    import nfl_rush_profiles as RP
+    S, tb = env["S"], env["tb"]
+    gsis = env["sl2g"].get(pid)
+    if not gsis or team not in tb or opp not in tb:
+        return None
+    blocks = {"d": tb[opp]["d"], "dq": tb[opp]["dq"], "ol": tb[team]["ol"], "tc": tb[team]["tc"]}
+    if pos == "RB":
+        blocks["p"] = RP.flatten(S.rb(gsis, team))
+        ro = S.rb_room_out(team, exclude=gsis) or {}
+    else:
+        q = S.qb(gsis, team)
+        blocks.update(q=RP.flatten(q), q_totals=q.get("totals") or {}, q_games=q.get("games") or {})
+        ro = {}
+    margin, tot = _num(line.get("margin")), _num(line.get("total"))
+    x = lambda n: _num((d_opp.get(n) or {}).get("x"))
+    ext = {"margin7": None if margin is None else margin / 7.0, "total_c": None if tot is None else (tot - 44.0) / 10.0,
+           "room_out": _num(ro.get("value")) if pos == "RB" else None, "m1_pass_epa": x("pass_epa"),
+           "m1_catch_all": x("catch_all"), "m1_man": x("man"), "m1_sh_frac": x("sh_frac")}
+    if "hist" in env:
+        ov = env["z"].get(opp)
+        keys = (("comp_rush_yd", "rush_yd"), ("comp_rec_yd", "rec_yd")) if pos == "RB" else (("comp_qb_rush_yd", "rush_yd"),)
+        for ek, lk in keys:
+            ext[ek] = NR.comparables(env["hist"], env["logs"], gsis, season, week, ov, lk)[0]
+    feats = NR.features(blocks, env["lg"], ext)
+    prof = NR.qb_profile(blocks) if pos == "QB" else None
+    pl = NR.plan(rc, pos, base, feats, prof, team_margin=margin)
+    at = {m["stat"]: i for i, m in enumerate(markets)}
+    gs2 = [dict(gst, rush_rec_yd=(gst.get("rush_yd") or 0) + (gst.get("rec_yd") or 0)) for gst in gstats] if gstats else None
+    notes, rung1 = [], []
+    for m in (NR.RB_MARKETS if pos == "RB" else NR.QB_MARKETS):
+        info = pl["markets"].get(m)
+        if not info or not NR.in_universe(pos, m, base):
+            continue
+        if info["form"] == "rung1" and m in at:
+            rung1.append(m.replace("_", " "))
+        ks_market = kl.get((RUSH_KALSHI_STAT[m], nm), {})
+        ks = sorted(set(NR.THRESHOLDS[pos].get(m, ())) | set(ks_market))
+        form, status = info["form"], info["status"]
+        if form in ("rung1", "none"):
+            continue      # nothing shipped: the first model's own block stands byte for byte; no new market
+        shift = math.exp(max(-1.0, min(1.0, info["shift"] or 0.0))) - 1.0
+        base_mean = {"rush_att": base.get("rush_att"), "rush_yd": base.get("rush_yd"), "rec": base.get("rec"),
+                     "rec_yd": base.get("rec_yd"), "td": (base.get("rush_td") or 0.0) + (base.get("rec_td") or 0.0),
+                     "rush_rec_yd": (base.get("rush_yd") or 0.0) + (base.get("rec_yd") or 0.0) if pos == "RB" else None,
+                     "long_rush": None}[m]
+        if form == "mean":
+            mu = float(base_mean or 0.0) * info["mult"]
+            dist = NR.family_dist(rc, pos, m, mu, base)
+            if dist is None:
+                continue
+            ladder = probs_with_band(lambda u, m=m: NR.family_dist(rc, pos, m, u, base), mu, info["se"], ks)
+            adj = mu
+        else:
+            dist = info["dist_fn"](1.0)
+            if dist is None:
+                continue
+            ladder = NR.probs(info["dist_fn"], info["se"], ks)
+            adj = NR.expected_longest(dist) if m == "long_rush" else dist.mean()
+        if status == "shipped":
+            notes.append(f"{m.replace('_', ' ')}: shipped (one prospective test)")
+        elif form == "derived":
+            notes.append(f"{m.replace('_', ' ')}: derived from its components' shipped models (it decides nothing of its own)")
+        blk = {"stat": m, "baseline_mean": _r(base_mean, 3), "baseline_source": "sleeper", "adjusted_mean": _r(adj, 3),
+               "dist": dist.to_dict(), "matchup_weight": status, "matchup_shift": _r(shift, 4),
+               "lines": _rush_lines(ks, ladder, ks_market, hist, m, gs2, shift, now), "engine": "rushing"}
+        if m in at:
+            markets[at[m]] = blk
+        else:
+            markets.append(blk)
+            at[m] = len(markets) - 1
+    if rung1:
+        notes.append("rushing model at rung 1 for " + ", ".join(rung1) + " (no group passed its test): the first "
+                     "model's market stands, unchanged")
+    fam = "rush_yd"
+    st_fam = pl["status"].get(fam, "0") if pl["markets"].get(fam, {}).get("form") != "rung1" else "0"
+    if pos == "RB":
+        p = blocks.get("p") or {}
+        contact = {"ybc_per_att": _num((p.get("rushing.line.ybc") or {}).get("value")),
+                   "yac_per_att": _num((p.get("rushing.back.yac") or {}).get("value"))}
+        bd = NR.rb_breakdown(pl["parts"], base, contact, status=st_fam)
+    else:
+        bd = NR.qb_breakdown(pl["parts"], base, status=st_fam, own=prof)
+        if gstats:
+            notes.append("past-game hit rates on QB rushing read nflverse carries (kneels excluded); Kalshi settles "
+                         "with kneels and scrambles")
+    return {"breakdown": bd, "role": NR.facts(blocks, NR.ROLE_FACTS, pos),
+            "opponent": NR.facts(blocks, NR.OPP_FACTS, pos), "notes": notes}
 
 
 def board_for_date(date_iso, now=None):

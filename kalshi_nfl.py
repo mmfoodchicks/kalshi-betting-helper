@@ -171,6 +171,69 @@ _SPREAD_RE = re.compile(r"^KXNFLSPREAD-([0-9A-Z]+)-([A-Z]+?)(\d+)$")
 _TOTAL_RE = re.compile(r"^KXNFLTOTAL-([0-9A-Z]+)-(\d+)$")
 
 
+def _add_props(ent, markets, stat):
+    """File one player-prop series' markets under their events (`ent(suffix)`
+    gives the event's entry): yes / no asks, full quotes, ticker and close, the
+    display name. Shared by the index and extra_props, so the Matchups board's
+    extra series read exactly as the index's."""
+    for m in markets:
+        suffix = (m.get("event_ticker") or "").split("-", 1)[-1]
+        title = m.get("title") or ""
+        if not suffix or ":" not in title:
+            continue
+        name = title.split(":", 1)[0].strip()
+        line = m.get("floor_strike")
+        if not name or line is None:
+            continue
+        # "ATL Falcons D/ST: 1+ touchdowns" is a TEAM market in a player
+        # series. It parsed as a player called "atl falcons d st" -- never
+        # matched a roster, so harmless to the sim, but it sat in every
+        # game's player index and name map as if it were a person.
+        if "D/ST" in name.upper():
+            continue
+        e = ent(suffix)
+        key = (stat, _norm(name), float(line))
+        e["players"][key] = _quote(kalshi._cents(m.get("yes_ask_dollars")))
+        e["no"]["players"][key] = _quote(kalshi._cents(m.get("no_ask_dollars")))
+        e["q"][("prop",) + key + (False,)] = _q(m, "yes")
+        e["q"][("prop",) + key + (True,)] = _q(m, "no")
+        e["tick"][("prop",) + key] = (m.get("ticker"),
+                                      kalshi._parse_time(m.get("close_time")))
+        e["names"][_norm(name)] = name       # display name, as Kalshi writes it
+
+
+# The player series only the Matchups board prices (the rushing model's markets:
+# research/reports/rush_data_sources.md section 9). Kept OUT of index(): that
+# index feeds the combo maker and the props recorder through _PROP_SERIES, and
+# three more series on its every-120 s rebuild would cost each of them markets
+# none reads. The board reads them in its niced build child, once a build.
+EXTRA_PROP_SERIES = {"KXNFLRSHATT": "rush_att", "KXNFLRRYDS": "rush_rec_yd", "KXNFLLONGRSH": "long_rush"}
+_extra_cache = {"ts": 0.0, "data": None}
+
+
+def extra_props():
+    """{suffix: {"players", "no", "q", "tick", "names"}} for EXTRA_PROP_SERIES,
+    in index()'s shape, cached _TTL. A series whose pages fail is left out whole
+    (ledgered KNFL-extra) -- never part of a series, the index's own rule."""
+    now = time.time()
+    if _extra_cache["data"] is not None and now - _extra_cache["ts"] < _TTL:
+        return _extra_cache["data"]
+    idx = {}
+
+    def ent(suffix):
+        return idx.setdefault(suffix, {"players": {}, "names": {}, "q": {}, "tick": {}, "no": {"players": {}}})
+
+    for series, stat in EXTRA_PROP_SERIES.items():
+        try:
+            markets = _fetch(series)
+        except Exception as e:
+            errlog.note("KNFL-extra", e, path=series)
+            continue
+        _add_props(ent, markets, stat)
+    _extra_cache.update(ts=now, data=idx)
+    return idx
+
+
 def _build():
     """{suffix: {ml, spread, total, ticker, close, no}} for every open NFL game.
 
@@ -237,30 +300,7 @@ def _build():
                                    kalshi._parse_time(m.get("close_time")))
 
     for series, stat in _PROP_SERIES.items():
-        for m in _fetch(series):
-            suffix = (m.get("event_ticker") or "").split("-", 1)[-1]
-            title = m.get("title") or ""
-            if not suffix or ":" not in title:
-                continue
-            name = title.split(":", 1)[0].strip()
-            line = m.get("floor_strike")
-            if not name or line is None:
-                continue
-            # "ATL Falcons D/ST: 1+ touchdowns" is a TEAM market in a player
-            # series. It parsed as a player called "atl falcons d st" -- never
-            # matched a roster, so harmless to the sim, but it sat in every
-            # game's player index and name map as if it were a person.
-            if "D/ST" in name.upper():
-                continue
-            e = ent(suffix)
-            key = (stat, _norm(name), float(line))
-            e["players"][key] = _quote(kalshi._cents(m.get("yes_ask_dollars")))
-            e["no"]["players"][key] = _quote(kalshi._cents(m.get("no_ask_dollars")))
-            e["q"][("prop",) + key + (False,)] = _q(m, "yes")
-            e["q"][("prop",) + key + (True,)] = _q(m, "no")
-            e["tick"][("prop",) + key] = (m.get("ticker"),
-                                          kalshi._parse_time(m.get("close_time")))
-            e["names"][_norm(name)] = name       # display name, as Kalshi writes it
+        _add_props(ent, _fetch(series), stat)
 
     for suffix, e in idx.items():
         if len(e["ml"]) >= 2:

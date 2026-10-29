@@ -42,7 +42,13 @@ import re
 #    and nfl_matchup_defhist_<season>_wNN.pkl (nfl_matchup.def_history: one
 #    week's defense vectors, ~2.7 KB, written once for a week the committed
 #    table lacks, never rewritten).
-SCHEMA = 6
+# 7: the deep store gains nfl_rush_aux_<season>.pkl (the rushing layer's
+#    auxiliary store, nfl_rush_data SCHEMA 2: pbp extras aligned to
+#    nfl_matchup_<season>'s rows, situational on-field counts, PFR rush / def /
+#    pass, NGS weekly rushing, injuries, snap counts, block coverage), built
+#    beside the matchup store by the nfl_matchup job (matchups.nfl_data_job),
+#    and its once-a-week retry marker nfl_rush_backfill_try_<season>.pkl.
+SCHEMA = 7
 
 _NAME_RE = re.compile(r"^[\w.,@=+-]{1,140}\.pkl$")
 

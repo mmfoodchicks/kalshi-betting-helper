@@ -1,0 +1,807 @@
+<!-- RUSH-PREREG-START -->
+### Q1. Data, rows, baselines
+
+- **Seasons.**
+  - Fit 2023-2024; choose on 2025 (the validation, Q4).
+  - Refit 2023-2025 for the 2026 secondary check (Q5), the export and the
+    prospective test (Q6): every coefficient, kernel, curve and dispersion
+    those steps read is the 2023-2025 refit, exactly what would ship.
+  - The SECONDARY check reads 2026 weeks 1-6, on rows with a frozen capture
+    (weeks 1-3 and 6; weeks 4-5 have none). It is disclosed as
+    knowledge-contaminated (Q8) and can only block.
+  - The decisive PROSPECTIVE test reads every regular-season 2026 game whose
+    kickoff -- the pbp's recorded start time (the store's Eastern-time
+    `kick`, `kick_ts`; minutes from the scheduled time, and the props log
+    freezes before either) -- is strictly later than the registration time
+    (the UTC time in
+    `research/data/nfl_rush_model/prereg.json`), through the last game of
+    week 11 (nflverse numbering). It is read ONCE, after that game is final.
+    - The window starts with the first game kicking off after the
+      registration time; the status line at registration names it. Hashed
+      before week 8's Thursday game (2026-10-30 00:15 UTC) it holds weeks
+      8-11, 56 games on ESPN's schedule; hashed after week 8, weeks 9-11,
+      42 games.
+    - A week-11 game postponed past week 12's first kickoff is in the
+      window only if the store holds it when the prospective frame is
+      built; one not yet played then is left out, whatever its outcome
+      would be (no leak: Opus's F4).
+  - **Too few games.** If fewer than 40 games in the window hold a universe
+    row with a frozen capture, the window extends a week at a time through
+    week 13. The count uses pre-game information only (kickoffs, frozen
+    lines, universes), never an outcome. Still under 40 at week 13, the
+    test runs on what exists and says so (`window_games`).
+- **Baselines.**
+  - 2023-2025: Sleeper's revised lines.
+  - 2026: only the frozen pre-kickoff captures. A capture counts when its
+    CONTENT time is strictly before the player's kickoff (`kick_ts`,
+    `choose_frozen`). The content time is the props log's pass time, or a
+    capture's Sleeper `updated_at` and, where the capture records when it
+    was fetched (`capture.json` `captured_utc`), no earlier than that fetch.
+    The latest such capture wins.
+  - **The props log** (deep store `nfl_props_2026_wNN`, exported to
+    sim-history as `props/nfl_props_2026_wNN.json`) rewrites Sleeper's
+    projection for every player whose team is still to kick off, on each
+    half-hourly pass, and freezes it five minutes before kickoff
+    (`nfl_props_log.LEAD_S`). It keys records by normalised NAME only.
+  - **Its lead covers the clock this rule reads.** The props log freezes
+    300 s before ESPN's SCHEDULED kickoff; `kick_ts`, the pbp's recorded
+    start, came 15-218 s AFTER the scheduled time on week 6's Sunday games
+    (Fable's measurement, re-derived on 11 of them), so a props-log
+    record is before both clocks (0 of week 6's 638 records within 300 s
+    of the scheduled kickoff). The DK captures ran 40+ minutes early.
+  - **What it was checked to carry** (weeks 6 and 7, 2026-10-23):
+    - every RB with a projection has rushing attempts, yards and TDs,
+      targets, receptions, receiving yards and receiving TDs (69 of 145 RBs
+      in week 6, 88-90 of 172 in week 7; the rest are backups with empty
+      projections);
+    - every QB with a projection has pass attempts and rushing attempts,
+      yards and TDs (25 of 90, 28 of 104).
+  - **The reader is week-agnostic** (`research.nfl_rush_model_frame.frozen_lines`):
+    - every capture `proj_2026_*.json` (any week) in the repo's feeds, the
+      prospective captures and the Sleeper directory;
+    - every props-log file;
+    - a props-log name maps to a Sleeper id through that week's own
+      captures, else the dataset's roster (name, team), else any week's
+      captures.
+
+    A back first seen after week 7 is kept. The first model's reader
+    stopped its map at week 7 and its glob at one digit (guarded).
+- **The prospective dataset** is built AFTER the window closes, by the
+  REGISTERED code's stored copies, in a registered tree
+  (`python3 -m research.nfl_rush_model_fit registered-tree --dest DIR`: the
+  repository with every registered file replaced by its `prereg_code/`
+  copy, refused unless each copy hashes to `prereg.json`). Production files
+  may change in the weeks between.
+  - Inside the tree the decision records' folder is the one its marker
+    names, the repository's `research/data/nfl_rush_model/`, outside the
+    tree: a run there reads and writes the repository's records and its
+    once-lock, never copies (two trees share one lock). An `NFLR_MODEL_OUT`
+    naming another folder is refused, and a tree may not hold its records'
+    folder (`resolve_model_out`, `in_registered_tree`).
+  - The 2026 season store and its rushing aux, built HERE from a fresh
+    download (`research.nfl_rush_model_fit build-stores`) into a scratch
+    deep folder (`DEEP_CACHE_DIR`): EMPTY at first, then holding copies of
+    the registration's 2019-2025 stores and aux taken from their archive
+    and checked against `prereg_manifest.sha256`; never a live deep folder
+    or a copy of one, and never production's job. `build-stores` first
+    moves the season's store and aux already in the folder aside
+    (`<key>.pkl.replaced`), then vouches only for what its own refresh
+    BUILT: the season's store must carry a play count, its aux `built`,
+    and the ids must be rebuilt; a store or aux the refresh kept (unchanged
+    upstream) or could not fetch refuses (Opus's F1a). It records the 2026 store, aux and ids pickles' sha256,
+    every repository module that ran and the versions, under this
+    registration. Should the archive be lost, `build-stores --older 2019
+    ... 2025` rebuilds the older seasons beside 2026, and each store and
+    aux must match the registration's CONTENT digest (Q9) or it refuses,
+    naming the parts that differ (2023's pair, rebuilt from a fresh download
+    on 2026-10-28, matched the registration-time pickles).
+  - The rushing dataset: `research.nfl_rush_dataset build --all-weeks
+    --sleeper <box> --out <records folder>/prospective_dataset`, the
+    records' folder by ABSOLUTE path (the marker's `model_out`: run from
+    the tree's root, a relative `--out` writes the tree's own copy, which
+    `prospective` refuses; Sonnet's F2, Opus's F3). `registered-tree`
+    prints these commands with the paths filled in. `--all-weeks` builds
+    every 2026 week the store holds; with no flag the builder stops at
+    week 7, the registered dataset's cap (Fable's B1). A SEPARATE
+    directory: the registered `research/data/nfl_rush/` files are never
+    rebuilt in place (a rebuild there would change registered bytes and
+    every command would refuse). Its `meta.json` records the sha256 of
+    every repository module the build loaded, the versions, the weeks it
+    holds and the sha256 of every store, aux and ids pickle it read.
+  - The frame: `research.nfl_rush_model_frame --k pooled --seasons 2026
+    --weeks <the window's> --frozen-only --dataset <that directory>
+    --sleeper <box> --props <every week's props log>`.
+  - The props logs and captures above. A week with no props log in the
+    sim-history listing is recorded ONCE, before the box is fetched, by
+    `research.nfl_rush_model_rule capture-missing --week W`, run in the
+    registered tree like everything after the hash; the record names this
+    registration, and a record naming another is refused.
+  - Sleeper's box (`stats_2026_<w>.json`) fetched 48+ hours after the
+    window's last game.
+
+  Its definition is registered; its bytes cannot be. At build time its meta
+  records the sha256 of every input it read (the dataset and its meta,
+  stores, aux, k tables, props logs, every capture file and its
+  `capture.json`, by repo-relative path) and of the code it ran, and each
+  box file's sha256 and modification time. The frame's gzip has a zero
+  mtime and no name, so a rebuild of the same rows has the same sha256.
+  - `prospective` refuses unless it runs in a registered tree, and refuses a
+    frame not built by EVERY registered code file at its registered bytes,
+    not built as above (pooled k, 2026 only, frozen rows only), or built
+    before the registration
+    (`research.nfl_rush_model_rule.prospective_frame_refusal`).
+  - It refuses a frame whose DATA the registered bytes did not make
+    (`provenance_refusal`): a dataset that is not, by realpath,
+    `research/data/nfl_rush_model/prospective_dataset` (the registered
+    folder by any path refuses), whose `meta.json` no longer hashes to what
+    the frame read, whose recorded code is not the registered bytes
+    (behaviour-neutral `errlog.py` and `research/__init__.py` aside), which
+    does not record the 2026 store, aux and ids it read or read a pickle
+    the frame did not (the frame's outcomes are its rows: Opus's F1b), or
+    which holds no rows of a window week (Fable's B1); a 2026 store, aux
+    or ids the store build's record does not vouch for, or a record that
+    changed, ran on other code or under another registration; and any
+    older store or aux that is not the registered test frame's, by sha256
+    or, re-saved or rebuilt, by content digest (Q9).
+  - It derives the window's weeks itself, never from the frame's rows: EVERY
+    week from the week of the first game kicking off after the registration
+    through the window's last week (the extension included), a range
+    (`window_weeks`). The store holds played games only, so each of those
+    weeks must hold a game in it, and the last week must be CLOSED: the
+    store must hold a game of the week after it (so every last-week game has
+    kicked off), and the window's last kickoff is the last week's last game
+    in the store. An empty window refuses.
+  - It refuses a frame that omits any of those weeks; a week with neither a
+    props log among the frame's inputs nor a "capture missing" entry
+    recorded before the box under THIS registration; a week whose props
+    log is an input but which holds no frozen universe row (the dataset or
+    the captures short of it: Fable's m5); a week with no box file; a box
+    fetched under 48 hours after the window's last game; and a run under
+    48 hours after it (`coverage_refusal`).
+  - It records the frame's sha256 and build record in
+    `prospective_lock.json`.
+- **Outcomes.**
+  - Sleeper's box first: official scoring, kneels are rushes, sacks are not.
+  - The pbp is the fallback for a player who played with no box line.
+  - TDs are the pbp's rushing + receiving TDs. Kalshi's KXNFLTD also counts
+    return and fumble-recovery TDs, rare for RBs and not counted here.
+  - The longest rush is the pbp's longest designed run or scramble; an
+    aborted snap recovered for positive yards, an official rush Kalshi
+    would count, is left out (rare; `nfl_rush.Longest` prices the same
+    definition, and the derived market decides nothing: Fable's n4).
+- **Scored and fitted CONDITIONAL ON PLAYING, in every season** (matching
+  Kalshi's settle-at-fair-price for a player who never plays, and the
+  board's conditional probabilities). He played iff Sleeper's box shows
+  `gp >= 1`, or the pbp credits him a rush, a target or a dropback
+  (`y_cond_played`). The all-rows figure is reported beside every decision
+  and decides nothing; the dropped rows are counted in the record.
+- **No restricted column selects a row.** The data layer gives a back a row,
+  and `act_played` 1, from PFR offensive snaps alone (48 of 618 RB rows in
+  2026). So:
+  - "played" never reads `act_played`, `act_any_snap` or a PFR snap count;
+  - the universes select on Sleeper's line only;
+  - every RB universe needs projected carries or targets, which is what
+    gives a back a dataset row whatever PFR says (`week_rows`' Sleeper
+    set), so no universe row exists through PFR alone;
+  - the distribution fits' box rows are Sleeper's (`gp >= 1`).
+
+  The columns that select a row are `research.nfl_rush_model_frame.SELECTION_COLS`;
+  a guard holds each to an unrestricted Sleeper or pbp tag in the dataset's
+  own schema.
+- **Row universes** (`nfl_rush.in_universe`, the board's own; the FIT
+  universe equals the SCORED universe):
+  - RB rushing (carries, rushing yards, rush + rec, the longest rush): 5+
+    projected carries and a positive yards line.
+  - RB receiving: 2+ projected targets and a positive receptions line.
+  - RB anytime TD: rush + rec TDs >= 0.15, with projected carries or
+    targets.
+  - QB rushing (attempts, yards, TD, the longest rush): 20+ projected pass
+    attempts and 2+ projected rushing attempts.
+- **Features.** Each is computed AS OF the week (strictly earlier games) by
+  the agreed data layer's code through production's adapter (`nfl_rush.features`,
+  `team_blocks`), shrunk by measured k:
+  - the validation frame on `reliability.json`'s `k_fit_only` (2018-2024),
+    and the first model's defense deviations on its fit-only k too (`NFLM_K`,
+    asserted);
+  - the test, export and prospective frames on the pooled 2018-2025 table.
+  - **Participation: prior seasons only, in every frame.** nflverse
+    publishes participation after the postseason, so no live board has the
+    current season's. Every snapshot goes through `nfl_rush.availability_view`,
+    which masks the season's own participation. That puts every season where
+    2026 is: the box falls back to FTN's count in season, and the rest reads
+    prior seasons. The pbp, FTN and the injury reports are in season.
+  - **Pressure** is the pbp's sacks + QB hits per opponent dropback, in
+    season, observed over what the QBs faced do elsewhere
+    (`dq.hit_sack_rate.oe_ratio`, a proxy; the layer measured r 0.40, k 67).
+  - **OL absences** are the team's linemen listed Out / Doubtful on the
+    week's report (`ol.ol_listed_out`).
+  - **Usage windows** (`dec_trend`, the carry shares) count pbp /
+    participation appearances only (the data layer's round-4 fix). A
+    special-teams-only PFR snap line moves no fitted input (guarded).
+  - **Missing inputs.** A feature with a missing input is missing; a sum
+    feature drops its missing parts and is missing only when every part is.
+    A missing feature reads 0, the deviation's "nothing known", in the fit
+    and on the board alike.
+    - The two non-negative counts (`cfp_ol_out`, `dec_room_out`,
+      `nfl_rush.MEAN_FILL`) read their training mean instead. Their 0 is
+      "nobody out", their minimum, and a board built before the week's
+      injury report posts reads None for every team.
+    - The section 4 missing counts treat a sum as missing only when every
+      part is.
+- **The prospective frame's features (C1, option b).** RECOMPUTED after the
+  window from all data on games strictly before each row's game. They can
+  differ from what the live board served if a feed lagged. The `live_lag`
+  column is blank: no board build logs its provenance stamp yet, so the
+  lag-split report is not available, and the report says so.
+- **Game script and kneels read the PRE-GAME line only (C2).**
+  - Research: nflverse's closing `spread_line` / `total_line`
+    (`team_margin`: + for the favoured home side).
+  - Production: the board's pre-game Kalshi de-vigged ladder; with none
+    believable, margin 0 / total 44, and the board says so.
+  - Never the realised score.
+
+### Q2. The model
+
+- **The mean** is Sleeper x exp(sum b (x - x_mean) / x_sd). There is NO
+  intercept anywhere: the level is Sleeper's line, fixed.
+  - Level recalibration is OUT of this rule. The first model's level rung
+    made 2025 worse, and `nfl_trim` governs the drive sim's level (Q8).
+  - x_mean and x_sd come from the fit rows (the market's universe,
+    played, in the fitting seasons). A missing x reads 0 before centring
+    (a `MEAN_FILL` count its fit rows' mean), in the fit and on the board
+    alike.
+- **The fit.** Ridge quasi-Poisson, with every column penalised alike and
+  outcomes clipped at 0.
+  - Lambda comes from {1, 10, 100, 300, 1e3, 3e3, 1e4, 3e4, 1e5, 1e6}, by
+    leave-one-season-out deviance over the FITTING seasons only: two folds
+    for 2023-2024, three for 2023-2025. Two folds make a coarse choice. A
+    column constant within one fold is penalised like the rest, and is
+    dropped only when its SD over all the fit rows is zero.
+  - The log factor is clamped to [-1, 1] when it is applied.
+  - The band is the delta-method SE from the penalised information's
+    inverse (`fit_ridge`: Z'WZ + lambda), with NO quasi-Poisson dispersion
+    factor, so it runs narrower than a dispersion-scaled band by about
+    sqrt(phi) for carries and yards. Display only: no decision reads a
+    band (Fable's m4).
+- **Dead features.** A feature whose SD over a position's training rows is
+  zero in EITHER frame (validation 2023-2024, test 2023-2025) is dropped
+  from every fit. A group left with no live term is not evaluated and
+  cannot ship. Within one fit, a column with zero SD in that market's fit
+  rows is dropped and recorded.
+  - Today that leaves out `cfp_direction` (RB), and `cfp_dsg_edge` and
+    `spd_qb_td_oe` (QB). Their defense signals (`def_side_ypc_dev`,
+    `def_dir_ypc_dev`, `def_rush_tds_oe` pooled) were measured UNSUPPORTED
+    by the data layer, so their deviations shrink to the prior.
+  - "Run direction" and "QB rushing TDs allowed" are therefore UNTESTED by
+    this rule. The QB TD market keeps only its FULL group.
+  - `spd_qb_td_oe` is dead only in the TEST frame: its shrinkage there is
+    the pooled k (2018-2025), which reads 2025's games and finds
+    `def_rush_tds_oe` unsupported; on the fit-only k (2018-2024) it is
+    live. One candidate group (QB anytime TD's SPD) leaves the 2025 walk
+    on a 2025-informed reliability: a removal, never an addition (Fable's
+    m3).
+- **Distributions.**
+  - **Rung 1 is this rule's own family**: NegBin counts (alpha by moments)
+    and rushing / receiving yards as a point mass from the count line at its
+    alpha plus a gamma positive part (CV by moments). These are the first
+    model's shapes and estimators, on this rule's universes and played rows,
+    with anytime TD Poisson.
+  - The rung-1 parameters, and the compound's kernels, alpha(mean) curves,
+    kneel table and QB position priors, are fit on 2023-2024 for the 2025
+    validation and on 2023-2025 for the 2026 check, the export and the
+    prospective test. The first model's committed (2023-2025) dispersion is
+    never used for 2025.
+  - Their rows (`research.nfl_rush_model_fit.fit_distributions`):
+    - the kernels: every pbp run, catch, designed QB run, sneak, scramble
+      and kneel of the position (yards clipped to [-15, 99]);
+    - the RB alpha curves, alpha = a x mean^b by moments over quintiles of
+      the line: Sleeper's box rows (`gp >= 1`) with a positive carries /
+      receptions line and yards line;
+    - the QB shares and component curves: QB-games with Sleeper's box
+      (`gp >= 1`), 20+ projected pass attempts and a positive rushing
+      line, a game with no rush a row of zeros;
+    - the kneel table: every team-game with a pre-game spread;
+    - the positions and Sleeper ids they read (which runs are an RB's,
+      whose box a QB's components join) are the registration's record of
+      the ids pickle (`prereg.json` `ids_positions`,
+      `fit.registered_positions`), never a later ids pickle: the
+      prospective test's folder holds a fresh one, in which nflverse may
+      have relisted a player since the hash (Fable's m7).
+  - SHAPE (Q3) switches a market to the compound of section 2.2.
+  - The QB compound splits his attempts by the POSITION's shares with one
+    pooled designed-run kernel (`nfl_rush.QB_SHARES`), chosen inside the
+    fitting seasons (section 1).
+- **What the board prices is this model's own code.** The walk scores each
+  row through `nfl_rush.plan` / `family_dist`, exactly what the board
+  calls. A replay guard checks fit -> export -> board probability.
+
+### Q3. The groups and their order
+
+Per market, in the owner's order:
+1. Sleeper (rung 1).
+2. OVD.
+3. SPD.
+4. CFP.
+5. SHAPE: the decomposition with NO new term. It is the compound
+   distribution in place of the rung-1 family, with the terms already
+   accepted re-expressed on components (Q3b).
+6. DEC: the opportunity terms.
+7. FULL.
+
+The feature lists are Q3a, generated from the adapter's definitions and
+frozen when this block is hashed; section 2.3 describes them.
+
+- **The TD markets** read only their own groups (RB: FULL; QB: FULL, its SPD
+  group dead).
+- **The derived markets** are rush + rec yards (RB) and the longest rush
+  (RB, QB). They are scored rung by rung (Q4's thresholds), deciding
+  nothing, wherever every one of their components' SHAPE is accepted on
+  both sides of a comparison. The board prices them only through components
+  whose SHAPE shipped, labelled "derived" (Q5).
+- A market whose baseline this rule never scored is never priced.
+
+#### Q3a. The feature lists (frozen at hashing; generated by `research.nfl_rush_model_frame.feature_lists_md` from `nfl_rush.FEATURES` / `GROUPS`)
+
+Frame column = `f_<feature>`. Blocks: `p` rb(pid, team), `q` qb(pid, team), `d` defense_run(opp), `dq` defense_qb(opp), `ol` offense_line(team), `tc` team_context(team) (`research/reports/nfl_rush_data.md` §0.3 paths), each from the data layer's snapshot as of the week through the frame's `availability_view` (the season's own participation never enters: Q1). `[m1_*]` are the first model's `nfl_matchup.defense_block` deviations (`x`) for the opponent, prior seasons for coverage; `[margin7]` the team-side PRE-GAME expected margin / 7 and `[total_c]` (total - 44) / 10 (research: nflverse closing spread_line / total_line; production: the board's pre-game Kalshi line); `[room_out]` `rb_room_out(team, exclude=pid)`; `[comp_*]` the comparables (frame docstring). `dq.hit_sack_rate` is the pbp's sacks + QB hits per opponent dropback, in season, observed over what the QBs faced do elsewhere (a pressure proxy), and `ol.ol_listed_out` the team's offensive linemen listed Out / Doubtful on the week's report (injuries; None without a report). Every input's source is declared (`nfl_rush.PATH_SOURCE` / `EXT_SOURCE`) and is pbp, participation, FTN, injuries or the pre-game line: no PFR or PFR-snap field and no NGS field (Q10). Participation keeps the shipped first model's status: nflverse took its 2022-and-earlier records from NGS, so the 2023 and 2024 rows' prior-season reads are NGS-originated (Q10). A missing input makes the feature missing (a `sum` drops a missing part and is missing only when every part is), and a missing feature reads 0, the deviation's "nothing known"; the two non-negative counts (`cfp_ol_out`, `dec_room_out`, `nfl_rush.MEAN_FILL`) read their training mean instead. "moves": `count` the opportunity (carries / designed runs / scrambles / receptions), `eff` yards per attempt, `mean` the market's mean; QB terms also name their component (`nfl_rush.QB_COMPONENT`); before SHAPE is accepted every term acts on its market's mean (Q3b).
+
+**No feature reads a dataset column.** The dataset (`research/data/nfl_rush/{rb,qb}_games_2023_2026.csv.gz`) supplies, by name (`research.nfl_rush_model_frame.ID_COLS` / `BASELINE_COLS` / `OUTCOME_COLS` / `PLAYED_COLS`), only the row's identity and pre-game injury-report status, Sleeper's line (`sl_proj_*`: the BASELINE, never a feature) and the outcomes (`act_*`, `sl_act_*`, `act_played`; written to the frame as `y_*`, which the frame reader drops for every season the hold forbids). `in_sleeper` and `sl_qb1` (post-week Sleeper fields) are read by nothing. Every feature below is computed from the snapshot API.
+
+- **RB rushing (carries, rushing yards; rush + rec and longest rush derived)**
+  - OVD: `ovd_run_epa` (eff) = d.vs_rb.epa (value - prior); `ovd_run_success` (eff) = d.vs_rb.success (value - prior)
+  - SPD: `spd_rb_ypc` (eff) = d.vs_rb.ypc (value - prior); `spd_rb_stuff` (eff) = d.vs_rb.stuff (value - prior); `spd_rb_expl10` (eff) = d.vs_rb.expl10 (value - prior); `spd_rb_yds_pg` (eff) = d.per_game.rb_rush_yds - league mean; `spd_rb_car_pg` (count) = d.per_game.rb_carries - league mean
+  - CFP: `cfp_direction` (eff) = sum: p.rushing.by_side.edge.share x d.vs_rb.by_side.edge.ypc (value - prior) + p.rushing.by_side.tackle.share x d.vs_rb.by_side.tackle.ypc (value - prior) + p.rushing.by_side.interior.share x d.vs_rb.by_side.interior.ypc (value - prior); `cfp_box_split` (eff) = sum: p.rushing.by_box.light.ypc (value - prior) x d.box.light (value - prior) + p.rushing.by_box.heavy.ypc (value - prior) x d.box.heavy (value - prior); `cfp_def_light` (eff) = d.box.light (value - prior); `cfp_def_heavy` (eff) = d.box.heavy (value - prior); `cfp_pers_split` (eff) = sum: p.rushing.by_personnel_faced.base.ypc (value - prior) x d.personnel.base (value - prior) + p.rushing.by_personnel_faced.nickel.ypc (value - prior) x d.personnel.nickel (value - prior) + p.rushing.by_personnel_faced.dime.ypc (value - prior) x d.personnel.dime (value - prior); `cfp_ol_line` (eff) = ol.line_yds (value - prior); `cfp_ol_stuff` (eff) = ol.stuff (value - prior); `cfp_def_line` (eff) = d.vs_rb.line_yds (value - prior); `cfp_ol_x_def_line` (eff) = ol.line_yds (value - prior) x d.vs_rb.line_yds (value - prior); `cfp_ol_out` (count) = ol.ol_listed_out; `cfp_front_dl4` (eff) = d.front_proxy.dl4 (value - prior)
+  - SHAPE: no term -- the compound distribution in place of the rung-1 family, the terms already accepted re-expressed on components (Q3b)
+  - DEC: `dec_margin` (count) = [margin7]; `dec_total` (count) = [total_c]; `dec_neutral_run` (count) = tc.neutral_run_rate (value - prior); `dec_trend` (count) = (p.recent.carry_share - p.usage.carry_share); `dec_room_out` (count) = [room_out]
+  - FULL: `full_comp_rush_yd` (eff) = [comp_rush_yd]; `full_qb_keep` (count) = tc.qb_keep_share (value - prior); `full_ypc_x_margin` (eff) = d.vs_rb.ypc (value - prior) x [margin7]
+- **QB rushing (attempts, rushing yards; longest rush derived)**
+  - OVD: `ovd_run_epa` (eff, designed) = d.vs_rb.epa (value - prior); `ovd_pressure` (count, scramble) = log dq.hit_sack_rate.oe_ratio; `ovd_blitz` (count, scramble) = dq.blitz (value - prior)
+  - SPD: `spd_qb_dsg_oe` (count, designed) = log dq.designed_runs.oe_ratio; `spd_qb_dsgyds_oe` (eff, designed) = log dq.designed_yds.oe_ratio; `spd_qb_scr_oe` (count, scramble) = log dq.scrambles.oe_ratio; `spd_qb_scryds_oe` (eff, scramble) = log dq.scramble_yds.oe_ratio; `spd_qb_expl_oe` (eff, both) = log dq.explosive_runs.oe_ratio
+  - CFP: `cfp_scr_press` (count, scramble) = (q.scramble.vs.pressure - q.scramble.vs.no_pressure) x log dq.hit_sack_rate.oe_ratio; `cfp_scr_blitz` (count, scramble) = (q.scramble.vs.blitz - q.scramble.vs.no_blitz) x dq.blitz (value - prior); `cfp_scr_man` (count, scramble) = (q.scramble.vs.man - q.scramble.vs.zone) x [m1_man]; `cfp_scr_shell` (count, scramble) = (q.scramble.vs.single_high - q.scramble.vs.two_high) x [m1_sh_frac]; `cfp_contain` (eff, scramble) = log dq.containment_proxy.oe_ratio; `cfp_dsg_edge` (eff, designed) = q.designed.by_side.edge x d.vs_rb.by_side.edge.ypc (value - prior)
+  - SHAPE: no term -- the compound distribution in place of the rung-1 family, the terms already accepted re-expressed on components (Q3b)
+  - DEC: `dec_margin` (count, both) = [margin7]; `dec_total` (count, both) = [total_c]
+  - FULL: `full_comp_qb_rush_yd` (eff, both) = [comp_qb_rush_yd]; `full_scr_x_margin` (count, scramble) = (q.scramble.vs.pressure - q.scramble.vs.no_pressure) x [margin7]
+- **RB receiving (receptions, receiving yards)**
+  - OVD: `ovd_pass_epa` (eff) = [m1_pass_epa]; `ovd_catch` (eff) = [m1_catch_all]
+  - SPD: `spd_rbrec_tgt` (count) = d.vs_rb_receiving.tgt_per_db (value - prior); `spd_rbrec_ypt` (eff) = d.vs_rb_receiving.ypt (value - prior); `spd_rbrec_catch` (count) = d.vs_rb_receiving.catch (value - prior); `spd_rbrec_yac` (eff) = d.vs_rb_receiving.yac_rec (value - prior)
+  - CFP: `cfp_screen_x_blitz` (count) = p.receiving.screen_share (value - prior) x dq.blitz (value - prior); `cfp_chk_x_press` (count) = p.receiving.checkdown_share (value - prior) x log dq.hit_sack_rate.oe_ratio; `cfp_rec_mz` (count) = (p.usage.tgt_per_db_vs_man - p.usage.tgt_per_db_vs_zone) x [m1_man]
+  - SHAPE: no term -- the compound distribution in place of the rung-1 family, the terms already accepted re-expressed on components (Q3b)
+  - DEC: `dec_margin` (count) = [margin7]; `dec_total` (count) = [total_c]
+  - FULL: `full_comp_rec_yd` (eff) = [comp_rec_yd]
+- **RB anytime TD**
+  - FULL: `full_rz_run` (mean) = tc.red_zone_run_rate (value - prior); `full_qb_keep` (mean) = tc.qb_keep_share (value - prior)
+- **QB anytime TD (rushing + receiving)**
+  - SPD: `spd_qb_td_oe` (mean) = log dq.rush_tds.oe_ratio
+  - FULL: `full_qb_gl` (mean) = q.scoring.gl_rush_rate (value - prior)
+
+#### Q3b. Which terms enter which market, the walk order, and how many decisions
+
+- **Before SHAPE** (or where SHAPE is not accepted), each market has one
+  mean GLM: its outcome, offset log(Sleeper's line).
+  - A COUNT market (RB carries, QB rushing attempts, RB receptions) reads a
+    group's `count` terms.
+  - A YARDS market (RB and QB rushing yards, RB receiving yards) reads all
+    of a group's terms.
+  - The distribution is the rung-1 family at the fitted mean.
+- **SHAPE and after: RBs.**
+  - The carries GLM (outcome: official rushing attempts, aborted snaps
+    included) reads the count terms. It has the same coefficients as the
+    mean form; only the count's dispersion changes, to the line-dependent
+    alpha.
+  - The yards-per-carry GLM (outcome: rushing yards, offset log(Sleeper's
+    yards) + the carries market's FINAL accepted log factor) reads `eff`
+    terms only.
+  - A count-type term accepted earlier on the yards market leaves at SHAPE:
+    the yards compound carries the carries market's factor instead.
+  - Receiving works the same way: receptions, then yards per catch.
+- **SHAPE and after: QBs.**
+  - **Two count GLMs.** Designed runs (outcome: the pbp's designed runs,
+    sneaks excluded) and scrambles (outcome: the pbp's scrambles). Each has
+    offset log(its expected count): Sleeper's attempts less the margin
+    table's kneels, split by the position's shares (`nfl_rush.qb_parts`),
+    under the count factors fitted so far.
+  - **Two efficiency GLMs.** Designed-run yards and scramble yards
+    (outcomes: the pbp's component yards, clipped at 0). Each has offset
+    log(its expected yards): the expected count x the anchored yards per
+    attempt.
+  - **The component map.** Each term moves the component(s) Q3a names
+    (`nfl_rush.QB_COMPONENT`). "both" means a coefficient of its own in
+    each component's GLM.
+  - Sneaks and kneels are never moved.
+  - If the attempts market's SHAPE is not accepted but the yards market's
+    is, the attempts' mean factor scales both component counts and the
+    yards anchor.
+- **The walk order.**
+  - RB: carries, rushing yards, receptions, receiving yards, TD.
+  - QB: attempts, rushing yards, TD.
+
+  A count market's walk completes before its yards market's starts.
+- **SHAPE on yards but not on counts.** The count market keeps its rung-1
+  NegBin and its own factor. The yards compound draws its count with the
+  line-dependent alpha at the SAME factor, so the expected carries agree.
+- **TD (the link).** A GLM on the pbp's rushing + receiving TDs, offset
+  log(Sleeper's rushing + receiving TDs). It reads only its own groups; no
+  carries or receptions factor reaches it.
+- **Decision count (C4, after the SHAPE split and the dead features).** The
+  2025 walk makes **35** group x market decisions:
+  - RB carries 5 (SPD, CFP, SHAPE, DEC, FULL);
+  - RB rushing yards 6 (OVD, SPD, CFP, SHAPE, DEC, FULL);
+  - RB receptions 4 (SPD, CFP, SHAPE, DEC);
+  - RB receiving yards 6;
+  - RB TD 1 (FULL);
+  - QB attempts 6;
+  - QB rushing yards 6;
+  - QB TD 1 (FULL).
+- **Error rates (computed by `research.nfl_rush_model_rule.error_rates`).**
+  Three figures for a null group:
+  - **The 2025 gate alone.** A null group passes about 2.275% of the time
+    on the normal figure (Phi(-2)). Opus's null simulation (fit 2023, score
+    2024, 1,000 replicates per setting) puts it at 0.0-1.3% with the floor,
+    mostly 0.3-0.7%.
+  - **A false provisional ship.** It must also pass the 2026 check (d <= 0,
+    about a coin flip). That is 1.14% a decision on the normal figure: 0.40
+    expected across 35 decisions, and 33.0% for at least one. On the
+    simulated figures, 8.4% (at 0.5%) to 20.4% (at 1.3%).
+  - **A false permanent ship.** It must also pass the prospective KEEP
+    (d < -1 SE, 15.87% for a null). That is 0.18% a decision on the normal
+    figure: 0.063 expected and **6.1%** for at least one across the 35. On
+    the simulated figures, 1.4% (at 0.5%) to 3.5% (at 1.3%).
+  - The decisions are sequential and correlated, so these are guides, not
+    bounds. SHAPE is not a null group: its shape gain was seen in the
+    fitting seasons (section 1).
+  - **Up to three of the 35 are vacuous by construction:** DEC on RB
+    rushing yards, RB receiving yards and QB rushing yards once that
+    market's SHAPE is accepted. DEC holds only count terms, which leave a
+    yards market at SHAPE, so the candidate equals the accepted model, d is
+    0 and the group is rejected. The figures above count them, so they are
+    conservative by up to three decisions.
+
+### Q4. The 2025 decision
+
+- **Metric per row:** the threshold log loss summed over the market's
+  thresholds. Probabilities are clipped to [1e-6, 1 - 1e-6]. The thresholds
+  are generated from `nfl_rush.THRESHOLDS`:
+
+
+| market | RB thresholds | QB thresholds |
+|---|---|---|
+| carries / QB rushing attempts | 5 / 10 / 15 / 20 | 2 / 4 / 6 / 8 |
+| rushing yards | 10 / 15 / 25 / 40 / 50 / 60 / 75 / 100 | 10 / 15 / 25 / 40 / 50 / 60 |
+| receptions | 1 / 2 / 3 / 4 / 5 | - |
+| receiving yards | 10 / 15 / 25 / 40 / 50 | - |
+| rush + rec yards (derived) | 25 / 40 / 50 / 60 / 75 / 100 / 125 | - |
+| anytime TD | 1 / 2 | 1 |
+| longest rush (derived) | 10 / 15 / 20 / 25 / 30 / 40 | 10 / 15 / 20 / 25 / 30 / 40 |
+
+- **d** is the candidate minus the accepted model, per scored row (Q1: in
+  the universe, played). Its **SE** is the LARGER of the game-clustered and
+  the player-clustered SE. Each is G / (G - 1) x the sum of the clusters'
+  CENTRED sums squared / n^2 (`research.nfl_rush_model_rule.clustered`).
+  On the 2024 traincheck the player-clustered SE was 1.31x the game one
+  for RBs.
+- **The gate:** a group is ACCEPTED on 2025 iff d < -2 SE AND d < -0.0005 x
+  the NUMBER of the market's thresholds. Both are strict, and a non-finite
+  d or SE rejects. It is one standard: SHAPE faces it exactly as a term
+  group does.
+- **The walk is SEQUENTIAL** in the owner's order. Each group's candidate is
+  the groups already accepted for that market plus the group, with the
+  count market's final model in a yards market's offsets. Both sides are
+  fit on 2023-2024, and a rejected group is never retried.
+- **Reported, deciding nothing:** for each step,
+  - the all-rows figure (players who did not play included);
+  - the derived markets' d where both sides price them, and, at the step
+    that first prices one (its components' SHAPE), that form's own log
+    loss, MAE and 10-bin ECE: the version that would be priced on
+    KXNFLRRYDS / KXNFLLONGRSH;
+  - each side's MAE of the mean and its 10-bin ECE per threshold;
+  - the rows dropped because a side could not price them.
+
+### Q5. The 2026 check, the provisional ship and the export
+
+- **The walk.** Over the 2025-accepted groups, in ladder order, on 2026
+  weeks 1-6's frozen rows (played).
+  - Each group is judged against the model with the groups already KEPT.
+  - Both sides are refit on 2023-2025 (kernels, curves and dispersion
+    included).
+  - A group is kept iff d <= 0 (point estimate).
+  - A dropped group is not refit into later ones: later groups are judged
+    on top of what was kept.
+  - Each row's capture lead time is reported.
+- **The export** refits exactly the kept set on 2023-2025 and writes
+  `coefs.json` ONCE (stage "provisional"). Each group carries status
+  "provisional" and the records it passed: the sha256 of this block, of
+  prereg.json, of validate.json and of check2026.json. It refuses once
+  `prospective_lock.json` exists: after the lock the only `coefs.json` is
+  the prospective test's.
+- **The board** reads only "provisional" and "shipped"; any other status,
+  None included, is not shipped and is ledgered.
+  - `nfl_rush.load_coefs` believes a file only when its statuses are one
+    stage's and trace to the records beside it (`record_chain`):
+    provisional needs prereg.json, validate.json and check2026.json to hash
+    to its records; shipped needs `prospective_lock.json` too. Its shipped
+    groups must also BE that record's set: check2026's provisional set, or
+    the lock's kept set. Otherwise the board has no rushing model at all,
+    ledgered `NFLR-coefs`.
+  - The board marks its markets "provisional" (`matchup_weight` and the
+    slate note).
+  - It prices a derived market only through components whose SHAPE
+    shipped, labelled "derived".
+  - With nothing shipped, it shows the facts and the breakdown, and prices
+    no new market: the first model's markets stand, unchanged.
+- **Nothing that failed 2025 ships.**
+
+### Q6. The prospective test (once)
+
+- **When:** after the window (Q1) closes and the Sleeper box is fetched 48+
+  hours later, on the prospective frame built as Q1 says.
+- **The walk.** Over the provisional groups, in ladder order, sequential:
+  - each group against the model with the groups already kept;
+  - both sides refit on 2023-2025 by the registered fitter, which is exactly
+    what would ship;
+  - **KEEP iff d < -1 SE** (one-sided; the SE as Q4); otherwise REVERT.
+- **Its power is modest; read the verdict with it** (Fable's m2). d's SE
+  scales as 1 / sqrt(games): 2025 holds 272 games, the window 56 (weeks
+  8-11) or 42 (weeks 9-11), so the window's SE is 2.20x or 2.54x the 2025
+  SE. A group whose TRUE gain sits exactly at the 2025 gate's edge (d = -2
+  SE of 2025) is kept with probability 0.46 (56 games) or 0.42 (42); at
+  1.5x the gate 0.64 or 0.57; at 2x 0.79 or 0.72
+  (`research.nfl_rush_model_rule.keep_power`, the normal figure). A real
+  effect of the gate's size is reverted about half the time: "reverted"
+  says the window did not confirm it, not that it is absent.
+- **Where it runs.** In a registered tree (Q1), from the code bytes stored
+  at registration, after the store pickles it reads directly (2023-2025)
+  are re-verified against the registration (by sha256, or, re-saved or
+  rebuilt, by content digest: Q9). It reads only
+  records written under this registration on the registered code
+  (`read_record`), check2026.json's link to validate.json intact, and
+  `coefs.json` as export wrote it.
+- **Once.** It writes `prospective_lock.json`. A re-run needs `--force`, and
+  the record says so with the previous sha256. The final `coefs.json`
+  (stage "shipped", written once, after the lock) holds the kept groups as
+  "shipped"; the board labels them "shipped (one prospective test)".
+  Reverted groups leave.
+- **Reported beside the decision:**
+  - the window's last week, its games and its note;
+  - the games and rows per market (C3);
+  - the all-rows figure;
+  - the MAE and ECE;
+  - the derived markets' first priced form (Q4);
+  - Kalshi's pre-kickoff prices (Q7, descriptive).
+
+### Q7. Kalshi (descriptive, no decision)
+
+Computed after the decisions, by a descriptive script outside the registered
+set; it decides nothing.
+- The last hourly candle at or before kickoff, books within 20c.
+- Series: KXNFLRSHYDS, KXNFLRSHATT, KXNFLRRYDS, KXNFLREC, KXNFLRECYDS,
+  KXNFLTD and KXNFLLONGRSH, for RB / QB rows.
+- Scored on 2025 (revised) and on 2026's frozen rows.
+- One-contract ROI on the positive-EV side, fee in, bootstrap over games
+  (the first model's R5).
+
+### Q8. What was seen before writing this
+
+- The 2023-2024 measurements of section 1, and this model's own design work
+  inside the fitting seasons. The own-share QB split lost to the position's
+  (+0.021 +/- 0.009 nats a row), and so did every blend.
+- **The first model's 2025 and 2026 results** (`research/reports/nfl_matchup_model.md`),
+  which read every RB / QB market here:
+  - its 2025 ladder accepted nothing for targets, receptions, receiving
+    yards, carries or rushing yards (best rungs -0.0026, -0.0012, -0.0007,
+    -0.0004, +0.0002);
+  - its level rung R made 2025 WORSE: receptions +0.0106 +/- 0.0049,
+    receiving yards +0.0079 +/- 0.0039, carries +0.0052 +/- 0.0021,
+    rushing yards +0.01106 +/- 0.00609;
+  - its F3 calibration tables (2023-2025 revised, 2026 frozen);
+  - its section 9 line-dependent CV gate on 2025 (FAILED, -0.0086 +/-
+    0.0137; the low-line cells moved the right way);
+  - Kalshi beating it on 2026 rushing yards (0.506 vs 0.447; QBs 0.552 vs
+    0.407).
+- **The 2025 / 2026 levels** (`research/reports/nfl_trim.md`): rushing
+  yards landed at 0.958x Sleeper in 2025 and 0.922x in 2026 weeks 1-6;
+  touchdowns at 0.957x and 1.056x. The level is OUT of this rule (Q2), but
+  2025 is not blind on it.
+- **`nfl_usage`'s carry-share test** (`research/reports/nfl_usage.md`,
+  shipped 2026-10-18). Last-3-games carry share at 0.3 against Sleeper's:
+  -0.003177 +/- 0.001459 on 2025 (passed), -0.002578 +/- 0.002000 on 2026.
+  That is `dec_trend`'s signal; its absent-lead-back case "hurt on 2025",
+  which is `dec_room_out`'s. DEC's opportunity terms are therefore NOT
+  blind on 2025.
+- **The orchestrator's slice** of the first model's Kalshi record, given to
+  the owner on 2026-10-23: buying YES on rushing yards lost 36.5% (95% -63%
+  to -7%) over 166 bets, 2025-26. It is disclosed here and enters nothing
+  else.
+- **Outcome-touching checks with no model in them:**
+  - the data layer's 2025 reconciliation of pbp against Sleeper's box;
+  - the data-source report's 2025-26 settlement checks (239 of 239 QB
+    ladders, the sacks tests);
+  - the data reviews' 2025-26 `act_played` / `act_any_snap` / `gp` tallies;
+  - the data layer's DECAY, BACK, sneak rule (its precision and recall on
+    2022-25), the hit + sack proxy's r (0.40, 2018-25), the pooled k and the
+    QB-game box-versus-pbp match on 2023-25. All of these read 2025. DECAY
+    0.75 was set on pairs through 2024 -> 2025; without them the tendency r
+    is 0.600, and DECAY is 0.75 either way.
+  - the data confirmation's count of 2026 RB rows that exist through PFR
+    offensive snaps alone (48 of 618), which set Q1's row-selection rule.
+- **Outcome-free looks at the 2025 / 2026 rows:** row counts per market,
+  missing-feature counts per group, frozen-capture counts and lead times,
+  and feature / line comparisons between frame builds and against the
+  dataset's own feature columns (section 4). Those comparison scripts read
+  whole CSV rows and skipped every outcome column: no 2025 / 2026 outcome
+  cell was compared, computed on or printed.
+- **The frames physically carry the 2025-26 `y_*` columns.** The reader
+  refuses them until the registration holds (Q9); the hold is enforced by
+  code, not by the files.
+- **The licence default** (Q10, 2026-10-24) removed three CFP terms and
+  swapped two inputs. It read the data sources' terms, never an outcome.
+
+So 2025 is not blind on the SHAPE question, on the level, or on DEC's
+opportunity terms, and 2026 weeks 1-6 are not blind on anything rushing.
+Only the prospective window (Q1) is blind, and it is the judge that makes a
+group "shipped".
+
+### Q9. Code, registration, refusals
+
+At registration (`research.nfl_rush_model_fit register`), `prereg.json`
+records:
+- the sha256 of this block;
+- the UTC time;
+- the sha256 and stored bytes of every code file the runs execute;
+- the sha256 of every data file;
+- the two frames' sha256, each with its build record (k table, seasons,
+  participation mode, the code and every input it read);
+- the dead features;
+- the decision count;
+- the Python and numpy versions (recorded, not enforced; every decision
+  record carries the versions it ran on too);
+- every deep pickle the frames read (the 2019-2026 stores and aux, the
+  ids) by sha256 AND by CONTENT digest (`stores`), and the ids pickle's
+  positions and Sleeper ids (`ids_positions`: what the distribution fit
+  reads, Q2).
+
+Beside it, `prereg_manifest.json` and `prereg_manifest.sha256` list the 19
+files the later commands verify -- the two frames and the 17 pickles --
+and the frames' build records, each with its sha256 and where it lay. They
+exist nowhere else when the hash is made and cannot be rebuilt byte for
+byte (`deep_cache.save` stamps the save time into every pickle), so they
+are archived at the hash (the runbook after this block).
+
+**The content digest** (`research.nfl_rush_model_fit.content_digest`):
+sha256 over a canonical encoding of a pickle's payload with the parts no
+registered computation reads left out (`NOT_CONTENT`: the save clocks
+`built`, `seconds`, `store_built`; the download bookkeeping `sources`; the
+aux build's join diagnostics `joins`, read only by the dataset's `checks`
+report; deep_cache's `generated_at` sits outside the payload): dict keys and
+sets sorted, floats by their exact hex, arrays by type code and bytes, an
+unknown type refused. Each top-level part (and each key of a small dict part) is
+digested on its own, so a mismatch names what differs (`cols.yds`). A
+re-saved or rebuilt pickle holding the same data passes; one changed value
+does not.
+
+The registered code (`REG_CODE`):
+- `nfl_rush.py`, `prop_dist.py`;
+- `research/nfl_rush_model_frame.py`, `research/nfl_rush_model_fit.py`,
+  `research/nfl_rush_model_rule.py`;
+- the agreed data layer: `nfl_rush_data.py`, `nfl_rush_profiles.py`,
+  `research/nfl_rush_dataset.py`;
+- `nfl_matchup_data.py`, `nfl_matchup_profiles.py`, `nfl_matchup.py`,
+  `research/nfl_matchup_frame.py`, `research/nfl_matchup_fit.py`,
+  `kalshi_nfl.py`;
+- `deep_cache.py` (it resolves and loads every store pickle) and `kalshi.py`
+  (imported by `kalshi_nfl`);
+- `research/nfl_matchup_dataset.py`: the prospective dataset build's
+  Sleeper parser (`load_sleeper`, the box: the decisive test's outcomes).
+
+Audited by listing every repository module loaded by each path: the frame
+build, the four commands, the dataset build (`build --out`) and the store
+build (`build-stores`, a fresh 2026 download, 9 s). The only others loaded
+are `errlog.py` (the ledger) and `research/__init__.py` (empty), which
+change no number (`research.nfl_rush_model_fit.NEUTRAL`). The dataset and
+store builds record the sha256 of every module they ran, and `prospective`
+refuses either unless each is a registered file at its registered bytes
+or one of those two.
+
+The registered data (`REG_DATA`):
+- `research/data/nfl_rush/rb_games_2023_2026.csv.gz`,
+  `research/data/nfl_rush/qb_games_2023_2026.csv.gz`;
+- `research/data/nfl_rush/reliability.json`, `research/data/nfl_rush/schema.json`;
+- `research/data/nfl_matchup/reliability.json`,
+  `research/data/nfl_matchup_model/k_fit_only.json`;
+- `research/data/player_weeks_2022_2025.csv.gz`.
+
+**Refusals.**
+- **Registration** refuses:
+  - without the orchestrator's go;
+  - a frame whose code or any input changed since it was built (`stale_frames`);
+  - a fitted input that is pending or carried by no row (`blocked_inputs`);
+  - a second registration.
+- **Every command** (`research.nfl_rush_model_rule` `validate`, `check2026`,
+  `export`, `prospective`) refuses unless `prereg.json` exists and this
+  block and every registered file still hash to it (`prereg_status`). The
+  held seasons (2025, 2026) become readable ONLY through that check;
+  there is no constant to edit.
+- Each command also refuses a frame that is not the registered one, and
+  runs in order (validate -> check2026 -> export -> prospective).
+- Each command re-verifies the store pickles its distribution parts read
+  directly (the season stores of its fitting seasons) against the
+  registration: by sha256, or, re-saved or rebuilt, by content digest; a
+  mismatch refuses, naming the parts that differ (`verify_stores`).
+- Each decision record carries the registration it ran under (this block's
+  sha256 and time) and every registered file's sha256 at run time; the
+  next command refuses a record that does not match `prereg.json`, or whose
+  link to the record before it is broken (`read_record`).
+- Each record is written once; `--force` re-runs and says so. `coefs.json`
+  is written once per stage (export, then prospective), and export refuses
+  after the prospective lock; the board refuses a provisional-stage
+  `coefs.json` with the lock beside it (an older stage restored).
+- **The decisive run executes from the stored copies.** The registered set
+  includes live production files (`nfl_rush.py`, `nfl_matchup.py`,
+  `kalshi_nfl.py`) that others edit; `prereg_status` would refuse after
+  any edit. The prospective dataset, frame and test therefore run in a
+  registered tree (Q1). The owner should know the live files may change
+  meanwhile; the registered bytes stay in `prereg_code/`, for anyone to
+  re-hash. The tree's report carries the block stored there
+  (`rule_block.md.txt`), so an edit inside the live report's block after
+  the hash cannot stop the run (Sonnet's F5e).
+- **The plumbing run** (`--plumb`) exercises the whole chain with every held
+  outcome replaced by a random 2023 row's, never reading a held one (the
+  distribution parts are then fit on the open seasons only), and writes
+  only under `research/data/nfl_rush_model/plumb/`. It is disclosed in
+  section 6.
+
+The QB's own split (the board's information) is the rushing layer's `qb()`
+through `nfl_rush.qb_profile`, never the first model's QB profile, whose
+"scramble" reads 0 for every QB (C6).
+
+### Q10. Data licences (the default; the orchestrator, 2026-10-24)
+
+- **Never fitted:** any PFR-, PFR-snap- or NGS-derived field, in any fitted
+  group (OVD, SPD, CFP, DEC, FULL), the comparables' vector or the trend
+  terms, with the one exception of participation (below).
+  - Sports Reference's terms (May 19, 2023, section 5) bar using its
+    Content for "supporting machine learning methods used to predict,
+    classify, label, or score inputs into the models". PFR advanced stats
+    and snap counts are its Content even via nflverse.
+  - NGS is the NFL's, whose terms bar using the Services to gamble
+    (`research/reviews/rush_data_sources_opus.md` F8).
+- **Fitted inputs come only from** the pbp, participation, FTN, the injury
+  reports and the pre-game line, or are derived from them.
+  - Every input declares its source (`nfl_rush.PATH_SOURCE`, `EXT_SOURCE`).
+  - A guard fails on an undeclared source, a PFR / NGS source, or a PFR /
+    NGS path name.
+  - It also holds every declaration EQUAL to the data layer's own tag
+    (`nfl_rush_profiles.SOURCE_OF`), and fails if `restricted()` is true
+    for any fitted input.
+  - A special-teams-only PFR snap line moves no fitted input (guarded on
+    the data layer's fixture): the usage windows count pbp and
+    participation appearances only.
+  - PFR never chooses a fitted or scored row either: the row selection
+    reads Sleeper's line, Sleeper's gp and the pbp only (Q1, guarded).
+- **The board may still show** PFR / NGS fields (snap share, yards before /
+  after contact, broken tackles, missed tackles, PFR pressure, RYOE). Each
+  is credited ("Pro Football Reference via nflverse", "NFL Next Gen Stats
+  via nflverse"), and its basis says it does not move a probability.
+- **Participation** keeps the shipped first model's status, by the
+  orchestrator's decision.
+  - nflverse took its records from NGS through 2022 and from FTN from 2023.
+  - Every frame reads participation from PRIOR seasons only (Q1). The 2023
+    rows read 2021-22 and the 2024 rows 2022-23, so part of what the
+    fitting seasons read is NGS-originated. It is the one NGS-originated
+    input this rule fits; "never fitted" covers every other NGS field.
+  - Credit: "NFL Next Gen Stats via nflverse (2022 and earlier); FTN Data
+    via nflverse (2023 on)". FTN: "FTN Data via nflverse" (CC BY-SA).
+- **The pre-game line** (game script, kneels) is nflverse's closing line in
+  research and Kalshi's de-vigged price in production. It is in the fitted
+  set as "lines"; it is neither PFR nor NGS.
+  - The orchestrator confirmed this source on 2026-10-24, with one caveat.
+    The nflverse nfldata documentation (DATASETS.md, the Games section,
+    fetched 2026-10-24) defines `spread_line` and `total_line` but names
+    no source for them, so their provenance is UNDOCUMENTED.
+  - Production reads Kalshi's own de-vigged game prices instead.
+  - The kneel and game-script terms read only the line, never the result.
+- **Adding PFR or NGS later** is a NEW pre-registered group, judged
+  prospectively, and only if the owner approves. Nothing in this rule
+  fits one.
+
+Every command refuses when a file or this block no longer hashes to what was
+registered.
+<!-- RUSH-PREREG-END -->

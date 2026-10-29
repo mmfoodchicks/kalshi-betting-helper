@@ -1,0 +1,483 @@
+{
+ "seasons": [
+  2023,
+  2024
+ ],
+ "A_per_attempt": {
+  "RB run": {
+   "n": 23524,
+   "mean": 4.258,
+   "sd": 6.05,
+   "skew": 4.16,
+   "p_le0": 0.1786,
+   "p_ge10": 0.1006,
+   "p_ge20": 0.0219,
+   "q": [
+    0.0,
+    1.0,
+    3.0,
+    6.0,
+    10.0,
+    27.8
+   ]
+  },
+  "WR run": {
+   "n": 878,
+   "mean": 5.535,
+   "sd": 7.605,
+   "skew": 1.524,
+   "p_le0": 0.2107,
+   "p_ge10": 0.2153,
+   "p_ge20": 0.041,
+   "q": [
+    -2.0,
+    1.0,
+    4.0,
+    9.0,
+    14.3,
+    34.7
+   ]
+  },
+  "QB designed run (not a sneak)": {
+   "n": 1148,
+   "mean": 4.206,
+   "sd": 6.392,
+   "skew": 2.159,
+   "p_le0": 0.3319,
+   "p_ge10": 0.1463,
+   "p_ge20": 0.0253,
+   "q": [
+    -1.0,
+    0.0,
+    3.0,
+    7.0,
+    12.0,
+    28.5
+   ]
+  },
+  "QB sneak (FTN)": {
+   "n": 567,
+   "mean": 1.481,
+   "sd": 1.023,
+   "skew": 0.495,
+   "p_le0": 0.1799,
+   "p_ge10": 0.0,
+   "p_ge20": 0.0,
+   "q": [
+    0.0,
+    1.0,
+    2.0,
+    2.0,
+    3.0,
+    4.0
+   ]
+  },
+  "QB RPO keep (FTN)": {
+   "n": 90,
+   "mean": 4.744,
+   "sd": 5.695,
+   "skew": 2.252,
+   "p_le0": 0.2111,
+   "p_ge10": 0.1444,
+   "p_ge20": 0.0222,
+   "q": [
+    0.0,
+    1.0,
+    4.0,
+    7.0,
+    12.0,
+    21.9
+   ]
+  },
+  "QB scramble": {
+   "n": 2097,
+   "mean": 7.511,
+   "sd": 6.011,
+   "skew": 1.917,
+   "p_le0": 0.0005,
+   "p_ge10": 0.2675,
+   "p_ge20": 0.0525,
+   "q": [
+    2.0,
+    3.0,
+    6.0,
+    10.0,
+    15.0,
+    30.0
+   ]
+  },
+  "kneel": {
+   "n": 833,
+   "mean": -1.118,
+   "sd": 0.622,
+   "skew": -4.251,
+   "p_le0": 1.0,
+   "p_ge10": 0.0,
+   "p_ge20": 0.0,
+   "q": [
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    0.0
+   ]
+  }
+ },
+ "B_qb_game": {
+  "qb_games": 1150,
+  "designed": {
+   "mean": 0.966,
+   "var": 2.828,
+   "p0": 0.597
+  },
+  "sneaks": {
+   "mean": 0.476,
+   "var": 0.808,
+   "p0": 0.702
+  },
+  "scrambles": {
+   "mean": 1.796,
+   "var": 2.855,
+   "p0": 0.252
+  },
+  "kneels": {
+   "mean": 0.615,
+   "var": 0.903,
+   "p0": 0.621
+  },
+  "dropbacks": {
+   "mean": 35.078,
+   "var": 93.613,
+   "p0": 0.0
+  },
+  "scramble_rate": 0.0512,
+  "yds_per_designed": 4.18,
+  "yds_per_scramble": 7.522,
+  "share_of_qb_rush_att": {
+   "designed": 0.251,
+   "sneak": 0.123,
+   "scramble": 0.466,
+   "kneel": 0.16
+  }
+ },
+ "C_kneels": {
+  "by_spread": {
+   "dog 0.5-2.5": {
+    "n": 133,
+    "mean": 0.774,
+    "p0": 0.534
+   },
+   "dog 3-6.5": {
+    "n": 285,
+    "mean": 0.495,
+    "p0": 0.681
+   },
+   "dog 7+": {
+    "n": 126,
+    "mean": 0.476,
+    "p0": 0.667
+   },
+   "fav 3-6.5": {
+    "n": 285,
+    "mean": 0.965,
+    "p0": 0.456
+   },
+   "fav 7+": {
+    "n": 126,
+    "mean": 1.063,
+    "p0": 0.437
+   },
+   "pick 0-2.5": {
+    "n": 133,
+    "mean": 0.902,
+    "p0": 0.504
+   }
+  },
+  "by_result": {
+   "won": {
+    "n": 544,
+    "mean": 1.307,
+    "p0": 0.322
+   },
+   "lost or tied": {
+    "n": 544,
+    "mean": 0.224,
+    "p0": 0.783
+   }
+  }
+ },
+ "D_box_kneels": {
+  "qb_games_with_a_kneel_matched": 504,
+  "box_equals_pbp_with_kneels": 504,
+  "box_equals_pbp_without_kneels": 0
+ },
+ "E_rb_shape": {
+  "rows_2023": 837,
+  "rows_2024": 837,
+  "carries_alpha_2023": 0.0939,
+  "carries_alpha_by_line_quintile_2023": [
+   {
+    "carry_line": [
+     5.0,
+     7.4
+    ],
+    "n": 173,
+    "alpha": 0.2872,
+    "p0_obs": 0.0347
+   },
+   {
+    "carry_line": [
+     7.4,
+     11.1
+    ],
+    "n": 180,
+    "alpha": 0.1786,
+    "p0_obs": 0.0111
+   },
+   {
+    "carry_line": [
+     11.1,
+     13.5
+    ],
+    "n": 184,
+    "alpha": 0.1211,
+    "p0_obs": 0.0
+   },
+   {
+    "carry_line": [
+     13.5,
+     15.3
+    ],
+    "n": 174,
+    "alpha": 0.0564,
+    "p0_obs": 0.0
+   },
+   {
+    "carry_line": [
+     15.3,
+     21.6
+    ],
+    "n": 173,
+    "alpha": 0.0571,
+    "p0_obs": 0.0
+   }
+  ],
+  "single_cv_2023": 0.5948,
+  "kernel_mean_2023": 4.152,
+  "ll_2024_compound_minus_single": {
+   "d": -0.09037942431967337,
+   "se": 0.015475008752123941,
+   "n": 837
+  },
+  "calibration_2024": {
+   "20-30": {
+    "n": 174,
+    "10+": {
+     "hit": 0.678,
+     "single_cv": 0.873,
+     "compound": 0.792
+    },
+    "15+": {
+     "hit": 0.569,
+     "single_cv": 0.727,
+     "compound": 0.662
+    },
+    "25+": {
+     "hit": 0.408,
+     "single_cv": 0.43,
+     "compound": 0.419
+    },
+    "40+": {
+     "hit": 0.264,
+     "single_cv": 0.155,
+     "compound": 0.185
+    }
+   },
+   "50+": {
+    "n": 441,
+    "10+": {
+     "hit": 0.982,
+     "single_cv": 0.987,
+     "compound": 0.985
+    },
+    "15+": {
+     "hit": 0.961,
+     "single_cv": 0.964,
+     "compound": 0.966
+    },
+    "25+": {
+     "hit": 0.893,
+     "single_cv": 0.884,
+     "compound": 0.902
+    },
+    "40+": {
+     "hit": 0.76,
+     "single_cv": 0.716,
+     "compound": 0.748
+    }
+   },
+   "all": {
+    "n": 837,
+    "10+": {
+     "hit": 0.885,
+     "single_cv": 0.951,
+     "compound": 0.924
+    },
+    "15+": {
+     "hit": 0.83,
+     "single_cv": 0.888,
+     "compound": 0.868
+    },
+    "25+": {
+     "hit": 0.699,
+     "single_cv": 0.731,
+     "compound": 0.736
+    },
+    "40+": {
+     "hit": 0.551,
+     "single_cv": 0.513,
+     "compound": 0.539
+    }
+   }
+  }
+ },
+ "F_sleeper_qb_kneels": {
+  "dog 3-6.5": {
+   "n": 285,
+   "att_actual_minus_proj": 0.216,
+   "yds_actual_minus_proj": 3.2,
+   "proj_att": 3.679
+  },
+  "dog 7+": {
+   "n": 126,
+   "att_actual_minus_proj": 0.435,
+   "yds_actual_minus_proj": 3.432,
+   "proj_att": 3.478
+  },
+  "fav 3-6.5": {
+   "n": 285,
+   "att_actual_minus_proj": 0.161,
+   "yds_actual_minus_proj": -0.218,
+   "proj_att": 3.927
+  },
+  "fav 7+": {
+   "n": 126,
+   "att_actual_minus_proj": 0.047,
+   "yds_actual_minus_proj": -0.49,
+   "proj_att": 4.096
+  },
+  "pick": {
+   "n": 265,
+   "att_actual_minus_proj": 0.196,
+   "yds_actual_minus_proj": 0.835,
+   "proj_att": 3.634
+  }
+ },
+ "G_correlations": {
+  "team_games": 1087,
+  "qb_rush_att_vs_rb1_carries": 0.0818,
+  "qb_rush_td_vs_rbs_rush_td": -0.0501,
+  "rb_games": 1674,
+  "rb_rush_yd_vs_rec_yd_same_player": -0.0232
+ },
+ "H_qb_shape": {
+  "rows_2023": 396,
+  "rows_2024": 424,
+  "kneels_by_spread_2023": {
+   "dog3": 0.59,
+   "fav3": 0.7052631578947368,
+   "pick": 0.7326732673267327,
+   "dog7": 0.4489795918367347,
+   "fav7": 0.7843137254901961
+  },
+  "shares_2023": {
+   "designed": 0.3053,
+   "sneak": 0.1558,
+   "scramble": 0.5389
+  },
+  "alpha_2023": {
+   "designed": 0.669,
+   "sneak": 1.05,
+   "scramble": 0.2352,
+   "kneel": 0.6335
+  },
+  "single_cv_2023": 0.7016,
+  "ll_2024_compound_minus_single": {
+   "d": -0.166543372506587,
+   "se": 0.04046791167420135,
+   "n": 424
+  },
+  "calibration_2024": {
+   "10-20": {
+    "n": 205,
+    "10+": {
+     "hit": 0.59,
+     "single_cv": 0.56,
+     "compound": 0.499
+    },
+    "15+": {
+     "hit": 0.439,
+     "single_cv": 0.359,
+     "compound": 0.362
+    },
+    "25+": {
+     "hit": 0.288,
+     "single_cv": 0.131,
+     "compound": 0.181
+    },
+    "40+": {
+     "hit": 0.117,
+     "single_cv": 0.026,
+     "compound": 0.057
+    }
+   },
+   "20-30": {
+    "n": 57,
+    "10+": {
+     "hit": 0.754,
+     "single_cv": 0.784,
+     "compound": 0.718
+    },
+    "15+": {
+     "hit": 0.667,
+     "single_cv": 0.63,
+     "compound": 0.596
+    },
+    "25+": {
+     "hit": 0.439,
+     "single_cv": 0.369,
+     "compound": 0.383
+    },
+    "40+": {
+     "hit": 0.14,
+     "single_cv": 0.145,
+     "compound": 0.174
+    }
+   },
+   "all": {
+    "n": 424,
+    "10+": {
+     "hit": 0.672,
+     "single_cv": 0.649,
+     "compound": 0.604
+    },
+    "15+": {
+     "hit": 0.566,
+     "single_cv": 0.487,
+     "compound": 0.488
+    },
+    "25+": {
+     "hit": 0.406,
+     "single_cv": 0.282,
+     "compound": 0.317
+    },
+    "40+": {
+     "hit": 0.212,
+     "single_cv": 0.14,
+     "compound": 0.167
+    }
+   }
+  }
+ }
+}

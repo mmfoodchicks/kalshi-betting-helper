@@ -1,0 +1,123 @@
+{
+ "by_season": {
+  "2023": {
+   "rb_rows": 1832,
+   "qb_rows": 662,
+   "weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+   ]
+  },
+  "2024": {
+   "rb_rows": 1790,
+   "qb_rows": 664,
+   "weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+   ]
+  },
+  "2025": {
+   "rb_rows": 1801,
+   "qb_rows": 664,
+   "weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+   ]
+  },
+  "2026": {
+   "rb_rows": 618,
+   "qb_rows": 211,
+   "weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ]
+  }
+ },
+ "rows": {
+  "rb": 6041,
+  "qb": 2201
+ },
+ "decay": 0.75,
+ "back": 2,
+ "k_frames": {
+  "2023": "reliability.json k_fit_only (pooled 2018-2024)",
+  "2024": "reliability.json k_fit_only (pooled 2018-2024)",
+  "2025": "reliability.json k_fit_only (pooled 2018-2024)",
+  "2026": "research/nfl_rush_dataset.py measure (split-half, 2018-2025)"
+ },
+ "sleeper_rows_mapped": 23600,
+ "sleeper_rows": 23671,
+ "k_note": "each row's shrunk `value` columns use the k table of its frame: 2023-2025 rows k_fit_only (pooled 2018-2024: a 2025 validation reads no 2025 reliability), 2026 rows the full 2018-2025 table; `_raw` and `_n` sit beside every value for re-shrinking",
+ "seconds": 74.6,
+ "files": {
+  "rb": {
+   "path": "research/data/nfl_rush/rb_games_2023_2026.csv.gz",
+   "bytes": 7677076,
+   "sha256": "f39a12ede637e30680043a1250a062dde93bd6ad160bfcc4fa2278d325dffe0f",
+   "columns": 905
+  },
+  "qb": {
+   "path": "research/data/nfl_rush/qb_games_2023_2026.csv.gz",
+   "bytes": 1567255,
+   "sha256": "d7a42025f001a1f66e4dbb702ca7c7356d2f6696534177c888b6995275d5de42",
+   "columns": 392
+  }
+ },
+ "license": {
+  "credit": "FTN Data via nflverse (CC BY-SA 4.0); nflverse-data (CC BY 4.0); Pro Football Reference advanced stats and snap counts via nflverse (credit Pro Football Reference / Sports Reference); participation through 2022: NFL NextGenStats via nflverse (for 2022 and earlier); NFL Next Gen Stats via nflverse (NFL-owned data, governed by the NFL's terms); NFL injury reports via nflverse; DynastyProcess db_playerids",
+  "share_alike": "tables derived from FTN charting are shared under CC BY-SA 4.0",
+  "terms": "research/reports/rush_data_sources.md \u00a712 and research/reports/matchup_data_sources.md"
+ }
+}

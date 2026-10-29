@@ -1,0 +1,960 @@
+{
+ "sleeper": {
+  "QB": {
+   "player_games": 2046,
+   "unmapped": 0,
+   "att_exact": 1.0,
+   "yds_exact": 0.9976,
+   "both_exact": 0.9976,
+   "att_exact_no_kneel": 0.6339,
+   "yds_exact_no_kneel": 0.6388,
+   "att_exact_no_aborted": 0.8832,
+   "yds_exact_no_aborted": 0.9936,
+   "att_exact_no_scramble": 0.3504,
+   "kneel_games": 749,
+   "kneel_games_exact_with_kneels": 749,
+   "kneel_games_exact_without_kneels": 0,
+   "mean_att_diff_pbp_minus_sleeper": 0.0,
+   "mean_yds_diff_pbp_minus_sleeper": -0.0049
+  },
+  "RB": {
+   "player_games": 5106,
+   "unmapped": 0,
+   "att_exact": 0.9998,
+   "yds_exact": 0.9996,
+   "both_exact": 0.9996,
+   "att_exact_no_kneel": 0.9998,
+   "yds_exact_no_kneel": 0.9996,
+   "att_exact_no_aborted": 0.9967,
+   "yds_exact_no_aborted": 0.998,
+   "att_exact_no_scramble": 0.9998,
+   "kneel_games": 0,
+   "kneel_games_exact_with_kneels": 0,
+   "kneel_games_exact_without_kneels": 0,
+   "mean_att_diff_pbp_minus_sleeper": -0.0002,
+   "mean_yds_diff_pbp_minus_sleeper": -0.0078
+  },
+  "definition": "pbp official rushes = designed (incl. sneaks) + scrambles + kneels + aborted snaps with the player as rusher; yards = nflverse rushing_yards where the row aligned (else yards_gained); sacks never"
+ },
+ "partition": {
+  "2023": {
+   "qbs": 81,
+   "rushes": 2285,
+   "partitioned": 2285.0,
+   "qbs_count_mismatch": 0,
+   "qbs_yards_mismatch": 0,
+   "sacks_with_a_rusher_id": 0,
+   "classes": {
+    "dsg": 453.0,
+    "sneak": 295.0,
+    "scr": 1029.0,
+    "kneel": 428.0,
+    "abort": 80.0,
+    "rpo": 56.0
+   },
+   "sneak_source": {
+    "ftn": 295,
+    "rule": 0
+   },
+   "rpo_dropbacks_not_rushes": 555
+  },
+  "2024": {
+   "qbs": 78,
+   "rushes": 2352,
+   "partitioned": 2352.0,
+   "qbs_count_mismatch": 0,
+   "qbs_yards_mismatch": 0,
+   "sacks_with_a_rusher_id": 0,
+   "classes": {
+    "dsg": 518.0,
+    "sneak": 267.0,
+    "scr": 1060.0,
+    "kneel": 405.0,
+    "abort": 102.0,
+    "rpo": 29.0
+   },
+   "sneak_source": {
+    "ftn": 267,
+    "rule": 0
+   },
+   "rpo_dropbacks_not_rushes": 349
+  },
+  "2025": {
+   "qbs": 81,
+   "rushes": 2215,
+   "partitioned": 2215.0,
+   "qbs_count_mismatch": 0,
+   "qbs_yards_mismatch": 0,
+   "sacks_with_a_rusher_id": 0,
+   "classes": {
+    "dsg": 357.0,
+    "sneak": 259.0,
+    "scr": 1087.0,
+    "kneel": 433.0,
+    "abort": 79.0,
+    "rpo": 67.0
+   },
+   "sneak_source": {
+    "ftn": 259,
+    "rule": 0
+   },
+   "rpo_dropbacks_not_rushes": 433
+  }
+ },
+ "coverage": {
+  "direction": {
+   "2018": {
+    "rb_designed_runs": 10956,
+    "location_blank": 0.0004,
+    "middle (gap blank by convention)": 0.311,
+    "left/right with gap blank": 0.0
+   },
+   "2019": {
+    "rb_designed_runs": 11183,
+    "location_blank": 0.0001,
+    "middle (gap blank by convention)": 0.2805,
+    "left/right with gap blank": 0.0
+   },
+   "2020": {
+    "rb_designed_runs": 11193,
+    "location_blank": 0.0003,
+    "middle (gap blank by convention)": 0.262,
+    "left/right with gap blank": 0.0
+   },
+   "2021": {
+    "rb_designed_runs": 11840,
+    "location_blank": 0.0,
+    "middle (gap blank by convention)": 0.2676,
+    "left/right with gap blank": 0.0
+   },
+   "2022": {
+    "rb_designed_runs": 11843,
+    "location_blank": 0.0005,
+    "middle (gap blank by convention)": 0.2489,
+    "left/right with gap blank": 0.0
+   },
+   "2023": {
+    "rb_designed_runs": 11739,
+    "location_blank": 0.0003,
+    "middle (gap blank by convention)": 0.2654,
+    "left/right with gap blank": 0.0
+   },
+   "2024": {
+    "rb_designed_runs": 11830,
+    "location_blank": 0.0003,
+    "middle (gap blank by convention)": 0.2559,
+    "left/right with gap blank": 0.0
+   },
+   "2025": {
+    "rb_designed_runs": 11881,
+    "location_blank": 0.0001,
+    "middle (gap blank by convention)": 0.2673,
+    "left/right with gap blank": 0.0
+   },
+   "2026": {
+    "rb_designed_runs": 4086,
+    "location_blank": 0.0,
+    "middle (gap blank by convention)": 0.2846,
+    "left/right with gap blank": 0.0
+   }
+  },
+  "joins": {
+   "2018": {
+    "pbp_extras": {
+     "games": 256,
+     "games_aligned": 256,
+     "rows": 32220,
+     "rows_aligned": 32220,
+     "rows_mismatch": 0,
+     "aborted_column": true,
+     "games_count_mismatch_n": 0
+    },
+    "pfr_rush": {
+     "rows": 2098,
+     "pfr_id": 2098,
+     "name": 0,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 16,
+     "examples": []
+    },
+    "snaps_ol": {
+     "rows": 3076,
+     "pfr_id": 3076,
+     "name": 0,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 0,
+     "examples": []
+    },
+    "snaps": {
+     "rows": 6489,
+     "pfr_id": 6489,
+     "name": 0,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 15,
+     "examples": []
+    },
+    "snaps_team": {
+     "team_games": 512,
+     "team_fallback": 0
+    },
+    "pfr_crosswalk": {
+     "players_csv": 16988,
+     "dp_added": 8,
+     "dp_disagree": 8,
+     "conflicts": 0
+    },
+    "ngs": {
+     "rows": 519,
+     "season_rows_dropped": 55,
+     "unjoined": 0,
+     "not_in_crosswalk": 0,
+     "examples": []
+    }
+   },
+   "2019": {
+    "pbp_extras": {
+     "games": 256,
+     "games_aligned": 256,
+     "rows": 32516,
+     "rows_aligned": 32516,
+     "rows_mismatch": 0,
+     "aborted_column": true,
+     "games_count_mismatch_n": 0
+    },
+    "pfr_rush": {
+     "rows": 2060,
+     "pfr_id": 2060,
+     "name": 0,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 11,
+     "examples": []
+    },
+    "snaps": {
+     "rows": 6479,
+     "pfr_id": 6466,
+     "name": 13,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 14,
+     "examples": []
+    },
+    "snaps_ol": {
+     "rows": 3136,
+     "pfr_id": 3136,
+     "name": 0,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 0,
+     "examples": []
+    },
+    "snaps_team": {
+     "team_games": 512,
+     "team_fallback": 4
+    },
+    "pfr_crosswalk": {
+     "players_csv": 16988,
+     "dp_added": 8,
+     "dp_disagree": 8,
+     "conflicts": 0
+    },
+    "ngs": {
+     "rows": 520,
+     "season_rows_dropped": 48,
+     "unjoined": 0,
+     "not_in_crosswalk": 0,
+     "examples": []
+    }
+   },
+   "2020": {
+    "pbp_extras": {
+     "games": 256,
+     "games_aligned": 256,
+     "rows": 32945,
+     "rows_aligned": 32945,
+     "rows_mismatch": 0,
+     "aborted_column": true,
+     "games_count_mismatch_n": 0
+    },
+    "pfr_rush": {
+     "rows": 2162,
+     "pfr_id": 2161,
+     "name": 0,
+     "unjoined": 1,
+     "skill_not_in_crosswalk": 20,
+     "examples": [
+      "John Lovett (LoveJo02, GB)"
+     ]
+    },
+    "snaps_ol": {
+     "rows": 2869,
+     "pfr_id": 2869,
+     "name": 0,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 0,
+     "examples": []
+    },
+    "snaps": {
+     "rows": 6688,
+     "pfr_id": 6679,
+     "name": 1,
+     "unjoined": 8,
+     "skill_not_in_crosswalk": 18,
+     "examples": [
+      "John Lovett (LoveJo02, GB)",
+      "John Lovett (LoveJo02, GB)",
+      "John Lovett (LoveJo02, GB)",
+      "John Lovett (LoveJo02, GB)",
+      "John Lovett (LoveJo02, GB)",
+      "John Lovett (LoveJo02, GB)",
+      "John Lovett (LoveJo02, GB)",
+      "John Lovett (LoveJo02, GB)"
+     ]
+    },
+    "snaps_team": {
+     "team_games": 512,
+     "team_fallback": 0
+    },
+    "pfr_crosswalk": {
+     "players_csv": 16988,
+     "dp_added": 8,
+     "dp_disagree": 8,
+     "conflicts": 0
+    },
+    "ngs": {
+     "rows": 516,
+     "season_rows_dropped": 55,
+     "unjoined": 0,
+     "not_in_crosswalk": 0,
+     "examples": []
+    }
+   },
+   "2021": {
+    "pbp_extras": {
+     "games": 272,
+     "games_aligned": 272,
+     "rows": 34449,
+     "rows_aligned": 34449,
+     "rows_mismatch": 0,
+     "aborted_column": true,
+     "games_count_mismatch_n": 0
+    },
+    "pfr_rush": {
+     "rows": 2274,
+     "pfr_id": 2274,
+     "name": 0,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 12,
+     "examples": []
+    },
+    "pfr_pass": {
+     "rows": 675,
+     "pfr_id": 675,
+     "name": 0,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 12,
+     "examples": []
+    },
+    "snaps_ol": {
+     "rows": 3346,
+     "pfr_id": 3344,
+     "name": 2,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 0,
+     "examples": []
+    },
+    "snaps": {
+     "rows": 7150,
+     "pfr_id": 7135,
+     "name": 15,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 1,
+     "examples": []
+    },
+    "snaps_team": {
+     "team_games": 544,
+     "team_fallback": 1
+    },
+    "pfr_crosswalk": {
+     "players_csv": 16988,
+     "dp_added": 8,
+     "dp_disagree": 8,
+     "conflicts": 0
+    },
+    "ngs": {
+     "rows": 540,
+     "season_rows_dropped": 52,
+     "unjoined": 0,
+     "not_in_crosswalk": 0,
+     "examples": []
+    }
+   },
+   "2022": {
+    "pbp_extras": {
+     "games": 271,
+     "games_aligned": 271,
+     "rows": 34136,
+     "rows_aligned": 34136,
+     "rows_mismatch": 0,
+     "aborted_column": true,
+     "games_count_mismatch_n": 0
+    },
+    "pfr_rush": {
+     "rows": 2289,
+     "pfr_id": 2289,
+     "name": 0,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 16,
+     "examples": []
+    },
+    "pfr_pass": {
+     "rows": 655,
+     "pfr_id": 655,
+     "name": 0,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 9,
+     "examples": []
+    },
+    "snaps_ol": {
+     "rows": 3342,
+     "pfr_id": 3342,
+     "name": 0,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 0,
+     "examples": []
+    },
+    "snaps": {
+     "rows": 7033,
+     "pfr_id": 7032,
+     "name": 1,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 0,
+     "examples": []
+    },
+    "snaps_team": {
+     "team_games": 542,
+     "team_fallback": 3
+    },
+    "pfr_crosswalk": {
+     "players_csv": 16988,
+     "dp_added": 8,
+     "dp_disagree": 8,
+     "conflicts": 0
+    },
+    "ngs": {
+     "rows": 542,
+     "season_rows_dropped": 48,
+     "unjoined": 0,
+     "not_in_crosswalk": 0,
+     "examples": []
+    }
+   },
+   "2023": {
+    "pbp_extras": {
+     "games": 272,
+     "games_aligned": 272,
+     "rows": 34331,
+     "rows_aligned": 34331,
+     "rows_mismatch": 0,
+     "aborted_column": true,
+     "games_count_mismatch_n": 0
+    },
+    "pfr_rush": {
+     "rows": 2277,
+     "pfr_id": 2277,
+     "name": 0,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 14,
+     "examples": []
+    },
+    "pfr_pass": {
+     "rows": 672,
+     "pfr_id": 672,
+     "name": 0,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 6,
+     "examples": []
+    },
+    "snaps_ol": {
+     "rows": 3362,
+     "pfr_id": 3362,
+     "name": 0,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 0,
+     "examples": []
+    },
+    "snaps": {
+     "rows": 7043,
+     "pfr_id": 7030,
+     "name": 0,
+     "unjoined": 13,
+     "skill_not_in_crosswalk": 0,
+     "examples": [
+      "Rodney Williams (WillRo08, PIT)",
+      "Rodney Williams (WillRo08, PIT)",
+      "Rodney Williams (WillRo08, PIT)",
+      "Rodney Williams (WillRo08, PIT)",
+      "Rodney Williams (WillRo08, PIT)",
+      "Rodney Williams (WillRo08, PIT)",
+      "Rodney Williams (WillRo08, PIT)",
+      "Rodney Williams (WillRo08, PIT)"
+     ]
+    },
+    "snaps_team": {
+     "team_games": 544,
+     "team_fallback": 0
+    },
+    "pfr_crosswalk": {
+     "players_csv": 16988,
+     "dp_added": 8,
+     "dp_disagree": 8,
+     "conflicts": 0
+    },
+    "ngs": {
+     "rows": 551,
+     "season_rows_dropped": 49,
+     "unjoined": 0,
+     "not_in_crosswalk": 0,
+     "examples": []
+    }
+   },
+   "2024": {
+    "pbp_extras": {
+     "games": 272,
+     "games_aligned": 272,
+     "rows": 33811,
+     "rows_aligned": 33811,
+     "rows_mismatch": 0,
+     "aborted_column": true,
+     "games_count_mismatch_n": 0
+    },
+    "pfr_rush": {
+     "rows": 2255,
+     "pfr_id": 2255,
+     "name": 0,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 11,
+     "examples": []
+    },
+    "pfr_pass": {
+     "rows": 664,
+     "pfr_id": 664,
+     "name": 0,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 9,
+     "examples": []
+    },
+    "snaps_ol": {
+     "rows": 3380,
+     "pfr_id": 3360,
+     "name": 0,
+     "unjoined": 20,
+     "skill_not_in_crosswalk": 0,
+     "examples": [
+      "Alec Anderson (AndeAl01, BUF)",
+      "Alec Anderson (AndeAl01, BUF)",
+      "Alec Anderson (AndeAl01, BUF)",
+      "Alec Anderson (AndeAl01, BUF)",
+      "Alec Anderson (AndeAl01, BUF)",
+      "Bill Murray (MurrBi00, CHI)",
+      "Alec Anderson (AndeAl01, BUF)",
+      "Bill Murray (MurrBi00, CHI)"
+     ]
+    },
+    "snaps": {
+     "rows": 7027,
+     "pfr_id": 7009,
+     "name": 4,
+     "unjoined": 14,
+     "skill_not_in_crosswalk": 13,
+     "examples": [
+      "Rodney Williams (WillRo08, PIT)",
+      "John Samuel Shenker (ShenJo00, LV)",
+      "Rodney Williams (WillRo08, PIT)",
+      "Rodney Williams (WillRo08, PIT)",
+      "John Samuel Shenker (ShenJo00, LV)",
+      "John Samuel Shenker (ShenJo00, LV)",
+      "Rodney Williams (WillRo08, PIT)",
+      "John Samuel Shenker (ShenJo00, LV)"
+     ]
+    },
+    "snaps_team": {
+     "team_games": 544,
+     "team_fallback": 1
+    },
+    "pfr_crosswalk": {
+     "players_csv": 16988,
+     "dp_added": 8,
+     "dp_disagree": 8,
+     "conflicts": 0
+    },
+    "ngs": {
+     "rows": 533,
+     "season_rows_dropped": 47,
+     "unjoined": 0,
+     "not_in_crosswalk": 0,
+     "examples": []
+    }
+   },
+   "2025": {
+    "pbp_extras": {
+     "games": 272,
+     "games_aligned": 272,
+     "rows": 33325,
+     "rows_aligned": 33325,
+     "rows_mismatch": 0,
+     "aborted_column": true,
+     "games_count_mismatch_n": 0
+    },
+    "pfr_rush": {
+     "rows": 2253,
+     "pfr_id": 2251,
+     "name": 0,
+     "unjoined": 2,
+     "skill_not_in_crosswalk": 6,
+     "examples": [
+      "Nathan Carter (CartNa00, ATL)",
+      "Nathan Carter (CartNa00, ATL)"
+     ]
+    },
+    "pfr_pass": {
+     "rows": 654,
+     "pfr_id": 654,
+     "name": 0,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 5,
+     "examples": []
+    },
+    "snaps_ol": {
+     "rows": 3428,
+     "pfr_id": 3413,
+     "name": 0,
+     "unjoined": 15,
+     "skill_not_in_crosswalk": 0,
+     "examples": [
+      "Alec Anderson (AndeAl01, BUF)",
+      "Alec Anderson (AndeAl01, BUF)",
+      "Alec Anderson (AndeAl01, BUF)",
+      "Alec Anderson (AndeAl01, BUF)",
+      "Alec Anderson (AndeAl01, BUF)",
+      "Alec Anderson (AndeAl01, BUF)",
+      "Alec Anderson (AndeAl01, BUF)",
+      "Alec Anderson (AndeAl01, BUF)"
+     ]
+    },
+    "snaps": {
+     "rows": 7028,
+     "pfr_id": 7011,
+     "name": 10,
+     "unjoined": 7,
+     "skill_not_in_crosswalk": 1,
+     "examples": [
+      "Nathan Carter (CartNa00, ATL)",
+      "Nathan Carter (CartNa00, ATL)",
+      "Nathan Carter (CartNa00, ATL)",
+      "Nathan Carter (CartNa00, ATL)",
+      "Nathan Carter (CartNa00, ATL)",
+      "Nathan Carter (CartNa00, ATL)",
+      "Nathan Carter (CartNa00, ATL)"
+     ]
+    },
+    "snaps_team": {
+     "team_games": 544,
+     "team_fallback": 3
+    },
+    "pfr_crosswalk": {
+     "players_csv": 16988,
+     "dp_added": 8,
+     "dp_disagree": 8,
+     "conflicts": 0
+    },
+    "ngs": {
+     "rows": 569,
+     "season_rows_dropped": 51,
+     "unjoined": 0,
+     "not_in_crosswalk": 0,
+     "examples": []
+    }
+   },
+   "2026": {
+    "pbp_extras": {
+     "games": 93,
+     "games_aligned": 93,
+     "rows": 11620,
+     "rows_aligned": 11620,
+     "rows_mismatch": 0,
+     "aborted_column": true,
+     "games_count_mismatch_n": 0
+    },
+    "pfr_rush": {
+     "rows": 736,
+     "pfr_id": 736,
+     "name": 0,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 5,
+     "examples": []
+    },
+    "pfr_pass": {
+     "rows": 213,
+     "pfr_id": 213,
+     "name": 0,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 2,
+     "examples": []
+    },
+    "snaps_ol": {
+     "rows": 1134,
+     "pfr_id": 1128,
+     "name": 0,
+     "unjoined": 6,
+     "skill_not_in_crosswalk": 0,
+     "examples": [
+      "Alec Anderson (AndeAl01, BUF)",
+      "Alec Anderson (AndeAl01, BUF)",
+      "Alec Anderson (AndeAl01, BUF)",
+      "Alec Anderson (AndeAl01, BUF)",
+      "Alec Anderson (AndeAl01, BUF)",
+      "Alec Anderson (AndeAl01, BUF)"
+     ]
+    },
+    "snaps": {
+     "rows": 2446,
+     "pfr_id": 2440,
+     "name": 6,
+     "unjoined": 0,
+     "skill_not_in_crosswalk": 0,
+     "examples": []
+    },
+    "snaps_team": {
+     "team_games": 186,
+     "team_fallback": 1
+    },
+    "pfr_crosswalk": {
+     "players_csv": 16988,
+     "dp_added": 8,
+     "dp_disagree": 8,
+     "conflicts": 0
+    },
+    "ngs": {
+     "rows": 186,
+     "season_rows_dropped": 45,
+     "unjoined": 0,
+     "not_in_crosswalk": 0,
+     "examples": []
+    }
+   }
+  },
+  "aux_2026": {
+   "pfr_rush_weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "pfr_def_weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "pfr_pass_weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "snap_weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "ngs_weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "injury_weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "situational_on_field": "none (no 2026 participation file)",
+   "missing": [
+    "situational on-field counts (no participation file for this season)"
+   ],
+   "store_weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "ngs_coverage": {
+   "2018": {
+    "rb_designed_runs": 10956.0,
+    "ngs_attempts_joined": 8008.0,
+    "share_of_rb_runs_with_ryoe": 0.7309,
+    "rb_games_10plus_runs": 521,
+    "of_which_ngs_row": 519
+   },
+   "2019": {
+    "rb_designed_runs": 11183.0,
+    "ngs_attempts_joined": 8245.0,
+    "share_of_rb_runs_with_ryoe": 0.7373,
+    "rb_games_10plus_runs": 520,
+    "of_which_ngs_row": 520
+   },
+   "2020": {
+    "rb_designed_runs": 11193.0,
+    "ngs_attempts_joined": 7971.0,
+    "share_of_rb_runs_with_ryoe": 0.7121,
+    "rb_games_10plus_runs": 517,
+    "of_which_ngs_row": 515
+   },
+   "2021": {
+    "rb_designed_runs": 11840.0,
+    "ngs_attempts_joined": 8529.0,
+    "share_of_rb_runs_with_ryoe": 0.7204,
+    "rb_games_10plus_runs": 540,
+    "of_which_ngs_row": 540
+   },
+   "2022": {
+    "rb_designed_runs": 11843.0,
+    "ngs_attempts_joined": 8511.0,
+    "share_of_rb_runs_with_ryoe": 0.7187,
+    "rb_games_10plus_runs": 542,
+    "of_which_ngs_row": 542
+   },
+   "2023": {
+    "rb_designed_runs": 11739.0,
+    "ngs_attempts_joined": 8558.0,
+    "share_of_rb_runs_with_ryoe": 0.729,
+    "rb_games_10plus_runs": 551,
+    "of_which_ngs_row": 550
+   },
+   "2024": {
+    "rb_designed_runs": 11830.0,
+    "ngs_attempts_joined": 8538.0,
+    "share_of_rb_runs_with_ryoe": 0.7217,
+    "rb_games_10plus_runs": 533,
+    "of_which_ngs_row": 533
+   },
+   "2025": {
+    "rb_designed_runs": 11881.0,
+    "ngs_attempts_joined": 8805.0,
+    "share_of_rb_runs_with_ryoe": 0.7411,
+    "rb_games_10plus_runs": 569,
+    "of_which_ngs_row": 569
+   },
+   "2026": {
+    "rb_designed_runs": 4086.0,
+    "ngs_attempts_joined": 2970.0,
+    "share_of_rb_runs_with_ryoe": 0.7269,
+    "rb_games_10plus_runs": 185,
+    "of_which_ngs_row": 185
+   }
+  }
+ },
+ "contact": {
+  "2023": {
+   "pfr_player_games": 2276,
+   "pfr_carries_equal_official_rushes": 1.0,
+   "within_1": 1.0,
+   "official_rushes": 14606,
+   "rushing_yards_differ_from_yards_gained": 2
+  },
+  "2024": {
+   "pfr_player_games": 2254,
+   "pfr_carries_equal_official_rushes": 0.9991,
+   "within_1": 1.0,
+   "official_rushes": 14686,
+   "rushing_yards_differ_from_yards_gained": 3
+  },
+  "2025": {
+   "pfr_player_games": 2251,
+   "pfr_carries_equal_official_rushes": 0.9996,
+   "within_1": 1.0,
+   "official_rushes": 14601,
+   "rushing_yards_differ_from_yards_gained": 1
+  }
+ },
+ "pfr_season": {
+  "2019": {},
+  "2020": {},
+  "2021": {},
+  "2022": {
+   "rpo_runs_team": {
+    "teams": 31,
+    "ftn_rpo_designed_runs": 888,
+    "ftn_rpo_qb_keeps": 50,
+    "pfr_rpo_rush_att": 276,
+    "r_ftn_runs_vs_pfr": -0.124
+   }
+  },
+  "2023": {
+   "rpo_runs_team": {
+    "teams": 31,
+    "ftn_rpo_designed_runs": 1224,
+    "ftn_rpo_qb_keeps": 56,
+    "pfr_rpo_rush_att": 247,
+    "r_ftn_runs_vs_pfr": 0.085
+   }
+  },
+  "2024": {
+   "scrambles": {
+    "qbs": 47,
+    "nflverse_total": 1012,
+    "pfr_total": 1007,
+    "exact": 0.723,
+    "within_3": 1.0,
+    "r": 0.999
+   },
+   "rpo_runs_team": {
+    "teams": 32,
+    "ftn_rpo_designed_runs": 839,
+    "ftn_rpo_qb_keeps": 29,
+    "pfr_rpo_rush_att": 282,
+    "r_ftn_runs_vs_pfr": 0.048
+   }
+  },
+  "2025": {
+   "scrambles": {
+    "qbs": 45,
+    "nflverse_total": 1021,
+    "pfr_total": 1028,
+    "exact": 0.733,
+    "within_3": 0.978,
+    "r": 0.998
+   },
+   "rpo_runs_team": {
+    "teams": 32,
+    "ftn_rpo_designed_runs": 1585,
+    "ftn_rpo_qb_keeps": 67,
+    "pfr_rpo_rush_att": 309,
+    "r_ftn_runs_vs_pfr": 0.113
+   }
+  },
+  "note": "PFR's scrambles and RPO counts are PFR's charting, nflverse's scrambles are nflfastR's qb_scramble and the RPO flag FTN's is_rpo; scrambles for QBs with 100+ dropbacks (PFR's column is blank before 2024); RPO runs per team (QBs traded mid-season, '2TM' rows, are left out of PFR's side)"
+ },
+ "license": {
+  "credit": "FTN Data via nflverse (CC BY-SA 4.0); nflverse-data (CC BY 4.0); Pro Football Reference advanced stats and snap counts via nflverse (credit Pro Football Reference / Sports Reference); participation through 2022: NFL NextGenStats via nflverse (for 2022 and earlier); NFL Next Gen Stats via nflverse (NFL-owned data, governed by the NFL's terms); NFL injury reports via nflverse; DynastyProcess db_playerids",
+  "share_alike": "tables derived from FTN charting are shared under CC BY-SA 4.0",
+  "terms": "research/reports/rush_data_sources.md \u00a712 and research/reports/matchup_data_sources.md"
+ }
+}
