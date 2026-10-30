@@ -21,6 +21,8 @@
   --hold: #fbbf24;
   --accent: #5b8cff;
   --accent2: #5b8cff;
+  --link: #8fb0ff;
+  --link-hover: #b8ccff;
   --grad: var(--accent);
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -41,6 +43,17 @@ body {
 }
 
 h1, h2, .brand { font-family: "Inter", sans-serif; letter-spacing: -0.01em; }
+
+/* Links had no colour of their own, so every one drew in the browser's #0000EE:
+   1.9:1 on a card, 1.6:1 once visited. The owner, 2026-10-30, on the Matchups
+   scanner's player names: "this black on blue is hard to read". One light tint
+   for every link and every state: 8.5:1 on a card, 8.0:1 on the lightest
+   surface (--card2). Both rules weigh one type selector (the hover inside
+   :where(), which adds nothing; a bare a:hover outweighs a class), so a class or
+   an inline colour still wins. The underline is the link's own colour at 45%. */
+a { color: var(--link); text-decoration-color: rgba(143, 176, 255, 0.45);
+    text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 2px; }
+a:where(:hover) { color: var(--link-hover); }
 
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 6px; }

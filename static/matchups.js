@@ -21,7 +21,7 @@
 // does not stop a quote from ending the string (the Fable review's B1 ran an
 // alert() through a player id that way, 2026-10-23).
 let _mx = { sport: "nfl", date: "", data: null, err: "", view: "scan", player: "", cmp: ["", ""],
-  label: "", stat: "", game: "", listed: true, sort: "best", dir: -1, side: "best", open: {}, full: {}, retry: null, tries: 0 };
+  label: "", stat: "", game: "", listed: true, fold: true, sort: "best", dir: -1, side: "best", open: {}, full: {}, retry: null, tries: 0 };
 // The owner's sort menu and side picker (2026-10-23): "Best picks" ranks the
 // believable +EV lines by their EV at the CAUTIOUS end of the model's band
 // (the EV itself where the engine has no band), thin books and lines the
@@ -182,15 +182,17 @@ function _mxVsMkt(v, side) {
 // The side a row is shown for: the chosen one, or the line's better side.
 function _mxRowSide(r) { return _mx.side === "yes" || _mx.side === "no" ? _mx.side : (r.b ? r.b.side : "yes"); }
 
-// The sort and side are a per-viewer convenience (localStorage, never required).
+// The sort, the side and the one-line-per-player fold are a per-viewer
+// convenience (localStorage, never required).
 function _mxSave() {
-  try { localStorage.setItem("mxSortSide", JSON.stringify({ sort: _mx.sort, side: _mx.side })); } catch (e) { /* private mode */ }
+  try { localStorage.setItem("mxSortSide", JSON.stringify({ sort: _mx.sort, side: _mx.side, fold: _mx.fold })); } catch (e) { /* private mode */ }
 }
 function _mxRestore() {
   try {
     const o = JSON.parse(localStorage.getItem("mxSortSide") || "{}");
     if (_MX_SORTS.some(([k]) => k === o.sort)) _mx.sort = o.sort;
     if (["best", "yes", "no"].includes(o.side)) _mx.side = o.side;
+    if (typeof o.fold === "boolean") _mx.fold = o.fold;
   } catch (e) { /* private mode or bad JSON: defaults */ }
 }
 function initMatchups() {
@@ -248,6 +250,7 @@ function _mxChange(e) {
   else if (act === "sortsel") { _mx.sort = _MX_SORTS.some(([k]) => k === el.value) ? el.value : "best"; _mx.dir = -1; _mxSave(); mxRender(); }
   else if (act === "game") { _mx.game = el.value; mxRender(); }
   else if (act === "listed") { _mx.listed = !!el.checked; mxRender(); }
+  else if (act === "fold") { _mx.fold = !!el.checked; _mxSave(); mxRender(); }
   else if (act === "pick") { _mx.player = el.value; mxRender(); _mxNeedPieces(); }
   else if (act === "cmp0" || act === "cmp1") { _mx.cmp[act === "cmp0" ? 0 : 1] = el.value; mxRender(); _mxNeedPieces(); }
 }
@@ -479,6 +482,13 @@ function _mxRows(d) {
   return rows;
 }
 function _mxKey(v) { return _mxOk(v) ? v : -1e12; }     // a missing value sorts last, never NaN (B10)
+// The scanner's fold: one player's one stat, YES and NO alike ("2 of the same"). The key carries
+// the name, team and game beside the id, so two players are never merged into one row -- not even
+// two whose id came through as the string "None" (nfl_matchup stores str(player_id)).
+function _mxGroup(r) {
+  const p = r.p || {};
+  return JSON.stringify([p.player_id ? String(p.player_id) : "", p.name, p.team, p.game_id, r.m.stat]);
+}
 function mxScanView(d) {
   let rows = _mxRows(d);
   const stats = [...new Set(rows.map((r) => r.m.stat))];
@@ -502,7 +512,7 @@ function mxScanView(d) {
     if (!_mxOk(e) || (no && v.market_kind !== "two_sided")) return null;
     return no ? -e : e;
   };
-  const key = {
+  const keys = {
     // a believable, unimpeached +EV line ranks by its cautious EV (the band's
     // unfavourable end; the EV itself without a band); everything else after
     best: (r) => {
@@ -513,15 +523,36 @@ function mxScanView(d) {
     ev: (r) => (clean(r) ? _mxKey(r.b.ev) : demoted(r, r.b ? r.b.ev : null)),
     p: (r) => _mxKey(_mxSideP(r.l, _mxRowSide(r)).p),
     edge: (r) => _mxKey(sideEdge(r)), nef: (r) => _mxKey((r.l.hit_similar_def || {}).n_eff),
-  }[_mx.sort] || (() => 0);
-  rows.sort((a, b) => _mx.dir * (key(a) - key(b)));
+  };
+  const key = keys[_mx.sort] || (() => 0);
+  for (const r of rows) { r.k = key(r); r.kb = keys.best(r); }
+  // The owner (2026-10-30): "only the best option for a certain player shows once ... If it's 2
+  // different slips like points and assists, keep those. But 2 of the same is annoying" -- Franz
+  // Wagner's assists were listed at 6+ and again at 4+, and football's ladders the same way. One
+  // row per player and stat: the rung the chosen sort ranks HIGHEST, whichever way its column is
+  // turned (Best picks breaks a tie: "Most evidence" ties every rung of a ladder). Folded after
+  // the filters, so a chip, a stat or a game keeps the best of what it shows; the row and the line
+  // above the table count what was folded, and the player page keeps every rung.
+  let folded = 0;
+  if (_mx.fold) {
+    const top = new Map();
+    for (const r of rows) {
+      const g = _mxGroup(r), t = top.get(g);
+      if (!t) { top.set(g, { r, n: 1 }); continue; }
+      t.n += 1;
+      if (r.k > t.r.k || (r.k === t.r.k && r.kb > t.r.kb)) t.r = r;
+    }
+    folded = rows.length - top.size;
+    rows = [...top.values()].map((t) => Object.assign(t.r, { more: t.n - 1 }));
+  }
+  rows.sort((a, b) => _mx.dir * (a.k - b.k));
   const th = (k, t) => `<th style="cursor:pointer" data-mx="sort" data-val="${k}">${t}${_mx.sort === k ? (_mx.dir < 0 ? " ▾" : " ▴") : ""}</th>`;
   const chip = (v, t) => `<span class="ptchip${_mx.label === v ? " on" : ""}" data-mx="label" data-val="${_mxEsc(v)}" style="cursor:pointer">${_mxEsc(t)}</span>`;
   const body = rows.slice(0, _MX_CAP).map((r) => {
     const mk = r.l.market || {}, b = r.b;
     return `<tr style="border-top:1px solid var(--line,#333)">
       <td style="text-align:left"><a href="#" data-mx="open" data-val="${_mxEsc(r.p.player_id)}">${_mxEsc(r.p.name)}</a> <span class="small" style="color:var(--muted)">${_mxEsc(r.p.pos || "")} ${_mxEsc(r.p.team)} v ${_mxEsc(r.p.opp)}</span></td>
-      <td>${_mxEsc(_mxStat(r.m.stat))} ${_mxEsc(r.l.k)}+</td>
+      <td>${_mxEsc(_mxStat(r.m.stat))} ${_mxEsc(r.l.k)}+${r.more ? ` <span class="small" style="color:var(--muted);white-space:nowrap">+${Number(r.more)} more</span>` : ""}</td>
       <td>${(() => { const sp = _mxSideP(r.l, _mxRowSide(r)); return `<span class="small" style="color:var(--muted)">${_mxSide(_mxRowSide(r))}</span> <b>${_mxPct(sp.p)}</b> <span class="small" style="color:var(--muted)">${_mxBand({ p_lo: sp.lo, p_hi: sp.hi })}</span>`; })()}</td>
       <td>${r.l.market ? `${_mxCents(mk.yes_ask)} / ${_mxCents(mk.no_ask)}` : "-"}</td>
       <td>${_mxVsMkt(r.l.value, _mxRowSide(r))}</td>
@@ -533,10 +564,12 @@ function mxScanView(d) {
   return `<div class="small" style="margin-bottom:6px">Show: ${chip("", "all")} ${Object.entries(_MX_LABELS).map(([k, [n]]) => chip(k, n)).join(" ")}
       · <select data-mx="stat" style="width:auto;padding:2px 4px"><option value="">every stat</option>${stats.map((s) => `<option value="${_mxEsc(s)}"${_mx.stat === String(s) ? " selected" : ""}>${_mxEsc(_mxStat(s))}</option>`).join("")}</select>
       <select data-mx="game" style="width:auto;padding:2px 4px"><option value="">every game</option>${games.map(([id, t]) => `<option value="${_mxEsc(id)}"${_mx.game === String(id) ? " selected" : ""}>${_mxEsc(t)}</option>`).join("")}</select>
-      <label style="display:inline-flex;align-items:center;gap:4px;white-space:nowrap"><input type="checkbox" data-mx="listed" ${_mx.listed ? "checked" : ""} style="width:auto;margin:0"/> only lines Kalshi lists</label></div>
+      <label style="display:inline-flex;flex-direction:row;align-items:center;gap:4px;white-space:nowrap"><input type="checkbox" data-mx="listed" ${_mx.listed ? "checked" : ""} style="width:auto;margin:0"/> only lines Kalshi lists</label>
+      <label style="display:inline-flex;flex-direction:row;align-items:center;gap:4px;white-space:nowrap"><input type="checkbox" data-mx="fold" ${_mx.fold ? "checked" : ""} style="width:auto;margin:0"/> best line per player and stat</label></div>
     <div class="small" style="margin-bottom:6px">Side: <select data-mx="side" style="width:auto;padding:2px 4px">${_MX_SIDES.map(([k, t]) => `<option value="${k}"${_mx.side === k ? " selected" : ""}>${t}</option>`).join("")}</select>
       · Sort: <select data-mx="sortsel" style="width:auto;padding:2px 4px">${_MX_SORTS.map(([k, t]) => `<option value="${k}"${_mx.sort === k ? " selected" : ""}>${t}</option>`).join("")}</select>
       <span style="color:var(--muted)">${_mx.sort === "best" ? "Best picks: believable +EV lines, ranked by their EV at the cautious end of the model's band; thin books and lines the market beat on record go last." : ""}</span></div>
+    ${folded ? `<div class="small" style="color:var(--muted);margin-bottom:4px">One line per player and stat, the best of each by your sort (whichever way its column is turned): ${folded} other line${folded === 1 ? "" : "s"} folded ("+N more" on the row). Tap a player for every line.</div>` : ""}
     <div class="small" style="color:var(--muted);margin-bottom:4px">"vs market" is the model's probability minus the market's own (the two-sided mid, or the ask when only one side is quoted). EV is cents per contract after Kalshi's fee at the ask, for the side shown; the range is the EV at the ends of the model's probability band. "Similar n" is the effective number of past games against comparable defenses.</div>
     <div class="scroller" style="overflow-x:auto"><table class="small" style="border-collapse:collapse;width:100%;min-width:720px;text-align:right">
       <thead><tr><th style="text-align:left;min-width:150px">Player</th><th>Line</th>${th("p", "Model (side)")}<th>YES / NO ask</th>${th("edge", "vs market")}${th("ev", "EV")}${th("nef", "Similar n")}<th style="text-align:left">Labels</th></tr></thead>

@@ -53,6 +53,79 @@ def _mx_sort_default_ok(js):
             and '["yes", "YES"], ["no", "NO"]' in js and "localStorage.setItem(\"mxSortSide\"" in js)
 
 
+def _mx_fold_check(js):
+    """The scanner's one-line-per-player fold, run on the real functions under node: (ok, out), ok None
+    where node is absent. The owner (2026-10-30): "only the best option for a certain player shows once ...
+    If it's 2 different slips like points and assists, keep those. But 2 of the same is annoying"."""
+    fo_ok, fo_out = None, ""
+    try:
+        import shutil
+        import subprocess
+        if shutil.which("node"):
+            h5 = ("const $ = () => null;\n" + js + "\n" + r"""
+function L(k, p, lo, hi, evy, evn, ivy, ivn, labels) {
+  return {k, p, p_lo: lo, p_hi: hi, market: {yes_ask: 50, no_ask: 52}, labels: labels || [], hit_similar_def: {n_eff: 12},
+    value: {best_side: evy >= evn ? 'yes' : 'no', ev_yes: evy, ev_no: evn, ev_interval: {yes: ivy, no: ivn},
+            believable: true, edge: 0.05, p_market: 0.5, market_kind: 'two_sided'}};
+}
+const ann = {player_id: '1', name: 'Ann', team: 'A', opp: 'B', game_id: '9', markets: [
+  {stat: 'ast', lines: [
+    L(4, 0.70, 0.60, 0.80, 9.0, -11, [-1, 19], [-21, -1], ['positive_ev']),
+    L(6, 0.60, 0.58, 0.62, 6.0, -8, [4, 8], [-10, -6], ['positive_ev']),
+    L(8, 0.45, 0.40, 0.50, -3.0, -5, [-8, 2], [-10, 0], ['strong_fit']),
+    L(10, 0.10, 0.08, 0.12, -9.0, 5.0, [-11, -7], [3, 7], ['positive_ev'])]},
+  {stat: 'pts', lines: [L(15, 0.55, 0.50, 0.60, 2.0, -4, [0.5, 3.5], [-6, -2], ['positive_ev'])]}]};
+const bob = {player_id: '2', name: 'Bob', team: 'C', opp: 'D', game_id: '8', markets: [
+  {stat: 'ast', lines: [L(4, 0.52, 0.50, 0.54, 1.0, -3, [0.2, 1.8], [-4, -2], ['positive_ev'])]}]};
+const cy = {player_id: 'None', name: 'Cy', team: 'E', opp: 'F', game_id: '7', markets: [
+  {stat: 'reb', lines: [L(5, 0.40, 0.35, 0.45, -2.0, -6, [-6, 2], [-9, -3], [])]}]};
+const di = {player_id: 'None', name: 'Di', team: 'E', opp: 'F', game_id: '7', markets: [
+  {stat: 'reb', lines: [L(5, 0.40, 0.35, 0.45, -2.5, -6, [-7, 1], [-9, -3], [])]}]};
+const d = {status: 'ok', games: [], players: [ann, bob, cy, di]};
+_mx.data = d; _mx.listed = false; _mx.side = 'best'; _mx.dir = -1; _mx.sort = 'best';
+const rows = (html) => [...html.matchAll(/data-mx="open" data-val="[^"]*">([^<]*)<\/a>[\s\S]*?<td>([A-Za-z+ ]+?) (\d+)\+(?: <span[^>]*>\+(\d+) more<\/span>)?<\/td>/g)]
+  .map((m) => `${m[1]} ${m[2]} ${m[3]}${m[4] ? ' +' + m[4] : ''}`);
+const dflt = _mx.fold;
+const h0 = mxScanView(d); const best = rows(h0);
+_mx.sort = 'ev'; const ev = rows(mxScanView(d));
+_mx.sort = 'p'; const p = rows(mxScanView(d));
+_mx.sort = 'best'; _mx.dir = 1; const asc = rows(mxScanView(d)); _mx.dir = -1;
+_mx.sort = 'nef'; const nef = rows(mxScanView(d)); _mx.sort = 'best';
+_mx.label = 'strong_fit'; const fit = rows(mxScanView(d)); _mx.label = '';
+_mx.stat = 'ast'; const astOnly = rows(mxScanView(d)); _mx.stat = '';
+_mx.fold = false; const h1 = mxScanView(d); const all = rows(h1);
+const store = {}; globalThis.localStorage = {getItem: (k) => store[k] || null, setItem: (k, v) => { store[k] = v; }};
+globalThis.mxRender = () => {};
+const tick = (checked) => _mxChange({target: {closest: () => ({dataset: {mx: 'fold'}, checked})}});
+_mx.fold = true; tick(false); const offAfter = _mx.fold; const savedOff = store.mxSortSide;
+_mx.fold = true; _mxRestore(); const restoredOff = _mx.fold;
+store.mxSortSide = '{"fold":"no"}'; _mx.fold = true; _mxRestore(); const keptBad = _mx.fold;
+tick(true); const onAfter = _mx.fold;
+process.stdout.write(JSON.stringify({dflt, best, ev, p, asc, nef, fit, astOnly, all,
+  note0: /3 other lines folded/.test(h0), note1: /folded/.test(h1),
+  box0: h0.includes('data-mx="fold" checked'), box1: h1.includes('data-mx="fold"') && !h1.includes('data-mx="fold" checked'),
+  offAfter, savedOff, restoredOff, keptBad, onAfter}));
+""")
+            r5 = subprocess.run(["node", "-e", h5], capture_output=True, text=True, timeout=30)
+            o5 = json.loads(r5.stdout) if r5.returncode == 0 and r5.stdout else None
+            fo_out = r5.stdout[:1200] + r5.stderr[-400:]
+            tail = ["Ann Points 15", "Bob Assists 4", "Cy Rebounds 5", "Di Rebounds 5"]
+            fo_ok = bool(o5) and o5["dflt"] is True \
+                and o5["best"] == ["Ann Assists 6 +3"] + tail \
+                and o5["ev"] == ["Ann Assists 4 +3"] + tail and o5["p"] == ["Ann Assists 10 +3"] + tail \
+                and o5["asc"] == ["Di Rebounds 5", "Cy Rebounds 5", "Bob Assists 4", "Ann Points 15", "Ann Assists 6 +3"] \
+                and o5["nef"] == ["Ann Assists 6 +3"] + tail and o5["fit"] == ["Ann Assists 8"] \
+                and o5["astOnly"] == ["Ann Assists 6 +3", "Bob Assists 4"] \
+                and o5["all"] == ["Ann Assists 6", "Ann Assists 10", "Ann Points 15", "Bob Assists 4", "Ann Assists 4",
+                                  "Cy Rebounds 5", "Di Rebounds 5", "Ann Assists 8"] \
+                and o5["note0"] and not o5["note1"] and o5["box0"] and o5["box1"] \
+                and o5["offAfter"] is False and '"fold":false' in (o5["savedOff"] or "") \
+                and o5["restoredOff"] is False and o5["keptBad"] is True and o5["onAfter"] is True
+    except Exception as e:
+        fo_ok, fo_out = False, repr(e)
+    return fo_ok, fo_out
+
+
 def _fake_d(calls, load_season, default_seasons=None, daily_raises=False, build_raises=()):
     """A stand-in nfl_matchup_data for the deep job: records each refresh as ("D", seasons, keep_raw).
     `build_raises`: seasons whose build fails AFTER their files were downloaded."""
@@ -542,7 +615,8 @@ def run(ck):
                   " L(9, 0.50, 0.30, 0.70, 2.0, -4, [-30, 10], [-12, 28], false, ['thin_book'], 0.0)];\n"   # muted +EV, floor -30
                   "_mx.data = {status: 'ok', games: [], players: [{player_id: '1', name: 'P', team: 'A', opp: 'B', game_id: '9',"
                   " markets: [{stat: 'pts', lines}]}]};\n"
-                  "_mx.listed = false; _mx.sort = 'best'; _mx.side = 'best'; _mx.dir = -1;\n"
+                  # every rung of the one ladder, the fold off: this check is the ORDER (the fold's own is below)
+                  "_mx.listed = false; _mx.fold = false; _mx.sort = 'best'; _mx.side = 'best'; _mx.dir = -1;\n"
                   "const ord = (html) => [...html.matchAll(/Points (\\d+)\\+/g)].map((m) => +m[1]);\n"
                   "const best = ord(mxScanView(_mx.data));\n"
                   "_mx.sort = 'ev'; const ev = ord(mxScanView(_mx.data));\n"
@@ -597,6 +671,52 @@ def run(ck):
        "clean +EV lines (sort review R2), and the stale qualifier rides only the side whose +EV earned it (R1); the "
        "menus and the stored choices refuse bad values",
        _mx_sort_default_ok(js) and so_ok is not False, str((so_ok, so_out)))
+    # The owner (2026-10-30): one row per player and stat -- "only the best option for a certain player shows
+    # once ... If it's 2 different slips like points and assists, keep those. But 2 of the same is annoying".
+    fo_ok, fo_out = _mx_fold_check(js)
+    ck("Matchups tab (one line per player and stat, the owner 2026-10-30): by default the scanner shows each player's "
+       "best rung of each stat, YES and NO alike -- the one the chosen sort ranks highest (Best picks: the +4c floor "
+       "over the +9c line whose floor is -1c and the NO +5c whose floor is +3c; Highest EV: that +9c line; Highest "
+       "probability: the 10+ NO at 90%), still the highest when the column is turned ascending, Best picks breaking a "
+       "tie (Most evidence ties a ladder) -- with '+N more' on its row and the count above the table; a different stat "
+       "(points beside assists) and a different player keep their rows, two players whose id came through as 'None' "
+       "are never merged, a chip or a stat filter folds what it keeps (the strong-fit chip shows the 8+ that carries "
+       "it), the box unticked shows every rung, and the choice is stored and refuses a non-boolean",
+       fo_ok is not False, str((fo_ok, fo_out)))
+    css = open(os.path.join(_ROOT, "static", "style.css")).read()
+    root_css = re.search(r":root\s*\{([^}]*)\}", css)
+    tok = dict(re.findall(r"--([\w-]+):\s*(#[0-9a-fA-F]{6})\s*;", root_css.group(1))) if root_css else {}
+
+    def _lum(h):
+        def lin(c):
+            c = c / 255.0
+            return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+        r_, g_, b_ = (int(h[i:i + 2], 16) for i in (1, 3, 5))
+        return 0.2126 * lin(r_) + 0.7152 * lin(g_) + 0.0722 * lin(b_)
+
+    def _contrast(a, b):
+        hi_, lo_ = sorted((_lum(a), _lum(b)), reverse=True)
+        return (hi_ + 0.05) / (lo_ + 0.05)
+    surfaces = [tok.get(k) for k in ("bg", "bg2", "card", "card2")]
+    a_rule = re.search(r"(?m)^a\s*\{([^}]*)\}", css)
+    hover_rule = re.search(r"(?m)^a:where\(:hover\)\s*\{([^}]*)\}", css)
+    ratios = [round(_contrast(tok[c], s), 2) for c in ("link", "link-hover") for s in surfaces] \
+        if tok.get("link") and tok.get("link-hover") and all(surfaces) else []
+    ck("links are readable on every surface: one app-wide colour (--link, and --link-hover) at 7:1 or better on the "
+       "page, the bars and both card tints -- the browser's own #0000EE was 1.9:1 on a card, 1.6:1 visited, the "
+       "owner's 'this black on blue is hard to read' on the Matchups scanner's player names (2026-10-30); that link "
+       "carries no colour of its own, so the rule reaches it, and the hover rule sits inside :where() so it weighs no "
+       "more than `a` (a bare a:hover outweighs a class, and the comment promises a class still wins)",
+       bool(a_rule) and "var(--link)" in a_rule.group(1) and bool(hover_rule) and "var(--link-hover)" in hover_rule.group(1)
+       and not re.search(r"(?m)^a:hover\b", css)
+       and len(ratios) == 8 and min(ratios) >= 7.0
+       and re.search(r'<a href="#" data-mx="open" data-val="\$\{_mxEsc\(r\.p\.player_id\)\}">', js) is not None,
+       str((ratios, a_rule.group(0) if a_rule else None)))
+    labs = re.findall(r'<label style="(display:inline-flex[^"]*)"><input type="checkbox" data-mx="(\w+)"', js)
+    ck("Matchups tab: the scanner's two checkboxes sit BESIDE their text -- style.css's global label rule is a column "
+       "(label { display: flex; flex-direction: column }), and an inline display alone left each box above its words",
+       sorted(m for _st, m in labs) == ["fold", "listed"] and all("flex-direction:row" in st for st, _m in labs)
+       and re.search(r"(?m)^label \{[^}]*flex-direction: column", css) is not None, str(labs))
     ck("Matchups tab (F18/F17): a line the record impeaches (market_better) has its EV muted, never bold, and ranked "
        "with the thin books; the chip's tooltip prints the record it rests on (season, n, both log losses)",
        "mkt: (labels || []).includes(\"market_better\")" in js and "r.b && r.b.ok && !r.b.mkt" in js
