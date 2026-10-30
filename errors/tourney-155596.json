@@ -388,6 +388,8 @@
  "mins_before_lock": 18,
  "model": "engine",
  "money_places": 14873,
+ "picked": false,
+ "picked_built_ts": null,
  "players": [
   {
    "ceiling": 32.2,

@@ -1361,6 +1361,8 @@
   "win_any_pct": "first or a share of it",
   "win_pct": "first outright"
  },
+ "picked": false,
+ "picked_built_ts": null,
  "players": [
   {
    "casual_pct": 37.64,
