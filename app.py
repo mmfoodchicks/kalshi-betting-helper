@@ -55,7 +55,7 @@ def _asset_version():
     page reload fetches the new UI without needing a server restart."""
     try:
         latest = max(os.path.getmtime(os.path.join(_STATIC_DIR, f))
-                     for f in ("app.js", "matchups.js", "nflview.js", "style.css", "sw.js"))
+                     for f in ("app.js", "matchups.js", "nflview.js", "dfspick.js", "style.css", "sw.js"))
         return str(int(latest))
     except OSError:
         return _ASSET_VERSION
@@ -2268,7 +2268,7 @@ def _tourney_pending():
     for dg, r in sorted(_tourney_requests().items(), key=lambda kv: kv[1].get("ts") or 0):
         if not _tourney_req_live(r, now):
             continue
-        if (_tourney_built_ts(r.get("sport") or "nfl", dg) or 0) >= (r.get("ts") or 0):
+        if (_tourney_built_ts(r.get("sport") or "nfl", dg, pick=bool(r.get("pick"))) or 0) >= (r.get("ts") or 0):
             continue
         try:
             row = dict(r, dg=int(dg))
@@ -2314,13 +2314,15 @@ def _tourney_last_attempt(dg, payload, queued):
 _tourney_built = {}          # board file -> (mtime, built_ts), this worker's
 
 
-def _tourney_built_ts(sport, dg):
+def _tourney_built_ts(sport, dg, pick=False):
     """The built_ts of a slate's tournament board (either kind), or None, reading
     each board file once per version: the queue asks it of every live request on
-    every poll of the tab, and a board is 0.5-1.2 MB of pickle (Fable's review)."""
+    every poll of the tab, and a board is 0.5-1.2 MB of pickle (Fable's review).
+    `pick`: the player picker's board of that slate (`..._pick`), which alone
+    answers a picked request."""
     import boardshare
     for k in _TOURNEY_KINDS:
-        name = f"{k}_tourney_{sport}_{dg}"
+        name = f"{k}_tourney_{sport}_{dg}" + ("_pick" if pick else "")
         mt = boardshare.mtime(name)
         if mt is None:
             continue
@@ -2334,11 +2336,12 @@ def _tourney_built_ts(sport, dg):
     return None
 
 
-def _tourney_board(sport, dg):
-    """(payload, age) for a slate's tournament board of either kind."""
+def _tourney_board(sport, dg, pick=False):
+    """(payload, age) for a slate's tournament board of either kind (`pick`:
+    the player picker's board of the slate)."""
     import boardshare
     for k in _TOURNEY_KINDS:
-        payload, age = boardshare.get(f"{k}_tourney_{sport}_{dg}", None)
+        payload, age = boardshare.get(f"{k}_tourney_{sport}_{dg}" + ("_pick" if pick else ""), None)
         if payload:
             return payload, age
     return None, None
@@ -2427,30 +2430,36 @@ def api_dfs_tourney():
     is none. It never computes: a one-core web worker must not be able to
     start a 200,000 x 60,000 matrix job.
 
-    ?sport=nfl&dg=<draft_group_id>"""
+    ?sport=nfl&dg=<draft_group_id>[&pick=1 -- the player picker's board]"""
     sport = (request.args.get("sport") or "nfl").lower()
     try:
         dg = int(request.args.get("dg") or 0)
     except ValueError:
         dg = 0
+    picked = (request.args.get("pick") or "") in ("1", "true")
     pc = _pc_status()               # the light: "PC off" is the honest reason for no board
     if sport != "nfl":
         return jsonify({"status": "none", "sport": sport, "pc": pc,
                         "why": "the tournament runs for NFL slates so far"})
     if not dg:
         return jsonify({"status": "none", "pc": pc, "why": "dg (draft group) required"})
-    queued = [r for r in _tourney_pending() if r["dg"] == dg]
+    queued = [r for r in _tourney_pending() if r["dg"] == dg and bool(r.get("pick")) == picked]
     queued_ts = queued[0].get("ts") if queued else None
     queued_attempt = queued[0].get("attempt") if queued else None
-    payload, age = _tourney_board(sport, dg)
+    payload, age = _tourney_board(sport, dg, pick=picked)
     last_attempt = _tourney_last_attempt(dg, payload, queued)
+    picked_ts = None if picked else _tourney_built_ts(sport, dg, pick=True)
     if not payload:
-        return jsonify({"status": "none", "sport": sport, "draft_group_id": dg, "pc": pc,
+        return jsonify({"status": "none", "sport": sport, "draft_group_id": dg, "pc": pc, "picked": picked,
+                        "picked_built_ts": picked_ts,
                         "queued_ts": queued_ts, "queued_attempt": queued_attempt, "last_attempt": last_attempt,
-                        "why": "not built yet - on its own the PC builds the Sunday main slate "
-                               "Saturday night and after Sunday's inactives, and the Thursday, "
-                               "Sunday and Monday night showdowns before their games; Build on "
-                               "the PC queues any slate"})
+                        "why": ("no build with your picks yet - pick players under Build on the PC and press "
+                                "Build; the PC builds it first in its next cycle (the schedule never builds "
+                                "one)" if picked else
+                                "not built yet - on its own the PC builds the Sunday main slate "
+                                "Saturday night and after Sunday's inactives, and the Thursday, "
+                                "Sunday and Monday night showdowns before their games; Build on "
+                                "the PC queues any slate")})
     out = dict(payload)
     out["status"] = "ok"
     out["age_s"] = int(age or 0)
@@ -2458,6 +2467,8 @@ def api_dfs_tourney():
     out["queued_ts"] = queued_ts
     out["queued_attempt"] = queued_attempt
     out["last_attempt"] = last_attempt
+    out["picked"] = picked
+    out["picked_built_ts"] = picked_ts
     return jsonify(out)
 
 
@@ -2468,8 +2479,13 @@ def api_dfs_tourney_request():
     a request is answered once a board newer than it arrives. The owner's
     ask, 2026-09-10: "let me have a button that will run it if I want."
 
-    JSON body: {sport, dg, kind: showdown|classic, label}, or {dg, cancel:
-    true} to take a request back (the PC finishes a build it has started).
+    JSON body: {sport, dg, kind: showdown|classic, label, pick}, or {dg,
+    cancel: true} to take a request back (the PC finishes a build it has
+    started). `pick` (the player picker, nfl_dfs.pick_parse) is checked here
+    against DraftKings' pool by arithmetic only -- names, DK's status, the
+    roster shape, the salary -- and the PC checks Sleeper's side (projection,
+    depth chart) when it builds; its refusal is the final word. One request
+    per slate: the latest press, picked or not, replaces the one queued.
 
     A classic slate with no contest of _TOURNEY_CL_MIN_POOL is refused: the
     PC builds classic boards only against seven-figure contests
@@ -2487,6 +2503,32 @@ def api_dfs_tourney_request():
     kind = "showdown" if (body.get("kind") or "") == "showdown" else "classic"
     reqs = _tourney_requests()
     now = int(time.time())
+    pick, pick_names = None, None
+    if not body.get("cancel") and body.get("pick"):
+        import dk
+        import nfl_dfs
+        import simulate
+        try:
+            pp = nfl_dfs.pick_parse(body.get("pick"))
+        except ValueError as e:
+            return jsonify({"error": f"player picker: {e}", "pick_refused": True}), 400
+        if pp:
+            try:
+                sl = dk.slate_for(sport, draft_group_id=dg)
+            except Exception as e:
+                errlog.note("TOURN-req-pick", e)
+                sl = None
+            if not sl:
+                return jsonify({"error": "player picker: DraftKings' pool for this slate did not load; try again",
+                                "pick_refused": True}), 502
+            pk, why = nfl_dfs.pick_resolve(pp, simulate.parse_dk_csv(sl["csv"]), kind, board=True)
+            if why:
+                return jsonify({"error": f"player picker: {why}", "pick_refused": True}), 400
+            pick = {key: [{"name": n, "team": t, "id": i} for n, t, i in pp[key]] for key in ("exclude", "force")}
+            pick["captain"] = ({"name": pp["captain"][0], "team": pp["captain"][1], "id": pp["captain"][2]}
+                               if pp["captain"] else None)
+            pick_names = nfl_dfs.pick_stamp(pk)
+    replaced = bool(reqs.get(str(dg))) and _tourney_req_live(reqs[str(dg)], now)
     if body.get("cancel"):
         reqs.pop(str(dg), None)
     else:
@@ -2503,14 +2545,19 @@ def api_dfs_tourney_request():
                                 "min_pool": _TOURNEY_CL_MIN_POOL}), 400
         reqs[str(dg)] = {"sport": sport, "kind": kind, "ts": now,
                          "label": str(body.get("label") or "")[:120],
-                         "starts_ts": _tourney_slate_start(sport, dg)}
+                         "starts_ts": _tourney_slate_start(sport, dg),
+                         **({"pick": pick, "pick_names": pick_names} if pick else {})}
     reqs = {k: v for k, v in reqs.items() if _tourney_req_live(v, now)}
     if not _tourney_json_save(_TOURNEY_REQ, reqs):
         return jsonify({"error": "could not queue the request"}), 500
     if body.get("cancel"):
         return jsonify({"cancelled": True, "dg": dg, "pending": len(_tourney_pending())})
-    return jsonify({"queued": True, "dg": dg, "kind": kind, "ts": now,
-                    "pending": len(_tourney_pending())})
+    return jsonify({"queued": True, "dg": dg, "kind": kind, "ts": now, "replaced": replaced,
+                    "pending": len(_tourney_pending()),
+                    **({"pick": pick_names,
+                        "checked": "against DraftKings' pool: the names, their status, the roster shape and the "
+                                   "salary; Sleeper's projection and depth chart are checked when the PC builds"}
+                       if pick else {})})
 
 
 @app.route("/api/dfs/tourney/requests")
@@ -2569,6 +2616,14 @@ def api_dfs_tourney_list():
     sport = (request.args.get("sport") or "nfl").lower()
     prefixes = tuple(f"{k}_tourney_{sport}_" for k in _TOURNEY_KINDS)
     rows = []
+
+    def _picked(payload, label):
+        pk = payload.get("pick")
+        if not pk:
+            return {"pick": False, "label": label}
+        bits = ([f"{', '.join(pk.get('force') or [])} forced"] if pk.get("force") else []) + \
+               ([f"{', '.join(pk.get('exclude') or [])} out"] if pk.get("exclude") else [])
+        return {"pick": True, "label": f"Your build: {label}" + (f" -- {'; '.join(bits)}" if bits else "")}
     try:
         names = [fn for fn in os.listdir(boardshare._DIR) if fn.startswith(prefixes) and fn.endswith(".pkl")]
     except OSError:
@@ -2602,7 +2657,7 @@ def api_dfs_tourney_list():
             rows.append({"dg": payload.get("draft_group_id"), "kind": "classic",
                          "contest": c.get("name"), "entries": c.get("max_entries"),
                          "entry_fee": c.get("entry_fee"), "teams": None,
-                         "label": f"Sunday main ({sl.get('games')} games)" if sl.get("games") else "classic",
+                         **_picked(payload, f"Sunday main ({sl.get('games')} games)" if sl.get("games") else "classic"),
                          "n_contests": len(cs), "starts": c.get("starts"),
                          "worlds": payload.get("worlds"), "built_ts": payload.get("built_ts"),
                          "age_s": int(age or 0)})
@@ -2612,7 +2667,7 @@ def api_dfs_tourney_list():
         rows.append({"dg": payload.get("draft_group_id"), "kind": "showdown",
                      "contest": c.get("name"), "entries": c.get("max_entries"),
                      "entry_fee": c.get("entry_fee"), "teams": sl.get("teams"),
-                     "label": " vs ".join(sl.get("teams") or []) or str(payload.get("draft_group_id")),
+                     **_picked(payload, " vs ".join(sl.get("teams") or []) or str(payload.get("draft_group_id"))),
                      "starts": c.get("starts"), "worlds": payload.get("worlds"),
                      "built_ts": payload.get("built_ts"), "age_s": int(age or 0)})
         _tourney_rows[fn] = (mt, rows[-1])
@@ -2788,6 +2843,11 @@ def api_simulate_dfs():
         obj = obj if obj in ("projection", "ceiling", "leverage") else "projection"
         contest = d.get("contest") if d.get("contest") in ("gpp", "double_up") else None
         try:
+            # the player picker rides its own key: `exclude` above is GAMES
+            pick = nfl_dfs.pick_parse(d.get("pick"))
+        except ValueError as e:
+            return jsonify({"error": f"player picker: {e}", "pick_refused": True}), 400
+        try:
             # 0 / absent is "the slate's own week" (its dates, else its
             # kickoff, else this week); the picker defaulted to Week 1 and an
             # auto-loaded week-6 slate was built on week-1 projections.
@@ -2815,7 +2875,8 @@ def api_simulate_dfs():
                 # DraftKings' own payout table for the contest picked in the tab
                 # (dk.contest_detail's tiers); nfl_dfs.payout_table validates it
                 # and the sims fall back to the fitted curve without it
-                payouts=(d.get("payouts") if isinstance(d.get("payouts"), list) else None))
+                payouts=(d.get("payouts") if isinstance(d.get("payouts"), list) else None),
+                pick=pick)
             if auto_slate and isinstance(res, dict):
                 res["dk_slate"] = auto_slate
             _dfs_log("nfl", d, res, auto_slate, text)

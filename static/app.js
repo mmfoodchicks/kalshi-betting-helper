@@ -6822,7 +6822,8 @@ function renderNflDfs(d) {
     ? `<div class="small" style="margin-top:6px;color:#e0566a">⚠️ ${escapeHtml(d.status_warning)}</div>` : "";
   const flatNote = d.flat_note
     ? `<div class="small" style="margin-top:6px;color:var(--muted)">${escapeHtml(d.flat_note)}</div>` : "";
-  return `<div class="combo hl prop">
+  const pickHtml = typeof dfsPickBanner === "function" ? dfsPickBanner(d) : "";
+  return `<div class="combo hl prop">${pickHtml}
     <div class="chead"><span class="ctag">🏈 NFL ${d.mode === "showdown" ? "showdown" : "lineup"} - ${objName}</span>
       <span class="small">Week ${d.week}${d.mode === "showdown" ? " · CPT + 5 FLEX" : ` · ${d.stack ? "QB stack" : "no stack"}`}</span></div>
     ${stWarn}${_nflInputsHtml(d.inputs)}
@@ -6887,10 +6888,12 @@ async function runDfsSim() {
         grid: (($("dfsGrid") || {}).value || "").trim() || null,
         nfl_mode: ($("dfsNflMode") || {}).value || "auto",
         payouts: _dfsDkPay,
+        pick: (sp === "nfl" && typeof dfsPickPayload === "function") ? dfsPickPayload("sheet") : null,
         week: parseInt(($("dfsNflWeek") || {}).value, 10) || 0 }),
     })).json();
     if (d.error === "upgrade_required") { box.innerHTML = upgradeNote(d); return; }
-    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    // escaped: the player picker's refusals echo the names sent ("X is not on this slate")
+    if (d.error) { box.innerHTML = `<div class="empty">${escapeHtml(d.error)}</div>`; return; }
     // The slate that was auto-pulled from DK's lobby, and who DK scratched.
     if (typeof loadDfsLookback === "function") setTimeout(loadDfsLookback, 800);   // the build was just logged
     const dkNote = d.dk_slate
@@ -7883,6 +7886,8 @@ async function dfsShowScoring() {
     const r = new FileReader();
     r.onload = () => {
       ta.value = String(r.result || "");
+      // a programmatic fill fires no input event: the player picker reads the new pool here
+      if (typeof dfsPickLoadSheet === "function") dfsPickLoadSheet();
       if (nameEl) nameEl.textContent = `\u2713 ${file.name} (${Math.max(1, Math.round(file.size / 1024))} KB, ${ta.value.split("\n").filter(Boolean).length - 1} players)`;
     };
     r.onerror = () => { if (nameEl) nameEl.textContent = "Couldn't read that file - try paste instead."; };
@@ -8244,6 +8249,7 @@ async function applyDfsContest(id) {
       const s = await (await fetch(`/api/dfs/slate?sport=${encodeURIComponent(sp)}&dg=${encodeURIComponent(dg)}`)).json();
       if (s.csv) {
         $("dfsCsv").value = s.csv;
+        if (typeof dfsPickLoadSheet === "function") dfsPickLoadSheet();   // the picker shows this slate's pool
         poolNote = ` · ${s.n_players} in the pool${s.n_dropped ? ` (${s.n_dropped} scratched)` : ""}`;
         if ($("dfsFileName")) $("dfsFileName").textContent = `DraftKings slate ${dg}: ${s.n_players} players loaded`;
       } else { poolNote = " · pool not loaded (paste the CSV)"; }
@@ -8348,20 +8354,23 @@ async function loadDfsField(cid) {
   box.innerHTML = `<div class="small" style="margin-top:8px"><b>${escapeHtml(((s.contest || {}).name) || String(s.contest_id))}</b> · ${(s.entries || 0).toLocaleString()} entries · 1st <b>${p.first ?? "-"}</b> · top 1% ${p.top_1pct ?? "-"} · cash line ${p.cash_line ?? "-"} · median ${p.median ?? "-"} · ${du.distinct_lineups != null ? du.distinct_lineups.toLocaleString() : "-"} distinct lineups (most copied: ${du.max_copies ?? "-"}) · ${s.max_entry_users_pct}% of entries from 150-max players</div>${shape}
     <div class="scroller" style="overflow-x:auto;margin-top:6px"><table class="small" style="border-collapse:collapse;min-width:100%"><thead><tr><th style="text-align:left">most owned</th><th></th><th>salary</th><th>owned</th><th>DK pts</th></tr></thead><tbody>${own}</tbody></table></div>`;
 }
-async function loadDfsTourney(dg, force) {
+let _dfsTourneyPicked = false;   // the player picker's board of the slate (?pick=1)
+async function loadDfsTourney(dg, force, picked) {
   const bx = _dfsTourneyBoxes();
   if (!bx) return;
   const sp = ($("dfsSport") || {}).value;
   loadNflWeather();
   loadDfsFields();
   renderDfsTourneyBuild();
+  if (typeof dfsPickLoadSheet === "function") dfsPickLoadSheet();
+  _dfsTourneyPicked = !!picked;
   if (sp !== "nfl") { bx.main.innerHTML = ""; bx.files.innerHTML = ""; _dfsTourneyDg = null; _dfsTourneyData = null; return; }
   loadDfsTourneyList();
   if (!dg) { bx.main.innerHTML = ""; _dfsTourneyDg = null; _dfsTourneyData = null; return; }
   _dfsTourneyDg = String(dg);
   bx.main.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ tournament: looking for the PC's build…</div>`;
   try {
-    const d = await (await fetch(`/api/dfs/tourney?sport=nfl&dg=${encodeURIComponent(dg)}`)).json();
+    const d = await (await fetch(`/api/dfs/tourney?sport=nfl&dg=${encodeURIComponent(dg)}${_dfsTourneyPicked ? "&pick=1" : ""}`)).json();
     if (String(_dfsTourneyDg) !== String(dg)) return;     // the user moved to another slate
     _dfsTourneyData = d;
     _dfsTourneyCid = null;
@@ -8378,7 +8387,7 @@ async function loadDfsTourneyList() {
     const rows = d.boards || [];
     const pend = d.pending || [];
     if (!rows.length && !pend.length) { bx.files.innerHTML = ""; return; }
-    const links = rows.map((r) => `<a href="#" onclick="loadDfsTourney(${r.dg}, true);return false" style="margin-right:10px" title="${escapeHtml(r.contest || "")}">${escapeHtml(r.label || (r.teams || []).join(" vs ") || String(r.dg))}</a><span class="small" style="color:var(--faint);margin-right:12px">${agoStr(r.age_s)}</span>`).join("");
+    const links = rows.map((r) => `<a href="#" onclick="loadDfsTourney(${Number(r.dg)}, true, ${r.pick ? "true" : "false"});return false" style="margin-right:10px" title="${escapeHtml(r.contest || "")}">${escapeHtml(r.label || (r.teams || []).join(" vs ") || String(r.dg))}</a><span class="small" style="color:var(--faint);margin-right:12px">${agoStr(r.age_s)}</span>`).join("");
     const q = pend.length ? `<span class="small" style="color:var(--muted)"> · queued for the PC: ${pend.map((p) => `${escapeHtml(p.label || String(p.dg))}${p.attempt ? ` <span style="color:#e0a656">(⚠ not built: ${escapeHtml(p.attempt.why || "no reason given")})</span>` : ""} <a href="#" onclick="dfsTourneyCancel(${Number(p.dg)});return false" title="take this request back (a build the PC has started still finishes)">✕</a>`).join(", ")}</span>` : "";
     bx.files.innerHTML = `<div class="small" style="margin-top:6px;color:var(--muted)">🗂 boards on file: ${links}${q}</div>`;
   } catch (e) { bx.files.innerHTML = ""; }
@@ -8409,8 +8418,10 @@ function renderDfsTourneyBuild(msg) {
   const group = (label, xs) => xs.length ? `<optgroup label="${label}">${xs.map(opt).join("")}</optgroup>` : "";
   const opts = group("Built automatically by the PC", auto) + group("Other slates", rest)
     + group("No $1M+ contest - the PC does not build these", none);
-  bx.build.innerHTML = `<div class="small" style="margin-top:6px">🛠 Build on the PC: <select id="dfsTourneyPickBuild" style="width:auto;padding:2px 4px"><option value="">- pick a slate -</option>${opts}</select> <button class="track-mini" type="button" onclick="dfsTourneyRequest()" title="Queue exactly the slate picked for the PC's next cycle. It builds requests before anything else: a showdown takes about 20 minutes, a classic slate about an hour.">Build</button>${msg ? ` <span style="color:var(--muted)">${escapeHtml(msg)}</span>` : ""}</div>`;
+  bx.build.innerHTML = `<div class="small" style="margin-top:6px">🛠 Build on the PC: <select id="dfsTourneyPickBuild" style="width:auto;padding:2px 4px"><option value="">- pick a slate -</option>${opts}</select> <button class="track-mini" type="button" onclick="dfsTourneyRequest()" title="Queue exactly the slate picked for the PC's next cycle. It builds requests before anything else: a showdown takes about 20 minutes, a classic slate about an hour.">Build</button>${msg ? ` <span style="color:var(--muted)">${escapeHtml(msg)}</span>` : ""}</div><div id="dfsPickPc"></div>`;
   if (keep && nfl.some((x) => String(x.draft_group_id) === keep)) $("dfsTourneyPickBuild").value = keep;
+  // the picker for that slate (its pool stays in memory across redraws)
+  if (typeof dfsPickLoad === "function" && keep && nfl.some((x) => String(x.draft_group_id) === keep)) dfsPickLoad("pc", keep);
 }
 async function dfsTourneyRequest() {
   const dg = (($("dfsTourneyPickBuild") || {}).value) || "";
@@ -8420,13 +8431,17 @@ async function dfsTourneyRequest() {
   const showdown = !!sl && (sl.games || 1) === 1;
   _dfsTourneyBusy = true;
   try {
+    // the picker's pool for this slate (and its saved picks) first: pressed while it loaded, the Build went out
+    // plain and replaced a queued picked one (round-3 review)
+    if (typeof dfsPickReady === "function") await dfsPickReady(dg);
     const r = await (await fetch("/api/dfs/tourney/request", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sport: "nfl", dg: Number(dg), kind: showdown ? "showdown" : "classic",
-                             label: `${_dfsSlateWhat(sl)} · ${_dfsDkWhen((sl || {}).starts)}` }),
+                             label: `${_dfsSlateWhat(sl)} · ${_dfsDkWhen((sl || {}).starts)}`,
+                             pick: typeof dfsPickPayload === "function" ? dfsPickPayload("pc", dg) : null }),
     })).json();
-    if (r.queued && _dfsTourneyData && String(_dfsTourneyDg) === String(dg)) { _dfsTourneyData.queued_ts = r.ts; delete _dfsTourneyData.queued_attempt; renderDfsTourney(_dfsTourneyData); }
-    renderDfsTourneyBuild(r.queued ? `queued: ${_dfsSlateWhat(sl)}` : (r.error || "could not queue it"));
+    if (r.queued && _dfsTourneyData && String(_dfsTourneyDg) === String(dg) && !!r.pick === _dfsTourneyPicked) { _dfsTourneyData.queued_ts = r.ts; delete _dfsTourneyData.queued_attempt; renderDfsTourney(_dfsTourneyData); }
+    renderDfsTourneyBuild(r.queued ? `queued: ${_dfsSlateWhat(sl)}${r.pick ? ` with your picks (${r.checked})` : ""}${r.replaced ? "; it replaces the build queued for this slate" : ""}` : (r.error || "could not queue it"));
     loadDfsTourneyList();
   } catch (e) { renderDfsTourneyBuild("could not reach the server"); }
   finally { _dfsTourneyBusy = false; }
@@ -8502,7 +8517,12 @@ function _dfsTourneyQueued(d) {
   if (!d.queued_ts) return "";
   const hm = (ts) => new Date(ts * 1000).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
   const a = d.queued_attempt;
-  const tried = a && a.ts ? ` · <b style="color:#e0a656">⚠ the PC tried at ${hm(a.ts)} and could not build it: ${escapeHtml(a.why || "no reason given")}</b> - it tries again every cycle until it builds, you cancel, or the slate locks` : "";
+  // a picked Build the picker refused is tried again every six hours (sooner near lock), or at once on a new
+  // press (pc_worker._PICK_RETRY_S): retried every cycle it repeated most of a classic build ahead of the schedule
+  const again = d.picked && /^player picker:/.test(a && a.why || "")
+    ? "it tries your picks again every six hours (sooner as lock nears), or at once when you press Build again, until the slate locks or you cancel"
+    : "it tries again every cycle until it builds, you cancel, or the slate locks";
+  const tried = a && a.ts ? ` · <b style="color:#e0a656">⚠ the PC tried at ${hm(a.ts)} and could not build it: ${escapeHtml(a.why || "no reason given")}</b> - ${again}` : "";
   return `<span class="small" style="color:var(--muted)"> · ⏳ queued ${hm(d.queued_ts)}: the PC picks it up within 10 minutes; a showdown build takes about 20, a classic slate about an hour${tried} · <a href="#" onclick="dfsTourneyCancel(${Number(_dfsTourneyDg)});return false">cancel</a></span>`;
 }
 // The PC's latest failed try at this slate that no queued request carries:
@@ -8527,8 +8547,13 @@ function renderDfsTourney(d) {
     : pc.state === "behind" ? (pc.pull_error ? "PC on, but its update (git pull) is failing"
       : `PC on, updating after its current build${pc.task ? ` (${escapeHtml(pc.task)})` : ""}`)
     : `PC off${pc.seen_s != null ? ` (seen ${agoStr(pc.seen_s)})` : ""}`;
+  const pickLink = !d.picked && d.picked_built_ts
+    ? `<div class="small" style="margin-top:4px">🎯 <a href="#" onclick="loadDfsTourney(${Number(d.draft_group_id)}, true, true);return false">Your picked build of this slate</a> <span style="color:var(--muted)">(built ${agoStr(Math.max(0, Date.now() / 1000 - d.picked_built_ts))})</span></div>` : "";
+  const pickBack = d.picked
+    ? `<div class="small" style="margin-top:4px"><a href="#" onclick="loadDfsTourney(${Number(d.draft_group_id)}, true, false);return false">Back to the PC's own board</a></div>` : "";
+  const pickHtml = (typeof dfsPickBanner === "function" ? dfsPickBanner(d) : "") + pickLink + pickBack;
   if (d.status !== "ok") {
-    box.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ <b>Tournament</b> - ${escapeHtml(d.why || "not built yet")} · ${pcTxt}${_dfsTourneyQueued(d)}</div>${_dfsTourneyTried(d)}${_nflInputsHtml(d.inputs)}`;
+    box.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ <b>Tournament${d.picked ? " (your picks)" : ""}</b> - ${escapeHtml(d.why || "not built yet")} · ${pcTxt}${_dfsTourneyQueued(d)}</div>${_dfsTourneyTried(d)}${pickHtml}${_nflInputsHtml(d.inputs)}`;
     return;
   }
   const classic = d.kind === "classic";
@@ -8624,7 +8649,7 @@ function renderDfsTourney(d) {
     ? ` Each simulated game is played snap by snap by the deep engine at the drive model's and its own blended level; every player's, defense's and kicker's points come off that one box score.`
     : (d.model ? ` Worlds: the ${escapeHtml(d.model)} model.` : "");
   box.innerHTML = `<div style="margin-top:10px;padding:8px 10px;border:1px solid var(--line,#333);border-radius:8px">
-    <div><b>🏟️ Tournament</b> <span class="small" style="color:var(--muted)">${escapeHtml(c.name || "")} · ${nf(c.max_entries)} entries · ${money(c.entry_fee)} · ${money(c.first_prize)} to 1st · built ${agoStr(d.age_s || 0)}${_dfsTourneyBy(d)} · ${pcTxt}</span>${_dfsTourneyQueued(d)}</div>${_dfsTourneyTried(d)}${_nflInputsHtml(d.inputs)}
+    <div><b>🏟️ Tournament${d.pick ? " (your picks)" : ""}</b> <span class="small" style="color:var(--muted)">${escapeHtml(c.name || "")} · ${nf(c.max_entries)} entries · ${money(c.entry_fee)} · ${money(c.first_prize)} to 1st · built ${agoStr(d.age_s || 0)}${_dfsTourneyBy(d)} · ${pcTxt}</span>${_dfsTourneyQueued(d)}</div>${_dfsTourneyTried(d)}${pickHtml}${_nflInputsHtml(d.inputs)}
     ${contestBtns}
     <div class="small" style="color:var(--muted);margin-top:2px">${head}${worldsTxt} ${escapeHtml(fm.note || "")}${fieldOnly.length ? ` Our depth and roster gates keep us off ${fieldOnly.slice(0, 8).map(escapeHtml).join(", ")}${fieldOnly.length > 8 ? ` and ${fieldOnly.length - 8} more` : ""}; the field still plays them.` : ""}</div>
     ${exp ? `<div class="small" style="color:var(--muted);margin-top:2px">⚠️ <b>Experimental win, EV and ROI</b>: ${expWhy}. Top 1% and top 0.1% are the ranking columns; the raw numbers stay on the sheet for comparison while the tail estimator is validated.</div>` : ""}

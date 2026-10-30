@@ -1259,13 +1259,38 @@ def last_refusal():
     return _REFUSAL[0]
 
 
+def _sd_free_captain_waivers(ents, idx, rows, forced):
+    """The construction rules a FORCED FLEX breaks beside a free captain in the
+    lineups listed (`rows` into `idx`), named once a forced man: a forced
+    defense beside the other team's captain was listed without a word, where
+    the sheet names it (nfl_dfs._sd_pick_waivers; round-2 review, m3). The free
+    slots obey the rules (entry_ok); the forced set is waived, and said."""
+    import nfl_dfs
+    beside = {}
+    for i in sorted(rows):
+        cap, got = ents[idx[i, 0]], []
+        for k in range(1, 6):
+            q = ents[idx[i, k]]
+            if q["name"] not in forced:
+                continue
+            if not nfl_dfs._sd_allowed(q, cap, got):
+                beside.setdefault(q["name"], set()).add(cap["name"])
+            got.append(q)
+    return [nfl_dfs.sd_waiver_text(nm, caps) for nm, caps in sorted(beside.items())]
+
+
 def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=500,
                        week=None, preseason=False, top=60, portfolio_sizes=(5, 10, 20),
-                       candidates=1200, log=print, model=None, seed=None, workers=None):
+                       candidates=1200, log=print, model=None, seed=None, workers=None, pick=None):
     """The tournament for one DraftKings NFL showdown draft group, against the
     biggest GPP on it (or `contest_id`). Returns the artifact the tab serves,
     or None when the pool or the contest cannot be read. `model` None is
-    BOARD_MODEL (legacy in the preseason, which no other model can play)."""
+    BOARD_MODEL (legacy in the preseason, which no other model can play).
+
+    `pick` (nfl_dfs.pick_parse) narrows only what WE may enter (entry_ok,
+    cpt_ok): the universe, the field's weights and the worlds are the unpicked
+    board's by construction. The forced men's own breaches of the house rules
+    are waived (the free slots still obey them; _sd_allowed is untouched)."""
     if np is None:
         raise RuntimeError("numpy is required for the tournament")
     import dk
@@ -1288,6 +1313,11 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     if not contest:
         return _refuse("no contest on this slate could be read from DraftKings")
     csv_players = simulate.parse_dk_csv(slate["csv"])
+    pk = None
+    if pick:
+        pk, why = nfl_dfs.pick_resolve(pick, csv_players, "showdown", board=True)
+        if why:
+            return _refuse(f"player picker: {why}")
     ents = nfl_dfs.showdown_pool(csv_players)
     teams = {e.get("team") for e in ents if e.get("team")}
     if week is None:
@@ -1339,6 +1369,30 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     if len(ents) < 6:
         return _refuse(f"only {len(ents)} players with a week-{week} projection (six needed)")
     ents = ents + extra
+    forced = pk.force if pk else frozenset()
+    pk_waived = []
+    if pk:
+        at = {e["name"]: e for e in ents}
+        for nm in sorted(forced):
+            e = at.get(nm)
+            why = next((d.get("why") for d in excluded if d["name"] == nm), None) or "not in this slate's pool"
+            if e is not None:
+                if e.get("_field_only"):
+                    if "by depth chart" not in why:
+                        # the sheet's rule (nfl_dfs._pk_restore): only the depth chart's RANK is waived; the
+                        # field's roster gates ("not on any roster Sleeper knows", a roster status) are not
+                        return _refuse(f"player picker: {nm} cannot be forced: {why}")
+                    pk_waived.append(f"the depth chart for {nm} ({e.get('depth')}): in your lineups; the field "
+                                     f"plays him too")
+                continue
+            if why == "no projection this week":
+                return _refuse(f"player picker: no projection this week for {nm}, so he cannot be forced")
+            if "by depth chart" in why and nm in by_name:
+                # D3: adding a man to `ents` would change the universe the field is weighted over
+                return _refuse(f"player picker: {nm} is outside the pool this board simulates ({why}): the field "
+                               f"keeps the {_FIELD_EXTRA_MAX} best gated players projected "
+                               f"{_FIELD_EXTRA_MIN_PROJ:g}+, and he is projected {by_name[nm]['proj']}")
+            return _refuse(f"player picker: {nm} cannot be forced: {why}")
     t1 = time.time()
     N = min(len(e["arr"]) for e in ents)
     if n_worlds:
@@ -1348,8 +1402,16 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
         f"({t1 - t0:.0f}s); enumerating lineups...")
 
     def entry_ok(cap_p, picked):
-        got = []
+        if pk:
+            names = {cap_p["name"]} | {p["name"] for p in picked}
+            if not forced <= names or names & pk.exclude:
+                return False
+        # the forced men count against the free slots' rules and are never
+        # tested themselves (the count rules are order-free, so this is exact)
+        got = [p for p in picked if p["name"] in forced]
         for p in picked:
+            if p["name"] in forced:
+                continue
             if p.get("_field_only") or not nfl_dfs._sd_allowed(p, cap_p, got):
                 return False
             got.append(p)
@@ -1360,9 +1422,24 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
                and p["cpt_salary"] >= nfl_dfs._SD_MIN_CPT_SALARY) >= 3
 
     def cpt_ok(p):
+        if pk and pk.captain:
+            return p["name"] == pk.captain          # his captain, the captain rules waived for him
+        if pk and p["name"] in pk.exclude:
+            return False
         if p.get("_field_only") or p.get("pos") not in nfl_dfs._SD_GPP_CPT_POS:
             return False
         return (not rich) or p["cpt_salary"] >= nfl_dfs._SD_MIN_CPT_SALARY
+
+    if pk and pk.captain:
+        c = next(e for e in ents if e["name"] == pk.captain)
+        if c.get("pos") not in nfl_dfs._SD_GPP_CPT_POS or (rich and c["cpt_salary"] < nfl_dfs._SD_MIN_CPT_SALARY):
+            pk_waived.append(f"the tournament captain rule (no kicker or defense; "
+                             f"${nfl_dfs._SD_MIN_CPT_SALARY:,}+) for {c['name']}")
+        got = []
+        for q in sorted((e for e in ents if e["name"] in forced and e is not c), key=lambda e: e["name"]):
+            if not nfl_dfs._sd_allowed(q, c, got):
+                pk_waived.append(f"the showdown construction rules for {q['name']} beside captain {c['name']}")
+            got.append(q)
 
     idx, W, allowed = enumerate_showdown(ents, nfl_dfs.CAP, cpt_mult=nfl_dfs.CPT_MULT,
                                          entry_ok=entry_ok, cpt_ok=cpt_ok)
@@ -1370,6 +1447,12 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     # player goes first (our own players never do)
     while idx is not None and len(idx) > _FIELD_MAX_LINEUPS and any(e.get("_field_only") for e in ents):
         drop = min((e for e in ents if e.get("_field_only")), key=lambda e: e["proj"])
+        if drop["name"] in forced:
+            # D3, as the classic board: the unpicked board drops him, so a man the field would not hold is refused.
+            # Dropping the next extra instead built a different universe, and so a different field and chalk
+            return _refuse(f"player picker: {drop['name']} is outside the pool this board simulates: the field is "
+                           f"held to {_FIELD_MAX_LINEUPS:,} lineups by dropping the least-projected field extras, "
+                           f"him among them")
         for d in excluded:
             if d["name"] == drop["name"]:
                 d["why"] = (d.get("why") or "") + f"; out of the field too, to hold it under {_FIELD_MAX_LINEUPS:,} lineups"
@@ -1382,6 +1465,10 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
                                              entry_ok=entry_ok, cpt_ok=cpt_ok)
     if idx is None:
         return _refuse("no legal lineup fits under the salary cap")
+    if pk and not allowed.any():
+        # a board of empty lists is not an answer to the owner's Build (Fable's build review, M2)
+        return _refuse("player picker: no lineup holds your picks under the cap and the house rules for the "
+                       "players left free")
     field_only = {e["name"] for e in ents if e.get("_field_only")}
     for d in excluded:
         d["field"] = d["name"] in field_only
@@ -1494,6 +1581,9 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
                              "fix": "disjoint selection/scoring worlds in the builder"},
                          "entries": [row(int(cand[j]), "cover") for j in chosen[:kk]]}
     t4 = time.time()
+    if pk and not pk.captain and forced:
+        listed = {int(i) for a in (by_win, by_ev, by_top1, by_money) for i in a} | {int(cand[j]) for j in chosen[:kmax]}
+        pk_waived += _sd_free_captain_waivers(ents, idx, listed, forced)
     # per-player: share of hindsight-optimal worlds at captain and at flex
     P = len(ents)
     opt_c = np.bincount(idx[:, 0], weights=res["opt"], minlength=P)
@@ -1559,6 +1649,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
             "players": players_out,
             "excluded": excluded[:40],
             "roster_source": nfl_dfs.roster_state(),
+            **({"pick": nfl_dfs.pick_stamp(pk, pk_waived)} if pk else {}),
             "timings": {"sims_s": round(t1 - t0, 1), "enumerate_s": round(t2 - t1, 1),
                         "score_s": round(t3 - t2, 1), "portfolio_s": round(t4 - t3, 1),
                         "total_s": round(t4 - t0, 1)}})
@@ -2116,14 +2207,22 @@ def check_completion(report, what):
     return report
 
 
-def classic_allowed(idx, players, max_per_game=_KNOB, max_per_team=_KNOB, rb_stack_targets=_KNOB):
+def classic_allowed(idx, players, max_per_game=_KNOB, max_per_team=_KNOB, rb_stack_targets=_KNOB, forced=None):
     """Our rulebook on a batch of lineups (rows, 9): stacked QB, no defense
     against our QB's or backs' teams, the team cap and (when set) the game
     cap, at most one sub-$3,000 punt and he holds a role. Field-only players
     (the depth gate's exclusions) fail it. The caps default to the module
     knobs; max_per_game=None means no per-game cap, and rb_stack_targets a
     number lets a back with that many projected targets count as the
-    quarterback's stack partner."""
+    quarterback's stack partner.
+
+    `forced` (the player picker's men, a mask over `players`; None as before)
+    binds the rules to the FREE slots: each team's cap is the knob or its
+    forced count, whichever is higher -- per team, so four forced Cowboys
+    admit no fourth Eagle -- a forced punt counts toward the one-punt cap
+    with only his role waived, and a forced field-only man may be ours. The
+    stack and the defense rules are unchanged (the free slots can meet the
+    stack; a forced defense facing a forced offense is refused upstream)."""
     if max_per_game is _KNOB:
         max_per_game = CL_MAX_PER_GAME
     if max_per_team is _KNOB:
@@ -2153,12 +2252,21 @@ def classic_allowed(idx, players, max_per_game=_KNOB, max_per_team=_KNOB, rb_sta
         & ~((dst_opp == T[:, 7]) & (pc[idx[:, 7]] == 1))
     Gm = game[idx]
     per_game = np.max(np.stack([(Gm == Gm[:, [k]]).sum(axis=1) for k in range(9)], axis=1), axis=1)
-    per_team = np.max(np.stack([(T == T[:, [k]]).sum(axis=1) for k in range(9)], axis=1), axis=1)
     punt = (sal[idx] < _CL_PUNT_SALARY) & (pc[idx] != 4)
-    punts_ok = (punt.sum(axis=1) <= 1) & ~(punt & ~role[idx]).any(axis=1)
     game_ok = (per_game <= max_per_game) if max_per_game is not None else np.ones(len(idx), dtype=bool)
-    return (stacked & dst_ok & game_ok & (per_team <= max_per_team)
-            & punts_ok & ~field_only[idx].any(axis=1))
+    if forced is None:
+        per_team = np.max(np.stack([(T == T[:, [k]]).sum(axis=1) for k in range(9)], axis=1), axis=1)
+        punts_ok = (punt.sum(axis=1) <= 1) & ~(punt & ~role[idx]).any(axis=1)
+        return (stacked & dst_ok & game_ok & (per_team <= max_per_team)
+                & punts_ok & ~field_only[idx].any(axis=1))
+    fz = np.asarray(forced, dtype=bool)
+    F = fz[idx]
+    cap_t = np.maximum(int(max_per_team), np.bincount(team[fz], minlength=len(teams)))
+    cnt = np.stack([(T == T[:, [k]]).sum(axis=1) for k in range(9)], axis=1)
+    team_ok = (cnt <= cap_t[T]).all(axis=1)
+    n_fpunt = int((fz & (sal < _CL_PUNT_SALARY) & (pc != 4)).sum())
+    punts_ok = (punt.sum(axis=1) <= max(1, n_fpunt)) & ~(punt & ~role[idx] & ~F).any(axis=1)
+    return stacked & dst_ok & game_ok & team_ok & punts_ok & ~(field_only[idx] & ~F).any(axis=1)
 
 
 def _dup_share(idx):
@@ -2645,13 +2753,67 @@ _SAFE_CATCHERS = 3
 _SAFE_FORCE = 1000.0          # points: more than any lineup scores, so a forced pair always enters
 
 
-def safe_lineups(X, players, keep, gen, n_cols=_SAFE_COLS, lambdas=_SAFE_LAMBDAS):
+def _safe_pairs(kp, pos, mu, fk):
+    """The steady columns' (quarterback, catcher) pairs: the best _SAFE_QBS
+    quarterbacks by mean and each one's best _SAFE_CATCHERS catchers. With
+    the picker's forced men (`fk`, a mask over `kp`) the pairs agree with
+    them: a forced quarterback's own pairs only, no pair whose quarterback
+    a forced defense faces, and every pair fits beside them (`fits`)."""
+    qbs = sorted((j for j in range(len(kp)) if pos[j] == "QB" and not kp[j].get("_field_only")),
+                 key=lambda j: -mu[j])[:_SAFE_QBS]
+    if fk.any():
+        fq = [j for j in range(len(kp)) if fk[j] and pos[j] == "QB"]
+        faced = {kp[j].get("opp") for j in range(len(kp)) if fk[j] and pos[j] == "DST"}
+        qbs = fq or [q for q in qbs if kp[q].get("team") not in faced]
+    held = {}
+    for j in np.where(fk)[0]:
+        held[pos[j]] = held.get(pos[j], 0) + 1
+
+    def fits(q, c):
+        """May the pair sit BESIDE the forced men in the solver's roster (one
+        QB, one TE -- the FLEX takes a back or a receiver -- four receivers,
+        three backs, six of the two)? At +F a tight-end pair beside a forced
+        tight end held one of the two: 65 of 423 picked steady answers dropped
+        the forced man on the guard's slate. With the forced men at 4F the
+        solver drops the pair's catcher instead, so a pair that cannot sit
+        beside them only spends its column repeating another answer; `fits`
+        keeps a quarterback's columns on pairs that can be built (the guard
+        pins it here: the 4F bonus hid it from every board-level check).
+        Always true with nothing forced, so the plain columns are the old
+        ones."""
+        n = dict(held)
+        for j in (q, c):
+            if not fk[j]:
+                n[pos[j]] = n.get(pos[j], 0) + 1
+        g = n.get
+        return (g("QB", 0) <= 1 and g("TE", 0) <= 1 and g("WR", 0) <= 4 and g("RB", 0) <= 3
+                and g("RB", 0) + g("WR", 0) <= 6)
+    pairs = []
+    for q in qbs:
+        mates = sorted((j for j in range(len(kp)) if pos[j] in ("WR", "TE")
+                        and kp[j].get("team") == kp[q].get("team") and not kp[j].get("_field_only")
+                        and fits(q, j)),
+                       key=lambda j: -mu[j])[:_SAFE_CATCHERS]
+        pairs += [(q, c) for c in mates]
+    return pairs
+
+
+def safe_lineups(X, players, keep, gen, n_cols=_SAFE_COLS, lambdas=_SAFE_LAMBDAS, forced=None):
     """Distinct sorted player-index tuples (indices into `players` and X's
     rows): the exact optimum of the generation worlds' mean, of the mean
     with each stacked pair forced in, and of mean + lambda (world - mean) for
     the first `n_cols` generation worlds with the pairs cycled. Rules beyond
     the stack and the defense are left to classic_allowed, which every
-    candidate passes through."""
+    candidate passes through.
+
+    `forced` (the player picker's men, a mask over `players`; they must be in
+    `keep`) carry 4 x _SAFE_FORCE in every column -- a forced field-only man
+    without the field-only penalty -- and the pairs agree with them: a
+    forced quarterback's own pairs only, no pair whose quarterback a forced
+    defense faces, and every pair fits beside them by position (`fits`).
+    The solver is exact and dropping a forced man costs more than any other
+    way to make room, so the forced men are in every answer whenever the
+    cap allows them."""
     if not len(gen) or not len(keep):
         return []
     keep = np.asarray(keep, dtype=np.int64)
@@ -2660,20 +2822,19 @@ def safe_lineups(X, players, keep, gen, n_cols=_SAFE_COLS, lambdas=_SAFE_LAMBDAS
     sal = np.asarray([int(p["salary"]) for p in kp])
     Xg = np.asarray(X[keep][:, gen.start:gen.stop], dtype=np.float64)
     mu = Xg.mean(axis=1)
-    qbs = sorted((j for j in range(len(kp)) if pos[j] == "QB" and not kp[j].get("_field_only")),
-                 key=lambda j: -mu[j])[:_SAFE_QBS]
-    pairs = []
-    for q in qbs:
-        mates = sorted((j for j in range(len(kp)) if pos[j] in ("WR", "TE")
-                        and kp[j].get("team") == kp[q].get("team") and not kp[j].get("_field_only")),
-                       key=lambda j: -mu[j])[:_SAFE_CATCHERS]
-        pairs += [(q, c) for c in mates]
+    fk = np.asarray(forced, dtype=bool)[keep] if forced is not None else np.zeros(len(kp), dtype=bool)
+    pairs = _safe_pairs(kp, pos, mu, fk)
     m = min(int(n_cols), Xg.shape[1])
     lam = np.asarray([lambdas[j % len(lambdas)] for j in range(m)], dtype=np.float64)
     base = [mu] + [mu] * len(pairs) + list((mu[:, None] + (Xg[:, :m] - mu[:, None]) * lam[None, :]).T)
     V = np.stack(base, axis=1)
     off = np.asarray([bool(p.get("_field_only")) for p in kp])
-    V[off, :] -= _SAFE_FORCE
+    V[off & ~fk, :] -= _SAFE_FORCE
+    # four times a pair's bonus: a pair's catcher carries +F too, so at +F a forced man and the catcher tied
+    # whenever the pair and the forced set overran the cap, and the solver dropped whichever freed more
+    # (three dear forced non-quarterbacks: 153 of 360 picked steady answers dropped one, round-2 review);
+    # at 4F dropping him costs more than dropping the catcher (F) or switching quarterbacks
+    V[fk, :] += 4.0 * _SAFE_FORCE
     qb_rows = np.asarray([j for j in range(len(kp)) if pos[j] == "QB"], dtype=np.int64)
     for col in range(1, V.shape[1]):
         if not pairs:
@@ -2694,6 +2855,83 @@ def safe_lineups(X, players, keep, gen, n_cols=_SAFE_COLS, lambdas=_SAFE_LAMBDAS
                 seen.add(t)
                 out.append(t)
     return out
+
+
+_GRAFT_SLOTS = {"QB": (0,), "RB": (1, 2, 7), "WR": (3, 4, 5, 7), "TE": (6,), "DST": (8,)}   # CL_SLOTS
+# a picked classic board's candidate sources, in build_nfl_classic's concatenation order
+_PICK_SOURCES = ("chalk", "steady", "hindsight", "second solve", "picked steady", "drawn")
+
+
+def graft(idx, players, forced, cap=50000, excluded=None):
+    """The player picker's candidates out of rows drawn without its forced men
+    (classic_sample is frozen: research/cl_slot.py and cl_week2.py hash its
+    source, so nothing can force a man INTO a draw). Each forced man is put
+    into each row: a row already holding him keeps him where he is; one forced
+    man takes every slot his position allows in turn (up to four variants);
+    with several, each takes the slot whose player costs most among those no
+    other forced man holds. A forced quarterback also brings his best-
+    projected receiver over the dearest receiver slot no forced man holds
+    when the row holds none of his (a row drawn round its own quarterback
+    keeps that one's stack); never a man the owner `excluded` (a mask over
+    `players`): forcing a quarterback and excluding his best receiver
+    brought that receiver back into the grafted rows, none of them listable
+    (round-2 review). Rows over the cap or holding a man twice -- scored as
+    an eight-man lineup against nine-man fields -- are dropped."""
+    fz = np.asarray(forced, dtype=bool)
+    fidx = [int(i) for i in np.where(fz)[0]]
+    if not fidx or not len(idx):
+        return idx
+    sal = np.asarray([int(p["salary"]) for p in players])
+    idx = np.asarray(idx)
+    if len(fidx) == 1:
+        f = fidx[0]
+        has = (idx == f).any(axis=1)
+        parts = [idx[has]]
+        for slot in _GRAFT_SLOTS[players[f]["pos"]]:
+            v = idx[~has].copy()
+            v[:, slot] = f
+            parts.append(v)
+        out = np.concatenate(parts, axis=0)
+    else:
+        out = idx.copy()
+        for f in fidx:
+            sl = np.asarray(_GRAFT_SLOTS[players[f]["pos"]])
+            has = (out == f).any(axis=1)
+            held = fz[out[:, sl]]
+            cost = np.where(held, -1, sal[out[:, sl]])
+            free = cost.max(axis=1) >= 0
+            put = ~has & free
+            r = np.where(put)[0]
+            out[r, sl[np.argmax(cost[r], axis=1)]] = f
+            out = out[has | put]
+    for q in (i for i in fidx if players[i]["pos"] == "QB"):
+        tm = players[q].get("team")
+        mates = sorted((j for j, p in enumerate(players) if p.get("team") == tm and p["pos"] in ("WR", "TE")
+                        and (fz[j] or not p.get("_field_only")) and not (excluded is not None and excluded[j])),
+                       key=lambda j: -float(players[j].get("proj") or 0))
+        if not mates:
+            continue
+        c = mates[0]
+        rows_tm = np.asarray([players[j].get("team") == tm and players[j]["pos"] in ("WR", "TE") for j in range(len(players))])
+        need = ~rows_tm[out[:, 3:8]].any(axis=1) & ~(out == c).any(axis=1)
+        sl = np.asarray(_GRAFT_SLOTS[players[c]["pos"]])
+        held = fz[out[:, sl]]
+        cost = np.where(held, -1, sal[out[:, sl]])     # over the dearest incumbent: the fewest rows over the cap
+        r = np.where(need & (~held).any(axis=1))[0]
+        if len(r):
+            v = out[r].copy()
+            v[np.arange(len(r)), sl[np.argmax(cost[r], axis=1)]] = c
+            out = np.concatenate([out, v], axis=0)
+    srt = np.sort(out, axis=1)
+    keep_rows = (srt[:, 1:] != srt[:, :-1]).all(axis=1) & (sal[out].sum(axis=1) <= cap)
+    return out[keep_rows]
+
+
+def distinct_rows(idx):
+    """Rows of nine DIFFERENT players (a candidate holding a man twice is an
+    eight-man lineup in lineup_matrix)."""
+    srt = np.sort(np.asarray(idx), axis=1)
+    return (srt[:, 1:] != srt[:, :-1]).all(axis=1)
 
 
 # Fixed probe lineups: exact nine-man lineups evaluated against every
@@ -2895,14 +3133,23 @@ def _engine_report(model, week, teams, seed):
 def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_worlds=None,
                       opt_worlds=20000, field_n=300000, cand_n=150000, cal_n=20000, chunk=500,
                       week=None, preseason=False, top=40, k_port=20, candidates=1200,
-                      seed=None, log=print, probes=None, model=None, workers=None):
+                      seed=None, log=print, probes=None, model=None, workers=None, pick=None):
     """The tournament for a DraftKings classic slate, against every contest
     on it whose pool clears `min_pool` (or `contest_ids`). Returns the
     artifact the tab serves, or None when the slate, the contests or the
     pool cannot be read. `model` names the game simulator (nfl_dfs_sim
     .MODELS); None is BOARD_MODEL, and a board says which in its stamp and
     its `model` field. `seed` seeds the field, the candidate draws and, under
-    the constrained and engine models, the worlds themselves."""
+    the constrained and engine models, the worlds themselves.
+
+    `pick` (nfl_dfs.pick_parse: the owner's Build with the player picker)
+    binds OUR candidates only. The first solve, the field, opt_pct and the
+    chalk are the unpicked board's exactly -- a solve biased toward the forced
+    men would move the field's ownership targets -- and the candidates come
+    from a SECOND solve over the picked pool, the safe columns with the forced
+    men in, and the draws with the excluded masked out and the forced grafted
+    in (graft). Every listed and portfolio lineup holds every forced man and
+    no excluded one."""
     if np is None:
         raise RuntimeError("numpy is required for the tournament")
     import dk
@@ -2924,6 +3171,11 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     if not contests:
         return _refuse(f"no contest of ${float(min_pool):,.0f}+ with a payout table and a field size")
     contests.sort(key=lambda c: -float(c.get("prize_pool") or 0))
+    pk = None
+    if pick:
+        pk, why = nfl_dfs.pick_resolve(pick, simulate.parse_dk_csv(slate["csv"]), "classic", board=True)
+        if why:
+            return _refuse(f"player picker: {why}")
     csv_players = [c for c in simulate.parse_dk_csv(slate["csv"]) if nfl_dfs._playable(c)]
     if week is None:
         try:
@@ -2985,6 +3237,29 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
         d["field"] = d["name"] in field_only
     excluded += dx
     ents = ents + extra
+    pk_waived = []
+    if pk:
+        at = {e["name"]: e for e in ents}
+        for nm in sorted(pk.force):
+            e = at.get(nm)
+            why = next((d.get("why") for d in excluded if d["name"] == nm), None) or "not in this slate's pool"
+            if e is not None:
+                if e.get("_field_only"):
+                    if "by depth chart" not in why:
+                        # the sheet's rule (nfl_dfs._pk_restore): only the depth chart's RANK is waived; a man
+                        # gated off the depth chart (practice squad, inactive) would make every lineup a dead one
+                        return _refuse(f"player picker: {nm} cannot be forced: {why}")
+                    pk_waived.append(f"the depth chart for {nm} ({e.get('depth')}): in your lineups; the field "
+                                     f"plays him too")
+                continue
+            if why == "no projection this week":
+                return _refuse(f"player picker: no projection this week for {nm}, so he cannot be forced")
+            if "by depth chart" in why and nm in by_name:
+                # D3: adding a row to the field's pool changes the field even masked out
+                return _refuse(f"player picker: {nm} is outside the pool this board simulates ({why}): the field "
+                               f"keeps the {_CL_FIELD_KEEP} best depth-gated players projected "
+                               f"{_FIELD_EXTRA_MIN_PROJ:g}+, and he is projected {by_name[nm]['proj']}")
+            return _refuse(f"player picker: {nm} cannot be forced: {why}")
     have = {p: sum(1 for e in ents if e["pos"] == p and not e.get("_field_only")) for p in _CL_POS}
     if have["QB"] < 2 or have["RB"] < 4 or have["WR"] < 6 or have["TE"] < 2 or have["DST"] < 2:
         return _refuse(f"too few players with a week-{week} projection: QB {have['QB']}, RB {have['RB']}, "
@@ -2997,6 +3272,8 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     sal = np.asarray([e["salary"] for e in ents])
     pos = [e["pos"] for e in ents]
     fo = np.asarray([bool(e.get("_field_only")) for e in ents])
+    forced_m = np.asarray([bool(pk) and e["name"] in pk.force for e in ents])
+    excl_m = np.asarray([bool(pk) and e["name"] in pk.exclude for e in ents])
     t1 = time.time()
     log(f"[tourney] classic {dg}: pool {P} players ({len(extra)} field-only) x {N:,} worlds "
         f"({t1 - t0:.0f}s); the best lineup of each of {min(N, opt_worlds):,} worlds...")
@@ -3058,23 +3335,78 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
         # --- our candidates: every world's optimal (allowed or not) + rule-abiding draws ---
         idx_o = _slot_rows(list(opt_count.keys()), pos)
         rep_c = {}
+        if pk:
+            # the picker's excluded men are masked out of OUR draws only (the
+            # field above was drawn from the whole pool; nothing before this
+            # line reads `fo`)
+            fo = fo | excl_m
         idx_c = draw(int(cand_n), rng, fb, fk, rules=True, exclude=fo, report=rep_c, pulls=pulls)
     finally:
         draw.close()
     check_completion(rep_c, "candidate draws")
-    idx_c = idx_c[classic_allowed(idx_c, ents)]
+    if pk and forced_m.any():
+        idx_c = graft(idx_c, ents, forced_m, excluded=excl_m)
+    idx_c = idx_c[classic_allowed(idx_c, ents, forced=forced_m if pk else None)]
+    if pk:
+        # only rows that can be listed take the draw budget below and the `grafted` count
+        idx_c = idx_c[(forced_m[idx_c].sum(axis=1) == int(forced_m.sum())) & ~excl_m[idx_c].any(axis=1)]
+    if pk and len(idx_c) > int(cand_n):
+        # one forced man grafted into every slot he can take is up to four rows
+        # a draw: held to the draw count, so a picked board scores about what a
+        # plain one does (scoring time grows with the candidates)
+        _u, first_c = np.unique(np.sort(idx_c, axis=1), axis=0, return_index=True)
+        idx_c = idx_c[np.sort(first_c)]
+        if len(idx_c) > int(cand_n):
+            idx_c = idx_c[np.sort(rng.choice(len(idx_c), int(cand_n), replace=False))]
     # the public's three most common builds ride along (allowed or not) so
     # the chalk row on the sheet is the real chalk
     top_f = np.argsort(-counts_f)[:3]
     idx_chalk = _slot_rows([tuple(int(v) for v in _uf[i]) for i in top_f], pos)
     safe = safe_lineups(X, ents, keep, gen)
     idx_s = _slot_rows(safe, pos) if safe else np.zeros((0, 9), dtype=idx_chalk.dtype)
-    both = np.concatenate([a for a in (idx_chalk, idx_s, idx_o, idx_c) if len(a)], axis=0)
+    t_pk = time.time()
+    if pk:
+        # the SECOND solve, for our candidates only: the picked pool (the
+        # excluded and the unforced field-only out, every forced man in) with
+        # the forced rows raised by _SAFE_FORCE over the generation worlds --
+        # exact, so the forced men are in every world's answer the cap allows
+        keep2 = np.asarray(sorted((set(int(i) for i in keep) - set(np.where(fo | excl_m)[0].tolist()))
+                                  | set(np.where(forced_m)[0].tolist())), dtype=np.int64)
+        X2 = np.array(X[keep2][:, gen.start:gen.stop], dtype=np.float32)
+        X2[forced_m[keep2]] += _SAFE_FORCE
+        opt2_L, _v2 = optimal_lineups(X2, sal[keep2], [pos[i] for i in keep2], chunk=64, workers=_workers(workers))
+        idx_o2 = _slot_rows(sorted({tuple(sorted(int(keep2[i]) for i in L)) for L in opt2_L if L}), pos)
+        safe2 = safe_lineups(X, ents, keep2, gen, n_cols=2 * _SAFE_COLS, forced=forced_m)
+        idx_s2 = _slot_rows(safe2, pos) if safe2 else np.zeros((0, 9), dtype=idx_chalk.dtype)
+        # rows that cannot hold the pick are never listed: score only the chalk and the picked rows
+        holds = lambda a: (forced_m[a].sum(axis=1) == int(forced_m.sum())) & ~excl_m[a].any(axis=1)
+        # the force's receipt: every answer of both picked solves holds the pick whenever the cap allows it
+        # (a weakened bias still lists rows -- the graft's -- so the counts are what pin it; Fable M1)
+        held_o2, held_s2 = int(holds(idx_o2).sum()), int(holds(idx_s2).sum())
+        idx_s, idx_o = idx_s[holds(idx_s)], idx_o[holds(idx_o)]
+        parts = [a for a in (idx_chalk, idx_s, idx_o, idx_o2, idx_s2, idx_c)]
+        both = np.concatenate([a for a in parts if len(a)], axis=0)
+        # where each candidate came from, so a listed row can say (and a guard can check the second solve feeds the lists)
+        src_both = np.concatenate([np.full(len(a), k, dtype=np.int8) for k, a in enumerate(parts) if len(a)])
+        keep_d = distinct_rows(both)
+        both, src_both = both[keep_d], src_both[keep_d]
+        log(f"[tourney] classic {dg}: picked -- {len(idx_o2):,} second-solve ({held_o2:,} holding the pick), "
+            f"{len(idx_s2):,} steady ({held_s2:,}) and {len(idx_c):,} grafted candidates ({time.time() - t_pk:.0f}s)")
+    else:
+        both = np.concatenate([a for a in (idx_chalk, idx_s, idx_o, idx_c) if len(a)], axis=0)
+    t_pk = time.time() - t_pk
     srt = np.sort(both, axis=1)
     _u, first = np.unique(srt, axis=0, return_index=True)
     idx_k = both[np.sort(first)]
+    src_k = src_both[np.sort(first)] if pk else None
     K = len(idx_k)
-    allowed = classic_allowed(idx_k, ents)
+    allowed = classic_allowed(idx_k, ents, forced=forced_m if pk else None)
+    if pk:
+        allowed &= (forced_m[idx_k].sum(axis=1) == int(forced_m.sum())) & ~excl_m[idx_k].any(axis=1)
+        if not allowed.any():
+            # a board of empty lists is not an answer to the owner's Build (Fable's build review, M2)
+            return _refuse("player picker: no candidate lineup holds your picks under the cap and the house rules "
+                           "for the players left free")
     keys_k = [tuple(r.tolist()) for r in np.sort(idx_k, axis=1)]
     is_opt = np.asarray([opt_count.get(k, 0) for k in keys_k])
     copies_share = np.asarray([f_count.get(k, 0) / M for k in keys_k])
@@ -3123,7 +3455,8 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                 "roi_pct": round(100.0 * (float(r["ev"][i]) - fee) / fee, 1),
                 "expected_copies": round(float(copies), 1),
                 "opt_worlds": int(is_opt[i]), "opt_pct": round(100.0 * float(is_opt[i]) / n_opt, 2),
-                "allowed": bool(allowed[i]), "rank_by": rank_by}
+                "allowed": bool(allowed[i]), "rank_by": rank_by,
+                **({"source": _PICK_SOURCES[int(src_k[i])]} if pk else {})}
     results = {}
     chalk_i = int(np.argmax(copies_share)) if K else None
     for gi, c in enumerate(contests):
@@ -3239,7 +3572,12 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
             "players": players_out,
             "excluded": excluded[:60],
             "roster_source": nfl_dfs.roster_state(),
+            **({"pick": dict(nfl_dfs.pick_stamp(pk, pk_waived), second_solve=int(len(idx_o2)),
+                             second_solve_held=held_o2, steady=int(len(idx_s2)), steady_held=held_s2,
+                             grafted=int(len(idx_c)), allowed=int(allowed.sum()))}
+               if pk else {}),
             "timings": {"sims_s": round(t1 - t0, 1), "optimal_s": round(t2 - t1, 1),
                         "field_s": round(t3 - t2, 1), "candidates_s": round(t4 - t3, 1),
                         "score_s": round(t5 - t4, 1), "portfolio_s": round(t6 - t5, 1),
+                        **({"pick_s": round(t_pk, 1)} if pk else {}),
                         "total_s": round(t6 - t0, 1)}})

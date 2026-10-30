@@ -893,14 +893,123 @@ def _cl_full_estimate(board):
     return fixed + 3.0 * t.get("sims_s", 0.0) + 4.0 * (t.get("score_s", 0.0) + t.get("portfolio_s", 0.0))
 
 
-def _cl_sims(start_ts, board, now=None):
+def _cl_sims(start_ts, board, now=None, picked=False):
     """Worlds for this classic build: the full count unless the slate's first
     kickoff is nearer than a full build takes plus ten minutes, when the old
-    count runs so the board still lands before lock."""
+    count runs so the board still lands before lock. A `picked` build (the
+    player picker's) adds a second solve the size of the first, so the plain
+    board's `optimal_s` is added to the estimate (Fable R5)."""
     if start_ts is None:
         return _CL_SIMS_FULL
     now = time.time() if now is None else now
-    return _CL_SIMS_FULL if start_ts - now > _cl_full_estimate(board) + 600 else _CL_SIMS_QUICK
+    est = _cl_full_estimate(board) + (float(((board or {}).get("timings") or {}).get("optimal_s") or 0.0)
+                                      if picked else 0.0)
+    return _CL_SIMS_FULL if start_ts - now > est + 600 else _CL_SIMS_QUICK
+
+
+def _split_picked(wanted):
+    """({dg: request} the player picker made, {dg: request} plain). A picked
+    request is the owner's Build of the `_pick` board: the automatic paths
+    (_rebuild_reason, _cl_rebuild_reason, the showdown `soon` list, the
+    scheduled windows) never see it, so it can neither trigger the automatic
+    board's rebuild nor consume a window (Fable M5)."""
+    return ({dg: r for dg, r in wanted.items() if r.get("pick")},
+            {dg: r for dg, r in wanted.items() if not r.get("pick")})
+
+
+_PICK_RETRY_S = 6 * 3600     # a refused picked Build is tried again this often, or at once on a new press
+
+
+def _picked_builds(url, tok, kind, picked, listed):
+    """Build the player picker's board for every picked request of `kind`
+    (classic | showdown) whose `_pick` board is older than the request, the
+    oldest first -- requests before the schedule, which then builds the
+    automatic board on its own reasons (R4). `listed` is {dg: lobby row}.
+
+    A press the builder REFUSED with a picker refusal ("player picker: ...") is
+    tried again only every _PICK_RETRY_S -- or half the time left to lock when
+    that is sooner -- or at once when the owner presses Build again (a new
+    request ts): most picker refusals come after the slate's simulation ("no
+    candidate lineup holds your picks" after most of a classic build), and
+    every cycle repeated one ahead of the scheduled boards (round-2 review). A
+    Tuesday's "no projection" can heal, so it is retried, rarely. Any other
+    refusal (a roster lookup down, no pool posted yet) and a crash are tried
+    again next cycle, as the plain builds are: six hours of a Sunday morning's
+    outage would have held the pick past lock (round-3 review)."""
+    import boardshare
+    import dfs_tourney
+    import nfl_dfs
+    pre = "cl" if kind == "classic" else "sd"
+    state = _tourney_state()
+    refused = state.setdefault("pk_refused", {})
+    gone = [k for k in refused if int(k) not in {int(d) for d in picked}]
+    for k in gone:
+        del refused[k]                  # its request is gone (built, cancelled, past lock): so is its refusal
+    if gone:
+        _tourney_state_save(state)
+    for dg, req in sorted(picked.items(), key=lambda kv: kv[1].get("ts") or 0):
+        if req.get("kind") != kind:
+            continue
+        name = f"{pre}_tourney_nfl_{dg}_pick"
+        board, _age = boardshare.get(name, None)
+        if board and (board.get("built_ts") or 0) >= (req.get("ts") or 0):
+            continue
+        sl = listed.get(dg)
+        if sl is None:
+            _report_attempt(url, tok, dg, req, "DraftKings no longer lists this slate (locked or pulled)", kind=kind)
+            continue
+        st = _dt_ts(sl.get("starts"))
+        if st is not None and st < time.time() - 30 * 60:
+            _report_attempt(url, tok, dg, req, "this slate has kicked off (no board after lock)", kind=kind)
+            continue
+        if kind == "showdown":
+            # the plain path's own showdown rules (Fable's build review, M3): a picked request on a slate nine
+            # days out used to fetch, simulate an unprojected week and refuse, every cycle
+            if sl.get("games") != 1 or sl.get("contest_type") != 96 or st is None:
+                _report_attempt(url, tok, dg, req, "not a one-game showdown slate, or its start is unreadable",
+                                kind=kind)
+                continue
+            if st > time.time() + 8 * 86400:
+                _report_attempt(url, tok, dg, req, "more than eight days out: a showdown is built in its last "
+                                "eight days", kind=kind)
+                continue
+        last = refused.get(str(dg)) or {}
+        if last.get("ts") == int(req.get("ts") or 0):
+            wait = _PICK_RETRY_S if st is None else min(_PICK_RETRY_S, max(600.0, (st - time.time()) / 2.0))
+            if time.time() - (last.get("at") or 0) < wait:
+                continue                # this press was refused; its refusal already shows beside the request
+        try:
+            pick = nfl_dfs.pick_parse(req.get("pick"))
+        except ValueError as e:
+            _report_attempt(url, tok, dg, req, f"player picker: {e}", kind=kind)
+            continue
+        why = "queued from the tab with the player picker"
+        _yield_point(f"{kind} board {dg} (your picks) - requested by PC request: {why}")
+        print(f"[vigil-pc] tourney {dg}: building the picked {kind} board - {why}...")
+        t0 = time.time()
+        try:
+            if kind == "classic":
+                plain, _a = boardshare.get(f"cl_tourney_nfl_{dg}", None)
+                art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=_cl_sims(st, plain, picked=True),
+                                                    log=print, pick=pick)
+            else:
+                art = dfs_tourney.build_nfl_showdown(dg, n_sims=60000, log=print, pick=pick)
+        except Exception as e:
+            print(f"[vigil-pc] tourney {dg}: picked build failed ({type(e).__name__}: {e})")
+            _report_attempt(url, tok, dg, req, f"the picked build failed ({type(e).__name__}: {e})", kind=kind)
+            continue
+        if not art:
+            why_r = dfs_tourney.last_refusal() or "nothing to build"
+            _report_attempt(url, tok, dg, req, why_r, kind=kind)
+            if why_r.startswith("player picker:"):
+                refused[str(dg)] = {"ts": int(req.get("ts") or 0), "at": int(time.time())}
+                _tourney_state_save(state)
+            continue
+        art["requested_by"] = {"by": "PC request (picked)", "why": why}
+        boardshare.put(name, art)
+        print(f"[vigil-pc] tourney {dg}: picked {kind} board done in {time.time() - t0:.0f}s")
+        _ship_boards(url, tok)
+
 
 def _task_classic_tourney(url, tok):
     """The classic-slate tournament (dfs_tourney.build_nfl_classic) for the
@@ -918,7 +1027,9 @@ def _task_classic_tourney(url, tok):
     except Exception as e:
         print(f"[vigil-pc] classic tourney: DK lobby failed ({type(e).__name__}: {e})")
         return
-    wanted = _tourney_requests(url, tok)
+    picked, wanted = _split_picked(_tourney_requests(url, tok))
+    _picked_builds(url, tok, "classic", picked,
+                   {int(sl["draft_group_id"]): sl for sl in slates if sl.get("draft_group_id")})
     todo = []
     main = _main_slate(slates)
     if main:
@@ -1020,7 +1131,9 @@ def _task_showdown_tourney(url, tok):
     for c in contests:
         dg = c.get("draft_group_id")
         pool_by_dg[dg] = max(pool_by_dg.get(dg, 0.0), float(c.get("prize_pool") or 0))
-    wanted = _tourney_requests(url, tok)
+    picked, wanted = _split_picked(_tourney_requests(url, tok))
+    _picked_builds(url, tok, "showdown", picked,
+                   {int(sl["draft_group_id"]): sl for sl in slates if sl.get("draft_group_id")})
     now = time.time()
     soon, small = [], 0
     for sl in slates:

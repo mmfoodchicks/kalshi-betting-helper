@@ -13383,7 +13383,7 @@ ck("the concentration caps are knobs: no per-game cap by default (the freedom th
    _dt14.CL_MAX_PER_GAME is None and _dt14.CL_MAX_PER_TEAM == 3
    and any("no cap on players from one game" in r and "knob" in r for r in _dt14.CL_RULES)
    and not any("four players from one game" in r for r in _dt14.CL_RULES)
-   and "def classic_allowed(idx, players, max_per_game=_KNOB, max_per_team=_KNOB, rb_stack_targets=_KNOB):" in _dts1
+   and "def classic_allowed(idx, players, max_per_game=_KNOB, max_per_team=_KNOB, rb_stack_targets=_KNOB, forced=None):" in _dts1
    and '"max_per_game": CL_MAX_PER_GAME, "max_per_team": CL_MAX_PER_TEAM,' in _dts1)
 _ws1 = _dt14.world_split(60000, 20000)
 _ws2 = _dt14.world_split(400, 20000)
@@ -13748,7 +13748,7 @@ _build_d = _dts_d[_dts_d.index("def build_nfl_classic("):_dts_d.index("def build
 # switch dfs_tourney.BOARD_MODEL (legacy in the preseason), and the PC passes
 # none, so a board's model moves only with that constant
 ck("the classic build takes model (None = BOARD_MODEL) and passes it and the seed to the pool, stamps whichever simulator made the worlds and records the model and seed on the board; the PC asks for no model on either board, so the switch alone decides",
-   'seed=None, log=print, probes=None, model=None, workers=None):' in _build_d
+   'seed=None, log=print, probes=None, model=None, workers=None, pick=None):' in _build_d
    and 'pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason, model=model, seed=seed,\n                                   teams=slate_teams, workers=_workers(workers)) or {}' in _build_d
    and "model = board_model(model, preseason)" in _build_d
    and '"model": model, "seed": (int(seed) if seed is not None else None),' in _build_d
@@ -15854,7 +15854,7 @@ finally:
 _js14 = open(_os.path.join(_root, "static", "app.js")).read()
 _ix14 = open(_os.path.join(_root, "templates", "index.html")).read()
 ck("the DFS tab shows the tournament for an NFL showdown slate (portfolio sizes, best by win, the chalk build, field vs optimal shares per player) and says PC off when there is no board",
-   'id="dfsTourney"' in _ix14 and "async function loadDfsTourney(dg, force)" in _js14
+   'id="dfsTourney"' in _ix14 and "async function loadDfsTourney(dg, force, picked)" in _js14
    and "/api/dfs/tourney?sport=nfl" in _js14 and "loadDfsTourney(dg);" in _js14
    and "loadDfsTourney(null)" in _js14 and "function renderDfsTourney(d)" in _js14
    and "dfsTourneyPick(" in _js14 and "most popular build" in _js14
@@ -15863,7 +15863,7 @@ ck("the DFS tab shows the tournament for an NFL showdown slate (portfolio sizes,
    and "🛠 Build on the PC: <select id=\"dfsTourneyPickBuild\"" in _js14
    and 'fetch("/api/dfs/tourney/request"' in _js14
    and "async function loadDfsTourneyList()" in _js14 and "boards on file" in _js14
-   and "loadDfsTourney(${r.dg}, true)" in _js14 and "queued_ts" in _js14)
+   and 'loadDfsTourney(${Number(r.dg)}, true, ${r.pick ? "true" : "false"})' in _js14 and "queued_ts" in _js14)
 # ===========================================================================
 # S5 -- the shadow-forbidden rule study. Guards.
 #
@@ -24604,6 +24604,17 @@ try:
 except Exception as _nv_e:                 # a guard file that cannot run is a failed guard, never a skipped one
     import traceback as _nv_tb
     ck("guards_viewer runs to the end", False, f"{type(_nv_e).__name__}: {_nv_e} " + _nv_tb.format_exc()[-600:])
+
+print("=" * 72)
+print("PK. The DFS player picker (2026-10-30, research/reports/dfs_picker.md): exclude / force in / force captain on")
+print("    the owner's own builds -- the sheet's search, the picked boards, the Build queue, the PC -- the field and")
+print("    the automatic builds untouched (tests/guards_picker.py)")
+print("=" * 72)
+try:
+    __import__("guards_picker").run(ck)
+except Exception as _pk_e:                 # a guard file that cannot run is a failed guard, never a skipped one
+    import traceback as _pk_tb
+    ck("guards_picker runs to the end", False, f"{type(_pk_e).__name__}: {_pk_e} " + _pk_tb.format_exc()[-600:])
 
 print("=" * 72)
 print("MX. The matchup upgrade (2026-10-23): prop math, the NBA engine, the NFL matchup data and model,")

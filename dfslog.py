@@ -264,6 +264,11 @@ def log_build(sport, req, res, auto_slate=None, csv_text=""):
     objective = str(req.get("objective") or res.get("objective") or "projection")
     if sport == "mlb":
         objective = "ceiling" if objective == "ceiling" else "median"
+    if res.get("pick"):
+        # the player picker's build is the owner's selection, not the
+        # builder's: graded and shown under its own tag, never in the
+        # correction fit or the objective ranking (nfl_dfs.pick_resolve)
+        objective = "picked:" + objective
     try:
         contest_id = int(req.get("contest_id") or 0) or None
         contest_size = int(req.get("contest_size") or 0) or None
@@ -785,9 +790,11 @@ def _graded_pairs(sport):
     with store._lock, store._conn() as c:
         # the tournament board's lineups are graded and shown, but they carry
         # the board's projections, not the builder's: the builder's
-        # correction is fitted on the builder's own lines only
+        # correction is fitted on the builder's own lines only -- and a
+        # picked build's lineups are the owner's choice of players
         rows = c.execute("SELECT event_key, event_date, players, actual_players, backtest FROM dfs_builds "
-                         "WHERE graded=1 AND sport=? AND objective NOT LIKE 'tourney:%'", (sport,)).fetchall()
+                         "WHERE graded=1 AND sport=? AND objective NOT LIKE 'tourney:%' "
+                         "AND objective NOT LIKE 'picked:%'", (sport,)).fetchall()
     seen, pairs, ev_info = set(), [], {}
     for r in rows:
         players = {p["name"]: p for p in json.loads(r["players"] or "[]")}
@@ -1012,7 +1019,7 @@ def report():
                     "partial": d["partial"]})
     best = {}
     for row in out:
-        if row["events"] >= 2:
+        if row["events"] >= 2 and not str(row["objective"]).startswith("picked:"):
             cur = best.get(row["sport"])
             if cur is None or row["mean_actual"] > cur["mean_actual"]:
                 best[row["sport"]] = row

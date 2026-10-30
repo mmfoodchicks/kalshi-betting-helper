@@ -1309,3 +1309,27 @@ body.nv-lock { overflow: hidden; }
   .nv-pts { font-size: 1.3rem; }
   .nv-panel { max-height: none; }
 }
+
+/* ---- The DFS player picker (static/dfspick.js) ---- */
+.pk-box { margin: 8px 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--card2); }
+.pk-head { font-weight: 600; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pk-note { color: var(--muted); margin: 2px 0 6px; }
+.pk-faint { color: var(--faint); font-weight: 400; font-size: 0.76rem; }
+.pk-search { width: 100%; box-sizing: border-box; margin: 2px 0 6px; padding: 6px 8px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 0.9rem; }
+.pk-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 0.82rem; }
+.pk-who { min-width: 0; overflow-wrap: anywhere; }
+.pk-acts { display: flex; gap: 4px; flex-wrap: wrap; }
+.pk-btn { min-height: 30px; }
+.pk-btn.pk-on { border-color: var(--yes); color: var(--yes); }
+.pk-out { color: var(--no); font-weight: 600; }
+.pk-chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 2px; }
+.pk-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 8px; border-radius: 12px;
+  border: 1px solid var(--border); font-size: 0.8rem; max-width: 100%; overflow-wrap: anywhere; }
+.pk-chip.pk-force, .pk-chip.pk-captain { border-color: var(--yes); }
+.pk-chip.pk-exclude { border-color: var(--no); }
+.pk-x { background: none; border: none; color: var(--muted); cursor: pointer; min-width: 26px; min-height: 26px; font-size: 0.85rem; }
+.pk-check { color: var(--muted); }
+.pk-banner { margin: 0 0 6px; padding: 6px 8px; border-left: 3px solid var(--yes); background: var(--card2); border-radius: 4px; font-size: 0.82rem; }
+.pk-banner ul { margin: 2px 0 0 16px; padding: 0; }

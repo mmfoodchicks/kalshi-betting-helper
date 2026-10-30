@@ -11,6 +11,7 @@ leverage objectives and the top-heavy contest sim mirror the MLB DFS builder;
 the pure payout-curve helpers are reused straight from mlb_dfs.
 """
 
+import collections
 import math
 import random
 
@@ -63,15 +64,19 @@ def _elig(pos):
 
 def _value(p, objective):
     if objective == "ceiling":
-        return p["ceiling"]
-    if objective == "leverage":
+        v = p["ceiling"]
+    elif objective == "leverage":
         # DST is exempt: the slot's score range is too small for contrarianism
         # to differentiate a lineup, so fading the chalk defense costs real
         # points to buy nothing -- leverage lives in the skill slots.
         if p.get("pos") == "DST":
-            return p["ceiling"]
-        return p["ceiling"] * (1.0 - 0.007 * p.get("own", 8.0))
-    return p["proj"]
+            v = p["ceiling"]
+        else:
+            v = p["ceiling"] * (1.0 - 0.007 * p.get("own", 8.0))
+    else:
+        v = p["proj"]
+    # a player the picker forced in rides a marked copy (never the field's dict)
+    return v + _PK_BIAS if "_pk" in p else v
 
 
 def _slate_dates(csv_players):
@@ -221,6 +226,304 @@ def _playable(c):
     """Drop players DK has already ruled out. Rostering an OUT or IR player is
     never right, and the export says so plainly."""
     return (c.get("status") or "").upper() not in _OUT_STATUS
+
+
+# ---- The player picker (2026-10-30) -----------------------------------------
+# The owner: '"exclude player": (player name) if I want to exclude him from a
+# build "force captain": (player) If I want to force that player to be
+# captain ... force players into a position. Like if I wanted a team with
+# dak, pickens, and ceedee lamb. It would create all lineups with those
+# players forced into the lineup. Of course the automatic builds would do all
+# available players anywhere.' Designed with a Fable agent before any code
+# (research/reports/dfs_picker.md). A pick binds OUR lineups only: the FIELD
+# still plays the man excluded, and a man forced past the depth gate never
+# joins it. Only the owner's builds take one -- the sheet's Run and a Build
+# queued for the PC; nothing on a schedule reads it.
+_PK_BIAS = 1000.0       # points, more than any lineup scores: polish and kicks never swap a forced
+                        # man out. Inside the search only; never in a reported number.
+_PK_MAX = 30            # names one pick may list
+_PICK_SHAPE = {"QB": 1, "RB": 3, "WR": 4, "TE": 1, "DST": 1}   # _lineup_ok and the boards' solver alike
+Pick = collections.namedtuple("Pick", "exclude force captain")  # raw DK names; force holds the captain
+
+
+def _pk_entry(x):
+    if isinstance(x, (list, tuple)) and len(x) == 3:       # already parsed
+        x = {"name": x[0], "team": x[1], "id": x[2]}
+    if isinstance(x, str):
+        x = {"name": x}
+    if not isinstance(x, dict) or not str(x.get("name") or "").strip():
+        raise ValueError("every picked player needs a name")
+    return (str(x["name"]).strip()[:80], str(x.get("team") or "").strip().upper()[:5],
+            str(x.get("id") or "").strip()[:20])
+
+
+def pick_parse(raw):
+    """The request's `pick` -- {exclude: [{name, team, id}], force: [...],
+    captain: {...} or null} -- as (name, TEAM, id) triples, or None when it
+    names nobody. ValueError on a malformed one. Always its own key: the
+    sheet's body already carries `exclude` for GAMES (dk.slate_for)."""
+    if not raw:
+        return None
+    if not isinstance(raw, dict):
+        raise ValueError("pick must be an object: {exclude, force, captain}")
+    ex, fo = raw.get("exclude") or [], raw.get("force") or []
+    if not isinstance(ex, list) or not isinstance(fo, list):
+        raise ValueError("pick.exclude and pick.force must be lists")
+    cap = raw.get("captain") or None
+    out = {"exclude": [_pk_entry(x) for x in ex], "force": [_pk_entry(x) for x in fo],
+           "captain": _pk_entry(cap) if cap else None}
+    if len(out["exclude"]) + len(out["force"]) + (1 if out["captain"] else 0) > _PK_MAX:
+        raise ValueError(f"a pick names at most {_PK_MAX} players")
+    if not (out["exclude"] or out["force"] or out["captain"]):
+        return None
+    return out
+
+
+def _pk_find(entry, rows, norm):
+    """(raw DK name, None) of the one man `entry` names on this slate, or
+    (None, why). Identity is the normalised name and the team; the id breaks
+    a tie only. The auto-loaded CSV writes DraftKings' id of the MAN
+    (playerDkId) on both of a showdown player's rows, but DraftKings' own
+    export writes a per-SLOT id, different on his CPT and FLEX rows, and an
+    old paste may have none -- so an id cannot be the key."""
+    name, team, pid = entry
+
+    def on_team(r):
+        return not team or (r.get("team") or "").strip().upper() == team
+    # DraftKings' own spelling first (the tab sends the pool's names); the
+    # normalised one -- accents, suffixes and punctuation dropped -- only when
+    # that finds no one, since it also drops digits and initials
+    flat = " ".join(name.lower().split())
+    hits = {}
+    for r in rows:
+        if on_team(r) and " ".join(str(r["name"]).lower().split()) == flat:
+            hits.setdefault(r["name"], []).append(r)
+    if not hits:
+        nk = norm(name)
+        for r in rows:
+            if on_team(r) and norm(r["name"]) == nk:
+                hits.setdefault(r["name"], []).append(r)
+    if len(hits) > 1 and pid:
+        hits = {k: v for k, v in hits.items() if any(str(r.get("dk_id") or "") == pid for r in v)}
+    if not hits:
+        return None, f"{name}{f' ({team})' if team else ''} is not on this slate"
+    if len(hits) > 1:
+        return None, f"two players on this slate match {name}; pick him from the list"
+    return next(iter(hits)), None
+
+
+def _cheapest_fill(slots, cands):
+    """The cheapest salary that fills `slots` from `cands` [(name, salary,
+    eligible slots)], each man once, or None: positions are separable, so
+    the cheapest eligible man slot by slot (FLEX last) is the minimum."""
+    used, tot = set(), 0
+    for s in sorted(slots, key=lambda s: s == "FLEX"):
+        best = min((c for c in cands if c[0] not in used and s in c[2]), key=lambda c: c[1], default=None)
+        if best is None:
+            return None
+        used.add(best[0])
+        tot += best[1]
+    return tot
+
+
+def pick_resolve(pp, rows, mode, cap=CAP, stack=True, board=False):
+    """(Pick, None) or (None, why): a parsed pick resolved to this slate's raw
+    DraftKings names and checked by arithmetic alone -- the names, DraftKings'
+    status, the roster shape, a defense facing a forced offense, a forced
+    quarterback with every catcher excluded, both teams on a showdown, and
+    the salary with the open slots filled as cheaply as the slate allows.
+    `board` reads the tournament board's defense rule (dfs_tourney
+    .classic_allowed: no defense facing our quarterback or backs) instead of
+    the sheet's (_lineup_ok: none facing anyone we roster).
+
+    A pass is not a promise: the build can still drop a forced man Sleeper
+    does not project or the depth chart rules out (it reads Sleeper; this
+    does not), and the build's refusal is the final word. `pp` is raw or
+    parsed (pick_parse is idempotent); one naming nobody resolves to None."""
+    pp = pick_parse(pp)
+    if not pp:
+        return None, None
+    try:
+        import nfl_adp
+        norm = nfl_adp._norm
+    except Exception as e:
+        errlog.note("PICK-norm", e)
+
+        def norm(s):
+            return " ".join(str(s or "").lower().split())
+    ex, fo = set(), set()
+    for key, dst in (("exclude", ex), ("force", fo)):
+        for e in pp.get(key) or []:
+            nm, why = _pk_find(e, rows, norm)
+            if why:
+                return None, why
+            dst.add(nm)
+    captain = None
+    if pp.get("captain"):
+        if mode != "showdown":
+            return None, "a captain is a showdown pick: a classic lineup has none"
+        captain, why = _pk_find(pp["captain"], rows, norm)
+        if why:
+            return None, why
+        fo.add(captain)
+    both = sorted(ex & fo)
+    if both:
+        return None, f"{both[0]} is both excluded and forced"
+    info, cpt_sal = {}, {}
+    for r in rows:
+        if (r.get("roster_pos") or "").upper() == "CPT":
+            cpt_sal[r["name"]] = int(float(r["salary"]))
+            info.setdefault(r["name"], r)
+        else:
+            info[r["name"]] = r
+    for nm in sorted(fo):
+        if not _playable(info[nm]):
+            return None, f"DraftKings lists {nm} {(info[nm].get('status') or '').upper()}: a lineup holding him is dead"
+
+    def pos_of(nm):
+        p = (info[nm].get("pos") or "").upper().split("/")[0]
+        return "RB" if p == "FB" else p
+
+    def team_of(nm):
+        return (info[nm].get("team") or "").strip().upper()
+    live = [nm for nm, r in info.items() if _playable(r) and nm not in ex and nm not in fo]
+    if mode == "showdown":
+        if len(fo) > len(SHOWDOWN_ROSTER):
+            return None, f"{len(fo)} forced: a showdown lineup holds {len(SHOWDOWN_ROSTER)}"
+        if len(fo) == len(SHOWDOWN_ROSTER) and len({team_of(nm) for nm in fo}) < SHOWDOWN_MIN_TEAMS:
+            return None, "six forced players from one team: DraftKings requires both teams in a showdown lineup"
+
+        def csal(nm):
+            return cpt_sal.get(nm, int(round(int(float(info[nm]["salary"])) * CPT_MULT)))
+        flex = {nm: int(float(info[nm]["salary"])) for nm in info}
+        fill = sorted(flex[nm] for nm in live)
+        best = None          # a lower bound: DraftKings' both-teams rule is not read here
+        for c in ([captain] if captain else sorted(fo) + [None]):
+            rest = [nm for nm in fo if nm != c]
+            n_open = len(SHOWDOWN_ROSTER) - 1 - len(rest)
+            if c is None:           # an unforced captain: the cheapest open man at 1.5x
+                if not live or len(live) < n_open + 1:
+                    continue
+                cc = min(live, key=csal)
+                others = sorted(flex[nm] for nm in live if nm != cc)
+                cost = csal(cc) + sum(flex[nm] for nm in rest) + sum(others[:n_open])
+            else:
+                if len(fill) < n_open:
+                    continue
+                cost = csal(c) + sum(flex[nm] for nm in rest) + sum(fill[:n_open])
+            best = cost if best is None else min(best, cost)
+        if best is None:
+            return None, "not enough players left to fill a showdown lineup around your picks"
+        if best > cap:
+            return None, (f"your picks cost ${best:,} with the open slots filled as cheaply as this slate allows, "
+                          f"over the ${cap:,} cap")
+        return Pick(frozenset(ex), frozenset(fo), captain), None
+    counts = collections.Counter(pos_of(nm) for nm in fo)
+    for p, k in counts.items():
+        if p not in _PICK_SHAPE:
+            return None, f"{min(nm for nm in fo if pos_of(nm) == p)} is a {p or 'player with no position'}: a classic lineup has no slot for him"
+        if k > _PICK_SHAPE[p]:
+            if p == "TE":        # DraftKings' rule allows a second at FLEX; this builder's FLEX never takes one
+                return None, (f"{k} forced at TE: the builder fills FLEX with a back or a receiver, so its lineups "
+                              f"hold one tight end")
+            return None, f"{k} forced at {p}: a classic lineup holds at most {_PICK_SHAPE[p]}"
+    if counts["RB"] + counts["WR"] > 6:
+        return None, "more than six backs and receivers forced: a classic lineup holds two backs, three receivers and a FLEX"
+    for d in (nm for nm in fo if pos_of(nm) == "DST"):
+        opp = _opp_of(team_of(d), info[d].get("game"))
+        for o in sorted(nm for nm in fo if pos_of(nm) != "DST" and (not board or pos_of(nm) in ("QB", "RB"))):
+            if opp and team_of(o) == opp:
+                return None, (f"the {d} defense plays {o}'s team: the builder never pairs a defense with an "
+                              f"offense it faces; drop one")
+    if stack:
+        for q in (nm for nm in fo if pos_of(nm) == "QB"):
+            mates = [nm for nm in live + sorted(fo) if nm != q and team_of(nm) == team_of(q) and pos_of(nm) in ("WR", "TE")]
+            if not mates:
+                return None, (f"every receiver and tight end of {q}'s team is excluded or out: the build stacks the "
+                              f"quarterback with one of them")
+    open_slots = list(ROSTER)
+    for nm in sorted(fo, key=lambda n: pos_of(n) in FLEX_OK):     # QB / TE / DST first, then backs and receivers
+        p = pos_of(nm)
+        s = p if p in open_slots else ("FLEX" if p in FLEX_OK and "FLEX" in open_slots else None)
+        if s is None:
+            return None, f"{nm} does not fit the slots left for a {p}"
+        open_slots.remove(s)
+    cands = [(nm, int(float(info[nm]["salary"])), _elig(pos_of(nm))) for nm in live]
+    fill = _cheapest_fill(open_slots, cands)
+    if fill is None:
+        return None, "not enough players left to fill a classic lineup around your picks"
+    cost = sum(int(float(info[nm]["salary"])) for nm in fo) + fill
+    if cost > cap:
+        return None, (f"your picks cost ${cost:,} with the open slots filled as cheaply as this slate allows, "
+                      f"over the ${cap:,} cap")
+    return Pick(frozenset(ex), frozenset(fo), None), None
+
+
+def _pk_restore(pk, kept, dx, pre_gate, waived):
+    """([forced men the depth gate removed by RANK], None), or ([], why). A
+    WR4 by the depth chart is the house rule, and the owner's pick beats it:
+    he comes back into OUR pool, named in `waived`, never into the field's.
+    Any other reason the gate gives (injured, not on a roster) means a dead
+    lineup: refused."""
+    have = {p["name"] for p in kept}
+    out = []
+    for d in dx:
+        nm = d.get("name")
+        if nm not in pk.force or nm in have:
+            continue
+        why = d.get("why") or ""
+        if "by depth chart" not in why:
+            return [], f"{nm} cannot be forced: {why}"
+        p = pre_gate[nm]
+        p["depth"] = why.split(" ")[0]
+        out.append(p)
+        waived.append(f"the depth chart for {nm} ({why}): in your lineups, never in the field's")
+    return out, None
+
+
+def _sd_pick_waivers(pk, builds, pool, objective):
+    """The showdown house rules the owner's own picks break, named: the GPP
+    captain rules for his captain, and _sd_allowed's construction rules for
+    a forced FLEX beside the captain and the other forced men (the free
+    slots still obey them; the forced set is waived by construction)."""
+    out = []
+    if pk.captain and objective in ("ceiling", "leverage"):
+        c = next((p for p in pool if p["name"] == pk.captain), None)
+        rich = sum(1 for p in pool if p.get("pos") in _SD_GPP_CPT_POS
+                   and p["cpt_salary"] >= _SD_MIN_CPT_SALARY) >= 3
+        if c is not None and (c.get("pos") not in _SD_GPP_CPT_POS
+                              or (rich and c["cpt_salary"] < _SD_MIN_CPT_SALARY)):
+            out.append(f"the tournament captain rule (no kicker or defense; ${_SD_MIN_CPT_SALARY:,}+) for {c['name']}")
+    beside = {}
+    for cap_p, picked, _sal in builds:
+        got = []
+        for q in (q for q in picked if "_pk" in q):
+            if not _sd_allowed(q, cap_p, got):
+                beside.setdefault(q["name"], set()).add(cap_p["name"])
+            got.append(q)
+    return out + [sd_waiver_text(nm, caps) for nm, caps in sorted(beside.items())]
+
+
+def sd_waiver_text(name, captains):
+    """One forced man's construction-rule waiver, naming every captain it was waived beside (the first versions
+    named one: "beside captain Ace Hawk" while he also sat beside Cal Hawk -- round-3 review), four at most."""
+    caps = sorted(captains)
+    more = f" and {len(caps) - 4} more" if len(caps) > 4 else ""
+    return (f"the showdown construction rules for {name} beside captain{'s' if len(caps) > 1 else ''} "
+            f"{', '.join(caps[:4])}{more}")
+
+
+def _pk_what(pk):
+    """'holding A, B without C' for a refusal: an exclude-only pick read "holding  under the cap"."""
+    parts = ([f"holding {', '.join(sorted(pk.force))}"] if pk.force else []) \
+        + ([f"without {', '.join(sorted(pk.exclude))}"] if pk.exclude else [])
+    return " ".join(parts) or "for your picks"
+
+
+def pick_stamp(pk, waived=(), notes=()):
+    """What a picked build says it was built under (the card, the board)."""
+    return {"exclude": sorted(pk.exclude), "force": sorted(pk.force), "captain": pk.captain,
+            "waived": list(waived), "notes": list(notes)}
 
 
 # ---- The depth-chart gate ---------------------------------------------------
@@ -573,7 +876,8 @@ def _value_sd(p, objective):
     the Patriots defense -- on the joint rule it scored 80.4 against 75.0 for
     the same lineup with the discount applied, and 76.2 for a Maye stack."""
     if objective == "leverage":
-        return p["ceiling"] * (1.0 - 0.007 * p.get("own", 8.0))
+        v = p["ceiling"] * (1.0 - 0.007 * p.get("own", 8.0))
+        return v + _PK_BIAS if "_pk" in p else v
     return _value(p, objective)
 
 
@@ -654,10 +958,20 @@ def _sd_allowed(p, cap_p, picked):
     return True
 
 
-def _sd_fill(cands, budget, objective, rng, cpt_team, greedy=False, cap_p=None):
+def _sd_fill(cands, budget, objective, rng, cpt_team, greedy=False, cap_p=None, seed=None):
     """Five FLEX under `budget`, spanning both teams with the captain, under
-    the construction rules (_sd_allowed) when the captain is given."""
+    the construction rules (_sd_allowed) when the captain is given. `seed`
+    (the picker's forced FLEX, never among `cands`) fills the first slots: the
+    rules then bind the free slots only, the forced men COUNTING against them
+    (a forced punt leaves one punt to the rest), and _sd_allowed itself is
+    untouched -- its five rejections are pinned (S5)."""
     picked, sal, teams = [], 0, {cpt_team}
+    if seed:
+        picked = list(seed)
+        sal = sum(p["salary"] for p in seed)
+        if sal > budget or len(picked) > 5:
+            return None
+        teams |= {p["team"] for p in seed if p["team"]}
     # A fill that dies mid-way (no player fits the last slot) used to return
     # with its partial picks still flagged taken, and they stayed taken for
     # every later fill under that captain -- so the expensive players, who
@@ -667,7 +981,7 @@ def _sd_fill(cands, budget, objective, rng, cpt_team, greedy=False, cap_p=None):
     # best lineup it never saw scored 108.8 on the joint rule against the
     # 99.5 it returned. The flags are released on every path now.
     try:
-        for slot in range(5):
+        for slot in range(len(picked), 5):
             pool = [p for p in cands if p["_free"] and sal + p["salary"] <= budget
                     and (cap_p is None or _sd_allowed(p, cap_p, picked))]
             # Last slot and still one-sided -> it has to come from the other team.
@@ -743,13 +1057,23 @@ def _joint_score(cap_p, picked, objective, iters):
 _JOINT_PER_CPT = 40
 
 
-def _showdown_bests(players, cap, objective, restarts=_SD_RESTARTS, rng=None):
+def _showdown_bests(players, cap, objective, restarts=_SD_RESTARTS, rng=None, pick=None, per_captain=1):
     """[(score, cap_p, picked, sal), ...] -- the best lineup for EACH captain,
     best first. Every player is tried as captain (the pool is one game, so
     that is only a few dozen); each captaincy gets one greedy fill plus a
     batch of randomized ones, under the construction rules. Cash
     (projection) ranks on the additive sum; the GPP objectives re-score each
-    captain's strongest candidates on their joint sims (_joint_score)."""
+    captain's strongest candidates on their joint sims (_joint_score).
+
+    `pick` (the players carry the picker's marks): a forced captain is the
+    only one tried, the GPP captain rules waived for him; the forced FLEX seed
+    every fill (_sd_fill) -- a forced man tried as captain leaves the seed for
+    that captaincy, and `others` never holds a forced man, so none is drawn
+    twice. Every captaincy of a picked build draws twice the fills, so a pick
+    with no forced captain costs about twice the unpicked search (seconds,
+    inline in the web worker as the sheet always was). `per_captain` > 1
+    returns that many DISTINCT fills of each captain (a forced captain's
+    multi-entry: one captain would otherwise be one entry)."""
     rng = rng or random
     if len(players) < len(SHOWDOWN_ROSTER):
         return []
@@ -758,22 +1082,37 @@ def _showdown_bests(players, cap, objective, restarts=_SD_RESTARTS, rng=None):
     gpp = objective in ("ceiling", "leverage")
     rich = sum(1 for p in players if p.get("pos") in _SD_GPP_CPT_POS
                and p["cpt_salary"] >= _SD_MIN_CPT_SALARY) >= 3
+    forced = [p for p in players if "_pk" in p] if pick else []
     per = {}                                    # captain name -> {frozenset: cand}
     for cap_p in players:
+        if pick and pick.captain and cap_p["name"] != pick.captain:
+            continue                        # the owner's captain is the only one
         budget = cap - cap_p["cpt_salary"]
         if budget < 0:
             continue
-        if gpp and cap_p.get("pos") not in _SD_GPP_CPT_POS:
+        mine = bool(pick and pick.captain)  # his captain: the GPP rules below are waived for him
+        if gpp and not mine and cap_p.get("pos") not in _SD_GPP_CPT_POS:
             continue                        # no K / DST captain in a GPP build
-        if gpp and rich and cap_p["cpt_salary"] < _SD_MIN_CPT_SALARY:
+        if gpp and not mine and rich and cap_p["cpt_salary"] < _SD_MIN_CPT_SALARY:
             continue                        # a GPP captain is a real price
+        seed = [p for p in forced if p is not cap_p]
+        if len(seed) > 5:
+            continue
         cap_p["_free"] = False
-        others = [p for p in players if p is not cap_p]
+        others = [p for p in players if p is not cap_p and not (forced and "_pk" in p)]
         cap_val = CPT_MULT * _value_sd(cap_p, objective)
+        if "_pk" in cap_p:
+            # the bias counts ONCE wherever a forced man sits: at 1.5x his
+            # captaincies outranked every other captain whatever they scored
+            cap_val -= (CPT_MULT - 1.0) * _PK_BIAS
         cands = per.setdefault(cap_p["name"], {})
-        for i in range(restarts + 1):
+        # a picked captaincy draws twice the fills: with fewer free slots each
+        # fill is cheaper, and at the default count one random pick in sixty
+        # came back 0.2 points short of the brute-force optimum where the
+        # unpicked search was exact on all sixty (2026-10-30)
+        for i in range((2 * restarts if pick else restarts) + 1):
             r = _sd_fill(others, budget, objective, rng, cap_p["team"], greedy=(i == 0),
-                         cap_p=cap_p)
+                         cap_p=cap_p, seed=seed or None)
             if not r:
                 continue
             picked, sal = r
@@ -787,6 +1126,16 @@ def _showdown_bests(players, cap, objective, restarts=_SD_RESTARTS, rng=None):
         if not cands:
             continue
         ranked = sorted(cands.values(), key=lambda c: -c[0])
+        if per_captain > 1:
+            top = ranked[:max(_JOINT_PER_CPT, per_captain)]
+            L = min((len(p.get("arr") or []) for c in top for p in [c[1]] + c[2]), default=0) if gpp else 0
+            if L > 0:
+                step = max(1, L // _JOINT_ITERS)
+                js = [(_joint_score(c[1], c[2], objective, range(0, L, step)), c) for c in top]
+                top = [(v, c[1], c[2], c[3]) for v, c in sorted((x for x in js if x[0] is not None),
+                                                                 key=lambda x: -x[0])]
+            out.extend(top[:per_captain])
+            continue
         best = ranked[0]
         if gpp:
             top = ranked[:_JOINT_PER_CPT]
@@ -815,11 +1164,14 @@ def optimize_showdown(players, cap, objective, restarts=_SD_RESTARTS, rng=None):
     return cap_p, picked, sal
 
 
-def optimize_showdown_multi(players, cap, objective, n, restarts=_SD_RESTARTS, rng=None):
+def optimize_showdown_multi(players, cap, objective, n, restarts=_SD_RESTARTS, rng=None, pick=None):
     """The best lineup for each of the top `n` captains, best captain first --
     a multi-entry that spreads captains, which is how a big showdown is
-    played: "be a rare lineup, not just rare players"."""
-    per = _showdown_bests(players, cap, objective, restarts=restarts, rng=rng)
+    played: "be a rare lineup, not just rare players". With the picker's
+    captain there is one captain, so the entries are his `n` best distinct
+    fills (measured before: n = 5 came back one entry)."""
+    per = _showdown_bests(players, cap, objective, restarts=restarts, rng=rng, pick=pick,
+                          per_captain=(max(1, int(n)) if pick and pick.captain else 1))
     return [(c[1], c[2], c[3]) for c in per[:max(1, int(n))]]
 
 
@@ -836,19 +1188,128 @@ def _by_pos(players):
     return by
 
 
+def _reserve(asc, slots, used):
+    """The cheapest salary that could fill `slots` from players not in `used`
+    (each man once, specific slots before the FLEX), or None when a slot has
+    no one: a lower bound -- the stack and defense rules are not read."""
+    tot, took = 0, set()
+    for s in sorted(slots, key=lambda s: s == "FLEX"):
+        for p in asc[s]:
+            if p["name"] not in used and p["name"] not in took:
+                took.add(p["name"])
+                tot += p["salary"]
+                break
+        else:
+            return None
+    return tot
+
+
 def _build_one(by_pos, cap, objective, stack_team=None, stack_min=0, rng=random,
-               bring_min=0):
+               bring_min=0, fixed=None, cheapest=False, asc=None):
     """One greedy-randomized valid lineup. With a stack, the QB slot is HELD to
     the stack team (catchers without their quarterback are not a stack) and
     WR/TE/FLEX slots seed from his team so they boom together. `bring_min`
     additionally requires a pass-catcher from the QB's OPPONENT -- the
-    bring-back: a shootout lifts both sides, and the game-stack owns it."""
+    bring-back: a shootout lifts both sides, and the game-stack owns it.
+
+    `fixed` (the picker's forced players) are SEATED first, the quarterback
+    before the rest so the stack and the bring-back read off him: QB, TE and
+    DST in their own slots, a back or receiver in his position's slot and
+    then the FLEX. Every fill then starts from them with the budget they
+    leave. Biasing their value alone was not enough: the fill admits a player
+    whenever he fits the cap with nothing held back for the open slots, so
+    the owner's own shape (a quarterback and two of his receivers) under the
+    projection objective completed 0 of 2,000 fills and the search answered
+    "no valid lineup" beside a legal one at 124.3 (Fable, 2026-10-30).
+    `cheapest` fills every open slot with its cheapest legal player: the
+    picked search's deterministic start. `asc` (by_pos sorted by salary)
+    holds every pick of a picked fill to what leaves the open slots their
+    cheapest fill (_reserve): with $22,000 forced, the fills -- the cheapest
+    one too, whose bring-back went to a $4,200 tight end ahead of a $3,500
+    receiver -- died at the FLEX with $47,100 spent and no one under $3,500.
+    A picked fill also chooses its quarterback, his stack and the bring-back
+    BEFORE the slots, each where the money left allows: left to the slot
+    order the tight end's slot always took the stack, so a lineup whose
+    bring-back had to be the tight end was never built (a receiver, a back and
+    a receiver forced on three teams: no fill of 2,000 beside a legal 222.3).
+    The unpicked fill is untouched (`asc` None)."""
     used, lineup, sal, stacked, brought = set(), [], 0, 0, 0
     stack_opp = None
     dst_opps, off_teams = set(), set()
-    for si in sorted(range(len(ROSTER)), key=lambda i: len(by_pos[ROSTER[i]])):
+    taken = set()
+
+    def slot_for(p):
+        si = next((i for i in range(len(ROSTER)) if i not in taken and ROSTER[i] == p["pos"]), None)
+        if si is None and p["pos"] in FLEX_OK:
+            si = next((i for i in range(len(ROSTER)) if i not in taken and ROSTER[i] == "FLEX"), None)
+        return si
+
+    def seat(p, si):
+        nonlocal sal, stacked, brought, stack_opp
+        taken.add(si)
+        if stack_team and p["pos"] == "QB":
+            stack_opp = p.get("opp")
+            # a forced receiver of his opponent seated before him is already the bring-back
+            brought = sum(1 for q in lineup if q.get("team") == stack_opp and q["pos"] in ("WR", "TE"))
+        if stack_team and p.get("team") == stack_team and p["pos"] in ("WR", "TE"):
+            stacked += 1
+        if stack_opp and p.get("team") == stack_opp and p["pos"] in ("WR", "TE"):
+            brought += 1
+        used.add(p["name"]); lineup.append(p); sal += p["salary"]
+        if p["pos"] == "DST":
+            if p.get("opp"):
+                dst_opps.add(p["opp"])
+        elif p.get("team"):
+            off_teams.add((p["team"] or "").upper())
+
+    for p in sorted(fixed or (), key=lambda x: x["pos"] != "QB"):
+        si = slot_for(p)
+        if si is None or (p["pos"] == "QB" and stack_team and p.get("team") != stack_team):
+            return None
+        seat(p, si)
+    if taken and (sal > cap or any((p.get("team") or "").upper() in dst_opps
+                                   for p in lineup if p["pos"] != "DST")):
+        return None
+    if asc is not None and stack_team:
+        def choose(cands):
+            ok = []
+            for c in cands:
+                si = slot_for(c)
+                if si is None:
+                    continue
+                rest = _reserve(asc, [ROSTER[j] for j in range(len(ROSTER)) if j not in taken and j != si],
+                                used | {c["name"]})
+                if rest is not None and sal + c["salary"] + rest <= cap:
+                    ok.append((c, si))
+            if not ok:
+                return None
+            if cheapest:
+                return min(ok, key=lambda x: (x[0]["salary"], -x[0]["proj"]))
+            top = ok[:14]
+            return rng.choices(top, weights=[max(0.1, _value(c, objective)) ** 2 for c, _si in top])[0]
+        if not any(p["pos"] == "QB" for p in lineup):
+            got = choose([p for p in by_pos["QB"] if p.get("team") == stack_team and p["name"] not in used])
+            if got is None:
+                return None
+            seat(*got)
+        while stacked < stack_min or (bring_min and brought < bring_min):
+            team = stack_team if stacked < stack_min else stack_opp
+            got = choose([p for p in by_pos["WR"] + by_pos["TE"] if team and p.get("team") == team
+                          and p["name"] not in used and (p.get("team") or "").upper() not in dst_opps])
+            if got is None:
+                return None
+            seat(*got)
+    order = sorted(range(len(ROSTER)), key=lambda i: len(by_pos[ROSTER[i]]))
+    for k, si in enumerate(order):
+        if si in taken:
+            continue
         pos = ROSTER[si]
         pool = [p for p in by_pos[pos] if p["name"] not in used and sal + p["salary"] <= cap]
+        if asc is not None:
+            rest = _reserve(asc, [ROSTER[j] for j in order[k + 1:] if j not in taken], used)
+            if rest is None:
+                return None
+            pool = [p for p in pool if sal + p["salary"] + rest <= cap]
         # NEVER oppose your own defense: a DST scores off the exact failures
         # your opposing skill player needs to succeed. DST slots skip defenses
         # facing a rostered offense; offense slots skip players the rostered
@@ -879,9 +1340,12 @@ def _build_one(by_pos, cap, objective, stack_team=None, stack_min=0, rng=random,
             bpool = [p for p in pool if p.get("team") == stack_opp and p["pos"] in ("WR", "TE")]
             if bpool:
                 cand = bpool
-        top = cand[:14]
-        weights = [max(0.1, _value(x, objective)) ** 2 for x in top]
-        pick = rng.choices(top, weights=weights)[0]
+        if cheapest:
+            pick = min(cand, key=lambda x: (x["salary"], -x["proj"]))
+        else:
+            top = cand[:14]
+            weights = [max(0.1, _value(x, objective)) ** 2 for x in top]
+            pick = rng.choices(top, weights=weights)[0]
         if stack_team and pick["pos"] == "QB":
             stack_opp = pick.get("opp")
         if stack_team and pick.get("team") == stack_team and pick["pos"] in ("WR", "TE"):
@@ -1033,6 +1497,8 @@ def _kick(lu, players, objective, cap, stack_min=0, bring_min=0, exclude=None):
     while improved:
         improved = False
         for out in list(cur):
+            if "_pk" in out:
+                continue
             rest = [p for p in players if p["name"] != out["name"]]
             # the barred player's slot is refilled by the best LEGAL fill of the
             # rest of the pool (the drop is allowed: that is the perturbation)
@@ -1057,6 +1523,9 @@ def _dst_kick(lu, players, objective, cap, stack_min=0, bring_min=0, exclude=Non
     here: the optimum held the other defense and five players it unlocked."""
     val = lambda lineup: sum(_value(p, objective) for p in lineup)
     best, best_v = lu, val(lu)              # `lu` itself when nothing beats it
+    if any("_pk" in p and p["pos"] == "DST" for p in lu):
+        return lu                           # the picker forced this defense
+    pk_teams = {(p.get("team") or "").upper() for p in lu if "_pk" in p and p["pos"] != "DST"}
     qb = next(p for p in lu if p["pos"] == "QB")
     cheap = {}
     for p in sorted(players, key=lambda p: p["salary"]):
@@ -1067,6 +1536,8 @@ def _dst_kick(lu, players, objective, cap, stack_min=0, bring_min=0, exclude=Non
         bar = d["opp"].upper()
         if (qb.get("team") or "").upper() == bar or (bring_min and (qb.get("opp") or "").upper() == bar):
             continue                        # this defense faces the stack or its bring-back
+        if bar in pk_teams:
+            continue                        # ... or a man the picker forced
         start = [d if p["pos"] == "DST" else p for p in lu]
         names = {p["name"] for p in start}
         ok = True
@@ -1109,7 +1580,7 @@ def _refill(cur, out, pool, objective, cap, stack_min, bring_min, exclude):
 
 
 def optimize(players, cap, objective, stack_min=0, restarts=2000, bring_min=0,
-             exclude=None, seed=None, polish_top=None, starts_per_team=1, thorough=True):
+             exclude=None, seed=None, polish_top=None, starts_per_team=1, thorough=True, fixed=None):
     """The best lineup for an additive objective under every _build_one rule:
     random greedy fills (_build_one), the best fill of EVERY stack team
     polished by one- and two-player swaps (_polish), the winner kicked
@@ -1124,7 +1595,16 @@ def optimize(players, cap, objective, stack_min=0, restarts=2000, bring_min=0,
 
     Seeded from the pool and the objective, so the same pool gives the same
     lineup on every build (the old search drew on the process's global RNG:
-    two builds a minute apart handed the owner different lineups)."""
+    two builds a minute apart handed the owner different lineups).
+
+    `fixed` is the picker's forced players, marked copies inside `players`:
+    every fill seats them (_build_one), one fill takes the cheapest legal
+    player at every open slot so a legal start exists whenever the salary
+    arithmetic allows one, and the bias they carry keeps polish and kicks from
+    swapping them out. This is a heuristic search, measured exact on fixtures,
+    never a certificate: the caller checks the answer holds them and words a
+    miss "the search found no legal lineup", not "none exists" (`exclude`, the
+    portfolio's overlap rule, is a different thing)."""
     import hashlib
     by_pos = _by_pos(players)
     if by_pos is None:
@@ -1134,16 +1614,17 @@ def optimize(players, cap, objective, stack_min=0, restarts=2000, bring_min=0,
         seed = int(hashlib.sha1(f"{objective}|{stack_min}|{bring_min}|{sig}".encode()).hexdigest()[:12], 16)
     rng = random.Random(seed)
     teams = sorted({p.get("team") for p in players if p.get("pos") == "QB" and p.get("team")})
+    fq = next((p for p in (fixed or ()) if p["pos"] == "QB"), None)
+    if fq is not None and fq.get("team"):
+        teams = [fq["team"]]            # a forced quarterback is the stack
     best_by = {}                        # stack team -> {roster: (score, lineup)}
-    for _ in range(restarts):
-        st = rng.choice(teams) if (stack_min and teams) else None
-        r = _build_one(by_pos, cap, objective, stack_team=st, stack_min=stack_min,
-                       rng=rng, bring_min=bring_min)
+
+    def keep(r):
         if not r:
-            continue
+            return
         lineup, _sal = r
         if not _lineup_ok(lineup, cap, stack_min, bring_min, exclude):
-            continue
+            return
         score = sum(_value(p, objective) for p in lineup)
         qb_team = next((p.get("team") for p in lineup if p["pos"] == "QB"), None)
         fills = best_by.setdefault(qb_team, {})
@@ -1152,6 +1633,15 @@ def optimize(players, cap, objective, stack_min=0, restarts=2000, bring_min=0,
             fills[key] = (score, lineup)
             if len(fills) > starts_per_team:
                 fills.pop(min(fills, key=lambda k: fills[k][0]))
+    asc = {pos: sorted(v, key=lambda p: (p["salary"], p["name"])) for pos, v in by_pos.items()} if fixed else None
+    for _ in range(restarts):
+        st = rng.choice(teams) if (stack_min and teams) else None
+        keep(_build_one(by_pos, cap, objective, stack_team=st, stack_min=stack_min,
+                        rng=rng, bring_min=bring_min, fixed=fixed, asc=asc))
+    if fixed:
+        for st in (teams if stack_min else [None]):
+            keep(_build_one(by_pos, cap, objective, stack_team=st, stack_min=stack_min,
+                            bring_min=bring_min, fixed=fixed, cheapest=True, asc=asc))
     best = None
     ranked = sorted((f for fills in best_by.values() for f in fills.values()), key=lambda x: -x[0])
     for _score, lineup in (ranked[:polish_top] if polish_top else ranked):
@@ -1345,18 +1835,32 @@ def _payout_setup(contest, C, prize_pool, first_prize, entry_fee, payouts):
 
 def contest_sim(your_lineup, players, contest="gpp", entry_fee=1.0, contest_size=None,
                 prize_pool=None, first_prize=None, sample_size=500, n_iter=400,
-                extra_lineups=None, seed=None, payouts=None):
-    by_pos = _by_pos(players)
-    arr = {p["name"]: p.get("arr") for p in players if p.get("arr")}
+                extra_lineups=None, seed=None, payouts=None, field_players=None, ref=None):
+    """`field_players` (a picked build) is the pool the FIELD is drawn from --
+    the public still plays the man the owner excluded and never the man he
+    forced past the depth gate -- while our lineups read their arrays from
+    `players`; `ref` pins the field's floor to the UNPICKED optimum, so a picked
+    card meets the unpicked card's field (the floor keys on the lineup handed
+    in, and a weaker forced lineup would lower it). Both None: as before."""
+    fp = players if field_players is None else field_players
+    by_pos = _by_pos(fp)
+    arr = {p["name"]: p.get("arr") for p in fp if p.get("arr")}
+    if field_players is not None:
+        for p in players:
+            if p.get("arr"):
+                arr.setdefault(p["name"], p["arr"])
     if by_pos is None or not arr:
         return None
     L = min(len(a) for a in arr.values())
-    own_w = {p["name"]: max(0.1, p.get("own", 8.0)) for p in players}
-    proj_of = {p["name"]: p.get("proj", 0.0) for p in players}
+    own_w = {p["name"]: max(0.1, p.get("own", 8.0)) for p in fp}
+    proj_of = {p["name"]: p.get("proj", 0.0) for p in fp}
+    if field_players is not None:
+        for p in players:
+            proj_of.setdefault(p["name"], p.get("proj", 0.0))
     # a fixed field for every build; `seed` draws another (the sample-noise
     # measurement, dfs_backtest.run_sample)
     rng = random.Random(12345 if seed is None else seed)
-    ref = sum(proj_of.get(p["name"], 0.0) for p in your_lineup)
+    ref = sum(proj_of.get(p["name"], 0.0) for p in your_lineup) if ref is None else float(ref)
     floor_q = 0.84 * ref
     field, attempts = [], 0
     while len(field) < sample_size and attempts < sample_size * 40:
@@ -1486,7 +1990,8 @@ def _showdown_contest_sim(your, players, contest, entry_fee, contest_size,
 
 
 def _showdown_contest_sims(yours, players, contest, entry_fee, contest_size,
-                           prize_pool, first_prize, sample_size=400, n_iter=300, payouts=None):
+                           prize_pool, first_prize, sample_size=400, n_iter=300, payouts=None,
+                           field_players=None, ref=None):
     """Same maths as the classic contest sim, over showdown rosters, for
     SEVERAL lineups against ONE field: the field's per-iteration score
     distribution is the expensive part (sample_size lineups x n_iter), and it
@@ -1494,14 +1999,23 @@ def _showdown_contest_sims(yours, players, contest, entry_fee, contest_size,
     five-captain multi-entry costs about what one lineup did. The captain's
     1.5x has to be applied per SLOT, not per player -- the same name scores
     differently depending on where the field put him. Returns one result per
-    lineup (None where nothing could be scored)."""
+    lineup (None where nothing could be scored). `field_players` and `ref`
+    as contest_sim's (a picked build)."""
     import statistics
-    arr = {p["name"]: p.get("arr") for p in players if p.get("arr")}
+    fp = players if field_players is None else field_players
+    arr = {p["name"]: p.get("arr") for p in fp if p.get("arr")}
+    if field_players is not None:
+        for p in players:
+            if p.get("arr"):
+                arr.setdefault(p["name"], p["arr"])
     if not arr or not yours:
         return [None for _ in yours]
     L = min(len(a) for a in arr.values())
-    own_w = {p["name"]: max(0.1, p.get("own", 8.0)) for p in players}
-    proj_of = {p["name"]: p.get("proj", 0.0) for p in players}
+    own_w = {p["name"]: max(0.1, p.get("own", 8.0)) for p in fp}
+    proj_of = {p["name"]: p.get("proj", 0.0) for p in fp}
+    if field_players is not None:
+        for p in players:
+            proj_of.setdefault(p["name"], p.get("proj", 0.0))
     rng = random.Random(12345)
 
     def sc(slots, it):
@@ -1511,13 +2025,14 @@ def _showdown_contest_sims(yours, players, contest, entry_fee, contest_size,
     # The field is trimmed to lineups projecting near OUR level (the bottom of
     # a real field never threatens a top-1% finish); the bar is set off the
     # strongest of our entries so every entry meets the same opponents.
-    ref = max(sum((CPT_MULT if s == "CPT" else 1.0) * proj_of.get(nm, 0.0) for s, nm in y)
-              for y in yours)
+    if ref is None:
+        ref = max(sum((CPT_MULT if s == "CPT" else 1.0) * proj_of.get(nm, 0.0) for s, nm in y)
+                  for y in yours)
     floor_q = 0.84 * ref
     field, attempts = [], 0
     while len(field) < sample_size and attempts < sample_size * 40:
         attempts += 1
-        fl = _sd_field_lineup(players, CAP, own_w, rng)
+        fl = _sd_field_lineup(fp, CAP, own_w, rng)
         if fl and sum((CPT_MULT if s == "CPT" else 1.0) * proj_of.get(nm, 0.0)
                       for s, nm in fl) >= floor_q:
             field.append(fl)
@@ -1586,7 +2101,7 @@ _SD_RULES = (
 
 def _build_showdown(csv_players, week, objective, contest, contest_size,
                     entry_fee, prize_pool, first_prize, preseason, field_size=None,
-                    n_lineups=1, lock_s=None, payouts=None):
+                    n_lineups=1, lock_s=None, payouts=None, pk=None):
     ents = showdown_pool(csv_players)
     if len(ents) < len(SHOWDOWN_ROSTER):
         return {"error": f"showdown needs {len(SHOWDOWN_ROSTER)} available players "
@@ -1630,6 +2145,12 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
             unmatched.append(e["name"])
         e["proj"] = round(e["proj"], 1)
     ents = [e for e in ents if not e.get("_drop")]
+    if pk:
+        miss = sorted(set(pk.force) - {e["name"] for e in ents})
+        if miss:
+            return {"error": f"player picker: no Sleeper projection this week for {', '.join(miss)}, so he "
+                             f"cannot be forced", "pick_refused": True}
+        pre_gate = {e["name"]: e for e in ents}
     try:
         ents, _dx = _apply_depth(ents, preseason,
                                  lock_s if lock_s is not None else _lock_seconds(None, csv_players, contest))
@@ -1637,23 +2158,49 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
         return {"error": f"no trustworthy roster for the depth-chart gate; the sheet is not built with the "
                          f"gate off ({_e})", "roster_source": _e.state, "excluded": excluded[:40]}
     excluded += _dx
+    restored, waived = [], []
+    if pk:
+        restored, why = _pk_restore(pk, ents, _dx, pre_gate, waived)
+        if why:
+            return {"error": f"player picker: {why}", "pick_refused": True}
     if len(ents) < len(SHOWDOWN_ROSTER):
         return {"error": f"showdown needs {len(SHOWDOWN_ROSTER)} rostered, projected "
                          f"players (got {len(ents)} after the depth chart)",
                 "excluded": excluded[:40]}
     _set_ownership(ents, n_slots=len(SHOWDOWN_ROSTER))
     n_entries = max(1, min(_SD_MAX_ENTRIES, int(n_lineups or 1)))
-    builds = optimize_showdown_multi(ents, CAP, objective, n_entries)
+    # the picker: our pool is the field's minus the excluded, the forced as
+    # marked copies taken after the ownership (the field keeps `ents`); the
+    # unpicked builds set the field's bar, so a picked card meets the
+    # unpicked card's field
+    ours, ref, unpicked_best = ents, None, None
+    if pk:
+        fixed = [dict(e, _pk=True) for e in ents + restored if e["name"] in pk.force]
+        ours = [e for e in ents if e["name"] not in pk.exclude and e["name"] not in pk.force] + fixed
+        ub = optimize_showdown_multi(ents, CAP, objective, n_entries)
+        if ub:
+            ref = max(CPT_MULT * c["proj"] + sum(q["proj"] for q in pk_) for c, pk_, _s in ub)
+            unpicked_best = round(CPT_MULT * ub[0][0]["proj"] + sum(q["proj"] for q in ub[0][1]), 1)
+    builds = optimize_showdown_multi(ours, CAP, objective, n_entries, pick=pk)
+    if pk:
+        builds = [b for b in builds if pk.force <= {b[0]["name"]} | {q["name"] for q in b[1]}
+                  and (not pk.captain or b[0]["name"] == pk.captain)]
+        if not builds:
+            return {"error": f"player picker: the search found no legal showdown lineup {_pk_what(pk)}"
+                             + (f" with {pk.captain} at captain" if pk.captain else "") + " under the cap",
+                    "pick_refused": True}
+        waived += _sd_pick_waivers(pk, builds, ours, objective)
     if not builds:
         return {"error": "no valid showdown lineup under the cap"}
     all_slots = [[("CPT", c["name"])] + [("FLEX", p["name"]) for p in pk] for c, pk, _s in builds]
     csims = [None for _ in builds]
     if contest:
         try:
-            csims = _showdown_contest_sims(all_slots, ents, contest, entry_fee, contest_size,
+            csims = _showdown_contest_sims(all_slots, ours, contest, entry_fee, contest_size,
                                            prize_pool, first_prize,
                                            sample_size=max(150, min(2000, int(field_size or 400))),
-                                           n_iter=_SD_ITERS, payouts=payouts)
+                                           n_iter=_SD_ITERS, payouts=payouts,
+                                           field_players=(ents if pk else None), ref=ref)
         except Exception as _e:
             errlog.note("NFLDFS-sd-contest", _e)
             csims = [None for _ in builds]
@@ -1742,6 +2289,7 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
             "excluded": excluded[:40], "n_excluded": len(excluded),
             "roster_source": roster_state(),
             "teams": teams,
+            **({"pick": pick_stamp(pk, waived), "unpicked_best": unpicked_best} if pk else {}),
             "note": "Showdown Captain Mode: 1 CPT at 1.5x points and 1.5x salary, "
                     "plus 5 FLEX from any position, spanning both teams. Players DK "
                     "lists OUT or IR are excluded."}
@@ -1750,11 +2298,12 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
 def build(csv_text, week=None, objective="projection", stack=True, contest=None,
           contest_size=None, entry_fee=1.0, prize_pool=None, first_prize=None,
           preseason=False, mode="auto", field_size=None, n_lineups=1, uniq=2,
-          contest_probe=None, starts=None, payouts=None):
+          contest_probe=None, starts=None, payouts=None, pick=None):
     """`week` None means "the slate's own week": read off the export's game
     dates, else the live slate's first kickoff (`starts`), else the calendar's
     current week. A number is the owner's explicit choice and is used only
-    when the slate itself carries no date."""
+    when the slate itself carries no date. `pick` is the player picker's
+    parsed pick (pick_parse), or None."""
     csv_players = simulate.parse_dk_csv(csv_text)
     if not csv_players:
         return {"error": "couldn't read any players out of that CSV"}
@@ -1779,11 +2328,16 @@ def build(csv_text, week=None, objective="projection", stack=True, contest=None,
     _lock_s = _lock_seconds(starts, csv_players, contest)
     detected = detect_mode(csv_players)
     use = detected if mode in (None, "", "auto") else mode
+    pk = None
+    if pick:
+        pk, why = pick_resolve(pick, csv_players, use, stack=bool(stack))
+        if why:
+            return {"error": f"player picker: {why}", "pick_refused": True}
     if use == "showdown":
         res = _build_showdown(csv_players, week, objective, contest, contest_size,
                               entry_fee, prize_pool, first_prize, preseason,
                               field_size=field_size, n_lineups=n_lineups, lock_s=_lock_s,
-                              payouts=payouts)
+                              payouts=payouts, pk=pk)
         if isinstance(res, dict) and "error" not in res:
             res["slate_mode"] = slate_note
         return res
@@ -1833,12 +2387,23 @@ def build(csv_text, week=None, objective="projection", stack=True, contest=None,
                         "salary": int(c["salary"]), "dk_status": (c.get("status") or "").upper(),
                         "proj": round(proj, 1), "ceiling": ceiling, "floor": floor,
                         "elig": elig, "arr": samp})
+    if pk:
+        miss = sorted(set(pk.force) - {p["name"] for p in players})
+        if miss:
+            return {"error": f"player picker: no Sleeper projection this week for {', '.join(miss)}, so he "
+                             f"cannot be forced", "pick_refused": True}
+        pre_gate = {p["name"]: p for p in players}
     try:
         players, _dx = _apply_depth(players, preseason, _lock_s)
     except RosterUnavailable as _e:
         return {"error": f"no trustworthy roster for the depth-chart gate; the sheet is not built with the "
                          f"gate off ({_e})", "roster_source": _e.state, "excluded": excluded[:40]}
     excluded += _dx
+    restored, waived, pk_notes = [], [], []
+    if pk:
+        restored, why = _pk_restore(pk, players, _dx, pre_gate, waived)
+        if why:
+            return {"error": f"player picker: {why}", "pick_refused": True}
     if _by_pos(players) is None:
         return {"error": "the slate doesn't cover every roster slot with rostered, "
                          "projected players (need QB/RB/WR/TE/DST)",
@@ -1851,16 +2416,36 @@ def build(csv_text, week=None, objective="projection", stack=True, contest=None,
     # top-heavy ones stack deeper.
     try:
         import dfslog                      # look-back correction in force (gated)
-        dfslog.adjust("nfl", players)
+        dfslog.adjust("nfl", players + restored)
     except Exception as _e:
         errlog.note("DFSLB-adjust", _e, path="nfl")
     stack_min = (2 if objective in ("ceiling", "leverage") else 1) if stack else 0
     # The GPP shapes also bring back one catcher from the QB's opponent: a
     # shootout lifts both sides, and the game-stack owns that outcome.
     bring_min = 1 if (stack and objective in ("ceiling", "leverage")) else 0
-    lineup = optimize(players, CAP, objective, stack_min=stack_min, bring_min=bring_min)
+    # The picker's pool: the field's minus the excluded, the forced as marked
+    # COPIES taken only now -- after the ownership and the look-back
+    # correction, which rewrites proj and replaces arr (a copy taken before
+    # it would choose, print and score three different books) -- plus any
+    # man forced past the depth gate. The field keeps `players`.
+    ours, fixed, unpicked_proj = players, None, None
+    if pk:
+        fixed = [dict(p, _pk=True) for p in players + restored if p["name"] in pk.force]
+        ours = [p for p in players if p["name"] not in pk.exclude and p["name"] not in pk.force] + fixed
+        u = optimize(players, CAP, objective, stack_min=stack_min, bring_min=bring_min)
+        if not u and bring_min:
+            u = optimize(players, CAP, objective, stack_min=stack_min)
+        unpicked_proj = sum(p["proj"] for p in u) if u else None
+    lineup = optimize(ours, CAP, objective, stack_min=stack_min, bring_min=bring_min, fixed=fixed)
     if not lineup and bring_min:
-        lineup = optimize(players, CAP, objective, stack_min=stack_min)
+        lineup = optimize(ours, CAP, objective, stack_min=stack_min, fixed=fixed)
+        if lineup and pk:
+            waived.append("the bring-back: the search found no lineup holding your picks with a receiver from "
+                          "the quarterback's opponent")
+    if pk and (not lineup or not pk.force <= {p["name"] for p in lineup}):
+        return {"error": f"player picker: the search found no legal lineup {_pk_what(pk)} under the cap, the "
+                         f"stack and the defense rules",
+                "pick_refused": True}
     if not lineup:
         return {"error": "no valid lineup under the cap"}
 
@@ -1870,6 +2455,12 @@ def build(csv_text, week=None, objective="projection", stack=True, contest=None,
     # ~60% of them once there are enough for that to mean something.
     n_lineups = max(1, min(20, int(n_lineups or 1)))
     uniq = max(1, min(6, int(uniq or 2)))
+    if pk and pk.force and uniq > len(ROSTER) - len(pk.force):
+        # the overlap rule already counts only the free slots (every lineup
+        # shares the forced men); past them it can never be met
+        pk_notes.append(f"lineups differ by {max(1, len(ROSTER) - len(pk.force))} players, not {uniq}: your "
+                        f"{len(pk.force)} forced players fill the rest")
+        uniq = max(1, len(ROSTER) - len(pk.force))
     lineups = [lineup]
     if n_lineups > 1:
         import collections as _cl
@@ -1880,13 +2471,16 @@ def build(csv_text, week=None, objective="projection", stack=True, contest=None,
             # search is seeded and exact, so a candidate rejected for crossing
             # 60% would come back identical on every retry and the portfolio
             # would end short. A name that would cross it sits this one out.
-            pool_k = players
+            pool_k = ours
             if len(lineups) >= 3:
                 capped = {nm for nm, c in expo.items() if (c + 1) / (len(lineups) + 1) > 0.6}
-                pool_k = [p for p in players if p["name"] not in capped]
+                # the forced men are in every lineup by definition: capped, the
+                # fourth lineup could not be built
+                capped -= set(pk.force) if pk else set()
+                pool_k = [p for p in ours if p["name"] not in capped]
             cand = optimize(pool_k, CAP, objective, stack_min=stack_min,
                             bring_min=bring_min, restarts=1000,
-                            exclude=(rosters, uniq), seed=len(lineups),
+                            exclude=(rosters, uniq), seed=len(lineups), fixed=fixed,
                             # the defense kick is the headline lineup's (up to
                             # 3 s on a 12-game slate); twenty of them would sit
                             # a web worker on one core for a minute
@@ -1909,11 +2503,12 @@ def build(csv_text, week=None, objective="projection", stack=True, contest=None,
             # GPP is decided in a tail 500 lineups cannot map. Clamped, because
             # the cost is linear and 3000 is already a ~20s build. One FIELD is
             # sampled and every portfolio lineup is scored against it.
-            csim = contest_sim(lineup, players, contest=contest, entry_fee=entry_fee,
+            csim = contest_sim(lineup, ours, contest=contest, entry_fee=entry_fee,
                                contest_size=contest_size, prize_pool=prize_pool,
                                first_prize=first_prize,
                                sample_size=max(200, min(3000, int(field_size or 500))),
-                               extra_lineups=lineups[1:], payouts=payouts)
+                               extra_lineups=lineups[1:], payouts=payouts,
+                               field_players=(players if pk else None), ref=unpicked_proj)
         except Exception as _e:
             # the card drops its contest lines; the ledger says why
             errlog.note("NFLDFS-contest", _e)
@@ -1979,6 +2574,8 @@ def build(csv_text, week=None, objective="projection", stack=True, contest=None,
             "roster_source": roster_state(),
             "inputs": nfl_dfs_sim.week_stamp(week, preseason),
             "n_pool": len(players),
+            **({"pick": pick_stamp(pk, waived, pk_notes),
+                "unpicked_best": round(unpicked_proj, 1) if unpicked_proj is not None else None} if pk else {}),
             "note": "Projections pinned to Sleeper; floor/ceiling + QB-WR correlation from the "
                     "game sim. Ownership is a model estimate of the field. In season the "
                     "pool is gated by Sleeper's depth chart: QB1, RB1-2, WR1-3, TE1-2 per "

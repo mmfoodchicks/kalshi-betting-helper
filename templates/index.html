@@ -610,6 +610,7 @@
         </div>
         <p class="sub" style="margin:2px 0 4px">Tap <b>Load CSV file</b> (or drag the file onto the box below) - or paste the <b>DKSalaries.csv</b> from your contest. Lineups are built under the cap with projected <b>ownership + leverage</b>, and can be <b>simulated against a field</b> for win% &amp; ROI. <span id="dfsLock"></span></p>
         <textarea id="dfsCsv" rows="6" placeholder="Position,Name + ID,Name,ID,Roster Position,Salary,Game Info,TeamAbbrev,AvgPointsPerGame&#10;..." style="width:100%;background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font-family:monospace;font-size:0.8rem"></textarea>
+        <div id="dfsPickSheet"></div>
         <div id="dfsLookback" class="matchup-card" style="margin-top:14px">
           <div class="matchup">🔁 Look-back: how the builder's lineups actually scored</div>
           <p class="sub" style="margin:2px 0 6px;font-size:0.78rem">Every lineup built for a <b>big event</b> (a race, an NFL or MLB main slate, a full UFC card, a 1,000-entry contest) is logged under its objective and graded off DraftKings' real scoring once the event is over. Five graded events per sport turn on a <b>correction</b> the builder applies before it optimizes, only when it beats "no correction" out of sample. <button class="track-mini" id="dfsLookbackGrade" type="button">Grade now</button> <span id="dfsLookbackNote" class="small" style="color:var(--muted)"></span></p>
@@ -844,5 +845,6 @@
   <script src="/static/app.js?v={{ v }}"></script>
   <script src="/static/matchups.js?v={{ v }}"></script>
   <script src="/static/nflview.js?v={{ v }}"></script>
+  <script src="/static/dfspick.js?v={{ v }}"></script>
 </body>
 </html>

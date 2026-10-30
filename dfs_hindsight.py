@@ -49,6 +49,11 @@ MISS_MIN_PTS = 5.0                      # only players projected for 5+ PPR ente
 CROSS_TOL = 0.1
 _ESPN_WEEK = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?seasontype=2&week={week}&dates={season}"
 _ESPN_SUMMARY = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event={eid}"
+# The AUTOMATIC boards only: a player picker's board (`..._<dg>_pick`, the
+# owner's forced and excluded men) is not what the board would have entered,
+# and the anchored `$` keeps it out of this record on purpose. A picked SHEET
+# build is logged by dfslog under "picked:<objective>" and shows in the
+# hindsight rows under that label (_logged reads every objective).
 _BOARD = re.compile(r"^(cl|sd)_tourney_nfl_(\d+)\.pkl$")
 
 

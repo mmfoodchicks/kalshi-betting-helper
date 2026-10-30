@@ -725,6 +725,48 @@ data-only `sim-history` branch (which never deploys):
       losses (a stopped fourth down in a team's own territory can even read as a conversion). This is NOT fixed
       here: a refit moves every deep number, so it is its own change, registered for 2026-11-06 with the
       walk-forward re-run (the report's 6.2).
+- **The DFS player picker** (2026-10-30, `research/reports/dfs_picker.md`; designed with a Fable agent, the build
+  reviewed by Fable (round 1) and an Opus agent (round 2, Fable out of credits), every item agreed). The owner:
+  "exclude player ... force captain ... It would create all lineups with those players forced into the lineup. Of
+  course the automatic builds would do all available players anywhere."
+  - **Where.** The lineup sheet's Run and Build on the PC take a `pick` -- `{exclude, force, captain}`, always its
+    own key (`exclude` on `/api/simulate/dfs` is GAMES). Nothing on a schedule reads one: the PC's own boards,
+    the look-back and the hindsight record (`picked:<objective>`, `_BOARD` skipping `_pick`) see the builder's
+    lineups only.
+  - **The FIELD is never picked.** The public still plays the man excluded and never the man forced past the
+    depth gate. The sheet's contest sim takes `field_players` and a floor pinned to the unpicked optimum (the
+    classic sheet's field hash is equal; the showdown sheet's floor comes from its unpicked search, which is
+    unseeded). The classic board keeps its first solve, field and `opt_pct` exactly; its candidates come from a
+    SECOND solve over the picked pool, picked steady columns and grafted draws (`graft`, never bringing an excluded
+    man), and the board stamps how many of each solve's answers hold the pick (`pick.second_solve_held`,
+    `steady_held`: all of them, since a forced man carries 4x a stack pair's bonus and the solver never trades
+    him for the pair's catcher; `_safe_pairs`' `fits` keeps each pair buildable beside the forced men -- the solver
+    holds one tight end, four receivers, six backs and receivers -- pinned directly, since no board count sees it). The showdown board narrows only `entry_ok`/`cpt_ok`; a forced man its universe cap would
+    drop is refused (dropping the next extra instead moved the field). A forced man must be projected, and on a
+    board already a field extra gated by the depth chart's RANK only (one more row in the sampler's pool changes
+    the field even masked out; a roster or off-chart gate is refused, as on the sheet).
+  - **The sheet's search** (`nfl_dfs.optimize(fixed=)`): forced men are SEATED, not just biased (+1,000 alone
+    answered "no valid lineup" beside a legal 124.3), and a picked fill holds a salary reserve and chooses the
+    quarterback, his stack and the bring-back before the slots; exact against a brute force on 225 random
+    feasible picks (`research/dfs_picker_stress.py`). With any ONE of the seat, the reserve or the bring-back
+    recount removed, the guard file's brute-force check stays exact (the cheapest start and the polish repair it on
+    a pool that small; the stress harness missed 7 of 225 only without the recount), so each mechanism has its own
+    guard (`_fill_checks`) -- a brute-force check alone cannot see them. A showdown captaincy counts the bias once
+    (1.5x outranked every other captain), a forced captain's multi-entry is his n best distinct fills, and a picked
+    captaincy draws 2x the fills.
+  - **House rules vs the owner's picks.** DraftKings' rules are never waived. Ours (the depth rank, the team cap
+    -- per team -- the punt's role, the showdown construction and captain rules) bind the free slots and are
+    waived for the forced men only, each named on the result (on the showdown board, beside a free captain too).
+    A forced defense facing a forced offense, a roster-shape break, a quarterback whose catchers are all excluded,
+    or a pick that leaves no lineup we may enter is refused with the rule named, never a board of empty lists.
+  - **The queue.** A picked Build is checked on DraftKings' pool by arithmetic (`nfl_dfs.pick_resolve`) when
+    queued; Sleeper's side when the PC builds (`queued_attempt`). `pc_worker._picked_builds` builds the
+    `..._pick` board first each cycle, under the plain path's showdown window (eight days, one game) and with the
+    second solve in `_cl_sims`' estimate; a press the PICKER refused ("player picker: ...") is tried again every six
+    hours, or half the time left to lock when sooner, or on a new press (`_PICK_RETRY_S`), never every cycle, while
+    any other refusal (a roster lookup down) is tried again next cycle as the plain builds are. The automatic paths
+    never see a picked request (`_split_picked`) and a window is consumed by the plain build only. Served on
+    `/api/dfs/tourney?dg=&pick=1`. Guards: `tests/guards_picker.py` (section PK).
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 
