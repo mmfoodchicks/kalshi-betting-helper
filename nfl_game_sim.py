@@ -997,7 +997,9 @@ _DEEP_WEIGHT = 0.30
 # come from the nightly 2,000-4,000-season run, not from here.
 _DEEP_N = 600
 _DEEP_PROFILES_TTL = 6 * 3600
-_deep_prof_cache = {"key": None, "t": 0.0, "profiles": None}
+# `src` / `src_ts` / `factors` say where the profiles came from (the game
+# viewer stamps them on its pieces; nothing here reads them).
+_deep_prof_cache = {"key": None, "t": 0.0, "profiles": None, "src": None, "src_ts": None, "factors": None}
 
 
 def _deep_profiles(season, week):
@@ -1012,13 +1014,13 @@ def _deep_profiles(season, week):
     if hit["key"] == key and hit["profiles"] and _time.time() - hit["t"] < _DEEP_PROFILES_TTL:
         return hit["profiles"]
     import nfl_deep_data
-    base = None
+    base, src, src_ts = None, "built", None
     try:
         import deep_cache
         payload, ts = deep_cache.load("nfl_deep")
         if (isinstance(payload, dict) and payload.get("profiles") and int(payload.get("season") or 0) == int(season)
                 and ts and _time.time() - ts < 36 * 3600):
-            base = payload["profiles"]
+            base, src, src_ts = payload["profiles"], "nightly", ts
     except Exception as _e:
         errlog.note("NFLG-deep-load", _e)
     if base is None:
@@ -1029,7 +1031,7 @@ def _deep_profiles(season, week):
         errlog.note("NFLG-deep-roster", _e)
         factors = {}
     profs = nfl_deep_data.with_roster(base, factors) if factors else base
-    hit.update(key=key, t=_time.time(), profiles=profs)
+    hit.update(key=key, t=_time.time(), profiles=profs, src=src, src_ts=src_ts, factors=factors)
     return profs
 
 

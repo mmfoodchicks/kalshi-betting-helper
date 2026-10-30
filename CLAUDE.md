@@ -692,6 +692,39 @@ data-only `sim-history` branch (which never deploys):
     deep weights at 400 graded shadow games a league; NFL deep weight at 200 graded `nfl_deep`
     games (asymmetric: a null sends it to 0); C1 at 10 dates and 150 games; N1 after week 18 + 48 h;
     N2 weeks 10-16; G2 and C3 replays (C3 before 2026-12-06); tennis blend per series in December.
+- **The NFL game viewer** (2026-10-29, `nfl_viewer.py`, `static/nflview.js`; designed, built and reviewed with a
+  Fable agent, `research/reports/nfl_viewer.md`). The owner: "view the most average play ... for every game ...
+  play by play", tapped from the NFL card ("Watch the typical game").
+  - **The typical game.** The deep engine plays the matchup 5,000 times on the board's own profiles, each game on
+    its own seed (`game_seed`, crc32). The viewer opens on the game nearest the medians of margin, total, each
+    side's net passing and rushing yards, turnovers and plays (`DIMS`, scaled by SD), among the games won by the
+    side the MEDIAN margin favours. Ties are excluded; a median of 0 is a pick'em.
+  - **Beside it.** Ten other games ("Another sim") and a per-down table over all 5,000 games. The header's
+    probability is the BOARD's deep figure, never a rate of the viewer's own games.
+  - **The log is passive.** `play_game(log=)` carries the log in the state dict, and every hook tests
+    `is not None`. A guard plays every box identically with and without it.
+  - **Names are drawn after the game**, on their own generator.
+    - Source: Sleeper's week (offence, IDP, kickers); out-type tags are never drawn.
+    - A defender is named only on a certain event: the tackle that ends an in-bounds non-scoring play, a sack, an
+      interception, a lost fumble, a return touchdown. No breakups, no missed tackles (the owner's call).
+    - Kickoffs and punts are spots. An interception or fumble is told as where the defence takes over (the
+      engine draws the net spot, never a return length).
+  - **Where it runs.**
+    - The PC builds in its boards pass (`pc_build`, a niced child, 150 s a pass); a piece is rebuilt at 12 h.
+    - The route reads only. A missing upcoming game is built in a niced child under HEAVY_BUILD.
+    - Nothing within ten minutes of kickoff is built. After kickoff a piece is the pre-game simulation, marked
+      as such and refused at +4 h.
+    - One boardshare piece a game (`nflview_<season>_wNN_<AWAY>_<HOME>`, in `_KEEP_LONG`), with the games inside
+      as JSON text; the route sends one.
+  - **Engine findings** (the report's section 6).
+    - A sack's net gain could carry the ball past the goal line without a score (3.7-3.8% of games). It is now
+      stopped at the 1, as this engine's pre-snap penalty is (-0.056 points a game; home-win rates within
+      +/-0.3). The screen marks every sack that nets yards as an artifact until the refit below.
+    - `research/nfl_deep_fit.py` reads a failed fourth down's end spot in the NEXT team's frame (ESPN does not
+      flag a turnover on downs). The sack table therefore holds 30-yard gains, and the down-4 cells hold 15-yard
+      losses (a stopped fourth down in a team's own territory can even read as a conversion). This is NOT fixed
+      here: a refit moves every deep number, so it is its own change, registered for 2026-11-06 with the
+      walk-forward re-run (the report's 6.2).
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 

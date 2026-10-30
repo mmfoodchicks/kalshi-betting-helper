@@ -341,6 +341,12 @@ def _task_boards():
     # started once before they take the loop's 300 s.
     _add("matchups-nba", lambda: __import__("matchups").pc_board("nba"))
     _add("matchups-nfl", lambda: __import__("matchups").pc_board("nfl"))
+    # The NFL game viewer's pieces (nfl_viewer): every upcoming game of the week
+    # whose piece is missing or 12 h old, 5,000 deep-engine games each, in a
+    # niced child capped at a few minutes a pass (the rest go next pass). After
+    # the matchups for the same reason they come last: they build inline. Most
+    # passes have nothing due and return at once.
+    _add("nfl-viewer", lambda: __import__("nfl_viewer").pc_build())
 
     deadline = time.time() + 300
     pending = dict(builders)

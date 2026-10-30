@@ -34,7 +34,9 @@ CLAIM_TIMEOUT = 300
 # day-old sweep deleted week 7's Millionaire board, built Thursday
 # 2026-10-22, by Friday night, so the tab said "not built yet" all weekend.
 # About 1-5 MB a board, a handful a week.
-_KEEP_LONG = ("cl_tourney_", "sd_tourney_", "tourney_requests.", "tourney_attempts.")
+# The game viewer's pieces (nfl_viewer) too: built up to a week ahead, served
+# to kickoff + 4 h, and a game-day build that fails must not leave a hole.
+_KEEP_LONG = ("cl_tourney_", "sd_tourney_", "tourney_requests.", "tourney_attempts.", "nflview_")
 _KEEP_LONG_S = 8 * 86400
 
 

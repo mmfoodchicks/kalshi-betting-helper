@@ -48,7 +48,11 @@ import re
 #    pass, NGS weekly rushing, injuries, snap counts, block coverage), built
 #    beside the matchup store by the nfl_matchup job (matchups.nfl_data_job),
 #    and its once-a-week retry marker nfl_rush_backfill_try_<season>.pkl.
-SCHEMA = 7
+# 8: the boards store gains nflview_<season>_wNN_<AWAY>_<HOME>.pkl (nfl_viewer:
+#    one game's typical and ten other simulated games, play by play, names
+#    drawn, the per-down table), and nfl_deep_sim's sack clamp changes what
+#    the deep engine plays (a sack that nets yards stops short of the goal).
+SCHEMA = 8
 
 _NAME_RE = re.compile(r"^[\w.,@=+-]{1,140}\.pkl$")
 

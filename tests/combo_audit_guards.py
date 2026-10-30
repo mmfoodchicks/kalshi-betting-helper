@@ -24595,6 +24595,17 @@ except Exception as _ag_e:                 # a guard file that cannot run is a f
     ck("guards_accuracy runs to the end", False, f"{type(_ag_e).__name__}: {_ag_e} " + _ag_tb.format_exc()[-600:])
 
 print("=" * 72)
+print("NV. The NFL game viewer (2026-10-29, research/reports/nfl_viewer.md): the deep engine's passive play log,")
+print("    the sack that can no longer cross the goal line, the typical game, names by share, the piece and route")
+print("    (tests/guards_viewer.py)")
+print("=" * 72)
+try:
+    __import__("guards_viewer").run(ck)
+except Exception as _nv_e:                 # a guard file that cannot run is a failed guard, never a skipped one
+    import traceback as _nv_tb
+    ck("guards_viewer runs to the end", False, f"{type(_nv_e).__name__}: {_nv_e} " + _nv_tb.format_exc()[-600:])
+
+print("=" * 72)
 print("MX. The matchup upgrade (2026-10-23): prop math, the NBA engine, the NFL matchup data and model,")
 print("    the Matchups tab's plumbing, the rushing data layer and model (2026-10-24) -- each guard file also runs alone (python3 tests/guards_<name>.py)")
 print("=" * 72)

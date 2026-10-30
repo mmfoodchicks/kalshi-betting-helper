@@ -3271,6 +3271,7 @@ function nflSlateCard(g) {
     <div class="nfl-pls">${players}</div>
     ${props ? `<details class="simdetail"><summary>📊 Top props</summary><ul class="legs">${props}</ul></details>` : ""}
     ${sgp}
+    ${g.p_home_deep != null && g.state !== "post" ? `<button type="button" class="nv-open" data-nv="open" data-nv-home="${escapeHtml(g.home)}" data-nv-away="${escapeHtml(g.away)}">▶ Watch the typical game, play by play</button>` : ""}
   </div>`;
 }
 function renderNFLWeek() {

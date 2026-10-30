@@ -55,7 +55,7 @@ def _asset_version():
     page reload fetches the new UI without needing a server restart."""
     try:
         latest = max(os.path.getmtime(os.path.join(_STATIC_DIR, f))
-                     for f in ("app.js", "matchups.js", "style.css", "sw.js"))
+                     for f in ("app.js", "matchups.js", "nflview.js", "style.css", "sw.js"))
         return str(int(latest))
     except OSError:
         return _ASSET_VERSION
@@ -3953,6 +3953,22 @@ def api_nfl_slate():
     except Exception as _e:
         errlog.note("APP-nfl-slate-record", _e)
     return jsonify(data)
+
+
+@app.route("/api/nfl/viewer")
+def api_nfl_viewer():
+    """One simulated game of a matchup, play by play (nfl_viewer): ?week=&home=
+    &away= and k (0 the typical game of 5,000, 1-10 others). Reads a published
+    piece and sends one game; a missing piece of an upcoming game is built in a
+    niced child (202 meanwhile), never in this worker."""
+    try:
+        import nfl_viewer
+        body, code = nfl_viewer.serve(request.args.get("week"), request.args.get("home"),
+                                      request.args.get("away"), request.args.get("k") or 0)
+    except Exception as e:
+        errlog.note("APP-nfl-viewer", e)
+        return jsonify({"error": f"viewer failed: {type(e).__name__}"}), 502
+    return Response(body, code, mimetype="application/json")
 
 
 @app.route("/api/nfl/record")

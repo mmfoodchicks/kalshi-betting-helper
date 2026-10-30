@@ -373,8 +373,16 @@ def _box():
                      "safety": 0, "clock": 0}}
 
 
-def play_game(home, away, rng, T=None, neutral=False, playoff=False, form_sd=None, env_sd=None):
+def play_game(home, away, rng, T=None, neutral=False, playoff=False, form_sd=None, env_sd=None, log=None):
     """One game. Returns {"h": box, "a": box, "ot": bool, "tie": bool}.
+
+    `log` (a list; the game viewer's) receives one dict per event -- kickoff,
+    snap, punt, field goal, try, return touchdown, safety and free kick, the
+    two-minute warning, period end, overtime, final -- in the order played,
+    each with the score AFTER it (_ev). It rides in the state dict, so no
+    internal function's signature changes, and recording never draws from
+    `rng` or takes a branch: a game plays identically with and without it
+    (a guard compares every box over seeds and modes).
 
     `env_sd` (default _ENV_SD, off) draws the game's shared PASSING
     environment -- wind, rain, a dome, a crew that lets the secondaries
@@ -400,7 +408,7 @@ def play_game(home, away, rng, T=None, neutral=False, playoff=False, form_sd=Non
     box = (_box(), _box())
     S = {"per": 1, "clk": 900, "off": None, "down": 1, "dist": 10, "ytg": 75,
          "ot_poss": [False, False], "sudden": False, "over": False, "kick_pending": None,
-         "drive_live": False, "playoff": playoff}
+         "drive_live": False, "playoff": playoff, "log": log}
     first_recv = rng.randrange(2)
     S["half2_recv"] = 1 - first_recv
     _kickoff(S, box, sides, T, rng, kicking=1 - first_recv)
@@ -418,10 +426,21 @@ def play_game(home, away, rng, T=None, neutral=False, playoff=False, form_sd=Non
             continue
         _snap(S, box, sides, T, rng, playoff)
     h, a = box
+    if log is not None:
+        _ev(S, box, "fin", ot=int(S["per"] > 4))
     return {"h": h, "a": a, "ot": S["per"] > 4, "tie": h["pts"] == a["pts"]}
 
 
 # ---- Mechanics ------------------------------------------------------------------
+def _ev(S, box, kind, **f):
+    """One event for the game viewer's log: its kind, the period and clock at
+    its start, and the score after it. Called only where the caller has checked
+    S["log"] is not None -- reads state, draws nothing."""
+    f["k"], f["q"], f["c"] = kind, S["per"], S["clk"]
+    f["s"] = (box[0]["pts"], box[1]["pts"])
+    S["log"].append(f)
+
+
 def _score(S, box, side, pts):
     box[side]["pts"] += pts
     box[side]["q"][min(4, S["per"] - 1)] += pts
@@ -458,14 +477,20 @@ def _kickoff(S, box, sides, T, rng, kicking):
             _new_drive(S, box, kicking, 55)
         else:
             _new_drive(S, box, recv, 45)
+        if S["log"] is not None:
+            _ev(S, box, "ko", o=kicking, res="onside_kept" if S["off"] == kicking else "onside_lost", y2=S["ytg"])
         S["clk"] = max(0, S["clk"] - 4)
         return
     if rng.random() < T.ko_td:
         box[recv]["td_ret"] += 1
+        if S["log"] is not None:
+            _ev(S, box, "ko", o=kicking, res="td")
         _return_td(S, box, sides, T, rng, recv)
         return
     ytg = T.kickoff.draw(rng) - _stoch(sides[recv].ko_shift, rng)
     _new_drive(S, box, recv, max(1, min(_KO_MAX_YTG, ytg)))
+    if S["log"] is not None:
+        _ev(S, box, "ko", o=kicking, res="spot", y2=S["ytg"])
     S["clk"] = max(0, S["clk"] - T.clock_draw("kickoff", 0, rng))
 
 
@@ -478,11 +503,19 @@ def _try_points(S, box, sides, T, rng, side):
         if rng.random() < T.two_good:
             _score(S, box, side, 2)
             box[side]["two_made"] += 1
+            if S["log"] is not None:
+                _ev(S, box, "try", o=side, two=1, ok=1)
             return 2
+        if S["log"] is not None:
+            _ev(S, box, "try", o=side, two=1, ok=0)
     elif rng.random() < sides[side].xp:
         _score(S, box, side, 1)
         box[side]["xp_made"] += 1
+        if S["log"] is not None:
+            _ev(S, box, "try", o=side, two=0, ok=1)
         return 1
+    elif S["log"] is not None:
+        _ev(S, box, "try", o=side, two=0, ok=0)
     return 0
 
 
@@ -491,6 +524,8 @@ def _return_td(S, box, sides, T, rng, scorer):
     fumble return): six, the try, then whatever the rules owe next."""
     _score(S, box, scorer, 6)
     box[scorer]["ret_pts"] += 6
+    if S["log"] is not None:
+        _ev(S, box, "rtd", o=scorer)
     S["drive_live"] = False
     if S["per"] >= 5 and S["sudden"]:
         S["over"] = True
@@ -545,6 +580,8 @@ def _change(S, box, sides, T, rng, new_ytg):
 
 def _end_period(S, box, sides, T, rng):
     per = S["per"]
+    if S["log"] is not None:
+        _ev(S, box, "end")
     if per == 1 or per == 3:
         S["per"] += 1
         S["clk"] = 900
@@ -569,6 +606,8 @@ def _end_period(S, box, sides, T, rng):
         S["sudden"] = False
         S["drive_live"] = False
         S["kick_pending"] = 1 - rng.randrange(2)
+        if S["log"] is not None:
+            _ev(S, box, "ot", kick=S["kick_pending"])
         return
     # end of an overtime period
     if h != a or not S.get("playoff"):
@@ -578,6 +617,8 @@ def _end_period(S, box, sides, T, rng):
     S["clk"] = 900
     if not S["drive_live"]:
         S["kick_pending"] = 1 - rng.randrange(2)
+        if S["log"] is not None:
+            _ev(S, box, "ot", kick=S["kick_pending"])
 
 
 def _tempo(S, box):
@@ -601,9 +642,13 @@ def _run_clock(S, box, sides, T, rng, cls, tempo_mult=1.0, defer_end=False):
     if tempo == 0 and cls in ("run", "oob"):
         dt = int(round(dt * tempo_mult))
     clk = S["clk"]
+    warn = False
     if S["per"] in (2, 4) and clk > 120 and clk - dt < 120:
         dt = clk - 120
+        warn = True
     S["clk"] = max(0, clk - dt)
+    if warn and S["log"] is not None:
+        _ev(S, box, "2mw")
     box[S["off"]]["top"] += min(dt, clk)
     if S["clk"] <= 0:
         if not defer_end:
@@ -649,18 +694,25 @@ def _punt(S, box, sides, T, rng):
     box[off]["punts"] += 1
     box[off]["ends"]["punt"] += 1
     ytg = S["ytg"]
+    lg = S["log"] is not None
     if rng.random() < T.punt_block:
         box[1 - off]["blk"] += 1
+        if lg:
+            _ev(S, box, "punt", o=off, d=S["down"], t=S["dist"], y=ytg, res="blocked", y2=max(1, 100 - ytg - 5))
         _run_clock(S, box, sides, T, rng, "punt")
         _change(S, box, sides, T, rng, max(1, 100 - ytg - 5))
         return
     if rng.random() < T.punt_td:
         box[1 - off]["td_ret"] += 1
+        if lg:
+            _ev(S, box, "punt", o=off, d=S["down"], t=S["dist"], y=ytg, res="td")
         _run_clock(S, box, sides, T, rng, "punt", defer_end=True)
         _return_td(S, box, sides, T, rng, 1 - off)
         return
     h = T.punt.get(min(95, max(30, ytg // 5 * 5))) or T.punt[65]
     recv_ytg = h.draw(rng) + _stoch(sides[off].punt_shift, rng)
+    if lg:
+        _ev(S, box, "punt", o=off, d=S["down"], t=S["dist"], y=ytg, res="spot", y2=max(1, min(99, recv_ytg)))
     # a period that ends on the punt: the receiver starts the next quarter at the
     # spot; at half-time / regulation the owed kickoff supersedes (_change)
     _run_clock(S, box, sides, T, rng, "punt")
@@ -672,9 +724,15 @@ def _field_goal(S, box, sides, T, rng):
     ytg = S["ytg"]
     kd = ytg + 17
     box[off]["fg_att"] += 1
+    lg = S["log"] is not None
+    # the kick taken because the clock is expiring (_snap sets the mark only while logging)
+    x = S.pop("_fgx", 0) if lg else 0
     if rng.random() < T.fg_block:
         box[1 - off]["blk"] += 1
         box[off]["ends"]["fgm"] += 1
+        if lg:
+            _ev(S, box, "fg", o=off, d=S["down"], t=S["dist"], y=ytg, kd=kd, res="blocked", x=x,
+                y2=max(1, 100 - ytg - 7))
         _run_clock(S, box, sides, T, rng, "fg")
         _change(S, box, sides, T, rng, max(1, 100 - ytg - 7))
         return
@@ -684,6 +742,8 @@ def _field_goal(S, box, sides, T, rng):
         box[off]["fg_0_39" if kd <= 39 else "fg_40_49" if kd <= 49 else "fg_50p"] += 1
         box[off]["ends"]["fg"] += 1
         _score(S, box, off, 3)
+        if lg:
+            _ev(S, box, "fg", o=off, d=S["down"], t=S["dist"], y=ytg, kd=kd, res="good", x=x)
         S["drive_live"] = False
         if S["per"] >= 5 and _ot_decided(S, box):
             S["over"] = True
@@ -693,6 +753,9 @@ def _field_goal(S, box, sides, T, rng):
         return
     # missed: the defence takes over at the spot of the kick (touchback inside the 20)
     box[off]["ends"]["fgm"] += 1
+    if lg:
+        _ev(S, box, "fg", o=off, d=S["down"], t=S["dist"], y=ytg, kd=kd, res="miss", x=x,
+            y2=max(1, 100 - max(20, ytg + 7)))
     _run_clock(S, box, sides, T, rng, "fg")
     _change(S, box, sides, T, rng, max(1, 100 - max(20, ytg + 7)))
 
@@ -708,6 +771,8 @@ def _snap(S, box, sides, T, rng, playoff):
     if per == 4 and sd > 0 and clk <= _KNEEL_SNAP_S * (4 - down) + 5 and down <= 4:
         bx["kneels"] += 1
         bx["plays"] += 1
+        if S["log"] is not None:
+            _ev(S, box, "kneel", o=off, d=down, t=dist, y=ytg, yd=-1)
         dt = min(clk, _KNEEL_SNAP_S + rng.randint(-2, 1))
         S["clk"] = clk - dt
         bx["top"] += dt
@@ -724,6 +789,8 @@ def _snap(S, box, sides, T, rng, playoff):
     # and the second quarter scored 6.1 a side against the real 6.93.
     if clk <= 20 and (down >= 2 or clk <= 8) and ytg + 17 <= 62 and (
             per == 2 or (per == 4 and -3 <= sd <= 0) or (per >= 5 and sd == 0)):
+        if S["log"] is not None:
+            S["_fgx"] = 1
         _field_goal(S, box, sides, T, rng)
         return
     # ---- fourth down: punt or kick first (the choice was drawn when the down
@@ -752,6 +819,8 @@ def _snap(S, box, sides, T, rng, playoff):
         else:
             S["ytg"] = ytg2
             S["dist"] = max(1, dist - yds) if yds > 0 else dist - yds
+        if S["log"] is not None:
+            _ev(S, box, "pen", o=off, d=down, t=dist, y=ytg, yd=yds, fd=int(bool(first)), y2=S["ytg"])
         _run_clock(S, box, sides, T, rng, "pen", me.tempo)
         return
     # ---- the play
@@ -770,11 +839,29 @@ def _snap(S, box, sides, T, rng, playoff):
     turnover_ytg = None            # the defence's yards to go after a turnover
     to_kind = None
     td = False
+    lg = S["log"] is not None
+    kind = "run"                   # the log's name for the play (never read by the game)
+    ret = 0
     if rng.random() < p_pass:
         # sack -> interception -> completion -> yards
         if rng.random() < _sig(_logit(T.sack.get((down, db), T.league["sack"])) + me.d_sack):
+            kind = "sack"
             bx["sacks"] += 1
             yds = T.sack_yds.draw(rng)
+            # A sack's yards are EFFECTIVE yards (the next snap's spot, penalties
+            # enforced), so one in twelve the table holds nets a gain -- and with
+            # no goal-line check that gain carried the ball past the goal line
+            # without a score: the next snap came from "1st and -16" and nearly
+            # anything scored. 3.7-3.8% of games (week 8's fourteen matchups,
+            # 56,000 paired games here, 28,000 in Fable's check). Stopped at the
+            # 1, as this engine's pre-snap penalty is (max(1, ...)); a real
+            # penalty is half the distance, which only matters once the fourth-
+            # down refit leaves the genuine penalty sacks (research/reports/
+            # nfl_viewer.md 6.2). Measured: 1.8% of final scores changed, -0.056
+            # points a game, home-win rates within +/-0.3 points at 8,000 seeds.
+            # The game viewer's legality check found it, 2026-10-29. No draw added.
+            if yds >= ytg:
+                yds = ytg - 1
             bx["sack_yds"] += -yds
             if rng.random() < T.fum["sack"] * me.fum_mult:
                 bx["fum_lost"] += 1
@@ -783,17 +870,22 @@ def _snap(S, box, sides, T, rng, playoff):
         else:
             bx["pass_att"] += 1
             if rng.random() < _sig(_logit(T.int.get((down, db), T.league["int"])) + me.d_int):
+                kind = "int"
                 bx["int"] += 1
                 adv = T.int_ret.draw(rng)
+                ret = adv
                 if adv >= 99 or 100 - ytg - adv <= 0:
                     # pick-six
                     box[1 - off]["td_ret"] += 1
+                    if lg:
+                        _ev(S, box, "int", o=off, d=down, t=dist, y=ytg, yd=0, ret=ret, td=0, six=1, to="int")
                     _run_clock(S, box, sides, T, rng, "to", me.tempo, defer_end=True)
                     _return_td(S, box, sides, T, rng, 1 - off)
                     return
                 turnover_ytg = max(1, min(99, 100 - ytg - adv))
                 to_kind = "int"
             elif rng.random() < _sig(_logit(T.comp.get((down, db), T.league["comp"])) + me.d_comp):
+                kind = "cmp"
                 bx["comp"] += 1
                 h = T.comp_yds.get((down, db, zn)) or T.comp_yds_dz.get((db, zn)) or T.comp_yds_dz[(2, 3)]
                 yds = _scale(h.draw(rng), me.m_pass, rng)
@@ -809,6 +901,7 @@ def _snap(S, box, sides, T, rng, playoff):
                 elif rng.random() < T.oob["comp"]:
                     cls = "oob"
             else:
+                kind = "inc"
                 cls = "inc"            # incomplete
     else:
         bx["rush_att"] += 1
@@ -828,6 +921,8 @@ def _snap(S, box, sides, T, rng, playoff):
     # ---- resolve
     if td:
         _score(S, box, off, 6)
+        if lg:
+            _ev(S, box, kind, o=off, d=down, t=dist, y=ytg, yd=yds, td=1, fd=1)
         bx["ends"]["td"] += 1
         if down == 3:
             bx["third_conv"] += 1
@@ -853,6 +948,8 @@ def _snap(S, box, sides, T, rng, playoff):
     if ytg2 >= 100 and rng.random() < _SAFETY_SHARE:
         # tackled in the end zone: safety, then a free kick to the scorers
         _score(S, box, 1 - off, 2)
+        if lg:
+            _ev(S, box, kind, o=off, d=down, t=dist, y=ytg, yd=yds, sf=1)
         bx["ends"]["safety"] += 1
         S["drive_live"] = False
         if S["per"] >= 5 and _ot_decided(S, box):
@@ -864,8 +961,12 @@ def _snap(S, box, sides, T, rng, playoff):
         # the free kick to the scorers (also after a safety that ended the 1st/3rd)
         h = T.punt[80]
         _new_drive(S, box, 1 - off, max(1, min(99, h.draw(rng) + 8)))
+        if lg:
+            _ev(S, box, "fk", o=off, y2=S["ytg"])
         return
     if turnover_ytg is not None:
+        if lg:
+            _ev(S, box, kind, o=off, d=down, t=dist, y=ytg, yd=yds, ret=ret, to=to_kind, ty=turnover_ytg)
         bx["ends"][to_kind or "fum"] += 1
         # The old guard here ("per == 3 and clk == 900") missed every half-time
         # kickoff that took time off the clock, and overtime entirely; _change
@@ -876,7 +977,9 @@ def _snap(S, box, sides, T, rng, playoff):
     if ytg2 >= 100:
         ytg2 = 99                 # held up at the goal line / thrown away instead
     S["ytg"] = ytg2
+    fd = 0
     if yds >= dist:
+        fd = 1
         bx["first"] += 1
         bx["conv"][down] += 1
         if down == 3:
@@ -889,10 +992,15 @@ def _snap(S, box, sides, T, rng, playoff):
         S["dist"] = dist - yds
     if S["down"] > 4:
         # turnover on downs
+        if lg:
+            _ev(S, box, kind, o=off, d=down, t=dist, y=ytg, yd=yds, to="downs", ty=max(1, 100 - ytg2),
+                ob=int(cls == "oob"))
         bx["ends"]["downs"] += 1
         _run_clock(S, box, sides, T, rng, "to", me.tempo)
         _change(S, box, sides, T, rng, max(1, 100 - ytg2))
         return
+    if lg:
+        _ev(S, box, kind, o=off, d=down, t=dist, y=ytg, yd=yds, fd=fd, y2=ytg2, ob=int(cls == "oob"))
     # the clock to the next snap depends on what the next snap is
     if S["down"] == 4:
         nxt = _fourth_decision(S, box, sides, T, rng, playoff)

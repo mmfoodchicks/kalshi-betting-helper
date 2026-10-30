@@ -3,6 +3,8 @@ Built 2026-10-16 12:58 UTC by research/nfl_deep_validate.py. Each season is scor
 
 PD = the points-differential ratings, standing in for Kalshi's win totals (which have no history here).
 
+**Note (2026-10-29).** The engine's sack clamp (`nfl_deep_sim._snap`: a sack that nets yards stops at the 1, found by the game viewer, research/reports/nfl_viewer.md 6.1) postdates these figures. Its measured effect: -0.056 points a game, 1.8% of final scores, home-win rates within +/-0.3 points at 8,000 seeds -- inside this report's own noise. The fourth-down refit (6.2 there) will move them and is re-validated on its own.
+
 ## All seasons
 | model | n | log loss | Brier | accuracy | margin MAE | slope actual~pred |
 |---|---|---|---|---|---|---|
