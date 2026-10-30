@@ -857,7 +857,7 @@ def build_game(season, week, home, away, kickoff_ts=None, home_name=None, away_n
     t0 = time.time()
     sums, downs, typ, others, (best, centre, scale, side, dist) = simulate_matchup(hp, ap, season, week, T, n=n)
     sim_s = time.time() - t0
-    board = E.simulate(hp, ap, n=nfl_game_sim._DEEP_N,
+    board = E.simulate(hp, ap, n=nfl_game_sim.deep_n(),
                        seed=zlib.crc32(f"{int(season)}|{int(week)}|{home}|{away}".encode()))
     teams = (home, away)
     players, roles = rosters(rows, teams, doubt)
@@ -898,7 +898,7 @@ def build_game(season, week, home, away, kickoff_ts=None, home_name=None, away_n
             "kickoff_era": getattr(T, "kickoff_era", None),
             "engine_sha": _sha(os.path.abspath(E.__file__)),
             "seed_scheme": "crc32('season|week|home|away|i'), random.Random per game",
-            "board_seed_scheme": "nfl_game_sim.board: crc32('season|week|home|away'), n=_DEEP_N"},
+            "board_seed_scheme": "nfl_game_sim.board: crc32('season|week|home|away'), n=deep_n()"},
     }
 
 
@@ -1015,12 +1015,31 @@ def _due(season, week, games, now=None):
 
 
 # The PC's boards pass gives the viewer this long a pass (no new game starts past
-# it): a week's 14-16 games at 9.6 s each (8.8-11.6) take one or two passes, the
-# rest going to the next pass five minutes later. Every piece comes due twice a
-# day (REBUILD_S), and once more after Sunday's inactives, so the other boards'
-# first upload waits up to this long two or three times a day -- inside their
-# 12-minute TTL slack (boardshare.PC_SLACK_S). Most passes have nothing due.
+# it): a game is 16.5-19.7 s on the dev box (the 5,000 logged games 9.6-12 s, and
+# the board's own figure ~7 s since the PC plays it at 5,000 games,
+# nfl_game_sim.deep_n), so a week's 14-16 games take two passes, the rest going
+# to the next pass. Every piece comes due twice a day (REBUILD_S), and once more
+# after Sunday's inactives, so the other boards' first upload waits up to this
+# long two or three times a day -- inside their 12-minute TTL slack
+# (boardshare.PC_SLACK_S). Most passes have nothing due.
 _PC_BUDGET_S = 150
+# Boards passes start pc_loop.BOARDS_S (300 s) apart, never closer than the pass
+# itself plus 30 s: 340-400 s in practice (the 5,000-game review, 2026-10-30).
+# A piece that comes due just after a pass started waits for the next one, and
+# a week's second half lands a pass after that.
+_PASS_GAP_S = 400
+
+
+def _pc_lag():
+    """How late the PC's rebuild of a due piece may land before the server builds
+    its own: the wait for the next pass, a pass's gap to the second half, that
+    pass's budget, and the upload's slack. The PC's piece lands at worst about
+    1,100-1,150 s after due (two gaps, then the second half's upload behind the
+    pass's fixed 300-s window: the 5,000-game review). It was 2 x _PC_BUDGET_S
+    + PC_SLACK_S, 1,020 s, which read the passes as back to back, so a tap in
+    the gap built a 600-game piece on the server."""
+    import boardshare
+    return 2 * _PASS_GAP_S + _PC_BUDGET_S + boardshare.PC_SLACK_S
 
 
 def pc_build():
@@ -1098,12 +1117,12 @@ def _server_build(season, week, g):
 
 def _serve_ages():
     """(max_age, late_window) past which the server rebuilds a piece itself.
-    While the PC is on, its own rebuild lands up to two passes and the upload's
-    slack after REBUILD_S (a 16-game week takes two passes), so the server waits
-    that much longer and lets the PC take the inactives window first (Fable m5)."""
+    While the PC is on, its own rebuild lands up to _pc_lag() after REBUILD_S (a
+    16-game week takes two passes), so the server waits that much longer and lets
+    the PC take the inactives window first (Fable m5)."""
     import boardshare
     if boardshare.pc_status().get("state") in ("on", "behind"):
-        lag = 2 * _PC_BUDGET_S + boardshare.PC_SLACK_S
+        lag = _pc_lag()
         return REBUILD_S + lag, _LATE_WINDOW_S - lag
     return REBUILD_S, _LATE_WINDOW_S
 

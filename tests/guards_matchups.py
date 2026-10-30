@@ -89,6 +89,7 @@ const dflt = _mx.fold;
 const h0 = mxScanView(d); const best = rows(h0);
 _mx.sort = 'ev'; const ev = rows(mxScanView(d));
 _mx.sort = 'p'; const p = rows(mxScanView(d));
+_mx.sort = 'edge'; const edg = rows(mxScanView(d));
 _mx.sort = 'best'; _mx.dir = 1; const asc = rows(mxScanView(d)); _mx.dir = -1;
 _mx.sort = 'nef'; const nef = rows(mxScanView(d)); _mx.sort = 'best';
 _mx.label = 'strong_fit'; const fit = rows(mxScanView(d)); _mx.label = '';
@@ -101,7 +102,7 @@ _mx.fold = true; tick(false); const offAfter = _mx.fold; const savedOff = store.
 _mx.fold = true; _mxRestore(); const restoredOff = _mx.fold;
 store.mxSortSide = '{"fold":"no"}'; _mx.fold = true; _mxRestore(); const keptBad = _mx.fold;
 tick(true); const onAfter = _mx.fold;
-process.stdout.write(JSON.stringify({dflt, best, ev, p, asc, nef, fit, astOnly, all,
+process.stdout.write(JSON.stringify({dflt, best, ev, p, edg, asc, nef, fit, astOnly, all,
   note0: /3 other lines folded/.test(h0), note1: /folded/.test(h1),
   box0: h0.includes('data-mx="fold" checked'), box1: h1.includes('data-mx="fold"') && !h1.includes('data-mx="fold" checked'),
   offAfter, savedOff, restoredOff, keptBad, onAfter}));
@@ -113,6 +114,7 @@ process.stdout.write(JSON.stringify({dflt, best, ev, p, asc, nef, fit, astOnly, 
             fo_ok = bool(o5) and o5["dflt"] is True \
                 and o5["best"] == ["Ann Assists 6 +3"] + tail \
                 and o5["ev"] == ["Ann Assists 4 +3"] + tail and o5["p"] == ["Ann Assists 10 +3"] + tail \
+                and o5["edg"] == ["Ann Assists 6 +3"] + tail \
                 and o5["asc"] == ["Di Rebounds 5", "Cy Rebounds 5", "Bob Assists 4", "Ann Points 15", "Ann Assists 6 +3"] \
                 and o5["nef"] == ["Ann Assists 6 +3"] + tail and o5["fit"] == ["Ann Assists 8"] \
                 and o5["astOnly"] == ["Ann Assists 6 +3", "Bob Assists 4"] \
@@ -677,7 +679,7 @@ def run(ck):
     ck("Matchups tab (one line per player and stat, the owner 2026-10-30): by default the scanner shows each player's "
        "best rung of each stat, YES and NO alike -- the one the chosen sort ranks highest (Best picks: the +4c floor "
        "over the +9c line whose floor is -1c and the NO +5c whose floor is +3c; Highest EV: that +9c line; Highest "
-       "probability: the 10+ NO at 90%), still the highest when the column is turned ascending, Best picks breaking a "
+       "probability: the 10+ NO at 90%; Biggest edge: a tie broken to the 6+), still the highest when the column is turned ascending, Best picks breaking a "
        "tie (Most evidence ties a ladder) -- with '+N more' on its row and the count above the table; a different stat "
        "(points beside assists) and a different player keep their rows, two players whose id came through as 'None' "
        "are never merged, a chip or a stat filter folds what it keeps (the strong-fit chip shows the 8+ that carries "

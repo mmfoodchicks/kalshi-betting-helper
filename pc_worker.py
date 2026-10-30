@@ -1397,6 +1397,11 @@ def boards_main():
 
 
 if __name__ == "__main__":
+    # This process and every child it starts (deep_cache.run_child passes the
+    # environment on) is the PC: a builder that plays more games here than the
+    # server can afford reads it (nfl_game_sim.deep_n). Set where the worker
+    # RUNS, never at import: the guard suite imports this module.
+    os.environ["VIGIL_PC_WORKER"] = "1"
     if "--boards" in sys.argv[1:]:
         sys.exit(boards_main() or 0)
     sys.exit(main() or 0)

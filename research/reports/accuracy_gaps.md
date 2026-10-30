@@ -531,6 +531,12 @@ needs one, the rule registered BEFORE its data is read.
   goes to 0; if the deep engine beats the drive sim by > 2 SE it stays.
   Power: SE ~0.008 nats on 200 games, so a null read is the expected one,
   and the rule sends a null to 0. The DFS engine keeps its own 0.30 (13.1).
+  2026-10-30: the PC's boards now play the deep figure at 5,000 games
+  (`nfl_game_sim.deep_n`; the server's fallback keeps 600). Shadow rows are
+  first-write-wins per (ticker, model), so week 9's `nfl_deep` rows are
+  600-game and later weeks mostly 5,000. The dice cost the 0.30 blend about
+  w^2/2n nats a row -- 7.5e-5 at 600, 9e-6 at 5,000 -- nothing beside the
+  read's SE, so the rule above is unchanged.
 - **C1 the anchor level.** Read at 10 dates AND 150 games a league (NBA/NHL
   about mid-November, NFL about week 13, college week 13): the book's line
   against Kalshi's price on the same tickers, log loss clustered by date.

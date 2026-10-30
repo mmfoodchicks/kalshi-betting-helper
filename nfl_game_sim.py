@@ -22,6 +22,7 @@ parlays honest. Leg masks feed the same bitmask machinery MLB uses
 (mlb_sim.best_same_game / game_bundles), so NFL gets correlated SGPs for free.
 """
 import math
+import os
 import predlog
 import random
 import zlib
@@ -996,6 +997,75 @@ _DEEP_WEIGHT = 0.30
 # Monte Carlo noise on a 30%-weight component; the futures board's numbers
 # come from the nightly 2,000-4,000-season run, not from here.
 _DEEP_N = 600
+# The PC's builds play more (the owner, 2026-10-30: "just increase the
+# simulator to 5000"). 600 games leave 1.7-2.3pp of Monte Carlo noise on the
+# deep figure -- frozen per matchup by the seed, so it never wobbles between
+# refreshes, but re-drawn by ANY change to a profile: a 0.05% nudge to one
+# team's level moved it SD 2.2-3.0 points, max 5-7, over 30 seeds (three
+# synthetic matchups, 2026-10-30, measured here and by the review). 5,000
+# games leave 0.6-0.85. The PC builds the board whenever it is on
+# (boardshare.adopt serves its copy); the server's fallback, a web-worker
+# thread on one core, keeps _DEEP_N. At 1.2-1.55 ms a game (the dev box, not
+# the PC) 14-16 matchups x 5,000 are 85-125 s of CPU: in the boards pass's
+# thread it would hold the GIL the other boards build under, and push the
+# PC's upload toward the server's pc_grace (tens of seconds of slack in the
+# worst phase, by the review's arithmetic). So the PC plays them in up to
+# _DEEP_PC_CHILDREN child processes at once (_deep_figures_parallel) -- the
+# same function, seed and tables, the thread's figures bit for bit. (Niced on
+# Unix only: run_child's os.nice does not exist on Windows, where the PC's
+# children run at normal priority, as its other children always have.) The game
+# viewer computes its copy of the figure through deep_n() too, so a board and
+# a viewer built on one machine, on the same profiles, agree.
+_DEEP_N_PC = 5000
+_DEEP_PC_CHILDREN = 4
+
+
+def deep_n():
+    """Games per matchup for the deep layer on THIS machine: _DEEP_N_PC in the
+    PC worker and every child it starts (pc_worker's __main__ sets
+    VIGIL_PC_WORKER; deep_cache.run_child passes the environment on), _DEEP_N
+    everywhere else."""
+    return _DEEP_N_PC if os.environ.get("VIGIL_PC_WORKER") == "1" else _DEEP_N
+
+
+def _deep_seed(season, week, home, away):
+    # crc32, not hash(): str hashes are randomized per process, so every worker
+    # (and the PC) drew a different deep figure
+    return zlib.crc32(f"{season}|{week}|{home}|{away}".encode())
+
+
+def _deep_jobs(jobs):
+    """deep_cache.run_child's target: [(home_profile, away_profile, n, seed)] ->
+    the nfl_deep_sim.simulate results, in order."""
+    import nfl_deep_sim
+    return [nfl_deep_sim.simulate(hp, ap, n=n, seed=seed) for hp, ap, n, seed in jobs]
+
+
+def _deep_figures_parallel(season, week, pairs, profs, n=None):
+    """{(home, away): the deep layer's result} for every pair whose profiles both
+    exist, played in up to _DEEP_PC_CHILDREN child processes at once
+    (deep_cache.run_child) -- the PC's path, off the boards pass's GIL. {} when a
+    child fails (ledgered NFLG-deep-children): the caller then plays them in its
+    own thread, the same figures, slower."""
+    import concurrent.futures
+    import deep_cache
+    n = deep_n() if n is None else int(n)
+    jobs = [((h, a), (profs[h], profs[a], n, _deep_seed(season, week, h, a)))
+            for h, a in pairs if h in profs and a in profs]
+    if not jobs:
+        return {}
+    k = max(1, min(_DEEP_PC_CHILDREN, (os.cpu_count() or 2) - 1, len(jobs)))
+    chunks = [jobs[i::k] for i in range(k)]
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=k) as ex:
+            got = list(ex.map(lambda ch: deep_cache.run_child(
+                "nfl_game_sim", "_deep_jobs", [j for _key, j in ch], timeout=900), chunks))
+        return {key: res for ch, rs in zip(chunks, got) for (key, _j), res in zip(ch, rs)}
+    except Exception as e:
+        errlog.note("NFLG-deep-children", e)
+        return {}
+
+
 _DEEP_PROFILES_TTL = 6 * 3600
 # `src` / `src_ts` / `factors` say where the profiles came from (the game
 # viewer stamps them on its pieces; nothing here reads them).
@@ -1193,21 +1263,31 @@ def _build_board(season, week, n=2400, preseason=False):
             profs = _deep_profiles(season, week)
         except Exception as _e:
             errlog.note("NFLG-deep-profiles", _e)
+        # The PC plays every matchup's deep figure at once, in children, before
+        # the loop; the server plays each in this thread (deep_n).
+        deep_pre = {}
+        if profs and os.environ.get("VIGIL_PC_WORKER") == "1":
+            try:
+                deep_pre = _deep_figures_parallel(season, week, [(h["abbr"], a["abbr"]) for h, a in games], profs)
+            except Exception as _e:
+                errlog.note("NFLG-deep-children", _e)
         for h, a in games:
             lad = _game_ladders(idx, h["abbr"], a["abbr"])
             sim = simulate_game(h, a, n=n, ladders=lad,
                                 prop_lad=(lad or {}).get("props"))
             sim["_book"] = h.get("book")       # the book's line, for nfl_book only
             if profs and h["abbr"] in profs and a["abbr"] in profs:
-                try:
-                    import nfl_deep_sim
-                    # crc32, not hash(): str hashes are randomized per process,
-                    # so every worker (and the PC) drew a different deep figure
-                    sim["_deep"] = nfl_deep_sim.simulate(
-                        profs[h["abbr"]], profs[a["abbr"]], n=_DEEP_N,
-                        seed=zlib.crc32(f"{season}|{week}|{h['abbr']}|{a['abbr']}".encode()))
-                except Exception as _e:
-                    errlog.note("NFLG-deep-sim", _e, path=f"{a['abbr']}@{h['abbr']}")
+                pre = deep_pre.get((h["abbr"], a["abbr"]))
+                if pre is not None:
+                    sim["_deep"] = pre
+                else:
+                    try:
+                        import nfl_deep_sim
+                        sim["_deep"] = nfl_deep_sim.simulate(
+                            profs[h["abbr"]], profs[a["abbr"]], n=deep_n(),
+                            seed=_deep_seed(season, week, h["abbr"], a["abbr"]))
+                    except Exception as _e:
+                        errlog.note("NFLG-deep-sim", _e, path=f"{a['abbr']}@{h['abbr']}")
             yield sim
 
     # A preseason model has no independent read on the level -- it is anchored TO
@@ -1231,6 +1311,7 @@ def _build_board(season, week, n=2400, preseason=False):
             g["p_home_deep"], g["p_away_deep"], g["p_tie_deep"] = deep["p_home"], deep["p_away"], deep["p_tie"]
             g["exp_home_deep"], g["exp_away_deep"] = deep["exp_home"], deep["exp_away"]
             g["exp_total_deep"], g["margin_deep"] = deep["exp_total"], deep["mean_margin"]
+            g["deep_n_sims"] = deep["n_sims"]          # 5,000 from the PC, 600 from the server (deep_n)
             g["deep_weight"] = _DEEP_WEIGHT
             ph = (1 - _DEEP_WEIGHT) * ph + _DEEP_WEIGHT * deep["p_home"]
         g["p_home"] = round(ph, 4)

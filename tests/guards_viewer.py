@@ -521,9 +521,9 @@ def run(ck):
            piece["schema"] == V.SCHEMA and len(piece["games"]) == V.K_RANDOM + 1 and len(raw_p) <= V.PIECE_MAX
            and piece["sims"][0]["kind"] == "typical" and g0["events"][0]["k"] == "ko"
            and all(k_ in pv for k_ in ("tables_sha", "engine_sha", "kickoff_era", "seed_scheme", "profiles"))
-           and piece["board"]["p_home"] == E.simulate(mats[1][0], mats[1][1], n=600,
+           and piece["board"]["p_home"] == E.simulate(mats[1][0], mats[1][1], n=__import__("nfl_game_sim").deep_n(),
                                                       seed=zlib.crc32(b"2026|9|GB|CAR"))["p_home"]
-           and set(piece["board"]) >= {"p_home", "p_away", "exp_home", "exp_away"} and piece["board"]["n"] == 600
+           and set(piece["board"]) >= {"p_home", "p_away", "exp_home", "exp_away"} and piece["board"]["n"] == __import__("nfl_game_sim").deep_n() == 600
            and not piece["names"]["missing"], f"{len(raw_p)} bytes; missing {piece['names']['missing']}")
 
         # ---- names on real Sleeper rows; the doubt rule; a club with no defensive names is ledgered
@@ -605,10 +605,16 @@ def run(ck):
             with _patched((boardshare, "pc_status", lambda path=None: {"state": "on"})):
                 V.serve(9, "GB", "CAR", 0)
                 pc_on_builds = len(built)
+                # past the old lag (two back-to-back 150-s passes and the slack, 1,020 s) but inside the real
+                # one (passes 340-400 s apart, _pc_lag): still the PC's -- the 5,000-game review's item 9
                 t_old = time.time() - V.REBUILD_S - 2 * V._PC_BUDGET_S - boardshare.PC_SLACK_S - 60
                 os.utime(pth, (t_old, t_old))
                 V.serve(9, "GB", "CAR", 0)
                 pc_on_builds = (pc_on_builds, len(built))
+                t_old = time.time() - V.REBUILD_S - V._pc_lag() - 60
+                os.utime(pth, (t_old, t_old))
+                V.serve(9, "GB", "CAR", 0)
+                pc_on_builds = pc_on_builds + (len(built),)
             built.clear()
             t_old = time.time() - V.REBUILD_S - 7200
             os.utime(pth, (t_old, t_old))
@@ -681,9 +687,11 @@ def run(ck):
            and stale_builds == 1 and c5 == 200 and started_builds == 1 and c6 == 202,
            str((c2, c3, c4, stale_builds, c5, started_builds, c6)))
         ck("a piece built before Sunday's inactives is rebuilt once kickoff is within 75 minutes (never before, never "
-           "for a fresh one); with the PC on, a piece just past 12 h is the PC's to rebuild and the server waits its "
-           "two passes and the upload slack; only this week's and next week's games are built",
-           worker_built is None and late_builds == 1 and pre_late == 0 and pc_on_builds == (0, 1)
+           "for a fresh one); with the PC on, a piece just past 12 h is the PC's to rebuild and the server waits the "
+           "PC's real lag -- the next pass, two passes 340-400 s apart, the budget and the upload slack (1,670 s; the "
+           "old 1,020 s read the passes as back to back) -- so a piece past the old lag is still the PC's; only this "
+           "week's and next week's games are built",
+           worker_built is None and late_builds == 1 and pre_late == 0 and pc_on_builds == (0, 0, 1) and V._pc_lag() == 2 * V._PASS_GAP_S + V._PC_BUDGET_S + boardshare.PC_SLACK_S == 1670
            and c_far == 404 and far_handed == 0, str((late_builds, pre_late, pc_on_builds, c_far, far_handed)))
         ck("one server build at a time across every worker: while another build holds the gate the route answers 202 "
            "'a simulation is running; this game follows' and starts nothing (three taps used to start three 60 MB "

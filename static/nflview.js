@@ -165,9 +165,13 @@ function _nvRender() {
   const winner = mg > 0 ? h.home : mg < 0 ? h.away : null;
   const against = ph != null && winner && winner !== fav
     ? ` In this game ${_nvEsc(winner)} wins; the board's deep engine has ${_nvEsc(fav)} at ${(favP * 100).toFixed(1)}%.` : "";
+  // How many simulated games a figure rests on: the PC plays 5,000, the server's
+  // fallback 600 (nfl_game_sim.deep_n), so two builds can differ by dice alone.
+  const sims = (n) => (Number(n) > 0 ? `${Number(n).toLocaleString()} sims` : "");
+  const nShown = card.p_home_deep != null ? card.deep_n_sims : (h.board || {}).n;
   const own = h.board && h.board.p_home != null && card.p_home_deep != null
     && Math.abs(h.board.p_home - card.p_home_deep) >= 0.01
-    ? ` · this build's own read ${_nvEsc(h.board.p_home >= 0.5 ? h.home : h.away)} ${((h.board.p_home >= 0.5 ? h.board.p_home : 1 - h.board.p_home) * 100).toFixed(1)}% (built ${_nvEsc(_nvMT(h.built_ts))}; the board's is from its own build)` : "";
+    ? ` · this build's own read ${_nvEsc(h.board.p_home >= 0.5 ? h.home : h.away)} ${((h.board.p_home >= 0.5 ? h.board.p_home : 1 - h.board.p_home) * 100).toFixed(1)}% (${sims(h.board.n) ? `${sims(h.board.n)}, ` : ""}built ${_nvEsc(_nvMT(h.built_ts))}); the board's is from its own build${sims(card.deep_n_sims) ? ` (${sims(card.deep_n_sims)})` : ""}` : "";
   const f1 = (x) => (x == null || isNaN(Number(x)) ? "–" : Number(x).toFixed(1));
   const startedNote = h.started
     ? `<div class="nv-started">The real game has kicked off. This is the PRE-GAME simulation, not the live game.</div>` : "";
@@ -177,7 +181,7 @@ function _nvRender() {
     <div class="nv-top">
       <div><div class="nv-title">${_nvEsc(h.away_name)} @ ${_nvEsc(h.home_name)} <span class="nv-tag">simulated</span></div>
       <div class="nv-sub">Simulated before kickoff · built ${_nvEsc(_nvMT(h.built_ts))}${h.by ? ` (${_nvEsc(h.by)})` : ""}${h.kickoff_ts ? ` · kickoff ${_nvEsc(_nvMT(h.kickoff_ts))}` : ""}</div>
-      ${ph != null ? `<div class="nv-sub">The board's deep engine: <b>${_nvEsc(fav)} ${(favP * 100).toFixed(1)}%</b> · expected ${_nvEsc(h.away)} ${f1(ea)} – ${f1(eh)} ${_nvEsc(h.home)}${own}</div>` : ""}
+      ${ph != null ? `<div class="nv-sub">The board's deep engine: <b>${_nvEsc(fav)} ${(favP * 100).toFixed(1)}%</b>${sims(nShown) ? ` (${sims(nShown)})` : ""} · expected ${_nvEsc(h.away)} ${f1(ea)} – ${f1(eh)} ${_nvEsc(h.home)}${own}</div>` : ""}
       </div>
       <button class="nv-x" type="button" data-nv="close" aria-label="Close">✕</button>
     </div>

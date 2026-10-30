@@ -12,6 +12,9 @@ import os, sys, datetime, collections, time as _tm
 # checkout, graded them for real, and the accumulated rows eventually crossed
 # a calibration earn-floor and flipped a guard's expected behaviour mid-week.
 os.environ["VIGIL_NO_BG"] = "1"
+# The PC worker's flag (pc_worker's __main__) plays the NFL deep layer at 5,000 games: a
+# developer's shell that carries it must not turn this suite into the PC.
+os.environ.pop("VIGIL_PC_WORKER", None)
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import baseball as B
 # The loops used to create the stores' tables as a side effect of starting;
@@ -18359,6 +18362,88 @@ ck("the weekly slate's deep layer: every regular-season game also runs the play-
    and "nfl_deep_data.roster_factors(season, week)" in _insp.getsource(_ngs_nd._deep_profiles)
    and 'deep_cache.load("nfl_deep")' in _insp.getsource(_ngs_nd._deep_profiles)
    and "if deep and not preseason:" in _bb_src_nd)
+# The owner (2026-10-30): "just increase the simulator to 5000" -- on the PC's builds; the server's
+# fallback is a web-worker thread on one core and keeps 600. The flag is the PC worker's ENVIRONMENT, so
+# the children it starts (the viewer's niced build, the deep layer's own children) read the same number
+# as the board it uploads. The suite clears the flag at its top, and by here it has imported app.py and
+# pc_worker: the flag still unset says neither sets it at import.
+import nfl_viewer as _nv_dn
+import nfl_deep_sim as _E_dn
+import deep_cache as _dc_dn
+_pcw_old = _os.environ.pop("VIGIL_PC_WORKER", None)
+try:
+    _dn_srv = _ngs_nd.deep_n()
+    _os.environ["VIGIL_PC_WORKER"] = "1"
+    _dn_pc = _ngs_nd.deep_n()
+    try:
+        _dn_child = _dc_dn.run_child("nfl_game_sim", "deep_n", timeout=180)
+    except Exception as _e_dn:
+        _dn_child = repr(_e_dn)
+finally:
+    _os.environ.pop("VIGIL_PC_WORKER", None)
+    if _pcw_old is not None:
+        _os.environ["VIGIL_PC_WORKER"] = _pcw_old
+_pw_src_dn = open(os.path.join(os.path.dirname(__file__), "..", "pc_worker.py")).read()
+_pw_cut_dn = _pw_src_dn.index('if __name__ == "__main__":')
+_pw_main_dn = _pw_src_dn[_pw_cut_dn:]
+_pl_src_dn = open(os.path.join(os.path.dirname(__file__), "..", "pc_loop.py")).read()
+ck("the deep layer plays 5,000 games a matchup in the PC worker and in every child it starts (the owner, "
+   "2026-10-30: 'just increase the simulator to 5000'; 600 games leave ~2pp, re-drawn by any profile change), "
+   "the server's web-worker fallback keeps 600, the card carries the count, the viewer computes its copy of the "
+   "figure through the same function, and the flag is set where the worker RUNS -- never at import (app.py and "
+   "pc_worker are imported by now and the flag is unset), and pc_loop starts the worker as a script both ways",
+   _pcw_old is None and _dn_srv == _ngs_nd._DEEP_N == 600 and _dn_pc == _ngs_nd._DEEP_N_PC == 5000
+   and _dn_child == 5000
+   and "n=deep_n()," in _bb_src_nd and 'g["deep_n_sims"] = deep["n_sims"]' in _bb_src_nd
+   and "n=nfl_game_sim.deep_n()," in _insp.getsource(_nv_dn.build_game)
+   and "_DEEP_N" not in _insp.getsource(_nv_dn.build_game)
+   and 'os.environ["VIGIL_PC_WORKER"] = "1"' in _pw_main_dn
+   and _pw_main_dn.index('os.environ["VIGIL_PC_WORKER"] = "1"') < _pw_main_dn.index("boards_main()")
+   and "VIGIL_PC_WORKER" not in _pw_src_dn[:_pw_cut_dn]
+   and '[sys.executable, os.path.join(_HERE, "pc_worker.py")]' in _pl_src_dn
+   and '[sys.executable, os.path.join(_HERE, "pc_worker.py"), "--boards"]' in _pl_src_dn
+   and "import pc_worker" not in _pl_src_dn and "pc_worker.main(" not in _pl_src_dn,
+   str((_pcw_old, _dn_srv, _dn_pc, _dn_child)))
+# The PC plays the deep layer in children (85-125 s of CPU at 5,000 a matchup would hold the boards pass's GIL
+# and crowd the server's pc_grace): the same figures as the thread, bit for bit, and the thread when a child fails.
+_T_dn = _E_dn.tables()
+_profs_dn = {}
+for _i_dn, _lv_dn in enumerate((0.95, 1.05, 1.00, 0.98, 1.03, 0.97)):
+    _p_dn = _E_dn.league_profile(_T_dn, f"Q{_i_dn}")
+    _p_dn["level"] = _lv_dn
+    _profs_dn[_p_dn["abbr"]] = _p_dn
+_pairs_dn = [("Q0", "Q1"), ("Q2", "Q3"), ("Q4", "Q5"), ("Q0", "ZZ")]          # the last has no profile: skipped
+_par_dn = _ngs_nd._deep_figures_parallel(2026, 9, _pairs_dn, _profs_dn, n=300)
+_seq_dn = {(h, a): _E_dn.simulate(_profs_dn[h], _profs_dn[a], n=300, seed=_ngs_nd._deep_seed(2026, 9, h, a))
+           for h, a in _pairs_dn[:3]}
+_rc_dn = _dc_dn.run_child
+_dc_dn.run_child = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("child down"))
+try:
+    _par_fail_dn = _ngs_nd._deep_figures_parallel(2026, 9, _pairs_dn, _profs_dn, n=300)
+finally:
+    _dc_dn.run_child = _rc_dn
+ck("the PC's deep layer runs in up to four child processes at once and returns the thread's figures bit for bit "
+   "(three matchups through real children against nfl_deep_sim.simulate on the same seed; a pair without a "
+   "profile is skipped); a child that fails returns nothing and the board's loop plays that build in its own "
+   "thread at the same count, the call itself wrapped so a failure costs the deep figures, never the board -- the "
+   "children are the PC's alone (the flag), the server's thread path unchanged",
+   _par_dn == _seq_dn and len(_par_dn) == 3 and _par_fail_dn == {} and _ngs_nd._DEEP_PC_CHILDREN == 4
+   and 'if profs and os.environ.get("VIGIL_PC_WORKER") == "1":' in _bb_src_nd
+   and "_deep_figures_parallel(season, week," in _bb_src_nd and 'sim["_deep"] = pre' in _bb_src_nd
+   and 'errlog.note("NFLG-deep-children", e)' in _insp.getsource(_ngs_nd._deep_figures_parallel)
+   and 'errlog.note("NFLG-deep-children", _e)' in _bb_src_nd
+   and "seed=_deep_seed(season, week, h[\"abbr\"], a[\"abbr\"])" in _bb_src_nd,
+   str((len(_par_dn), _par_fail_dn)))
+_nv_js_dn = open(os.path.join(os.path.dirname(__file__), "..", "static", "nflview.js")).read()
+_app_js_dn = open(os.path.join(os.path.dirname(__file__), "..", "static", "app.js")).read()
+ck("the owner sees how many simulated games a deep figure rests on: the NFL card prints '(N sims, +/-X pts)' "
+   "beside it (X its own binomial SE), the viewer's header the count of the figure it shows, and the viewer's "
+   "own-read note both counts -- a 600-game build beside a 5,000-game one differs by dice alone",
+   "Number(g.deep_n_sims).toLocaleString()} sims, \u00b1${(100 * Math.sqrt(g.p_home_deep * (1 - g.p_home_deep) / g.deep_n_sims)).toFixed(1)} pts"
+   in _app_js_dn
+   and "const nShown = card.p_home_deep != null ? card.deep_n_sims : (h.board || {}).n;" in _nv_js_dn
+   and "${sims(nShown) ? ` (${sims(nShown)})` : \"\"}" in _nv_js_dn and "sims(h.board.n)" in _nv_js_dn
+   and "sims(card.deep_n_sims)" in _nv_js_dn)
 _js_src_nd = open(os.path.join(os.path.dirname(__file__), "..", "static", "app.js")).read()
 _card_nd = _js_src_nd[_js_src_nd.index("function nflSlateCard"):_js_src_nd.index("function renderNFLWeek")]
 ck("the NFL game card names both teams' probabilities on the pick line and shows both models for both sides when the deep figures are present; the Featured tab's NFL board carries the deep badge, a rerun button and the progress watcher off /api/nfl/deep/status; the team view renders the deep run's schedule with win AND loss probabilities per game",
@@ -18551,7 +18636,10 @@ ck("the deep engine's forecasts are graded apart: predlog keys a second model's 
 # (10) seeds that are the same on every process
 ck("the deep layer's seeds are process-stable (crc32 of the matchup), not hash() of strings, which Python randomizes per process -- every worker and the PC drew different deep figures for the same game",
    "hash((" not in _insp.getsource(_nds.simulate) and "zlib.crc32(" in _insp.getsource(_nds.simulate)
-   and "zlib.crc32(" in _insp.getsource(__import__("nfl_game_sim")._build_board))
+   and "zlib.crc32(" in _insp.getsource(__import__("nfl_game_sim")._deep_seed)
+   and __import__("nfl_game_sim")._deep_seed(2026, 9, "GB", "CAR") == __import__("zlib").crc32(b"2026|9|GB|CAR")
+   and "_deep_seed(season, week," in _insp.getsource(__import__("nfl_game_sim")._build_board)
+   and "hash(" not in _insp.getsource(__import__("nfl_game_sim")._build_board))
 _rep_dir_nd = os.path.join(os.path.dirname(__file__), "..", "research", "reports")
 _val_rep_nd = open(os.path.join(_rep_dir_nd, "nfl_deep_validation.md")).read()
 import research.nfl_deep_validate as _ndv
