@@ -56,7 +56,7 @@
    1.0,
    0.5,
    0.0,
-   0
+   6
   ],
   "mlb_bases": [
    1.06,
@@ -134,7 +134,7 @@
    1.0,
    0.5,
    0.0,
-   146
+   148
   ],
   "nfl_pre": [
    1.0,
@@ -158,7 +158,7 @@
    0.67,
    0.5,
    0.0,
-   32964
+   33094
   ],
   "ufc": [
    1.0,
@@ -174,12 +174,216 @@
   ]
  },
  "mx": {
-  "fitted_ts": 1793332667,
-  "nba": {},
-  "nfl": {},
+  "fitted_ts": 1793355154,
+  "nba": {
+   "ast": {
+    "a": 0.0,
+    "b": 1.0,
+    "days": 1,
+    "family": "identity",
+    "fitted_ts": 1793355154,
+    "gain": null,
+    "n": 133,
+    "n_eff": 37.0,
+    "se": null,
+    "why": "below the floors"
+   },
+   "fg3m": {
+    "a": 0.0,
+    "b": 1.0,
+    "days": 1,
+    "family": "identity",
+    "fitted_ts": 1793355154,
+    "gain": null,
+    "n": 179,
+    "n_eff": 38.0,
+    "se": null,
+    "why": "below the floors"
+   },
+   "pra": {
+    "a": 0.0,
+    "b": 1.0,
+    "days": 1,
+    "family": "identity",
+    "fitted_ts": 1793355154,
+    "gain": null,
+    "n": 65,
+    "n_eff": 20.0,
+    "se": null,
+    "why": "below the floors"
+   },
+   "pts": {
+    "a": 0.0,
+    "b": 1.0,
+    "days": 1,
+    "family": "identity",
+    "fitted_ts": 1793355154,
+    "gain": null,
+    "n": 138,
+    "n_eff": 40.0,
+    "se": null,
+    "why": "below the floors"
+   },
+   "reb": {
+    "a": 0.0,
+    "b": 1.0,
+    "days": 1,
+    "family": "identity",
+    "fitted_ts": 1793355154,
+    "gain": null,
+    "n": 160,
+    "n_eff": 38.0,
+    "se": null,
+    "why": "below the floors"
+   }
+  },
+  "nfl": {
+   "pass_yd": {
+    "a": 0.0,
+    "b": 1.0,
+    "days": 1,
+    "family": "identity",
+    "fitted_ts": 1793355154,
+    "gain": null,
+    "n": 13,
+    "n_eff": 2.0,
+    "se": null,
+    "why": "below the floors"
+   },
+   "rec": {
+    "a": 0.0,
+    "b": 1.0,
+    "days": 1,
+    "family": "identity",
+    "fitted_ts": 1793355154,
+    "gain": null,
+    "n": 95,
+    "n_eff": 15.0,
+    "se": null,
+    "why": "below the floors"
+   },
+   "rec_yd": {
+    "a": 0.0,
+    "b": 1.0,
+    "days": 1,
+    "family": "identity",
+    "fitted_ts": 1793355154,
+    "gain": null,
+    "n": 144,
+    "n_eff": 15.0,
+    "se": null,
+    "why": "below the floors"
+   },
+   "rush_yd": {
+    "a": 0.0,
+    "b": 1.0,
+    "days": 1,
+    "family": "identity",
+    "fitted_ts": 1793355154,
+    "gain": null,
+    "n": 53,
+    "n_eff": 7.0,
+    "se": null,
+    "why": "below the floors"
+   },
+   "td": {
+    "a": 0.0,
+    "b": 1.0,
+    "days": 1,
+    "family": "identity",
+    "fitted_ts": 1793355154,
+    "gain": null,
+    "n": 36,
+    "n_eff": 20.0,
+    "se": null,
+    "why": "below the floors"
+   }
+  },
   "verdict": {
-   "nba": {},
-   "nfl": {}
+   "nba": {
+    "ast": {
+     "days": 1,
+     "decided": null,
+     "diff": 0.020820999501373574,
+     "games": 3,
+     "n": 113,
+     "se": 0.030337147734427576
+    },
+    "fg3m": {
+     "days": 1,
+     "decided": null,
+     "diff": 0.01573634862919206,
+     "games": 3,
+     "n": 150,
+     "se": 0.012304563604783898
+    },
+    "pra": {
+     "days": 1,
+     "decided": null,
+     "diff": 0.034919796802247306,
+     "games": 3,
+     "n": 58,
+     "se": 0.004389943955221935
+    },
+    "pts": {
+     "days": 1,
+     "decided": null,
+     "diff": 0.03793892123379958,
+     "games": 3,
+     "n": 131,
+     "se": 0.018995185771989047
+    },
+    "reb": {
+     "days": 1,
+     "decided": null,
+     "diff": 0.023187582739562673,
+     "games": 3,
+     "n": 133,
+     "se": 0.003559711647385372
+    }
+   },
+   "nfl": {
+    "pass_yd": {
+     "days": 1,
+     "decided": null,
+     "diff": -0.023515240092764237,
+     "games": 1,
+     "n": 13,
+     "se": null
+    },
+    "rec": {
+     "days": 1,
+     "decided": null,
+     "diff": 0.047683542489699624,
+     "games": 1,
+     "n": 84,
+     "se": null
+    },
+    "rec_yd": {
+     "days": 1,
+     "decided": null,
+     "diff": -0.007024896092539275,
+     "games": 1,
+     "n": 144,
+     "se": null
+    },
+    "rush_yd": {
+     "days": 1,
+     "decided": null,
+     "diff": 0.2097057123523673,
+     "games": 1,
+     "n": 50,
+     "se": null
+    },
+    "td": {
+     "days": 1,
+     "decided": null,
+     "diff": 0.008764979024112256,
+     "games": 1,
+     "n": 36,
+     "se": null
+    }
+   }
   }
  },
  "schema": 1,
@@ -205,10 +409,10 @@
    "weight": 0.0
   },
   "ufc": {
-   "at": 1793316923.7756195,
+   "at": 1793334919.6708798,
    "n": 299,
    "weight": 0.05
   }
  },
- "ts": 1793332667.7128828
+ "ts": 1793355154.469067
 }

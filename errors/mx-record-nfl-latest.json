@@ -924,5 +924,66 @@
    "voids": 2
   }
  },
- "tuning": {}
+ "tuning": {
+  "pass_yd": {
+   "a": 0.0,
+   "b": 1.0,
+   "days": 1,
+   "family": "identity",
+   "fitted_ts": 1793355154,
+   "gain": null,
+   "n": 13,
+   "n_eff": 2.0,
+   "se": null,
+   "why": "below the floors"
+  },
+  "rec": {
+   "a": 0.0,
+   "b": 1.0,
+   "days": 1,
+   "family": "identity",
+   "fitted_ts": 1793355154,
+   "gain": null,
+   "n": 95,
+   "n_eff": 15.0,
+   "se": null,
+   "why": "below the floors"
+  },
+  "rec_yd": {
+   "a": 0.0,
+   "b": 1.0,
+   "days": 1,
+   "family": "identity",
+   "fitted_ts": 1793355154,
+   "gain": null,
+   "n": 144,
+   "n_eff": 15.0,
+   "se": null,
+   "why": "below the floors"
+  },
+  "rush_yd": {
+   "a": 0.0,
+   "b": 1.0,
+   "days": 1,
+   "family": "identity",
+   "fitted_ts": 1793355154,
+   "gain": null,
+   "n": 53,
+   "n_eff": 7.0,
+   "se": null,
+   "why": "below the floors"
+  },
+  "td": {
+   "a": 0.0,
+   "b": 1.0,
+   "days": 1,
+   "family": "identity",
+   "fitted_ts": 1793355154,
+   "gain": null,
+   "n": 36,
+   "n_eff": 20.0,
+   "se": null,
+   "why": "below the floors"
+  }
+ }
 }
