@@ -1,8 +1,8 @@
-# Error ledger — updated 2026-10-29
+# Error ledger — updated 2026-10-30
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `NFL-DRIFT` | 241 | 10-29 22:27 | Rec Yds: the model sits -4.1 points off Kalshi's mid over 260 rungs in 14 games |
+| `NFL-DRIFT` | 240 | 10-30 05:40 | Rush Yds: the model sits -6.7 points off Kalshi's mid over 141 rungs in 13 games |
 | `MEM-high` | 12 | 10-28 23:13 | 2047/2048MB: 1766.2MB pid51 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 138.6MB pid9 /usr/local/bin/python3.11 /us |
 | `KAL-candles` | 11 | 10-28 01:52 | HTTPError: HTTP Error 429: Too Many Requests |
 | `KNFL-markets-fetch` | 11 | 10-28 08:43 | HTTPError: HTTP Error 429: Too Many Requests |
