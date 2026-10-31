@@ -56,7 +56,7 @@
    1.0,
    0.5,
    0.0,
-   12
+   14
   ],
   "mlb_bases": [
    1.06,
@@ -158,7 +158,7 @@
    0.67,
    0.5,
    0.0,
-   33308
+   33424
   ],
   "ufc": [
    1.0,
@@ -174,17 +174,17 @@
   ]
  },
  "mx": {
-  "fitted_ts": 1793423646,
+  "fitted_ts": 1793446362,
   "nba": {
    "ast": {
     "a": 0.0,
     "b": 1.0,
     "days": 2,
     "family": "identity",
-    "fitted_ts": 1793423646,
+    "fitted_ts": 1793446362,
     "gain": null,
-    "n": 422,
-    "n_eff": 115.0,
+    "n": 500,
+    "n_eff": 137.0,
     "se": null,
     "why": "below the floors"
    },
@@ -193,10 +193,10 @@
     "b": 1.0,
     "days": 2,
     "family": "identity",
-    "fitted_ts": 1793423646,
+    "fitted_ts": 1793446362,
     "gain": null,
-    "n": 555,
-    "n_eff": 115.0,
+    "n": 665,
+    "n_eff": 138.0,
     "se": null,
     "why": "below the floors"
    },
@@ -205,10 +205,10 @@
     "b": 1.0,
     "days": 2,
     "family": "identity",
-    "fitted_ts": 1793423646,
+    "fitted_ts": 1793446362,
     "gain": null,
-    "n": 192,
-    "n_eff": 58.0,
+    "n": 225,
+    "n_eff": 68.0,
     "se": null,
     "why": "below the floors"
    },
@@ -217,10 +217,10 @@
     "b": 1.0,
     "days": 2,
     "family": "identity",
-    "fitted_ts": 1793423646,
+    "fitted_ts": 1793446362,
     "gain": null,
-    "n": 440,
-    "n_eff": 126.0,
+    "n": 527,
+    "n_eff": 150.0,
     "se": null,
     "why": "below the floors"
    },
@@ -229,10 +229,10 @@
     "b": 1.0,
     "days": 2,
     "family": "identity",
-    "fitted_ts": 1793423646,
+    "fitted_ts": 1793446362,
     "gain": null,
-    "n": 501,
-    "n_eff": 121.0,
+    "n": 598,
+    "n_eff": 145.0,
     "se": null,
     "why": "below the floors"
    }
@@ -243,7 +243,7 @@
     "b": 1.0,
     "days": 1,
     "family": "identity",
-    "fitted_ts": 1793423646,
+    "fitted_ts": 1793446362,
     "gain": null,
     "n": 13,
     "n_eff": 2.0,
@@ -255,7 +255,7 @@
     "b": 1.0,
     "days": 1,
     "family": "identity",
-    "fitted_ts": 1793423646,
+    "fitted_ts": 1793446362,
     "gain": null,
     "n": 95,
     "n_eff": 15.0,
@@ -267,7 +267,7 @@
     "b": 1.0,
     "days": 1,
     "family": "identity",
-    "fitted_ts": 1793423646,
+    "fitted_ts": 1793446362,
     "gain": null,
     "n": 144,
     "n_eff": 15.0,
@@ -279,7 +279,7 @@
     "b": 1.0,
     "days": 1,
     "family": "identity",
-    "fitted_ts": 1793423646,
+    "fitted_ts": 1793446362,
     "gain": null,
     "n": 53,
     "n_eff": 7.0,
@@ -291,7 +291,7 @@
     "b": 1.0,
     "days": 1,
     "family": "identity",
-    "fitted_ts": 1793423646,
+    "fitted_ts": 1793446362,
     "gain": null,
     "n": 36,
     "n_eff": 20.0,
@@ -304,42 +304,42 @@
     "ast": {
      "days": 2,
      "decided": null,
-     "diff": 0.03945491285306397,
-     "games": 11,
-     "n": 344,
-     "se": 0.02515896018484982
+     "diff": 0.026829722503880205,
+     "games": 13,
+     "n": 412,
+     "se": 0.022378480355938826
     },
     "fg3m": {
      "days": 2,
      "decided": null,
-     "diff": 0.011312807472651946,
-     "games": 11,
-     "n": 432,
-     "se": 0.009874519374717098
+     "diff": 0.008794368964756698,
+     "games": 13,
+     "n": 521,
+     "se": 0.008952555631708773
     },
     "pra": {
      "days": 2,
      "decided": null,
-     "diff": 0.05640653208820073,
-     "games": 11,
-     "n": 168,
-     "se": 0.017328311237913667
+     "diff": 0.05282120036889315,
+     "games": 13,
+     "n": 197,
+     "se": 0.014919524998192532
     },
     "pts": {
      "days": 2,
      "decided": null,
-     "diff": 0.02694351356232615,
-     "games": 11,
-     "n": 408,
-     "se": 0.010784511651873918
+     "diff": 0.02707606803660522,
+     "games": 13,
+     "n": 492,
+     "se": 0.01021631594597228
     },
     "reb": {
      "days": 2,
      "decided": null,
-     "diff": 0.013861817401755277,
-     "games": 11,
-     "n": 409,
-     "se": 0.006663254307307149
+     "diff": 0.016430010717964152,
+     "games": 13,
+     "n": 482,
+     "se": 0.005944630376092079
     }
    },
    "nfl": {
@@ -414,5 +414,5 @@
    "weight": 0.05
   }
  },
- "ts": 1793423646.802387
+ "ts": 1793446362.2700505
 }

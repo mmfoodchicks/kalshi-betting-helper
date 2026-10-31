@@ -9,10 +9,10 @@
     "ready": true,
     "toward_pct": 71.4
    },
-   "graded": 12,
+   "graded": 14,
    "logged": 218,
    "vs_market": {
-    "n": 12,
+    "n": 14,
     "ready": false
    }
   },
@@ -22,10 +22,10 @@
     "n": 9,
     "ready": false
    },
-   "graded": 10,
-   "logged": 111,
+   "graded": 11,
+   "logged": 117,
    "vs_market": {
-    "n": 10,
+    "n": 11,
     "ready": false
    }
   },
@@ -35,11 +35,11 @@
     "n": 0,
     "ready": false
    },
-   "graded": 12,
+   "graded": 14,
    "logged": 210,
    "shadow": true,
    "vs_market": {
-    "n": 12,
+    "n": 14,
     "ready": false
    }
   },
@@ -504,14 +504,14 @@
   "soccer": {
    "abandoned": 6,
    "close": {
-    "avg_capture_c": 2.58,
-    "flat_pct": 12.8,
-    "n": 602,
+    "avg_capture_c": 2.59,
+    "flat_pct": 12.7,
+    "n": 604,
     "ready": true,
-    "toward_pct": 58.0
+    "toward_pct": 58.4
    },
    "graded": 2241,
-   "logged": 4134,
+   "logged": 4155,
    "vs_market": {
     "beats_market": false,
     "edge": -0.0127,
@@ -526,14 +526,14 @@
   "soccer_btts": {
    "abandoned": 0,
    "close": {
-    "avg_capture_c": 0.15,
-    "flat_pct": 20.8,
-    "n": 154,
+    "avg_capture_c": 0.2,
+    "flat_pct": 16.6,
+    "n": 169,
     "ready": true,
-    "toward_pct": 45.5
+    "toward_pct": 48.5
    },
    "graded": 320,
-   "logged": 700,
+   "logged": 702,
    "vs_market": {
     "beats_market": false,
     "edge": -0.0029,
@@ -552,7 +552,7 @@
     "ready": false
    },
    "graded": 1557,
-   "logged": 3045,
+   "logged": 3066,
    "shadow": true,
    "vs_market": {
     "beats_market": false,
@@ -571,55 +571,55 @@
     "KXATPCHALLENGERMATCH": {
      "edge": -0.0005,
      "market_brier": 0.2162,
-     "market_logloss": 0.6202,
+     "market_logloss": 0.6201,
      "model_brier": 0.2164,
-     "model_logloss": 0.6207,
-     "n": 4492,
+     "model_logloss": 0.6206,
+     "n": 4502,
      "ready": true
     },
     "KXATPMATCH": {
-     "edge": 0.0151,
-     "market_brier": 0.2371,
-     "market_logloss": 0.6658,
-     "model_brier": 0.2296,
-     "model_logloss": 0.6507,
-     "n": 1684,
+     "edge": 0.0159,
+     "market_brier": 0.2372,
+     "market_logloss": 0.666,
+     "model_brier": 0.2293,
+     "model_logloss": 0.65,
+     "n": 1708,
      "ready": true
     },
     "KXITFMATCH": {
-     "edge": 0.0304,
+     "edge": 0.0302,
      "market_brier": 0.2334,
-     "market_logloss": 0.6577,
-     "model_brier": 0.2187,
-     "model_logloss": 0.6273,
-     "n": 12706,
+     "market_logloss": 0.6576,
+     "model_brier": 0.2188,
+     "model_logloss": 0.6274,
+     "n": 12738,
      "ready": true
     },
     "KXITFWMATCH": {
-     "edge": 0.041,
-     "market_brier": 0.235,
-     "market_logloss": 0.6605,
+     "edge": 0.0408,
+     "market_brier": 0.2349,
+     "market_logloss": 0.6603,
      "model_brier": 0.2152,
-     "model_logloss": 0.6194,
-     "n": 11188,
+     "model_logloss": 0.6195,
+     "n": 11224,
      "ready": true
     },
     "KXWTACHALLENGERMATCH": {
-     "edge": 0.0066,
-     "market_brier": 0.2138,
-     "market_logloss": 0.6114,
-     "model_brier": 0.2107,
-     "model_logloss": 0.6048,
-     "n": 1376,
+     "edge": 0.0062,
+     "market_brier": 0.2139,
+     "market_logloss": 0.6118,
+     "model_brier": 0.2111,
+     "model_logloss": 0.6057,
+     "n": 1386,
      "ready": true
     },
     "KXWTAMATCH": {
-     "edge": 0.0227,
-     "market_brier": 0.2292,
-     "market_logloss": 0.6471,
-     "model_brier": 0.2185,
-     "model_logloss": 0.6244,
-     "n": 1868,
+     "edge": 0.0224,
+     "market_brier": 0.2293,
+     "market_logloss": 0.6473,
+     "model_brier": 0.2188,
+     "model_logloss": 0.6249,
+     "n": 1872,
      "ready": true
     }
    },
@@ -630,16 +630,16 @@
     "ready": true,
     "toward_pct": 58.0
    },
-   "graded": 33316,
-   "logged": 41360,
+   "graded": 33432,
+   "logged": 41432,
    "vs_market": {
     "beats_market": true,
-    "edge": 0.0276,
+    "edge": 0.0275,
     "market_brier": 0.2308,
-    "market_logloss": 0.6515,
-    "model_brier": 0.2174,
-    "model_logloss": 0.6239,
-    "n": 33314,
+    "market_logloss": 0.6514,
+    "model_brier": 0.2175,
+    "model_logloss": 0.624,
+    "n": 33430,
     "ready": true
    }
   },
@@ -651,7 +651,7 @@
     "ready": false
    },
    "graded": 0,
-   "logged": 610,
+   "logged": 676,
    "shadow": true,
    "vs_market": {
     "n": 0,
