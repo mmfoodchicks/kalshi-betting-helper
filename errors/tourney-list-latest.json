@@ -1,7 +1,22 @@
 {
  "boards": [
   {
-   "age_s": 683,
+   "age_s": 18509,
+   "built_ts": 1793494207,
+   "contest": "NFL $6M Midseason Main Event [$1.5M to 1st]",
+   "dg": 153728,
+   "entries": 4444,
+   "entry_fee": 1500.0,
+   "kind": "classic",
+   "label": "Sunday main (11 games)",
+   "n_contests": 2,
+   "pick": false,
+   "starts": "2026-11-01T18:00:00.0000000Z",
+   "teams": null,
+   "worlds": 180000
+  },
+  {
+   "age_s": 31148,
    "built_ts": 1793481568,
    "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (CHI @ SEA)",
    "dg": 155609,
@@ -18,7 +33,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 51434,
+   "age_s": 81898,
    "built_ts": 1793430810,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (PHI @ WAS)",
    "dg": 155951,
@@ -35,7 +50,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 164015,
+   "age_s": 194479,
    "built_ts": 1793318233,
    "contest": "NFL Showdown $1.25M Thursday Night Showdown [$300K to 1st] (CAR @ GB)",
    "dg": 155596,
@@ -50,21 +65,6 @@
     "GB"
    ],
    "worlds": 60000
-  },
-  {
-   "age_s": 188163,
-   "built_ts": 1793294089,
-   "contest": "NFL $6M Midseason Main Event [$1.5M to 1st]",
-   "dg": 153728,
-   "entries": 4444,
-   "entry_fee": 1500.0,
-   "kind": "classic",
-   "label": "Sunday main (11 games)",
-   "n_contests": 2,
-   "pick": false,
-   "starts": "2026-11-01T18:00:00.0000000Z",
-   "teams": null,
-   "worlds": 180000
   }
  ],
  "pending": [],
