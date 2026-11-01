@@ -338,11 +338,11 @@
   "nba": {
    "abandoned": 0,
    "close": {
-    "avg_capture_c": -1.1,
+    "avg_capture_c": -1.2,
     "flat_pct": 4.0,
     "n": 50,
     "ready": true,
-    "toward_pct": 38.0
+    "toward_pct": 34.0
    },
    "graded": 120,
    "logged": 158,
@@ -398,7 +398,7 @@
     "flat_pct": 10.3,
     "n": 146,
     "ready": true,
-    "toward_pct": 52.1
+    "toward_pct": 52.7
    },
    "graded": 148,
    "logged": 176,
@@ -525,44 +525,44 @@
   "soccer": {
    "abandoned": 6,
    "close": {
-    "avg_capture_c": 1.47,
-    "flat_pct": 11.5,
-    "n": 925,
+    "avg_capture_c": 1.38,
+    "flat_pct": 11.6,
+    "n": 952,
     "ready": true,
-    "toward_pct": 53.6
+    "toward_pct": 53.2
    },
-   "graded": 2460,
-   "logged": 4347,
+   "graded": 2463,
+   "logged": 4359,
    "vs_market": {
     "beats_market": false,
     "edge": -0.0192,
-    "market_brier": 0.1932,
+    "market_brier": 0.1931,
     "market_logloss": 0.5691,
     "model_brier": 0.2006,
-    "model_logloss": 0.5883,
-    "n": 2460,
+    "model_logloss": 0.5882,
+    "n": 2463,
     "ready": true
    }
   },
   "soccer_btts": {
    "abandoned": 0,
    "close": {
-    "avg_capture_c": 0.31,
-    "flat_pct": 13.8,
-    "n": 340,
+    "avg_capture_c": 0.34,
+    "flat_pct": 14.1,
+    "n": 347,
     "ready": true,
-    "toward_pct": 50.6
+    "toward_pct": 51.0
    },
-   "graded": 392,
-   "logged": 874,
+   "graded": 393,
+   "logged": 882,
    "vs_market": {
     "beats_market": false,
-    "edge": -0.0074,
-    "market_brier": 0.2411,
-    "market_logloss": 0.6749,
+    "edge": -0.007,
+    "market_brier": 0.2412,
+    "market_logloss": 0.6751,
     "model_brier": 0.2445,
-    "model_logloss": 0.6822,
-    "n": 392,
+    "model_logloss": 0.6821,
+    "n": 393,
     "ready": true
    }
   },
@@ -572,17 +572,17 @@
     "n": 0,
     "ready": false
    },
-   "graded": 1758,
+   "graded": 1761,
    "logged": 3243,
    "shadow": true,
    "vs_market": {
     "beats_market": false,
     "edge": -0.002,
     "market_brier": 0.1931,
-    "market_logloss": 0.5705,
-    "model_brier": 0.1941,
-    "model_logloss": 0.5725,
-    "n": 1758,
+    "market_logloss": 0.5704,
+    "model_brier": 0.194,
+    "model_logloss": 0.5724,
+    "n": 1761,
     "ready": true
    }
   },
@@ -652,7 +652,7 @@
     "toward_pct": 58.1
    },
    "graded": 34110,
-   "logged": 42004,
+   "logged": 42030,
    "vs_market": {
     "beats_market": true,
     "edge": 0.0276,
@@ -672,7 +672,7 @@
     "ready": false
    },
    "graded": 0,
-   "logged": 1148,
+   "logged": 1164,
    "shadow": true,
    "vs_market": {
     "n": 0,

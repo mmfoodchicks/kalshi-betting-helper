@@ -2,6 +2,17 @@
  "errors": [
   {
    "code": "NFL-DRIFT",
+   "id": 2285,
+   "last_ts": 1793567959.297827,
+   "msg": "Rush Yds: the model sits -6.1 points off Kalshi's mid over 153 rungs in 4 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 831,
+   "tb": "",
+   "ts": 1793567959.297827
+  },
+  {
+   "code": "NFL-DRIFT",
    "id": 2284,
    "last_ts": 1793566105.7049785,
    "msg": "Rush Yds: the model sits -5.4 points off Kalshi's mid over 195 rungs in 5 games",
@@ -2133,47 +2144,25 @@
    "pid": 586,
    "tb": "Traceback (most recent call last):\n  File \"/app/kalshi_nfl.py\", line 108, in _fetch\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
    "ts": 1792976041.0847936
-  },
-  {
-   "code": "KAL-candles",
-   "id": 2090,
-   "last_ts": 1792964895.3814056,
-   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "n": 1,
-   "path": null,
-   "pid": 540,
-   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi.py\", line 254, in build\n    d = _get_json(f\"{BASE}/series/{series}/markets/{ticker}/candlesticks\"\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
-   "ts": 1792964895.3814056
-  },
-  {
-   "code": "MEM-high",
-   "id": 2089,
-   "last_ts": 1792964718.5927758,
-   "msg": "2035/2048MB: 1693.8MB pid545 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 141.3MB pid540 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 78.2MB pid536 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 24.7MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
-   "n": 1,
-   "path": null,
-   "pid": 545,
-   "tb": "",
-   "ts": 1792964718.5927758
   }
  ],
- "generated_at": 1793566167.7907023,
+ "generated_at": 1793570367.2472615,
  "summary": [
   {
    "code": "NFL-DRIFT",
    "first_ts": 1793312861.2092621,
-   "last_msg": "Rush Yds: the model sits -5.4 points off Kalshi's mid over 195 rungs in 5 games",
-   "last_ts": 1793566105.7049785,
-   "n": 286,
-   "variants": 151
+   "last_msg": "Rush Yds: the model sits -6.1 points off Kalshi's mid over 153 rungs in 4 games",
+   "last_ts": 1793567959.297827,
+   "n": 287,
+   "variants": 152
   },
   {
    "code": "KAL-candles",
-   "first_ts": 1792964895.3814056,
+   "first_ts": 1793008680.3634546,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
    "last_ts": 1793551250.0329378,
-   "n": 27,
-   "variants": 10
+   "n": 26,
+   "variants": 9
   },
   {
    "code": "KNFL-markets-fetch",
@@ -2208,14 +2197,6 @@
    "variants": 3
   },
   {
-   "code": "MEM-high",
-   "first_ts": 1792964718.5927758,
-   "last_msg": "2047/2048MB: 1766.2MB pid51 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 138.6MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 109.0MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 22.8MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
-   "last_ts": 1793229226.8063767,
-   "n": 3,
-   "variants": 3
-  },
-  {
    "code": "UFCC-fights",
    "first_ts": 1793008666.1578984,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
@@ -2236,6 +2217,14 @@
    "first_ts": 1792991824.2195208,
    "last_msg": "RuntimeError: KXNFLRECYDS: page 2 failed after 200 markets -- a partial series is not an index",
    "last_ts": 1793165110.7172513,
+   "n": 2,
+   "variants": 2
+  },
+  {
+   "code": "MEM-high",
+   "first_ts": 1793151950.983061,
+   "last_msg": "2047/2048MB: 1766.2MB pid51 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 138.6MB pid9 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 109.0MB pid8 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 22.8MB pid1 /usr/local/bin/python3.11 /usr/local/bin/gunicor",
+   "last_ts": 1793229226.8063767,
    "n": 2,
    "variants": 2
   },
