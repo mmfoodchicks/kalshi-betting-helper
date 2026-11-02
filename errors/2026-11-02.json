@@ -1,6 +1,28 @@
 {
  "errors": [
   {
+   "code": "MXR-params",
+   "id": 2287,
+   "last_ts": 1793632638.9373047,
+   "msg": "TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', \"import os\\ntry:\\n    os.nice(10)\\nexcept (AttributeError, OSError):\\n    pass\\nimport sys, pickle, importlib\\n_out = os.fdopen(os.dup(1), 'wb')\\nos.dup2(2, 1)\\nsys.stdout = sys.stderr\\na, kw = pickle.loads(sys.stdin.buffer.read())\\n_out.write(pickle.dumps(getattr(importlib.import_module('calibrate'), 'write_params')(*a, **kw)))\\n_out.flush()\"]' timed out after 1800 seconds",
+   "n": 1,
+   "path": null,
+   "pid": 1118,
+   "tb": "Traceback (most recent call last):\n  File \"/app/mx_record.py\", line 770, in tick\n    deep_cache.run_child(\"calibrate\", \"write_params\", timeout=1800)\n  File \"/app/deep_cache.py\", line 142, in run_child\n    out = subprocess.run(\n          ^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/subprocess.py\", line 550, in run\n    stdout, stderr = process.communicate(input, timeout=timeout)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/subprocess.py\", line 1209, in communicate\n    stdout, stderr = self._communicate(input, endtime, timeout)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/subprocess.py\", line 2116, in _communicate\n    self._check_timeout(endtime, orig_timeout, stdout, stderr)\n  File \"/usr/local/lib/python3.11/subprocess.py\", line 1253, in _check_timeout\n    raise TimeoutExpired(\nsubprocess.TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', \"import os\\ntry:\\n    os.nice(10)\\nexcept (AttributeError, OSError):\\n    pass\\nimport sys, pickle, importlib\\n_out = os.fdopen(os.dup(1), 'wb')\\nos.dup2(2, 1)\\nsys.stdout = sys.stderr\\na, kw = pickle.loads(sys.stdin.buffer.read())\\n_out.write(pickle.dumps(getattr(importlib.import_module('calibrate'), 'write_params')(*a, **kw)))\\n_out.flush()\"]' timed out after 1800 seconds\n",
+   "ts": 1793632638.9373047
+  },
+  {
+   "code": "KAL-candles",
+   "id": 2286,
+   "last_ts": 1793611501.5067213,
+   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "n": 6,
+   "path": null,
+   "pid": 1033,
+   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi.py\", line 219, in build\n    d = _get_json(f\"{BASE}/series/{series}/markets/{ticker}/candlesticks\"\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 37, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
+   "ts": 1793611498.6563447
+  },
+  {
    "code": "NFL-DRIFT",
    "id": 2285,
    "last_ts": 1793567959.297827,
@@ -2034,75 +2056,9 @@
    "pid": 3579,
    "tb": "Traceback (most recent call last):\n  File \"/app/kalshi_nfl.py\", line 108, in _fetch\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
    "ts": 1793032201.6961532
-  },
-  {
-   "code": "UFCC-rounds",
-   "id": 2100,
-   "last_ts": 1793029154.3107834,
-   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "n": 1,
-   "path": null,
-   "pid": 3579,
-   "tb": "Traceback (most recent call last):\n  File \"/app/ufc_combo.py\", line 109, in markets\n    for m in _series(\"KXUFCROUNDS\"):\n             ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/ufc_combo.py\", line 66, in _series\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
-   "ts": 1793029154.3107834
-  },
-  {
-   "code": "KNFL-markets-fetch",
-   "id": 2099,
-   "last_ts": 1793014160.3056948,
-   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "n": 1,
-   "path": null,
-   "pid": 3079,
-   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi_nfl.py\", line 108, in _fetch\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
-   "ts": 1793014160.3056948
-  },
-  {
-   "code": "KAL-candles",
-   "id": 2098,
-   "last_ts": 1793008773.8227038,
-   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "n": 3,
-   "path": null,
-   "pid": 3089,
-   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi.py\", line 254, in build\n    d = _get_json(f\"{BASE}/series/{series}/markets/{ticker}/candlesticks\"\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
-   "ts": 1793008680.3634546
-  },
-  {
-   "code": "UFCC-fights",
-   "id": 2097,
-   "last_ts": 1793008666.1578984,
-   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "n": 1,
-   "path": null,
-   "pid": 3079,
-   "tb": "Traceback (most recent call last):\n  File \"/app/ufc_combo.py\", line 99, in markets\n    for m in _series(\"KXUFCFIGHT\"):\n             ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/ufc_combo.py\", line 66, in _series\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
-   "ts": 1793008666.1578984
-  },
-  {
-   "code": "KNFL-markets-fetch",
-   "id": 2096,
-   "last_ts": 1793007449.5849771,
-   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "n": 1,
-   "path": null,
-   "pid": 3079,
-   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi_nfl.py\", line 108, in _fetch\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
-   "ts": 1793007449.5849771
-  },
-  {
-   "code": "UFCC-rounds",
-   "id": 2095,
-   "last_ts": 1792998491.5707464,
-   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "n": 1,
-   "path": null,
-   "pid": 2624,
-   "tb": "Traceback (most recent call last):\n  File \"/app/ufc_combo.py\", line 109, in markets\n    for m in _series(\"KXUFCROUNDS\"):\n             ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/ufc_combo.py\", line 66, in _series\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
-   "ts": 1792998491.5707464
   }
  ],
- "generated_at": 1793599083.4980078,
+ "generated_at": 1793634286.5908718,
  "summary": [
   {
    "code": "NFL-DRIFT",
@@ -2114,19 +2070,19 @@
   },
   {
    "code": "KAL-candles",
-   "first_ts": 1793008680.3634546,
+   "first_ts": 1793055521.4077,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "last_ts": 1793551250.0329378,
-   "n": 26,
+   "last_ts": 1793611501.5067213,
+   "n": 29,
    "variants": 9
   },
   {
    "code": "KNFL-markets-fetch",
-   "first_ts": 1793007449.5849771,
+   "first_ts": 1793032201.6961532,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
    "last_ts": 1793538512.1442626,
-   "n": 9,
-   "variants": 9
+   "n": 7,
+   "variants": 7
   },
   {
    "code": "SOC-kalshi",
@@ -2137,14 +2093,6 @@
    "variants": 1
   },
   {
-   "code": "UFCC-rounds",
-   "first_ts": 1792998491.5707464,
-   "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "last_ts": 1793245180.9905767,
-   "n": 6,
-   "variants": 6
-  },
-  {
    "code": "MXR-grade-fetch",
    "first_ts": 1793415727.4282765,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
@@ -2153,12 +2101,12 @@
    "variants": 3
   },
   {
-   "code": "UFCC-fights",
-   "first_ts": 1793008666.1578984,
+   "code": "UFCC-rounds",
+   "first_ts": 1793036930.4903674,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "last_ts": 1793220439.8419366,
-   "n": 3,
-   "variants": 3
+   "last_ts": 1793245180.9905767,
+   "n": 4,
+   "variants": 4
   },
   {
    "code": "DK-contest",
@@ -2177,6 +2125,14 @@
    "variants": 2
   },
   {
+   "code": "UFCC-fights",
+   "first_ts": 1793094190.8992205,
+   "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "last_ts": 1793220439.8419366,
+   "n": 2,
+   "variants": 2
+  },
+  {
    "code": "DK-lobby-empty",
    "first_ts": 1793551358.283977,
    "last_msg": "mlb: lobby answered with no draft groups",
@@ -2189,6 +2145,14 @@
    "first_ts": 1793165110.7172513,
    "last_msg": "RuntimeError: KXNFLRECYDS: page 2 failed after 200 markets -- a partial series is not an index",
    "last_ts": 1793165110.7172513,
+   "n": 1,
+   "variants": 1
+  },
+  {
+   "code": "MXR-params",
+   "first_ts": 1793632638.9373047,
+   "last_msg": "TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', \"import os\\ntry:\\n    os.nice(10)\\nexcept (AttributeError, OSError):\\n    pass\\nimport sys, pickle, importlib\\n_out = os.fdopen(os.dup(1), 'wb')\\nos.dup2(2, 1)\\nsys.stdout = sys.stderr\\na, kw = pickle.loads(sys.stdin.buffer.read())\\n_out.write(pickle.dumps(getattr(importlib.import_module('calibrate'), 'write_params')(*a, **kw)))\\n_out.flush()\"]' timed out after 1800 seconds",
+   "last_ts": 1793632638.9373047,
    "n": 1,
    "variants": 1
   },
