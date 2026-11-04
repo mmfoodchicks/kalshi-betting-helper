@@ -2,10 +2,10 @@
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `NFL-DRIFT` | 287 | 11-01 21:19 | Rush Yds: the model sits -6.1 points off Kalshi's mid over 153 rungs in 4 games |
+| `NFL-DRIFT` | 294 | 11-04 14:27 | Rush Yds: the model sits -9.5 points off Kalshi's mid over 33 rungs in 9 games |
 | `KAL-candles` | 27 | 11-02 09:25 | HTTPError: HTTP Error 429: Too Many Requests |
-| `KNFL-markets-fetch` | 4 | 11-01 13:08 | HTTPError: HTTP Error 429: Too Many Requests |
 | `MXR-grade-fetch` | 4 | 11-01 05:12 | HTTPError: HTTP Error 429: Too Many Requests |
+| `KNFL-markets-fetch` | 3 | 11-01 13:08 | HTTPError: HTTP Error 429: Too Many Requests |
 | `DK-contest` | 2 | 11-01 16:04 | HTTPError: HTTP Error 403: Forbidden |
 | `DK-lobby-empty` | 1 | 11-01 16:42 | mlb: lobby answered with no draft groups |
 | `MEM-high` | 1 | 10-28 23:13 | 2047/2048MB: 1766.2MB pid51 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 138.6MB pid9 /usr/local/bin/python3.11 /us |
