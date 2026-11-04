@@ -1335,11 +1335,7 @@
   }
  },
  "kind": "classic",
- "last_attempt": {
-  "scheduled": true,
-  "ts": 1793553054,
-  "why": "no contest of $1,000,000+ with a payout table and a field size"
- },
+ "last_attempt": null,
  "max_per_game": null,
  "max_per_team": 3,
  "model": "engine",
