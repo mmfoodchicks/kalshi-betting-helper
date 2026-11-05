@@ -53,10 +53,10 @@
  "commit": "e771c12af5a2",
  "models": {
   "cfb": [
-   0.852,
+   0.849,
    0.5,
    0.0,
-   222
+   226
   ],
   "mlb_bases": [
    1.06,
@@ -128,7 +128,7 @@
    1.0,
    0.5,
    0.0,
-   156
+   182
   ],
   "nfl": [
    1.0,
@@ -146,7 +146,7 @@
    1.0,
    0.5,
    0.0,
-   266
+   274
   ],
   "prop": [
    1.0,
@@ -158,7 +158,7 @@
    0.66,
    0.5,
    0.0,
-   36094
+   36570
   ],
   "ufc": [
    1.0,
@@ -174,65 +174,65 @@
   ]
  },
  "mx": {
-  "fitted_ts": 1793837867,
+  "fitted_ts": 1793908401,
   "nba": {
    "ast": {
     "a": 0.0,
     "b": 1.0,
-    "days": 5,
+    "days": 6,
     "family": "identity",
-    "fitted_ts": 1793837867,
+    "fitted_ts": 1793908401,
     "gain": null,
-    "n": 1437,
-    "n_eff": 401.0,
+    "n": 1928,
+    "n_eff": 546.0,
     "se": null,
     "why": "below the floors"
    },
    "fg3m": {
     "a": 0.0,
     "b": 1.0,
-    "days": 5,
+    "days": 6,
     "family": "identity",
-    "fitted_ts": 1793837867,
+    "fitted_ts": 1793908402,
     "gain": null,
-    "n": 1871,
-    "n_eff": 398.0,
+    "n": 2567,
+    "n_eff": 556.0,
     "se": null,
     "why": "below the floors"
    },
    "pra": {
     "a": 0.0,
     "b": 1.0,
-    "days": 5,
+    "days": 6,
     "family": "identity",
-    "fitted_ts": 1793837867,
+    "fitted_ts": 1793908402,
     "gain": null,
-    "n": 884,
-    "n_eff": 285.0,
+    "n": 1329,
+    "n_eff": 432.0,
     "se": null,
     "why": "below the floors"
    },
    "pts": {
     "a": 0.0,
     "b": 1.0,
-    "days": 5,
+    "days": 6,
     "family": "identity",
-    "fitted_ts": 1793837867,
+    "fitted_ts": 1793908402,
     "gain": null,
-    "n": 1585,
-    "n_eff": 453.0,
+    "n": 2221,
+    "n_eff": 643.0,
     "se": null,
     "why": "below the floors"
    },
    "reb": {
     "a": 0.0,
     "b": 1.0,
-    "days": 5,
+    "days": 6,
     "family": "identity",
-    "fitted_ts": 1793837867,
+    "fitted_ts": 1793908402,
     "gain": null,
-    "n": 1804,
-    "n_eff": 436.0,
+    "n": 2556,
+    "n_eff": 621.0,
     "se": null,
     "why": "below the floors"
    }
@@ -243,7 +243,7 @@
     "b": 1.0,
     "days": 3,
     "family": "identity",
-    "fitted_ts": 1793837867,
+    "fitted_ts": 1793908402,
     "gain": null,
     "n": 251,
     "n_eff": 28.0,
@@ -255,7 +255,7 @@
     "b": 1.0,
     "days": 3,
     "family": "identity",
-    "fitted_ts": 1793837867,
+    "fitted_ts": 1793908402,
     "gain": null,
     "n": 1121,
     "n_eff": 176.0,
@@ -267,7 +267,7 @@
     "b": 1.0,
     "days": 3,
     "family": "identity",
-    "fitted_ts": 1793837867,
+    "fitted_ts": 1793908402,
     "gain": null,
     "n": 1720,
     "n_eff": 177.0,
@@ -279,7 +279,7 @@
     "b": 1.0,
     "days": 3,
     "family": "identity",
-    "fitted_ts": 1793837867,
+    "fitted_ts": 1793908402,
     "gain": null,
     "n": 769,
     "n_eff": 92.0,
@@ -291,7 +291,7 @@
     "b": 1.0,
     "days": 3,
     "family": "identity",
-    "fitted_ts": 1793837867,
+    "fitted_ts": 1793908402,
     "gain": null,
     "n": 493,
     "n_eff": 268.0,
@@ -302,44 +302,44 @@
   "verdict": {
    "nba": {
     "ast": {
-     "days": 5,
+     "days": 6,
      "decided": null,
-     "diff": 0.008547082175272837,
-     "games": 39,
-     "n": 1001,
-     "se": 0.010631516746393664
+     "diff": 0.00973791986465185,
+     "games": 53,
+     "n": 1358,
+     "se": 0.008119111403663611
     },
     "fg3m": {
-     "days": 5,
+     "days": 6,
      "decided": null,
-     "diff": 0.003896790781363923,
-     "games": 39,
-     "n": 1288,
-     "se": 0.00576696695995022
+     "diff": 5.702039636094399e-05,
+     "games": 53,
+     "n": 1769,
+     "se": 0.004624758147233206
     },
     "pra": {
-     "days": 5,
+     "days": 6,
      "decided": null,
-     "diff": 0.022344110728517462,
-     "games": 39,
-     "n": 552,
-     "se": 0.01354449610025655
+     "diff": 0.013538240338956741,
+     "games": 53,
+     "n": 801,
+     "se": 0.010053577765806735
     },
     "pts": {
-     "days": 5,
+     "days": 6,
      "decided": null,
-     "diff": 0.021262603994587778,
-     "games": 39,
-     "n": 1380,
-     "se": 0.007524033448180263
+     "diff": 0.01922860754193642,
+     "games": 53,
+     "n": 1922,
+     "se": 0.005764525748630284
     },
     "reb": {
-     "days": 5,
+     "days": 6,
      "decided": null,
-     "diff": 0.010874749072093445,
-     "games": 39,
-     "n": 1262,
-     "se": 0.005617477896730152
+     "diff": 0.008896955478785197,
+     "games": 53,
+     "n": 1755,
+     "se": 0.004628555796981986
     }
    },
    "nfl": {
@@ -409,10 +409,10 @@
    "weight": 0.0
   },
   "ufc": {
-   "at": 1793770051.6964474,
+   "at": 1793857189.797509,
    "n": 299,
    "weight": 0.05
   }
  },
- "ts": 1793837867.5593252
+ "ts": 1793908401.7575688
 }

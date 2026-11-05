@@ -32,7 +32,7 @@
     "toward_pct": 46.2
    },
    "graded": 135,
-   "logged": 228,
+   "logged": 233,
    "vs_market": {
     "beats_market": true,
     "edge": 0.0002,
@@ -535,46 +535,46 @@
    }
   },
   "soccer": {
-   "abandoned": 6,
+   "abandoned": 12,
    "close": {
     "avg_capture_c": 1.15,
-    "flat_pct": 10.4,
-    "n": 1250,
+    "flat_pct": 10.2,
+    "n": 1272,
     "ready": true,
     "toward_pct": 52.3
    },
-   "graded": 3597,
-   "logged": 5055,
+   "graded": 3657,
+   "logged": 5097,
    "vs_market": {
     "beats_market": false,
-    "edge": -0.0253,
-    "market_brier": 0.1914,
-    "market_logloss": 0.5652,
-    "model_brier": 0.2017,
-    "model_logloss": 0.5905,
-    "n": 3597,
+    "edge": -0.0261,
+    "market_brier": 0.1912,
+    "market_logloss": 0.5648,
+    "model_brier": 0.2019,
+    "model_logloss": 0.5909,
+    "n": 3657,
     "ready": true
    }
   },
   "soccer_btts": {
-   "abandoned": 0,
+   "abandoned": 2,
    "close": {
     "avg_capture_c": 0.27,
-    "flat_pct": 12.1,
-    "n": 494,
+    "flat_pct": 11.5,
+    "n": 515,
     "ready": true,
-    "toward_pct": 49.8
+    "toward_pct": 49.7
    },
-   "graded": 751,
-   "logged": 995,
+   "graded": 771,
+   "logged": 1031,
    "vs_market": {
-    "beats_market": false,
-    "edge": -0.0002,
-    "market_brier": 0.2476,
-    "market_logloss": 0.6884,
+    "beats_market": true,
+    "edge": 0.0014,
+    "market_brier": 0.2483,
+    "market_logloss": 0.6899,
     "model_brier": 0.2477,
-    "model_logloss": 0.6886,
-    "n": 751,
+    "model_logloss": 0.6885,
+    "n": 771,
     "ready": true
    }
   },
@@ -584,17 +584,17 @@
     "n": 0,
     "ready": false
    },
-   "graded": 2829,
-   "logged": 4029,
+   "graded": 2886,
+   "logged": 4158,
    "shadow": true,
    "vs_market": {
     "beats_market": false,
-    "edge": -0.002,
-    "market_brier": 0.19,
-    "market_logloss": 0.563,
-    "model_brier": 0.1909,
-    "model_logloss": 0.5651,
-    "n": 2829,
+    "edge": -0.0021,
+    "market_brier": 0.1899,
+    "market_logloss": 0.5627,
+    "model_brier": 0.1908,
+    "model_logloss": 0.5648,
+    "n": 2886,
     "ready": true
    }
   },
@@ -603,38 +603,38 @@
    "by_series": {
     "KXATPCHALLENGERMATCH": {
      "edge": -0.0008,
-     "market_brier": 0.216,
-     "market_logloss": 0.6192,
-     "model_brier": 0.2162,
-     "model_logloss": 0.62,
-     "n": 4912,
+     "market_brier": 0.2164,
+     "market_logloss": 0.6201,
+     "model_brier": 0.2166,
+     "model_logloss": 0.6209,
+     "n": 4942,
      "ready": true
     },
     "KXATPMATCH": {
      "edge": 0.0157,
-     "market_brier": 0.2376,
-     "market_logloss": 0.667,
-     "model_brier": 0.2299,
-     "model_logloss": 0.6513,
-     "n": 1858,
+     "market_brier": 0.2373,
+     "market_logloss": 0.6664,
+     "model_brier": 0.2296,
+     "model_logloss": 0.6507,
+     "n": 1874,
      "ready": true
     },
     "KXITFMATCH": {
-     "edge": 0.0296,
-     "market_brier": 0.233,
-     "market_logloss": 0.6564,
+     "edge": 0.0298,
+     "market_brier": 0.2331,
+     "market_logloss": 0.6566,
      "model_brier": 0.2186,
      "model_logloss": 0.6268,
-     "n": 13726,
+     "n": 13864,
      "ready": true
     },
     "KXITFWMATCH": {
-     "edge": 0.0417,
+     "edge": 0.042,
      "market_brier": 0.2348,
-     "market_logloss": 0.66,
-     "model_brier": 0.2147,
-     "model_logloss": 0.6183,
-     "n": 12316,
+     "market_logloss": 0.6599,
+     "model_brier": 0.2145,
+     "model_logloss": 0.6179,
+     "n": 12456,
      "ready": true
     },
     "KXWTACHALLENGERMATCH": {
@@ -663,16 +663,16 @@
     "ready": true,
     "toward_pct": 57.8
    },
-   "graded": 36246,
-   "logged": 44282,
+   "graded": 36570,
+   "logged": 44458,
    "vs_market": {
     "beats_market": true,
-    "edge": 0.0274,
-    "market_brier": 0.2306,
-    "market_logloss": 0.651,
+    "edge": 0.0277,
+    "market_brier": 0.2307,
+    "market_logloss": 0.6511,
     "model_brier": 0.2173,
     "model_logloss": 0.6235,
-    "n": 36244,
+    "n": 36568,
     "ready": true
    }
   },
@@ -684,7 +684,7 @@
     "ready": false
    },
    "graded": 0,
-   "logged": 2984,
+   "logged": 3146,
    "shadow": true,
    "vs_market": {
     "n": 0,
