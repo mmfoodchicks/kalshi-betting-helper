@@ -2,6 +2,215 @@
  "errors": [
   {
    "code": "NFL-DRIFT",
+   "id": 2329,
+   "last_ts": 1793860819.2294772,
+   "msg": "Rush Yds: the model sits -8.2 points off Kalshi's mid over 66 rungs in 12 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 2043,
+   "tb": "",
+   "ts": 1793860819.2294772
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2328,
+   "last_ts": 1793860725.4586923,
+   "msg": "Rush Yds: the model sits -8.5 points off Kalshi's mid over 65 rungs in 12 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 2008,
+   "tb": "",
+   "ts": 1793860725.4586923
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2327,
+   "last_ts": 1793858907.2397244,
+   "msg": "Rush Yds: the model sits -8.0 points off Kalshi's mid over 65 rungs in 12 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 2008,
+   "tb": "",
+   "ts": 1793858907.2397244
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2326,
+   "last_ts": 1793857075.6394956,
+   "msg": "Rush Yds: the model sits -8.4 points off Kalshi's mid over 65 rungs in 12 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 2008,
+   "tb": "",
+   "ts": 1793857075.6394956
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2325,
+   "last_ts": 1793855263.294143,
+   "msg": "Rush Yds: the model sits -7.9 points off Kalshi's mid over 62 rungs in 12 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 2008,
+   "tb": "",
+   "ts": 1793855263.294143
+  },
+  {
+   "code": "MXR-grade-fetch",
+   "id": 2323,
+   "last_ts": 1793855184.1424377,
+   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "n": 2,
+   "path": "KXNBA3PT-26NOV04INDMEM",
+   "pid": 2008,
+   "tb": "Traceback (most recent call last):\n  File \"/app/mx_record.py\", line 297, in grade_due\n    d = fetch(ev) or {}\n        ^^^^^^^^^\n  File \"/app/mx_record.py\", line 283, in <lambda>\n    fetch = fetch or (lambda ev: kalshi._get_json(f\"{kalshi.BASE}/markets?event_ticker={ev}&limit=1000\"))\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 37, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
+   "ts": 1793854866.5987353
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2324,
+   "last_ts": 1793854905.73844,
+   "msg": "Rush Yds: the model sits -8.3 points off Kalshi's mid over 61 rungs in 12 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 1979,
+   "tb": "",
+   "ts": 1793854905.73844
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2322,
+   "last_ts": 1793853090.3679128,
+   "msg": "Rush Yds: the model sits -8.4 points off Kalshi's mid over 62 rungs in 12 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 1979,
+   "tb": "",
+   "ts": 1793853090.3679128
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2321,
+   "last_ts": 1793851280.8749568,
+   "msg": "Rush Yds: the model sits -8.6 points off Kalshi's mid over 61 rungs in 12 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 1979,
+   "tb": "",
+   "ts": 1793851280.8749568
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2320,
+   "last_ts": 1793849466.7069688,
+   "msg": "Rush Yds: the model sits -8.7 points off Kalshi's mid over 60 rungs in 11 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 1979,
+   "tb": "",
+   "ts": 1793849466.7069688
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2319,
+   "last_ts": 1793847654.1519086,
+   "msg": "Rush Yds: the model sits -9.0 points off Kalshi's mid over 55 rungs in 11 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 1979,
+   "tb": "",
+   "ts": 1793847654.1519086
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2318,
+   "last_ts": 1793847163.4425118,
+   "msg": "Rush Yds: the model sits -9.2 points off Kalshi's mid over 53 rungs in 11 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 1961,
+   "tb": "",
+   "ts": 1793847163.4425118
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2317,
+   "last_ts": 1793845347.731095,
+   "msg": "Rush Yds: the model sits -9.1 points off Kalshi's mid over 58 rungs in 11 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 1961,
+   "tb": "",
+   "ts": 1793845347.731095
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2316,
+   "last_ts": 1793843534.11731,
+   "msg": "Rush Yds: the model sits -9.9 points off Kalshi's mid over 49 rungs in 10 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 1961,
+   "tb": "",
+   "ts": 1793843534.11731
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2315,
+   "last_ts": 1793841721.264925,
+   "msg": "Rush Yds: the model sits -8.8 points off Kalshi's mid over 50 rungs in 10 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 1961,
+   "tb": "",
+   "ts": 1793841721.264925
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2314,
+   "last_ts": 1793841163.8266742,
+   "msg": "Rush Yds: the model sits -9.2 points off Kalshi's mid over 48 rungs in 10 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 1926,
+   "tb": "",
+   "ts": 1793841163.8266742
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2313,
+   "last_ts": 1793839348.8907185,
+   "msg": "Rush Yds: the model sits -8.3 points off Kalshi's mid over 56 rungs in 10 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 1926,
+   "tb": "",
+   "ts": 1793839348.8907185
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2312,
+   "last_ts": 1793837535.340225,
+   "msg": "Rush Yds: the model sits -9.2 points off Kalshi's mid over 47 rungs in 9 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 1926,
+   "tb": "",
+   "ts": 1793837535.340225
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2311,
+   "last_ts": 1793835719.9074972,
+   "msg": "Rush Yds: the model sits -8.4 points off Kalshi's mid over 47 rungs in 9 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 1926,
+   "tb": "",
+   "ts": 1793835719.9074972
+  },
+  {
+   "code": "NFL-DRIFT",
    "id": 2310,
    "last_ts": 1793833907.2860034,
    "msg": "Rush Yds: the model sits -8.9 points off Kalshi's mid over 49 rungs in 9 games",
@@ -2122,39 +2331,17 @@
    "pid": 7,
    "tb": "",
    "ts": 1793270871.7428286
-  },
-  {
-   "code": "NBADEEP-day",
-   "id": 2117,
-   "last_ts": 1793247750.4368658,
-   "msg": "JSONDecodeError: Expecting value: line 1 column 1 (char 0)",
-   "n": 1,
-   "path": "2026-10-26",
-   "pid": 7,
-   "tb": "Traceback (most recent call last):\n  File \"/app/nba_deep_data.py\", line 279, in update\n    for ev in P._day_events(day.strftime(\"%Y%m%d\")):\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/nba_pbp.py\", line 306, in _day_events\n    d = _get(f\"{_SITE}/scoreboard?dates={ymd}\", timeout=20)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/nba_pbp.py\", line 302, in _get\n    return racing._get_json(url, timeout=timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/racing.py\", line 50, in _get_json\n    return json.loads(resp.read().decode(\"utf-8\"))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/json/__init__.py\", line 346, in loads\n    return _default_decoder.decode(s)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/json/decoder.py\", line 337, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/json/decoder.py\", line 355, in raw_decode\n    raise JSONDecodeError(\"Expecting value\", s, err.value) from None\njson.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)\n",
-   "ts": 1793247750.4368658
-  },
-  {
-   "code": "UFCC-rounds",
-   "id": 2116,
-   "last_ts": 1793245180.9905767,
-   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "n": 1,
-   "path": null,
-   "pid": 7,
-   "tb": "Traceback (most recent call last):\n  File \"/app/ufc_combo.py\", line 109, in markets\n    for m in _series(\"KXUFCROUNDS\"):\n             ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/ufc_combo.py\", line 66, in _series\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
-   "ts": 1793245180.9905767
   }
  ],
- "generated_at": 1793835509.3916337,
+ "generated_at": 1793860905.3173928,
  "summary": [
   {
    "code": "NFL-DRIFT",
    "first_ts": 1793312861.2092621,
-   "last_msg": "Rush Yds: the model sits -8.9 points off Kalshi's mid over 49 rungs in 9 games",
-   "last_ts": 1793833907.2860034,
-   "n": 310,
-   "variants": 175
+   "last_msg": "Rush Yds: the model sits -8.2 points off Kalshi's mid over 66 rungs in 12 games",
+   "last_ts": 1793860819.2294772,
+   "n": 328,
+   "variants": 193
   },
   {
    "code": "KAL-candles",
@@ -2168,9 +2355,9 @@
    "code": "MXR-grade-fetch",
    "first_ts": 1793415727.4282765,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "last_ts": 1793509925.7571442,
-   "n": 4,
-   "variants": 3
+   "last_ts": 1793855184.1424377,
+   "n": 6,
+   "variants": 4
   },
   {
    "code": "KNFL-markets-fetch",
@@ -2205,14 +2392,6 @@
    "variants": 1
   },
   {
-   "code": "NBADEEP-day",
-   "first_ts": 1793247750.4368658,
-   "last_msg": "JSONDecodeError: Expecting value: line 1 column 1 (char 0)",
-   "last_ts": 1793247750.4368658,
-   "n": 1,
-   "variants": 1
-  },
-  {
    "code": "STORE-crypto-drop",
    "first_ts": 1793270871.7428286,
    "last_msg": "dropped the removed crypto features' tables (quote_samples 1,138,502 rows, resolved_markets 40,543 rows, markets 0 rows); markets.db 255.7 -> 52.3 MB",
@@ -2225,14 +2404,6 @@
    "first_ts": 1793551200.1663427,
    "last_msg": "dg 153728 (schedule): no contest of $1,000,000+ with a payout table and a field size",
    "last_ts": 1793551200.1663427,
-   "n": 1,
-   "variants": 1
-  },
-  {
-   "code": "UFCC-rounds",
-   "first_ts": 1793245180.9905767,
-   "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "last_ts": 1793245180.9905767,
    "n": 1,
    "variants": 1
   }
