@@ -8379,6 +8379,11 @@ async function loadDfsTourney(dg, force, picked) {
     bx.main.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ tournament board unavailable.</div>`;
   }
 }
+// A board stays on the "boards on file" line until its games are over (ends_ts: the contest's start + 4 h for
+// a showdown, + 8 h for a classic slate, app._TOURNEY_DONE_S), then moves into the Past boards folder -- the
+// owner (2026-11-06): "update the boards on file to disappear after the game ... put them in a tabbed folder
+// like the game day weather or real fields". A board whose start did not parse stays on the line.
+function _dfsBoardDone(r, now) { return Number(r.ends_ts) > 0 && now >= Number(r.ends_ts); }
 async function loadDfsTourneyList() {
   const bx = _dfsTourneyBoxes();
   if (!bx) return;
@@ -8387,9 +8392,19 @@ async function loadDfsTourneyList() {
     const rows = d.boards || [];
     const pend = d.pending || [];
     if (!rows.length && !pend.length) { bx.files.innerHTML = ""; return; }
-    const links = rows.map((r) => `<a href="#" onclick="loadDfsTourney(${Number(r.dg)}, true, ${r.pick ? "true" : "false"});return false" style="margin-right:10px" title="${escapeHtml(r.contest || "")}">${escapeHtml(r.label || (r.teams || []).join(" vs ") || String(r.dg))}</a><span class="small" style="color:var(--faint);margin-right:12px">${agoStr(r.age_s)}</span>`).join("");
+    const now = Date.now() / 1000;
+    const link = (r) => `<a href="#" onclick="loadDfsTourney(${Number(r.dg)}, true, ${r.pick ? "true" : "false"});return false" style="margin-right:10px" title="${escapeHtml(r.contest || "")}">${escapeHtml(r.label || (r.teams || []).join(" vs ") || String(r.dg))}</a><span class="small" style="color:var(--faint);margin-right:12px">${agoStr(r.age_s)}</span>`;
+    const cur = rows.filter((r) => !_dfsBoardDone(r, now)), past = rows.filter((r) => _dfsBoardDone(r, now));
     const q = pend.length ? `<span class="small" style="color:var(--muted)"> · queued for the PC: ${pend.map((p) => `${escapeHtml(p.label || String(p.dg))}${p.attempt ? ` <span style="color:#e0a656">(⚠ not built: ${escapeHtml(p.attempt.why || "no reason given")})</span>` : ""} <a href="#" onclick="dfsTourneyCancel(${Number(p.dg)});return false" title="take this request back (a build the PC has started still finishes)">✕</a>`).join(", ")}</span>` : "";
-    bx.files.innerHTML = `<div class="small" style="margin-top:6px;color:var(--muted)">🗂 boards on file: ${links}${q}</div>`;
+    // the folder keeps its open state across a refresh of the list
+    const wasOpen = !!($("dfsPastBoards") || {}).open;
+    const line = cur.length || q
+      ? `<div class="small" style="margin-top:6px;color:var(--muted)">🗂 boards on file: ${cur.length ? cur.map(link).join("") : "none before kickoff"}${q}</div>` : "";
+    const folder = past.length
+      ? `<details id="dfsPastBoards" class="matchup-card" style="margin-top:10px"${wasOpen ? " open" : ""}><summary class="small">🗂️ Past boards · ${past.length} finished slate${past.length === 1 ? "" : "s"}</summary>
+        <div class="small" style="margin-top:6px">${past.map(link).join("")}</div>
+        <div class="small" style="margin-top:4px;color:var(--faint)">A board moves here once its games are over: a showdown 4 hours after kickoff, a classic slate 8 hours after its first game.</div></details>` : "";
+    bx.files.innerHTML = line + folder;
   } catch (e) { bx.files.innerHTML = ""; }
 }
 // Build on the PC: a dropdown of every NFL slate by NAME, nothing picked

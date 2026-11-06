@@ -13343,6 +13343,89 @@ try:
 finally:
     _bs14._DIR = _old16b
     _shutil.rmtree(_tmp16b, ignore_errors=True)
+# The owner (2026-11-06): "update the boards on file to disappear after the game ... put them in a tabbed folder
+# like the game day weather or real fields". Each row carries ends_ts (the contest's start + 4 h for a showdown,
+# + 8 h for a classic slate); the tab keeps an upcoming board on the line and files a finished one in a folder.
+import datetime as _dt_pb
+import json as _json_pb
+import time as _time_pb
+_old_pb = _bs14._DIR
+_tmp_pb = _tf14.mkdtemp(prefix="vigil-past-boards-guard-")
+_iso_pb = lambda t: _dt_pb.datetime.fromtimestamp(t, _dt_pb.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.0000000Z")
+_now_pb = int(_time_pb.time())
+try:
+    _bs14._DIR = _tmp_pb
+    _bs14.put("sd_tourney_nfl_777101", {"version": 2, "kind": "showdown", "sport": "nfl", "draft_group_id": 777101,
+                                        "built_ts": 3, "contest": {"name": "past sd", "starts": _iso_pb(_now_pb - 5 * 3600)},
+                                        "slate": {"teams": ["BUF", "MIN"]}})
+    _bs14.put("sd_tourney_nfl_777102", {"version": 2, "kind": "showdown", "sport": "nfl", "draft_group_id": 777102,
+                                        "built_ts": 4, "contest": {"name": "on now", "starts": _iso_pb(_now_pb - 3 * 3600)},
+                                        "slate": {"teams": ["CHI", "TB"]}})
+    _bs14.put("cl_tourney_nfl_777103", {"version": 2, "kind": "classic", "sport": "nfl", "draft_group_id": 777103,
+                                        "built_ts": 5, "contests": [{"id": 9, "name": "milly", "starts": _iso_pb(_now_pb - 7 * 3600)}],
+                                        "slate": {"games": 11}, "results": {"9": {}}, "players": [], "worlds": 3})
+    _bs14.put("sd_tourney_nfl_777104", {"version": 2, "kind": "showdown", "sport": "nfl", "draft_group_id": 777104,
+                                        "built_ts": 6, "contest": {"name": "no start", "starts": "soon"},
+                                        "slate": {"teams": ["PHI", "WAS"]}})
+    _rows_pb = {r["dg"]: r for r in (_app14.app.test_client().get("/api/dfs/tourney/list?sport=nfl").get_json() or {}).get("boards", [])}
+finally:
+    _bs14._DIR = _old_pb
+    _shutil.rmtree(_tmp_pb, ignore_errors=True)
+_ends_pb = {dg: (r.get("ends_ts") - _now_pb if r.get("ends_ts") else None) for dg, r in _rows_pb.items()}
+_js_pb = open(os.path.join(os.path.dirname(__file__), "..", "static", "app.js")).read()
+_fn_a_pb = _js_pb.index("function _dfsBoardDone(r, now)")
+_fn_b_pb = _js_pb.index("\n}\n", _js_pb.index("async function loadDfsTourneyList()")) + 3
+_h_pb = ("const els = {}; const $ = (id) => els[id] || null;\n"
+         "const escapeHtml = (x) => String(x == null ? '' : x).replace(/[&<>\"']/g, (c) => '&#' + c.charCodeAt(0) + ';');\n"
+         "const agoStr = (s) => `${s}s ago`;\n"
+         "const files = {innerHTML: ''}; const _dfsTourneyBoxes = () => ({files});\n"
+         + _js_pb[_fn_a_pb:_fn_b_pb] + "\n"
+         "const now = Date.now() / 1000;\n"
+         "const B = (dg, label, ends) => ({dg, label, ends_ts: ends, age_s: 60});\n"
+         "let served;\n"
+         "globalThis.fetch = async () => ({json: async () => served});\n"
+         "(async () => {\n"
+         "served = {boards: [B(1, 'NOW vs ON', now + 3600), B(2, 'OLD vs GAME', now - 60), B(3, 'NO vs START', null)], pending: []};\n"
+         "await loadDfsTourneyList(); const a = files.innerHTML;\n"
+         "els.dfsPastBoards = {open: true}; await loadDfsTourneyList(); const kept = files.innerHTML;\n"
+         "delete els.dfsPastBoards;\n"
+         "served = {boards: [B(2, 'OLD vs GAME', now - 60)], pending: [{dg: 9, label: 'Queued slate'}]};\n"
+         "await loadDfsTourneyList(); const onlyPast = files.innerHTML;\n"
+         "served = {boards: [B(1, 'NOW vs ON', now + 3600)], pending: []};\n"
+         "await loadDfsTourneyList(); const noPast = files.innerHTML;\n"
+         "process.stdout.write(JSON.stringify({a, kept, onlyPast, noPast}));\n"
+         "})();")
+_o_pb, _out_pb = None, ""
+try:
+    import shutil as _sh_pb, subprocess as _sp_pb
+    if _sh_pb.which("node"):
+        _r_pb = _sp_pb.run(["node", "-e", _h_pb], capture_output=True, text=True, timeout=30)
+        _o_pb = _json_pb.loads(_r_pb.stdout) if _r_pb.returncode == 0 and _r_pb.stdout else False
+        _out_pb = _r_pb.stdout[:600] + _r_pb.stderr[-400:]
+except Exception as _e_pb:
+    _o_pb, _out_pb = False, repr(_e_pb)
+
+def _split_pb(html):
+    cut = html.find('<details id="dfsPastBoards"')
+    return (html, "") if cut < 0 else (html[:cut], html[cut:])
+_ok_js_pb = _o_pb is None or (
+    bool(_o_pb)
+    and "NOW vs ON" in _split_pb(_o_pb["a"])[0] and "NO vs START" in _split_pb(_o_pb["a"])[0]
+    and "OLD vs GAME" not in _split_pb(_o_pb["a"])[0] and "OLD vs GAME" in _split_pb(_o_pb["a"])[1]
+    and "Past boards · 1 finished slate<" in _o_pb["a"] and '<details id="dfsPastBoards" class="matchup-card" style="margin-top:10px">' in _o_pb["a"]
+    and '<details id="dfsPastBoards" class="matchup-card" style="margin-top:10px" open>' in _o_pb["kept"]
+    and "none before kickoff" in _split_pb(_o_pb["onlyPast"])[0] and "Queued slate" in _split_pb(_o_pb["onlyPast"])[0]
+    and "OLD vs GAME" in _split_pb(_o_pb["onlyPast"])[1]
+    and "dfsPastBoards" not in _o_pb["noPast"] and "NOW vs ON" in _o_pb["noPast"])
+ck("a finished tournament board leaves the 'boards on file' line for a Past boards folder (the owner, 2026-11-06): "
+   "the list route stamps ends_ts -- a showdown 4 h after its contest's start, a classic slate 8 h after its first "
+   "game, nothing when the start does not parse -- and the tab (its real function under node) keeps an upcoming or "
+   "undated board on the line, files a finished one in a <details> folder styled like the weather and real-fields "
+   "folders, keeps the folder open across a refresh, says 'none before kickoff' beside a queue, and draws no folder "
+   "when nothing is finished",
+   _ends_pb == {777101: -3600, 777102: 3600, 777103: 3600, 777104: None}
+   and _app14._TOURNEY_DONE_S == {"showdown": 4 * 3600, "classic": 8 * 3600} and _ok_js_pb,
+   str((_ends_pb, _out_pb[:400])))
 _js16 = open(_os.path.join(_root, "static", "app.js")).read()
 ck("the tab renders a classic board: a contest selector, portfolio sizes one to twenty, the top 0.1% column, and nine-slot rows",
    'd.kind === "classic"' in _js16 and "dfsTourneyContest(" in _js16 and "top 0.1%" in _js16

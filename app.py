@@ -2604,6 +2604,21 @@ def api_dfs_tourney_attempt():
     return jsonify({"recorded": _tourney_json_save(_TOURNEY_ATTEMPTS, tries)})
 
 
+# A board is "after the game" this long past its contest's start (the slate's lock): one game runs kickoff to
+# final, overtime included, inside 4 h; the Sunday main slate's late window kicks off ~3.5 h after its first game
+# and is final ~7.75 h after it, so 8 h. Nothing stores a slate's last kickoff, so the start is the clock. The tab
+# files a board past it under "Past boards" (the owner, 2026-11-06: "update the boards on file to disappear after
+# the game ... put them in a tabbed folder like the game day weather or real fields").
+_TOURNEY_DONE_S = {"showdown": 4 * 3600, "classic": 8 * 3600}
+
+
+def _tourney_ends(kind, starts):
+    """Epoch seconds the board's games are over, or None when its start does not parse."""
+    import nfl_dfs
+    ts = nfl_dfs.iso_ts(starts)
+    return int(ts + _TOURNEY_DONE_S[kind]) if ts else None
+
+
 _tourney_rows = {}          # board file -> (mtime, list row), this worker's
 
 
@@ -2659,6 +2674,7 @@ def api_dfs_tourney_list():
                          "entry_fee": c.get("entry_fee"), "teams": None,
                          **_picked(payload, f"Sunday main ({sl.get('games')} games)" if sl.get("games") else "classic"),
                          "n_contests": len(cs), "starts": c.get("starts"),
+                         "ends_ts": _tourney_ends("classic", c.get("starts")),
                          "worlds": payload.get("worlds"), "built_ts": payload.get("built_ts"),
                          "age_s": int(age or 0)})
             _tourney_rows[fn] = (mt, rows[-1])
@@ -2668,8 +2684,8 @@ def api_dfs_tourney_list():
                      "contest": c.get("name"), "entries": c.get("max_entries"),
                      "entry_fee": c.get("entry_fee"), "teams": sl.get("teams"),
                      **_picked(payload, " vs ".join(sl.get("teams") or []) or str(payload.get("draft_group_id"))),
-                     "starts": c.get("starts"), "worlds": payload.get("worlds"),
-                     "built_ts": payload.get("built_ts"), "age_s": int(age or 0)})
+                     "starts": c.get("starts"), "ends_ts": _tourney_ends("showdown", c.get("starts")),
+                     "worlds": payload.get("worlds"), "built_ts": payload.get("built_ts"), "age_s": int(age or 0)})
         _tourney_rows[fn] = (mt, rows[-1])
     rows.sort(key=lambda r: -(r.get("built_ts") or 0))
     return jsonify({"sport": sport, "boards": rows[:12], "pending": _tourney_pending()})
