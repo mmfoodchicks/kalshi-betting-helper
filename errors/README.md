@@ -1,8 +1,8 @@
-# Error ledger — updated 2026-11-05
+# Error ledger — updated 2026-11-06
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `NFL-DRIFT` | 357 | 11-05 19:49 | Rush Yds: the model sits -8.7 points off Kalshi's mid over 124 rungs in 15 games |
+| `NFL-DRIFT` | 347 | 11-06 06:11 | Rush Yds: the model sits -6.7 points off Kalshi's mid over 142 rungs in 14 games |
 | `KAL-candles` | 27 | 11-02 09:25 | HTTPError: HTTP Error 429: Too Many Requests |
 | `MXR-grade-fetch` | 6 | 11-05 05:06 | HTTPError: HTTP Error 429: Too Many Requests |
 | `KNFL-markets-fetch` | 3 | 11-01 13:08 | HTTPError: HTTP Error 429: Too Many Requests |
