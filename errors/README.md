@@ -2,8 +2,8 @@
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `NFL-DRIFT` | 309 | 11-07 12:41 | Rush Yds: the model sits -4.6 points off Kalshi's mid over 237 rungs in 14 games |
-| `KAL-candles` | 20 | 11-06 11:13 | HTTPError: HTTP Error 429: Too Many Requests |
+| `NFL-DRIFT` | 305 | 11-07 21:43 | Rush Yds: the model sits -4.0 points off Kalshi's mid over 273 rungs in 14 games |
+| `KAL-candles` | 9 | 11-06 11:13 | HTTPError: HTTP Error 429: Too Many Requests |
 | `MXR-grade-fetch` | 5 | 11-05 05:06 | HTTPError: HTTP Error 429: Too Many Requests |
 | `DK-contest` | 2 | 11-01 16:04 | HTTPError: HTTP Error 403: Forbidden |
 | `KNFL-markets-fetch` | 2 | 11-01 13:08 | HTTPError: HTTP Error 429: Too Many Requests |
