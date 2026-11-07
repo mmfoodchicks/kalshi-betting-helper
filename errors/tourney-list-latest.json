@@ -1,7 +1,25 @@
 {
  "boards": [
   {
-   "age_s": 6242,
+   "age_s": 27038,
+   "built_ts": 1794003870,
+   "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (BUF @ MIN)",
+   "dg": 156014,
+   "ends_ts": 1794287700,
+   "entries": 73529,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "BUF vs MIN",
+   "pick": false,
+   "starts": "2026-11-10T01:15:00.0000000Z",
+   "teams": [
+    "BUF",
+    "MIN"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 44222,
    "built_ts": 1793986687,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (TB @ CHI)",
    "dg": 156013,
@@ -19,25 +37,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 60905,
-   "built_ts": 1793932022,
-   "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (BUF @ MIN)",
-   "dg": 156014,
-   "ends_ts": 1794287700,
-   "entries": 73529,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "BUF vs MIN",
-   "pick": false,
-   "starts": "2026-11-10T01:15:00.0000000Z",
-   "teams": [
-    "BUF",
-    "MIN"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 67721,
+   "age_s": 105701,
    "built_ts": 1793925205,
    "contest": "NFL Showdown $1.25M Thursday Night Showdown [$300K to 1st] (JAX @ BAL)",
    "dg": 156000,
@@ -55,7 +55,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 326586,
+   "age_s": 364567,
    "built_ts": 1793666342,
    "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (CHI @ SEA)",
    "dg": 155609,
@@ -73,7 +73,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 411287,
+   "age_s": 449267,
    "built_ts": 1793581643,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (PHI @ WAS)",
    "dg": 155951,
@@ -91,7 +91,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 442979,
+   "age_s": 480959,
    "built_ts": 1793549951,
    "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st, $50K Crown Cash Throne Eligible]",
    "dg": 153728,
@@ -105,24 +105,6 @@
    "starts": "2026-11-01T18:00:00.0000000Z",
    "teams": null,
    "worlds": 180000
-  },
-  {
-   "age_s": 674694,
-   "built_ts": 1793318233,
-   "contest": "NFL Showdown $1.25M Thursday Night Showdown [$300K to 1st] (CAR @ GB)",
-   "dg": 155596,
-   "ends_ts": 1793333700,
-   "entries": 73529,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "CAR vs GB",
-   "pick": false,
-   "starts": "2026-10-30T00:15:00.0000000Z",
-   "teams": [
-    "CAR",
-    "GB"
-   ],
-   "worlds": 60000
   }
  ],
  "pending": [],

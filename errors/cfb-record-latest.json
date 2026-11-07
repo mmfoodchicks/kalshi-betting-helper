@@ -1,13 +1,13 @@
 {
  "ats": {
-  "accuracy_pct": 54.2,
-  "brier": 0.2324,
+  "accuracy_pct": 53.4,
+  "brier": 0.2332,
   "brier_baseline": 0.25,
   "calibration": [
    {
-    "actual": 47.0,
-    "n": 117,
-    "predicted": 54.4,
+    "actual": 46.3,
+    "n": 121,
+    "predicted": 54.3,
     "range": "50-60%"
    },
    {
@@ -29,21 +29,21 @@
     "range": "80-100%"
    }
   ],
-  "clv_avg": -1.58,
-  "clv_n": 142,
+  "clv_avg": -1.53,
+  "clv_n": 146,
   "clv_note": "pre-game closes only",
-  "clv_positive_pct": 20.4,
-  "edge_bets": 39,
+  "clv_positive_pct": 20.5,
+  "edge_bets": 40,
   "edge_threshold": 3.0,
   "fees_included": true,
-  "graded": 142,
-  "losses": 65,
-  "pending": 1428,
-  "roi_bets": 142,
-  "roi_edge_pct": 14.4,
-  "roi_pct": -8.6,
+  "graded": 146,
+  "losses": 68,
+  "pending": 1435,
+  "roi_bets": 146,
+  "roi_edge_pct": 11.6,
+  "roi_pct": -9.7,
   "totals_accuracy": null,
-  "wins": 77
+  "wins": 78
  },
  "div": null,
  "divisions": {
@@ -75,7 +75,7 @@
     "fees_included": true,
     "graded": 3,
     "losses": 1,
-    "pending": 165,
+    "pending": 166,
     "roi_bets": 3,
     "roi_edge_pct": -2.0,
     "roi_pct": 30.7,
@@ -152,14 +152,14 @@
   },
   "fbs": {
    "ats": {
-    "accuracy_pct": 51.3,
-    "brier": 0.2407,
+    "accuracy_pct": 48.8,
+    "brier": 0.2427,
     "brier_baseline": 0.25,
     "calibration": [
      {
-      "actual": 47.2,
-      "n": 36,
-      "predicted": 53.7,
+      "actual": 45.0,
+      "n": 40,
+      "predicted": 53.6,
       "range": "50-60%"
      },
      {
@@ -169,25 +169,25 @@
       "range": "60-70%"
      }
     ],
-    "clv_avg": -0.23,
-    "clv_n": 39,
+    "clv_avg": -0.21,
+    "clv_n": 43,
     "clv_note": "pre-game closes only",
-    "clv_positive_pct": 23.1,
-    "edge_bets": 15,
+    "clv_positive_pct": 23.3,
+    "edge_bets": 16,
     "edge_threshold": 3.0,
     "fees_included": true,
-    "graded": 39,
-    "losses": 19,
-    "pending": 679,
-    "roi_bets": 39,
-    "roi_edge_pct": 41.4,
-    "roi_pct": -2.8,
+    "graded": 43,
+    "losses": 22,
+    "pending": 680,
+    "roi_bets": 43,
+    "roi_edge_pct": 32.4,
+    "roi_pct": -7.6,
     "totals_accuracy": null,
-    "wins": 20
+    "wins": 21
    },
    "regular": {
     "accuracy_pct": 73.3,
-    "brier": 0.1888,
+    "brier": 0.1889,
     "brier_baseline": 0.25,
     "calibration": [
      {
@@ -197,14 +197,14 @@
       "range": "50-60%"
      },
      {
-      "actual": 69.4,
-      "n": 108,
+      "actual": 69.1,
+      "n": 110,
       "predicted": 65.1,
       "range": "60-70%"
      },
      {
-      "actual": 72.4,
-      "n": 98,
+      "actual": 72.7,
+      "n": 99,
       "predicted": 75.0,
       "range": "70-80%"
      },
@@ -216,18 +216,18 @@
      }
     ],
     "clv_avg": -0.34,
-    "clv_n": 431,
+    "clv_n": 435,
     "clv_note": "pre-game closes only",
     "clv_positive_pct": 29.9,
     "edge_bets": 14,
     "edge_threshold": 3.0,
     "fees_included": true,
-    "graded": 431,
-    "losses": 115,
-    "pending": 56,
-    "roi_bets": 431,
+    "graded": 435,
+    "losses": 116,
+    "pending": 52,
+    "roi_bets": 435,
     "roi_edge_pct": 1.0,
-    "roi_pct": -2.5,
+    "roi_pct": -2.4,
     "totals_accuracy": {
      "actual_avg": 52.4,
      "bias": 4.24,
@@ -235,7 +235,7 @@
      "n": 427,
      "predicted_avg": 56.64
     },
-    "wins": 316
+    "wins": 319
    },
    "totals": {
     "accuracy_pct": null,
@@ -299,7 +299,7 @@
     "fees_included": true,
     "graded": 100,
     "losses": 45,
-    "pending": 584,
+    "pending": 589,
     "roi_bets": 100,
     "roi_edge_pct": -1.5,
     "roi_pct": -11.5,
@@ -383,26 +383,26 @@
  },
  "market": {
   "close": {
-   "avg_capture_c": 0.12,
-   "flat_pct": 6.6,
-   "n": 196,
+   "avg_capture_c": 0.18,
+   "flat_pct": 6.8,
+   "n": 206,
    "ready": true,
-   "toward_pct": 44.9
+   "toward_pct": 46.1
   },
   "vs_market": {
    "beats_market": false,
-   "edge": -0.0138,
-   "market_brier": 0.1667,
-   "market_logloss": 0.4997,
-   "model_brier": 0.1719,
-   "model_logloss": 0.5135,
-   "n": 232,
+   "edge": -0.0151,
+   "market_brier": 0.1666,
+   "market_logloss": 0.4999,
+   "model_brier": 0.1725,
+   "model_logloss": 0.515,
+   "n": 236,
    "ready": true
   }
  },
  "regular": {
   "accuracy_pct": 76.6,
-  "brier": 0.1714,
+  "brier": 0.1716,
   "brier_baseline": 0.25,
   "calibration": [
    {
@@ -412,14 +412,14 @@
     "range": "50-60%"
    },
    {
-    "actual": 69.6,
-    "n": 125,
+    "actual": 69.3,
+    "n": 127,
     "predicted": 65.1,
     "range": "60-70%"
    },
    {
-    "actual": 74.6,
-    "n": 122,
+    "actual": 74.8,
+    "n": 123,
     "predicted": 74.8,
     "range": "70-80%"
    },
@@ -431,18 +431,18 @@
    }
   ],
   "clv_avg": -0.27,
-  "clv_n": 564,
+  "clv_n": 568,
   "clv_note": "pre-game closes only",
-  "clv_positive_pct": 31.4,
+  "clv_positive_pct": 31.3,
   "edge_bets": 14,
   "edge_threshold": 3.0,
   "fees_included": true,
-  "graded": 564,
-  "losses": 132,
-  "pending": 432,
-  "roi_bets": 564,
+  "graded": 568,
+  "losses": 133,
+  "pending": 428,
+  "roi_bets": 568,
   "roi_edge_pct": 1.0,
-  "roi_pct": -0.7,
+  "roi_pct": -0.6,
   "totals_accuracy": {
    "actual_avg": 52.57,
    "bias": 3.67,
@@ -450,7 +450,7 @@
    "n": 501,
    "predicted_avg": 56.25
   },
-  "wins": 432
+  "wins": 435
  },
  "totals": {
   "accuracy_pct": null,

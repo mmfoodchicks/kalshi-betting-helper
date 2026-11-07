@@ -1,10 +1,10 @@
-# Error ledger — updated 2026-11-06
+# Error ledger — updated 2026-11-07
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `NFL-DRIFT` | 340 | 11-06 19:09 | Rush Yds: the model sits -5.4 points off Kalshi's mid over 179 rungs in 14 games |
+| `NFL-DRIFT` | 314 | 11-07 05:39 | Rush Yds: the model sits -4.7 points off Kalshi's mid over 231 rungs in 14 games |
 | `KAL-candles` | 20 | 11-06 11:13 | HTTPError: HTTP Error 429: Too Many Requests |
-| `MXR-grade-fetch` | 6 | 11-05 05:06 | HTTPError: HTTP Error 429: Too Many Requests |
+| `MXR-grade-fetch` | 5 | 11-05 05:06 | HTTPError: HTTP Error 429: Too Many Requests |
 | `KNFL-markets-fetch` | 3 | 11-01 13:08 | HTTPError: HTTP Error 429: Too Many Requests |
 | `DK-contest` | 2 | 11-01 16:04 | HTTPError: HTTP Error 403: Forbidden |
 | `DK-lobby-empty` | 1 | 11-01 16:42 | mlb: lobby answered with no draft groups |
