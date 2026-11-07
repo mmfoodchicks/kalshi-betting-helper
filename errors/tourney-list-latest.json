@@ -1,7 +1,25 @@
 {
  "boards": [
   {
-   "age_s": 27038,
+   "age_s": 17061,
+   "built_ts": 1794039138,
+   "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (TB @ CHI)",
+   "dg": 156013,
+   "ends_ts": 1794201600,
+   "entries": 58823,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "CHI vs TB",
+   "pick": false,
+   "starts": "2026-11-09T01:20:00.0000000Z",
+   "teams": [
+    "CHI",
+    "TB"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 52329,
    "built_ts": 1794003870,
    "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (BUF @ MIN)",
    "dg": 156014,
@@ -19,25 +37,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 44222,
-   "built_ts": 1793986687,
-   "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (TB @ CHI)",
-   "dg": 156013,
-   "ends_ts": 1794201600,
-   "entries": 58823,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "CHI vs TB",
-   "pick": false,
-   "starts": "2026-11-09T01:20:00.0000000Z",
-   "teams": [
-    "CHI",
-    "TB"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 105701,
+   "age_s": 130992,
    "built_ts": 1793925205,
    "contest": "NFL Showdown $1.25M Thursday Night Showdown [$300K to 1st] (JAX @ BAL)",
    "dg": 156000,
@@ -55,7 +55,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 364567,
+   "age_s": 389858,
    "built_ts": 1793666342,
    "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (CHI @ SEA)",
    "dg": 155609,
@@ -73,7 +73,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 449267,
+   "age_s": 474558,
    "built_ts": 1793581643,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (PHI @ WAS)",
    "dg": 155951,
@@ -91,7 +91,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 480959,
+   "age_s": 506250,
    "built_ts": 1793549951,
    "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st, $50K Crown Cash Throne Eligible]",
    "dg": 153728,
