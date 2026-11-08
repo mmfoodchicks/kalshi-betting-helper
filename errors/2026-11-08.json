@@ -1,6 +1,17 @@
 {
  "errors": [
   {
+   "code": "DK-lobby-empty",
+   "id": 2485,
+   "last_ts": 1794175103.821952,
+   "msg": "nascar: lobby answered with no draft groups",
+   "n": 1,
+   "path": null,
+   "pid": 1375,
+   "tb": "",
+   "ts": 1794175103.821952
+  },
+  {
    "code": "NFL-DRIFT",
    "id": 2484,
    "last_ts": 1794166998.301147,
@@ -2188,39 +2199,17 @@
    "pid": 1033,
    "tb": "Traceback (most recent call last):\n  File \"/app/kalshi.py\", line 219, in build\n    d = _get_json(f\"{BASE}/series/{series}/markets/{ticker}/candlesticks\"\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 37, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
    "ts": 1793611498.6563447
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2285,
-   "last_ts": 1793567959.297827,
-   "msg": "Rush Yds: the model sits -6.1 points off Kalshi's mid over 153 rungs in 4 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 831,
-   "tb": "",
-   "ts": 1793567959.297827
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2284,
-   "last_ts": 1793566105.7049785,
-   "msg": "Rush Yds: the model sits -5.4 points off Kalshi's mid over 195 rungs in 5 games",
-   "n": 2,
-   "path": "Rush Yds",
-   "pid": 804,
-   "tb": "",
-   "ts": 1793566105.7049785
   }
  ],
- "generated_at": 1794170725.2159598,
+ "generated_at": 1794175221.511438,
  "summary": [
   {
    "code": "NFL-DRIFT",
-   "first_ts": 1793566105.7049785,
+   "first_ts": 1793782574.0771937,
    "last_msg": "Rush Yds: the model sits -4.1 points off Kalshi's mid over 189 rungs in 6 games",
    "last_ts": 1794166998.301147,
-   "n": 268,
-   "variants": 197
+   "n": 265,
+   "variants": 195
   },
   {
    "code": "KAL-candles",
@@ -2236,6 +2225,14 @@
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
    "last_ts": 1793855184.1424377,
    "n": 2,
+   "variants": 1
+  },
+  {
+   "code": "DK-lobby-empty",
+   "first_ts": 1794175103.821952,
+   "last_msg": "nascar: lobby answered with no draft groups",
+   "last_ts": 1794175103.821952,
+   "n": 1,
    "variants": 1
   },
   {
