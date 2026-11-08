@@ -2,6 +2,50 @@
  "errors": [
   {
    "code": "NFL-DRIFT",
+   "id": 2484,
+   "last_ts": 1794166998.301147,
+   "msg": "Rush Yds: the model sits -4.1 points off Kalshi's mid over 189 rungs in 6 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 1352,
+   "tb": "",
+   "ts": 1794166998.301147
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2483,
+   "last_ts": 1794165142.2223437,
+   "msg": "Rush Yds: the model sits -4.2 points off Kalshi's mid over 186 rungs in 6 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 1323,
+   "tb": "",
+   "ts": 1794165142.2223437
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2482,
+   "last_ts": 1794163327.0275888,
+   "msg": "Rush Yds: the model sits -4.1 points off Kalshi's mid over 186 rungs in 6 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 1323,
+   "tb": "",
+   "ts": 1794163327.0275888
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2481,
+   "last_ts": 1794161506.7100866,
+   "msg": "Rush Yds: the model sits -4.2 points off Kalshi's mid over 183 rungs in 6 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 1323,
+   "tb": "",
+   "ts": 1794161506.7100866
+  },
+  {
+   "code": "NFL-DRIFT",
    "id": 2480,
    "last_ts": 1794112894.0803099,
    "msg": "Receptions: the model sits -4.1 points off Kalshi's mid over 297 rungs in 14 games",
@@ -2166,220 +2210,25 @@
    "pid": 804,
    "tb": "",
    "ts": 1793566105.7049785
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2283,
-   "last_ts": 1793564281.7371106,
-   "msg": "Rush Yds: the model sits -5.5 points off Kalshi's mid over 195 rungs in 5 games",
-   "n": 2,
-   "path": "Rush Yds",
-   "pid": 804,
-   "tb": "",
-   "ts": 1793564281.7371106
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2282,
-   "last_ts": 1793562455.8750916,
-   "msg": "Rush Yds: the model sits -5.9 points off Kalshi's mid over 192 rungs in 5 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 804,
-   "tb": "",
-   "ts": 1793562455.8750916
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2281,
-   "last_ts": 1793561566.0436518,
-   "msg": "Rush Yds: the model sits -5.8 points off Kalshi's mid over 189 rungs in 5 games",
-   "n": 2,
-   "path": "Rush Yds",
-   "pid": 775,
-   "tb": "",
-   "ts": 1793561566.0436518
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2280,
-   "last_ts": 1793559748.6470947,
-   "msg": "Rush Yds: the model sits -5.7 points off Kalshi's mid over 185 rungs in 5 games",
-   "n": 2,
-   "path": "Rush Yds",
-   "pid": 775,
-   "tb": "",
-   "ts": 1793559748.6470947
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2279,
-   "last_ts": 1793557925.8957546,
-   "msg": "Rush Yds: the model sits -5.9 points off Kalshi's mid over 185 rungs in 5 games",
-   "n": 2,
-   "path": "Rush Yds",
-   "pid": 775,
-   "tb": "",
-   "ts": 1793557925.8957546
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2278,
-   "last_ts": 1793556111.5847702,
-   "msg": "Rush Yds: the model sits -5.6 points off Kalshi's mid over 182 rungs in 5 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 775,
-   "tb": "",
-   "ts": 1793556111.5847702
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2277,
-   "last_ts": 1793554498.2503307,
-   "msg": "Receptions: the model sits -4.2 points off Kalshi's mid over 554 rungs in 13 games",
-   "n": 1,
-   "path": "Receptions",
-   "pid": 734,
-   "tb": "",
-   "ts": 1793554498.2503307
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2276,
-   "last_ts": 1793552679.281156,
-   "msg": "Receptions: the model sits -4.3 points off Kalshi's mid over 543 rungs in 13 games",
-   "n": 1,
-   "path": "Receptions",
-   "pid": 734,
-   "tb": "",
-   "ts": 1793552679.281156
-  },
-  {
-   "code": "DK-lobby-empty",
-   "id": 2275,
-   "last_ts": 1793551358.283977,
-   "msg": "mlb: lobby answered with no draft groups",
-   "n": 1,
-   "path": null,
-   "pid": 746,
-   "tb": "",
-   "ts": 1793551358.283977
-  },
-  {
-   "code": "KAL-candles",
-   "id": 2274,
-   "last_ts": 1793551250.0329378,
-   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "n": 1,
-   "path": null,
-   "pid": 755,
-   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi.py\", line 219, in build\n    d = _get_json(f\"{BASE}/series/{series}/markets/{ticker}/candlesticks\"\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 37, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
-   "ts": 1793551250.0329378
-  },
-  {
-   "code": "TOURN-attempt",
-   "id": 2273,
-   "last_ts": 1793551200.1663427,
-   "msg": "dg 153728 (schedule): no contest of $1,000,000+ with a payout table and a field size",
-   "n": 1,
-   "path": "153728",
-   "pid": 755,
-   "tb": "",
-   "ts": 1793551200.1663427
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2272,
-   "last_ts": 1793550859.8225505,
-   "msg": "Receptions: the model sits -4.3 points off Kalshi's mid over 525 rungs in 13 games",
-   "n": 1,
-   "path": "Receptions",
-   "pid": 734,
-   "tb": "",
-   "ts": 1793550859.8225505
-  },
-  {
-   "code": "DK-contest",
-   "id": 2270,
-   "last_ts": 1793549089.877849,
-   "msg": "HTTPError: HTTP Error 403: Forbidden",
-   "n": 2,
-   "path": "197185360",
-   "pid": 746,
-   "tb": "Traceback (most recent call last):\n  File \"/app/dk.py\", line 255, in build\n    d = _get(_CONTEST.format(cid=cid))\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/dk.py\", line 93, in _get\n    return racing._get_json(url, timeout=timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/racing.py\", line 49, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n",
-   "ts": 1793548715.405353
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2271,
-   "last_ts": 1793549035.0457733,
-   "msg": "Receptions: the model sits -4.3 points off Kalshi's mid over 515 rungs in 13 games",
-   "n": 2,
-   "path": "Receptions",
-   "pid": 734,
-   "tb": "",
-   "ts": 1793548945.561912
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2269,
-   "last_ts": 1793547127.1544602,
-   "msg": "Receptions: the model sits -4.1 points off Kalshi's mid over 499 rungs in 13 games",
-   "n": 1,
-   "path": "Receptions",
-   "pid": 686,
-   "tb": "",
-   "ts": 1793547127.1544602
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2268,
-   "last_ts": 1793545310.8510444,
-   "msg": "Receptions: the model sits -4.0 points off Kalshi's mid over 484 rungs in 13 games",
-   "n": 1,
-   "path": "Receptions",
-   "pid": 686,
-   "tb": "",
-   "ts": 1793545310.8510444
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2267,
-   "last_ts": 1793541631.8899267,
-   "msg": "Receptions: the model sits -4.0 points off Kalshi's mid over 464 rungs in 13 games",
-   "n": 1,
-   "path": "Receptions",
-   "pid": 686,
-   "tb": "",
-   "ts": 1793541631.8899267
   }
  ],
- "generated_at": 1794144012.7618701,
+ "generated_at": 1794170725.2159598,
  "summary": [
   {
    "code": "NFL-DRIFT",
-   "first_ts": 1793541631.8899267,
-   "last_msg": "Receptions: the model sits -4.1 points off Kalshi's mid over 297 rungs in 14 games",
-   "last_ts": 1794112894.0803099,
-   "n": 282,
-   "variants": 206
+   "first_ts": 1793566105.7049785,
+   "last_msg": "Rush Yds: the model sits -4.1 points off Kalshi's mid over 189 rungs in 6 games",
+   "last_ts": 1794166998.301147,
+   "n": 268,
+   "variants": 197
   },
   {
    "code": "KAL-candles",
-   "first_ts": 1793551250.0329378,
+   "first_ts": 1793611498.6563447,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
    "last_ts": 1793963582.1288376,
-   "n": 8,
-   "variants": 3
-  },
-  {
-   "code": "DK-contest",
-   "first_ts": 1793548715.405353,
-   "last_msg": "HTTPError: HTTP Error 403: Forbidden",
-   "last_ts": 1793549089.877849,
-   "n": 2,
-   "variants": 1
+   "n": 7,
+   "variants": 2
   },
   {
    "code": "MXR-grade-fetch",
@@ -2390,26 +2239,10 @@
    "variants": 1
   },
   {
-   "code": "DK-lobby-empty",
-   "first_ts": 1793551358.283977,
-   "last_msg": "mlb: lobby answered with no draft groups",
-   "last_ts": 1793551358.283977,
-   "n": 1,
-   "variants": 1
-  },
-  {
    "code": "MXR-params",
    "first_ts": 1793632638.9373047,
    "last_msg": "TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', \"import os\\ntry:\\n    os.nice(10)\\nexcept (AttributeError, OSError):\\n    pass\\nimport sys, pickle, importlib\\n_out = os.fdopen(os.dup(1), 'wb')\\nos.dup2(2, 1)\\nsys.stdout = sys.stderr\\na, kw = pickle.loads(sys.stdin.buffer.read())\\n_out.write(pickle.dumps(getattr(importlib.import_module('calibrate'), 'write_params')(*a, **kw)))\\n_out.flush()\"]' timed out after 1800 seconds",
    "last_ts": 1793632638.9373047,
-   "n": 1,
-   "variants": 1
-  },
-  {
-   "code": "TOURN-attempt",
-   "first_ts": 1793551200.1663427,
-   "last_msg": "dg 153728 (schedule): no contest of $1,000,000+ with a payout table and a field size",
-   "last_ts": 1793551200.1663427,
    "n": 1,
    "variants": 1
   }
