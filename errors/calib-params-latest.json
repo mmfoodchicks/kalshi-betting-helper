@@ -53,10 +53,10 @@
  "commit": "9cb2a126e9c7",
  "models": {
   "cfb": [
-   0.8,
+   0.85,
    0.5,
    0.0,
-   430
+   458
   ],
   "mlb_bases": [
    1.06,
@@ -158,7 +158,7 @@
    0.67,
    0.5,
    0.0,
-   37272
+   37494
   ],
   "ufc": [
    1.0,
@@ -174,17 +174,17 @@
   ]
  },
  "mx": {
-  "fitted_ts": 1794116216,
+  "fitted_ts": 1794139135,
   "nba": {
    "ast": {
     "a": 0.0,
     "b": 1.0,
     "days": 9,
     "family": "identity",
-    "fitted_ts": 1794116216,
+    "fitted_ts": 1794139135,
     "gain": null,
-    "n": 2497,
-    "n_eff": 707.0,
+    "n": 2611,
+    "n_eff": 737.0,
     "se": null,
     "why": "below the floors"
    },
@@ -193,10 +193,10 @@
     "b": 1.0,
     "days": 9,
     "family": "identity",
-    "fitted_ts": 1794116216,
+    "fitted_ts": 1794139135,
     "gain": null,
-    "n": 3351,
-    "n_eff": 718.0,
+    "n": 3531,
+    "n_eff": 755.0,
     "se": null,
     "why": "below the floors"
    },
@@ -205,10 +205,10 @@
     "b": 1.0,
     "days": 9,
     "family": "identity",
-    "fitted_ts": 1794116216,
+    "fitted_ts": 1794139135,
     "gain": null,
-    "n": 1821,
-    "n_eff": 598.0,
+    "n": 1925,
+    "n_eff": 632.0,
     "se": null,
     "why": "below the floors"
    },
@@ -217,10 +217,10 @@
     "b": 1.0,
     "days": 9,
     "family": "identity",
-    "fitted_ts": 1794116216,
+    "fitted_ts": 1794139135,
     "gain": null,
-    "n": 2873,
-    "n_eff": 838.0,
+    "n": 3011,
+    "n_eff": 879.0,
     "se": null,
     "why": "below the floors"
    },
@@ -229,10 +229,10 @@
     "b": 1.0,
     "days": 9,
     "family": "identity",
-    "fitted_ts": 1794116216,
+    "fitted_ts": 1794139135,
     "gain": null,
-    "n": 3347,
-    "n_eff": 813.0,
+    "n": 3514,
+    "n_eff": 854.0,
     "se": null,
     "why": "below the floors"
    }
@@ -243,7 +243,7 @@
     "b": 1.0,
     "days": 4,
     "family": "identity",
-    "fitted_ts": 1794116216,
+    "fitted_ts": 1794139135,
     "gain": null,
     "n": 268,
     "n_eff": 30.0,
@@ -255,7 +255,7 @@
     "b": 1.0,
     "days": 4,
     "family": "identity",
-    "fitted_ts": 1794116216,
+    "fitted_ts": 1794139135,
     "gain": null,
     "n": 1203,
     "n_eff": 191.0,
@@ -267,7 +267,7 @@
     "b": 1.0,
     "days": 4,
     "family": "identity",
-    "fitted_ts": 1794116216,
+    "fitted_ts": 1794139135,
     "gain": null,
     "n": 1852,
     "n_eff": 192.0,
@@ -279,7 +279,7 @@
     "b": 1.0,
     "days": 4,
     "family": "identity",
-    "fitted_ts": 1794116216,
+    "fitted_ts": 1794139135,
     "gain": null,
     "n": 825,
     "n_eff": 98.0,
@@ -291,7 +291,7 @@
     "b": 1.0,
     "days": 4,
     "family": "identity",
-    "fitted_ts": 1794116216,
+    "fitted_ts": 1794139135,
     "gain": null,
     "n": 525,
     "n_eff": 287.0,
@@ -304,42 +304,42 @@
     "ast": {
      "days": 9,
      "decided": null,
-     "diff": 0.014687490788837696,
-     "games": 68,
-     "n": 1821,
-     "se": 0.007188099099881888
+     "diff": 0.01690747964818057,
+     "games": 71,
+     "n": 1916,
+     "se": 0.0071366793189694445
     },
     "fg3m": {
      "days": 9,
      "decided": null,
-     "diff": 0.002570979163953308,
-     "games": 68,
-     "n": 2366,
-     "se": 0.004505007562878437
+     "diff": 0.0037100727852185855,
+     "games": 71,
+     "n": 2510,
+     "se": 0.004387995437380631
     },
     "pra": {
      "days": 9,
      "decided": null,
-     "diff": 0.02316879114057069,
-     "games": 68,
-     "n": 1171,
-     "se": 0.008155685129864728
+     "diff": 0.026447828662939415,
+     "games": 71,
+     "n": 1247,
+     "se": 0.00794865649769826
     },
     "pts": {
      "days": 9,
      "decided": null,
-     "diff": 0.020509505683437138,
-     "games": 68,
-     "n": 2528,
-     "se": 0.004830744154292335
+     "diff": 0.020778362174344815,
+     "games": 71,
+     "n": 2661,
+     "se": 0.004602396511898592
     },
     "reb": {
      "days": 9,
      "decided": null,
-     "diff": 0.00766484157848417,
-     "games": 68,
-     "n": 2406,
-     "se": 0.003686876851953632
+     "diff": 0.008435663750025944,
+     "games": 71,
+     "n": 2535,
+     "se": 0.0036621357757030135
     }
    },
    "nfl": {
@@ -409,10 +409,10 @@
    "weight": 0.0
   },
   "ufc": {
-   "at": 1794099639.9714904,
+   "at": 1794116352.987133,
    "n": 299,
    "weight": 0.05
   }
  },
- "ts": 1794116216.5743232
+ "ts": 1794139135.330186
 }

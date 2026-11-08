@@ -1,24 +1,8 @@
 {
  "boards": [
   {
-   "age_s": 14371,
-   "built_ts": 1794103066,
-   "contest": "NFL $2.5M MEGA Millionaire [$1M to 1st]",
-   "dg": 155994,
-   "ends_ts": 1794189600,
-   "entries": 634,
-   "entry_fee": 4444.0,
-   "kind": "classic",
-   "label": "Sunday main (11 games)",
-   "n_contests": 3,
-   "pick": false,
-   "starts": "2026-11-08T18:00:00.0000000Z",
-   "teams": null,
-   "worlds": 180000
-  },
-  {
-   "age_s": 37917,
-   "built_ts": 1794079519,
+   "age_s": 18728,
+   "built_ts": 1794125283,
    "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (BUF @ MIN)",
    "dg": 156014,
    "ends_ts": 1794287700,
@@ -35,7 +19,23 @@
    "worlds": 60000
   },
   {
-   "age_s": 78298,
+   "age_s": 40945,
+   "built_ts": 1794103066,
+   "contest": "NFL $2.5M MEGA Millionaire [$1M to 1st]",
+   "dg": 155994,
+   "ends_ts": 1794189600,
+   "entries": 634,
+   "entry_fee": 4444.0,
+   "kind": "classic",
+   "label": "Sunday main (11 games)",
+   "n_contests": 3,
+   "pick": false,
+   "starts": "2026-11-08T18:00:00.0000000Z",
+   "teams": null,
+   "worlds": 180000
+  },
+  {
+   "age_s": 104871,
    "built_ts": 1794039138,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (TB @ CHI)",
    "dg": 156013,
@@ -53,7 +53,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 192229,
+   "age_s": 218802,
    "built_ts": 1793925205,
    "contest": "NFL Showdown $1.25M Thursday Night Showdown [$300K to 1st] (JAX @ BAL)",
    "dg": 156000,
@@ -71,7 +71,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 451094,
+   "age_s": 477668,
    "built_ts": 1793666342,
    "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (CHI @ SEA)",
    "dg": 155609,
@@ -89,7 +89,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 535794,
+   "age_s": 562368,
    "built_ts": 1793581643,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (PHI @ WAS)",
    "dg": 155951,
@@ -107,7 +107,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 567486,
+   "age_s": 594060,
    "built_ts": 1793549951,
    "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st, $50K Crown Cash Throne Eligible]",
    "dg": 153728,
