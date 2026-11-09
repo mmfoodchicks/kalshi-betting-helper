@@ -1,7 +1,25 @@
 {
  "boards": [
   {
-   "age_s": 21158,
+   "age_s": 3054,
+   "built_ts": 1794259639,
+   "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (BUF @ MIN)",
+   "dg": 156014,
+   "ends_ts": 1794287700,
+   "entries": 73529,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "BUF vs MIN",
+   "pick": false,
+   "starts": "2026-11-10T01:15:00.0000000Z",
+   "teams": [
+    "BUF",
+    "MIN"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 78597,
    "built_ts": 1794184099,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (TB @ CHI)",
    "dg": 156013,
@@ -19,7 +37,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 47019,
+   "age_s": 104458,
    "built_ts": 1794158240,
    "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 155994,
@@ -35,25 +53,7 @@
    "worlds": 180000
   },
   {
-   "age_s": 79975,
-   "built_ts": 1794125283,
-   "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (BUF @ MIN)",
-   "dg": 156014,
-   "ends_ts": 1794287700,
-   "entries": 73529,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "BUF vs MIN",
-   "pick": false,
-   "starts": "2026-11-10T01:15:00.0000000Z",
-   "teams": [
-    "BUF",
-    "MIN"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 280050,
+   "age_s": 337489,
    "built_ts": 1793925205,
    "contest": "NFL Showdown $1.25M Thursday Night Showdown [$300K to 1st] (JAX @ BAL)",
    "dg": 156000,
@@ -71,7 +71,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 538915,
+   "age_s": 596354,
    "built_ts": 1793666342,
    "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (CHI @ SEA)",
    "dg": 155609,
@@ -89,7 +89,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 623615,
+   "age_s": 681054,
    "built_ts": 1793581643,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (PHI @ WAS)",
    "dg": 155951,
@@ -105,22 +105,6 @@
     "WAS"
    ],
    "worlds": 60000
-  },
-  {
-   "age_s": 655307,
-   "built_ts": 1793549951,
-   "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st, $50K Crown Cash Throne Eligible]",
-   "dg": 153728,
-   "ends_ts": 1793584800,
-   "entries": 147058,
-   "entry_fee": 20.0,
-   "kind": "classic",
-   "label": "Sunday main (11 games)",
-   "n_contests": 1,
-   "pick": false,
-   "starts": "2026-11-01T18:00:00.0000000Z",
-   "teams": null,
-   "worlds": 180000
   }
  ],
  "pending": [],

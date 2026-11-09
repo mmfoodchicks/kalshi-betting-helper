@@ -125,16 +125,16 @@
    4604
   ],
   "nba": [
-   1.0,
+   0.885,
    0.5,
    0.0,
-   216
+   230
   ],
   "nfl": [
-   0.846,
+   0.838,
    0.5,
    0.0,
-   192
+   202
   ],
   "nfl_pre": [
    1.0,
@@ -146,7 +146,7 @@
    1.0,
    0.5,
    0.0,
-   328
+   336
   ],
   "prop": [
    1.0,
@@ -158,7 +158,7 @@
    0.67,
    0.5,
    0.0,
-   37686
+   38166
   ],
   "ufc": [
    1.0,
@@ -174,65 +174,65 @@
   ]
  },
  "mx": {
-  "fitted_ts": 1794184302,
+  "fitted_ts": 1794252921,
   "nba": {
    "ast": {
     "a": 0.0,
     "b": 1.0,
-    "days": 9,
+    "days": 10,
     "family": "identity",
-    "fitted_ts": 1794184302,
+    "fitted_ts": 1794252921,
     "gain": null,
-    "n": 2615,
-    "n_eff": 738.0,
+    "n": 2900,
+    "n_eff": 819.0,
     "se": null,
     "why": "below the floors"
    },
    "fg3m": {
     "a": 0.0,
     "b": 1.0,
-    "days": 9,
+    "days": 10,
     "family": "identity",
-    "fitted_ts": 1794184302,
+    "fitted_ts": 1794252921,
     "gain": null,
-    "n": 3531,
-    "n_eff": 755.0,
+    "n": 3887,
+    "n_eff": 829.0,
     "se": null,
     "why": "below the floors"
    },
    "pra": {
     "a": 0.0,
     "b": 1.0,
-    "days": 9,
+    "days": 10,
     "family": "identity",
-    "fitted_ts": 1794184302,
+    "fitted_ts": 1794252921,
     "gain": null,
-    "n": 1925,
-    "n_eff": 632.0,
+    "n": 2157,
+    "n_eff": 709.0,
     "se": null,
     "why": "below the floors"
    },
    "pts": {
     "a": 0.0,
     "b": 1.0,
-    "days": 9,
+    "days": 10,
     "family": "identity",
-    "fitted_ts": 1794184302,
+    "fitted_ts": 1794252922,
     "gain": null,
-    "n": 3011,
-    "n_eff": 879.0,
+    "n": 3316,
+    "n_eff": 972.0,
     "se": null,
     "why": "below the floors"
    },
    "reb": {
     "a": 0.0,
     "b": 1.0,
-    "days": 9,
+    "days": 10,
     "family": "identity",
-    "fitted_ts": 1794184302,
+    "fitted_ts": 1794252922,
     "gain": null,
-    "n": 3514,
-    "n_eff": 854.0,
+    "n": 3875,
+    "n_eff": 943.0,
     "se": null,
     "why": "below the floors"
    }
@@ -243,10 +243,10 @@
     "b": 1.0,
     "days": 5,
     "family": "identity",
-    "fitted_ts": 1794184302,
+    "fitted_ts": 1794252922,
     "gain": null,
-    "n": 416,
-    "n_eff": 46.0,
+    "n": 505,
+    "n_eff": 56.0,
     "se": null,
     "why": "below the floors"
    },
@@ -255,10 +255,10 @@
     "b": 1.0,
     "days": 5,
     "family": "identity",
-    "fitted_ts": 1794184302,
+    "fitted_ts": 1794252922,
     "gain": null,
-    "n": 1854,
-    "n_eff": 291.0,
+    "n": 2253,
+    "n_eff": 354.0,
     "se": null,
     "why": "below the floors"
    },
@@ -267,10 +267,10 @@
     "b": 1.0,
     "days": 5,
     "family": "identity",
-    "fitted_ts": 1794184302,
+    "fitted_ts": 1794252922,
     "gain": null,
-    "n": 2808,
-    "n_eff": 293.0,
+    "n": 3434,
+    "n_eff": 355.0,
     "se": null,
     "why": "below the floors"
    },
@@ -279,10 +279,10 @@
     "b": 1.0,
     "days": 5,
     "family": "identity",
-    "fitted_ts": 1794184302,
+    "fitted_ts": 1794252922,
     "gain": null,
-    "n": 1264,
-    "n_eff": 143.0,
+    "n": 1511,
+    "n_eff": 172.0,
     "se": null,
     "why": "below the floors"
    },
@@ -291,10 +291,10 @@
     "b": 1.0,
     "days": 5,
     "family": "identity",
-    "fitted_ts": 1794184302,
+    "fitted_ts": 1794252922,
     "gain": null,
-    "n": 800,
-    "n_eff": 437.0,
+    "n": 970,
+    "n_eff": 532.0,
     "se": null,
     "why": "below the floors"
    }
@@ -302,86 +302,94 @@
   "verdict": {
    "nba": {
     "ast": {
-     "days": 9,
-     "decided": null,
-     "diff": 0.016896283079204866,
-     "games": 71,
-     "n": 1919,
-     "se": 0.007122908145110127
+     "days": 10,
+     "decided": "market_better",
+     "diff": 0.015936473955574702,
+     "games": 78,
+     "market_ll": 0.5200663803595438,
+     "model_ll": 0.5360028543151182,
+     "n": 2122,
+     "se": 0.00652554594433834
     },
     "fg3m": {
-     "days": 9,
+     "days": 10,
      "decided": null,
-     "diff": 0.0037100727852185855,
-     "games": 71,
-     "n": 2510,
-     "se": 0.004387995437380631
+     "diff": 0.0037671980508668804,
+     "games": 78,
+     "n": 2763,
+     "se": 0.004047298486053994
     },
     "pra": {
-     "days": 9,
-     "decided": null,
-     "diff": 0.026447828662939415,
-     "games": 71,
-     "n": 1247,
-     "se": 0.00794865649769826
+     "days": 10,
+     "decided": "market_better",
+     "diff": 0.02400241724113359,
+     "games": 78,
+     "market_ll": 0.6106102453771458,
+     "model_ll": 0.6346126626182795,
+     "n": 1399,
+     "se": 0.007522247049600579
     },
     "pts": {
-     "days": 9,
-     "decided": null,
-     "diff": 0.020778362174344815,
-     "games": 71,
-     "n": 2661,
-     "se": 0.004602396511898592
+     "days": 10,
+     "decided": "market_better",
+     "diff": 0.019683586682824262,
+     "games": 78,
+     "market_ll": 0.5115745411764872,
+     "model_ll": 0.5312581278593114,
+     "n": 2929,
+     "se": 0.00423991711965467
     },
     "reb": {
-     "days": 9,
-     "decided": null,
-     "diff": 0.008435663750025944,
-     "games": 71,
-     "n": 2535,
-     "se": 0.0036621357757030135
+     "days": 10,
+     "decided": "market_better",
+     "diff": 0.008944023416708358,
+     "games": 78,
+     "market_ll": 0.5039806719082518,
+     "model_ll": 0.5129246953249602,
+     "n": 2788,
+     "se": 0.0034811399114256366
     }
    },
    "nfl": {
     "pass_yd": {
      "days": 5,
      "decided": null,
-     "diff": 0.024463073660554776,
-     "games": 23,
-     "n": 408,
-     "se": 0.021937176811649813
+     "diff": 0.02541060648050352,
+     "games": 28,
+     "n": 492,
+     "se": 0.018339830706280397
     },
     "rec": {
      "days": 5,
      "decided": null,
-     "diff": 0.02207532903573139,
-     "games": 23,
-     "n": 1413,
-     "se": 0.010853917253747802
+     "diff": 0.020168349915434963,
+     "games": 28,
+     "n": 1681,
+     "se": 0.009952386193247429
     },
     "rec_yd": {
      "days": 5,
      "decided": null,
-     "diff": 0.022082009358272578,
-     "games": 23,
-     "n": 2371,
-     "se": 0.011200904063144003
+     "diff": 0.018145908400071242,
+     "games": 28,
+     "n": 2853,
+     "se": 0.01086789074118751
     },
     "rush_yd": {
      "days": 5,
      "decided": null,
-     "diff": 0.052160613242044185,
-     "games": 23,
-     "n": 1102,
-     "se": 0.024136846965955226
+     "diff": 0.04071013115860146,
+     "games": 28,
+     "n": 1322,
+     "se": 0.020841315189365963
     },
     "td": {
      "days": 5,
      "decided": null,
-     "diff": 0.012062382037200692,
-     "games": 23,
-     "n": 774,
-     "se": 0.005246206477625177
+     "diff": 0.012469624341394755,
+     "games": 28,
+     "n": 939,
+     "se": 0.004696721173936725
     }
    }
   }
@@ -409,10 +417,10 @@
    "weight": 0.0
   },
   "ufc": {
-   "at": 1794116352.987133,
+   "at": 1794203445.6420982,
    "n": 299,
    "weight": 0.05
   }
  },
- "ts": 1794184302.650225
+ "ts": 1794252921.4995933
 }
