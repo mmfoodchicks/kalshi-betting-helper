@@ -128,6 +128,67 @@ process.stdout.write(JSON.stringify({dflt, best, ev, p, edg, asc, nef, fit, astO
     return fo_ok, fo_out
 
 
+def _mx_proven_check(js):
+    """The Proven view on the real functions under node: (ok, out), ok None where node is absent. The
+    owner (2026-11-10): "Christian mccafrey, anytime TD 7/7 ... the next player would be 0/7 ... then 6/7 and so
+    on just the best bets week to week that seem to always or never hit. Based on kalshi"."""
+    ok, out = None, ""
+    try:
+        import shutil
+        import subprocess
+        if shutil.which("node"):
+            h = ("const $ = () => null;\n" + js + "\n" + r"""
+const L = (k, hits, n, ya, na, p, listed) => ({k, p, p_lo: p - 0.02, p_hi: p + 0.02, labels: [],
+  market: listed === false ? null : {yes_ask: ya, no_ask: na}, hit_season: n ? {hits, n} : undefined});
+const P = (id, name, gid, markets) => ({player_id: id, name, team: 'T' + id, opp: 'O' + id, game_id: gid, markets});
+const d = {status: 'ok', games: [{game_id: 'g1', away: 'A', home: 'B'}], players: [
+  P('1', 'Cmc', 'g1', [{stat: 'td', lines: [L(1, 7, 7, 78, 24, 0.70)]},
+    {stat: 'rush_yd', lines: [L(40, 7, 7, 93, 9, 0.9), L(60, 7, 7, 75, 27, 0.72), L(70, 6, 7, 62, 40, 0.6),
+                              L(100, 0, 7, 20, 82, 0.2), L(150, 0, 7, 4, 97, 0.03)]}]),
+  P('2', 'Dry', 'g1', [{stat: 'td', lines: [L(1, 0, 7, 22, 80, 0.2)]}]),
+  P('3', 'Six', 'g1', [{stat: 'td', lines: [L(1, 6, 7, 70, 32, 0.66)]}]),
+  P('4', 'One', 'g1', [{stat: 'td', lines: [L(1, 1, 7, 30, 72, 0.25)]}]),
+  P('5', 'Mid', 'g1', [{stat: 'td', lines: [L(1, 4, 8, 50, 52, 0.5)]}]),
+  P('6', 'New', 'g1', [{stat: 'td', lines: [L(1, 3, 3, 60, 42, 0.6)]}]),            // three games: under the default floor
+  P('7', 'Off', 'g1', [{stat: 'td', lines: [L(1, 9, 9, 60, 42, 0.6, false)]}]),     // 9/9 but Kalshi lists no line
+  P('8', '<img src=x onerror=alert(1)>', 'g1', [{stat: 'td', lines: [L(1, 5, 5, 66, 36, 0.6)]}])]};
+_mx.data = d; _mx.stat = ''; _mx.game = ''; _mx.fold = true; _mx.minGames = 5;
+const rows = (html) => [...html.matchAll(/data-mx="open" data-val="[^"]*">([^<]*)<\/a>[\s\S]*?<td>([A-Za-z+ ]+?) (\d+)\+(?: <span[^>]*>\+(\d+) more<\/span>)?<\/td>\s*<td[^>]*><b[^>]*>(\d+)\/(\d+)<\/b>[\s\S]*?<td[^>]*><span[^>]*>(YES|NO)<\/span> <b>([^<]*)<\/b>/g)]
+  .map((m) => `${m[1].replace(/&lt;.*/, 'Esc')} ${m[2]} ${m[3]} ${m[5]}/${m[6]} ${m[7]} ${m[8]}${m[4] ? ' +' + m[4] : ''}`);
+const h0 = mxProvenView(d); const folded = rows(h0);
+_mx.fold = false; const all = rows(mxProvenView(d)); _mx.fold = true;
+_mx.minGames = 3; const three = rows(mxProvenView(d)).filter((r) => r.startsWith('New')); _mx.minGames = 5;
+_mx.stat = 'rush_yd'; const rush = rows(mxProvenView(d)); _mx.stat = '';
+globalThis.mxRender = () => {};
+const pick = (value) => _mxChange({target: {closest: () => ({dataset: {mx: 'mingames'}, value})}});
+pick('8'); const m8 = _mx.minGames; pick('<img>'); const mBad = _mx.minGames; _mx.minGames = 5;
+const old = mxProvenView({status: 'ok', games: [], players: [P('9', 'Old', 'g1', [{stat: 'td', lines: [L(1, 0, 0, 50, 52, 0.5)]}])]});
+_mx.minGames = 8; _mx.stat = 'rush_yd'; const short = mxProvenView(d); _mx.minGames = 5; _mx.stat = '';
+process.stdout.write(JSON.stringify({folded, all, three, rush, m8, mBad, raw: h0.includes('<img src=x'),
+  tab: /data-mx="view" data-val="proven"/.test(String(initMatchups)), note: h0.match(/(\d+) other lines? folded/)[1], fits: !/min-width/.test(h0.slice(h0.indexOf('<table'))),
+  oldMsg: /built before this view existed/.test(old), shortMsg: /has 8\+ games this season/.test(short)}));
+""")
+            r = subprocess.run(["node", "-e", h], capture_output=True, text=True, timeout=30)
+            o = json.loads(r.stdout) if r.returncode == 0 and r.stdout else None
+            out = r.stdout[:1500] + r.stderr[-500:]
+            ok = bool(o) \
+                and o["folded"] == ["Cmc Rush Yds 60 7/7 YES 75¢ +4", "Cmc Anytime TD 1 7/7 YES 78¢", "Dry Anytime TD 1 0/7 NO 80¢",
+                                    "Esc Anytime TD 1 5/5 YES 66¢", "Six Anytime TD 1 6/7 YES 70¢", "One Anytime TD 1 1/7 NO 72¢",
+                                    "Mid Anytime TD 1 4/8 YES 50¢"] \
+                and o["all"][:3] == ["Cmc Rush Yds 60 7/7 YES 75¢", "Cmc Anytime TD 1 7/7 YES 78¢", "Cmc Rush Yds 40 7/7 YES 93¢"] \
+                and o["all"][3:6] == ["Dry Anytime TD 1 0/7 NO 80¢", "Cmc Rush Yds 100 0/7 NO 82¢", "Cmc Rush Yds 150 0/7 NO 97¢"] \
+                and o["all"][6:] == ["Esc Anytime TD 1 5/5 YES 66¢", "Cmc Rush Yds 70 6/7 YES 62¢", "Six Anytime TD 1 6/7 YES 70¢",
+                                     "One Anytime TD 1 1/7 NO 72¢", "Mid Anytime TD 1 4/8 YES 50¢"] \
+                and len(o["all"]) == 11 and not any(x.startswith(("New", "Off")) for x in o["all"]) \
+                and o["three"] == ["New Anytime TD 1 3/3 YES 60¢"] \
+                and o["rush"] == ["Cmc Rush Yds 60 7/7 YES 75¢ +4"] \
+                and o["m8"] == 8 and o["mBad"] == 5 and o["raw"] is False and o["tab"] is True \
+                and str(o["note"]) == "4" and o["fits"] is True and o["oldMsg"] and o["shortMsg"]
+    except Exception as e:
+        ok, out = False, repr(e)
+    return ok, out
+
+
 def _fake_d(calls, load_season, default_seasons=None, daily_raises=False, build_raises=()):
     """A stand-in nfl_matchup_data for the deep job: records each refresh as ("D", seasons, keep_raw).
     `build_raises`: seasons whose build fails AFTER their files were downloaded."""
@@ -685,6 +746,42 @@ def run(ck):
        "are never merged, a chip or a stat filter folds what it keeps (the strong-fit chip shows the 8+ that carries "
        "it), the box unticked shows every rung, and the choice is stored and refuses a non-boolean",
        fo_ok is not False, str((fo_ok, fo_out)))
+    # The owner (2026-11-10): the Proven view -- each Kalshi line's record in his games this season.
+    pv_ok, pv_out = _mx_proven_check(js)
+    import nfl_matchup as _NM_pv
+    import nba_matchup_data as _ND_pv
+    import nba_matchup_profiles as _NP_pv
+    gm = lambda season, week: (1.0, None, {"season": season, "week": week}, None, None)
+    g_pv = [gm(2025, 17), gm(2025, 18), gm(2026, 1), gm(2026, 2), gm(2026, 3)]
+    st_pv = [{"td": 2}, {"td": 0}, {"td": 1}, {"td": 0}, {"td": 3}]
+    sh_pv = (_NM_pv.season_hits(g_pv, st_pv, "td", 1, 2026), _NM_pv.season_hits(g_pv, st_pv, "td", 2, 2026),
+             _NM_pv.season_hits(g_pv, st_pv, "td", 1, 2027), _NM_pv.season_hits(g_pv, st_pv, "td", 1, None),
+             _NM_pv.season_hits(g_pv, st_pv, "rec", 1, 2026), _NM_pv._hits(g_pv, "td", 1, stats=st_pv)[0])
+    slim_pv = matchups._slim_line({"k": 1, "p": 0.5, "hit_season": {"hits": 2, "n": 3, "x": 9}, "hit_all": {"hits": 4, "n": 5},
+                                   "market": None})
+    nba_src_pv = inspect.getsource(__import__("nba_matchup").player_payload)
+    nfl_src_pv = inspect.getsource(_NM_pv)
+    ck("Matchups tab (Proven, the owner 2026-11-10): every line Kalshi lists with how often the player cleared it in "
+       "his games THIS season, the most one-sided first -- 7/7 and 0/7 (the always before the never), then 6/7 and "
+       "1/7 -- the side the record points to with Kalshi's ask for it and the model's chance beside it; a line "
+       "Kalshi does not list and a record under the games floor (5, or the 3 / 8 the menu offers, a bad value "
+       "refused) are left out; one line per player and stat by default, the most one-sided and then the CHEAPER ask "
+       "(the 60+ he cleared every game at 75c over the 40+ at 93c and the 100+ he never reached at 82c), the rest "
+       "counted; a hostile name is escaped; an old board says it carries no records; the table has no minimum width "
+       "(five narrow columns on a phone: the first version pushed the bet and the model off the screen)",
+       pv_ok is not False and 'data-val="proven">' in js and "mxProvenView(d)" in js, str((pv_ok, pv_out)))
+    ck("...and the record is this season's alone: the NFL count reads only the games whose record carries the "
+       "board's season (hit_all still spans the back seasons), nothing without a season or a game in it; the NBA "
+       "count reads the games from that season's August on (the logs hold last season too); the index keeps the two "
+       "numbers and nothing else of it",
+       sh_pv[:5] == ({"hits": 2, "n": 3}, {"hits": 1, "n": 3}, None, None, None) and sh_pv[5] == {"hits": 3, "n": 5}
+       and slim_pv.get("hit_season") == {"hits": 2, "n": 3} and "hit_all" not in slim_pv
+       and nfl_src_pv.count('"hit_season": season_hits(hist, gstats, sname, k, season)') == 2
+       and "season=season))" in nfl_src_pv and "now, season=season)" in nfl_src_pv
+       and 'szn0 = M._day(f"{D.season_of(day)}-08-01")' in nba_src_pv and "if h[0] >= szn0]" in nba_src_pv
+       and '"hit_season": ({"hits": sum(1 for v in vals_szn if v >= k), "n": len(vals_szn)}' in nba_src_pv
+       and _ND_pv.season_of("2026-11-10") == 2026 and _ND_pv.season_of("2027-04-02") == 2026
+       and _NP_pv._day("2026-04-10") < _NP_pv._day("2026-08-01") <= _NP_pv._day("2026-10-21"), str(sh_pv))
     css = open(os.path.join(_ROOT, "static", "style.css")).read()
     root_css = re.search(r":root\s*\{([^}]*)\}", css)
     tok = dict(re.findall(r"--([\w-]+):\s*(#[0-9a-fA-F]{6})\s*;", root_css.group(1))) if root_css else {}
@@ -715,9 +812,10 @@ def run(ck):
        and re.search(r'<a href="#" data-mx="open" data-val="\$\{_mxEsc\(r\.p\.player_id\)\}">', js) is not None,
        str((ratios, a_rule.group(0) if a_rule else None)))
     labs = re.findall(r'<label style="(display:inline-flex[^"]*)"><input type="checkbox" data-mx="(\w+)"', js)
-    ck("Matchups tab: the scanner's two checkboxes sit BESIDE their text -- style.css's global label rule is a column "
-       "(label { display: flex; flex-direction: column }), and an inline display alone left each box above its words",
-       sorted(m for _st, m in labs) == ["fold", "listed"] and all("flex-direction:row" in st for st, _m in labs)
+    ck("Matchups tab: the scanner's two checkboxes and the Proven view's sit BESIDE their text -- style.css's global "
+       "label rule is a column (label { display: flex; flex-direction: column }), and an inline display alone left "
+       "each box above its words",
+       sorted(m for _st, m in labs) == ["fold", "fold", "listed"] and all("flex-direction:row" in st for st, _m in labs)
        and re.search(r"(?m)^label \{[^}]*flex-direction: column", css) is not None, str(labs))
     ck("Matchups tab (F18/F17): a line the record impeaches (market_better) has its EV muted, never bold, and ranked "
        "with the thin books; the chip's tooltip prints the record it rests on (season, n, both log losses)",

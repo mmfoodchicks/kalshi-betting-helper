@@ -21,7 +21,7 @@
 // does not stop a quote from ending the string (the Fable review's B1 ran an
 // alert() through a player id that way, 2026-10-23).
 let _mx = { sport: "nfl", date: "", data: null, err: "", view: "scan", player: "", cmp: ["", ""],
-  label: "", stat: "", game: "", listed: true, fold: true, sort: "best", dir: -1, side: "best", open: {}, full: {}, retry: null, tries: 0 };
+  label: "", stat: "", game: "", listed: true, fold: true, minGames: 5, sort: "best", dir: -1, side: "best", open: {}, full: {}, retry: null, tries: 0 };
 // The owner's sort menu and side picker (2026-10-23): "Best picks" ranks the
 // believable +EV lines by their EV at the CAUTIOUS end of the model's band
 // (the EV itself where the engine has no band), thin books and lines the
@@ -207,7 +207,7 @@ function initMatchups() {
         <button class="subtab" data-mx="sport" data-val="nfl">🏈 NFL</button><button class="subtab" data-mx="sport" data-val="nba">🏀 NBA</button>
       </div>
       <div class="subtabs">
-        <button class="subtab" data-mx="view" data-val="scan">📈 Opportunities</button><button class="subtab" data-mx="view" data-val="player">🧩 Player</button><button class="subtab" data-mx="view" data-val="cmp">⚖️ Compare</button><button class="subtab" data-mx="view" data-val="record">📒 Record</button>
+        <button class="subtab" data-mx="view" data-val="scan">📈 Opportunities</button><button class="subtab" data-mx="view" data-val="proven">✅ Proven</button><button class="subtab" data-mx="view" data-val="player">🧩 Player</button><button class="subtab" data-mx="view" data-val="cmp">⚖️ Compare</button><button class="subtab" data-mx="view" data-val="record">📒 Record</button>
       </div>
       <input id="mxDate" type="date" style="width:auto" data-mx="date"/>
     </div>
@@ -251,6 +251,7 @@ function _mxChange(e) {
   else if (act === "game") { _mx.game = el.value; mxRender(); }
   else if (act === "listed") { _mx.listed = !!el.checked; mxRender(); }
   else if (act === "fold") { _mx.fold = !!el.checked; _mxSave(); mxRender(); }
+  else if (act === "mingames") { _mx.minGames = _MX_MIN_GAMES.includes(Number(el.value)) ? Number(el.value) : 5; mxRender(); }
   else if (act === "pick") { _mx.player = el.value; mxRender(); _mxNeedPieces(); }
   else if (act === "cmp0" || act === "cmp1") { _mx.cmp[act === "cmp0" ? 0 : 1] = el.value; mxRender(); _mxNeedPieces(); }
 }
@@ -400,6 +401,7 @@ function mxRender() {
   if (_mx.view === "player") body.innerHTML = mxPlayerView();
   else if (_mx.view === "cmp") body.innerHTML = mxCompareView();
   else if (_mx.view === "record") body.innerHTML = mxRecordView();
+  else if (_mx.view === "proven") body.innerHTML = mxProvenView(d);
   else body.innerHTML = mxScanView(d);
 }
 
@@ -574,6 +576,99 @@ function mxScanView(d) {
     <div class="scroller" style="overflow-x:auto"><table class="small" style="border-collapse:collapse;width:100%;min-width:720px;text-align:right">
       <thead><tr><th style="text-align:left;min-width:150px">Player</th><th>Line</th>${th("p", "Model (side)")}<th>YES / NO ask</th>${th("edge", "vs market")}${th("ev", "EV")}${th("nef", "Similar n")}<th style="text-align:left">Labels</th></tr></thead>
       <tbody>${body || `<tr><td colspan="8" class="empty">No lines match.${_mx.hidden ? ` ${_mx.hidden} line${_mx.hidden === 1 ? " is" : "s are"} hidden by "only lines Kalshi lists" - Kalshi lists none of them on this board.` : ""}</td></tr>`}</tbody></table></div>${more}`;
+}
+
+// ---- Proven: each Kalshi line's record in his games this season ------------------
+// The owner (2026-11-10): "a section in the match up area ... that tells me the 'proven' hits ... Christian
+// mccafrey, anytime TD 7/7 ... the next player would be 0/7 because they haven't scored at all then 6/7 and so
+// on just the best bets week to week that seem to always or never hit. Based on kalshi, for both nfl and
+// basketball." Every line KALSHI LISTS on this board, with how often he cleared it in his games THIS season
+// (hit_season: box scores before this date, games he played), the most one-sided record first -- 7/7 and 0/7
+// together, then 6/7 and 1/7 -- and the side the record points to with Kalshi's ask for it. A record is what
+// happened, not a forecast, and the price already knows the streak: the model's figure and the ask sit beside
+// it, and the note says how often a merely good bet runs the table.
+const _MX_MIN_GAMES = [3, 5, 8];
+function _mxProvenRows(d) {
+  const rows = [];
+  const started = _mxStarted(d);
+  const minN = _MX_MIN_GAMES.includes(_mx.minGames) ? _mx.minGames : 5;
+  let carried = 0;
+  for (const p of d.players || []) {
+    if (started.has(String(p.game_id))) continue;
+    for (const m of p.markets || []) {
+      for (const l of m.lines || []) {
+        const h = l.hit_season;
+        if (!l.market || !h || !_mxOk(h.n) || !_mxOk(h.hits) || h.n <= 0) continue;      // Kalshi's lines only
+        carried += 1;
+        if (h.n < minN) continue;
+        const rate = h.hits / h.n, side = rate >= 0.5 ? "yes" : "no";
+        const ask = side === "yes" ? l.market.yes_ask : l.market.no_ask;
+        // how one-sided, as ONE division of whole numbers: 6/7 and 1/7 must tie exactly (rate - 0.5 differs in
+        // its last bit between them, and the never-hit row sorted above the always-hit one)
+        rows.push({ p, m, l, h, rate, side, ext: Math.abs(2 * h.hits - h.n) / (2 * h.n), ask: _mxOk(ask) ? ask : null });
+      }
+    }
+  }
+  return { rows, carried, minN };
+}
+// Of two lines, the one that says more: the more one-sided record, then the longer one, then the CHEAPER ask on
+// the side it points to (the tougher rung -- the highest he always cleared, the lowest he never reached), a line
+// with no ask last.
+function _mxProvenBetter(a, b) {
+  if (a.ext !== b.ext) return a.ext > b.ext;
+  if (a.h.n !== b.h.n) return a.h.n > b.h.n;
+  if ((a.ask == null) !== (b.ask == null)) return a.ask != null;
+  if (a.ask != null && a.ask !== b.ask) return a.ask < b.ask;
+  return a.side === "yes" ? Number(a.l.k) > Number(b.l.k) : Number(a.l.k) < Number(b.l.k);
+}
+function mxProvenView(d) {
+  const got = _mxProvenRows(d);
+  let rows = got.rows;
+  const stats = [...new Set(rows.map((r) => r.m.stat))];
+  const started = _mxStarted(d);
+  const games = (d.games || []).filter((g) => !started.has(String(g.game_id))).map((g) => [g.game_id, `${g.away} @ ${g.home}`]);
+  if (_mx.stat) rows = rows.filter((r) => String(r.m.stat) === _mx.stat);
+  if (_mx.game) rows = rows.filter((r) => String(r.p.game_id) === _mx.game);
+  let folded = 0;
+  if (_mx.fold) {
+    const top = new Map();
+    for (const r of rows) {
+      const g = _mxGroup(r), t = top.get(g);
+      if (!t) { top.set(g, { r, n: 1 }); continue; }
+      t.n += 1;
+      if (_mxProvenBetter(r, t.r)) t.r = r;
+    }
+    folded = rows.length - top.size;
+    rows = [...top.values()].map((t) => Object.assign(t.r, { more: t.n - 1 }));
+  }
+  // 7/7 and 0/7 first (the always before the never), then 6/7 and 1/7 ...; the longer record, then the cheaper ask
+  rows.sort((a, b) => (b.ext - a.ext) || (b.h.n - a.h.n) || (b.rate - a.rate)
+    || ((a.ask == null ? 1e9 : a.ask) - (b.ask == null ? 1e9 : b.ask)));
+  const body = rows.slice(0, _MX_CAP).map((r) => {
+    const sp = _mxSideP(r.l, r.side);
+    const col = r.side === "yes" ? "var(--yes)" : "var(--no)";
+    // five narrow columns that fit a phone (the scanner's eight scroll sideways): the team under the name,
+    // the record alone -- its colour is the side, green cleared, red missed
+    return `<tr style="border-top:1px solid var(--line,#333)">
+      <td style="text-align:left;padding:3px 0"><a href="#" data-mx="open" data-val="${_mxEsc(r.p.player_id)}">${_mxEsc(r.p.name)}</a><span class="small" style="display:block;color:var(--muted)">${_mxEsc(r.p.pos || "")} ${_mxEsc(r.p.team)} v ${_mxEsc(r.p.opp)}</span></td>
+      <td>${_mxEsc(_mxStat(r.m.stat))} ${_mxEsc(r.l.k)}+${r.more ? ` <span class="small" style="color:var(--muted);white-space:nowrap">+${Number(r.more)} more</span>` : ""}</td>
+      <td style="white-space:nowrap;padding-left:8px"><b style="color:${col}">${Number(r.h.hits)}/${Number(r.h.n)}</b></td>
+      <td style="white-space:nowrap;padding-left:8px"><span class="small" style="color:var(--muted)">${_mxSide(r.side)}</span> <b>${_mxCents(r.ask)}</b></td>
+      <td style="padding-left:8px">${_mxPct(sp.p)}</td></tr>`;
+  }).join("");
+  const more = rows.length > _MX_CAP ? `<div class="small" style="color:var(--muted)">Showing the first ${_MX_CAP} of ${rows.length} - filter by stat or game to see the rest.</div>` : "";
+  const none = !got.carried
+    ? "This board carries no season records yet: it was built before this view existed, and the next build has them."
+    : `No line Kalshi lists has ${got.minN}+ games this season here - lower "games" to see shorter records.`;
+  return `<div class="small" style="margin-bottom:6px"><select data-mx="stat" style="width:auto;padding:2px 4px"><option value="">every stat</option>${stats.map((s) => `<option value="${_mxEsc(s)}"${_mx.stat === String(s) ? " selected" : ""}>${_mxEsc(_mxStat(s))}</option>`).join("")}</select>
+      <select data-mx="game" style="width:auto;padding:2px 4px"><option value="">every game</option>${games.map(([id, t]) => `<option value="${_mxEsc(id)}"${_mx.game === String(id) ? " selected" : ""}>${_mxEsc(t)}</option>`).join("")}</select>
+      games: <select data-mx="mingames" style="width:auto;padding:2px 4px">${_MX_MIN_GAMES.map((n) => `<option value="${n}"${got.minN === n ? " selected" : ""}>${n}+</option>`).join("")}</select>
+      <label style="display:inline-flex;flex-direction:row;align-items:center;gap:4px;white-space:nowrap"><input type="checkbox" data-mx="fold" ${_mx.fold ? "checked" : ""} style="width:auto;margin:0"/> one line per player and stat</label></div>
+    <div class="small" style="color:var(--muted);margin-bottom:4px">How often each player cleared a line Kalshi lists today, in his games this season - what happened, not a forecast.${folded ? ` ${folded} other line${folded === 1 ? "" : "s"} folded.` : ""}
+      <details><summary>How to read this</summary>"Season" is games cleared out of games played (green: he clears it, red: he misses it). "Bet" is the side that record points to, with Kalshi's ask for it; "Model" is the engine's chance of that side. The price already knows the streak: a 7/7 at 90¢ pays 10¢, and a true 70% bet goes 7 for 7 about one time in twelve. With one line per player and stat, the line kept is the most one-sided, the cheaper ask breaking a tie; tap a player for every line.</details></div>
+    <div class="scroller" style="overflow-x:auto"><table class="small" style="border-collapse:collapse;width:100%;text-align:right">
+      <thead><tr><th style="text-align:left">Player</th><th>Line</th><th style="padding-left:8px">Season</th><th style="padding-left:8px">Bet</th><th style="padding-left:8px">Model</th></tr></thead>
+      <tbody>${body || `<tr><td colspan="5" class="empty">${none}</td></tr>`}</tbody></table></div>${more}`;
 }
 
 // ---- Player: profile, opponent, the matrix, every line ------------------------

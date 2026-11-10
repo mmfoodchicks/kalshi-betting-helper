@@ -93,6 +93,10 @@ def _slim_line(ln):
     hs = ln.get("hit_similar_def") or {}
     if "n_eff" in hs:
         out["hit_similar_def"] = {"n_eff": hs.get("n_eff")}
+    # this season's hit record, two ints: the Proven view reads it off the index
+    hz = ln.get("hit_season")
+    if isinstance(hz, dict) and hz.get("n"):
+        out["hit_season"] = {"hits": hz.get("hits"), "n": hz.get("n")}
     mk = ln.get("market")
     out["market"] = {k: mk.get(k) for k in _MARKET_KEYS} if mk else None
     v = ln.get("value")

@@ -1646,6 +1646,18 @@ def _factor_text(lead, f, d, pos):
     return (base_txt, e.get("why") or "")
 
 
+def season_hits(games, stats, key, k, season):
+    """{"hits", "n"}: how often he reached `k` in THIS season's games, or None
+    without a season or a game in it. hit_all counts BACK seasons too (history);
+    the tab's Proven view is the owner's "7/7 ... week to week" (2026-11-10),
+    which is this season's games alone."""
+    if season is None or not games or not stats:
+        return None
+    vals = [st.get(key) for g, st in zip(games, stats) if g[2].get("season") == season]
+    vals = [x for x in vals if x is not None]
+    return {"hits": sum(1 for x in vals if x >= k), "n": len(vals)} if vals else None
+
+
 def _hits(games, key, k, recent=10, stats=None):
     if not games:
         return None, None, None
@@ -1818,7 +1830,7 @@ def _with_reason(b):
     return b
 
 
-def _first_market(m, blk, coefs, pos, base, ks_market, hist, gstats, ship, now):
+def _first_market(m, blk, coefs, pos, base, ks_market, hist, gstats, ship, now, season=None):
     """One of the first model's market blocks (its thresholds and Kalshi's rungs, the band, the hit
     rates and the labels)."""
     ks = sorted(set(THRESHOLDS.get(m, ())) | set(ks_market))
@@ -1842,7 +1854,8 @@ def _first_market(m, blk, coefs, pos, base, ks_market, hist, gstats, ship, now):
         mkt = ks_market.get(k)
         val, labels, fside = line_labels(p, lo, hi, mkt, shift, (h_sim or {}).get("n_eff"), now=now)
         lines_out.append({"k": k, "p": _r(p), "p_lo": _r(lo), "p_hi": _r(hi), "hit_all": h_all,
-                          "hit_recent": h_rec, "hit_similar_def": h_sim, "market": mkt, "value": val,
+                          "hit_recent": h_rec, "hit_season": season_hits(hist, gstats, sname, k, season),
+                          "hit_similar_def": h_sim, "market": mkt, "value": val,
                           "labels": labels, "fit_side": fside})
     return {"stat": sname, "baseline_mean": _r(blk["baseline"], 3), "baseline_source": "sleeper",
             "adjusted_mean": _r(blk["adjusted"], 3), "dist": blk["dist"].to_dict(),
@@ -2020,7 +2033,7 @@ def _board(out, season, week, rows, kalshi_idx, schedule, ctx, coefs, lines, wit
             if blk.get("dist") is None:
                 continue
             ks_market = kl.get((KALSHI_STAT.get(m), nm), {}) if m in KALSHI_STAT else {}
-            markets.append(_first_market(m, blk, coefs, pos, base, ks_market, hist, gstats, ship, now))
+            markets.append(_first_market(m, blk, coefs, pos, base, ks_market, hist, gstats, ship, now, season=season))
         if f is not None:
             if pos in ("WR", "TE", "RB"):
                 notes.append("coverage splits are prior seasons only: nflverse publishes a season's participation "
@@ -2141,7 +2154,7 @@ def _rush_board(out, rc, env):
                             "to week 13 if it holds under 40 games) decides whether they stay.")
 
 
-def _rush_lines(ks, ladder, ks_market, hist, sname, gstats, shift, now):
+def _rush_lines(ks, ladder, ks_market, hist, sname, gstats, shift, now, season=None):
     lines_out = []
     for k in ks:
         if k not in ladder:
@@ -2151,7 +2164,8 @@ def _rush_lines(ks, ladder, ks_market, hist, sname, gstats, shift, now):
         mkt = ks_market.get(k)
         val, labels, fside = line_labels(p, lo, hi, mkt, shift, (h_sim or {}).get("n_eff"), now=now)
         lines_out.append({"k": k, "p": _r(p), "p_lo": _r(lo), "p_hi": _r(hi), "hit_all": h_all,
-                          "hit_recent": h_rec, "hit_similar_def": h_sim, "market": mkt, "value": val,
+                          "hit_recent": h_rec, "hit_season": season_hits(hist, gstats, sname, k, season),
+                          "hit_similar_def": h_sim, "market": mkt, "value": val,
                           "labels": labels, "fit_side": fside})
     return lines_out
 
@@ -2227,7 +2241,7 @@ def _rush_player(rc, env, season, week, pos, pid, team, opp, base, line, d_opp, 
             notes.append(f"{m.replace('_', ' ')}: derived from its components' shipped models (it decides nothing of its own)")
         blk = {"stat": m, "baseline_mean": _r(base_mean, 3), "baseline_source": "sleeper", "adjusted_mean": _r(adj, 3),
                "dist": dist.to_dict(), "matchup_weight": status, "matchup_shift": _r(shift, 4),
-               "lines": _rush_lines(ks, ladder, ks_market, hist, m, gs2, shift, now), "engine": "rushing"}
+               "lines": _rush_lines(ks, ladder, ks_market, hist, m, gs2, shift, now, season=season), "engine": "rushing"}
         if m in at:
             markets[at[m]] = blk
         else:

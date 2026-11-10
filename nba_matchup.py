@@ -1024,8 +1024,12 @@ def player_payload(pid, name, team, opp, game_id, home, sn, book, P, ctx, hist, 
     # the hit tables read ONLY games before the date (a past date's board must
     # not count that date or later; reviews 2026-10-23, O2 / F2)
     hist_sorted = sorted(prior_h, key=lambda h: h[0])
+    # this season's games alone, for the tab's Proven view (the owner's "7/7 ...
+    # week to week", 2026-11-10): the logs hold last season too (rebuild)
+    szn0 = M._day(f"{D.season_of(day)}-08-01")
     for m in MARKETS + tuple(COMBOS) + ("dk",):
         vals = [_hist_stat(h[3], m) for h in hist_sorted]
+        vals_szn = [v for h, v in zip(hist_sorted, vals) if h[0] >= szn0]
         pvals = [_hist_stat(h[3], m) for h in prior_h]
         mk = pred["markets"][m]
         lines = []
@@ -1043,6 +1047,8 @@ def player_payload(pid, name, team, opp, game_id, home, sn, book, P, ctx, hist, 
             line = {"k": k, "p": _round(p, 4), "p_lo": _round(lo, 4), "p_hi": _round(hi, 4),
                     "hit_all": {"hits": hits_all, "n": len(vals)},
                     "hit_recent": {"hits": sum(1 for v in recent if v >= k), "n": len(recent)},
+                    "hit_season": ({"hits": sum(1 for v in vals_szn if v >= k), "n": len(vals_szn)}
+                                   if vals_szn else None),
                     "hit_similar_def": {"hits_w": _round(hw / sw * n_eff if sw > 0 else 0.0, 2), "n_eff": _round(n_eff, 1)},
                     "market": None, "value": None}
             if kalshi_idx is not None and event_key and m != "dk":
