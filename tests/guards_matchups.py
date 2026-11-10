@@ -189,6 +189,60 @@ process.stdout.write(JSON.stringify({folded, all, three, rush, m8, mBad, raw: h0
     return ok, out
 
 
+def _mx_xref_check(js):
+    """The Proven record cross-referenced on the scanner, on the real functions under node: (ok, out)."""
+    ok, out = None, ""
+    try:
+        import shutil
+        import subprocess
+        if shutil.which("node"):
+            h = ("const $ = () => null;\n" + js + "\n" + r"""
+const L = (k, hits, n, evy, evn) => ({k, p: 0.6, p_lo: 0.58, p_hi: 0.62, labels: ['positive_ev'],
+  market: {yes_ask: 50, no_ask: 52}, hit_season: n ? {hits, n} : undefined,
+  value: {best_side: evy >= evn ? 'yes' : 'no', ev_yes: evy, ev_no: evn, ev_interval: {yes: [evy - 1, evy + 1], no: [evn - 1, evn + 1]},
+          believable: true, edge: 0.05, p_market: 0.5, market_kind: 'two_sided'}});
+const P = (id, name, stat, line) => ({player_id: id, name, team: 'T', opp: 'O', game_id: 'g', markets: [{stat, lines: [line]}]});
+const d = {status: 'ok', games: [], players: [
+  P('1', 'Yes', 'ast', L(4, 8, 9, 6, -8)),        // YES side, cleared 8/9: proven
+  P('2', 'Edge', 'ast', L(4, 4, 5, 5, -8)),       // 4/5 is 80% exactly: proven
+  P('3', 'Near', 'ast', L(4, 7, 9, 4, -8)),       // 7/9 = 78%: not proven
+  P('4', 'Nope', 'ast', L(6, 1, 9, -8, 3)),       // NO side, cleared 1/9: proven for NO
+  P('5', 'Fade', 'ast', L(6, 1, 9, 2, -8)),       // YES side against a 1/9 record
+  P('6', 'Few', 'ast', L(4, 3, 3, 1, -8)),        // three games: a record, never a label
+  P('7', 'None', 'ast', L(4, 0, 0, 0.5, -8))]};
+_mx.data = d; _mx.listed = false; _mx.fold = true; _mx.side = 'best'; _mx.sort = 'best'; _mx.dir = -1; _mx.label = '';
+const tr = (html) => html.split('<tr style="border-top').slice(1).map((t) => ({
+  name: (t.match(/data-mx="open" data-val="[^"]*">([^<]*)<\/a>/) || [])[1],
+  rec: (t.match(/games played this season">(\d+\/\d+)<\/span>/) || [])[1] || null,
+  proven: (t.match(/>Proven \((YES|NO)\) (\d+\/\d+)<\/span>/) || []).slice(1).join(' ') || null,
+  against: (t.match(/>against his record (\d+\/\d+)<\/span>/) || [])[1] || null}));
+const h0 = mxScanView(d); const all = tr(h0);
+_mx.label = 'proven'; const only = tr(mxScanView(d)).map((r) => r.name);
+_mx.side = 'no'; const onlyNo = tr(mxScanView(d)).map((r) => r.name); _mx.side = 'best'; _mx.label = '';
+const before = JSON.stringify(d.players.map((p) => p.markets[0].lines[0].p));
+process.stdout.write(JSON.stringify({all, only, onlyNo, chip: /data-mx="label" data-val="proven"/.test(h0),
+  legend: !!_MX_LABELS.proven && /changes no probability or EV/.test(_MX_LABELS.proven[1]),
+  same: before === JSON.stringify(d.players.map((p) => p.markets[0].lines[0].p)),
+  order: all.map((r) => r.name)}));
+""")
+            r = subprocess.run(["node", "-e", h], capture_output=True, text=True, timeout=30)
+            o = json.loads(r.stdout) if r.returncode == 0 and r.stdout else None
+            out = r.stdout[:1500] + r.stderr[-500:]
+            by = {x["name"]: x for x in (o or {}).get("all", [])}
+            ok = bool(o) and len(by) == 7 \
+                and (by["Yes"]["rec"], by["Yes"]["proven"], by["Yes"]["against"]) == ("8/9", "YES 8/9", None) \
+                and by["Edge"]["proven"] == "YES 4/5" and by["Near"]["proven"] is None and by["Near"]["rec"] == "7/9" \
+                and (by["Nope"]["proven"], by["Nope"]["against"]) == ("NO 1/9", None) \
+                and (by["Fade"]["proven"], by["Fade"]["against"]) == (None, "1/9") \
+                and (by["Few"]["rec"], by["Few"]["proven"]) == ("3/3", None) and by["None"]["rec"] is None \
+                and sorted(o["only"]) == ["Edge", "Nope", "Yes"] and o["onlyNo"] == ["Nope", "Fade"] \
+                and o["order"] == ["Yes", "Edge", "Near", "Nope", "Fade", "Few", "None"] \
+                and o["chip"] and o["legend"] and o["same"]
+    except Exception as e:
+        ok, out = False, repr(e)
+    return ok, out
+
+
 def _fake_d(calls, load_season, default_seasons=None, daily_raises=False, build_raises=()):
     """A stand-in nfl_matchup_data for the deep job: records each refresh as ("D", seasons, keep_raw).
     `build_raises`: seasons whose build fails AFTER their files were downloaded."""
@@ -770,6 +824,13 @@ def run(ck):
        "counted; a hostile name is escaped; an old board says it carries no records; the table has no minimum width "
        "(five narrow columns on a phone: the first version pushed the bet and the model off the screen)",
        pv_ok is not False and 'data-val="proven">' in js and "mxProvenView(d)" in js, str((pv_ok, pv_out)))
+    xr_ok, xr_out = _mx_xref_check(js)
+    ck("Matchups tab (the Proven record on Opportunities, the owner 2026-11-10: 'cross reference this list into the "
+       "opportunities tab'): each scanner row shows the line's season record, a 'Proven (SIDE) h/n' chip when the "
+       "side shown went his way in 80%+ of 5+ games (4/5 counts, 7/9 does not, three games never), a red 'against "
+       "his record' chip at 20% or less, and a Proven filter that keeps the backed rows (the NO side reads the "
+       "misses); it is a label -- the order stays the sort's and no probability moves",
+       xr_ok is not False and "won * 5 >= h.n * 4" in js, str((xr_ok, xr_out)))
     ck("...and the record is this season's alone: the NFL count reads only the games whose record carries the "
        "board's season (hit_all still spans the back seasons), nothing without a season or a game in it; the NBA "
        "count reads the games from that season's August on (the logs hold last season too); the index keeps the two "

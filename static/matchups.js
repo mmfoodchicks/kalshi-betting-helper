@@ -50,6 +50,8 @@ const _MX_LABELS = {
   positive_ev_robust: ["Robust +EV", "Still positive at the LOW end of the model's probability band."],
   strong_fit: ["Strong fit", "The matchup terms the model kept (what this defense measurably concedes) move this projection 5% or more toward the named side. Says nothing about price."],
   low_evidence: ["Low evidence", "Too little reliable data behind the adjustment for a confident read."],
+  // read off the line's season record on the page (_mxRecordFor), never an engine label: it names the side shown
+  proven: ["Proven", "On the side shown, this line went his way in 80% or more of his games this season (5 games or more) - the Proven tab's record. What happened, not a forecast: it changes no probability or EV here, and Kalshi's price already knows the streak."],
 };
 // Qualifiers (prop_value.QUALIFIERS) stand where a +EV label was WITHHELD:
 // they explain the price, they are not value judgements, so they are drawn
@@ -484,6 +486,19 @@ function _mxRows(d) {
   return rows;
 }
 function _mxKey(v) { return _mxOk(v) ? v : -1e12; }     // a missing value sorts last, never NaN (B10)
+// The Proven tab's record, cross-referenced on a scanner row (the owner, 2026-11-10: "cross reference this list
+// into the opportunities tab"): his season record on this line FOR THE SIDE SHOWN. `backs` at 80%+ of 5+ games,
+// `against` at 20% or less -- whole-number arithmetic, so 4/5 is 80% exactly. It is a label and a filter, never a
+// weight on the probability: the engine's distribution is built from those same games (counting them twice), and
+// no test has shown the streak beats the price.
+const _MX_PROVEN_MIN = 5;
+function _mxRecordFor(l, side) {
+  const h = (l || {}).hit_season;
+  if (!h || !_mxOk(h.n) || !_mxOk(h.hits) || h.n <= 0) return null;
+  const won = side === "no" ? h.n - h.hits : h.hits;
+  const enough = h.n >= _MX_PROVEN_MIN;
+  return { hits: h.hits, n: h.n, backs: enough && won * 5 >= h.n * 4, against: enough && won * 5 <= h.n };
+}
 // The scanner's fold: one player's one stat, YES and NO alike ("2 of the same"). The key carries
 // the name, team and game beside the id, so two players are never merged into one row -- not even
 // two whose id came through as the string "None" (nfl_matchup stores str(player_id)).
@@ -496,7 +511,9 @@ function mxScanView(d) {
   const stats = [...new Set(rows.map((r) => r.m.stat))];
   const started = _mxStarted(d);
   const games = (d.games || []).filter((g) => !started.has(String(g.game_id))).map((g) => [g.game_id, `${g.away} @ ${g.home}`]);
-  if (_mx.label) {
+  if (_mx.label === "proven") {
+    rows = rows.filter((r) => ((_mxRecordFor(r.l, _mxRowSide(r)) || {}).backs));
+  } else if (_mx.label) {
     // the +EV chips name a side: with YES or NO chosen, a line qualifies only
     // when THAT side's EV is positive
     const evLab = _mx.label === "positive_ev" || _mx.label === "positive_ev_robust";
@@ -552,15 +569,19 @@ function mxScanView(d) {
   const chip = (v, t) => `<span class="ptchip${_mx.label === v ? " on" : ""}" data-mx="label" data-val="${_mxEsc(v)}" style="cursor:pointer">${_mxEsc(t)}</span>`;
   const body = rows.slice(0, _MX_CAP).map((r) => {
     const mk = r.l.market || {}, b = r.b;
+    const rec = _mxRecordFor(r.l, _mxRowSide(r));
+    const recChip = !rec ? "" : rec.backs
+      ? `<span class="ptchip on" title="${_mxEsc(_MX_LABELS.proven[1])}" style="cursor:help">Proven (${_mxSide(_mxRowSide(r))}) ${Number(rec.hits)}/${Number(rec.n)}</span> `
+      : rec.against ? `<span class="small" title="He cleared this line in ${Number(rec.hits)} of his ${Number(rec.n)} games this season: the side shown went against him in 80% or more of them." style="cursor:help;color:var(--no);border:1px dashed var(--no);border-radius:4px;padding:0 4px">against his record ${Number(rec.hits)}/${Number(rec.n)}</span> ` : "";
     return `<tr style="border-top:1px solid var(--line,#333)">
       <td style="text-align:left"><a href="#" data-mx="open" data-val="${_mxEsc(r.p.player_id)}">${_mxEsc(r.p.name)}</a> <span class="small" style="color:var(--muted)">${_mxEsc(r.p.pos || "")} ${_mxEsc(r.p.team)} v ${_mxEsc(r.p.opp)}</span></td>
-      <td>${_mxEsc(_mxStat(r.m.stat))} ${_mxEsc(r.l.k)}+${r.more ? ` <span class="small" style="color:var(--muted);white-space:nowrap">+${Number(r.more)} more</span>` : ""}</td>
+      <td>${_mxEsc(_mxStat(r.m.stat))} ${_mxEsc(r.l.k)}+${rec ? ` <span class="small" style="color:var(--muted);white-space:nowrap" title="games he cleared this line / games played this season">${Number(rec.hits)}/${Number(rec.n)}</span>` : ""}${r.more ? ` <span class="small" style="color:var(--muted);white-space:nowrap">+${Number(r.more)} more</span>` : ""}</td>
       <td>${(() => { const sp = _mxSideP(r.l, _mxRowSide(r)); return `<span class="small" style="color:var(--muted)">${_mxSide(_mxRowSide(r))}</span> <b>${_mxPct(sp.p)}</b> <span class="small" style="color:var(--muted)">${_mxBand({ p_lo: sp.lo, p_hi: sp.hi })}</span>`; })()}</td>
       <td>${r.l.market ? `${_mxCents(mk.yes_ask)} / ${_mxCents(mk.no_ask)}` : "-"}</td>
       <td>${_mxVsMkt(r.l.value, _mxRowSide(r))}</td>
       <td>${b ? `${_mxEvCell(b, true)} <span class="small" style="color:var(--muted)">${_mxSigned(b.lo, 1)} to ${_mxSigned(b.hi, 1)}</span>` : "-"}</td>
       <td>${_mxNum((r.l.hit_similar_def || {}).n_eff, 1)}</td>
-      <td style="text-align:left">${_mxChips(r.l, r.m.stat)}</td></tr>`;
+      <td style="text-align:left">${recChip}${_mxChips(r.l, r.m.stat)}</td></tr>`;
   }).join("");
   const more = rows.length > _MX_CAP ? `<div class="small" style="color:var(--muted)">Showing the first ${_MX_CAP} of ${rows.length} lines - filter by stat or game to see the rest.</div>` : "";
   return `<div class="small" style="margin-bottom:6px">Show: ${chip("", "all")} ${Object.entries(_MX_LABELS).map(([k, [n]]) => chip(k, n)).join(" ")}
