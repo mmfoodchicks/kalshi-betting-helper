@@ -977,62 +977,92 @@
   "ast": {
    "a": 0.0,
    "b": 1.0,
-   "days": 10,
+   "blend_report": {
+    "applied": false,
+    "gain_over_platt": null,
+    "n_eff": 638.2,
+    "se": null
+   },
+   "days": 11,
    "family": "identity",
-   "fitted_ts": 1794275900,
+   "fitted_ts": 1794320973,
    "gain": null,
-   "n": 2900,
-   "n_eff": 819.0,
+   "n": 3182,
+   "n_eff": 898.0,
    "se": null,
-   "why": "below the floors"
+   "why": "nothing scored out of sample yet (it needs 30 games past the first 10 dates)"
   },
   "fg3m": {
    "a": 0.0,
    "b": 1.0,
-   "days": 10,
+   "blend_report": {
+    "applied": false,
+    "gain_over_platt": null,
+    "n_eff": 634.3,
+    "se": null
+   },
+   "days": 11,
    "family": "identity",
-   "fitted_ts": 1794275900,
+   "fitted_ts": 1794320973,
    "gain": null,
-   "n": 3887,
-   "n_eff": 829.0,
+   "n": 4288,
+   "n_eff": 915.0,
    "se": null,
-   "why": "below the floors"
+   "why": "nothing scored out of sample yet (it needs 30 games past the first 10 dates)"
   },
   "pra": {
    "a": 0.0,
    "b": 1.0,
-   "days": 10,
+   "blend_report": {
+    "applied": false,
+    "gain_over_platt": null,
+    "n_eff": 498.3,
+    "se": null
+   },
+   "days": 11,
    "family": "identity",
-   "fitted_ts": 1794275900,
+   "fitted_ts": 1794320973,
    "gain": null,
-   "n": 2157,
-   "n_eff": 709.0,
+   "n": 2401,
+   "n_eff": 789.0,
    "se": null,
-   "why": "below the floors"
+   "why": "nothing scored out of sample yet (it needs 30 games past the first 10 dates)"
   },
   "pts": {
    "a": 0.0,
    "b": 1.0,
-   "days": 10,
+   "blend_report": {
+    "applied": false,
+    "gain_over_platt": null,
+    "n_eff": 925.3,
+    "se": null
+   },
+   "days": 11,
    "family": "identity",
-   "fitted_ts": 1794275900,
+   "fitted_ts": 1794320973,
    "gain": null,
-   "n": 3316,
-   "n_eff": 972.0,
+   "n": 3669,
+   "n_eff": 1077.0,
    "se": null,
-   "why": "below the floors"
+   "why": "nothing scored out of sample yet (it needs 30 games past the first 10 dates)"
   },
   "reb": {
    "a": 0.0,
    "b": 1.0,
-   "days": 10,
+   "blend_report": {
+    "applied": false,
+    "gain_over_platt": null,
+    "n_eff": 733.1,
+    "se": null
+   },
+   "days": 11,
    "family": "identity",
-   "fitted_ts": 1794275901,
+   "fitted_ts": 1794320973,
    "gain": null,
-   "n": 3875,
-   "n_eff": 943.0,
+   "n": 4289,
+   "n_eff": 1044.0,
    "se": null,
-   "why": "below the floors"
+   "why": "nothing scored out of sample yet (it needs 30 games past the first 10 dates)"
   }
  }
 }
