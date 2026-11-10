@@ -1,8 +1,26 @@
 {
  "boards": [
   {
-   "age_s": 3054,
-   "built_ts": 1794259639,
+   "age_s": 18046,
+   "built_ts": 1794276775,
+   "contest": "NFL Showdown $1.2M Thursday Night Showdown [$300K to 1st] (WAS @ NYG)",
+   "dg": 156421,
+   "ends_ts": 1794546900,
+   "entries": 70588,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "NYG vs WAS",
+   "pick": false,
+   "starts": "2026-11-13T01:15:00.0000000Z",
+   "teams": [
+    "NYG",
+    "WAS"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 24395,
+   "built_ts": 1794270427,
    "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (BUF @ MIN)",
    "dg": 156014,
    "ends_ts": 1794287700,
@@ -19,7 +37,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 78597,
+   "age_s": 110722,
    "built_ts": 1794184099,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (TB @ CHI)",
    "dg": 156013,
@@ -37,7 +55,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 104458,
+   "age_s": 136584,
    "built_ts": 1794158240,
    "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 155994,
@@ -53,7 +71,7 @@
    "worlds": 180000
   },
   {
-   "age_s": 337489,
+   "age_s": 369614,
    "built_ts": 1793925205,
    "contest": "NFL Showdown $1.25M Thursday Night Showdown [$300K to 1st] (JAX @ BAL)",
    "dg": 156000,
@@ -71,7 +89,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 596354,
+   "age_s": 628479,
    "built_ts": 1793666342,
    "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (CHI @ SEA)",
    "dg": 155609,
@@ -85,24 +103,6 @@
    "teams": [
     "CHI",
     "SEA"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 681054,
-   "built_ts": 1793581643,
-   "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (PHI @ WAS)",
-   "dg": 155951,
-   "ends_ts": 1793596800,
-   "entries": 58823,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "PHI vs WAS",
-   "pick": false,
-   "starts": "2026-11-02T01:20:00.0000000Z",
-   "teams": [
-    "PHI",
-    "WAS"
    ],
    "worlds": 60000
   }

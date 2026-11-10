@@ -2,6 +2,28 @@
  "errors": [
   {
    "code": "DK-lobby-empty",
+   "id": 2488,
+   "last_ts": 1794271325.4685447,
+   "msg": "nascar: lobby answered with no draft groups",
+   "n": 1,
+   "path": null,
+   "pid": 1784,
+   "tb": "",
+   "ts": 1794271325.4685447
+  },
+  {
+   "code": "DK-lobby-empty",
+   "id": 2487,
+   "last_ts": 1794263893.3156624,
+   "msg": "nascar: lobby answered with no draft groups",
+   "n": 1,
+   "path": null,
+   "pid": 1745,
+   "tb": "",
+   "ts": 1794263893.3156624
+  },
+  {
+   "code": "DK-lobby-empty",
    "id": 2486,
    "last_ts": 1794229330.663558,
    "msg": "nascar: lobby answered with no draft groups",
@@ -2190,7 +2212,7 @@
    "ts": 1793782574.0771937
   }
  ],
- "generated_at": 1794262699.1856103,
+ "generated_at": 1794294824.4383998,
  "summary": [
   {
    "code": "NFL-DRIFT",
@@ -2204,9 +2226,9 @@
    "code": "DK-lobby-empty",
    "first_ts": 1794175103.821952,
    "last_msg": "nascar: lobby answered with no draft groups",
-   "last_ts": 1794229330.663558,
-   "n": 2,
-   "variants": 2
+   "last_ts": 1794271325.4685447,
+   "n": 4,
+   "variants": 4
   },
   {
    "code": "MXR-grade-fetch",
