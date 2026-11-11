@@ -125,10 +125,10 @@
    4604
   ],
   "nba": [
-   1.0,
+   0.872,
    0.5,
    0.0,
-   244
+   256
   ],
   "nfl": [
    0.837,
@@ -146,7 +146,7 @@
    1.0,
    0.5,
    0.0,
-   356
+   368
   ],
   "prop": [
    1.0,
@@ -158,7 +158,7 @@
    0.67,
    0.5,
    0.0,
-   38716
+   39112
   ],
   "ufc": [
    1.0,
@@ -174,7 +174,7 @@
   ]
  },
  "mx": {
-  "fitted_ts": 1794320972,
+  "fitted_ts": 1794367152,
   "nba": {
    "ast": {
     "a": 0.0,
@@ -187,7 +187,7 @@
     },
     "days": 11,
     "family": "identity",
-    "fitted_ts": 1794320973,
+    "fitted_ts": 1794367152,
     "gain": null,
     "n": 3182,
     "n_eff": 898.0,
@@ -205,7 +205,7 @@
     },
     "days": 11,
     "family": "identity",
-    "fitted_ts": 1794320973,
+    "fitted_ts": 1794367152,
     "gain": null,
     "n": 4288,
     "n_eff": 915.0,
@@ -223,7 +223,7 @@
     },
     "days": 11,
     "family": "identity",
-    "fitted_ts": 1794320973,
+    "fitted_ts": 1794367152,
     "gain": null,
     "n": 2401,
     "n_eff": 789.0,
@@ -241,7 +241,7 @@
     },
     "days": 11,
     "family": "identity",
-    "fitted_ts": 1794320973,
+    "fitted_ts": 1794367152,
     "gain": null,
     "n": 3669,
     "n_eff": 1077.0,
@@ -259,7 +259,7 @@
     },
     "days": 11,
     "family": "identity",
-    "fitted_ts": 1794320973,
+    "fitted_ts": 1794367152,
     "gain": null,
     "n": 4289,
     "n_eff": 1044.0,
@@ -273,7 +273,7 @@
     "b": 1.0,
     "days": 6,
     "family": "identity",
-    "fitted_ts": 1794320973,
+    "fitted_ts": 1794367152,
     "gain": null,
     "n": 524,
     "n_eff": 58.0,
@@ -285,7 +285,7 @@
     "b": 1.0,
     "days": 6,
     "family": "identity",
-    "fitted_ts": 1794320973,
+    "fitted_ts": 1794367152,
     "gain": null,
     "n": 2334,
     "n_eff": 367.0,
@@ -297,7 +297,7 @@
     "b": 1.0,
     "days": 6,
     "family": "identity",
-    "fitted_ts": 1794320973,
+    "fitted_ts": 1794367152,
     "gain": null,
     "n": 3567,
     "n_eff": 370.0,
@@ -309,7 +309,7 @@
     "b": 1.0,
     "days": 6,
     "family": "identity",
-    "fitted_ts": 1794320973,
+    "fitted_ts": 1794367153,
     "gain": null,
     "n": 1564,
     "n_eff": 178.0,
@@ -321,7 +321,7 @@
     "b": 1.0,
     "days": 6,
     "family": "identity",
-    "fitted_ts": 1794320973,
+    "fitted_ts": 1794367153,
     "gain": null,
     "n": 1003,
     "n_eff": 552.0,
@@ -447,10 +447,10 @@
    "weight": 0.0
   },
   "ufc": {
-   "at": 1794288923.254894,
+   "at": 1794358819.9788952,
    "n": 299,
    "weight": 0.05
   }
  },
- "ts": 1794320972.709989
+ "ts": 1794367152.4864414
 }
