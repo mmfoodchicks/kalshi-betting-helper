@@ -92,7 +92,7 @@ _mx.sort = 'p'; const p = rows(mxScanView(d));
 _mx.sort = 'edge'; const edg = rows(mxScanView(d));
 _mx.sort = 'best'; _mx.dir = 1; const asc = rows(mxScanView(d)); _mx.dir = -1;
 _mx.sort = 'nef'; const nef = rows(mxScanView(d)); _mx.sort = 'best';
-_mx.label = 'strong_fit'; const fit = rows(mxScanView(d)); _mx.label = '';
+_mx.labels = ['strong_fit']; const fit = rows(mxScanView(d)); _mx.labels = [];
 _mx.stat = 'ast'; const astOnly = rows(mxScanView(d)); _mx.stat = '';
 _mx.fold = false; const h1 = mxScanView(d); const all = rows(h1);
 const store = {}; globalThis.localStorage = {getItem: (k) => store[k] || null, setItem: (k, v) => { store[k] = v; }};
@@ -210,15 +210,15 @@ const d = {status: 'ok', games: [], players: [
   P('5', 'Fade', 'ast', L(6, 1, 9, 2, -8)),       // YES side against a 1/9 record
   P('6', 'Few', 'ast', L(4, 3, 3, 1, -8)),        // three games: a record, never a label
   P('7', 'None', 'ast', L(4, 0, 0, 0.5, -8))]};
-_mx.data = d; _mx.listed = false; _mx.fold = true; _mx.side = 'best'; _mx.sort = 'best'; _mx.dir = -1; _mx.label = '';
+_mx.data = d; _mx.listed = false; _mx.fold = true; _mx.side = 'best'; _mx.sort = 'best'; _mx.dir = -1; _mx.labels = [];
 const tr = (html) => html.split('<tr style="border-top').slice(1).map((t) => ({
   name: (t.match(/data-mx="open" data-val="[^"]*">([^<]*)<\/a>/) || [])[1],
   rec: (t.match(/games played this season">(\d+\/\d+)<\/span>/) || [])[1] || null,
   proven: (t.match(/>Proven \((YES|NO)\) (\d+\/\d+)<\/span>/) || []).slice(1).join(' ') || null,
   against: (t.match(/>against his record (\d+\/\d+)<\/span>/) || [])[1] || null}));
 const h0 = mxScanView(d); const all = tr(h0);
-_mx.label = 'proven'; const only = tr(mxScanView(d)).map((r) => r.name);
-_mx.side = 'no'; const onlyNo = tr(mxScanView(d)).map((r) => r.name); _mx.side = 'best'; _mx.label = '';
+_mx.labels = ['proven']; const only = tr(mxScanView(d)).map((r) => r.name);
+_mx.side = 'no'; const onlyNo = tr(mxScanView(d)).map((r) => r.name); _mx.side = 'best'; _mx.labels = [];
 const before = JSON.stringify(d.players.map((p) => p.markets[0].lines[0].p));
 process.stdout.write(JSON.stringify({all, only, onlyNo, chip: /data-mx="label" data-val="proven"/.test(h0),
   legend: !!_MX_LABELS.proven && /changes no probability or EV/.test(_MX_LABELS.proven[1]),
@@ -238,6 +238,56 @@ process.stdout.write(JSON.stringify({all, only, onlyNo, chip: /data-mx="label" d
                 and sorted(o["only"]) == ["Edge", "Nope", "Yes"] and o["onlyNo"] == ["Nope", "Fade"] \
                 and o["order"] == ["Yes", "Edge", "Near", "Nope", "Fade", "Few", "None"] \
                 and o["chip"] and o["legend"] and o["same"]
+    except Exception as e:
+        ok, out = False, repr(e)
+    return ok, out
+
+
+def _mx_filters_check(js):
+    """Several label chips at once and the team menu, on the real functions under node: (ok, out)."""
+    ok, out = None, ""
+    try:
+        import shutil
+        import subprocess
+        if shutil.which("node"):
+            h = ("const $ = () => null;\n" + js + "\n" + r"""
+const L = (k, hits, n, labels) => ({k, p: 0.6, p_lo: 0.58, p_hi: 0.62, labels, fit_side: 'yes',
+  market: {yes_ask: 50, no_ask: 52}, hit_season: {hits, n},
+  value: {best_side: 'yes', ev_yes: 5, ev_no: -8, ev_interval: {yes: [4, 6], no: [-9, -7]}, believable: true,
+          edge: 0.05, p_market: 0.5, market_kind: 'two_sided'}});
+const P = (id, name, team, line) => ({player_id: id, name, team, opp: 'X', game_id: 'g', markets: [{stat: 'ast', lines: [line]}]});
+const d = {status: 'ok', games: [{game_id: 'g', away: 'A', home: 'B'}], players: [
+  P('1', 'Both', 'BOS', L(4, 9, 9, ['positive_ev', 'strong_fit'])),     // proven + strong fit + +EV
+  P('2', 'Prov', 'BOS', L(4, 9, 9, ['positive_ev'])),                   // proven + +EV
+  P('3', 'Fit', 'NYK', L(4, 5, 9, ['positive_ev', 'strong_fit'])),      // strong fit + +EV, not proven
+  P('4', 'Plain', 'NYK', L(4, 5, 9, []))]};
+_mx.data = d; _mx.listed = false; _mx.fold = true; _mx.side = 'best'; _mx.sort = 'best'; _mx.dir = -1;
+const names = (html) => [...html.matchAll(/data-mx="open" data-val="[^"]*">([^<]*)<\/a>/g)].map((m) => m[1]).sort();
+const on = (html) => [...html.matchAll(/class="ptchip on" data-mx="label" data-val="([^"]*)"/g)].map((m) => m[1]);
+globalThis.mxRender = () => {};
+const tap = (val) => _mxClick({preventDefault() {}, target: {closest: () => ({tagName: 'SPAN', dataset: {mx: 'label', val}})}});
+const h0 = mxScanView(d); const none = [names(h0), on(h0)];
+tap('proven'); const one = [names(mxScanView(d)), _mx.labels.slice()];
+tap('strong_fit'); const hTwo = mxScanView(d); const two = [names(hTwo), on(hTwo)];
+tap('strong_fit'); tap('positive_ev'); const pe = names(mxScanView(d));
+tap('<img src=x>'); tap('constructor'); const bad = _mx.labels.slice();
+tap(''); const cleared = _mx.labels.slice();
+const pick = (value) => _mxChange({target: {closest: () => ({dataset: {mx: 'team'}, value})}});
+pick('NYK'); const hT = mxScanView(d); const team = names(hT); const provenTeam = names(mxProvenView(d));
+tap('strong_fit'); const teamFit = names(mxScanView(d)); tap('');
+const opts = [...hT.matchAll(/<option value="([A-Z]+)"( selected)?>/g)].filter((m) => ['BOS', 'NYK'].includes(m[1])).map((m) => m[1] + (m[2] ? '*' : ''));
+const pvOpts = /data-mx="team"/.test(mxProvenView(d));
+process.stdout.write(JSON.stringify({none, one, two, pe, bad, cleared, team, provenTeam, teamFit, opts, pvOpts}));
+""")
+            r = subprocess.run(["node", "-e", h], capture_output=True, text=True, timeout=30)
+            o = json.loads(r.stdout) if r.returncode == 0 and r.stdout else None
+            out = r.stdout[:1200] + r.stderr[-500:]
+            ok = bool(o) and o["none"] == [["Both", "Fit", "Plain", "Prov"], [""]] \
+                and o["one"] == [["Both", "Prov"], ["proven"]] \
+                and o["two"] == [["Both"], ["strong_fit", "proven"]] \
+                and o["pe"] == ["Both", "Prov"] and o["bad"] == ["proven", "positive_ev"] and o["cleared"] == [] \
+                and o["team"] == ["Fit", "Plain"] and o["provenTeam"] == ["Fit", "Plain"] and o["teamFit"] == ["Fit"] \
+                and o["opts"] == ["BOS", "NYK*"] and o["pvOpts"] is True
     except Exception as e:
         ok, out = False, repr(e)
     return ok, out
@@ -740,7 +790,7 @@ def run(ck):
                   "_mx.sort = 'best'; _mx.side = 'no'; const noHtml = mxScanView(_mx.data); const noOrd = ord(noHtml);\n"
                   "_mx.sort = 'p'; const noP = ord(mxScanView(_mx.data));\n"
                   "_mx.sort = 'edge'; const noEdge = ord(mxScanView(_mx.data));\n"
-                  "_mx.sort = 'best'; _mx.label = 'positive_ev'; const noEvChip = ord(mxScanView(_mx.data)); _mx.label = '';\n"
+                  "_mx.sort = 'best'; _mx.labels = ['positive_ev']; const noEvChip = ord(mxScanView(_mx.data)); _mx.labels = [];\n"
                   "_mx.side = 'yes'; const yesOrd = ord(mxScanView(_mx.data));\n"
                   "const st7 = [_mxSideValue(lines[6].value, lines[6].labels, 'yes', 'pts').stale,"
                   " _mxSideValue(lines[6].value, lines[6].labels, 'no', 'pts').stale]; _mx.side = 'no';\n"
@@ -824,6 +874,13 @@ def run(ck):
        "counted; a hostile name is escaped; an old board says it carries no records; the table has no minimum width "
        "(five narrow columns on a phone: the first version pushed the bet and the model off the screen)",
        pv_ok is not False and 'data-val="proven">' in js and "mxProvenView(d)" in js, str((pv_ok, pv_out)))
+    fl_ok, fl_out = _mx_filters_check(js)
+    ck("Matchups tab (the owner, 2026-11-11: 'filter by team' and 'let me pick more than one tab, like if I want "
+       "proven and strong fit or proven and ev+'): the label chips are a set -- a tap adds or removes one, every "
+       "chip chosen must hold (Proven AND Strong fit keeps the one line that is both), 'all' clears them and a value "
+       "the tab does not know is refused -- and a team menu on Opportunities and on Proven keeps one team's players, "
+       "together with the chips",
+       fl_ok is not False, str((fl_ok, fl_out)))
     xr_ok, xr_out = _mx_xref_check(js)
     ck("Matchups tab (the Proven record on Opportunities, the owner 2026-11-10: 'cross reference this list into the "
        "opportunities tab'): each scanner row shows the line's season record, a 'Proven (SIDE) h/n' chip when the "

@@ -21,7 +21,7 @@
 // does not stop a quote from ending the string (the Fable review's B1 ran an
 // alert() through a player id that way, 2026-10-23).
 let _mx = { sport: "nfl", date: "", data: null, err: "", view: "scan", player: "", cmp: ["", ""],
-  label: "", stat: "", game: "", listed: true, fold: true, minGames: 5, sort: "best", dir: -1, side: "best", open: {}, full: {}, retry: null, tries: 0 };
+  labels: [], stat: "", game: "", team: "", listed: true, fold: true, minGames: 5, sort: "best", dir: -1, side: "best", open: {}, full: {}, retry: null, tries: 0 };
 // The owner's sort menu and side picker (2026-10-23): "Best picks" ranks the
 // believable +EV lines by their EV at the CAUTIOUS end of the model's band
 // (the EV itself where the engine has no band), thin books and lines the
@@ -239,7 +239,7 @@ function _mxClick(e) {
   } else if (act === "view") { _mx.view = val; mxRender(); _mxNeedPieces(); }
   else if (act === "open") { e.preventDefault(); _mx.player = val; _mx.view = "player"; mxRender(); _mxNeedPieces(); }
   else if (act === "sort") { if (_mx.sort === val) _mx.dir = -_mx.dir; else { _mx.sort = val; _mx.dir = -1; } _mxSave(); mxRender(); }
-  else if (act === "label") { _mx.label = val; mxRender(); }
+  else if (act === "label") { _mx.labels = _mxToggleLabel(_mx.labels, val); mxRender(); }
   else if (act === "toggle") { _mx.open[val] = !_mx.open[val]; mxRender(); }
 }
 function _mxChange(e) {
@@ -251,6 +251,7 @@ function _mxChange(e) {
   else if (act === "side") { _mx.side = ["yes", "no"].includes(el.value) ? el.value : "best"; _mxSave(); mxRender(); }
   else if (act === "sortsel") { _mx.sort = _MX_SORTS.some(([k]) => k === el.value) ? el.value : "best"; _mx.dir = -1; _mxSave(); mxRender(); }
   else if (act === "game") { _mx.game = el.value; mxRender(); }
+  else if (act === "team") { _mx.team = el.value; mxRender(); }
   else if (act === "listed") { _mx.listed = !!el.checked; mxRender(); }
   else if (act === "fold") { _mx.fold = !!el.checked; _mxSave(); mxRender(); }
   else if (act === "mingames") { _mx.minGames = _MX_MIN_GAMES.includes(Number(el.value)) ? Number(el.value) : 5; mxRender(); }
@@ -301,6 +302,8 @@ async function mxLoad(retry) {
   _mx.loadedAt = Date.now();
   // a game filter whose game has left the list would empty the table under "every game"
   if (_mx.game && !(((_mx.data || {}).games) || []).some((g) => String(g.game_id) === _mx.game)) _mx.game = "";
+  // ...and so would a team that is not on this board (another sport, another day)
+  if (_mx.team && !(((_mx.data || {}).players) || []).some((p) => String(p.team) === _mx.team)) _mx.team = "";
   mxRender();
   if (_mx.view !== "scan") _mxNeedPieces();
   // a live board arms the live timer; a failed or unreadable answer looks again in two minutes
@@ -486,6 +489,15 @@ function _mxRows(d) {
   return rows;
 }
 function _mxKey(v) { return _mxOk(v) ? v : -1e12; }     // a missing value sorts last, never NaN (B10)
+// The label chips are a SET: a tap adds or removes one, "all" (the empty value) clears them, and only a label
+// the tab knows is taken (a chip's value is read back off the page).
+function _mxToggleLabel(cur, val) {
+  if (!val) return [];
+  if (!Object.prototype.hasOwnProperty.call(_MX_LABELS, val)) return cur || [];
+  return (cur || []).includes(val) ? cur.filter((x) => x !== val) : (cur || []).concat([val]);
+}
+// The teams with a line in `rows`, sorted, for the team menu (the owner, 2026-11-11: "filter by team").
+function _mxTeams(rows) { return [...new Set(rows.map((r) => String(r.p.team || "")).filter(Boolean))].sort(); }
 // The Proven tab's record, cross-referenced on a scanner row (the owner, 2026-11-10: "cross reference this list
 // into the opportunities tab"): his season record on this line FOR THE SIDE SHOWN. `backs` at 80%+ of 5+ games,
 // `against` at 20% or less -- whole-number arithmetic, so 4/5 is 80% exactly. It is a label and a filter, never a
@@ -511,17 +523,23 @@ function mxScanView(d) {
   const stats = [...new Set(rows.map((r) => r.m.stat))];
   const started = _mxStarted(d);
   const games = (d.games || []).filter((g) => !started.has(String(g.game_id))).map((g) => [g.game_id, `${g.away} @ ${g.home}`]);
-  if (_mx.label === "proven") {
-    rows = rows.filter((r) => ((_mxRecordFor(r.l, _mxRowSide(r)) || {}).backs));
-  } else if (_mx.label) {
+  const teams = _mxTeams(rows);
+  // Every chip chosen must hold (the owner, 2026-11-11: "let me pick more than one tab, like if I want proven
+  // and strong fit or proven and ev+").
+  for (const lab of _mx.labels || []) {
+    if (lab === "proven") {
+      rows = rows.filter((r) => ((_mxRecordFor(r.l, _mxRowSide(r)) || {}).backs));
+      continue;
+    }
     // the +EV chips name a side: with YES or NO chosen, a line qualifies only
     // when THAT side's EV is positive
-    const evLab = _mx.label === "positive_ev" || _mx.label === "positive_ev_robust";
-    rows = rows.filter((r) => (r.l.labels || []).includes(_mx.label)
+    const evLab = lab === "positive_ev" || lab === "positive_ev_robust";
+    rows = rows.filter((r) => (r.l.labels || []).includes(lab)
       && (!evLab || _mx.side === "best" || (r.b && r.b.ev > 0)));
   }
   if (_mx.stat) rows = rows.filter((r) => String(r.m.stat) === _mx.stat);
   if (_mx.game) rows = rows.filter((r) => String(r.p.game_id) === _mx.game);
+  if (_mx.team) rows = rows.filter((r) => String(r.p.team) === _mx.team);
   const clean = (r) => r.b && r.b.ok && !r.b.mkt && !r.b.stale;
   // below the clean +EV lines: the muted +EV lines (thin, stale, impeached),
   // then every negative-EV line, then lines with no EV at all
@@ -566,7 +584,8 @@ function mxScanView(d) {
   }
   rows.sort((a, b) => _mx.dir * (a.k - b.k));
   const th = (k, t) => `<th style="cursor:pointer" data-mx="sort" data-val="${k}">${t}${_mx.sort === k ? (_mx.dir < 0 ? " ▾" : " ▴") : ""}</th>`;
-  const chip = (v, t) => `<span class="ptchip${_mx.label === v ? " on" : ""}" data-mx="label" data-val="${_mxEsc(v)}" style="cursor:pointer">${_mxEsc(t)}</span>`;
+  const picked = _mx.labels || [];
+  const chip = (v, t) => `<span class="ptchip${(v ? picked.includes(v) : !picked.length) ? " on" : ""}" data-mx="label" data-val="${_mxEsc(v)}" style="cursor:pointer">${_mxEsc(t)}</span>`;
   const body = rows.slice(0, _MX_CAP).map((r) => {
     const mk = r.l.market || {}, b = r.b;
     const rec = _mxRecordFor(r.l, _mxRowSide(r));
@@ -587,6 +606,7 @@ function mxScanView(d) {
   return `<div class="small" style="margin-bottom:6px">Show: ${chip("", "all")} ${Object.entries(_MX_LABELS).map(([k, [n]]) => chip(k, n)).join(" ")}
       · <select data-mx="stat" style="width:auto;padding:2px 4px"><option value="">every stat</option>${stats.map((s) => `<option value="${_mxEsc(s)}"${_mx.stat === String(s) ? " selected" : ""}>${_mxEsc(_mxStat(s))}</option>`).join("")}</select>
       <select data-mx="game" style="width:auto;padding:2px 4px"><option value="">every game</option>${games.map(([id, t]) => `<option value="${_mxEsc(id)}"${_mx.game === String(id) ? " selected" : ""}>${_mxEsc(t)}</option>`).join("")}</select>
+      <select data-mx="team" style="width:auto;padding:2px 4px"><option value="">every team</option>${teams.map((t) => `<option value="${_mxEsc(t)}"${_mx.team === t ? " selected" : ""}>${_mxEsc(t)}</option>`).join("")}</select>
       <label style="display:inline-flex;flex-direction:row;align-items:center;gap:4px;white-space:nowrap"><input type="checkbox" data-mx="listed" ${_mx.listed ? "checked" : ""} style="width:auto;margin:0"/> only lines Kalshi lists</label>
       <label style="display:inline-flex;flex-direction:row;align-items:center;gap:4px;white-space:nowrap"><input type="checkbox" data-mx="fold" ${_mx.fold ? "checked" : ""} style="width:auto;margin:0"/> best line per player and stat</label></div>
     <div class="small" style="margin-bottom:6px">Side: <select data-mx="side" style="width:auto;padding:2px 4px">${_MX_SIDES.map(([k, t]) => `<option value="${k}"${_mx.side === k ? " selected" : ""}>${t}</option>`).join("")}</select>
@@ -648,8 +668,10 @@ function mxProvenView(d) {
   const stats = [...new Set(rows.map((r) => r.m.stat))];
   const started = _mxStarted(d);
   const games = (d.games || []).filter((g) => !started.has(String(g.game_id))).map((g) => [g.game_id, `${g.away} @ ${g.home}`]);
+  const teams = _mxTeams(rows);
   if (_mx.stat) rows = rows.filter((r) => String(r.m.stat) === _mx.stat);
   if (_mx.game) rows = rows.filter((r) => String(r.p.game_id) === _mx.game);
+  if (_mx.team) rows = rows.filter((r) => String(r.p.team) === _mx.team);
   let folded = 0;
   if (_mx.fold) {
     const top = new Map();
@@ -683,6 +705,7 @@ function mxProvenView(d) {
     : `No line Kalshi lists has ${got.minN}+ games this season here - lower "games" to see shorter records.`;
   return `<div class="small" style="margin-bottom:6px"><select data-mx="stat" style="width:auto;padding:2px 4px"><option value="">every stat</option>${stats.map((s) => `<option value="${_mxEsc(s)}"${_mx.stat === String(s) ? " selected" : ""}>${_mxEsc(_mxStat(s))}</option>`).join("")}</select>
       <select data-mx="game" style="width:auto;padding:2px 4px"><option value="">every game</option>${games.map(([id, t]) => `<option value="${_mxEsc(id)}"${_mx.game === String(id) ? " selected" : ""}>${_mxEsc(t)}</option>`).join("")}</select>
+      <select data-mx="team" style="width:auto;padding:2px 4px"><option value="">every team</option>${teams.map((t) => `<option value="${_mxEsc(t)}"${_mx.team === t ? " selected" : ""}>${_mxEsc(t)}</option>`).join("")}</select>
       games: <select data-mx="mingames" style="width:auto;padding:2px 4px">${_MX_MIN_GAMES.map((n) => `<option value="${n}"${got.minN === n ? " selected" : ""}>${n}+</option>`).join("")}</select>
       <label style="display:inline-flex;flex-direction:row;align-items:center;gap:4px;white-space:nowrap"><input type="checkbox" data-mx="fold" ${_mx.fold ? "checked" : ""} style="width:auto;margin:0"/> one line per player and stat</label></div>
     <div class="small" style="color:var(--muted);margin-bottom:4px">How often each player cleared a line Kalshi lists today, in his games this season - what happened, not a forecast.${folded ? ` ${folded} other line${folded === 1 ? "" : "s"} folded.` : ""}
