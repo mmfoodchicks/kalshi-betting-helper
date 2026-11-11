@@ -256,11 +256,15 @@ const L = (k, hits, n, labels) => ({k, p: 0.6, p_lo: 0.58, p_hi: 0.62, labels, f
   value: {best_side: 'yes', ev_yes: 5, ev_no: -8, ev_interval: {yes: [4, 6], no: [-9, -7]}, believable: true,
           edge: 0.05, p_market: 0.5, market_kind: 'two_sided'}});
 const P = (id, name, team, line) => ({player_id: id, name, team, opp: 'X', game_id: 'g', markets: [{stat: 'ast', lines: [line]}]});
-const d = {status: 'ok', games: [{game_id: 'g', away: 'A', home: 'B'}], players: [
+const now = Date.now() / 1000;
+const d = {status: 'ok', games: [{game_id: 'late', away: 'LAL', home: 'DEN', start_ts: now + 9 * 3600},
+    {game_id: 'nost', away: 'NO', home: 'START'}, {game_id: 'early', away: 'NYK', home: 'BOS', start_ts: now + 3600},
+    {game_id: 'mid', away: 'MIA', home: 'ATL', start_ts: now + 5 * 3600}], players: [
   P('1', 'Both', 'BOS', L(4, 9, 9, ['positive_ev', 'strong_fit'])),     // proven + strong fit + +EV
   P('2', 'Prov', 'BOS', L(4, 9, 9, ['positive_ev'])),                   // proven + +EV
   P('3', 'Fit', 'NYK', L(4, 5, 9, ['positive_ev', 'strong_fit'])),      // strong fit + +EV, not proven
-  P('4', 'Plain', 'NYK', L(4, 5, 9, []))]};
+  P('4', 'Plain', 'LAL', L(4, 5, 9, []))]};
+d.players.forEach((p) => { p.game_id = p.team === 'LAL' ? 'late' : 'early'; });
 _mx.data = d; _mx.listed = false; _mx.fold = true; _mx.side = 'best'; _mx.sort = 'best'; _mx.dir = -1;
 const names = (html) => [...html.matchAll(/data-mx="open" data-val="[^"]*">([^<]*)<\/a>/g)].map((m) => m[1]).sort();
 const on = (html) => [...html.matchAll(/class="ptchip on" data-mx="label" data-val="([^"]*)"/g)].map((m) => m[1]);
@@ -272,12 +276,14 @@ tap('strong_fit'); const hTwo = mxScanView(d); const two = [names(hTwo), on(hTwo
 tap('strong_fit'); tap('positive_ev'); const pe = names(mxScanView(d));
 tap('<img src=x>'); tap('constructor'); const bad = _mx.labels.slice();
 tap(''); const cleared = _mx.labels.slice();
-const pick = (value) => _mxChange({target: {closest: () => ({dataset: {mx: 'team'}, value})}});
-pick('NYK'); const hT = mxScanView(d); const team = names(hT); const provenTeam = names(mxProvenView(d));
+const pick = (value) => _mxChange({target: {closest: () => ({dataset: {mx: 'game'}, value})}});
+pick('early'); const hT = mxScanView(d); const team = names(hT); const provenTeam = names(mxProvenView(d));
 tap('strong_fit'); const teamFit = names(mxScanView(d)); tap('');
-const opts = [...hT.matchAll(/<option value="([A-Z]+)"( selected)?>/g)].filter((m) => ['BOS', 'NYK'].includes(m[1])).map((m) => m[1] + (m[2] ? '*' : ''));
-const pvOpts = /data-mx="team"/.test(mxProvenView(d));
-process.stdout.write(JSON.stringify({none, one, two, pe, bad, cleared, team, provenTeam, teamFit, opts, pvOpts}));
+const menu = (html) => [...html.slice(html.indexOf('data-mx="game"')).split('</select>')[0].matchAll(/<option value="([a-z]*)"( selected)?>([^<]*)<\/option>/g)]
+  .map((m) => [m[1] + (m[2] ? '*' : ''), m[3]]);
+const opts = menu(hT), pvOpts = menu(mxProvenView(d)).map((m) => m[0]);
+process.stdout.write(JSON.stringify({none, one, two, pe, bad, cleared, team, provenTeam, teamFit, opts, pvOpts,
+  noTeam: !/data-mx="team"/.test(hT + mxProvenView(d))}));
 """)
             r = subprocess.run(["node", "-e", h], capture_output=True, text=True, timeout=30)
             o = json.loads(r.stdout) if r.returncode == 0 and r.stdout else None
@@ -286,8 +292,13 @@ process.stdout.write(JSON.stringify({none, one, two, pe, bad, cleared, team, pro
                 and o["one"] == [["Both", "Prov"], ["proven"]] \
                 and o["two"] == [["Both"], ["strong_fit", "proven"]] \
                 and o["pe"] == ["Both", "Prov"] and o["bad"] == ["proven", "positive_ev"] and o["cleared"] == [] \
-                and o["team"] == ["Fit", "Plain"] and o["provenTeam"] == ["Fit", "Plain"] and o["teamFit"] == ["Fit"] \
-                and o["opts"] == ["BOS", "NYK*"] and o["pvOpts"] is True
+                and o["team"] == ["Both", "Fit", "Prov"] and o["provenTeam"] == ["Both", "Fit", "Prov"] \
+                and o["teamFit"] == ["Both", "Fit"] \
+                and [m[0] for m in o["opts"]] == ["", "early*", "mid", "late", "nost"] \
+                and o["opts"][0][1] == "every matchup" and o["opts"][1][1].endswith(" · NYK @ BOS") \
+                and re.match(r"^[A-Z][a-z]{2} \d{1,2}:\d{2}\s?[AP]M · NYK @ BOS$", o["opts"][1][1]) is not None \
+                and o["opts"][4][1] == "NO @ START" and o["pvOpts"] == ["", "early*", "mid", "late", "nost"] \
+                and o["noTeam"] is True
     except Exception as e:
         ok, out = False, repr(e)
     return ok, out
@@ -875,11 +886,13 @@ def run(ck):
        "(five narrow columns on a phone: the first version pushed the bet and the model off the screen)",
        pv_ok is not False and 'data-val="proven">' in js and "mxProvenView(d)" in js, str((pv_ok, pv_out)))
     fl_ok, fl_out = _mx_filters_check(js)
-    ck("Matchups tab (the owner, 2026-11-11: 'filter by team' and 'let me pick more than one tab, like if I want "
-       "proven and strong fit or proven and ev+'): the label chips are a set -- a tap adds or removes one, every "
-       "chip chosen must hold (Proven AND Strong fit keeps the one line that is both), 'all' clears them and a value "
-       "the tab does not know is refused -- and a team menu on Opportunities and on Proven keeps one team's players, "
-       "together with the chips",
+    ck("Matchups tab (the owner, 2026-11-11: 'let me pick more than one tab, like if I want proven and strong fit or "
+       "proven and ev+', and of the menu, 'change it from team to match up and sort it by that matches start time. So "
+       "the first game of the day is at the top'): the label chips are a set -- a tap adds or removes one, every chip "
+       "chosen must hold (Proven AND Strong fit keeps the one line that is both), 'all' clears them and a value the "
+       "tab does not know is refused -- and ONE matchup menu on Opportunities and on Proven lists the games by start, "
+       "the earliest first with its Mountain-time start on the row and a game with no start last, keeps one game's "
+       "players together with the chips, and there is no team menu",
        fl_ok is not False, str((fl_ok, fl_out)))
     xr_ok, xr_out = _mx_xref_check(js)
     ck("Matchups tab (the Proven record on Opportunities, the owner 2026-11-10: 'cross reference this list into the "
