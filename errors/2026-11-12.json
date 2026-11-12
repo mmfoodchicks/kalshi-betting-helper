@@ -2,6 +2,50 @@
  "errors": [
   {
    "code": "NFL-DRIFT",
+   "id": 2506,
+   "last_ts": 1794476595.876516,
+   "msg": "Total: the model sits +4.7 points off Kalshi's mid over 100 rungs in 14 games",
+   "n": 2,
+   "path": "Total",
+   "pid": 282,
+   "tb": "",
+   "ts": 1794476595.876516
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2505,
+   "last_ts": 1794474785.786013,
+   "msg": "Total: the model sits +4.3 points off Kalshi's mid over 109 rungs in 14 games",
+   "n": 1,
+   "path": "Total",
+   "pid": 282,
+   "tb": "",
+   "ts": 1794474785.786013
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2504,
+   "last_ts": 1794472973.578848,
+   "msg": "Total: the model sits +4.0 points off Kalshi's mid over 122 rungs in 14 games",
+   "n": 1,
+   "path": "Total",
+   "pid": 282,
+   "tb": "",
+   "ts": 1794472973.578848
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2503,
+   "last_ts": 1794446217.6823595,
+   "msg": "Total: the model sits +4.0 points off Kalshi's mid over 147 rungs in 14 games",
+   "n": 1,
+   "path": "Total",
+   "pid": 172,
+   "tb": "",
+   "ts": 1794446217.6823595
+  },
+  {
+   "code": "NFL-DRIFT",
    "id": 2502,
    "last_ts": 1794405334.3270118,
    "msg": "Rec Yds: the model sits -4.1 points off Kalshi's mid over 78 rungs in 7 games",
@@ -1715,391 +1759,17 @@
    "pid": 2165,
    "tb": "",
    "ts": 1793892462.7967446
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2346,
-   "last_ts": 1793890648.8181639,
-   "msg": "Rush Yds: the model sits -8.3 points off Kalshi's mid over 90 rungs in 14 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 2165,
-   "tb": "",
-   "ts": 1793890648.8181639
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2345,
-   "last_ts": 1793890305.653735,
-   "msg": "Rush Yds: the model sits -7.9 points off Kalshi's mid over 87 rungs in 14 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 2133,
-   "tb": "",
-   "ts": 1793890305.653735
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2344,
-   "last_ts": 1793888491.21975,
-   "msg": "Rush Yds: the model sits -6.8 points off Kalshi's mid over 85 rungs in 14 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 2133,
-   "tb": "",
-   "ts": 1793888491.21975
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2343,
-   "last_ts": 1793886672.4213917,
-   "msg": "Rush Yds: the model sits -7.0 points off Kalshi's mid over 83 rungs in 14 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 2133,
-   "tb": "",
-   "ts": 1793886672.4213917
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2342,
-   "last_ts": 1793884858.330684,
-   "msg": "Rush Yds: the model sits -6.4 points off Kalshi's mid over 89 rungs in 13 games",
-   "n": 2,
-   "path": "Rush Yds",
-   "pid": 2133,
-   "tb": "",
-   "ts": 1793884639.0218208
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2341,
-   "last_ts": 1793882822.9423645,
-   "msg": "Rush Yds: the model sits -6.7 points off Kalshi's mid over 89 rungs in 13 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 2099,
-   "tb": "",
-   "ts": 1793882822.9423645
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2340,
-   "last_ts": 1793880999.9710166,
-   "msg": "Rush Yds: the model sits -7.2 points off Kalshi's mid over 77 rungs in 13 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 2099,
-   "tb": "",
-   "ts": 1793880999.9710166
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2339,
-   "last_ts": 1793879182.6913793,
-   "msg": "Rush Yds: the model sits -7.0 points off Kalshi's mid over 80 rungs in 13 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 2099,
-   "tb": "",
-   "ts": 1793879182.6913793
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2338,
-   "last_ts": 1793877367.6241946,
-   "msg": "Rush Yds: the model sits -7.6 points off Kalshi's mid over 74 rungs in 13 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 2099,
-   "tb": "",
-   "ts": 1793877367.6241946
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2337,
-   "last_ts": 1793875551.6111004,
-   "msg": "Rush Yds: the model sits -9.3 points off Kalshi's mid over 60 rungs in 13 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 2099,
-   "tb": "",
-   "ts": 1793875551.6111004
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2336,
-   "last_ts": 1793873799.4692674,
-   "msg": "Rush Yds: the model sits -9.7 points off Kalshi's mid over 46 rungs in 11 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 2063,
-   "tb": "",
-   "ts": 1793873799.4692674
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2335,
-   "last_ts": 1793871983.6590595,
-   "msg": "Rush Yds: the model sits -10.3 points off Kalshi's mid over 43 rungs in 10 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 2063,
-   "tb": "",
-   "ts": 1793871983.6590595
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2334,
-   "last_ts": 1793870173.2615404,
-   "msg": "Rush Yds: the model sits -9.5 points off Kalshi's mid over 49 rungs in 11 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 2063,
-   "tb": "",
-   "ts": 1793870173.2615404
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2333,
-   "last_ts": 1793868363.109146,
-   "msg": "Rush Yds: the model sits -8.9 points off Kalshi's mid over 56 rungs in 13 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 2063,
-   "tb": "",
-   "ts": 1793868363.109146
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2332,
-   "last_ts": 1793866550.5019536,
-   "msg": "Rush Yds: the model sits -9.0 points off Kalshi's mid over 56 rungs in 13 games",
-   "n": 2,
-   "path": "Rush Yds",
-   "pid": 2063,
-   "tb": "",
-   "ts": 1793866297.8072362
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2331,
-   "last_ts": 1793864465.164431,
-   "msg": "Rush Yds: the model sits -8.1 points off Kalshi's mid over 71 rungs in 13 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 2043,
-   "tb": "",
-   "ts": 1793864465.164431
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2330,
-   "last_ts": 1793862651.1865957,
-   "msg": "Rush Yds: the model sits -7.8 points off Kalshi's mid over 68 rungs in 13 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 2043,
-   "tb": "",
-   "ts": 1793862651.1865957
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2329,
-   "last_ts": 1793860819.2294772,
-   "msg": "Rush Yds: the model sits -8.2 points off Kalshi's mid over 66 rungs in 12 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 2043,
-   "tb": "",
-   "ts": 1793860819.2294772
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2328,
-   "last_ts": 1793860725.4586923,
-   "msg": "Rush Yds: the model sits -8.5 points off Kalshi's mid over 65 rungs in 12 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 2008,
-   "tb": "",
-   "ts": 1793860725.4586923
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2327,
-   "last_ts": 1793858907.2397244,
-   "msg": "Rush Yds: the model sits -8.0 points off Kalshi's mid over 65 rungs in 12 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 2008,
-   "tb": "",
-   "ts": 1793858907.2397244
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2326,
-   "last_ts": 1793857075.6394956,
-   "msg": "Rush Yds: the model sits -8.4 points off Kalshi's mid over 65 rungs in 12 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 2008,
-   "tb": "",
-   "ts": 1793857075.6394956
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2325,
-   "last_ts": 1793855263.294143,
-   "msg": "Rush Yds: the model sits -7.9 points off Kalshi's mid over 62 rungs in 12 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 2008,
-   "tb": "",
-   "ts": 1793855263.294143
-  },
-  {
-   "code": "MXR-grade-fetch",
-   "id": 2323,
-   "last_ts": 1793855184.1424377,
-   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "n": 2,
-   "path": "KXNBA3PT-26NOV04INDMEM",
-   "pid": 2008,
-   "tb": "Traceback (most recent call last):\n  File \"/app/mx_record.py\", line 297, in grade_due\n    d = fetch(ev) or {}\n        ^^^^^^^^^\n  File \"/app/mx_record.py\", line 283, in <lambda>\n    fetch = fetch or (lambda ev: kalshi._get_json(f\"{kalshi.BASE}/markets?event_ticker={ev}&limit=1000\"))\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 37, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
-   "ts": 1793854866.5987353
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2324,
-   "last_ts": 1793854905.73844,
-   "msg": "Rush Yds: the model sits -8.3 points off Kalshi's mid over 61 rungs in 12 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 1979,
-   "tb": "",
-   "ts": 1793854905.73844
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2322,
-   "last_ts": 1793853090.3679128,
-   "msg": "Rush Yds: the model sits -8.4 points off Kalshi's mid over 62 rungs in 12 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 1979,
-   "tb": "",
-   "ts": 1793853090.3679128
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2321,
-   "last_ts": 1793851280.8749568,
-   "msg": "Rush Yds: the model sits -8.6 points off Kalshi's mid over 61 rungs in 12 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 1979,
-   "tb": "",
-   "ts": 1793851280.8749568
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2320,
-   "last_ts": 1793849466.7069688,
-   "msg": "Rush Yds: the model sits -8.7 points off Kalshi's mid over 60 rungs in 11 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 1979,
-   "tb": "",
-   "ts": 1793849466.7069688
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2319,
-   "last_ts": 1793847654.1519086,
-   "msg": "Rush Yds: the model sits -9.0 points off Kalshi's mid over 55 rungs in 11 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 1979,
-   "tb": "",
-   "ts": 1793847654.1519086
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2318,
-   "last_ts": 1793847163.4425118,
-   "msg": "Rush Yds: the model sits -9.2 points off Kalshi's mid over 53 rungs in 11 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 1961,
-   "tb": "",
-   "ts": 1793847163.4425118
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2317,
-   "last_ts": 1793845347.731095,
-   "msg": "Rush Yds: the model sits -9.1 points off Kalshi's mid over 58 rungs in 11 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 1961,
-   "tb": "",
-   "ts": 1793845347.731095
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2316,
-   "last_ts": 1793843534.11731,
-   "msg": "Rush Yds: the model sits -9.9 points off Kalshi's mid over 49 rungs in 10 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 1961,
-   "tb": "",
-   "ts": 1793843534.11731
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2315,
-   "last_ts": 1793841721.264925,
-   "msg": "Rush Yds: the model sits -8.8 points off Kalshi's mid over 50 rungs in 10 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 1961,
-   "tb": "",
-   "ts": 1793841721.264925
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2314,
-   "last_ts": 1793841163.8266742,
-   "msg": "Rush Yds: the model sits -9.2 points off Kalshi's mid over 48 rungs in 10 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 1926,
-   "tb": "",
-   "ts": 1793841163.8266742
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2313,
-   "last_ts": 1793839348.8907185,
-   "msg": "Rush Yds: the model sits -8.3 points off Kalshi's mid over 56 rungs in 10 games",
-   "n": 1,
-   "path": "Rush Yds",
-   "pid": 1926,
-   "tb": "",
-   "ts": 1793839348.8907185
   }
  ],
- "generated_at": 1794443940.3733919,
+ "generated_at": 1794496176.7332854,
  "summary": [
   {
    "code": "NFL-DRIFT",
-   "first_ts": 1793839348.8907185,
-   "last_msg": "Rec Yds: the model sits -4.1 points off Kalshi's mid over 78 rungs in 7 games",
-   "last_ts": 1794405334.3270118,
-   "n": 254,
-   "variants": 184
+   "first_ts": 1793892462.7967446,
+   "last_msg": "Total: the model sits +4.7 points off Kalshi's mid over 100 rungs in 14 games",
+   "last_ts": 1794476595.876516,
+   "n": 224,
+   "variants": 155
   },
   {
    "code": "DK-lobby-empty",
@@ -2108,14 +1778,6 @@
    "last_ts": 1794271325.4685447,
    "n": 4,
    "variants": 4
-  },
-  {
-   "code": "MXR-grade-fetch",
-   "first_ts": 1793854866.5987353,
-   "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "last_ts": 1793855184.1424377,
-   "n": 2,
-   "variants": 1
   },
   {
    "code": "KAL-candles",
