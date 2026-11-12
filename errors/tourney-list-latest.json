@@ -1,8 +1,8 @@
 {
  "boards": [
   {
-   "age_s": 25091,
-   "built_ts": 1794471083,
+   "age_s": 546,
+   "built_ts": 1794526009,
    "contest": "NFL Showdown $1.2M Thursday Night Showdown [$300K to 1st] (WAS @ NYG)",
    "dg": 156421,
    "ends_ts": 1794546900,
@@ -19,7 +19,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 225747,
+   "age_s": 256129,
    "built_ts": 1794270427,
    "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (BUF @ MIN)",
    "dg": 156014,
@@ -37,7 +37,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 312075,
+   "age_s": 342456,
    "built_ts": 1794184099,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (TB @ CHI)",
    "dg": 156013,
@@ -55,7 +55,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 337936,
+   "age_s": 368317,
    "built_ts": 1794158240,
    "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 155994,
@@ -71,7 +71,7 @@
    "worlds": 180000
   },
   {
-   "age_s": 570966,
+   "age_s": 601347,
    "built_ts": 1793925205,
    "contest": "NFL Showdown $1.25M Thursday Night Showdown [$300K to 1st] (JAX @ BAL)",
    "dg": 156000,
@@ -89,6 +89,35 @@
    "worlds": 60000
   }
  ],
- "pending": [],
+ "pending": [
+  {
+   "dg": 156421,
+   "kind": "showdown",
+   "label": "WAS @ NYG showdown \u00b7 Thu, Nov 12 8:15 PM ET",
+   "pick": {
+    "captain": null,
+    "exclude": [
+     {
+      "id": "787660",
+      "name": "J.J. McCarthy",
+      "team": "NYG"
+     }
+    ],
+    "force": []
+   },
+   "pick_names": {
+    "captain": null,
+    "exclude": [
+     "J.J. McCarthy"
+    ],
+    "force": [],
+    "notes": [],
+    "waived": []
+   },
+   "sport": "nfl",
+   "starts_ts": 1794532500,
+   "ts": 1794526087
+  }
+ ],
  "sport": "nfl"
 }
