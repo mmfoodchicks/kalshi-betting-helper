@@ -1,12 +1,12 @@
 {
  "ats": {
-  "accuracy_pct": 52.9,
-  "brier": 0.2433,
+  "accuracy_pct": 53.2,
+  "brier": 0.2431,
   "brier_baseline": 0.25,
   "calibration": [
    {
-    "actual": 50.2,
-    "n": 333,
+    "actual": 50.4,
+    "n": 335,
     "predicted": 53.1,
     "range": "50-60%"
    },
@@ -29,21 +29,21 @@
     "range": "80-100%"
    }
   ],
-  "clv_avg": -0.93,
-  "clv_n": 359,
+  "clv_avg": -0.94,
+  "clv_n": 361,
   "clv_note": "pre-game closes only",
-  "clv_positive_pct": 23.1,
+  "clv_positive_pct": 23.0,
   "edge_bets": 65,
   "edge_threshold": 3.0,
   "fees_included": true,
-  "graded": 359,
+  "graded": 361,
   "losses": 169,
-  "pending": 1401,
-  "roi_bets": 359,
+  "pending": 1433,
+  "roi_bets": 361,
   "roi_edge_pct": 10.0,
-  "roi_pct": -5.8,
+  "roi_pct": -5.4,
   "totals_accuracy": null,
-  "wins": 190
+  "wins": 192
  },
  "div": null,
  "divisions": {
@@ -152,13 +152,13 @@
   },
   "fbs": {
    "ats": {
-    "accuracy_pct": 50.8,
-    "brier": 0.2485,
+    "accuracy_pct": 51.4,
+    "brier": 0.2483,
     "brier_baseline": 0.25,
     "calibration": [
      {
-      "actual": 50.0,
-      "n": 178,
+      "actual": 50.6,
+      "n": 180,
       "predicted": 52.3,
       "range": "50-60%"
      },
@@ -169,21 +169,21 @@
       "range": "60-70%"
      }
     ],
-    "clv_avg": -0.41,
-    "clv_n": 181,
+    "clv_avg": -0.44,
+    "clv_n": 183,
     "clv_note": "pre-game closes only",
-    "clv_positive_pct": 22.7,
+    "clv_positive_pct": 22.4,
     "edge_bets": 30,
     "edge_threshold": 3.0,
     "fees_included": true,
-    "graded": 181,
+    "graded": 183,
     "losses": 89,
-    "pending": 669,
-    "roi_bets": 181,
+    "pending": 673,
+    "roi_bets": 183,
     "roi_edge_pct": 2.9,
-    "roi_pct": -4.7,
+    "roi_pct": -3.7,
     "totals_accuracy": null,
-    "wins": 92
+    "wins": 94
    },
    "regular": {
     "accuracy_pct": 72.8,
@@ -299,7 +299,7 @@
     "fees_included": true,
     "graded": 170,
     "losses": 78,
-    "pending": 568,
+    "pending": 596,
     "roi_bets": 170,
     "roi_edge_pct": 10.0,
     "roi_pct": -9.0,
@@ -391,12 +391,12 @@
   },
   "vs_market": {
    "beats_market": false,
-   "edge": -0.0176,
-   "market_brier": 0.1787,
-   "market_logloss": 0.5296,
-   "model_brier": 0.186,
-   "model_logloss": 0.5472,
-   "n": 468,
+   "edge": -0.0173,
+   "market_brier": 0.1782,
+   "market_logloss": 0.5284,
+   "model_brier": 0.1853,
+   "model_logloss": 0.5458,
+   "n": 470,
    "ready": true
   }
  },
