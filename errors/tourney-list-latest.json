@@ -1,8 +1,44 @@
 {
  "boards": [
   {
-   "age_s": 546,
-   "built_ts": 1794526009,
+   "age_s": 17605,
+   "built_ts": 1794534431,
+   "contest": "NFL Showdown $1.11M Monday Night Showdown [$250K to 1st] (LAC @ BAL)",
+   "dg": 156434,
+   "ends_ts": 1794892500,
+   "entries": 65359,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "BAL vs LAC",
+   "pick": false,
+   "starts": "2026-11-17T01:15:00.0000000Z",
+   "teams": [
+    "BAL",
+    "LAC"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 18230,
+   "built_ts": 1794533803,
+   "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (PIT @ CIN)",
+   "dg": 156433,
+   "ends_ts": 1794806400,
+   "entries": 58823,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "CIN vs PIT",
+   "pick": false,
+   "starts": "2026-11-16T01:20:00.0000000Z",
+   "teams": [
+    "CIN",
+    "PIT"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 20348,
+   "built_ts": 1794531685,
    "contest": "NFL Showdown $1.2M Thursday Night Showdown [$300K to 1st] (WAS @ NYG)",
    "dg": 156421,
    "ends_ts": 1794546900,
@@ -19,7 +55,25 @@
    "worlds": 60000
   },
   {
-   "age_s": 256129,
+   "age_s": 21308,
+   "built_ts": 1794530724,
+   "contest": "NFL Showdown $1.2M Thursday Night Showdown [$300K to 1st] (WAS @ NYG)",
+   "dg": 156421,
+   "ends_ts": 1794546900,
+   "entries": 70588,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "Your build: NYG vs WAS -- Austin Ekeler, Dominic Zvada, Drew Stevens, J.J. McCarthy out",
+   "pick": true,
+   "starts": "2026-11-13T01:15:00.0000000Z",
+   "teams": [
+    "NYG",
+    "WAS"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 281608,
    "built_ts": 1794270427,
    "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (BUF @ MIN)",
    "dg": 156014,
@@ -37,7 +91,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 342456,
+   "age_s": 367935,
    "built_ts": 1794184099,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (TB @ CHI)",
    "dg": 156013,
@@ -55,7 +109,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 368317,
+   "age_s": 393796,
    "built_ts": 1794158240,
    "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 155994,
@@ -71,7 +125,7 @@
    "worlds": 180000
   },
   {
-   "age_s": 601347,
+   "age_s": 626827,
    "built_ts": 1793925205,
    "contest": "NFL Showdown $1.25M Thursday Night Showdown [$300K to 1st] (JAX @ BAL)",
    "dg": 156000,
@@ -89,35 +143,6 @@
    "worlds": 60000
   }
  ],
- "pending": [
-  {
-   "dg": 156421,
-   "kind": "showdown",
-   "label": "WAS @ NYG showdown \u00b7 Thu, Nov 12 8:15 PM ET",
-   "pick": {
-    "captain": null,
-    "exclude": [
-     {
-      "id": "787660",
-      "name": "J.J. McCarthy",
-      "team": "NYG"
-     }
-    ],
-    "force": []
-   },
-   "pick_names": {
-    "captain": null,
-    "exclude": [
-     "J.J. McCarthy"
-    ],
-    "force": [],
-    "notes": [],
-    "waived": []
-   },
-   "sport": "nfl",
-   "starts_ts": 1794532500,
-   "ts": 1794526087
-  }
- ],
+ "pending": [],
  "sport": "nfl"
 }
