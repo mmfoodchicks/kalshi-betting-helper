@@ -1,7 +1,25 @@
 {
  "boards": [
   {
-   "age_s": 20585,
+   "age_s": 2090,
+   "built_ts": 1794864256,
+   "contest": "NFL Showdown $1.11M Monday Night Showdown [$250K to 1st] (LAC @ BAL)",
+   "dg": 156434,
+   "ends_ts": 1794892500,
+   "entries": 65359,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "BAL vs LAC",
+   "pick": false,
+   "starts": "2026-11-17T01:15:00.0000000Z",
+   "teams": [
+    "BAL",
+    "LAC"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 76732,
    "built_ts": 1794789614,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (PIT @ CIN)",
    "dg": 156433,
@@ -19,25 +37,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 37331,
-   "built_ts": 1794772868,
-   "contest": "NFL Showdown $1.11M Monday Night Showdown [$250K to 1st] (LAC @ BAL)",
-   "dg": 156434,
-   "ends_ts": 1794892500,
-   "entries": 65359,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "BAL vs LAC",
-   "pick": false,
-   "starts": "2026-11-17T01:15:00.0000000Z",
-   "teams": [
-    "BAL",
-    "LAC"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 46527,
+   "age_s": 102674,
    "built_ts": 1794763673,
    "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 156416,
@@ -53,7 +53,7 @@
    "worlds": 180000
   },
   {
-   "age_s": 278513,
+   "age_s": 334660,
    "built_ts": 1794531685,
    "contest": "NFL Showdown $1.2M Thursday Night Showdown [$300K to 1st] (WAS @ NYG)",
    "dg": 156421,
@@ -71,7 +71,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 279472,
+   "age_s": 335619,
    "built_ts": 1794530724,
    "contest": "NFL Showdown $1.2M Thursday Night Showdown [$300K to 1st] (WAS @ NYG)",
    "dg": 156421,
@@ -89,7 +89,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 539772,
+   "age_s": 595919,
    "built_ts": 1794270427,
    "contest": "NFL Showdown $1.25M Monday Night Showdown [$300K to 1st] (BUF @ MIN)",
    "dg": 156014,
@@ -107,7 +107,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 626099,
+   "age_s": 682246,
    "built_ts": 1794184099,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (TB @ CHI)",
    "dg": 156013,
@@ -123,22 +123,6 @@
     "TB"
    ],
    "worlds": 60000
-  },
-  {
-   "age_s": 651961,
-   "built_ts": 1794158240,
-   "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st]",
-   "dg": 155994,
-   "ends_ts": 1794189600,
-   "entries": 147058,
-   "entry_fee": 20.0,
-   "kind": "classic",
-   "label": "Sunday main (11 games)",
-   "n_contests": 2,
-   "pick": false,
-   "starts": "2026-11-08T18:00:00.0000000Z",
-   "teams": null,
-   "worlds": 180000
   }
  ],
  "pending": [],
