@@ -1539,20 +1539,9 @@
    "pid": 1588,
    "tb": "",
    "ts": 1794229330.663558
-  },
-  {
-   "code": "DK-lobby-empty",
-   "id": 2485,
-   "last_ts": 1794175103.821952,
-   "msg": "nascar: lobby answered with no draft groups",
-   "n": 1,
-   "path": null,
-   "pid": 1375,
-   "tb": "",
-   "ts": 1794175103.821952
   }
  ],
- "generated_at": 1794777364.1484458,
+ "generated_at": 1794810201.4307928,
  "summary": [
   {
    "code": "NFL-DRIFT",
@@ -1564,11 +1553,11 @@
   },
   {
    "code": "DK-lobby-empty",
-   "first_ts": 1794175103.821952,
+   "first_ts": 1794229330.663558,
    "last_msg": "nascar: lobby answered with no draft groups",
    "last_ts": 1794763849.7020798,
-   "n": 20,
-   "variants": 16
+   "n": 19,
+   "variants": 15
   },
   {
    "code": "KAL-candles",
