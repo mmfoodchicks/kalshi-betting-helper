@@ -389,11 +389,11 @@
  },
  "market": {
   "close": {
-   "avg_capture_c": 0.14,
+   "avg_capture_c": 0.16,
    "flat_pct": 4.4,
-   "n": 548,
+   "n": 550,
    "ready": true,
-   "toward_pct": 45.4
+   "toward_pct": 45.6
   },
   "vs_market": {
    "beats_market": false,
