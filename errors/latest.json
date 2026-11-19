@@ -1,6 +1,127 @@
 {
  "errors": [
   {
+   "code": "MXR-grade-fetch",
+   "id": 2637,
+   "last_ts": 1795072147.3708854,
+   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "n": 1,
+   "path": "KXNBA3PT-26NOV18UTALAL",
+   "pid": 13930,
+   "tb": "Traceback (most recent call last):\n  File \"/app/mx_record.py\", line 297, in grade_due\n    d = fetch(ev) or {}\n        ^^^^^^^^^\n  File \"/app/mx_record.py\", line 283, in <lambda>\n    fetch = fetch or (lambda ev: kalshi._get_json(f\"{kalshi.BASE}/markets?event_ticker={ev}&limit=1000\"))\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 37, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
+   "ts": 1795072147.3708854
+  },
+  {
+   "code": "MXR-grade-fetch",
+   "id": 2636,
+   "last_ts": 1795064734.2731757,
+   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "n": 1,
+   "path": "KXNBA3PT-26NOV18DETNOP",
+   "pid": 13930,
+   "tb": "Traceback (most recent call last):\n  File \"/app/mx_record.py\", line 297, in grade_due\n    d = fetch(ev) or {}\n        ^^^^^^^^^\n  File \"/app/mx_record.py\", line 283, in <lambda>\n    fetch = fetch or (lambda ev: kalshi._get_json(f\"{kalshi.BASE}/markets?event_ticker={ev}&limit=1000\"))\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 37, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
+   "ts": 1795064734.2731757
+  },
+  {
+   "code": "UFCC-fights",
+   "id": 2635,
+   "last_ts": 1795061795.1575537,
+   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "n": 1,
+   "path": null,
+   "pid": 13930,
+   "tb": "Traceback (most recent call last):\n  File \"/app/ufc_combo.py\", line 99, in markets\n    for m in _series(\"KXUFCFIGHT\"):\n             ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/ufc_combo.py\", line 66, in _series\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 37, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
+   "ts": 1795061795.1575537
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2634,
+   "last_ts": 1795058753.2241676,
+   "msg": "Total: the model sits +4.3 points off Kalshi's mid over 137 rungs in 13 games",
+   "n": 1,
+   "path": "Total",
+   "pid": 13930,
+   "tb": "",
+   "ts": 1795058753.2241676
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2633,
+   "last_ts": 1795058363.7413783,
+   "msg": "Total: the model sits +4.4 points off Kalshi's mid over 136 rungs in 13 games",
+   "n": 1,
+   "path": "Total",
+   "pid": 13904,
+   "tb": "",
+   "ts": 1795058363.7413783
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2632,
+   "last_ts": 1795056527.090699,
+   "msg": "Total: the model sits +4.3 points off Kalshi's mid over 134 rungs in 13 games",
+   "n": 1,
+   "path": "Total",
+   "pid": 13904,
+   "tb": "",
+   "ts": 1795056527.090699
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2631,
+   "last_ts": 1795054677.5458977,
+   "msg": "Total: the model sits +4.5 points off Kalshi's mid over 134 rungs in 13 games",
+   "n": 1,
+   "path": "Total",
+   "pid": 13904,
+   "tb": "",
+   "ts": 1795054677.5458977
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2630,
+   "last_ts": 1795052863.114351,
+   "msg": "Total: the model sits +4.3 points off Kalshi's mid over 134 rungs in 13 games",
+   "n": 1,
+   "path": "Total",
+   "pid": 13904,
+   "tb": "",
+   "ts": 1795052863.114351
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2629,
+   "last_ts": 1795051028.2389643,
+   "msg": "Total: the model sits +4.1 points off Kalshi's mid over 131 rungs in 13 games",
+   "n": 1,
+   "path": "Total",
+   "pid": 13904,
+   "tb": "",
+   "ts": 1795051028.2389643
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2628,
+   "last_ts": 1795050043.3208613,
+   "msg": "Total: the model sits +4.5 points off Kalshi's mid over 131 rungs in 13 games",
+   "n": 1,
+   "path": "Total",
+   "pid": 13878,
+   "tb": "",
+   "ts": 1795050043.3208613
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2627,
+   "last_ts": 1795048228.0031667,
+   "msg": "Total: the model sits +4.3 points off Kalshi's mid over 131 rungs in 13 games",
+   "n": 1,
+   "path": "Total",
+   "pid": 13878,
+   "tb": "",
+   "ts": 1795048228.0031667
+  },
+  {
    "code": "DK-lobby-empty",
    "id": 2626,
    "last_ts": 1794874240.3254368,
@@ -1352,28 +1473,17 @@
    "pid": 282,
    "tb": "",
    "ts": 1794472973.578848
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2503,
-   "last_ts": 1794446217.6823595,
-   "msg": "Total: the model sits +4.0 points off Kalshi's mid over 147 rungs in 14 games",
-   "n": 1,
-   "path": "Total",
-   "pid": 172,
-   "tb": "",
-   "ts": 1794446217.6823595
   }
  ],
- "generated_at": 1795033697.8305693,
+ "generated_at": 1795072824.9263499,
  "summary": [
   {
    "code": "NFL-DRIFT",
-   "first_ts": 1794446217.6823595,
-   "last_msg": "Total: the model sits +4.6 points off Kalshi's mid over 78 rungs in 5 games",
-   "last_ts": 1794775477.5679069,
-   "n": 170,
-   "variants": 106
+   "first_ts": 1794472973.578848,
+   "last_msg": "Total: the model sits +4.3 points off Kalshi's mid over 137 rungs in 13 games",
+   "last_ts": 1795058753.2241676,
+   "n": 177,
+   "variants": 113
   },
   {
    "code": "DK-lobby-empty",
@@ -1392,28 +1502,28 @@
    "variants": 1
   },
   {
+   "code": "MXR-grade-fetch",
+   "first_ts": 1794629245.7295632,
+   "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "last_ts": 1795072147.3708854,
+   "n": 3,
+   "variants": 3
+  },
+  {
+   "code": "UFCC-fights",
+   "first_ts": 1794656077.1360703,
+   "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "last_ts": 1795061795.1575537,
+   "n": 2,
+   "variants": 2
+  },
+  {
    "code": "UFCC-rounds",
    "first_ts": 1794633756.8475342,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
    "last_ts": 1794635588.8871918,
    "n": 2,
    "variants": 2
-  },
-  {
-   "code": "MXR-grade-fetch",
-   "first_ts": 1794629245.7295632,
-   "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "last_ts": 1794629245.7295632,
-   "n": 1,
-   "variants": 1
-  },
-  {
-   "code": "UFCC-fights",
-   "first_ts": 1794656077.1360703,
-   "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "last_ts": 1794656077.1360703,
-   "n": 1,
-   "variants": 1
   }
  ],
  "window_days": 7

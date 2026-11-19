@@ -1,7 +1,25 @@
 {
  "boards": [
   {
-   "age_s": 169439,
+   "age_s": 25484,
+   "built_ts": 1795047338,
+   "contest": "NFL Showdown $1.11M Thursday Night Showdown [$250K to 1st] (IND @ HOU)",
+   "dg": 156781,
+   "ends_ts": 1795151700,
+   "entries": 65359,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "HOU vs IND",
+   "pick": false,
+   "starts": "2026-11-20T01:15:00.0000000Z",
+   "teams": [
+    "HOU",
+    "IND"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 208566,
    "built_ts": 1794864256,
    "contest": "NFL Showdown $1.11M Monday Night Showdown [$250K to 1st] (LAC @ BAL)",
    "dg": 156434,
@@ -19,7 +37,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 244082,
+   "age_s": 283209,
    "built_ts": 1794789614,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (PIT @ CIN)",
    "dg": 156433,
@@ -37,7 +55,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 270023,
+   "age_s": 309150,
    "built_ts": 1794763673,
    "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 156416,
@@ -53,7 +71,7 @@
    "worlds": 180000
   },
   {
-   "age_s": 502009,
+   "age_s": 541136,
    "built_ts": 1794531685,
    "contest": "NFL Showdown $1.2M Thursday Night Showdown [$300K to 1st] (WAS @ NYG)",
    "dg": 156421,
@@ -71,7 +89,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 502968,
+   "age_s": 542095,
    "built_ts": 1794530724,
    "contest": "NFL Showdown $1.2M Thursday Night Showdown [$300K to 1st] (WAS @ NYG)",
    "dg": 156421,
