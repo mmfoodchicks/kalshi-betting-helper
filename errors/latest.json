@@ -1,6 +1,39 @@
 {
  "errors": [
   {
+   "code": "NFL-DRIFT",
+   "id": 2640,
+   "last_ts": 1795106082.8615246,
+   "msg": "Total: the model sits +4.4 points off Kalshi's mid over 138 rungs in 13 games",
+   "n": 1,
+   "path": "Total",
+   "pid": 16870,
+   "tb": "",
+   "ts": 1795106082.8615246
+  },
+  {
+   "code": "KNFL-markets-fetch",
+   "id": 2639,
+   "last_ts": 1795104722.3380542,
+   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "n": 1,
+   "path": null,
+   "pid": 16870,
+   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi_nfl.py\", line 108, in _fetch\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 37, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
+   "ts": 1795104722.3380542
+  },
+  {
+   "code": "UFCC-rounds",
+   "id": 2638,
+   "last_ts": 1795076371.570279,
+   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "n": 1,
+   "path": null,
+   "pid": 16339,
+   "tb": "Traceback (most recent call last):\n  File \"/app/ufc_combo.py\", line 109, in markets\n    for m in _series(\"KXUFCROUNDS\"):\n             ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/ufc_combo.py\", line 66, in _series\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 37, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
+   "ts": 1795076371.570279
+  },
+  {
    "code": "MXR-grade-fetch",
    "id": 2637,
    "last_ts": 1795072147.3708854,
@@ -1418,72 +1451,17 @@
    "pid": 439,
    "tb": "",
    "ts": 1794516556.6808066
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2508,
-   "last_ts": 1794514732.9036627,
-   "msg": "Receptions: the model sits -4.1 points off Kalshi's mid over 60 rungs in 8 games",
-   "n": 2,
-   "path": "Receptions",
-   "pid": 439,
-   "tb": "",
-   "ts": 1794514609.6546452
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2507,
-   "last_ts": 1794510978.2033367,
-   "msg": "Receptions: the model sits -4.7 points off Kalshi's mid over 53 rungs in 4 games",
-   "n": 1,
-   "path": "Receptions",
-   "pid": 420,
-   "tb": "",
-   "ts": 1794510978.2033367
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2506,
-   "last_ts": 1794476595.876516,
-   "msg": "Total: the model sits +4.7 points off Kalshi's mid over 100 rungs in 14 games",
-   "n": 2,
-   "path": "Total",
-   "pid": 282,
-   "tb": "",
-   "ts": 1794476595.876516
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2505,
-   "last_ts": 1794474785.786013,
-   "msg": "Total: the model sits +4.3 points off Kalshi's mid over 109 rungs in 14 games",
-   "n": 1,
-   "path": "Total",
-   "pid": 282,
-   "tb": "",
-   "ts": 1794474785.786013
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2504,
-   "last_ts": 1794472973.578848,
-   "msg": "Total: the model sits +4.0 points off Kalshi's mid over 122 rungs in 14 games",
-   "n": 1,
-   "path": "Total",
-   "pid": 282,
-   "tb": "",
-   "ts": 1794472973.578848
   }
  ],
- "generated_at": 1795072824.9263499,
+ "generated_at": 1795120292.7343163,
  "summary": [
   {
    "code": "NFL-DRIFT",
-   "first_ts": 1794472973.578848,
-   "last_msg": "Total: the model sits +4.3 points off Kalshi's mid over 137 rungs in 13 games",
-   "last_ts": 1795058753.2241676,
-   "n": 177,
-   "variants": 113
+   "first_ts": 1794516556.6808066,
+   "last_msg": "Total: the model sits +4.4 points off Kalshi's mid over 138 rungs in 13 games",
+   "last_ts": 1795106082.8615246,
+   "n": 171,
+   "variants": 109
   },
   {
    "code": "DK-lobby-empty",
@@ -1510,6 +1488,14 @@
    "variants": 3
   },
   {
+   "code": "UFCC-rounds",
+   "first_ts": 1794633756.8475342,
+   "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "last_ts": 1795076371.570279,
+   "n": 3,
+   "variants": 3
+  },
+  {
    "code": "UFCC-fights",
    "first_ts": 1794656077.1360703,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
@@ -1518,12 +1504,12 @@
    "variants": 2
   },
   {
-   "code": "UFCC-rounds",
-   "first_ts": 1794633756.8475342,
+   "code": "KNFL-markets-fetch",
+   "first_ts": 1795104722.3380542,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "last_ts": 1794635588.8871918,
-   "n": 2,
-   "variants": 2
+   "last_ts": 1795104722.3380542,
+   "n": 1,
+   "variants": 1
   }
  ],
  "window_days": 7
