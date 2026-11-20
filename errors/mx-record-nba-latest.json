@@ -979,17 +979,17 @@
    "b": 1.0,
    "blend_report": {
     "applied": false,
-    "gain_over_platt": 0.005231417954685004,
-    "n_eff": 1069.7,
-    "se": 0.003615273688791765
+    "gain_over_platt": 0.005734954840509996,
+    "n_eff": 1110.2,
+    "se": 0.0033971713148432748
    },
-   "days": 18,
+   "days": 19,
    "family": "identity",
-   "fitted_ts": 1795139639,
-   "gain": 0.00010754039409191203,
-   "n": 5192,
-   "n_eff": 1483.0,
-   "se": 0.000242765694399586,
+   "fitted_ts": 1795185500,
+   "gain": 0.00013119304385097481,
+   "n": 5357,
+   "n_eff": 1531.0,
+   "se": 0.0002288449661320403,
    "why": "did not beat the identity out of sample"
   },
   "fg3m": {
@@ -997,17 +997,17 @@
    "b": 1.0,
    "blend_report": {
     "applied": false,
-    "gain_over_platt": 0.012439026699314754,
-    "n_eff": 1053.4,
-    "se": 0.0031968063028115965
+    "gain_over_platt": 0.012247404617221272,
+    "n_eff": 1092.1,
+    "se": 0.0032365877766849602
    },
-   "days": 18,
+   "days": 19,
    "family": "identity",
-   "fitted_ts": 1795139640,
-   "gain": 6.219041284757627e-05,
-   "n": 7068,
-   "n_eff": 1504.0,
-   "se": 0.0004788153238676598,
+   "fitted_ts": 1795185501,
+   "gain": 0.0002237120866629464,
+   "n": 7293,
+   "n_eff": 1551.0,
+   "se": 0.0004696804559273455,
    "why": "did not beat the identity out of sample"
   },
   "pra": {
@@ -1015,17 +1015,17 @@
    "b": 1.0,
    "blend_report": {
     "applied": false,
-    "gain_over_platt": 0.013662196118149804,
-    "n_eff": 957.6,
-    "se": 0.007047046893484907
+    "gain_over_platt": 0.012695288922695289,
+    "n_eff": 999.4,
+    "se": 0.006852060374370953
    },
-   "days": 18,
+   "days": 19,
    "family": "identity",
-   "fitted_ts": 1795139640,
-   "gain": 0.0013267829873084354,
-   "n": 4116,
-   "n_eff": 1374.0,
-   "se": 0.0018136573168320673,
+   "fitted_ts": 1795185502,
+   "gain": 0.0008998947294701738,
+   "n": 4247,
+   "n_eff": 1420.0,
+   "se": 0.0017620829806243527,
    "why": "did not beat the identity out of sample"
   },
   "pts": {
@@ -1033,17 +1033,17 @@
    "b": 1.0,
    "blend_report": {
     "applied": false,
-    "gain_over_platt": 0.016162183818132798,
-    "n_eff": 1519.8,
-    "se": 0.005340412176735535
+    "gain_over_platt": 0.01691973111392919,
+    "n_eff": 1567.2,
+    "se": 0.005259952292089859
    },
-   "days": 18,
+   "days": 19,
    "family": "identity",
-   "fitted_ts": 1795139641,
-   "gain": -0.0018975932908537052,
-   "n": 5960,
-   "n_eff": 1768.0,
-   "se": 0.0011262834399169827,
+   "fitted_ts": 1795185502,
+   "gain": -0.00212351659739067,
+   "n": 6127,
+   "n_eff": 1819.0,
+   "se": 0.001079870691566059,
    "why": "did not beat the identity out of sample"
   },
   "reb": {
@@ -1051,17 +1051,17 @@
    "b": 1.0,
    "blend_report": {
     "applied": false,
-    "gain_over_platt": 0.001010860972089932,
-    "n_eff": 1219.6,
-    "se": 0.003417525095634971
+    "gain_over_platt": 0.0027675255619570445,
+    "n_eff": 1263.5,
+    "se": 0.003415929128435452
    },
-   "days": 18,
+   "days": 19,
    "family": "identity",
-   "fitted_ts": 1795139642,
-   "gain": 0.0003559329247392573,
-   "n": 7001,
-   "n_eff": 1708.0,
-   "se": 0.0005130510149460814,
+   "fitted_ts": 1795185503,
+   "gain": 0.00032470491600222344,
+   "n": 7205,
+   "n_eff": 1759.0,
+   "se": 0.0005064364124654882,
    "why": "did not beat the identity out of sample"
   }
  }
