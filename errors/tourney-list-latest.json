@@ -1,7 +1,25 @@
 {
  "boards": [
   {
-   "age_s": 1050,
+   "age_s": 33492,
+   "built_ts": 1795210995,
+   "contest": "NFL Showdown $1.2M Monday Night Showdown [$300K to 1st] (CIN @ WAS)",
+   "dg": 156793,
+   "ends_ts": 1795497300,
+   "entries": 70588,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "CIN vs WAS",
+   "pick": false,
+   "starts": "2026-11-24T01:15:00.0000000Z",
+   "teams": [
+    "CIN",
+    "WAS"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 40040,
    "built_ts": 1795204454,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (MIN vs SF)",
    "dg": 156792,
@@ -19,25 +37,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 64545,
-   "built_ts": 1795140961,
-   "contest": "NFL Showdown $1.2M Monday Night Showdown [$300K to 1st] (CIN @ WAS)",
-   "dg": 156793,
-   "ends_ts": 1795497300,
-   "entries": 70588,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "CIN vs WAS",
-   "pick": false,
-   "starts": "2026-11-24T01:15:00.0000000Z",
-   "teams": [
-    "CIN",
-    "WAS"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 68723,
+   "age_s": 107713,
    "built_ts": 1795136781,
    "contest": "NFL Showdown $1.11M Thursday Night Showdown [$250K to 1st] (IND @ HOU)",
    "dg": 156781,
@@ -55,7 +55,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 341249,
+   "age_s": 380239,
    "built_ts": 1794864256,
    "contest": "NFL Showdown $1.11M Monday Night Showdown [$250K to 1st] (LAC @ BAL)",
    "dg": 156434,
@@ -73,7 +73,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 415891,
+   "age_s": 454881,
    "built_ts": 1794789614,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (PIT @ CIN)",
    "dg": 156433,
@@ -91,7 +91,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 441833,
+   "age_s": 480822,
    "built_ts": 1794763673,
    "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 156416,
@@ -105,42 +105,6 @@
    "starts": "2026-11-15T18:00:00.0000000Z",
    "teams": null,
    "worlds": 180000
-  },
-  {
-   "age_s": 673819,
-   "built_ts": 1794531685,
-   "contest": "NFL Showdown $1.2M Thursday Night Showdown [$300K to 1st] (WAS @ NYG)",
-   "dg": 156421,
-   "ends_ts": 1794546900,
-   "entries": 70588,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "NYG vs WAS",
-   "pick": false,
-   "starts": "2026-11-13T01:15:00.0000000Z",
-   "teams": [
-    "NYG",
-    "WAS"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 674778,
-   "built_ts": 1794530724,
-   "contest": "NFL Showdown $1.2M Thursday Night Showdown [$300K to 1st] (WAS @ NYG)",
-   "dg": 156421,
-   "ends_ts": 1794546900,
-   "entries": 70588,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "Your build: NYG vs WAS -- Austin Ekeler, Dominic Zvada, Drew Stevens, J.J. McCarthy out",
-   "pick": true,
-   "starts": "2026-11-13T01:15:00.0000000Z",
-   "teams": [
-    "NYG",
-    "WAS"
-   ],
-   "worlds": 60000
   }
  ],
  "pending": [],
