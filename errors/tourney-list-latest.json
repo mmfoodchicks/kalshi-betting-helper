@@ -1,7 +1,25 @@
 {
  "boards": [
   {
-   "age_s": 8108,
+   "age_s": 1498,
+   "built_ts": 1795383365,
+   "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (MIN vs SF)",
+   "dg": 156792,
+   "ends_ts": 1795411200,
+   "entries": 58823,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "MIN vs SF",
+   "pick": false,
+   "starts": "2026-11-23T01:20:00.0000000Z",
+   "teams": [
+    "MIN",
+    "SF"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 16899,
    "built_ts": 1795367963,
    "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 156561,
@@ -17,7 +35,7 @@
    "worlds": 180000
   },
   {
-   "age_s": 10530,
+   "age_s": 19321,
    "built_ts": 1795365542,
    "contest": "NFL Showdown $1.2M Monday Night Showdown [$300K to 1st] (CIN @ WAS)",
    "dg": 156793,
@@ -35,25 +53,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 20817,
-   "built_ts": 1795355253,
-   "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (MIN vs SF)",
-   "dg": 156792,
-   "ends_ts": 1795411200,
-   "entries": 58823,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "MIN vs SF",
-   "pick": false,
-   "starts": "2026-11-23T01:20:00.0000000Z",
-   "teams": [
-    "MIN",
-    "SF"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 239289,
+   "age_s": 248080,
    "built_ts": 1795136781,
    "contest": "NFL Showdown $1.11M Thursday Night Showdown [$250K to 1st] (IND @ HOU)",
    "dg": 156781,
@@ -71,7 +71,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 511815,
+   "age_s": 520606,
    "built_ts": 1794864256,
    "contest": "NFL Showdown $1.11M Monday Night Showdown [$250K to 1st] (LAC @ BAL)",
    "dg": 156434,
@@ -89,7 +89,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 586457,
+   "age_s": 595248,
    "built_ts": 1794789614,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (PIT @ CIN)",
    "dg": 156433,
@@ -107,7 +107,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 612399,
+   "age_s": 621190,
    "built_ts": 1794763673,
    "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 156416,
