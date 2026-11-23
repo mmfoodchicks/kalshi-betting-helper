@@ -967,10 +967,10 @@
    "b": 1.0,
    "days": 11,
    "family": "identity",
-   "fitted_ts": 1795413899,
+   "fitted_ts": 1795458847,
    "gain": null,
-   "n": 985,
-   "n_eff": 108.0,
+   "n": 1004,
+   "n_eff": 110.0,
    "se": null,
    "why": "below the floors"
   },
@@ -980,15 +980,15 @@
    "blend_report": {
     "applied": false,
     "gain_over_platt": null,
-    "n_eff": 503.3,
+    "n_eff": 514.5,
     "se": null
    },
    "days": 11,
    "family": "identity",
-   "fitted_ts": 1795413899,
+   "fitted_ts": 1795458847,
    "gain": null,
-   "n": 4356,
-   "n_eff": 690.0,
+   "n": 4439,
+   "n_eff": 703.0,
    "se": null,
    "why": "nothing scored out of sample yet (it needs 30 games past the first 10 dates)"
   },
@@ -998,15 +998,15 @@
    "blend_report": {
     "applied": false,
     "gain_over_platt": null,
-    "n_eff": 574.0,
+    "n_eff": 585.5,
     "se": null
    },
    "days": 11,
    "family": "identity",
-   "fitted_ts": 1795413900,
+   "fitted_ts": 1795458847,
    "gain": null,
-   "n": 6708,
-   "n_eff": 694.0,
+   "n": 6837,
+   "n_eff": 707.0,
    "se": null,
    "why": "nothing scored out of sample yet (it needs 30 games past the first 10 dates)"
   },
@@ -1015,10 +1015,10 @@
    "b": 1.0,
    "days": 11,
    "family": "identity",
-   "fitted_ts": 1795413900,
+   "fitted_ts": 1795458848,
    "gain": null,
-   "n": 2832,
-   "n_eff": 326.0,
+   "n": 2891,
+   "n_eff": 333.0,
    "se": null,
    "why": "nothing scored out of sample yet (it needs 30 games past the first 10 dates)"
   },
@@ -1028,15 +1028,15 @@
    "blend_report": {
     "applied": false,
     "gain_over_platt": null,
-    "n_eff": 985.3,
+    "n_eff": 1004.3,
     "se": null
    },
    "days": 11,
    "family": "identity",
-   "fitted_ts": 1795413900,
+   "fitted_ts": 1795458848,
    "gain": null,
-   "n": 1849,
-   "n_eff": 1022.0,
+   "n": 1883,
+   "n_eff": 1041.0,
    "se": null,
    "why": "nothing scored out of sample yet (it needs 30 games past the first 10 dates)"
   }
