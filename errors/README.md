@@ -1,4 +1,4 @@
-# Error ledger — updated 2026-11-22
+# Error ledger — updated 2026-11-23
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
