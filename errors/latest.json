@@ -1374,20 +1374,9 @@
    "pid": 13878,
    "tb": "",
    "ts": 1795048228.0031667
-  },
-  {
-   "code": "DK-lobby-empty",
-   "id": 2626,
-   "last_ts": 1794874240.3254368,
-   "msg": "nascar: lobby answered with no draft groups",
-   "n": 1,
-   "path": null,
-   "pid": 6278,
-   "tb": "",
-   "ts": 1794874240.3254368
   }
  ],
- "generated_at": 1795477846.9739485,
+ "generated_at": 1795513843.875569,
  "summary": [
   {
    "code": "NFL-DRIFT",
@@ -1404,14 +1393,6 @@
    "last_ts": 1795072147.3708854,
    "n": 2,
    "variants": 2
-  },
-  {
-   "code": "DK-lobby-empty",
-   "first_ts": 1794874240.3254368,
-   "last_msg": "nascar: lobby answered with no draft groups",
-   "last_ts": 1794874240.3254368,
-   "n": 1,
-   "variants": 1
   },
   {
    "code": "KNFL-markets-fetch",

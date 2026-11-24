@@ -20,8 +20,8 @@
   "wins": 0
  },
  "regular": {
-  "accuracy_pct": 64.2,
-  "brier": 0.2219,
+  "accuracy_pct": 63.8,
+  "brier": 0.2238,
   "brier_baseline": 0.25,
   "calibration": [
    {
@@ -31,8 +31,8 @@
     "range": "50-60%"
    },
    {
-    "actual": 69.0,
-    "n": 42,
+    "actual": 67.4,
+    "n": 43,
     "predicted": 64.1,
     "range": "60-70%"
    },
@@ -50,33 +50,33 @@
    }
   ],
   "clv_avg": -0.17,
-  "clv_n": 162,
+  "clv_n": 163,
   "clv_note": "pre-game closes only",
-  "clv_positive_pct": 35.2,
+  "clv_positive_pct": 35.6,
   "edge_bets": 27,
   "edge_threshold": 3.0,
   "fees_included": true,
-  "graded": 162,
-  "losses": 58,
+  "graded": 163,
+  "losses": 59,
   "market": {
    "basis": "the same graded games; Kalshi's pre-game closing mid for the pick's side (else its price when the pick was logged)",
-   "fav_n": 129,
-   "fav_pct": 71.3,
-   "ll_market": 0.5849,
-   "ll_model": 0.6166,
-   "model_pct": 68.2,
-   "n": 129
+   "fav_n": 130,
+   "fav_pct": 70.8,
+   "ll_market": 0.5906,
+   "ll_model": 0.6219,
+   "model_pct": 67.7,
+   "n": 130
   },
-  "pending": 1,
-  "roi_bets": 162,
+  "pending": 16,
+  "roi_bets": 163,
   "roi_edge_pct": -15.5,
-  "roi_pct": -5.4,
+  "roi_pct": -6.0,
   "totals_accuracy": {
-   "actual_avg": 46.01,
-   "bias": -0.43,
+   "actual_avg": 45.99,
+   "bias": -0.35,
    "mean_abs_error": 10.54,
-   "n": 145,
-   "predicted_avg": 45.58
+   "n": 146,
+   "predicted_avg": 45.64
   },
   "wins": 104
  }
