@@ -1,7 +1,25 @@
 {
  "boards": [
   {
-   "age_s": 27676,
+   "age_s": 9034,
+   "built_ts": 1795549965,
+   "contest": "NFL Showdown $800K Thanksgiving Night Showdown [$200K to 1st] (KC @ BUF)",
+   "dg": 157075,
+   "ends_ts": 1795756800,
+   "entries": 37647,
+   "entry_fee": 25.0,
+   "kind": "showdown",
+   "label": "BUF vs KC",
+   "pick": false,
+   "starts": "2026-11-27T01:20:00.0000000Z",
+   "teams": [
+    "BUF",
+    "KC"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 72839,
    "built_ts": 1795486166,
    "contest": "NFL Showdown $1M Wednesday Night Showdown [$250K to 1st] (GB @ LAR)",
    "dg": 157072,
@@ -19,7 +37,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 31514,
+   "age_s": 76676,
    "built_ts": 1795482322,
    "contest": "NFL Showdown $500K Field General [$100K to 1st] (CIN @ WAS)",
    "dg": 156793,
@@ -37,25 +55,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 49852,
-   "built_ts": 1795463990,
-   "contest": "NFL Showdown $800K Thanksgiving Night Showdown [$200K to 1st] (KC @ BUF)",
-   "dg": 157075,
-   "ends_ts": 1795756800,
-   "entries": 37647,
-   "entry_fee": 25.0,
-   "kind": "showdown",
-   "label": "BUF vs KC",
-   "pick": false,
-   "starts": "2026-11-27T01:20:00.0000000Z",
-   "teams": [
-    "BUF",
-    "KC"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 119950,
+   "age_s": 165113,
    "built_ts": 1795393888,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (MIN vs SF)",
    "dg": 156792,
@@ -73,7 +73,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 145879,
+   "age_s": 191041,
    "built_ts": 1795367963,
    "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 156561,
@@ -89,7 +89,7 @@
    "worlds": 180000
   },
   {
-   "age_s": 377059,
+   "age_s": 422221,
    "built_ts": 1795136781,
    "contest": "NFL Showdown $1.11M Thursday Night Showdown [$250K to 1st] (IND @ HOU)",
    "dg": 156781,
@@ -103,24 +103,6 @@
    "teams": [
     "HOU",
     "IND"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 649585,
-   "built_ts": 1794864256,
-   "contest": "NFL Showdown $1.11M Monday Night Showdown [$250K to 1st] (LAC @ BAL)",
-   "dg": 156434,
-   "ends_ts": 1794892500,
-   "entries": 65359,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "BAL vs LAC",
-   "pick": false,
-   "starts": "2026-11-17T01:15:00.0000000Z",
-   "teams": [
-    "BAL",
-    "LAC"
    ],
    "worlds": 60000
   }
