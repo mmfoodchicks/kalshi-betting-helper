@@ -1,0 +1,4492 @@
+{
+ "n": 198,
+ "owner": "nfl",
+ "rows": [
+  {
+   "close_mkt": 0.445,
+   "close_mkt_ts": 1792329415,
+   "close_time": 1792503000,
+   "event_ts": 1792330200,
+   "graded": 1,
+   "mkt": 0.43564356435643564,
+   "outcome": 1,
+   "prob": 0.385,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.43564356435643564,
+     "prob": 0.35,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18HOUJAC-HOU",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.555,
+   "close_mkt_ts": 1792329415,
+   "close_time": 1792503000,
+   "event_ts": 1792330200,
+   "graded": 1,
+   "mkt": 0.5643564356435643,
+   "outcome": 0,
+   "prob": 0.615,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.5643564356435643,
+     "prob": 0.65,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18HOUJAC-JAC",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.615,
+   "close_mkt_ts": 1792342702,
+   "close_time": 1792515600,
+   "event_ts": 1792342800,
+   "graded": 1,
+   "mkt": 0.6138613861386139,
+   "outcome": 0,
+   "prob": 0.5179,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.6138613861386139,
+     "prob": 0.6461,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18BALCLE-BAL",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.395,
+   "close_mkt_ts": 1792342702,
+   "close_time": 1792515600,
+   "event_ts": 1792342800,
+   "graded": 1,
+   "mkt": 0.38613861386138615,
+   "outcome": 1,
+   "prob": 0.4821,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.38613861386138615,
+     "prob": 0.3539,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18BALCLE-CLE",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.585,
+   "close_mkt_ts": 1792342702,
+   "close_time": 1792515600,
+   "event_ts": 1792342800,
+   "graded": 1,
+   "mkt": 0.6237623762376238,
+   "outcome": 1,
+   "prob": 0.5658000000000001,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.6237623762376238,
+     "prob": 0.5218,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18CARPHI-CAR",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.415,
+   "close_mkt_ts": 1792342702,
+   "close_time": 1792515600,
+   "event_ts": 1792342800,
+   "graded": 1,
+   "mkt": 0.37623762376237624,
+   "outcome": 0,
+   "prob": 0.4342,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.37623762376237624,
+     "prob": 0.4782,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18CARPHI-PHI",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.485,
+   "close_mkt_ts": 1792342702,
+   "close_time": 1792515600,
+   "event_ts": 1792342800,
+   "graded": 1,
+   "mkt": 0.49019607843137253,
+   "outcome": 0,
+   "prob": 0.4633,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.49019607843137253,
+     "prob": 0.5619,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18CHIATL-ATL",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.515,
+   "close_mkt_ts": 1792342702,
+   "close_time": 1792515600,
+   "event_ts": 1792342800,
+   "graded": 1,
+   "mkt": 0.5098039215686274,
+   "outcome": 1,
+   "prob": 0.5367,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.5098039215686274,
+     "prob": 0.4381,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18CHIATL-CHI",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.505,
+   "close_mkt_ts": 1792342702,
+   "close_time": 1792515600,
+   "event_ts": 1792342800,
+   "graded": 1,
+   "mkt": 0.504950495049505,
+   "outcome": 1,
+   "prob": 0.6213,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.504950495049505,
+     "prob": 0.4415,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18NONYG-NO",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.495,
+   "close_mkt_ts": 1792342702,
+   "close_time": 1792515600,
+   "event_ts": 1792342800,
+   "graded": 1,
+   "mkt": 0.49504950495049505,
+   "outcome": 0,
+   "prob": 0.3787,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.49504950495049505,
+     "prob": 0.5585,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18NONYG-NYG",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.755,
+   "close_mkt_ts": 1792342702,
+   "close_time": 1792515600,
+   "event_ts": 1792342800,
+   "graded": 1,
+   "mkt": 0.7524752475247525,
+   "outcome": 1,
+   "prob": 0.6987,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.7524752475247525,
+     "prob": 0.7441,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18NYJNE-NE",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.245,
+   "close_mkt_ts": 1792342702,
+   "close_time": 1792515600,
+   "event_ts": 1792342800,
+   "graded": 1,
+   "mkt": 0.24752475247524752,
+   "outcome": 0,
+   "prob": 0.3013,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.24752475247524752,
+     "prob": 0.2559,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18NYJNE-NYJ",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.565,
+   "close_mkt_ts": 1792342702,
+   "close_time": 1792515600,
+   "event_ts": 1792342800,
+   "graded": 1,
+   "mkt": 0.5643564356435643,
+   "outcome": 1,
+   "prob": 0.5829,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.5643564356435643,
+     "prob": 0.5993,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18PITTB-PIT",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.445,
+   "close_mkt_ts": 1792342702,
+   "close_time": 1792515600,
+   "event_ts": 1792342800,
+   "graded": 1,
+   "mkt": 0.43564356435643564,
+   "outcome": 0,
+   "prob": 0.4171,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.43564356435643564,
+     "prob": 0.4007,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18PITTB-TB",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.725,
+   "close_mkt_ts": 1792342702,
+   "close_time": 1792515600,
+   "event_ts": 1792342800,
+   "graded": 1,
+   "mkt": 0.7425742574257426,
+   "outcome": 0,
+   "prob": 0.6967,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.7425742574257426,
+     "prob": 0.811,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18TENIND-IND",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.275,
+   "close_mkt_ts": 1792342702,
+   "close_time": 1792515600,
+   "event_ts": 1792342800,
+   "graded": 1,
+   "mkt": 0.25742574257425743,
+   "outcome": 1,
+   "prob": 0.3033,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.25742574257425743,
+     "prob": 0.189,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18TENIND-TEN",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.135,
+   "close_mkt_ts": 1792353228,
+   "close_time": 1792526700,
+   "event_ts": 1792353900,
+   "graded": 1,
+   "mkt": 0.12871287128712872,
+   "outcome": 1,
+   "prob": 0.20040000000000002,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.12871287128712872,
+     "prob": 0.1619,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18ARILAR-ARI",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.865,
+   "close_mkt_ts": 1792353228,
+   "close_time": 1792526700,
+   "event_ts": 1792353900,
+   "graded": 1,
+   "mkt": 0.8712871287128713,
+   "outcome": 0,
+   "prob": 0.7996,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.8712871287128713,
+     "prob": 0.8381,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18ARILAR-LAR",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.675,
+   "close_mkt_ts": 1792355043,
+   "close_time": 1792527900,
+   "event_ts": 1792355100,
+   "graded": 1,
+   "mkt": 0.6732673267326733,
+   "outcome": 1,
+   "prob": 0.5237,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.6732673267326733,
+     "prob": 0.6417,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18BUFLV-BUF",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.325,
+   "close_mkt_ts": 1792355043,
+   "close_time": 1792527900,
+   "event_ts": 1792355100,
+   "graded": 1,
+   "mkt": 0.32673267326732675,
+   "outcome": 0,
+   "prob": 0.4763,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.32673267326732675,
+     "prob": 0.3583,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18BUFLV-LV",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.765,
+   "close_mkt_ts": 1792355043,
+   "close_time": 1792527900,
+   "event_ts": 1792355100,
+   "graded": 1,
+   "mkt": 0.7821782178217822,
+   "outcome": 1,
+   "prob": 0.7433,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.7821782178217822,
+     "prob": 0.8464,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18LACKC-KC",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.225,
+   "close_mkt_ts": 1792355043,
+   "close_time": 1792527900,
+   "event_ts": 1792355100,
+   "graded": 1,
+   "mkt": 0.21782178217821782,
+   "outcome": 0,
+   "prob": 0.25670000000000004,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.21782178217821782,
+     "prob": 0.1536,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18LACKC-LAC",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.515,
+   "close_mkt_ts": 1792369132,
+   "close_time": 1792542000,
+   "event_ts": 1792369200,
+   "graded": 1,
+   "mkt": 0.48,
+   "outcome": 0,
+   "prob": 0.42000000000000004,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.48,
+     "prob": 0.3863,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18DALGB-DAL",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.495,
+   "close_mkt_ts": 1792369132,
+   "close_time": 1792542000,
+   "event_ts": 1792369200,
+   "graded": 1,
+   "mkt": 0.52,
+   "outcome": 1,
+   "prob": 0.58,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.52,
+     "prob": 0.6137,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT18DALGB-GB",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.765,
+   "close_mkt_ts": 1792454594,
+   "close_time": 1792628100,
+   "event_ts": 1792455300,
+   "graded": 1,
+   "mkt": 0.7722772277227723,
+   "outcome": 1,
+   "prob": 0.7754,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.7722772277227723,
+     "prob": 0.7833,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT19WASSF-SF",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.235,
+   "close_mkt_ts": 1792454594,
+   "close_time": 1792628100,
+   "event_ts": 1792455300,
+   "graded": 1,
+   "mkt": 0.22772277227722773,
+   "outcome": 0,
+   "prob": 0.22460000000000002,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.22772277227722773,
+     "prob": 0.2167,
+     "ts": 1792186948
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT19WASSF-WAS",
+   "ts": 1792186948
+  },
+  {
+   "close_mkt": 0.595,
+   "close_mkt_ts": 1792713951,
+   "close_time": 1792887300,
+   "event_ts": 1792714500,
+   "graded": 1,
+   "mkt": 0.5294117647058824,
+   "outcome": 1,
+   "prob": 0.6029,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.5294117647058824,
+     "prob": 0.5067,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT22NECHI-CHI",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.405,
+   "close_mkt_ts": 1792713951,
+   "close_time": 1792887300,
+   "event_ts": 1792714500,
+   "graded": 1,
+   "mkt": 0.47058823529411764,
+   "outcome": 0,
+   "prob": 0.3971,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.47058823529411764,
+     "prob": 0.4933,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT22NECHI-NE",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.405,
+   "close_mkt_ts": 1792934101,
+   "close_time": 1793107800,
+   "event_ts": 1792935000,
+   "graded": 1,
+   "mkt": 0.45098039215686275,
+   "outcome": 0,
+   "prob": 0.4188,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.45098039215686275,
+     "prob": 0.4515,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25PITNO-NO",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.595,
+   "close_mkt_ts": 1792934101,
+   "close_time": 1793107800,
+   "event_ts": 1792935000,
+   "graded": 1,
+   "mkt": 0.5490196078431373,
+   "outcome": 1,
+   "prob": 0.5811999999999999,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.5490196078431373,
+     "prob": 0.5485,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25PITNO-PIT",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.395,
+   "close_mkt_ts": 1792946762,
+   "close_time": 1793120400,
+   "event_ts": 1792947600,
+   "graded": 1,
+   "mkt": 0.594059405940594,
+   "outcome": 0,
+   "prob": 0.5833,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.594059405940594,
+     "prob": 0.5997,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25CINBAL-BAL",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.595,
+   "close_mkt_ts": 1792946762,
+   "close_time": 1793120400,
+   "event_ts": 1792947600,
+   "graded": 1,
+   "mkt": 0.40594059405940597,
+   "outcome": 1,
+   "prob": 0.41669999999999996,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.40594059405940597,
+     "prob": 0.4003,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25CINBAL-CIN",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.545,
+   "close_mkt_ts": 1792946762,
+   "close_time": 1793120400,
+   "event_ts": 1792947600,
+   "graded": 1,
+   "mkt": 0.5294117647058824,
+   "outcome": 1,
+   "prob": 0.4929,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.5294117647058824,
+     "prob": 0.6237,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25CLETEN-CLE",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.455,
+   "close_mkt_ts": 1792946762,
+   "close_time": 1793120400,
+   "event_ts": 1792947600,
+   "graded": 1,
+   "mkt": 0.47058823529411764,
+   "outcome": 0,
+   "prob": 0.5071,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.47058823529411764,
+     "prob": 0.3763,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25CLETEN-TEN",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.255,
+   "close_mkt_ts": 1792946762,
+   "close_time": 1793120400,
+   "event_ts": 1792947600,
+   "graded": 1,
+   "mkt": 0.3235294117647059,
+   "outcome": 0,
+   "prob": 0.2904,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.3235294117647059,
+     "prob": 0.3769,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25INDMIN-IND",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.745,
+   "close_mkt_ts": 1792946762,
+   "close_time": 1793120400,
+   "event_ts": 1792947600,
+   "graded": 1,
+   "mkt": 0.6764705882352942,
+   "outcome": 1,
+   "prob": 0.7096,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.6764705882352942,
+     "prob": 0.6231,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25INDMIN-MIN",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.355,
+   "close_mkt_ts": 1792946762,
+   "close_time": 1793120400,
+   "event_ts": 1792947600,
+   "graded": 1,
+   "mkt": 0.33980582524271846,
+   "outcome": 1,
+   "prob": 0.29710000000000003,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.33980582524271846,
+     "prob": 0.2475,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25MIANYJ-MIA",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.645,
+   "close_mkt_ts": 1792946762,
+   "close_time": 1793120400,
+   "event_ts": 1792947600,
+   "graded": 1,
+   "mkt": 0.6601941747572816,
+   "outcome": 0,
+   "prob": 0.7029,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.6601941747572816,
+     "prob": 0.7525,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25MIANYJ-NYJ",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.805,
+   "close_mkt_ts": 1792946762,
+   "close_time": 1793120400,
+   "event_ts": 1792947600,
+   "graded": 1,
+   "mkt": 0.7352941176470589,
+   "outcome": 0,
+   "prob": 0.72,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.7352941176470589,
+     "prob": 0.8054,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25NYGHOU-HOU",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.195,
+   "close_mkt_ts": 1792946762,
+   "close_time": 1793120400,
+   "event_ts": 1792947600,
+   "graded": 1,
+   "mkt": 0.2647058823529412,
+   "outcome": 1,
+   "prob": 0.28,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.2647058823529412,
+     "prob": 0.1946,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25NYGHOU-NYG",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.425,
+   "close_mkt_ts": 1792946762,
+   "close_time": 1793120400,
+   "event_ts": 1792947600,
+   "graded": 1,
+   "mkt": 0.3300970873786408,
+   "outcome": 1,
+   "prob": 0.4,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.3300970873786408,
+     "prob": 0.4174,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25SFATL-ATL",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.575,
+   "close_mkt_ts": 1792946762,
+   "close_time": 1793120400,
+   "event_ts": 1792947600,
+   "graded": 1,
+   "mkt": 0.6699029126213593,
+   "outcome": 0,
+   "prob": 0.6,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.6699029126213593,
+     "prob": 0.5826,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25SFATL-SF",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.605,
+   "close_mkt_ts": 1792946762,
+   "close_time": 1793120400,
+   "event_ts": 1792947600,
+   "graded": 1,
+   "mkt": 0.5728155339805825,
+   "outcome": 0,
+   "prob": 0.565,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.5728155339805825,
+     "prob": 0.5769,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25TBCAR-CAR",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.395,
+   "close_mkt_ts": 1792946762,
+   "close_time": 1793120400,
+   "event_ts": 1792947600,
+   "graded": 1,
+   "mkt": 0.42718446601941745,
+   "outcome": 1,
+   "prob": 0.43500000000000005,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.42718446601941745,
+     "prob": 0.4231,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25TBCAR-TB",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.335,
+   "close_mkt_ts": 1792957899,
+   "close_time": 1793131500,
+   "event_ts": 1792958700,
+   "graded": 1,
+   "mkt": 0.3076923076923077,
+   "outcome": 0,
+   "prob": 0.3837,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.3076923076923077,
+     "prob": 0.2023,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25DENARI-ARI",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.665,
+   "close_mkt_ts": 1792957899,
+   "close_time": 1793131500,
+   "event_ts": 1792958700,
+   "graded": 1,
+   "mkt": 0.6923076923076923,
+   "outcome": 1,
+   "prob": 0.6163000000000001,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.6923076923076923,
+     "prob": 0.7977,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25DENARI-DEN",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.655,
+   "close_mkt_ts": 1792959714,
+   "close_time": 1793132700,
+   "event_ts": 1792959900,
+   "graded": 1,
+   "mkt": 0.6116504854368932,
+   "outcome": 1,
+   "prob": 0.6058,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.6116504854368932,
+     "prob": 0.6683,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25GBDET-DET",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.345,
+   "close_mkt_ts": 1792959714,
+   "close_time": 1793132700,
+   "event_ts": 1792959900,
+   "graded": 1,
+   "mkt": 0.3883495145631068,
+   "outcome": 0,
+   "prob": 0.3942,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.3883495145631068,
+     "prob": 0.3317,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25GBDET-GB",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.615,
+   "close_mkt_ts": 1792959714,
+   "close_time": 1793132700,
+   "event_ts": 1792959900,
+   "graded": 1,
+   "mkt": 0.7047619047619048,
+   "outcome": 1,
+   "prob": 0.6038,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.7047619047619048,
+     "prob": 0.7283,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25LARLV-LAR",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.385,
+   "close_mkt_ts": 1792959714,
+   "close_time": 1793132700,
+   "event_ts": 1792959900,
+   "graded": 1,
+   "mkt": 0.29523809523809524,
+   "outcome": 0,
+   "prob": 0.3962,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.29523809523809524,
+     "prob": 0.2717,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25LARLV-LV",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.415,
+   "close_mkt_ts": 1792973208,
+   "close_time": 1793146800,
+   "event_ts": 1792974000,
+   "graded": 1,
+   "mkt": 0.46601941747572817,
+   "outcome": 0,
+   "prob": 0.40580000000000005,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.46601941747572817,
+     "prob": 0.4217,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25KCSEA-KC",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.585,
+   "close_mkt_ts": 1792973208,
+   "close_time": 1793146800,
+   "event_ts": 1792974000,
+   "graded": 1,
+   "mkt": 0.5339805825242718,
+   "outcome": 1,
+   "prob": 0.5942,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.5339805825242718,
+     "prob": 0.5783,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT25KCSEA-SEA",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.675,
+   "close_mkt_ts": 1793059582,
+   "close_time": 1793232900,
+   "event_ts": 1793060100,
+   "graded": 1,
+   "mkt": 0.5728155339805825,
+   "outcome": 1,
+   "prob": 0.47750000000000004,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.5728155339805825,
+     "prob": 0.5142,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT26DALPHI-DAL",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.335,
+   "close_mkt_ts": 1793059582,
+   "close_time": 1793232900,
+   "event_ts": 1793060100,
+   "graded": 1,
+   "mkt": 0.42718446601941745,
+   "outcome": 0,
+   "prob": 0.5225,
+   "shadow": {
+    "nfl_deep": {
+     "mkt": 0.42718446601941745,
+     "prob": 0.4858,
+     "ts": 1792328699
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT26DALPHI-PHI",
+   "ts": 1792328699
+  },
+  {
+   "close_mkt": 0.365,
+   "close_mkt_ts": 1793318875,
+   "close_time": 1793492100,
+   "event_ts": 1793319300,
+   "graded": 1,
+   "mkt": 0.3564356435643564,
+   "outcome": 0,
+   "prob": 0.3762,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.36633663366336633,
+     "prob": 0.3775334481388264,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.3564356435643564,
+     "prob": 0.3589,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT29CARGB-CAR",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.645,
+   "close_mkt_ts": 1793318875,
+   "close_time": 1793492100,
+   "event_ts": 1793319300,
+   "graded": 1,
+   "mkt": 0.6435643564356436,
+   "outcome": 1,
+   "prob": 0.6238,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.6336633663366337,
+     "prob": 0.6224665518611737,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.6435643564356436,
+     "prob": 0.6411,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26OCT29CARGB-GB",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.245,
+   "close_mkt_ts": 1793555366,
+   "close_time": 1793728800,
+   "event_ts": 1793556000,
+   "graded": 1,
+   "mkt": 0.25742574257425743,
+   "outcome": 1,
+   "prob": 0.27249999999999996,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.25742574257425743,
+     "prob": 0.26645768025078376,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.25742574257425743,
+     "prob": 0.2295,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01ARIDAL-ARI",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.755,
+   "close_mkt_ts": 1793555366,
+   "close_time": 1793728800,
+   "event_ts": 1793556000,
+   "graded": 1,
+   "mkt": 0.7425742574257426,
+   "outcome": 0,
+   "prob": 0.7275,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.7425742574257426,
+     "prob": 0.7335423197492164,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.7425742574257426,
+     "prob": 0.7705,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01ARIDAL-DAL",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.455,
+   "close_mkt_ts": 1793555366,
+   "close_time": 1793728800,
+   "event_ts": 1793556000,
+   "graded": 1,
+   "mkt": 0.4411764705882353,
+   "outcome": 0,
+   "prob": 0.3738,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.44554455445544555,
+     "prob": 0.448558885283451,
+     "ts": 1793380244
+    },
+    "nfl_deep": {
+     "mkt": 0.4411764705882353,
+     "prob": 0.4439,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01ATLTB-ATL",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.545,
+   "close_mkt_ts": 1793555366,
+   "close_time": 1793728800,
+   "event_ts": 1793556000,
+   "graded": 1,
+   "mkt": 0.5588235294117647,
+   "outcome": 1,
+   "prob": 0.6262,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.5544554455445545,
+     "prob": 0.551441114716549,
+     "ts": 1793380244
+    },
+    "nfl_deep": {
+     "mkt": 0.5588235294117647,
+     "prob": 0.5561,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01ATLTB-TB",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.385,
+   "close_mkt_ts": 1793555366,
+   "close_time": 1793728800,
+   "event_ts": 1793556000,
+   "graded": 1,
+   "mkt": 0.38235294117647056,
+   "outcome": 0,
+   "prob": 0.40290000000000004,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.38613861386138615,
+     "prob": 0.3962430290578221,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.38235294117647056,
+     "prob": 0.3806,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01BALBUF-BAL",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.615,
+   "close_mkt_ts": 1793555366,
+   "close_time": 1793728800,
+   "event_ts": 1793556000,
+   "graded": 1,
+   "mkt": 0.6176470588235294,
+   "outcome": 1,
+   "prob": 0.5971,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.6138613861386139,
+     "prob": 0.6037569709421778,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.6176470588235294,
+     "prob": 0.6194,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01BALBUF-BUF",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.345,
+   "close_mkt_ts": 1793555366,
+   "close_time": 1793728800,
+   "event_ts": 1793556000,
+   "graded": 1,
+   "mkt": 0.3564356435643564,
+   "outcome": 0,
+   "prob": 0.2946,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.3564356435643564,
+     "prob": 0.3690596562184025,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.3564356435643564,
+     "prob": 0.3456,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01CLEPIT-CLE",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.655,
+   "close_mkt_ts": 1793555366,
+   "close_time": 1793728800,
+   "event_ts": 1793556000,
+   "graded": 1,
+   "mkt": 0.6435643564356436,
+   "outcome": 1,
+   "prob": 0.7054,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.6435643564356436,
+     "prob": 0.6309403437815976,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.6435643564356436,
+     "prob": 0.6544,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01CLEPIT-PIT",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.185,
+   "close_mkt_ts": 1793555366,
+   "close_time": 1793728800,
+   "event_ts": 1793556000,
+   "graded": 1,
+   "mkt": 0.19801980198019803,
+   "outcome": 0,
+   "prob": 0.18669999999999998,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.19801980198019803,
+     "prob": 0.19999999999999998,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.19801980198019803,
+     "prob": 0.1567,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01INDJAC-IND",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.815,
+   "close_mkt_ts": 1793555366,
+   "close_time": 1793728800,
+   "event_ts": 1793556000,
+   "graded": 1,
+   "mkt": 0.801980198019802,
+   "outcome": 1,
+   "prob": 0.8133,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.801980198019802,
+     "prob": 0.7999999999999999,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.801980198019802,
+     "prob": 0.8433,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01INDJAC-JAC",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.455,
+   "close_mkt_ts": 1793555366,
+   "close_time": 1793728800,
+   "event_ts": 1793556000,
+   "graded": 1,
+   "mkt": 0.47058823529411764,
+   "outcome": 1,
+   "prob": 0.41869999999999996,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.4752475247524752,
+     "prob": 0.4739134147382802,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.47058823529411764,
+     "prob": 0.5176,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01LVNYJ-LV",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.545,
+   "close_mkt_ts": 1793555366,
+   "close_time": 1793728800,
+   "event_ts": 1793556000,
+   "graded": 1,
+   "mkt": 0.5294117647058824,
+   "outcome": 0,
+   "prob": 0.5813,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.5247524752475248,
+     "prob": 0.5260865852617197,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.5294117647058824,
+     "prob": 0.4824,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01LVNYJ-NYJ",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.625,
+   "close_mkt_ts": 1793555366,
+   "close_time": 1793728800,
+   "event_ts": 1793556000,
+   "graded": 1,
+   "mkt": 0.6237623762376238,
+   "outcome": 1,
+   "prob": 0.5537,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.6237623762376238,
+     "prob": 0.6037569709421778,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.6237623762376238,
+     "prob": 0.6311,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01MINDET-DET",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.375,
+   "close_mkt_ts": 1793555366,
+   "close_time": 1793728800,
+   "event_ts": 1793556000,
+   "graded": 1,
+   "mkt": 0.37623762376237624,
+   "outcome": 0,
+   "prob": 0.44630000000000003,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.37623762376237624,
+     "prob": 0.3962430290578221,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.37623762376237624,
+     "prob": 0.3689,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01MINDET-MIN",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.885,
+   "close_mkt_ts": 1793555366,
+   "close_time": 1793728800,
+   "event_ts": 1793556000,
+   "graded": 1,
+   "mkt": 0.8235294117647058,
+   "outcome": 1,
+   "prob": 0.8042,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.8316831683168316,
+     "prob": 0.827123695976155,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.8235294117647058,
+     "prob": 0.9083,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01TENCIN-CIN",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.115,
+   "close_mkt_ts": 1793555366,
+   "close_time": 1793728800,
+   "event_ts": 1793556000,
+   "graded": 1,
+   "mkt": 0.17647058823529413,
+   "outcome": 0,
+   "prob": 0.19579999999999997,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.16831683168316833,
+     "prob": 0.17287630402384502,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.17647058823529413,
+     "prob": 0.0917,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01TENCIN-TEN",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.265,
+   "close_mkt_ts": 1793566964,
+   "close_time": 1793739900,
+   "event_ts": 1793567100,
+   "graded": 1,
+   "mkt": 0.27,
+   "outcome": 0,
+   "prob": 0.2933,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.26732673267326734,
+     "prob": 0.299837925445705,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.27,
+     "prob": 0.2267,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01LACLAR-LAC",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.725,
+   "close_mkt_ts": 1793566964,
+   "close_time": 1793739900,
+   "event_ts": 1793567100,
+   "graded": 1,
+   "mkt": 0.73,
+   "outcome": 1,
+   "prob": 0.7067,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.7326732673267327,
+     "prob": 0.7001620745542949,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.73,
+     "prob": 0.7733,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01LACLAR-LAR",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.505,
+   "close_mkt_ts": 1793567888,
+   "close_time": 1793741100,
+   "event_ts": 1793568300,
+   "graded": 1,
+   "mkt": 0.4752475247524752,
+   "outcome": 1,
+   "prob": 0.4988,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.4752475247524752,
+     "prob": 0.4826358742837298,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.4752475247524752,
+     "prob": 0.5793,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01KCDEN-DEN",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.495,
+   "close_mkt_ts": 1793567888,
+   "close_time": 1793741100,
+   "event_ts": 1793568300,
+   "graded": 1,
+   "mkt": 0.5247524752475248,
+   "outcome": 0,
+   "prob": 0.5012,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.5247524752475248,
+     "prob": 0.5173641257162701,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.5247524752475248,
+     "prob": 0.4207,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01KCDEN-KC",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.235,
+   "close_mkt_ts": 1793567888,
+   "close_time": 1793741100,
+   "event_ts": 1793568300,
+   "graded": 1,
+   "mkt": 0.2376237623762376,
+   "outcome": 0,
+   "prob": 0.35,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.2376237623762376,
+     "prob": 0.27792074112197634,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.2376237623762376,
+     "prob": 0.1983,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01NEMIA-MIA",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.755,
+   "close_mkt_ts": 1793567888,
+   "close_time": 1793741100,
+   "event_ts": 1793568300,
+   "graded": 1,
+   "mkt": 0.7623762376237624,
+   "outcome": 1,
+   "prob": 0.65,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.7623762376237624,
+     "prob": 0.7220792588780237,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.7623762376237624,
+     "prob": 0.8017,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01NEMIA-NE",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.305,
+   "close_mkt_ts": 1793581662,
+   "close_time": 1793755200,
+   "event_ts": 1793582400,
+   "graded": 1,
+   "mkt": 0.3069306930693069,
+   "outcome": 0,
+   "prob": 0.3567,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.3069306930693069,
+     "prob": 0.3249687530045188,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.3069306930693069,
+     "prob": 0.3139,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01PHIWAS-PHI",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.695,
+   "close_mkt_ts": 1793581662,
+   "close_time": 1793755200,
+   "event_ts": 1793582400,
+   "graded": 1,
+   "mkt": 0.693069306930693,
+   "outcome": 1,
+   "prob": 0.6433,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.693069306930693,
+     "prob": 0.6750312469954812,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.693069306930693,
+     "prob": 0.6861,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV01PHIWAS-WAS",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.385,
+   "close_mkt_ts": 1793668393,
+   "close_time": 1793841300,
+   "event_ts": 1793668500,
+   "graded": 1,
+   "mkt": 0.39603960396039606,
+   "outcome": 1,
+   "prob": 0.4183,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.39603960396039606,
+     "prob": 0.3962430290578221,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.39603960396039606,
+     "prob": 0.3317,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV02CHISEA-CHI",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.615,
+   "close_mkt_ts": 1793668393,
+   "close_time": 1793841300,
+   "event_ts": 1793668500,
+   "graded": 1,
+   "mkt": 0.6039603960396039,
+   "outcome": 0,
+   "prob": 0.5817,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.6039603960396039,
+     "prob": 0.6037569709421778,
+     "ts": 1793302691
+    },
+    "nfl_deep": {
+     "mkt": 0.6039603960396039,
+     "prob": 0.6683,
+     "ts": 1793287565
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV02CHISEA-SEA",
+   "ts": 1793287565
+  },
+  {
+   "close_mkt": 0.225,
+   "close_mkt_ts": 1793927365,
+   "close_time": 1794100500,
+   "event_ts": 1793927700,
+   "graded": 1,
+   "mkt": 0.2079207920792079,
+   "outcome": 0,
+   "prob": 0.2562,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.2079207920792079,
+     "prob": 0.20863836017569545,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.2079207920792079,
+     "prob": 0.1688,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV05JACBAL-BAL",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.775,
+   "close_mkt_ts": 1793927365,
+   "close_time": 1794100500,
+   "event_ts": 1793927700,
+   "graded": 1,
+   "mkt": 0.7920792079207921,
+   "outcome": 1,
+   "prob": 0.7438,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.7920792079207921,
+     "prob": 0.7913616398243045,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.7920792079207921,
+     "prob": 0.8312,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV05JACBAL-JAC",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.375,
+   "close_mkt_ts": 1794147410,
+   "close_time": 1794321000,
+   "event_ts": 1794148200,
+   "graded": 1,
+   "mkt": 0.39603960396039606,
+   "outcome": 0,
+   "prob": 0.4504,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.39603960396039606,
+     "prob": 0.4066302458405761,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.39603960396039606,
+     "prob": 0.347,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08CINATL-ATL",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.625,
+   "close_mkt_ts": 1794147410,
+   "close_time": 1794321000,
+   "event_ts": 1794148200,
+   "graded": 1,
+   "mkt": 0.6039603960396039,
+   "outcome": 1,
+   "prob": 0.5496,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.6039603960396039,
+     "prob": 0.593369754159424,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.6039603960396039,
+     "prob": 0.653,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08CINATL-CIN",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.325,
+   "close_mkt_ts": 1794160483,
+   "close_time": 1794333600,
+   "event_ts": 1794160800,
+   "graded": 1,
+   "mkt": 0.42574257425742573,
+   "outcome": 0,
+   "prob": 0.39749999999999996,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.42574257425742573,
+     "prob": 0.43650793650793646,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.42574257425742573,
+     "prob": 0.4653,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08CLENO-CLE",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.675,
+   "close_mkt_ts": 1794160483,
+   "close_time": 1794333600,
+   "event_ts": 1794160800,
+   "graded": 1,
+   "mkt": 0.5742574257425742,
+   "outcome": 1,
+   "prob": 0.6025,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.5742574257425742,
+     "prob": 0.5634920634920635,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.5742574257425742,
+     "prob": 0.5347,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08CLENO-NO",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.655,
+   "close_mkt_ts": 1794160483,
+   "close_time": 1794333600,
+   "event_ts": 1794160800,
+   "graded": 1,
+   "mkt": 0.693069306930693,
+   "outcome": 1,
+   "prob": 0.615,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.693069306930693,
+     "prob": 0.7001620745542949,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.693069306930693,
+     "prob": 0.6409,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08DALIND-DAL",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.345,
+   "close_mkt_ts": 1794160483,
+   "close_time": 1794333600,
+   "event_ts": 1794160800,
+   "graded": 1,
+   "mkt": 0.3069306930693069,
+   "outcome": 0,
+   "prob": 0.385,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.3069306930693069,
+     "prob": 0.299837925445705,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.3069306930693069,
+     "prob": 0.3591,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08DALIND-IND",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.395,
+   "close_mkt_ts": 1794160483,
+   "close_time": 1794333600,
+   "event_ts": 1794160800,
+   "graded": 1,
+   "mkt": 0.40594059405940597,
+   "outcome": 0,
+   "prob": 0.4421,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.40594059405940597,
+     "prob": 0.42794036443953615,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.40594059405940597,
+     "prob": 0.3242,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08DENCAR-CAR",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.605,
+   "close_mkt_ts": 1794160483,
+   "close_time": 1794333600,
+   "event_ts": 1794160800,
+   "graded": 1,
+   "mkt": 0.594059405940594,
+   "outcome": 1,
+   "prob": 0.5579000000000001,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.594059405940594,
+     "prob": 0.5720596355604638,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.594059405940594,
+     "prob": 0.6758,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08DENCAR-DEN",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.735,
+   "close_mkt_ts": 1794160483,
+   "close_time": 1794333600,
+   "event_ts": 1794160800,
+   "graded": 1,
+   "mkt": 0.75,
+   "outcome": 1,
+   "prob": 0.6483,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.75,
+     "prob": 0.7508125677139762,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.75,
+     "prob": 0.8,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08DETMIA-DET",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.265,
+   "close_mkt_ts": 1794160483,
+   "close_time": 1794333600,
+   "event_ts": 1794160800,
+   "graded": 1,
+   "mkt": 0.25,
+   "outcome": 0,
+   "prob": 0.3517,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.25,
+     "prob": 0.2491874322860238,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.25,
+     "prob": 0.2,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08DETMIA-MIA",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.665,
+   "close_mkt_ts": 1794160483,
+   "close_time": 1794333600,
+   "event_ts": 1794160800,
+   "graded": 1,
+   "mkt": 0.696078431372549,
+   "outcome": 1,
+   "prob": 0.6608,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.696078431372549,
+     "prob": 0.6750312469954812,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.696078431372549,
+     "prob": 0.6748,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08LARWAS-LAR",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.335,
+   "close_mkt_ts": 1794160483,
+   "close_time": 1794333600,
+   "event_ts": 1794160800,
+   "graded": 1,
+   "mkt": 0.30392156862745096,
+   "outcome": 0,
+   "prob": 0.3392,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.30392156862745096,
+     "prob": 0.3249687530045188,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.30392156862745096,
+     "prob": 0.3252,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08LARWAS-WAS",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.585,
+   "close_mkt_ts": 1794160483,
+   "close_time": 1794333600,
+   "event_ts": 1794160800,
+   "graded": 1,
+   "mkt": 0.6336633663366337,
+   "outcome": 1,
+   "prob": 0.49039999999999995,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.6336633663366337,
+     "prob": 0.6092362344582594,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.6336633663366337,
+     "prob": 0.5575,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08NYGPHI-NYG",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.415,
+   "close_mkt_ts": 1794160483,
+   "close_time": 1794333600,
+   "event_ts": 1794160800,
+   "graded": 1,
+   "mkt": 0.36633663366336633,
+   "outcome": 0,
+   "prob": 0.5096,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.36633663366336633,
+     "prob": 0.39076376554174075,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.36633663366336633,
+     "prob": 0.4425,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08NYGPHI-PHI",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.805,
+   "close_mkt_ts": 1794160483,
+   "close_time": 1794333600,
+   "event_ts": 1794160800,
+   "graded": 1,
+   "mkt": 0.8,
+   "outcome": 1,
+   "prob": 0.785,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.8,
+     "prob": 0.7957758771164253,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.8,
+     "prob": 0.8593,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08NYJKC-KC",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.185,
+   "close_mkt_ts": 1794160483,
+   "close_time": 1794333600,
+   "event_ts": 1794160800,
+   "graded": 1,
+   "mkt": 0.2,
+   "outcome": 0,
+   "prob": 0.21499999999999997,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.2,
+     "prob": 0.2042241228835748,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.2,
+     "prob": 0.1407,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08NYJKC-NYJ",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.675,
+   "close_mkt_ts": 1794171461,
+   "close_time": 1794344700,
+   "event_ts": 1794171900,
+   "graded": 1,
+   "mkt": 0.65,
+   "outcome": 1,
+   "prob": 0.62,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.65,
+     "prob": 0.6369041816941223,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.65,
+     "prob": 0.7396,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08HOULAC-HOU",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.325,
+   "close_mkt_ts": 1794171461,
+   "close_time": 1794344700,
+   "event_ts": 1794171900,
+   "graded": 1,
+   "mkt": 0.35,
+   "outcome": 0,
+   "prob": 0.38,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.35,
+     "prob": 0.3630958183058778,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.35,
+     "prob": 0.2604,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08HOULAC-LAC",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.215,
+   "close_mkt_ts": 1794172366,
+   "close_time": 1794345900,
+   "event_ts": 1794173100,
+   "graded": 1,
+   "mkt": 0.17647058823529413,
+   "outcome": 0,
+   "prob": 0.15039999999999998,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.17647058823529413,
+     "prob": 0.16290068313189698,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.17647058823529413,
+     "prob": 0.1056,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08ARISEA-ARI",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.785,
+   "close_mkt_ts": 1794172366,
+   "close_time": 1794345900,
+   "event_ts": 1794173100,
+   "graded": 1,
+   "mkt": 0.8235294117647058,
+   "outcome": 1,
+   "prob": 0.8496,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.8235294117647058,
+     "prob": 0.8370993168681029,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.8235294117647058,
+     "prob": 0.8944,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08ARISEA-SEA",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.385,
+   "close_mkt_ts": 1794172366,
+   "close_time": 1794345900,
+   "event_ts": 1794173100,
+   "graded": 1,
+   "mkt": 0.4117647058823529,
+   "outcome": 1,
+   "prob": 0.34750000000000003,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.4117647058823529,
+     "prob": 0.4170073589533933,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.4117647058823529,
+     "prob": 0.4222,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08GBNE-GB",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.615,
+   "close_mkt_ts": 1794172366,
+   "close_time": 1794345900,
+   "event_ts": 1794173100,
+   "graded": 1,
+   "mkt": 0.5882352941176471,
+   "outcome": 0,
+   "prob": 0.6525,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.5882352941176471,
+     "prob": 0.5829926410466066,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.5882352941176471,
+     "prob": 0.5778,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08GBNE-NE",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.205,
+   "close_mkt_ts": 1794172366,
+   "close_time": 1794345900,
+   "event_ts": 1794173100,
+   "graded": 1,
+   "mkt": 0.19801980198019803,
+   "outcome": 0,
+   "prob": 0.20289999999999997,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.19801980198019803,
+     "prob": 0.18813314037626627,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.19801980198019803,
+     "prob": 0.2043,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08LVSF-LV",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.795,
+   "close_mkt_ts": 1794172366,
+   "close_time": 1794345900,
+   "event_ts": 1794173100,
+   "graded": 1,
+   "mkt": 0.801980198019802,
+   "outcome": 1,
+   "prob": 0.7971,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.801980198019802,
+     "prob": 0.8118668596237336,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.801980198019802,
+     "prob": 0.7957,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08LVSF-SF",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.715,
+   "close_mkt_ts": 1794186639,
+   "close_time": 1794360000,
+   "event_ts": 1794187200,
+   "graded": 1,
+   "mkt": 0.7352941176470589,
+   "outcome": 1,
+   "prob": 0.4554,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.7352941176470589,
+     "prob": 0.690792883054068,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.7352941176470589,
+     "prob": 0.5898,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08TBCHI-CHI",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.285,
+   "close_mkt_ts": 1794186639,
+   "close_time": 1794360000,
+   "event_ts": 1794187200,
+   "graded": 1,
+   "mkt": 0.2647058823529412,
+   "outcome": 0,
+   "prob": 0.5446,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.2647058823529412,
+     "prob": 0.30920711694593195,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.2647058823529412,
+     "prob": 0.4102,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV08TBCHI-TB",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.635,
+   "close_mkt_ts": 1794272549,
+   "close_time": 1794446100,
+   "event_ts": 1794273300,
+   "graded": 1,
+   "mkt": 0.6336633663366337,
+   "outcome": 1,
+   "prob": 0.4788,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.6336633663366337,
+     "prob": 0.6224665518611737,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.6336633663366337,
+     "prob": 0.6656,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV09BUFMIN-BUF",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.365,
+   "close_mkt_ts": 1794272549,
+   "close_time": 1794446100,
+   "event_ts": 1794273300,
+   "graded": 1,
+   "mkt": 0.36633663366336633,
+   "outcome": 0,
+   "prob": 0.5212,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.36633663366336633,
+     "prob": 0.3775334481388264,
+     "ts": 1793682643
+    },
+    "nfl_deep": {
+     "mkt": 0.36633663366336633,
+     "prob": 0.3344,
+     "ts": 1793682643
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV09BUFMIN-MIN",
+   "ts": 1793682643
+  },
+  {
+   "close_mkt": 0.545,
+   "close_mkt_ts": 1794532320,
+   "close_time": 1794705300,
+   "event_ts": 1794532500,
+   "graded": 1,
+   "mkt": 0.5445544554455446,
+   "outcome": 0,
+   "prob": 0.5779,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.5445544554455446,
+     "prob": 0.5427435387673957,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.5445544554455446,
+     "prob": 0.5458,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV12WASNYG-NYG",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.455,
+   "close_mkt_ts": 1794532320,
+   "close_time": 1794705300,
+   "event_ts": 1794532500,
+   "graded": 1,
+   "mkt": 0.45544554455445546,
+   "outcome": 1,
+   "prob": 0.42210000000000003,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.45544554455445546,
+     "prob": 0.4572564612326044,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.45544554455445546,
+     "prob": 0.4542,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV12WASNYG-WAS",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.575,
+   "close_mkt_ts": 1794752403,
+   "close_time": 1794925800,
+   "event_ts": 1794753000,
+   "graded": 1,
+   "mkt": 0.5742574257425742,
+   "outcome": 1,
+   "prob": 0.5896,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.5742574257425742,
+     "prob": 0.5829926410466066,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.5742574257425742,
+     "prob": 0.5758,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15NEDET-DET",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.425,
+   "close_mkt_ts": 1794752403,
+   "close_time": 1794925800,
+   "event_ts": 1794753000,
+   "graded": 1,
+   "mkt": 0.42574257425742573,
+   "outcome": 0,
+   "prob": 0.4104,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.42574257425742573,
+     "prob": 0.4170073589533933,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.42574257425742573,
+     "prob": 0.4242,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15NEDET-NE",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.795,
+   "close_mkt_ts": 1794764983,
+   "close_time": 1794938400,
+   "event_ts": 1794765600,
+   "graded": 1,
+   "mkt": 0.801980198019802,
+   "outcome": 1,
+   "prob": 0.6367,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.801980198019802,
+     "prob": 0.8042929292929294,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.801980198019802,
+     "prob": 0.8028,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15BUFNYJ-BUF",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.205,
+   "close_mkt_ts": 1794764983,
+   "close_time": 1794938400,
+   "event_ts": 1794765600,
+   "graded": 1,
+   "mkt": 0.19801980198019803,
+   "outcome": 0,
+   "prob": 0.3633,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.19801980198019803,
+     "prob": 0.19570707070707072,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.19801980198019803,
+     "prob": 0.1972,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15BUFNYJ-NYJ",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.505,
+   "close_mkt_ts": 1794764983,
+   "close_time": 1794938400,
+   "event_ts": 1794765600,
+   "graded": 1,
+   "mkt": 0.4803921568627451,
+   "outcome": 1,
+   "prob": 0.4971,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.4803921568627451,
+     "prob": 0.4782608695652174,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.4803921568627451,
+     "prob": 0.4883,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15CARNO-CAR",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.495,
+   "close_mkt_ts": 1794764983,
+   "close_time": 1794938400,
+   "event_ts": 1794765600,
+   "graded": 1,
+   "mkt": 0.5196078431372549,
+   "outcome": 0,
+   "prob": 0.5029,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.5196078431372549,
+     "prob": 0.5217391304347826,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.5196078431372549,
+     "prob": 0.5117,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15CARNO-NO",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.355,
+   "close_mkt_ts": 1794764983,
+   "close_time": 1794938400,
+   "event_ts": 1794765600,
+   "graded": 1,
+   "mkt": 0.33663366336633666,
+   "outcome": 1,
+   "prob": 0.3858,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.33663366336633666,
+     "prob": 0.33099297893681046,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.33663366336633666,
+     "prob": 0.2781,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15HOUCLE-CLE",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.645,
+   "close_mkt_ts": 1794764983,
+   "close_time": 1794938400,
+   "event_ts": 1794765600,
+   "graded": 1,
+   "mkt": 0.6633663366336634,
+   "outcome": 0,
+   "prob": 0.6142000000000001,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.6633663366336634,
+     "prob": 0.6690070210631895,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.6633663366336634,
+     "prob": 0.7219,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15HOUCLE-HOU",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.835,
+   "close_mkt_ts": 1794764983,
+   "close_time": 1794938400,
+   "event_ts": 1794765600,
+   "graded": 1,
+   "mkt": 0.8217821782178217,
+   "outcome": 1,
+   "prob": 0.7825,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.8217821782178217,
+     "prob": 0.8081570996978852,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.8217821782178217,
+     "prob": 0.8831,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15JACTEN-JAC",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.165,
+   "close_mkt_ts": 1794764983,
+   "close_time": 1794938400,
+   "event_ts": 1794765600,
+   "graded": 1,
+   "mkt": 0.1782178217821782,
+   "outcome": 0,
+   "prob": 0.2175,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.1782178217821782,
+     "prob": 0.19184290030211482,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.1782178217821782,
+     "prob": 0.1169,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15JACTEN-TEN",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.365,
+   "close_mkt_ts": 1794764983,
+   "close_time": 1794938400,
+   "event_ts": 1794765600,
+   "graded": 1,
+   "mkt": 0.36633663366336633,
+   "outcome": 0,
+   "prob": 0.4358,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.36633663366336633,
+     "prob": 0.3835616438356164,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.36633663366336633,
+     "prob": 0.4142,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15KCATL-ATL",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.635,
+   "close_mkt_ts": 1794764983,
+   "close_time": 1794938400,
+   "event_ts": 1794765600,
+   "graded": 1,
+   "mkt": 0.6336633663366337,
+   "outcome": 1,
+   "prob": 0.5642,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.6336633663366337,
+     "prob": 0.6164383561643836,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.6336633663366337,
+     "prob": 0.5858,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15KCATL-KC",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.675,
+   "close_mkt_ts": 1794764983,
+   "close_time": 1794938400,
+   "event_ts": 1794765600,
+   "graded": 1,
+   "mkt": 0.5643564356435643,
+   "outcome": 1,
+   "prob": 0.6088,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.5643564356435643,
+     "prob": 0.551441114716549,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.5643564356435643,
+     "prob": 0.7233,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15MIAIND-IND",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.335,
+   "close_mkt_ts": 1794764983,
+   "close_time": 1794938400,
+   "event_ts": 1794765600,
+   "graded": 1,
+   "mkt": 0.43564356435643564,
+   "outcome": 0,
+   "prob": 0.3912,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.43564356435643564,
+     "prob": 0.448558885283451,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.43564356435643564,
+     "prob": 0.2767,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15MIAIND-MIA",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.575,
+   "close_mkt_ts": 1794764983,
+   "close_time": 1794938400,
+   "event_ts": 1794765600,
+   "graded": 1,
+   "mkt": 0.6336633663366337,
+   "outcome": 0,
+   "prob": 0.5825,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.6336633663366337,
+     "prob": 0.6574752261956054,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.6336633663366337,
+     "prob": 0.6494,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15MINGB-GB",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.425,
+   "close_mkt_ts": 1794764983,
+   "close_time": 1794938400,
+   "event_ts": 1794765600,
+   "graded": 1,
+   "mkt": 0.36633663366336633,
+   "outcome": 1,
+   "prob": 0.4175,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.36633663366336633,
+     "prob": 0.34252477380439467,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.36633663366336633,
+     "prob": 0.3506,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15MINGB-MIN",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796159100,
+   "event_ts": 1794765600,
+   "graded": 0,
+   "mkt": 0.8921568627450981,
+   "outcome": null,
+   "prob": 0.8017,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.8910891089108911,
+     "prob": 0.8882492380629867,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.8921568627450981,
+     "prob": 0.8683,
+     "ts": 1795106024
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV29TENJAC-JAC",
+   "ts": 1795106024
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796159100,
+   "event_ts": 1794765600,
+   "graded": 0,
+   "mkt": 0.10784313725490197,
+   "outcome": null,
+   "prob": 0.1983,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.10891089108910891,
+     "prob": 0.1117507619370132,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.10784313725490197,
+     "prob": 0.1317,
+     "ts": 1795106024
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV29TENJAC-TEN",
+   "ts": 1795106024
+  },
+  {
+   "close_mkt": 0.185,
+   "close_mkt_ts": 1794776362,
+   "close_time": 1794949500,
+   "event_ts": 1794776700,
+   "graded": 1,
+   "mkt": 0.21568627450980393,
+   "outcome": 0,
+   "prob": 0.2117,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.21568627450980393,
+     "prob": 0.2132564841498559,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.21568627450980393,
+     "prob": 0.2144,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15LARARI-ARI",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.815,
+   "close_mkt_ts": 1794776362,
+   "close_time": 1794949500,
+   "event_ts": 1794776700,
+   "graded": 1,
+   "mkt": 0.7843137254901961,
+   "outcome": 1,
+   "prob": 0.7883,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.7843137254901961,
+     "prob": 0.7867435158501441,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.7843137254901961,
+     "prob": 0.7856,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15LARARI-LAR",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.275,
+   "close_mkt_ts": 1794776362,
+   "close_time": 1794949500,
+   "event_ts": 1794776700,
+   "graded": 1,
+   "mkt": 0.37623762376237624,
+   "outcome": 0,
+   "prob": 0.4208,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.37623762376237624,
+     "prob": 0.3835616438356164,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.37623762376237624,
+     "prob": 0.3678,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15SEALV-LV",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.725,
+   "close_mkt_ts": 1794776362,
+   "close_time": 1794949500,
+   "event_ts": 1794776700,
+   "graded": 1,
+   "mkt": 0.6237623762376238,
+   "outcome": 1,
+   "prob": 0.5791999999999999,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.6237623762376238,
+     "prob": 0.6164383561643836,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.6237623762376238,
+     "prob": 0.6322,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15SEALV-SEA",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.365,
+   "close_mkt_ts": 1794777267,
+   "close_time": 1794950700,
+   "event_ts": 1794777900,
+   "graded": 1,
+   "mkt": 0.32673267326732675,
+   "outcome": 0,
+   "prob": 0.4412,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.32673267326732675,
+     "prob": 0.34252477380439467,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.32673267326732675,
+     "prob": 0.3588,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15SFDAL-DAL",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.645,
+   "close_mkt_ts": 1794777267,
+   "close_time": 1794950700,
+   "event_ts": 1794777900,
+   "graded": 1,
+   "mkt": 0.6732673267326733,
+   "outcome": 1,
+   "prob": 0.5588,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.6732673267326733,
+     "prob": 0.6574752261956054,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.6732673267326733,
+     "prob": 0.6412,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15SFDAL-SF",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.675,
+   "close_mkt_ts": 1794791952,
+   "close_time": 1794964800,
+   "event_ts": 1794792000,
+   "graded": 1,
+   "mkt": 0.6372549019607843,
+   "outcome": 1,
+   "prob": 0.5846,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.6372549019607843,
+     "prob": 0.6164383561643836,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.6372549019607843,
+     "prob": 0.7048,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15PITCIN-CIN",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.335,
+   "close_mkt_ts": 1794791952,
+   "close_time": 1794964800,
+   "event_ts": 1794792000,
+   "graded": 1,
+   "mkt": 0.3627450980392157,
+   "outcome": 0,
+   "prob": 0.4154,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.3627450980392157,
+     "prob": 0.3835616438356164,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.3627450980392157,
+     "prob": 0.2952,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV15PITCIN-PIT",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.675,
+   "close_mkt_ts": 1794877385,
+   "close_time": 1795050900,
+   "event_ts": 1794878100,
+   "graded": 1,
+   "mkt": 0.6764705882352942,
+   "outcome": 0,
+   "prob": 0.6904,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.6764705882352942,
+     "prob": 0.6636481241914618,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.6764705882352942,
+     "prob": 0.687,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV16LACBAL-BAL",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.335,
+   "close_mkt_ts": 1794877385,
+   "close_time": 1795050900,
+   "event_ts": 1794878100,
+   "graded": 1,
+   "mkt": 0.3235294117647059,
+   "outcome": 1,
+   "prob": 0.3096,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.3235294117647059,
+     "prob": 0.33635187580853815,
+     "ts": 1794287128
+    },
+    "nfl_deep": {
+     "mkt": 0.3235294117647059,
+     "prob": 0.313,
+     "ts": 1794287128
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV16LACBAL-LAC",
+   "ts": 1794287128
+  },
+  {
+   "close_mkt": 0.845,
+   "close_mkt_ts": 1795136431,
+   "close_time": 1795310100,
+   "event_ts": 1795137300,
+   "graded": 1,
+   "mkt": 0.8415841584158416,
+   "outcome": 1,
+   "prob": 0.8475,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.8415841584158416,
+     "prob": 0.8465011286681716,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.8415841584158416,
+     "prob": 0.8683,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV19INDHOU-HOU",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.155,
+   "close_mkt_ts": 1795136431,
+   "close_time": 1795310100,
+   "event_ts": 1795137300,
+   "graded": 1,
+   "mkt": 0.15841584158415842,
+   "outcome": 0,
+   "prob": 0.15249999999999997,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.15841584158415842,
+     "prob": 0.15349887133182846,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.15841584158415842,
+     "prob": 0.1317,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV19INDHOU-IND",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.085,
+   "close_mkt_ts": 1795370018,
+   "close_time": 1795543200,
+   "event_ts": 1795370400,
+   "graded": 1,
+   "mkt": 0.09,
+   "outcome": 0,
+   "prob": 0.06869999999999998,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.09,
+     "prob": 0.10114192495921696,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.09,
+     "prob": 0.1619,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22ARIKC-ARI",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.915,
+   "close_mkt_ts": 1795370018,
+   "close_time": 1795543200,
+   "event_ts": 1795370400,
+   "graded": 1,
+   "mkt": 0.91,
+   "outcome": 1,
+   "prob": 0.9313,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.91,
+     "prob": 0.8988580750407831,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.91,
+     "prob": 0.8381,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22ARIKC-KC",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.435,
+   "close_mkt_ts": 1795370018,
+   "close_time": 1795543200,
+   "event_ts": 1795370400,
+   "graded": 1,
+   "mkt": 0.43564356435643564,
+   "outcome": 0,
+   "prob": 0.39580000000000004,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.43564356435643564,
+     "prob": 0.43650793650793646,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.43564356435643564,
+     "prob": 0.4124,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22BALCAR-BAL",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.565,
+   "close_mkt_ts": 1795370018,
+   "close_time": 1795543200,
+   "event_ts": 1795370400,
+   "graded": 1,
+   "mkt": 0.5643564356435643,
+   "outcome": 1,
+   "prob": 0.6042,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.5643564356435643,
+     "prob": 0.5634920634920635,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.5643564356435643,
+     "prob": 0.5876,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22BALCAR-CAR",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.915,
+   "close_mkt_ts": 1795370018,
+   "close_time": 1795543200,
+   "event_ts": 1795370400,
+   "graded": 1,
+   "mkt": 0.9019607843137255,
+   "outcome": 1,
+   "prob": 0.8567,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.9019607843137255,
+     "prob": 0.8988580750407831,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.9019607843137255,
+     "prob": 0.9633,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22MIABUF-BUF",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.085,
+   "close_mkt_ts": 1795370018,
+   "close_time": 1795543200,
+   "event_ts": 1795370400,
+   "graded": 1,
+   "mkt": 0.09803921568627451,
+   "outcome": 0,
+   "prob": 0.14329999999999998,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.09803921568627451,
+     "prob": 0.10114192495921696,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.09803921568627451,
+     "prob": 0.0367,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22MIABUF-MIA",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.845,
+   "close_mkt_ts": 1795370018,
+   "close_time": 1795543200,
+   "event_ts": 1795370400,
+   "graded": 1,
+   "mkt": 0.8415841584158416,
+   "outcome": 1,
+   "prob": 0.8229,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.8415841584158416,
+     "prob": 0.84,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.8415841584158416,
+     "prob": 0.8831,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22NOCHI-CHI",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.155,
+   "close_mkt_ts": 1795370018,
+   "close_time": 1795543200,
+   "event_ts": 1795370400,
+   "graded": 1,
+   "mkt": 0.15841584158415842,
+   "outcome": 0,
+   "prob": 0.17710000000000004,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.15841584158415842,
+     "prob": 0.15999999999999998,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.15841584158415842,
+     "prob": 0.1169,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22NOCHI-NO",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.355,
+   "close_mkt_ts": 1795370018,
+   "close_time": 1795543200,
+   "event_ts": 1795370400,
+   "graded": 1,
+   "mkt": 0.33663366336633666,
+   "outcome": 1,
+   "prob": 0.2883,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.33663366336633666,
+     "prob": 0.35527082119976705,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.33663366336633666,
+     "prob": 0.258,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22PITPHI-PHI",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.645,
+   "close_mkt_ts": 1795370018,
+   "close_time": 1795543200,
+   "event_ts": 1795370400,
+   "graded": 1,
+   "mkt": 0.6633663366336634,
+   "outcome": 0,
+   "prob": 0.7117,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.6633663366336634,
+     "prob": 0.644729178800233,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.6633663366336634,
+     "prob": 0.742,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22PITPHI-PIT",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.665,
+   "close_mkt_ts": 1795370018,
+   "close_time": 1795543200,
+   "event_ts": 1795370400,
+   "graded": 1,
+   "mkt": 0.7425742574257426,
+   "outcome": 1,
+   "prob": 0.6621,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.7425742574257426,
+     "prob": 0.740871613663133,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.7425742574257426,
+     "prob": 0.5578,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22TBDET-DET",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.335,
+   "close_mkt_ts": 1795370018,
+   "close_time": 1795543200,
+   "event_ts": 1795370400,
+   "graded": 1,
+   "mkt": 0.25742574257425743,
+   "outcome": 0,
+   "prob": 0.3379,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.25742574257425743,
+     "prob": 0.2591283863368669,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.25742574257425743,
+     "prob": 0.4422,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22TBDET-TB",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.765,
+   "close_mkt_ts": 1795370018,
+   "close_time": 1795543200,
+   "event_ts": 1795370400,
+   "graded": 1,
+   "mkt": 0.7821782178217822,
+   "outcome": 1,
+   "prob": 0.7054,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.7821782178217822,
+     "prob": 0.7600000000000001,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.7821782178217822,
+     "prob": 0.7609,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22TENDAL-DAL",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.235,
+   "close_mkt_ts": 1795370018,
+   "close_time": 1795543200,
+   "event_ts": 1795370400,
+   "graded": 1,
+   "mkt": 0.21782178217821782,
+   "outcome": 0,
+   "prob": 0.2946,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.21782178217821782,
+     "prob": 0.24000000000000005,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.21782178217821782,
+     "prob": 0.2391,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22TENDAL-TEN",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.605,
+   "close_mkt_ts": 1795381387,
+   "close_time": 1795554300,
+   "event_ts": 1795381500,
+   "graded": 1,
+   "mkt": 0.6237623762376238,
+   "outcome": 0,
+   "prob": 0.5917,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.6237623762376238,
+     "prob": 0.6224665518611737,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.6237623762376238,
+     "prob": 0.5743,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22NYJLAC-LAC",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.395,
+   "close_mkt_ts": 1795381387,
+   "close_time": 1795554300,
+   "event_ts": 1795381500,
+   "graded": 1,
+   "mkt": 0.37623762376237624,
+   "outcome": 1,
+   "prob": 0.4083,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.37623762376237624,
+     "prob": 0.3775334481388264,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.37623762376237624,
+     "prob": 0.4257,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22NYJLAC-NYJ",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.725,
+   "close_mkt_ts": 1795382292,
+   "close_time": 1795555500,
+   "event_ts": 1795382700,
+   "graded": 1,
+   "mkt": 0.7029702970297029,
+   "outcome": 0,
+   "prob": 0.7129,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.7029702970297029,
+     "prob": 0.6957699520733487,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.7029702970297029,
+     "prob": 0.8261,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22JACNYG-JAC",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.275,
+   "close_mkt_ts": 1795382292,
+   "close_time": 1795555500,
+   "event_ts": 1795382700,
+   "graded": 1,
+   "mkt": 0.297029702970297,
+   "outcome": 1,
+   "prob": 0.2871,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.297029702970297,
+     "prob": 0.30423004792665137,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.297029702970297,
+     "prob": 0.1739,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22JACNYG-NYG",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.845,
+   "close_mkt_ts": 1795382292,
+   "close_time": 1795555500,
+   "event_ts": 1795382700,
+   "graded": 1,
+   "mkt": 0.8217821782178217,
+   "outcome": 1,
+   "prob": 0.8458,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.8217821782178217,
+     "prob": 0.817258883248731,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.8217821782178217,
+     "prob": 0.8297,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22LVDEN-DEN",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.155,
+   "close_mkt_ts": 1795382292,
+   "close_time": 1795555500,
+   "event_ts": 1795382700,
+   "graded": 1,
+   "mkt": 0.1782178217821782,
+   "outcome": 0,
+   "prob": 0.1542,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.1782178217821782,
+     "prob": 0.18274111675126903,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.1782178217821782,
+     "prob": 0.1703,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22LVDEN-LV",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.345,
+   "close_mkt_ts": 1795396518,
+   "close_time": 1795569600,
+   "event_ts": 1795396800,
+   "graded": 1,
+   "mkt": 0.40594059405940597,
+   "outcome": 0,
+   "prob": 0.5162,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.40594059405940597,
+     "prob": 0.4066302458405761,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.40594059405940597,
+     "prob": 0.4357,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22MINSF-MIN",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.665,
+   "close_mkt_ts": 1795396518,
+   "close_time": 1795569600,
+   "event_ts": 1795396800,
+   "graded": 1,
+   "mkt": 0.594059405940594,
+   "outcome": 1,
+   "prob": 0.4838,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.594059405940594,
+     "prob": 0.593369754159424,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.594059405940594,
+     "prob": 0.5643,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV22MINSF-SF",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.735,
+   "close_mkt_ts": 1795482656,
+   "close_time": 1795655700,
+   "event_ts": 1795482900,
+   "graded": 1,
+   "mkt": 0.7227722772277227,
+   "outcome": 0,
+   "prob": 0.6529,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.7227722772277227,
+     "prob": 0.7135512302607419,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.7227722772277227,
+     "prob": 0.8233,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV23CINWAS-CIN",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.275,
+   "close_mkt_ts": 1795482656,
+   "close_time": 1795655700,
+   "event_ts": 1795482900,
+   "graded": 1,
+   "mkt": 0.27722772277227725,
+   "outcome": 1,
+   "prob": 0.3471,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.27722772277227725,
+     "prob": 0.28644876973925815,
+     "ts": 1794954864
+    },
+    "nfl_deep": {
+     "mkt": 0.27722772277227725,
+     "prob": 0.1767,
+     "ts": 1794954864
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV23CINWAS-WAS",
+   "ts": 1794954864
+  },
+  {
+   "close_mkt": 0.445,
+   "close_mkt_ts": 1795654288,
+   "close_time": 1795827600,
+   "event_ts": 1795654800,
+   "graded": 1,
+   "mkt": 0.45544554455445546,
+   "outcome": 0,
+   "prob": 0.3771,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.45544554455445546,
+     "prob": 0.448558885283451,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.45544554455445546,
+     "prob": 0.475,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV25GBLAR-GB",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": 0.555,
+   "close_mkt_ts": 1795654288,
+   "close_time": 1795827600,
+   "event_ts": 1795654800,
+   "graded": 1,
+   "mkt": 0.5445544554455446,
+   "outcome": 1,
+   "prob": 0.6229,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.5445544554455446,
+     "prob": 0.551441114716549,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.5445544554455446,
+     "prob": 0.525,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV25GBLAR-LAR",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1795888800,
+   "event_ts": 1795716000,
+   "graded": 0,
+   "mkt": 0.5588235294117647,
+   "outcome": null,
+   "prob": 0.5388,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.5588235294117647,
+     "prob": 0.5696140522761468,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.5588235294117647,
+     "prob": 0.5876,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV26CHIDET-CHI",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1795888800,
+   "event_ts": 1795716000,
+   "graded": 0,
+   "mkt": 0.4411764705882353,
+   "outcome": null,
+   "prob": 0.4612,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.4411764705882353,
+     "prob": 0.4303859477238532,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.4411764705882353,
+     "prob": 0.4124,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV26CHIDET-DET",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1795901400,
+   "event_ts": 1795728600,
+   "graded": 0,
+   "mkt": 0.79,
+   "outcome": null,
+   "prob": 0.8029,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.79,
+     "prob": 0.7901387623414838,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.79,
+     "prob": 0.7553,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV26PHIDAL-DAL",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1795901400,
+   "event_ts": 1795728600,
+   "graded": 0,
+   "mkt": 0.21,
+   "outcome": null,
+   "prob": 0.19710000000000005,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.21,
+     "prob": 0.2098612376585162,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.21,
+     "prob": 0.2447,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV26PHIDAL-PHI",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1795915200,
+   "event_ts": 1795742400,
+   "graded": 0,
+   "mkt": 0.5841584158415841,
+   "outcome": null,
+   "prob": 0.5708,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.5841584158415841,
+     "prob": 0.5766299745977985,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.5841584158415841,
+     "prob": 0.6601,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV26KCBUF-BUF",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1795915200,
+   "event_ts": 1795742400,
+   "graded": 0,
+   "mkt": 0.4158415841584158,
+   "outcome": null,
+   "prob": 0.4292,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.4158415841584158,
+     "prob": 0.42337002540220153,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.4158415841584158,
+     "prob": 0.3399,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV26KCBUF-KC",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1795982400,
+   "event_ts": 1795809600,
+   "graded": 0,
+   "mkt": 0.5841584158415841,
+   "outcome": null,
+   "prob": 0.4637,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.5841584158415841,
+     "prob": 0.5840469782236358,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.5841584158415841,
+     "prob": 0.6782,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV27DENPIT-DEN",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1795982400,
+   "event_ts": 1795809600,
+   "graded": 0,
+   "mkt": 0.4158415841584158,
+   "outcome": null,
+   "prob": 0.5363,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.4158415841584158,
+     "prob": 0.41595302177636406,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.4158415841584158,
+     "prob": 0.3218,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV27DENPIT-PIT",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796148000,
+   "event_ts": 1795975200,
+   "graded": 0,
+   "mkt": 0.2549019607843137,
+   "outcome": null,
+   "prob": 0.23250000000000004,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.2549019607843137,
+     "prob": 0.2554241763287797,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.2549019607843137,
+     "prob": 0.1918,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV29ATLMIN-ATL",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796148000,
+   "event_ts": 1795975200,
+   "graded": 0,
+   "mkt": 0.7450980392156863,
+   "outcome": null,
+   "prob": 0.7675,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.7450980392156863,
+     "prob": 0.7445758236712202,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.7450980392156863,
+     "prob": 0.8082,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV29ATLMIN-MIN",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796148000,
+   "event_ts": 1795975200,
+   "graded": 0,
+   "mkt": 0.27450980392156865,
+   "outcome": null,
+   "prob": 0.24960000000000004,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.27450980392156865,
+     "prob": 0.27367999465990256,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.27450980392156865,
+     "prob": 0.2231,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV29BALHOU-BAL",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796148000,
+   "event_ts": 1795975200,
+   "graded": 0,
+   "mkt": 0.7254901960784313,
+   "outcome": null,
+   "prob": 0.7504,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.7254901960784313,
+     "prob": 0.7263200053400974,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.7254901960784313,
+     "prob": 0.7769,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV29BALHOU-HOU",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796148000,
+   "event_ts": 1795975200,
+   "graded": 0,
+   "mkt": 0.8415841584158416,
+   "outcome": null,
+   "prob": 0.8208,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.8415841584158416,
+     "prob": 0.8122489375327473,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.8415841584158416,
+     "prob": 0.8928,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV29NOCIN-CIN",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796148000,
+   "event_ts": 1795975200,
+   "graded": 0,
+   "mkt": 0.15841584158415842,
+   "outcome": null,
+   "prob": 0.17920000000000003,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.15841584158415842,
+     "prob": 0.18775106246725273,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.15841584158415842,
+     "prob": 0.1072,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV29NOCIN-NO",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796148000,
+   "event_ts": 1795975200,
+   "graded": 0,
+   "mkt": 0.2549019607843137,
+   "outcome": null,
+   "prob": 0.3667,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.2549019607843137,
+     "prob": 0.26688590943587154,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.2549019607843137,
+     "prob": 0.3252,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV29NYGIND-IND",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796148000,
+   "event_ts": 1795975200,
+   "graded": 0,
+   "mkt": 0.7450980392156863,
+   "outcome": null,
+   "prob": 0.6333,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.7450980392156863,
+     "prob": 0.7331140905641286,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.7450980392156863,
+     "prob": 0.6748,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV29NYGIND-NYG",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796148000,
+   "event_ts": 1795975200,
+   "graded": 0,
+   "mkt": 0.3431372549019608,
+   "outcome": null,
+   "prob": 0.4888,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.3431372549019608,
+     "prob": 0.3454649474101131,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.3431372549019608,
+     "prob": 0.218,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV29NYJMIA-MIA",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796148000,
+   "event_ts": 1795975200,
+   "graded": 0,
+   "mkt": 0.6568627450980392,
+   "outcome": null,
+   "prob": 0.5112,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.6568627450980392,
+     "prob": 0.6545350525898869,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.6568627450980392,
+     "prob": 0.782,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV29NYJMIA-NYJ",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796174400,
+   "event_ts": 1795986300,
+   "graded": 0,
+   "mkt": 0.504950495049505,
+   "outcome": null,
+   "prob": 0.5713,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.504950495049505,
+     "prob": 0.5131897120246207,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.504950495049505,
+     "prob": 0.5762,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV29NELAC-LAC",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796174400,
+   "event_ts": 1795986300,
+   "graded": 0,
+   "mkt": 0.49504950495049505,
+   "outcome": null,
+   "prob": 0.42869999999999997,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.49504950495049505,
+     "prob": 0.48681028797537923,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.49504950495049505,
+     "prob": 0.4238,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV29NELAC-NE",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796160300,
+   "event_ts": 1795987500,
+   "graded": 0,
+   "mkt": 0.38235294117647056,
+   "outcome": null,
+   "prob": 0.37539999999999996,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.38235294117647056,
+     "prob": 0.3793616536414697,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.38235294117647056,
+     "prob": 0.3459,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV29SEASF-SEA",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796160300,
+   "event_ts": 1795987500,
+   "graded": 0,
+   "mkt": 0.6176470588235294,
+   "outcome": null,
+   "prob": 0.6246,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.6176470588235294,
+     "prob": 0.6206383463585302,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.6176470588235294,
+     "prob": 0.6541,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV29SEASF-SF",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796160300,
+   "event_ts": 1795987500,
+   "graded": 0,
+   "mkt": 0.22549019607843138,
+   "outcome": null,
+   "prob": 0.3804,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.22549019607843138,
+     "prob": 0.23114265068277406,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.22549019607843138,
+     "prob": 0.3706,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV29WASARI-ARI",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796160300,
+   "event_ts": 1795987500,
+   "graded": 0,
+   "mkt": 0.7745098039215687,
+   "outcome": null,
+   "prob": 0.6195999999999999,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.7745098039215687,
+     "prob": 0.7688573493172259,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.7745098039215687,
+     "prob": 0.6294,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV29WASARI-WAS",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796148000,
+   "event_ts": 1796001600,
+   "graded": 0,
+   "mkt": 0.6666666666666666,
+   "outcome": null,
+   "prob": 0.7217,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.6666666666666666,
+     "prob": 0.6616208466857818,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.6666666666666666,
+     "prob": 0.6405,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV29LVCLE-CLE",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796148000,
+   "event_ts": 1796001600,
+   "graded": 0,
+   "mkt": 0.3333333333333333,
+   "outcome": null,
+   "prob": 0.2783,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.3333333333333333,
+     "prob": 0.33837915331421825,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.3333333333333333,
+     "prob": 0.3595,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV29LVCLE-LV",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796260500,
+   "event_ts": 1796087700,
+   "graded": 0,
+   "mkt": 0.4117647058823529,
+   "outcome": null,
+   "prob": 0.30710000000000004,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.4117647058823529,
+     "prob": 0.41595302177636406,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.4117647058823529,
+     "prob": 0.2408,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV30CARTB-CAR",
+   "ts": 1795497552
+  },
+  {
+   "close_mkt": null,
+   "close_mkt_ts": null,
+   "close_time": 1796260500,
+   "event_ts": 1796087700,
+   "graded": 0,
+   "mkt": 0.5882352941176471,
+   "outcome": null,
+   "prob": 0.6929,
+   "shadow": {
+    "nfl_book": {
+     "mkt": 0.5882352941176471,
+     "prob": 0.5840469782236358,
+     "ts": 1795497552
+    },
+    "nfl_deep": {
+     "mkt": 0.5882352941176471,
+     "prob": 0.7592,
+     "ts": 1795497552
+    }
+   },
+   "ticker": "KXNFLGAME-26NOV30CARTB-TB",
+   "ts": 1795497552
+  }
+ ],
+ "shadows": [
+  "nfl_deep",
+  "nfl_book"
+ ]
+}

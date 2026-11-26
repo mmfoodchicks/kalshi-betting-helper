@@ -1,0 +1,816 @@
+{
+ "contest": {
+  "draft_group_id": 156561,
+  "entry_fee": 20.0,
+  "first_prize": 1000000.0,
+  "max_entries": 147058,
+  "name": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st]",
+  "places_paid": 30413,
+  "prize_pool": 2500000.0,
+  "starts": "2026-11-22T18:00:00.0000000Z"
+ },
+ "contest_id": 197882014,
+ "duplicates": {
+  "distinct_lineups": 133222,
+  "distinct_pair_collision": 1.0041611851540488e-05,
+  "entries_in_duplicated_lineups_pct": 13.67,
+  "max_copies": 234
+ },
+ "entries": 147058,
+ "final": true,
+ "kind": "classic",
+ "malformed": 0,
+ "max_entry_users_pct": 16.12,
+ "model": {
+  "bring_back": 0.35,
+  "collision": 1.2e-07,
+  "dst_vs_own_qb": 0.08,
+  "max_own": 0.38,
+  "salary_used": 49400.0,
+  "stack_dist": [
+   0.174,
+   0.49,
+   0.289,
+   0.047
+  ]
+ },
+ "ownership": [
+  {
+   "dk_pct": {
+    "FLEX": 8.17,
+    "RB": 62.51
+   },
+   "fpts": 27.3,
+   "name": "Emmett Johnson",
+   "pct": 70.7,
+   "pos": "RB",
+   "salary": 6000,
+   "team": "KC"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 4.67,
+    "RB": 30.76
+   },
+   "fpts": 14.0,
+   "name": "Tony Pollard",
+   "pct": 35.44,
+   "pos": "RB",
+   "salary": 6500,
+   "team": "TEN"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.63,
+    "WR": 33.08
+   },
+   "fpts": 33.2,
+   "name": "CeeDee Lamb",
+   "pct": 34.72,
+   "pos": "WR",
+   "salary": 8800,
+   "team": "DAL"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 14.95,
+    "RB": 19.56
+   },
+   "fpts": 37.9,
+   "name": "Jonah Coleman",
+   "pct": 34.51,
+   "pos": "RB",
+   "salary": 6300,
+   "team": "DEN"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.16,
+    "WR": 24.75
+   },
+   "fpts": 26.8,
+   "name": "George Pickens",
+   "pct": 25.91,
+   "pos": "WR",
+   "salary": 6800,
+   "team": "DAL"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.01,
+    "WR": 22.05
+   },
+   "fpts": 13.8,
+   "name": "Carnell Tate",
+   "pct": 23.06,
+   "pos": "WR",
+   "salary": 5500,
+   "team": "TEN"
+  },
+  {
+   "dk_pct": {
+    "QB": 21.72
+   },
+   "fpts": 38.9,
+   "name": "Dak Prescott",
+   "pct": 21.72,
+   "pos": "QB",
+   "salary": 6700,
+   "team": "DAL"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 2.13,
+    "TE": 18.72
+   },
+   "fpts": 3.4,
+   "name": "Mark Andrews",
+   "pct": 20.86,
+   "pos": "TE",
+   "salary": 3500,
+   "team": "BAL"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 2.24,
+    "WR": 17.71
+   },
+   "fpts": 5.7,
+   "name": "Elic Ayomanor",
+   "pct": 19.96,
+   "pos": "WR",
+   "salary": 3700,
+   "team": "TEN"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 3.13,
+    "RB": 13.59
+   },
+   "fpts": 17.2,
+   "name": "James Cook III",
+   "pct": 16.72,
+   "pos": "RB",
+   "salary": 7900,
+   "team": "BUF"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.03,
+    "WR": 15.47
+   },
+   "fpts": 2.0,
+   "name": "Jordyn Tyson",
+   "pct": 16.51,
+   "pos": "WR",
+   "salary": 5200,
+   "team": "NO"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 6.61,
+    "RB": 9.15
+   },
+   "fpts": 10.3,
+   "name": "Omarion Hampton",
+   "pct": 15.77,
+   "pos": "RB",
+   "salary": 5200,
+   "team": "LAC"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.53,
+    "TE": 14.03
+   },
+   "fpts": 11.9,
+   "name": "Colston Loveland",
+   "pct": 15.56,
+   "pos": "TE",
+   "salary": 5100,
+   "team": "CHI"
+  },
+  {
+   "dk_pct": {
+    "DST": 14.97
+   },
+   "fpts": 6.0,
+   "name": "Steelers",
+   "pct": 14.98,
+   "pos": "DST",
+   "salary": 3300,
+   "team": "PIT"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.69,
+    "WR": 12.92
+   },
+   "fpts": 6.9,
+   "name": "Garrett Wilson",
+   "pct": 14.62,
+   "pos": "WR",
+   "salary": 6400,
+   "team": "NYJ"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.93,
+    "WR": 13.56
+   },
+   "fpts": 14.7,
+   "name": "Amon-Ra St. Brown",
+   "pct": 14.49,
+   "pos": "WR",
+   "salary": 8200,
+   "team": "DET"
+  },
+  {
+   "dk_pct": {
+    "QB": 14.47
+   },
+   "fpts": 23.22,
+   "name": "Cam Ward",
+   "pct": 14.47,
+   "pos": "QB",
+   "salary": 5500,
+   "team": "TEN"
+  },
+  {
+   "dk_pct": {
+    "DST": 14.03
+   },
+   "fpts": 7.0,
+   "name": "Chiefs",
+   "pct": 14.04,
+   "pos": "DST",
+   "salary": 4000,
+   "team": "KC"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.21,
+    "WR": 12.82
+   },
+   "fpts": 21.3,
+   "name": "Parker Washington",
+   "pct": 14.03,
+   "pos": "WR",
+   "salary": 6700,
+   "team": "JAX"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.34,
+    "TE": 12.67
+   },
+   "fpts": 5.1,
+   "name": "Dawson Knox",
+   "pct": 14.01,
+   "pos": "TE",
+   "salary": 2800,
+   "team": "BUF"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.7,
+    "WR": 12.63
+   },
+   "fpts": 3.3,
+   "name": "Luther Burden III",
+   "pct": 13.34,
+   "pos": "WR",
+   "salary": 6300,
+   "team": "CHI"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.86,
+    "RB": 10.34
+   },
+   "fpts": 24.1,
+   "name": "Javonte Williams",
+   "pct": 12.19,
+   "pos": "RB",
+   "salary": 7300,
+   "team": "DAL"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.19,
+    "WR": 9.75
+   },
+   "fpts": 8.5,
+   "name": "Rome Odunze",
+   "pct": 10.94,
+   "pos": "WR",
+   "salary": 4600,
+   "team": "CHI"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.71,
+    "WR": 10.03
+   },
+   "fpts": 3.8,
+   "name": "Emeka Egbuka",
+   "pct": 10.74,
+   "pos": "WR",
+   "salary": 5200,
+   "team": "TB"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.92,
+    "TE": 8.65
+   },
+   "fpts": 4.5,
+   "name": "Isaiah Likely",
+   "pct": 10.57,
+   "pos": "TE",
+   "salary": 5600,
+   "team": "NYG"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.78,
+    "RB": 8.65
+   },
+   "fpts": 12.9,
+   "name": "D'Andre Swift",
+   "pct": 10.43,
+   "pos": "RB",
+   "salary": 6900,
+   "team": "CHI"
+  },
+  {
+   "dk_pct": {
+    "DST": 10.31
+   },
+   "fpts": 6.0,
+   "name": "Jets",
+   "pct": 10.32,
+   "pos": "DST",
+   "salary": 2600,
+   "team": "NYJ"
+  },
+  {
+   "dk_pct": {
+    "QB": 10.24
+   },
+   "fpts": 27.96,
+   "name": "Patrick Mahomes",
+   "pct": 10.24,
+   "pos": "QB",
+   "salary": 6500,
+   "team": "KC"
+  },
+  {
+   "dk_pct": {
+    "DST": 9.75
+   },
+   "fpts": 13.0,
+   "name": "Broncos",
+   "pct": 9.76,
+   "pos": "DST",
+   "salary": 3600,
+   "team": "DEN"
+  },
+  {
+   "dk_pct": {
+    "QB": 9.14
+   },
+   "fpts": 15.34,
+   "name": "Caleb Williams",
+   "pct": 9.14,
+   "pos": "QB",
+   "salary": 6300,
+   "team": "CHI"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.08,
+    "WR": 7.75
+   },
+   "fpts": 5.0,
+   "name": "Caleb Douglas",
+   "pct": 8.83,
+   "pos": "WR",
+   "salary": 4400,
+   "team": "MIA"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.58,
+    "WR": 8.06
+   },
+   "fpts": 9.9,
+   "name": "Josh Downs",
+   "pct": 8.65,
+   "pos": "WR",
+   "salary": 5100,
+   "team": "KC"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.49,
+    "RB": 7.08
+   },
+   "fpts": 29.0,
+   "name": "Chuba Hubbard",
+   "pct": 8.57,
+   "pos": "RB",
+   "salary": 7500,
+   "team": "CAR"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.12,
+    "WR": 6.8
+   },
+   "fpts": 5.0,
+   "name": "Adonai Mitchell",
+   "pct": 7.93,
+   "pos": "WR",
+   "salary": 4900,
+   "team": "NYJ"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.15,
+    "TE": 6.72
+   },
+   "fpts": 25.4,
+   "name": "Travis Kelce",
+   "pct": 7.87,
+   "pos": "TE",
+   "salary": 4700,
+   "team": "KC"
+  },
+  {
+   "dk_pct": {
+    "DST": 7.71
+   },
+   "fpts": 1.0,
+   "name": "Chargers",
+   "pct": 7.71,
+   "pos": "DST",
+   "salary": 3000,
+   "team": "LAC"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.95,
+    "RB": 6.39
+   },
+   "fpts": 27.8,
+   "name": "Jahmyr Gibbs",
+   "pct": 7.33,
+   "pos": "RB",
+   "salary": 10000,
+   "team": "DET"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.01,
+    "WR": 6.16
+   },
+   "fpts": 18.5,
+   "name": "Malik Nabers",
+   "pct": 7.18,
+   "pos": "WR",
+   "salary": 7100,
+   "team": "NYG"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.82,
+    "TE": 6.33
+   },
+   "fpts": 1.8,
+   "name": "Cade Otton",
+   "pct": 7.15,
+   "pos": "TE",
+   "salary": 3300,
+   "team": "TB"
+  },
+  {
+   "dk_pct": {
+    "QB": 6.7
+   },
+   "fpts": 17.16,
+   "name": "Josh Allen",
+   "pct": 6.7,
+   "pos": "QB",
+   "salary": 7700,
+   "team": "BUF"
+  }
+ ],
+ "points": {
+  "cash_line": 157.86,
+  "first": 219.3,
+  "median": 137.24,
+  "top_0_1pct": 203.59999,
+  "top_10pct": 168.94,
+  "top_1pct": 191.80002
+ },
+ "rank_points": [
+  [
+   1,
+   219.3
+  ],
+  [
+   2,
+   218.5
+  ],
+  [
+   5,
+   217.1
+  ],
+  [
+   10,
+   215.6
+  ],
+  [
+   20,
+   213.3
+  ],
+  [
+   50,
+   209.30002
+  ],
+  [
+   100,
+   205.8
+  ],
+  [
+   200,
+   202.50002
+  ],
+  [
+   500,
+   198.2
+  ],
+  [
+   1000,
+   194.2
+  ],
+  [
+   2000,
+   189.5
+  ],
+  [
+   5000,
+   181.46
+  ],
+  [
+   10000,
+   174.0
+  ],
+  [
+   20000,
+   164.71999
+  ],
+  [
+   50000,
+   147.74002
+  ],
+  [
+   100000,
+   125.76
+  ],
+  [
+   147058,
+   0.0
+  ]
+ ],
+ "sha256": "c06b70e826bd102cfe17714e022752c17d60da3b482a87e2917b77300d44e9a4",
+ "shape": {
+  "bring_back_pct": 43.98,
+  "dst_vs_own_qb_pct": 0.306,
+  "resolved": 147015,
+  "salary_at_cap_pct": 48.45,
+  "salary_mean": 49874.4,
+  "salary_median": 49900,
+  "stack_pct": [
+   12.74,
+   51.12,
+   33.45,
+   2.69
+  ],
+  "unresolved": 0
+ },
+ "top_lineups": [
+  {
+   "lineup": [
+    [
+     "DST",
+     "Jets"
+    ],
+    [
+     "FLEX",
+     "Jonah Coleman"
+    ],
+    [
+     "QB",
+     "Dak Prescott"
+    ],
+    [
+     "RB",
+     "Emmett Johnson"
+    ],
+    [
+     "RB",
+     "Breece Hall"
+    ],
+    [
+     "TE",
+     "Travis Kelce"
+    ],
+    [
+     "WR",
+     "CeeDee Lamb"
+    ],
+    [
+     "WR",
+     "Khalil Shakir"
+    ],
+    [
+     "WR",
+     "Chimere Dike"
+    ]
+   ],
+   "points": 219.3,
+   "rank": 1
+  },
+  {
+   "lineup": [
+    [
+     "DST",
+     "Cowboys"
+    ],
+    [
+     "FLEX",
+     "Mark Andrews"
+    ],
+    [
+     "QB",
+     "Dak Prescott"
+    ],
+    [
+     "RB",
+     "Javonte Williams"
+    ],
+    [
+     "RB",
+     "Jonah Coleman"
+    ],
+    [
+     "TE",
+     "Travis Kelce"
+    ],
+    [
+     "WR",
+     "CeeDee Lamb"
+    ],
+    [
+     "WR",
+     "George Pickens"
+    ],
+    [
+     "WR",
+     "Jack Bech"
+    ]
+   ],
+   "points": 218.5,
+   "rank": 2
+  },
+  {
+   "lineup": [
+    [
+     "DST",
+     "Jets"
+    ],
+    [
+     "FLEX",
+     "Chimere Dike"
+    ],
+    [
+     "QB",
+     "Dak Prescott"
+    ],
+    [
+     "RB",
+     "Jonah Coleman"
+    ],
+    [
+     "RB",
+     "Emmett Johnson"
+    ],
+    [
+     "TE",
+     "Travis Kelce"
+    ],
+    [
+     "WR",
+     "CeeDee Lamb"
+    ],
+    [
+     "WR",
+     "George Pickens"
+    ],
+    [
+     "WR",
+     "Rome Odunze"
+    ]
+   ],
+   "points": 217.3,
+   "rank": 3
+  },
+  {
+   "lineup": [
+    [
+     "DST",
+     "Bears"
+    ],
+    [
+     "FLEX",
+     "Emmett Johnson"
+    ],
+    [
+     "QB",
+     "Dak Prescott"
+    ],
+    [
+     "RB",
+     "Jonah Coleman"
+    ],
+    [
+     "RB",
+     "Omarion Hampton"
+    ],
+    [
+     "TE",
+     "Evan Engram"
+    ],
+    [
+     "WR",
+     "CeeDee Lamb"
+    ],
+    [
+     "WR",
+     "George Pickens"
+    ],
+    [
+     "WR",
+     "Chimere Dike"
+    ]
+   ],
+   "points": 217.1,
+   "rank": 4
+  },
+  {
+   "lineup": [
+    [
+     "DST",
+     "Ravens"
+    ],
+    [
+     "FLEX",
+     "Travis Kelce"
+    ],
+    [
+     "QB",
+     "Dak Prescott"
+    ],
+    [
+     "RB",
+     "Jonah Coleman"
+    ],
+    [
+     "RB",
+     "Emmett Johnson"
+    ],
+    [
+     "TE",
+     "Brevyn Spann-Ford"
+    ],
+    [
+     "WR",
+     "CeeDee Lamb"
+    ],
+    [
+     "WR",
+     "DJ Moore"
+    ],
+    [
+     "WR",
+     "Carnell Tate"
+    ]
+   ],
+   "points": 217.1,
+   "rank": 4
+  }
+ ],
+ "with_lineup": 147015
+}
