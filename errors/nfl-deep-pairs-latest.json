@@ -3813,8 +3813,8 @@
    "ts": 1795497552
   },
   {
-   "close_mkt": null,
-   "close_mkt_ts": null,
+   "close_mkt": 0.505,
+   "close_mkt_ts": 1795715436,
    "close_time": 1795888800,
    "event_ts": 1795716000,
    "graded": 0,
@@ -3837,8 +3837,8 @@
    "ts": 1795497552
   },
   {
-   "close_mkt": null,
-   "close_mkt_ts": null,
+   "close_mkt": 0.495,
+   "close_mkt_ts": 1795715436,
    "close_time": 1795888800,
    "event_ts": 1795716000,
    "graded": 0,
@@ -3861,8 +3861,8 @@
    "ts": 1795497552
   },
   {
-   "close_mkt": null,
-   "close_mkt_ts": null,
+   "close_mkt": 0.795,
+   "close_mkt_ts": 1795727622,
    "close_time": 1795901400,
    "event_ts": 1795728600,
    "graded": 0,
@@ -3885,8 +3885,8 @@
    "ts": 1795497552
   },
   {
-   "close_mkt": null,
-   "close_mkt_ts": null,
+   "close_mkt": 0.205,
+   "close_mkt_ts": 1795727622,
    "close_time": 1795901400,
    "event_ts": 1795728600,
    "graded": 0,
@@ -3909,8 +3909,8 @@
    "ts": 1795497552
   },
   {
-   "close_mkt": null,
-   "close_mkt_ts": null,
+   "close_mkt": 0.605,
+   "close_mkt_ts": 1795727622,
    "close_time": 1795915200,
    "event_ts": 1795742400,
    "graded": 0,
@@ -3933,8 +3933,8 @@
    "ts": 1795497552
   },
   {
-   "close_mkt": null,
-   "close_mkt_ts": null,
+   "close_mkt": 0.395,
+   "close_mkt_ts": 1795727622,
    "close_time": 1795915200,
    "event_ts": 1795742400,
    "graded": 0,
