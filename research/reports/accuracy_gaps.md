@@ -20,7 +20,7 @@ Model against Kalshi's price at log time, Brier, lower is better **[live]**:
 | tennis | 0.2177 | 0.2309 | 32,858 | 57.9% of 3,068 (+5.4c) | the one model that beats the price |
 | nfl | 0.2284 | 0.2325 | 146 | 52.5% of 122 (+1.7c) | beats Kalshi's EARLY price; loses to the consensus close (`game_xref.md`) |
 | nfl_pre | 0.2804 | 0.2850 | 62 | - | market-anchored by design |
-| nfl_deep (shadow) | 0.2684 | 0.2559 | 54 | - | worse than the drive sim live |
+| nfl_deep (shadow) | 0.2684 | 0.2559 | 54 | - | NOT comparable with the nfl row above: different games (146 vs 54). Corrected 2026-11-26: on the 57 games both graded (weeks 9-12, isolated by differencing the data branch's versions), Brier drive 0.1901, deep 0.1775, Kalshi 0.1702; deep better in 3 of 4 weeks, +0.027 +/- 0.045 log loss over 4 weekly clusters, not decisive (`research/sprint_2026_11_26/engines/report.md` 3) |
 | nba | 0.2504 | 0.2200 | 106 | - | the widest game-market gap; October ratings are noise (section 4) |
 | nba_deep (shadow) | 0.2316 | 0.2210 | 78 | - | far better than production live, blend weight 0 |
 | nhl | 0.2406 | 0.2267 | 194 | 66.7% of 12 | second-widest gap; no goalie, no prior (section 5) |

@@ -767,6 +767,11 @@ data-only `sim-history` branch (which never deploys):
     any other refusal (a roster lookup down) is tried again next cycle as the plain builds are. The automatic paths
     never see a picked request (`_split_picked`) and a window is consumed by the plain build only. Served on
     `/api/dfs/tourney?dg=&pick=1`. Guards: `tests/guards_picker.py` (section PK).
+- **The 2026-11-26 sprint** (`research/reports/sprint_2026_11_26.md`): the owner's Phase 0-10 backlog
+  reconciled item by item (done / partial / missing / rejected / blocked), four audits with their scripts
+  (`research/sprint_2026_11_26/`), and the readability pass (`tests/guards_ui.py`, section UI: the page's
+  own intro notes fold to two lines; a note a board renders at run time never does). Read its section E
+  before acting on a recommendation: each needs the owner's call or a test on week 13+ games.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 

@@ -109,6 +109,12 @@ footer { text-align: center; color: var(--faint); font-size: 0.75rem; padding: 8
 
 /* ------------------------------- Forms & buttons ------------------------- */
 label { display: flex; flex-direction: column; font-size: 0.8rem; color: var(--muted); gap: 5px; }
+/* A checkbox or radio sits BESIDE its words. The rule above stacks a label's
+   children (caption over input) for the form fields, and it drew every
+   checkbox on a line of its own above its text -- the NFL week board's
+   "preseason" read as a lone box with a caption under it (2026-11-26). */
+label:has(> input[type="checkbox"]), label:has(> input[type="radio"]) {
+  flex-direction: row; align-items: center; gap: 6px; }
 .opt { color: var(--faint); }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
 
@@ -237,7 +243,11 @@ button.danger { color: var(--no); }
 /* ---- Edge Finder ---- */
 .leanrow { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
 .leanchip { font-size: 0.78rem; padding: 3px 8px; border-radius: 999px;
-  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--muted); }
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--muted);
+  /* One chip, one line: inline spans broke inside the pill on a phone
+     ("nhl:" on one row, its "0" on the next). */
+  display: inline-block; white-space: nowrap; max-width: 100%; overflow: hidden;
+  text-overflow: ellipsis; vertical-align: middle; margin: 2px 0; }
 .leanchip.warn { background: rgba(255,176,32,0.12); border-color: rgba(255,176,32,0.5); color: #ffd27a; }
 .leanwarn { margin: 8px 0; padding: 9px 11px; border-radius: 10px; font-size: 0.85rem;
   background: rgba(255,176,32,0.1); border: 1px solid rgba(255,176,32,0.4); color: #ffd27a; }
@@ -255,6 +265,37 @@ button.danger { color: var(--no); }
   .edgerow { grid-template-columns: 44px 1fr 52px 50px; }
   .edgerow .ecol-num:nth-of-type(5), .edgerow .ecol-conf { display: none; }
 }
+
+/* A labelled number ("O45.5 61%", "#3 12%"). The class was used in thirteen
+   places and styled in none, so ladders ran together as plain text and
+   wrapped between a line and its percentage. */
+.chip { display: inline-block; white-space: nowrap; padding: 1px 7px; margin: 2px 0;
+  border-radius: 999px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border2);
+  font-size: 0.78rem; line-height: 1.5; font-variant-numeric: tabular-nums; }
+
+/* Long intro notes fold to two lines with a "more" toggle (foldLongNotes). */
+.foldwrap { min-width: 0; }
+.sub.folded { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  line-clamp: 2; overflow: hidden; }
+.foldbtn { background: none; border: 0; padding: 2px 0 4px; margin: 0; color: var(--link);
+  font-size: 0.78rem; font-weight: 500; cursor: pointer; }
+.foldbtn:hover { color: var(--link-hover); text-decoration: underline; }
+.foldbtn[hidden] { display: none; }
+
+/* The NFL card's two models: model | away | home, one row each. */
+/* The footnote sits outside the grid: as a spanning row its long line widened
+   every column and pushed the away/home figures to the card's edges. */
+.nfl-models { margin: 6px 0 2px; font-size: 0.8rem; color: var(--muted); }
+.nfl-models .nm-grid { display: grid; grid-template-columns: auto auto auto; justify-content: start;
+  gap: 1px 14px; }
+.nfl-models .nm-name { white-space: nowrap; }
+.nfl-models .nm-p { text-align: right; font-variant-numeric: tabular-nums; color: var(--text);
+  white-space: nowrap; }
+/* Kalshi's two asks and our edge on each, under the bar: inside it they drew
+   red and blue figures over the fill and read as one run of numbers. */
+.nfl-kx { margin: 4px 0 0; font-size: 0.8rem; color: var(--muted); text-align: center; }
+.nfl-kx .nfl-kxsep { color: var(--faint); margin: 0 4px; }
+.nfl-models .nm-foot { font-size: 0.74rem; color: var(--faint); }
 
 .note { margin-top: 10px; padding: 9px 11px; border-radius: 10px; font-size: 0.85rem; }
 .note.dip { background: rgba(91, 140, 255, 0.12); border: 1px solid rgba(91, 140, 255, 0.5); color: #aac4ff; }
@@ -924,6 +965,11 @@ body.tier-locked .owner-only { display: none !important; }
   .tab { padding: 8px 14px; font-size: 0.9rem; white-space: nowrap; flex: 0 0 auto; }
 
   .settingsbar { font-size: 0.82rem; flex-wrap: wrap; gap: 6px 10px; justify-content: center; }
+  /* The tagline and the plan hint cost two rows above every tab on a phone
+     and say nothing the owner does not know. */
+  .topbar .sub, .settingsbar .hint { display: none; }
+  .settingsbar { margin-top: 8px; }
+  .foldbtn { font-size: 0.82rem; min-height: 28px; }
 
   .card { padding: 16px 14px; border-radius: 16px; }
   .card h2 { font-size: 1.08rem; }

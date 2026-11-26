@@ -24802,6 +24802,16 @@ except Exception as _pk_e:                 # a guard file that cannot run is a f
     ck("guards_picker runs to the end", False, f"{type(_pk_e).__name__}: {_pk_e} " + _pk_tb.format_exc()[-600:])
 
 print("=" * 72)
+print("UI. The readability pass (2026-11-26): checkbox labels, chips that never break inside themselves, Best Bets'")
+print("    source names, the folded intro notes, the NFL card's models and asks, the bet ledger (tests/guards_ui.py)")
+print("=" * 72)
+try:
+    __import__("guards_ui").run(ck)
+except Exception as _ui_e:                 # a guard file that cannot run is a failed guard, never a skipped one
+    import traceback as _ui_tb
+    ck("guards_ui runs to the end", False, f"{type(_ui_e).__name__}: {_ui_e} " + _ui_tb.format_exc()[-600:])
+
+print("=" * 72)
 print("MX. The matchup upgrade (2026-10-23): prop math, the NBA engine, the NFL matchup data and model,")
 print("    the Matchups tab's plumbing, the rushing data layer and model (2026-10-24) -- each guard file also runs alone (python3 tests/guards_<name>.py)")
 print("=" * 72)

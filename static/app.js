@@ -2208,9 +2208,59 @@ function setupTabs() {
   setupBaseballSubtabs();
 }
 
+// ---- Long intro notes fold to two lines ------------------------------------
+// The owner, 2026-11-26: "make the website easier to read and use". Every card
+// opened on a paragraph of method notes -- the NFL week board's ran seven lines
+// on a phone before the first game. The notes are the page's honesty, so they
+// stay one tap away instead of going: every intro (p.sub) in the page's own
+// markup shows two lines and a "more" toggle. A note a board renders at run
+// time (a warning, an empty state) is never folded: this runs once, at load.
+// The toggle hides itself wherever the note already fits in two lines, which
+// is only measurable while its tab is on screen, so tab switches and resizes
+// re-check (_foldCheck).
+function foldLongNotes() {
+  document.querySelectorAll("p.sub").forEach((p) => {
+    if (p.dataset.fold || (p.textContent || "").trim().length < 120) return;
+    p.dataset.fold = "1";
+    // The note shares a flex row with its controls on most cards, so the note
+    // and its toggle move into one wrapper that takes the note's own width.
+    const wrap = document.createElement("div"), cs = getComputedStyle(p);
+    wrap.className = "foldwrap";
+    wrap.style.maxWidth = cs.maxWidth;
+    wrap.style.margin = `${cs.marginTop} ${cs.marginRight} ${cs.marginBottom} ${cs.marginLeft}`;
+    p.style.maxWidth = "none";
+    p.style.margin = "0";
+    p.before(wrap);
+    wrap.appendChild(p);
+    p.classList.add("folded");
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "foldbtn"; b.textContent = "more ▾";
+    b.setAttribute("aria-expanded", "false");
+    b.addEventListener("click", () => {
+      const open = !p.classList.toggle("folded");
+      b.textContent = open ? "less ▴" : "more ▾";
+      b.setAttribute("aria-expanded", String(open));
+    });
+    wrap.appendChild(b);
+  });
+  _foldCheck();
+  let t = null;
+  window.addEventListener("resize", () => { clearTimeout(t); t = setTimeout(_foldCheck, 150); });
+  document.querySelectorAll("button.tab, button.subtab").forEach((btn) =>
+    btn.addEventListener("click", () => setTimeout(_foldCheck, 0)));
+}
+function _foldCheck() {
+  document.querySelectorAll(".foldwrap").forEach((w) => {
+    const p = w.firstElementChild, b = w.lastElementChild;
+    if (!p || !b || !p.classList.contains("folded") || !p.offsetParent) return;
+    b.hidden = p.scrollHeight <= p.clientHeight + 1;
+  });
+}
+
 // ---- Best Bets: every net-of-fee edge across all models, one screen --------
-const _SRC_LABEL = { mlb: "⚾ MLB slate", mlb_futures: "⚾ MLB futures", ufc: "🥊 UFC",
-                     tennis: "🎾 Tennis", arbitrage: "🔒 Arbitrage" };
+const _SRC_LABEL = { mlb: "⚾ MLB slate", mlb_futures: "⚾ MLB futures", nba: "🏀 NBA",
+                     nhl: "🏒 NHL", cfb_futures: "🎓 College futures", ufc: "🥊 UFC",
+                     golf: "⛳ Golf", tennis: "🎾 Tennis", arbitrage: "🔒 Arbitrage" };
 async function loadBestBets() {
   const box = $("bbetsResults"), src = $("bbetsSources");
   box.innerHTML = `<div class="empty">Hunting edges across every model… (the MLB slate sim is the slow part - ~30s cold)</div>`;
@@ -2219,8 +2269,13 @@ async function loadBestBets() {
     const d = await (await fetch("/api/bestbets")).json();
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
     // Source status chips: which models contributed, which failed/are warming.
-    src.innerHTML = Object.entries(d.sources || {}).map(([k, s]) =>
-      `<span class="leanchip${s.ok ? "" : " warn"}" title="${s.ok ? "" : (s.error || "unavailable")}">${_SRC_LABEL[k] || k}: ${s.ok ? `<b>${s.rows}</b>` : "✗"}</span>`).join(" ");
+    // A source switched off on purpose (MLB's sims, paused for the off-season)
+    // reads "paused" in the quiet colour: drawn as a failure it was a warning
+    // chip on every scan all winter.
+    src.innerHTML = Object.entries(d.sources || {}).map(([k, s]) => {
+      const paused = !s.ok && /paused/i.test(s.error || "");
+      return `<span class="leanchip${s.ok || paused ? "" : " warn"}" title="${escapeHtml(s.ok ? "" : (s.error || "unavailable"))}">${_SRC_LABEL[k] || k}: ${s.ok ? `<b>${s.rows}</b>` : paused ? "paused" : "✗"}</span>`;
+    }).join(" ");
     if (!d.rows || !d.rows.length) {
       box.innerHTML = `<div class="empty">No positive net-of-fee edges right now - that's an honest answer, not a bug. Markets tighten close to game time; check back when slates/cards post.</div>`;
       return;
@@ -3256,7 +3311,14 @@ function nflSlateCard(g) {
   const otherPct = g.pick ? Math.round((100 - g.pick.pct) * 10) / 10 : null;
   const pct1 = (x) => (Math.round(x * 1000) / 10).toFixed(1);
   const twoModels = g.p_home_deep != null
-    ? `<div class="small" style="color:var(--muted);margin-top:2px" title="The win% above blends two models. Drive model: Sleeper's matchup projections through the alternating-possession engine (the graded record behind the pick). Deep engine: the play-by-play simulation (nfl_deep_sim) -- every snap, both units against each other, this week's roster signal, levels anchored to Kalshi's win totals. Blended at ${Math.round((g.deep_weight || 0) * 100)}% deep until the deep engine's own graded record earns more. The deep figure is from the simulated games shown beside it: 5,000 when the PC built the board, 600 when the server did. The plus-or-minus is one standard error of those games' dice alone, not a range the result must fall in.">🧬 drive model ${g.away} <b>${pct1(g.p_away_model)}%</b> – <b>${pct1(g.p_home_model)}%</b> ${g.home} · play-by-play deep engine ${g.away} <b>${pct1(g.p_away_deep)}%</b> – <b>${pct1(g.p_home_deep)}%</b> ${g.home}${g.p_tie_deep ? ` <span class="small">(tie ${pct1(g.p_tie_deep)}%)</span>` : ""}${g.deep_n_sims > 0 ? ` <span class="small">(${Number(g.deep_n_sims).toLocaleString()} sims, ±${(100 * Math.sqrt(g.p_home_deep * (1 - g.p_home_deep) / g.deep_n_sims)).toFixed(1)} pts)</span>` : ""} · deep score ${g.away} ${g.exp_away_deep} – ${g.exp_home_deep} ${g.home}</div>`
+    // A small two-row table (model, away, home) instead of one run-on line: on
+    // a phone the line wrapped to four rows with the numbers split from their
+    // teams (the owner, 2026-11-26: "make the website easier to read").
+    ? `<div class="nfl-models" title="The win% above blends two models. Drive model: Sleeper's matchup projections through the alternating-possession engine (the graded record behind the pick). Deep engine: the play-by-play simulation (nfl_deep_sim) -- every snap, both units against each other, this week's roster signal, levels anchored to Kalshi's win totals. Blended at ${Math.round((g.deep_weight || 0) * 100)}% deep until the deep engine's own graded record earns more. The deep figure is from the simulated games shown beside it: 5,000 when the PC built the board, 600 when the server did. The plus-or-minus is one standard error of those games' dice alone, not a range the result must fall in."><div class="nm-grid">
+        <span class="nm-name">🧬 Drive model</span><span class="nm-p">${g.away} <b>${pct1(g.p_away_model)}%</b></span><span class="nm-p">${g.home} <b>${pct1(g.p_home_model)}%</b></span>
+        <span class="nm-name">Deep engine</span><span class="nm-p">${g.away} <b>${pct1(g.p_away_deep)}%</b></span><span class="nm-p">${g.home} <b>${pct1(g.p_home_deep)}%</b></span></div>
+        <div class="nm-foot">deep score ${g.away} ${g.exp_away_deep} – ${g.exp_home_deep} ${g.home}${g.p_tie_deep ? ` · tie ${pct1(g.p_tie_deep)}%` : ""}${g.deep_n_sims > 0 ? ` · ${Number(g.deep_n_sims).toLocaleString()} sims, ±${(100 * Math.sqrt(g.p_home_deep * (1 - g.p_home_deep) / g.deep_n_sims)).toFixed(1)} pts` : ""}</div>
+      </div>`
     : "";
   return `<div class="bbgame nflcard">
     <div class="top"><div>
@@ -3265,7 +3327,8 @@ function nflSlateCard(g) {
     </div></div>
     <div class="nfl-score"><span class="nfl-sc">${g.away} <b>${g.exp_away}</b></span><span class="nfl-scsep">-</span><span class="nfl-sc"><b>${g.exp_home}</b> ${g.home}</span></div>
     <div class="winbar"><div class="fill" style="width:${ph}%"></div>
-      <div class="lbl">${g.away} ${pa}% ${_nflEdgeChip(kx.away_cents, g.edge_away)} - ${_nflEdgeChip(kx.home_cents, g.edge_home)} ${ph}% ${g.home}</div></div>
+      <div class="lbl">${g.away} ${pa}% - ${ph}% ${g.home}</div></div>
+    ${kx.away_cents != null || kx.home_cents != null ? `<div class="nfl-kx">${g.away} ${_nflEdgeChip(kx.away_cents, g.edge_away) || "-"} <span class="nfl-kxsep">·</span> ${g.home} ${_nflEdgeChip(kx.home_cents, g.edge_home) || "-"}</div>` : ""}
     ${twoModels}
     <div class="small" style="margin:4px 0">${ladder} ${spreads}</div>
     <div class="nfl-pls">${players}</div>
@@ -7577,6 +7640,7 @@ async function init() {
 
   // Baseball setup
   setupTabs();
+  foldLongNotes();
   // Best Bets is the landing tab - kick off its scan without waiting for a click.
   if ($("tab-bestbets") && !$("tab-bestbets").classList.contains("hidden")) {
     $("bbetsResults").dataset.loaded = "1";

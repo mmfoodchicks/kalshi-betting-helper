@@ -800,20 +800,29 @@
       <div class="grid">
         <label>Type
           <select id="betKind">
+            <option value="nfl">NFL</option>
+            <option value="cfb">College football</option>
+            <option value="nba">NBA</option>
+            <option value="nhl">NHL</option>
+            <option value="soccer">Soccer</option>
+            <option value="ufc">UFC</option>
+            <option value="tennis">Tennis</option>
+            <option value="golf">Golf</option>
             <option value="baseball">Baseball</option>
+            <option value="dfs">DFS</option>
             <option value="other">Other</option>
           </select>
         </label>
         <label>Description
-          <input id="betDesc" type="text" placeholder="e.g. BTC NO &gt; $63k 3pm" />
+          <input id="betDesc" type="text" placeholder="e.g. Chiefs ML vs Bills" />
         </label>
         <label>Side
-          <input id="betSide" type="text" placeholder="YES / NO / team" style="width:90px" />
+          <input id="betSide" type="text" placeholder="YES / NO / team" />
         </label>
         <label>Stake $
           <input id="betStake" type="number" step="any" min="0" placeholder="100" />
         </label>
-        <label>Price ¢ <span class="opt">(entry)</span>
+        <label><span>Price ¢ <span class="opt">(entry)</span></span>
           <input id="betPrice" type="number" step="any" min="0" max="100" placeholder="40" />
         </label>
       </div>
