@@ -96,6 +96,15 @@ def run(ck):
        and "sims, ±${(100 * Math.sqrt(g.p_home_deep * (1 - g.p_home_deep) / g.deep_n_sims)).toFixed(1)} pts"
        in card and ".nfl-models .nm-grid { display: grid;" in css and ".nfl-kx {" in css, lbl[:160])
 
+    tb = _between(js, "const lineupCell = (r) => {", "const players = d.players || [];")
+    ck("UI: the tournament board never prints a classic board's expected copies as a number (the field draws duplicates "
+       "100-400x too rarely, so they read about zero), and the classic portfolio's coverage says it is in-sample and that "
+       "its optimism is unmeasured -- the showdown one already carried its measured basis",
+       '<td>${classic ? `<span style="color:var(--muted)" title="not estimable on a classic board' in tb
+       and 'most popular build${classic ? "" : ` (~${chalk.expected_copies} copies)`}' in tb
+       and 'any top 1% (in-sample)</a>`).join("");\n    // The classic cover' in tb
+       and "has not been measured" in tb)
+
     kinds = re.findall(r'<option value="([a-z]+)">', _between(html, '<select id="betKind">', "</select>"))
     ck("UI: the bet ledger's types are the sports Vigil covers (Baseball and Other were all it offered) and its "
        "example is not the removed crypto feature",

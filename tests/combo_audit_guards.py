@@ -24811,6 +24811,16 @@ except Exception as _cs_e:                 # a guard file that cannot run is a f
     import traceback as _cs_tb
     ck("guards_conservation runs to the end", False, f"{type(_cs_e).__name__}: {_cs_e} " + _cs_tb.format_exc()[-600:])
 
+# The owner's picked builds reach the data branch (2026-11-26, the DFS audit's
+# first recommendation): the forced-Gibbs Thanksgiving board was never
+# exported, so the picker's result could only be read off the unpicked board.
+_pk_wf = open(_os.path.join(_root, ".github", "workflows", "error-log.yml")).read()
+ck("the snapshot exports the owner's picked build of a slate beside the plain board (tourney-<dg>-pick.json), fetched only "
+   "when the plain board says one exists, saved only when the answer is a picked board and not the 'none' reply",
+   "/api/dfs/tourney?sport=nfl&dg=$dg&pick=1" in _pk_wf and "get('picked_built_ts')" in _pk_wf
+   and "d.get('picked') and d.get('status') != 'none'" in _pk_wf
+   and 'f"tourney-{os.environ[\'DG\']}-pick.json"' in _pk_wf)
+
 print("=" * 72)
 print("UI. The readability pass (2026-11-26): checkbox labels, chips that never break inside themselves, Best Bets'")
 print("    source names, the folded intro notes, the NFL card's models and asks, the bet ledger (tests/guards_ui.py)")
