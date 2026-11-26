@@ -1,6 +1,171 @@
 {
  "errors": [
   {
+   "code": "NFL-DRIFT",
+   "id": 2828,
+   "last_ts": 1795706555.5282483,
+   "msg": "Rush Yds: the model sits -4.4 points off Kalshi's mid over 168 rungs in 13 games",
+   "n": 2,
+   "path": "Rush Yds",
+   "pid": 7,
+   "tb": "",
+   "ts": 1795706555.5282483
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2827,
+   "last_ts": 1795704739.0653732,
+   "msg": "Rush Yds: the model sits -4.6 points off Kalshi's mid over 165 rungs in 13 games",
+   "n": 3,
+   "path": "Rush Yds",
+   "pid": 7,
+   "tb": "",
+   "ts": 1795704593.119264
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2826,
+   "last_ts": 1795702780.3736749,
+   "msg": "Rush Yds: the model sits -4.6 points off Kalshi's mid over 167 rungs in 13 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 7,
+   "tb": "",
+   "ts": 1795702780.3736749
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2825,
+   "last_ts": 1795701690.7048752,
+   "msg": "Rush Yds: the model sits -4.5 points off Kalshi's mid over 164 rungs in 13 games",
+   "n": 2,
+   "path": "Rush Yds",
+   "pid": 23084,
+   "tb": "",
+   "ts": 1795701690.7048752
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2824,
+   "last_ts": 1795699875.054302,
+   "msg": "Rush Yds: the model sits -4.8 points off Kalshi's mid over 161 rungs in 13 games",
+   "n": 2,
+   "path": "Rush Yds",
+   "pid": 23084,
+   "tb": "",
+   "ts": 1795699875.054302
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2823,
+   "last_ts": 1795698049.3276172,
+   "msg": "Rush Yds: the model sits -5.0 points off Kalshi's mid over 164 rungs in 13 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 23084,
+   "tb": "",
+   "ts": 1795698049.3276172
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2822,
+   "last_ts": 1795696689.267504,
+   "msg": "Rush Yds: the model sits -4.8 points off Kalshi's mid over 163 rungs in 13 games",
+   "n": 2,
+   "path": "Rush Yds",
+   "pid": 23060,
+   "tb": "",
+   "ts": 1795696689.267504
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2821,
+   "last_ts": 1795694855.825555,
+   "msg": "Rush Yds: the model sits -4.9 points off Kalshi's mid over 162 rungs in 13 games",
+   "n": 2,
+   "path": "Rush Yds",
+   "pid": 23060,
+   "tb": "",
+   "ts": 1795694855.825555
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2820,
+   "last_ts": 1795693041.4985363,
+   "msg": "Rush Yds: the model sits -4.9 points off Kalshi's mid over 161 rungs in 13 games",
+   "n": 2,
+   "path": "Rush Yds",
+   "pid": 23060,
+   "tb": "",
+   "ts": 1795693041.4985363
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2819,
+   "last_ts": 1795691224.9870138,
+   "msg": "Rush Yds: the model sits -4.8 points off Kalshi's mid over 159 rungs in 13 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 23060,
+   "tb": "",
+   "ts": 1795691224.9870138
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2818,
+   "last_ts": 1795689625.4926784,
+   "msg": "Rush Yds: the model sits -4.8 points off Kalshi's mid over 159 rungs in 13 games",
+   "n": 2,
+   "path": "Rush Yds",
+   "pid": 23037,
+   "tb": "",
+   "ts": 1795689625.4926784
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2817,
+   "last_ts": 1795687809.9315326,
+   "msg": "Rush Yds: the model sits -4.7 points off Kalshi's mid over 158 rungs in 13 games",
+   "n": 2,
+   "path": "Rush Yds",
+   "pid": 23037,
+   "tb": "",
+   "ts": 1795687809.9315326
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2816,
+   "last_ts": 1795685978.3418465,
+   "msg": "Rush Yds: the model sits -4.3 points off Kalshi's mid over 143 rungs in 13 games",
+   "n": 2,
+   "path": "Rush Yds",
+   "pid": 23037,
+   "tb": "",
+   "ts": 1795685978.3418465
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2815,
+   "last_ts": 1795684164.9104493,
+   "msg": "Rush Yds: the model sits -4.4 points off Kalshi's mid over 145 rungs in 13 games",
+   "n": 3,
+   "path": "Rush Yds",
+   "pid": 23037,
+   "tb": "",
+   "ts": 1795683741.9132113
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2814,
+   "last_ts": 1795681909.237327,
+   "msg": "Rush Yds: the model sits -4.9 points off Kalshi's mid over 160 rungs in 13 games",
+   "n": 2,
+   "path": "Rush Yds",
+   "pid": 23005,
+   "tb": "",
+   "ts": 1795681909.237327
+  },
+  {
    "code": "KAL-candles",
    "id": 2813,
    "last_ts": 1795680410.963251,
@@ -1924,28 +2089,17 @@
    "pid": 16870,
    "tb": "Traceback (most recent call last):\n  File \"/app/kalshi_nfl.py\", line 108, in _fetch\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 37, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
    "ts": 1795104722.3380542
-  },
-  {
-   "code": "UFCC-rounds",
-   "id": 2638,
-   "last_ts": 1795076371.570279,
-   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "n": 1,
-   "path": null,
-   "pid": 16339,
-   "tb": "Traceback (most recent call last):\n  File \"/app/ufc_combo.py\", line 109, in markets\n    for m in _series(\"KXUFCROUNDS\"):\n             ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/ufc_combo.py\", line 66, in _series\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 37, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
-   "ts": 1795076371.570279
   }
  ],
- "generated_at": 1795680732.6327298,
+ "generated_at": 1795706887.6427765,
  "summary": [
   {
    "code": "NFL-DRIFT",
    "first_ts": 1795106082.8615246,
-   "last_msg": "Rush Yds: the model sits -4.9 points off Kalshi's mid over 158 rungs in 13 games",
-   "last_ts": 1795680095.2787726,
-   "n": 242,
-   "variants": 170
+   "last_msg": "Rush Yds: the model sits -4.4 points off Kalshi's mid over 168 rungs in 13 games",
+   "last_ts": 1795706555.5282483,
+   "n": 271,
+   "variants": 185
   },
   {
    "code": "KAL-candles",
@@ -1968,14 +2122,6 @@
    "first_ts": 1795104722.3380542,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
    "last_ts": 1795104722.3380542,
-   "n": 1,
-   "variants": 1
-  },
-  {
-   "code": "UFCC-rounds",
-   "first_ts": 1795076371.570279,
-   "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "last_ts": 1795076371.570279,
    "n": 1,
    "variants": 1
   }

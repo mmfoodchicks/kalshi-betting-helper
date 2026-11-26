@@ -965,12 +965,12 @@
   "pass_yd": {
    "a": 0.0,
    "b": 1.0,
-   "days": 12,
+   "days": 13,
    "family": "identity",
-   "fitted_ts": 1795664248,
+   "fitted_ts": 1795686772,
    "gain": null,
-   "n": 1022,
-   "n_eff": 112.0,
+   "n": 1040,
+   "n_eff": 114.0,
    "se": null,
    "why": "below the floors"
   },
@@ -980,15 +980,15 @@
    "blend_report": {
     "applied": false,
     "gain_over_platt": null,
-    "n_eff": 528.5,
+    "n_eff": 541.6,
     "se": null
    },
-   "days": 12,
+   "days": 13,
    "family": "identity",
-   "fitted_ts": 1795664248,
+   "fitted_ts": 1795686772,
    "gain": null,
-   "n": 4537,
-   "n_eff": 719.0,
+   "n": 4633,
+   "n_eff": 734.0,
    "se": null,
    "why": "nothing scored out of sample yet (it needs 30 games past the first 10 dates)"
   },
@@ -998,27 +998,33 @@
    "blend_report": {
     "applied": false,
     "gain_over_platt": null,
-    "n_eff": 599.5,
+    "n_eff": 613.5,
     "se": null
    },
-   "days": 12,
+   "days": 13,
    "family": "identity",
-   "fitted_ts": 1795664248,
+   "fitted_ts": 1795686772,
    "gain": null,
-   "n": 6991,
-   "n_eff": 723.0,
+   "n": 7144,
+   "n_eff": 738.0,
    "se": null,
    "why": "nothing scored out of sample yet (it needs 30 games past the first 10 dates)"
   },
   "rush_yd": {
    "a": 0.0,
    "b": 1.0,
-   "days": 12,
+   "blend_report": {
+    "applied": false,
+    "gain_over_platt": null,
+    "n_eff": 305.7,
+    "se": null
+   },
+   "days": 13,
    "family": "identity",
-   "fitted_ts": 1795664248,
+   "fitted_ts": 1795686772,
    "gain": null,
-   "n": 2954,
-   "n_eff": 340.0,
+   "n": 3015,
+   "n_eff": 348.0,
    "se": null,
    "why": "nothing scored out of sample yet (it needs 30 games past the first 10 dates)"
   },
@@ -1028,15 +1034,15 @@
    "blend_report": {
     "applied": false,
     "gain_over_platt": null,
-    "n_eff": 1025.3,
+    "n_eff": 1044.3,
     "se": null
    },
-   "days": 12,
+   "days": 13,
    "family": "identity",
-   "fitted_ts": 1795664248,
+   "fitted_ts": 1795686773,
    "gain": null,
-   "n": 1921,
-   "n_eff": 1062.0,
+   "n": 1956,
+   "n_eff": 1081.0,
    "se": null,
    "why": "nothing scored out of sample yet (it needs 30 games past the first 10 dates)"
   }
