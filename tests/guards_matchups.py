@@ -823,13 +823,16 @@ def run(ck):
             so_out = r3.stdout[:900] + r3.stderr[-400:]
             # Best picks: clean +EV by cautious EV (2: +4, 5: NO +2, 8: NO +1, 1: -1), then the muted +EV
             # (thin 3: 28, impeached 4: 18, stale 7: 10, thin 9: -30 -- still above the -EV tier), then the
-            # negative-EV line 6 (cautious -8). Highest EV: every
+            # negative-EV line 6 (cautious -8). Highest probability sorts by the figure shown in bold: line 4
+            # carries market_better on a believable two-sided book, so Kalshi's own price leads it (the owner,
+            # 2026-11-26: "lead with Kalshi's market-implied probability where it has demonstrated better
+            # accuracy") -- NO 1 - 0.40 = 60%, third, where Vigil's NO 20% had it eighth. Highest EV: every
             # believable, fresh, unimpeached line by EV (1, 5, 2, 8, then 6 at -3), the muted ones after.
             so_ok = bool(o3) \
                 and o3["best"] == [2, 5, 8, 1, 3, 4, 7, 9, 6] \
                 and o3["ev"] == [1, 5, 2, 8, 6, 3, 4, 7, 9] \
                 and o3["noOrd"][:2] == [5, 8] and o3["noOrd"][-4:] == [7, 1, 4, 3] \
-                and o3["noP"] == [5, 8, 6, 9, 2, 1, 7, 4, 3] \
+                and o3["noP"] == [5, 8, 4, 6, 9, 2, 1, 7, 3] \
                 and o3["noEdge"] == [5, 6, 9, 2, 1, 7, 4, 3, 8] \
                 and o3["noEvChip"] == [5, 8] \
                 and o3["yesOrd"] == [2, 1, 3, 4, 7, 9, 6, 8, 5] and o3["st7"] == [True, False] \
@@ -958,7 +961,10 @@ def run(ck):
        "clears the previous board's status",
        "Still building after eight checks" in js and "He is not on this slate" in js
        and "_mxOk(d.age_s) && !d.placeholder" in js
-       and "function _mxBand(l)" in js and js.count("${_mxBand(") == 3 and "l.p_hi > l.p_lo" in js
+       # every chance cell goes through _mxLeadCell (2026-11-26), which draws the band once: the scanner, the
+       # player page's two tables (the Proven view prints no band)
+       and "function _mxBand(l)" in js and js.count("${_mxBand(") == 1 and js.count("${_mxBand({ p_lo: a.lo, p_hi: a.hi })}") == 1
+       and js.count("_mxLeadCell(") == 4 and "l.p_hi > l.p_lo" in js
        and ': "no band"; }' in js
        and js.count("${_mxPct(l.p_lo)}") == 1 and "${_mxPct(r.l.p_lo)}" not in js
        and 'hidden by "only lines Kalshi lists"' in js and "if (!retry) {" in js
@@ -1279,6 +1285,70 @@ def run(ck):
        and '__import__("matchups").nfl_data_job(log=print)' in inspect.getsource(pc_worker)
        and "os.nice(10)" in inspect.getsource(matchups.job_isolated)
        and "nfl_matchup_<season>.pkl" in art)
+    _lead_check(ck)
+
+
+def _lead_check(ck):
+    """The owner (2026-11-26, decision 2): "lead with Kalshi's market-implied probability where it has demonstrated
+    better accuracy ... keep bid, ask, implied probability, Vigil's probability and executable EV distinct ... do
+    not conceal unfavorable performance". Display only."""
+    import json
+    import shutil
+    import subprocess
+    js = open(os.path.join(_ROOT, "static", "matchups.js")).read()
+    out, ok = "", None
+    if shutil.which("node"):
+        h = ("const $ = () => null;\n" + js + "\n"
+             "const L = (p, pm, kind, bel, labels) => ({k: 1, p, p_lo: p - 0.05, p_hi: p + 0.05, labels: labels || [],"
+             " market: {yes_bid: 40, yes_ask: 44, no_bid: 55, no_ask: 59},"
+             " value: {p_market: pm, market_kind: kind, believable: bel, ev_yes: 3, ev_no: -5, best_side: 'yes'}});\n"
+             "_mx.data = {market_record: {rush_yd: {market_ll: 0.43, model_ll: 0.46, n: 900, season: '2026'},"
+             " rec: {market_ll: 0.50, model_ll: 0.48, n: 800, season: '2026'}, '*': {market_ll: 0.45, model_ll: 0.47, n: 5000}}};\n"
+             "const a = _mxLead(L(0.70, 0.62, 'two_sided', true), 'yes', 'rush_yd');\n"      # record: Kalshi better
+             "const b = _mxLead(L(0.70, 0.62, 'two_sided', true), 'no', 'rush_yd');\n"
+             "const c = _mxLead(L(0.70, 0.62, 'one_sided', true), 'yes', 'rush_yd');\n"      # no two-sided price
+             "const d = _mxLead(L(0.70, 0.62, 'two_sided', false), 'yes', 'rush_yd');\n"     # thin book
+             "const e = _mxLead(L(0.70, 0.62, 'two_sided', true), 'yes', 'rec');\n"          # Vigil better on record
+             "const f = _mxLead(L(0.70, 0.62, 'two_sided', true), 'yes', 'tgt');\n"          # falls back to '*'
+             "const cell = _mxLeadCell(L(0.70, 0.62, 'two_sided', true), 'yes', 'rush_yd', true);\n"
+             "const cellV = _mxLeadCell(L(0.70, 0.62, 'two_sided', true), 'yes', 'rec', true);\n"
+             "const sum = _mxLeadSummary(_mx.data);\n"
+             "const ev = _mxBest(L(0.70, 0.62, 'two_sided', true).value, [], 'rush_yd');\n"
+             "_mx.data.market_record = {'<img src=x>': {market_ll: 0.4, model_ll: 0.5, n: 1}};\n"
+             "const hostile = _mxLeadSummary(_mx.data);\n"
+             "process.stdout.write(JSON.stringify({a, b, c, d, e, f, cell, cellV, sum, ev, hostile,"
+             " none: _mxLeadSummary({})}));")
+        r = subprocess.run(["node", "-e", h], capture_output=True, text=True, timeout=30)
+        o = json.loads(r.stdout) if r.returncode == 0 and r.stdout else None
+        out = (r.stdout[:1500] + r.stderr[-400:])
+        ok = bool(o) \
+            and o["a"]["src"] == "kalshi" and abs(o["a"]["p"] - 0.62) < 1e-9 and abs(o["a"]["vigil"] - 0.70) < 1e-9 \
+            and o["b"]["src"] == "kalshi" and abs(o["b"]["p"] - 0.38) < 1e-9 and abs(o["b"]["vigil"] - 0.30) < 1e-9 \
+            and o["c"]["src"] == "vigil" and abs(o["c"]["p"] - 0.70) < 1e-9 \
+            and o["d"]["src"] == "vigil" and o["e"]["src"] == "vigil" and o["f"]["src"] == "kalshi" \
+            and "Kalshi 62%" in o["cell"] and "Vigil 70%" in o["cell"] and "65%-75%" in o["cell"] \
+            and "Kalshi" not in o["cellV"] and "<b>70%</b>" in o["cellV"] \
+            and "Rush Yds (Kalshi 0.430 vs Vigil 0.460)" in o["sum"] and "every other stat (Kalshi 0.450 vs Vigil 0.470)" in o["sum"] \
+            and "Vigil's figure leads on Receptions (Kalshi 0.500 vs Vigil 0.480)" in o["sum"] \
+            and o["ev"]["ev"] == 3 and o["ev"]["mkt"] is True \
+            and "<img" not in o["hostile"] and "&lt;img" in o["hostile"] and o["none"] == ""
+    ck("Matchups lead (the owner's decision 2, 2026-11-26): Kalshi's own price leads a line's chance where the stat's "
+       "record has Kalshi the better forecaster (a stat without its own record reads the pooled one) AND the book is "
+       "believable and two-sided -- YES 62%, NO 38% -- with Vigil's figure and band beside it; a one-sided or thin "
+       "book, or a stat where Vigil's record is the better, leads with Vigil's figure as before; the EV is unchanged "
+       "(Vigil's probability at the ask) and still muted as impeached; a line above every table names, for each "
+       "stat, which forecaster leads and both log losses, escaped",
+       ok is not False, out)
+    ck("Matchups lead: the scanner's chance column, its sort and the bid / ask of the side shown, the Proven view's "
+       "chance and the player page's two tables all read the same helper (no cell can lead one way while another "
+       "leads the other), and the record line sits above the scanner, the Proven view and each player's lines",
+       'p: (r) => _mxKey(_mxLead(r.l, _mxRowSide(r), r.m.stat).p)' in js
+       and "${_mxLeadCell(r.l, _mxRowSide(r), r.m.stat, true)}" in js
+       and '`${_mxCents(mk.no_bid)} / ${_mxCents(mk.no_ask)}` : `${_mxCents(mk.yes_bid)} / ${_mxCents(mk.yes_ask)}`' in js
+       and "const a = _mxLead(r.l, r.side, r.m.stat);" in js
+       and js.count('_mxLeadCell(l, "yes", m.stat, false)') == 2
+       and js.count("${_mxLeadSummary(d)}") == 2 and "${_mxLeadSummary(_mx.data)}" in js
+       and '${th("p", "Chance (side)")}<th>Bid / ask</th>' in js)
 
 
 def main():

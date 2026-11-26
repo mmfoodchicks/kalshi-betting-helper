@@ -805,9 +805,22 @@ data-only `sim-history` branch (which never deploys):
     Still open: safeties (not in the owner's table), and Sleeper's `pts_allow` on the actuals side.
   - The NFL deep weight stays 0.30 until its registered read. 200 rows = 100 games, paired per game,
     clustered by week, both the registered comparison and the production blend; an inconclusive result
-    is insufficient evidence; any replacement protocol uses fresh data.
+    is insufficient evidence; any replacement protocol uses fresh data. The full rule, every ambiguity
+    and its setting, the decision table and the fresh-data protocol: `research/reports/nfl_deep_weight_rule.md`;
+    the read as code, pinned there by sha256: `research/nfl_deep_weight_read.py` (counts only before the
+    100th game); its data: `errors/nfl-deep-pairs-latest.json` (`/api/predlog/paired`). Guards: section DR.
   - Where Kalshi is measurably better, the Matchups tab may lead with its de-vigged probability, bid, ask
-    and Vigil's figure shown apart.
+    and Vigil's figure shown apart. **Built the same day** (`static/matchups.js` `_mxLead`): a line's
+    chance leads with Kalshi's two-sided mid where the stat's record has Kalshi the better forecaster (the
+    "market better on record" test, live record once decided) and the book is believable; Vigil's figure
+    and band beside it; one-sided or thin books and stats Vigil leads stay Vigil's. EV is unchanged (Vigil's
+    probability at the ask, muted). The scanner shows the side's bid / ask and sorts "Highest probability"
+    by the figure in bold; a line above each table names who leads per stat with both log losses.
+  - **Duplication** (`research/reports/dk_duplication.md`, `research/dk_duplication.py`, guards DD): the real
+    classic fields are 340-520x more concentrated than the board's sampled field (3.9e-6 to 1.0e-5 against
+    1.0e-8 to 1.9e-8, each estimate within ~3-8% sampling): a field-MODEL gap, not sampling. Showdown 2.4x
+    (sd_dup). Never scaled per lineup. Every board stamps `field_duplication` (the standings' own
+    definition); summaries keep `most_copied` and `copies_histogram` from 2026-11-26.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 

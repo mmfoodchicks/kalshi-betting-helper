@@ -3115,6 +3115,27 @@ def api_calibration():
         return jsonify({"error": f"calibration report failed: {e}"}), 502
 
 
+@app.route("/api/predlog/paired")
+def api_predlog_paired():
+    """Per-ticker rows of one owning bucket beside its shadow buckets
+    (predlog.paired_rows) -- the registered NFL deep-weight read is paired per
+    game and clustered by week, which the aggregates cannot do. The error-log
+    workflow pulls `owner=nfl&shadow=nfl_deep,nfl_book` to the data branch.
+    Behind the same auth as every other route."""
+    import predlog
+    owner = request.args.get("owner", "nfl")
+    shadows = [m.strip() for m in (request.args.get("shadow") or "").split(",") if m.strip()]
+    if not owner or not shadows:
+        return jsonify({"error": "owner and shadow (comma-separated) are required"}), 400
+    try:
+        predlog.init_db()
+        rows = predlog.paired_rows(owner, shadows)
+        return jsonify({"owner": owner, "shadows": shadows[:4], "n": len(rows), "rows": rows})
+    except Exception as e:
+        errlog.note("APP-predlog-paired", e)
+        return jsonify({"error": f"paired export failed: {type(e).__name__}"}), 502
+
+
 @app.route("/api/sharp")
 def api_sharp():
     """Where the models are ACTUALLY sharp, in one table: per predlog bucket,

@@ -143,6 +143,41 @@ function _mxSideP(l, side) {
   if (side !== "no") return { p: l.p, lo: l.p_lo, hi: l.p_hi };
   return { p: _mxOk(l.p) ? 1 - l.p : null, lo: _mxOk(l.p_hi) ? 1 - l.p_hi : null, hi: _mxOk(l.p_lo) ? 1 - l.p_lo : null };
 }
+// Who leads a line's chance (the owner, 2026-11-26: "lead with Kalshi's market-implied probability where
+// it has demonstrated better accuracy ... keep bid, ask, implied probability, Vigil's probability and
+// executable EV distinct ... do not conceal unfavorable performance"). Kalshi's figure leads where the
+// stat's record says its price forecast better -- the same test as the "market better on record" mute
+// (_mxImpeached: the live record once decided, else the research record) -- AND the line has a believable
+// two-sided book, whose mid is a price rather than a listing. Everywhere else Vigil's figure leads, as
+// before. Display only: no probability, EV or label changes. EV stays Vigil's probability at the ask, fee
+// in (Kalshi's own mid against its own ask is only the spread and the fee).
+const _MX_LEAD_TIP = "Kalshi's own price (the mid of a two-sided book) leads here: on record Kalshi forecast this stat better than the engine. Vigil's figure is beside it; the EV is still Vigil's figure at the ask.";
+function _mxLead(l, side, stat) {
+  const sp = _mxSideP(l, side), v = l.value || {};
+  const book = v.market_kind === "two_sided" && v.believable !== false && _mxOk(v.p_market);
+  const pk = book ? (side === "no" ? 1 - v.p_market : v.p_market) : null;
+  const k = book && _mxImpeached(stat, l.labels);
+  return { src: k ? "kalshi" : "vigil", p: k ? pk : sp.p, vigil: sp.p, kalshi: pk, lo: sp.lo, hi: sp.hi };
+}
+// The chance cell: Kalshi's figure in bold with Vigil's beside it, or Vigil's in bold with its band.
+function _mxLeadCell(l, side, stat, showSide) {
+  const a = _mxLead(l, side, stat);
+  const sd = showSide ? `<span class="small" style="color:var(--muted)">${_mxSide(side)}</span> ` : "";
+  const band = `<span class="small" style="color:var(--muted)">${_mxBand({ p_lo: a.lo, p_hi: a.hi })}</span>`;
+  if (a.src !== "kalshi") return `${sd}<b>${_mxPct(a.p)}</b> ${band}`;
+  return `${sd}<b title="${_mxEsc(_MX_LEAD_TIP + _mxRecordText(stat))}" style="cursor:help">Kalshi ${_mxPct(a.p)}</b> <span class="small" style="color:var(--muted);white-space:nowrap">· Vigil ${_mxPct(a.vigil)}</span> ${band}`;
+}
+// One line above a table: where each forecaster leads, with the log losses that decided it (lower is
+// better) -- said in the open, never only in a tooltip.
+function _mxLeadSummary(d) {
+  const rec = (d || {}).market_record || {};
+  const ks = Object.keys(rec).filter((s) => rec[s] && _mxOk(rec[s].market_ll) && _mxOk(rec[s].model_ll));
+  if (!ks.length) return "";
+  const nm = (s) => (s === "*" ? (ks.length === 1 ? "every stat" : "every other stat") : _mxStat(s));
+  const fmt = (s) => `${_mxEsc(nm(s))} (Kalshi ${_mxNum(rec[s].market_ll, 3)} vs Vigil ${_mxNum(rec[s].model_ll, 3)}${rec[s].live ? ", live record" : ""})`;
+  const k = ks.filter((s) => rec[s].market_ll < rec[s].model_ll), v = ks.filter((s) => !(rec[s].market_ll < rec[s].model_ll));
+  return `<div class="small" style="margin-bottom:4px">On record (log loss, lower is better): <b>Kalshi's price leads</b> on ${k.length ? k.map(fmt).join(", ") : "no stat"}${v.length ? `; Vigil's figure leads on ${v.map(fmt).join(", ")}` : ""}. Where Kalshi leads, its figure is in bold and Vigil's sits beside it (a one-sided or thin book has no price to lead with, so Vigil's shows).</div>`;
+}
 function _mxBest(v, labels, stat) {
   if (!v) return null;
   const side = v.best_side === "no" || v.best_side === "yes" ? v.best_side
@@ -562,7 +597,8 @@ function mxScanView(d) {
       return clean(r) && r.b.ev > 0 ? _mxKey(c) : demoted(r, c);
     },
     ev: (r) => (clean(r) ? _mxKey(r.b.ev) : demoted(r, r.b ? r.b.ev : null)),
-    p: (r) => _mxKey(_mxSideP(r.l, _mxRowSide(r)).p),
+    // the figure shown in bold: Kalshi's where it leads (_mxLead), else Vigil's
+    p: (r) => _mxKey(_mxLead(r.l, _mxRowSide(r), r.m.stat).p),
     edge: (r) => _mxKey(sideEdge(r)), nef: (r) => _mxKey((r.l.hit_similar_def || {}).n_eff),
   };
   const key = keys[_mx.sort] || (() => 0);
@@ -599,8 +635,8 @@ function mxScanView(d) {
     return `<tr style="border-top:1px solid var(--line,#333)">
       <td style="text-align:left"><a href="#" data-mx="open" data-val="${_mxEsc(r.p.player_id)}">${_mxEsc(r.p.name)}</a> <span class="small" style="color:var(--muted)">${_mxEsc(r.p.pos || "")} ${_mxEsc(r.p.team)} v ${_mxEsc(r.p.opp)}</span></td>
       <td>${_mxEsc(_mxStat(r.m.stat))} ${_mxEsc(r.l.k)}+${rec ? ` <span class="small" style="color:var(--muted);white-space:nowrap" title="games he cleared this line / games played this season">${Number(rec.hits)}/${Number(rec.n)}</span>` : ""}${r.more ? ` <span class="small" style="color:var(--muted);white-space:nowrap">+${Number(r.more)} more</span>` : ""}</td>
-      <td>${(() => { const sp = _mxSideP(r.l, _mxRowSide(r)); return `<span class="small" style="color:var(--muted)">${_mxSide(_mxRowSide(r))}</span> <b>${_mxPct(sp.p)}</b> <span class="small" style="color:var(--muted)">${_mxBand({ p_lo: sp.lo, p_hi: sp.hi })}</span>`; })()}</td>
-      <td>${r.l.market ? `${_mxCents(mk.yes_ask)} / ${_mxCents(mk.no_ask)}` : "-"}</td>
+      <td>${_mxLeadCell(r.l, _mxRowSide(r), r.m.stat, true)}</td>
+      <td style="white-space:nowrap">${r.l.market ? (_mxRowSide(r) === "no" ? `${_mxCents(mk.no_bid)} / ${_mxCents(mk.no_ask)}` : `${_mxCents(mk.yes_bid)} / ${_mxCents(mk.yes_ask)}`) : "-"}</td>
       <td>${_mxVsMkt(r.l.value, _mxRowSide(r))}</td>
       <td>${b ? `${_mxEvCell(b, true)} <span class="small" style="color:var(--muted)">${_mxSigned(b.lo, 1)} to ${_mxSigned(b.hi, 1)}</span>` : "-"}</td>
       <td>${_mxNum((r.l.hit_similar_def || {}).n_eff, 1)}</td>
@@ -616,9 +652,10 @@ function mxScanView(d) {
       · Sort: <select data-mx="sortsel" style="width:auto;padding:2px 4px">${_MX_SORTS.map(([k, t]) => `<option value="${k}"${_mx.sort === k ? " selected" : ""}>${t}</option>`).join("")}</select>
       <span style="color:var(--muted)">${_mx.sort === "best" ? "Best picks: believable +EV lines, ranked by their EV at the cautious end of the model's band; thin books and lines the market beat on record go last." : ""}</span></div>
     ${folded ? `<div class="small" style="color:var(--muted);margin-bottom:4px">One line per player and stat, the best of each by your sort (whichever way its column is turned): ${folded} other line${folded === 1 ? "" : "s"} folded ("+N more" on the row). Tap a player for every line.</div>` : ""}
-    <div class="small" style="color:var(--muted);margin-bottom:4px">"vs market" is the model's probability minus the market's own (the two-sided mid, or the ask when only one side is quoted). EV is cents per contract after Kalshi's fee at the ask, for the side shown; the range is the EV at the ends of the model's probability band. "Similar n" is the effective number of past games against comparable defenses.</div>
+    ${_mxLeadSummary(d)}
+    <div class="small" style="color:var(--muted);margin-bottom:4px">"Chance" is the side shown's probability: Kalshi's own price where it leads (above), else Vigil's, with its band. "Bid / ask" is Kalshi's book for the side shown. "vs market" is Vigil's probability minus the market's own (the two-sided mid, or the ask when only one side is quoted). EV is cents per contract after Kalshi's fee at the ask, for the side shown, on Vigil's probability; the range is the EV at the ends of its band. "Similar n" is the effective number of past games against comparable defenses.</div>
     <div class="scroller" style="overflow-x:auto"><table class="small" style="border-collapse:collapse;width:100%;min-width:720px;text-align:right">
-      <thead><tr><th style="text-align:left;min-width:150px">Player</th><th>Line</th>${th("p", "Model (side)")}<th>YES / NO ask</th>${th("edge", "vs market")}${th("ev", "EV")}${th("nef", "Similar n")}<th style="text-align:left">Labels</th></tr></thead>
+      <thead><tr><th style="text-align:left;min-width:150px">Player</th><th>Line</th>${th("p", "Chance (side)")}<th>Bid / ask</th>${th("edge", "vs market")}${th("ev", "EV")}${th("nef", "Similar n")}<th style="text-align:left">Labels</th></tr></thead>
       <tbody>${body || `<tr><td colspan="8" class="empty">No lines match.${_mx.hidden ? ` ${_mx.hidden} line${_mx.hidden === 1 ? " is" : "s are"} hidden by "only lines Kalshi lists" - Kalshi lists none of them on this board.` : ""}</td></tr>`}</tbody></table></div>${more}`;
 }
 
@@ -698,7 +735,7 @@ function mxProvenView(d) {
       <td>${_mxEsc(_mxStat(r.m.stat))} ${_mxEsc(r.l.k)}+${r.more ? ` <span class="small" style="color:var(--muted);white-space:nowrap">+${Number(r.more)} more</span>` : ""}</td>
       <td style="white-space:nowrap;padding-left:8px"><b style="color:${col}">${Number(r.h.hits)}/${Number(r.h.n)}</b></td>
       <td style="white-space:nowrap;padding-left:8px"><span class="small" style="color:var(--muted)">${_mxSide(r.side)}</span> <b>${_mxCents(r.ask)}</b></td>
-      <td style="padding-left:8px">${_mxPct(sp.p)}</td></tr>`;
+      <td style="padding-left:8px">${(() => { const a = _mxLead(r.l, r.side, r.m.stat); return a.src === "kalshi" ? `<b title="${_mxEsc(_MX_LEAD_TIP)}" style="cursor:help">${_mxPct(a.p)}</b><span class="small" style="display:block;color:var(--muted);white-space:nowrap">Kalshi · Vigil ${_mxPct(a.vigil)}</span>` : _mxPct(sp.p); })()}</td></tr>`;
   }).join("");
   const more = rows.length > _MX_CAP ? `<div class="small" style="color:var(--muted)">Showing the first ${_MX_CAP} of ${rows.length} - filter by stat or game to see the rest.</div>` : "";
   const none = !got.carried
@@ -708,10 +745,11 @@ function mxProvenView(d) {
       <select data-mx="game" style="width:auto;padding:2px 4px"><option value="">every matchup</option>${games.map(([id, t]) => `<option value="${_mxEsc(id)}"${_mx.game === String(id) ? " selected" : ""}>${_mxEsc(t)}</option>`).join("")}</select>
       games: <select data-mx="mingames" style="width:auto;padding:2px 4px">${_MX_MIN_GAMES.map((n) => `<option value="${n}"${got.minN === n ? " selected" : ""}>${n}+</option>`).join("")}</select>
       <label style="display:inline-flex;flex-direction:row;align-items:center;gap:4px;white-space:nowrap"><input type="checkbox" data-mx="fold" ${_mx.fold ? "checked" : ""} style="width:auto;margin:0"/> one line per player and stat</label></div>
+    ${_mxLeadSummary(d)}
     <div class="small" style="color:var(--muted);margin-bottom:4px">How often each player cleared a line Kalshi lists today, in his games this season - what happened, not a forecast.${folded ? ` ${folded} other line${folded === 1 ? "" : "s"} folded.` : ""}
-      <details><summary>How to read this</summary>"Season" is games cleared out of games played (green: he clears it, red: he misses it). "Bet" is the side that record points to, with Kalshi's ask for it; "Model" is the engine's chance of that side. The price already knows the streak: a 7/7 at 90¢ pays 10¢, and a true 70% bet goes 7 for 7 about one time in twelve. With one line per player and stat, the line kept is the most one-sided, the cheaper ask breaking a tie; tap a player for every line.</details></div>
+      <details><summary>How to read this</summary>"Season" is games cleared out of games played (green: he clears it, red: he misses it). "Bet" is the side that record points to, with Kalshi's ask for it; "Chance" is that side's probability -- Kalshi's own price where Kalshi beat the engine on record for the stat (marked "Kalshi", Vigil's figure under it), else Vigil's. The price already knows the streak: a 7/7 at 90¢ pays 10¢, and a true 70% bet goes 7 for 7 about one time in twelve. With one line per player and stat, the line kept is the most one-sided, the cheaper ask breaking a tie; tap a player for every line.</details></div>
     <div class="scroller" style="overflow-x:auto"><table class="small" style="border-collapse:collapse;width:100%;text-align:right">
-      <thead><tr><th style="text-align:left">Player</th><th>Line</th><th style="padding-left:8px">Season</th><th style="padding-left:8px">Bet</th><th style="padding-left:8px">Model</th></tr></thead>
+      <thead><tr><th style="text-align:left">Player</th><th>Line</th><th style="padding-left:8px">Season</th><th style="padding-left:8px">Bet</th><th style="padding-left:8px">Chance</th></tr></thead>
       <tbody>${body || `<tr><td colspan="5" class="empty">${none}</td></tr>`}</tbody></table></div>${more}`;
 }
 
@@ -780,11 +818,11 @@ function _mxMarkets(p, compact) {
       const mk = l.market || {}, b = _mxBest(l.value, l.labels, m.stat);
       const evCell = _mxEvCell(b, true);
       if (compact) {
-        return `<tr style="border-top:1px solid var(--line,#333)"><td>${_mxEsc(l.k)}+</td><td><b>${_mxPct(l.p)}</b> <span class="small" style="color:var(--muted)">${_mxBand(l)}</span></td>
+        return `<tr style="border-top:1px solid var(--line,#333)"><td>${_mxEsc(l.k)}+</td><td>${_mxLeadCell(l, "yes", m.stat, false)}</td>
           <td>${l.market ? `${_mxCents(mk.yes_ask)} / ${_mxCents(mk.no_ask)}` : "-"}</td><td>${evCell}</td><td style="text-align:left">${_mxChips(l, m.stat)}</td></tr>`;
       }
       return `<tr style="border-top:1px solid var(--line,#333)"><td>${_mxEsc(l.k)}+</td><td>${_mxHit(l.hit_all)}</td><td>${_mxHit(l.hit_recent)}</td><td>${_mxHit(l.hit_similar_def)}</td>
-        <td><b>${_mxPct(l.p)}</b> <span class="small" style="color:var(--muted)">${_mxBand(l)}</span></td>
+        <td>${_mxLeadCell(l, "yes", m.stat, false)}</td>
         <td>${l.market ? `${_mxCents(mk.yes_bid)}/${_mxCents(mk.yes_ask)} · NO ${_mxCents(mk.no_ask)} <span class="small" style="color:var(--muted)">${_mxEsc(_mxMt(mk.ts))}</span>` : "-"}</td>
         <td>${_mxVsMkt(l.value)}</td>
         <td>${b ? `${evCell} <span class="small" style="color:var(--muted)">(${_mxSigned(b.lo, 1)} to ${_mxSigned(b.hi, 1)}) ROI ${_mxPct(b.roi, 1)}</span>` : "-"}</td>
@@ -793,8 +831,8 @@ function _mxMarkets(p, compact) {
     // a projection change is only shown when both ends of it exist (B8)
     const delta = _mxOk(m.adjusted_mean) && _mxOk(m.baseline_mean) ? ` (${_mxSigned(m.adjusted_mean - m.baseline_mean)})` : "";
     const head = compact
-      ? `<th>Line</th><th>Model (band)</th><th>YES / NO ask</th><th>Best EV</th><th style="text-align:left">Labels</th>`
-      : `<th>Line</th><th>Hit, all</th><th>Hit, recent</th><th>Hit, similar defenses</th><th>Model (band)</th><th>Kalshi YES bid/ask · NO ask</th><th>vs market</th><th>Best EV / contract</th><th style="text-align:left">Labels</th>`;
+      ? `<th>Line</th><th>YES chance</th><th>YES / NO ask</th><th>Best EV</th><th style="text-align:left">Labels</th>`
+      : `<th>Line</th><th>Hit, all</th><th>Hit, recent</th><th>Hit, similar defenses</th><th>YES chance</th><th>Kalshi YES bid/ask · NO ask</th><th>vs market</th><th>Best EV / contract</th><th style="text-align:left">Labels</th>`;
     const src = m.baseline_source ? ` (${_mxEsc(m.baseline_source)})` : "";
     const fam = (m.dist || {}).family ? ` · ${_mxEsc(m.dist.family)}` : "";
     return `<div style="margin-top:10px"><b>${_mxEsc(_mxStat(m.stat))}</b> <span class="small" style="color:var(--muted)">baseline ${_mxNum(m.baseline_mean)}${src} → adjusted <b>${_mxNum(m.adjusted_mean)}</b>${delta}${fam}</span>
@@ -830,6 +868,7 @@ function _mxPlayerCard(p, idx, compact) {
     </div>
     <div style="margin-top:8px"><div class="small"><b>Matchup matrix</b> <span style="color:var(--muted)">- tap a row for its data; the effect column is what the model actually applied</span></div>${_mxMatrix(p, idx)}</div>
     ${_mxBreakdown(p)}
+    <div style="margin-top:8px">${_mxLeadSummary(_mx.data)}</div>
     ${_mxMarkets(p, compact)}
     ${_mxComparables(p)}
     ${(p.notes || []).length ? `<div class="small" style="color:var(--muted);margin-top:6px">${p.notes.map(_mxEsc).join(" · ")}</div>` : ""}

@@ -564,6 +564,43 @@ def _ll(q, y):
     return -math.log(q if y else 1 - q)
 
 
+def paired_rows(owner, shadows, limit=5000):
+    """Per-ticker rows for a paired read: every `owner` prediction that at
+    least one of the `shadows` models also logged, with each model's FIRST
+    logged figure and its time, the Kalshi price each was logged beside, the
+    closing price, the kickoff the logger knew and the settlement. Ungraded
+    rows ride along (graded 0) so a read can see what is still to come.
+
+    Built for the registered NFL deep-weight read (research/reports/
+    nfl_deep_weight_rule.md): the record's aggregates (/api/sharp) cannot pair
+    the drive model with the deep engine game by game, and the read is paired
+    per game and clustered by week. A season is a few hundred rows; `limit`
+    bounds it anyway (one LEFT JOIN a shadow model, at most four)."""
+    shadows = [m for m in shadows if isinstance(m, str) and m][:4]
+    if not shadows:
+        return []
+    cols = ["p.ticker AS ticker", "p.prob AS prob", "p.ts AS ts", "p.mkt AS mkt", "p.close_mkt AS close_mkt",
+            "p.close_mkt_ts AS close_mkt_ts", "p.event_ts AS event_ts", "p.close_time AS close_time",
+            "p.graded AS graded", "p.outcome AS outcome"]
+    joins, have = [], []
+    for i, _m in enumerate(shadows):
+        cols += [f"s{i}.prob AS s{i}_prob", f"s{i}.ts AS s{i}_ts", f"s{i}.mkt AS s{i}_mkt"]
+        joins.append(f"LEFT JOIN shadow s{i} ON s{i}.ticker = p.ticker AND s{i}.model = ?")
+        have.append(f"s{i}.prob IS NOT NULL")
+    sql = (f"SELECT {', '.join(cols)} FROM predictions p {' '.join(joins)} "
+           f"WHERE p.model = ? AND ({' OR '.join(have)}) ORDER BY p.event_ts, p.ticker LIMIT ?")
+    with _lock, _conn() as c:
+        rows = c.execute(sql, (*shadows, owner, int(limit))).fetchall()
+    out = []
+    for r in rows:
+        d = {k: r[k] for k in ("ticker", "prob", "ts", "mkt", "close_mkt", "close_mkt_ts", "event_ts",
+                               "close_time", "graded", "outcome")}
+        d["shadow"] = {m: {"prob": r[f"s{i}_prob"], "ts": r[f"s{i}_ts"], "mkt": r[f"s{i}_mkt"]}
+                       for i, m in enumerate(shadows) if r[f"s{i}_prob"] is not None}
+        out.append(d)
+    return out
+
+
 def by_series(model, min_n=30):
     """vs_market split by the ticker's series (the text before its first "-"):
     {series: {n, ready[, model_logloss, market_logloss, edge, model_brier,

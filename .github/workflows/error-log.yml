@@ -215,11 +215,14 @@ jobs:
           # record from this branch (2026-10-29): every predlog bucket against
           # the Kalshi price it was logged beside (/api/sharp), the NFL and
           # college pick ledgers, the Matchups tab's graded record per sport,
-          # and the shared calibration file the PC fetches. Volatile stamps are
+          # and the shared calibration file the PC fetches; and since
+          # 2026-11-26 the NFL drive and deep rows ticker by ticker for the
+          # registered deep-weight read (nfl_deep_weight_rule.md). Volatile stamps are
           # dropped so an unchanged record is not a new commit. Best-effort.
           for spec in "sharp:/api/sharp" "nfl-record:/api/nfl/record" "cfb-record:/api/cfb/record" \
                       "mx-record-nba:/api/matchups/record?sport=nba" "mx-record-nfl:/api/matchups/record?sport=nfl" \
-                      "calib-params:/api/calibration/params"; do
+                      "calib-params:/api/calibration/params" \
+                      "nfl-deep-pairs:/api/predlog/paired?owner=nfl&shadow=nfl_deep,nfl_book"; do
             curl -sS -o /tmp/rec.json --max-time 60 "${AUTH[@]}" "$APP_URL${spec#*:}" || true
             NAME="${spec%%:*}" python3 - <<'PY' || true
           import json, os

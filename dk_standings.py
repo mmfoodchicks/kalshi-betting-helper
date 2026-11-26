@@ -210,7 +210,15 @@ def summarize(parsed, pool=None, detail=None, cid=None, sha=None):
     pairs = (sum(c * (c - 1) for c in counts) / (N * (N - 1))) if N > 1 else None
     out["duplicates"] = {"distinct_lineups": len(lc), "max_copies": counts[0] if counts else 0,
                          "entries_in_duplicated_lineups_pct": round(100 * sum(c for c in counts if c > 1) / N, 2),
-                         "distinct_pair_collision": pairs}
+                         "distinct_pair_collision": pairs,
+                         # the duplication study (research/reports/dk_duplication.md): the
+                         # collision is an aggregate; WHICH builds the public copies is what
+                         # a field model must reproduce. Player names and counts only --
+                         # never an entrant. The copy-count histogram lets the U-statistic's
+                         # variance be computed instead of bounded.
+                         "most_copied": [{"lineup": list(k), "copies": int(c)} for k, c in lc.most_common(20) if c > 1],
+                         "copies_histogram": {str(k): int(v) for k, v in
+                                              sorted(collections.Counter(counts).items())}}
     users = collections.Counter(e["user_entries"] for e in E)
     out["max_entry_users_pct"] = round(100 * users.get(150, 0) / max(1, n), 2)
     out["top_lineups"] = [{"rank": e["rank"], "points": e["points"], "lineup": e["lineup"]}

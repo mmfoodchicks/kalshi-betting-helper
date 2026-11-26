@@ -571,6 +571,51 @@ MONEY_TIES_PAID = True                   # Stage 3B
 MONEY_DUP_EXACT = False                  # Stage 3C: measured, not derived
 
 
+def field_duplication(idx, w, kind):
+    """The field MODEL's pair collision, in the real standings' own
+    definition (dk_standings.summarize's distinct_pair_collision): the chance
+    that two different entries hold the same lineup -- classic, the same nine
+    players in any slots; showdown, the same captain and the same five flex.
+
+    Classic: the board's field is a SAMPLE of M rows, so this is the
+    unbiased U-statistic sum n(n-1) / (M(M-1)) over its distinct lineups --
+    the same estimator the real contest's figure is, and an estimate of the
+    model's sum of p^2 if the rows are independent draws. Showdown: the field
+    is the whole enumerated universe with its weights, so it is that sum
+    exactly. Stamped on every board (2026-11-26, the duplication study:
+    research/reports/dk_duplication.md) so a board's model can be read against
+    the contest's real figure from the data branch. A description, never an
+    input: no number on the board reads it. Never raises."""
+    try:
+        a = np.asarray(idx)
+        if a.ndim != 2 or len(a) < 2:
+            return None
+        if kind == "showdown":
+            if w is None:
+                return None
+            # each enumerated row is a distinct (captain, flex set): sum of p^2
+            p = np.asarray(w, dtype=np.float64)
+            tot = float(p.sum())
+            if not tot > 0:
+                return None
+            val, basis = float(((p / tot) ** 2).sum()), "the field's own weights over every legal lineup: sum p^2, exact"
+            rows = int(len(a))
+        else:
+            # the same estimator field_model.collision has carried on classic
+            # boards since cl_sampler (_collision); repeated here so both kinds
+            # answer under one key
+            val, rows = _collision(a), int(len(a))
+            basis = ("the field sample's rows (players sorted, so slots do not matter): "
+                     "sum n(n-1) / (M(M-1)), the real figure's estimator")
+        return {"model_pair_collision": val, "rows": rows, "kind": kind, "basis": basis,
+                "definition": "the chance two different entries hold the same lineup "
+                              "(dk_standings.summarize: distinct_pair_collision)",
+                "experimental": True}
+    except Exception as e:
+        errlog.note("TOURN-dup", e)
+        return None
+
+
 def money_gate(field_n, contest_C):
     """Whether the win, payout and ROI columns may be published as
     authoritative. Returns the block a board carries."""
@@ -1618,6 +1663,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     return plain({"version": VERSION, "engine": SD_ENGINE,
             "kind": "showdown", "sport": "nfl", "draft_group_id": int(dg),
             "built_ts": _built, "status_sig": st_sig, "status": st_cls, "eval_artifact": _eval_art,
+            "field_duplication": field_duplication(idx, f, "showdown"),
             # freshness, so a board can be audited for WHEN it was built
             # rather than only for what it says: a board made on Thursday and
             # served on Sunday used to look identical to one made at lock.
@@ -3525,6 +3571,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                                            model, n_sims, slate_teams, _built)
     return plain({"version": VERSION, "engine": ENGINE, "kind": "classic", "sport": "nfl", "draft_group_id": int(dg),
             "built_ts": _built, "status_sig": st_sig, "status": st_cls, "eval_artifact": _eval_art,
+            "field_duplication": field_duplication(idx_f, None, "classic"),
             "pool_sig": pool_sig(slate["csv"]),
             "contests": [results[str(c["id"])]["contest"] for c in contests],
             "slate": {"n_players": slate.get("n_players"), "dropped": slate.get("dropped"),

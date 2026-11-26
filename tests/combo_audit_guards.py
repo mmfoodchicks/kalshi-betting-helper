@@ -24854,6 +24854,26 @@ except Exception as _ev_e:                 # a guard file that cannot run is a f
     ck("guards_evaluator runs to the end", False, f"{type(_ev_e).__name__}: {_ev_e} " + _ev_tb.format_exc()[-600:])
 
 print("=" * 72)
+print("DR. The registered NFL deep-weight read (2026-11-26, research/reports/nfl_deep_weight_rule.md): the frozen")
+print("    weight, the unit, the clauses, the clustered SE, the export, the script pinned by hash (tests/guards_deep_rule.py)")
+print("=" * 72)
+try:
+    __import__("guards_deep_rule").run(ck)
+except Exception as _dr_e:                 # a guard file that cannot run is a failed guard, never a skipped one
+    import traceback as _dr_tb
+    ck("guards_deep_rule runs to the end", False, f"{type(_dr_e).__name__}: {_dr_e} " + _dr_tb.format_exc()[-600:])
+
+print("=" * 72)
+print("DD. Duplication, real against the model (2026-11-26, research/reports/dk_duplication.md): the board's figure in")
+print("    the standings' own definition, the summaries' copy counts, the study's uncertainty (tests/guards_dk_dup.py)")
+print("=" * 72)
+try:
+    __import__("guards_dk_dup").run(ck)
+except Exception as _dd_e:                 # a guard file that cannot run is a failed guard, never a skipped one
+    import traceback as _dd_tb
+    ck("guards_dk_dup runs to the end", False, f"{type(_dd_e).__name__}: {_dd_e} " + _dd_tb.format_exc()[-600:])
+
+print("=" * 72)
 print("UI. The readability pass (2026-11-26): checkbox labels, chips that never break inside themselves, Best Bets'")
 print("    source names, the folded intro notes, the NFL card's models and asks, the bet ledger (tests/guards_ui.py)")
 print("=" * 72)

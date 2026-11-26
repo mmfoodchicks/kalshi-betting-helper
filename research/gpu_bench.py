@@ -16,16 +16,32 @@ device:
   h2d_s / d2h_s host-to-device and device-to-host copies
   matmul_s      the score products
   bucket_s      the bucketing
-  hist_s        the per-world histograms and their cumulative mass
-  total_s       end to end, transfers included
+  hist_s        the per-world histograms and their cumulative mass, one world
+                a call (production's loop: dfs_tourney._world_tables,
+                dfs_evaluate.prepare)
+  hist_batched_s the same histograms --hist-batch worlds a call (below)
+  total_s       end to end, transfers included (both histogram passes)
+  total_loop_s / total_batched_s   the end to end with ONE histogram pass
   peak_ram_mb   this process's peak resident memory
   peak_vram_mb  CuPy's memory pool high-water mark (GPU only)
 
 and AGREEMENT: the bucket of every (world, lineup) and the threshold bucket of
-every (world, fraction) compared exactly between the two devices. On
+every (world, fraction) compared exactly between the two devices, and the
+batched thresholds against the loop's on each device. On
 DraftKings' 0.02 lattice they should be identical (the conservation audit's
 D1-D3: float32 summation error ~5.6e-5 against a 0.005 bucket margin); any
 mismatch is counted and printed, never hidden.
+
+Why a batched pass. The owner's first GPU run (2026-11-26, RTX 4070 SUPER,
+20,000 worlds x 300,000 lineups, exact agreement) read matmul 13.4 -> 1.1 s and
+bucketing 31.5 -> 1.7 s, but the histograms only 63.4 -> 53.3 s: 93% of the
+GPU's time. One world a call is ~10 small kernels and the device-to-host syncs
+cupy.bincount makes to size its output -- 20,000 times, ~2.6 ms a world, latency
+not arithmetic. The batched pass offsets world j's buckets by j x _NB, makes ONE
+weighted bincount over --hist-batch worlds, reshapes it to (worlds, _NB), and
+counts the mass above each fraction row-wise (`above` is non-increasing, so the
+count of buckets with above > q IS searchsorted's left insertion point). On the
+CPU it sums the same weights in the same order as the loop.
 
 Inputs: --source cache reads the newest entry of the PC's worlds cache
 (pool_cache) and a field from the newest evaluator artifact (dfs_evaluate),
@@ -42,6 +58,7 @@ threads are capped with --threads (default: half the cores).
     python research/gpu_bench.py                       # synthetic, 20,000 worlds x 300,000 lineups
     python research/gpu_bench.py --source cache        # the newest real slate on this PC
     python research/gpu_bench.py --worlds 40000 --field 300000 --out bench.json
+    python research/gpu_bench.py --hist-batch 200      # more worlds per batched call (more VRAM)
 """
 import argparse
 import json
@@ -146,25 +163,58 @@ def inputs(args, np):
     return X, idx, np.full(args.field, 1.0 / args.field), f"synthetic: {P} players on the 0.02 lattice"
 
 
-def run(xp, X, idx, w, chunk, fractions, device):
+def _hist_loop(xp, B, s, T, wd, qs):
+    """Production's form: one world a call."""
+    for j in range(B.shape[0]):
+        hist = xp.bincount(B[j], weights=wd, minlength=_NB)
+        above = xp.cumsum(hist[::-1])[::-1] - hist
+        T[s + j] = xp.searchsorted(-above, -qs, side="left")
+
+
+def _hist_batched(xp, B, s, T, wt, qs_host, hb):
+    """`hb` worlds a call: world j's buckets offset by j x _NB into one
+    bincount (wt is the field weights tiled hb times), then the mass strictly
+    above each bucket row-wise and, per fraction, the count of buckets whose
+    mass above exceeds it -- searchsorted's left point on a non-increasing row."""
+    c, M = B.shape
+    for u in range(0, c, hb):
+        n = min(hb, c - u)
+        off = (xp.arange(n, dtype=xp.int32) * _NB)[:, None]
+        flat = (B[u:u + n] + off).ravel()
+        hist = xp.bincount(flat, weights=wt[: n * M], minlength=n * _NB).reshape(n, _NB)
+        above = xp.cumsum(hist[:, ::-1], axis=1)[:, ::-1] - hist
+        for k, q in enumerate(qs_host):
+            T[s + u:s + u + n, k] = xp.count_nonzero(above > q, axis=1)
+
+
+def run(xp, X, idx, w, chunk, fractions, device, hist="both", hb=50):
     """The kernel on `xp` (numpy or cupy). Returns (timings, buckets of the
-    first chunk, thresholds) -- the last two as host numpy arrays."""
+    first chunk, loop thresholds, batched thresholds) -- the last three as host
+    numpy arrays (None for a pass not run)."""
     import numpy as np
-    t = {"h2d_s": 0.0, "matmul_s": 0.0, "bucket_s": 0.0, "hist_s": 0.0, "d2h_s": 0.0}
+    t = {"h2d_s": 0.0, "matmul_s": 0.0, "bucket_s": 0.0, "d2h_s": 0.0}
+    do_loop, do_batch = hist in ("loop", "both"), hist in ("batched", "both")
+    if do_loop:
+        t["hist_s"] = 0.0
+    if do_batch:
+        t["hist_batched_s"] = 0.0
     sync = (lambda: xp.cuda.Stream.null.synchronize()) if device == "gpu" else (lambda: None)
     P, N = X.shape
     M = len(idx)
     t0 = time.time()
     Wf = np.zeros((M, P), dtype=np.float32)
     Wf[np.arange(M)[:, None], idx] = 1.0
+    qs_host = [float(q) + 1e-12 for q in fractions]
     a = time.time()
     Xd = xp.asarray(X)
     WfT = xp.asarray(np.ascontiguousarray(Wf.T))
     wd = xp.asarray(w)
-    qs = xp.asarray(np.asarray(fractions, dtype=np.float64) + 1e-12)
+    qs = xp.asarray(np.asarray(qs_host, dtype=np.float64))
+    wt = xp.tile(wd, hb) if do_batch else None
     sync()
     t["h2d_s"] += time.time() - a
-    T = xp.zeros((N, len(fractions)), dtype=xp.int32)
+    T = xp.zeros((N, len(fractions)), dtype=xp.int32) if do_loop else None
+    Tb = xp.zeros((N, len(fractions)), dtype=xp.int64) if do_batch else None
     first_b = None
     for s in range(0, N, chunk):
         a = time.time()
@@ -180,23 +230,36 @@ def run(xp, X, idx, w, chunk, fractions, device):
         S += 0.5
         xp.clip(S, 0, _NB - 1, out=S)
         B = S.astype(xp.int32)
+        del S
         sync()
         t["bucket_s"] += time.time() - a
         if first_b is None:
             first_b = B
-        a = time.time()
-        for j in range(B.shape[0]):
-            hist = xp.bincount(B[j], weights=wd, minlength=_NB)
-            above = xp.cumsum(hist[::-1])[::-1] - hist
-            T[s + j] = xp.searchsorted(-above, -qs, side="left")
-        sync()
-        t["hist_s"] += time.time() - a
+        if do_loop:
+            a = time.time()
+            _hist_loop(xp, B, s, T, wd, qs)
+            sync()
+            t["hist_s"] += time.time() - a
+        if do_batch:
+            a = time.time()
+            _hist_batched(xp, B, s, Tb, wt, qs_host, hb)
+            sync()
+            t["hist_batched_s"] += time.time() - a
     a = time.time()
-    Th = T.get() if device == "gpu" else T
-    Bh = first_b.get() if device == "gpu" else first_b
+    host = (lambda v: None if v is None else (v.get() if device == "gpu" else v))
+    Th, Tbh, Bh = host(T), host(Tb), host(first_b)
     t["d2h_s"] += time.time() - a
     t["total_s"] = time.time() - t0
-    return {k: round(v, 3) for k, v in t.items()}, Bh, Th
+    base = t["h2d_s"] + t["matmul_s"] + t["bucket_s"] + t["d2h_s"]
+    if do_loop:
+        t["total_loop_s"] = base + t["hist_s"]
+    if do_batch:
+        t["total_batched_s"] = base + t["hist_batched_s"]
+    return {k: round(v, 3) for k, v in t.items()}, Bh, Th, Tbh
+
+
+def _mis(a, b):
+    return None if a is None or b is None else int((a != b).sum())
 
 
 def main():
@@ -206,6 +269,13 @@ def main():
     ap.add_argument("--field", type=int, default=300000)
     ap.add_argument("--players", type=int, default=150)
     ap.add_argument("--chunk", type=int, default=250, help="worlds per chunk (VRAM: chunk x field x 8 bytes)")
+    ap.add_argument("--hist", choices=("auto", "both", "loop", "batched"), default="auto",
+                    help="histogram pass: production's one world a call, the batched one, or both; auto "
+                         "(default) runs the loop on the CPU and both on the GPU -- batched on the CPU measured "
+                         "~3x SLOWER than the loop here (8 row-wise counts over hist-batch x 60,001 buckets), "
+                         "and it sums the same weights in the same order, so it would only add minutes")
+    ap.add_argument("--hist-batch", type=int, default=50,
+                    help="worlds per batched bincount (memory: hist-batch x field x 12 bytes)")
     ap.add_argument("--threads", type=int, default=max(1, (os.cpu_count() or 2) // 2))
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--cpu-only", action="store_true")
@@ -223,17 +293,19 @@ def main():
     X, idx, w, label = inputs(args, np)
     rep = {"when": time.strftime("%Y-%m-%d %H:%M:%S"), "host": platform.platform(), "python": sys.version.split()[0],
            "numpy": np.__version__, "inputs": label, "players": int(X.shape[0]), "worlds": int(X.shape[1]),
-           "field": int(len(idx)), "chunk": args.chunk, "cpu_threads": args.threads, "priority": prio,
+           "field": int(len(idx)), "chunk": args.chunk, "hist": args.hist, "hist_batch": args.hist_batch,
+           "cpu_threads": args.threads, "priority": prio,
            "fractions": list(FRACTIONS)}
     print(f"[bench] {label}: {X.shape[1]:,} worlds x {len(idx):,} field lineups, chunk {args.chunk}, "
-          f"{args.threads} CPU threads, priority {prio}")
+          f"histograms {args.hist} (batch {args.hist_batch}), {args.threads} CPU threads, priority {prio}")
     cpu = gpu = None
     if not args.gpu_only:
         print("[bench] CPU (numpy)...", flush=True)
-        tc, Bc, Tc = run(np, X, idx, w, args.chunk, FRACTIONS, "cpu")
+        tc, Bc, Tc, Tcb = run(np, X, idx, w, args.chunk, FRACTIONS, "cpu", "loop" if args.hist == "auto" else args.hist,
+                                args.hist_batch)
         tc["peak_ram_mb"] = _peak_ram_mb()
         rep["cpu"] = tc
-        cpu = (Bc, Tc)
+        cpu = (Bc, Tc, Tcb)
         print(f"[bench]   {tc}")
     if not args.cpu_only:
         try:
@@ -247,12 +319,13 @@ def main():
             rep["gpu_vram_mb"] = round(dev["totalGlobalMem"] / 1024 / 1024)
             print(f"[bench] GPU (CuPy) on {rep['gpu_name']}...", flush=True)
             pool = cp.get_default_memory_pool()
-            tg, Bg, Tg = run(cp, X, idx, w, args.chunk, FRACTIONS, "gpu")
+            tg, Bg, Tg, Tgb = run(cp, X, idx, w, args.chunk, FRACTIONS, "gpu", "both" if args.hist == "auto" else args.hist,
+                                args.hist_batch)
             tg["init_s"] = round(init, 3)
             tg["peak_vram_mb"] = round(pool.total_bytes() / 1024 / 1024, 1)
             tg["peak_ram_mb"] = _peak_ram_mb()
             rep["gpu"] = tg
-            gpu = (Bg, Tg)
+            gpu = (Bg, Tg, Tgb)
             print(f"[bench]   {tg}")
         except ImportError:
             rep["gpu"] = {"error": 'CuPy is not installed: pip install "cupy-cuda12x[ctk]"'}
@@ -260,15 +333,46 @@ def main():
         except Exception as e:
             rep["gpu"] = {"error": f"{type(e).__name__}: {e}"}
             print(f"[bench] GPU run failed: {type(e).__name__}: {e} (lower --chunk if out of memory)")
+    # Agreement. The reference is production's answer: the CPU's loop. Every
+    # other (device, pass) is compared to it cell by cell, and the batched pass
+    # to the loop on its own device.
+    ag = {}
+    ref = cpu[1] if cpu and cpu[1] is not None else (cpu[2] if cpu else None)
+    for dev, got in (("cpu", cpu), ("gpu", gpu)):
+        if not got:
+            continue
+        ag[f"{dev}_batched_vs_{dev}_loop"] = _mis(got[1], got[2])
+        if dev == "gpu" and ref is not None:
+            ag["gpu_loop_vs_cpu"] = _mis(ref, got[1])
+            ag["gpu_batched_vs_cpu"] = _mis(ref, got[2])
     if cpu and gpu:
-        b_mis = int((cpu[0] != gpu[0]).sum())
-        t_mis = int((cpu[1] != gpu[1]).sum())
-        rep["agreement"] = {"bucket_mismatches_first_chunk": b_mis, "bucket_cells_first_chunk": int(cpu[0].size),
-                            "threshold_mismatches": t_mis, "threshold_cells": int(cpu[1].size),
-                            "exact": b_mis == 0 and t_mis == 0}
-        if "total_s" in rep.get("gpu", {}) and "total_s" in rep.get("cpu", {}):
-            rep["speedup_total"] = round(rep["cpu"]["total_s"] / max(1e-9, rep["gpu"]["total_s"] + rep["gpu"]["init_s"]), 2)
-        print(f"[bench] agreement: {rep['agreement']}; speed-up incl. init {rep.get('speedup_total')}x")
+        ag["bucket_mismatches_first_chunk"] = _mis(cpu[0], gpu[0])
+        ag["bucket_cells_first_chunk"] = int(cpu[0].size)
+    if ref is not None:
+        ag["threshold_cells"] = int(ref.size)
+    ag = {k: v for k, v in ag.items() if v is not None}        # a pass not run compares nothing
+    compared = [v for k, v in ag.items() if k.endswith(("_loop", "_cpu")) or k.startswith("bucket_mismatches")]
+    if compared:
+        ag["exact"] = all(v == 0 for v in compared)
+        rep["agreement"] = ag
+        print(f"[bench] agreement (mismatched cells; 0 is exact): {ag}")
+    sp = {}
+    c, g = rep.get("cpu", {}), rep.get("gpu", {})
+    if "hist_s" in c and "hist_batched_s" in c:
+        sp["cpu_hist_batched_vs_loop"] = round(c["hist_s"] / max(1e-9, c["hist_batched_s"]), 2)
+    if "hist_s" in g and "hist_batched_s" in g:
+        sp["gpu_hist_batched_vs_loop"] = round(g["hist_s"] / max(1e-9, g["hist_batched_s"]), 2)
+    cref = c.get("total_loop_s") or c.get("total_batched_s")
+    if cref and "init_s" in g:
+        # production today (the CPU loop) against each GPU pass, GPU start-up included
+        for k in ("total_loop_s", "total_batched_s"):
+            if k in g:
+                sp[f"cpu_production_vs_gpu_{k[6:-2]}"] = round(cref / max(1e-9, g[k] + g["init_s"]), 2)
+        if "total_batched_s" in c and "total_batched_s" in g:
+            sp["cpu_batched_vs_gpu_batched"] = round(c["total_batched_s"] / max(1e-9, g["total_batched_s"] + g["init_s"]), 2)
+    if sp:
+        rep["speedups"] = sp
+        print(f"[bench] speed-ups (x faster): {sp}")
     out = args.out or f"gpu_bench_{time.strftime('%Y%m%d_%H%M%S')}.json"
     with open(out, "w") as f:
         json.dump(rep, f, indent=1)
