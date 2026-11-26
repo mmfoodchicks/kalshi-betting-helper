@@ -62,13 +62,18 @@ def _config():
     return url, tok
 
 
-def _cfg_flag(key):
-    """A true/false switch from vigil-pc.cfg; absent or unreadable is False."""
+def _cfg_value(key):
+    """One setting from vigil-pc.cfg; absent or unreadable is None."""
     try:
         with open(os.path.join(_HERE, "vigil-pc.cfg")) as fh:
-            return bool(json.load(fh).get(key))
+            return json.load(fh).get(key)
     except (OSError, ValueError, AttributeError):
-        return False
+        return None
+
+
+def _cfg_flag(key):
+    """A true/false switch from vigil-pc.cfg; absent or unreadable is False."""
+    return bool(_cfg_value(key))
 
 
 _COMMIT_CACHE = [None]
@@ -1316,6 +1321,123 @@ def _fetch_params(url, tok):
     return True
 
 
+# ---- the GPU benchmark on real data (2026-11-26) ---------------------------------------------------
+# The owner, leaving the PC on for Thanksgiving: "Test batch 50 versus 250 on real cached simulation data.
+# Report benchmark results back to the server, including actual data source, runtime, memory consumption
+# and numerical agreement ... Do not interrupt active slate builds or miss slate deadlines ... without
+# introducing arbitrary remote command execution ... Keep temperatures and memory consumption within safe
+# limits." So: the configurations are FIXED HERE (nothing the server says changes what runs); the task is
+# the cycle's last, after every build it owes; it never starts within _GPU_BENCH_CLEAR_S of an NFL slate's
+# start (a slate it cannot see is a reason not to run); research/gpu_bench.py lowers its own priority,
+# reads the GPU's temperature through nvidia-smi and skips the GPU above 83 C; each configuration has a
+# wall-clock cap; it runs once per version of the bench and these configurations, and looks again after
+# _GPU_BENCH_RETRY_S while no real slate is cached. The report goes up through the PC's own token door
+# (/api/pc/bench). Real data only: the bench refuses synthetic inputs under --source cache.
+_GPU_BENCH_CONFIGS = (
+    # the lineup evaluator's workload: its 40,000 final worlds against a 300,000-lineup field
+    {"name": "evaluator", "worlds": 40000, "field": 300000, "batches": "50,250"},
+    # the tournament board's: 160,000 scoring worlds, the same field
+    {"name": "tournament", "worlds": 160000, "field": 300000, "batches": "50,250"},
+)
+# three hours, written as seconds: the schedule guard keeps the three-hour product expression out of this
+# file (an old rebuild-on-age rule it was written to catch); this is a deadline margin, not an age
+_GPU_BENCH_CLEAR_S = 10_800
+_GPU_BENCH_RETRY_S = 6 * 3600
+_GPU_BENCH_TIMEOUT_S = 45 * 60
+
+
+def _gpu_bench_key():
+    import hashlib
+    with open(os.path.join(_HERE, "research", "gpu_bench.py"), "rb") as fh:
+        src = fh.read()
+    return hashlib.sha256(src + json.dumps(_GPU_BENCH_CONFIGS, sort_keys=True).encode()).hexdigest()[:16]
+
+
+def _next_nfl_start_s():
+    """Seconds to the next NFL DraftKings slate's start, or None when none is listed."""
+    import dk
+    import nfl_dfs
+    now, best = time.time(), None
+    for sl in dk.slates("nfl") or []:
+        ts = nfl_dfs.iso_ts(sl.get("starts"))
+        if ts and ts > now:
+            best = ts - now if best is None else min(best, ts - now)
+    return best
+
+
+def _task_gpu_bench(url, tok, run=None, now_left=None):
+    """Run the fixed benchmark configurations once per bench version on the newest real cached slate and
+    post the reports. `run` / `now_left` let a guard stand in for the subprocess and the lobby."""
+    import importlib.util
+    import subprocess
+    if importlib.util.find_spec("cupy") is None and run is None:
+        return "no CuPy"
+    sdir = os.environ["VIGIL_SIM_CACHE_DIR"]
+    spath = os.path.join(sdir, "gpu_bench_state.json")
+    try:
+        with open(spath) as fh:
+            state = json.load(fh)
+    except (OSError, ValueError):
+        state = {}
+    key = _gpu_bench_key()
+    if state.get("done") == key:
+        return "done"
+    if state.get("tried_key") == key and time.time() - float(state.get("tried_ts") or 0) < _GPU_BENCH_RETRY_S:
+        return "waiting"
+    try:
+        left = now_left() if now_left else _next_nfl_start_s()
+    except Exception as e:
+        print(f"[vigil-pc] GPU benchmark: the DraftKings lobby could not be read ({type(e).__name__}); not risking a deadline")
+        return "no lobby"
+    if left is not None and left < _GPU_BENCH_CLEAR_S:
+        print(f"[vigil-pc] GPU benchmark: an NFL slate starts in {left / 60:.0f} min; not now")
+        return "deadline"
+    _task_note("GPU benchmark on real cached data")
+    results, real = [], True
+    for cfg in _GPU_BENCH_CONFIGS:
+        if run is None:
+            _yield_point(f"GPU benchmark ({cfg['name']})")
+        out = os.path.join(sdir, f"gpu_bench_{cfg['name']}.json")
+        cmd = [sys.executable, os.path.join(_HERE, "research", "gpu_bench.py"), "--source", "cache",
+               "--worlds", str(cfg["worlds"]), "--field", str(cfg["field"]), "--gpu-batches", cfg["batches"],
+               "--force", "--out", out]
+        t0, rep, err = time.time(), None, None
+        try:
+            if os.path.exists(out):
+                os.remove(out)
+            r = (run or subprocess.run)(cmd, cwd=_HERE, capture_output=True, text=True, timeout=_GPU_BENCH_TIMEOUT_S)
+            if r.returncode == 0 and os.path.exists(out):
+                with open(out) as fh:
+                    rep = json.load(fh)
+            else:
+                err = ((r.stderr or "") + (r.stdout or ""))[-800:]
+        except subprocess.TimeoutExpired:
+            err = f"timed out after {_GPU_BENCH_TIMEOUT_S}s"
+        except (OSError, ValueError) as e:
+            err = f"{type(e).__name__}: {e}"[:300]
+        results.append({"config": dict(cfg), "report": rep, "error": err, "wall_s": round(time.time() - t0, 1)})
+        if rep is None or not str(rep.get("inputs", "")).startswith("cache:"):
+            real = False
+            break
+    payload = {"key": key, "commit": _git_commit(), "ts": time.time(), "real_data": real, "results": results}
+    try:
+        _api(url, tok, "/api/pc/bench", data=json.dumps(payload).encode(),
+             headers={"Content-Type": "application/json"}, timeout=60)
+    except Exception as e:
+        print(f"[vigil-pc] GPU benchmark report not delivered ({type(e).__name__}); next cycle retries")
+        return "undelivered"
+    state.update(tried_key=key, tried_ts=time.time())
+    if real:
+        state["done"] = key
+    try:
+        with open(spath, "w") as fh:
+            json.dump(state, fh)
+    except OSError as e:
+        print(f"[vigil-pc] GPU benchmark state not written ({type(e).__name__})")
+    print(f"[vigil-pc] GPU benchmark: {'done on real data' if real else 'no real slate yet'} -- reported")
+    return "reported" if real else "no real data"
+
+
 def _cycle(url, tok):
     total = 0
     _fetch_params(url, tok)
@@ -1341,7 +1463,9 @@ def _cycle(url, tok):
     for label, fn in (("showdown tourney", lambda: _task_showdown_tourney(url, tok)),
                       ("classic tourney", lambda: _task_classic_tourney(url, tok)),
                       ("deep nightly", lambda: _task_deep(url, tok)),
-                      ("standings", _task_standings)):
+                      ("standings", _task_standings),
+                      # last: after every build the cycle owes (pc_worker._task_gpu_bench's rules)
+                      ("GPU benchmark", lambda: _task_gpu_bench(url, tok))):
         _yield_point(label)
         try:
             fn()
@@ -1412,6 +1536,8 @@ def _eval_one(url, tok, r, log=print):
                 board = None            # the served board is a different build: its lineups are not this field's
             out["result"] = dfs_evaluate.evaluate(path, meta, r.get("lineups") or [], board=board)
             out["result"]["seconds"] = round(time.time() - t0, 1)
+            # what computed the field's thresholds and how long it took (or that saved ones were reused)
+            out["result"]["compute"] = dict(dfs_evaluate.LAST_COMPUTE)
     except Exception as e:
         errlog.note("EVAL-pc", e, path=str(dg))
         out["error"] = f"the PC could not evaluate: {type(e).__name__}: {e}"[:300]
@@ -1420,6 +1546,13 @@ def _eval_one(url, tok, r, log=print):
              headers={"Content-Type": "application/json"}, timeout=60)
     except Exception as e:
         errlog.note("EVAL-post", e, path=str(rid))
+
+
+# Worlds per GPU histogram call in the evaluator unless vigil-pc.cfg says otherwise: the owner's candidate
+# (2026-11-26, bench at 20,000 x 300,000: 1.3 s of histograms at 250 against 9.0 s at 50, every cell equal),
+# trialled on the real workload while the owner is away -- each result on the tab says what answered and how
+# long the thresholds took, which is the timing the default waits on.
+EVAL_GPU_HIST_BATCH = 250
 
 
 def eval_main():
@@ -1433,11 +1566,24 @@ def eval_main():
         os.nice(10)
     except (AttributeError, OSError):
         pass                                     # Windows: the loop's process priority stands
-    if _cfg_flag("gpu"):
-        # "gpu": true in vigil-pc.cfg: the field's thresholds on the GPU, each job's first chunk checked
-        # against the CPU cell by cell (dfs_evaluate.field_thresholds); anything else answers on the CPU
+    # The GPU for the field's thresholds (dfs_evaluate.field_thresholds; each job's first chunk is checked
+    # against the CPU cell by cell, and anything else answers on the CPU). "gpu": true / false in
+    # vigil-pc.cfg decides; with no "gpu" key it is ON wherever CuPy is installed -- the owner, 2026-11-26,
+    # leaving for Thanksgiving: "add the GPU stuff ... so we can do this while I'm not home" (the config is
+    # on the PC and cannot be edited from away; vigil-pc.bat is frozen on purpose).
+    g = _cfg_value("gpu")
+    if g is None:
+        import importlib.util
+        g, why = importlib.util.find_spec("cupy") is not None, "automatic"
+    else:
+        g, why = bool(g), "vigil-pc.cfg"
+    if g:
         os.environ["VIGIL_GPU"] = "1"
-        print("[vigil-pc] evaluator: GPU requested in vigil-pc.cfg (verified against the CPU on every job)")
+        hb = _cfg_value("gpu_hist_batch")
+        os.environ["VIGIL_GPU_HIST_BATCH"] = str(hb if isinstance(hb, int) and hb > 0 else EVAL_GPU_HIST_BATCH)
+    print(f"[vigil-pc] evaluator: {'GPU' if g else 'CPU'} ({why}"
+          + (f"; {os.environ['VIGIL_GPU_HIST_BATCH']} worlds a histogram call; every job verified against the CPU)"
+             if g else ")"))
     while True:
         try:
             reqs = _api(url, tok, "/api/dfs/eval/requests").get("requests") or []

@@ -232,17 +232,36 @@ def run_gpu(ck):
        "(several worlds a bincount, a count per fraction) gives the same cells on DraftKings' lattice with "
        "uneven field weights", (Tc == ref).all() and dc == "CPU" and (Tg == ref).all() and dg.startswith("GPU"),
        f"{dc} {dg} cpu {int((Tc != ref).sum())} gpu {int((Tg != ref).sum())}")
+    os.environ["VIGIL_GPU_HIST_BATCH"] = "250"
+    T250, d250 = E.field_thresholds(X, WfT, w, qs, chunk, xp=fake)
+    os.environ["VIGIL_GPU_HIST_BATCH"] = "7"
+    T7, d7 = E.field_thresholds(X, WfT, w, qs, chunk, xp=fake)
+    os.environ.pop("VIGIL_GPU_HIST_BATCH", None)
+    ck("EV13b the GPU's worlds-per-histogram setting (vigil-pc.cfg gpu_hist_batch; the owner's bench: 250 a call "
+       "20.1x the CPU) changes the speed, never a cell: 250 (capped at the chunk) and 7 give the loop's cells, and "
+       "the device line names the batch", (T250 == ref).all() and (T7 == ref).all() and "batch 128" in d250
+       and "batch 7" in d7 and E._gpu_hist_batch() == E.GPU_HIST_BATCH, f"{d250} {d7}")
     ck("EV14 the GPU never answers unchecked: a first chunk that differs from the CPU in one cell, or any error "
        "(out of memory), sends the whole job to the CPU (ledgered EVAL-gpu-mismatch / EVAL-gpu) with the right "
        "answer; with no switch the GPU is never tried",
        db == "CPU" and (Tb == ref).all() and dx == "CPU" and (Tx == ref).all() and off, f"{db} {dx} {off}")
     pw = open(os.path.join(_ROOT, "pc_worker.py")).read()
     ex = open(os.path.join(_ROOT, "vigil-pc.cfg.example")).read()
-    ck("EV15 the switch is the owner's: \"gpu\": true in vigil-pc.cfg sets VIGIL_GPU=1 in the evaluator's lane only "
-       "(the example ships it false), and the evaluator's log names the device that answered",
-       'if _cfg_flag("gpu"):' in pw and 'os.environ["VIGIL_GPU"] = "1"' in pw and '"gpu": false' in ex
+    js = open(os.path.join(_ROOT, "static", "dfseval.js")).read()
+    ck("EV15 the switch: \"gpu\" in vigil-pc.cfg decides (true / false); with no key the evaluator lane uses the GPU "
+       "wherever CuPy is installed (the owner, away for Thanksgiving: the config cannot be edited from away and "
+       "vigil-pc.bat is frozen), at the candidate 250 worlds a histogram call unless gpu_hist_batch says otherwise; "
+       "VIGIL_GPU is set in that lane only; the example config ships it false",
+       'g = _cfg_value("gpu")' in pw and 'importlib.util.find_spec("cupy") is not None' in pw
+       and 'os.environ["VIGIL_GPU"] = "1"' in pw and "EVAL_GPU_HIST_BATCH = 250" in pw
+       and pw.count('os.environ["VIGIL_GPU"]') == 1 and '"gpu": false' in ex
        and inspect.getsource(E.prepare).count("field_thresholds(X, WfT, w, qs, chunk)") == 1
        and "on the {device}" in inspect.getsource(E.prepare))
+    ck("EV15b every result says what computed the field's thresholds and how long it took -- the GPU's real-workload "
+       "timing, readable from the owner's phone -- or that saved thresholds were reused, escaped on the tab",
+       'out["result"]["compute"] = dict(dfs_evaluate.LAST_COMPUTE)' in pw
+       and inspect.getsource(E.prepare).count("LAST_COMPUTE.update(") == 2
+       and "_dxeEsc(res.compute.device)" in js and "Field thresholds:" in js)
 
 
 def run_wiring(ck):

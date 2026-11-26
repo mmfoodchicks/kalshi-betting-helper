@@ -795,7 +795,17 @@ data-only `sim-history` branch (which never deploys):
     histograms take 50 worlds a bincount -- one world a call was launch/sync-bound). The evaluator uses it
     when `"gpu": true` is in vigil-pc.cfg (`dfs_evaluate.field_thresholds`, VIGIL_GPU=1 in the eval lane
     only): every job's first chunk is recomputed on the CPU and compared cell by cell, and a mismatch or any
-    error sends the whole job to the CPU (`EVAL-gpu-mismatch` / `EVAL-gpu`). The tournament scoring pass is
+    error sends the whole job to the CPU (`EVAL-gpu-mismatch` / `EVAL-gpu`). Worlds per histogram call is
+    `"gpu_hist_batch"` (default 50; the owner's bench read 250 at 1.3 s of histograms against 9.0 s, the whole
+    kernel 20.1x the CPU, 2.3 GB VRAM -- the candidate, pending the real workload's timing). With no "gpu" key
+    the evaluator lane uses the GPU wherever CuPy is installed, at 250 (`EVAL_GPU_HIST_BATCH`; the owner,
+    away for Thanksgiving, could not edit the config), and every result says what computed its thresholds and
+    how long (`compute`, shown on the tab). **The unattended benchmark** (`pc_worker._task_gpu_bench`, the
+    cycle's last task): fixed configurations (evaluator 40k and tournament 160k worlds, batches 50 and 250) on
+    the newest REAL cached slate (`gpu_bench --source cache` refuses synthetic), once per bench version, never
+    within 3 h of an NFL slate's start or with the lobby unreadable, GPU skipped above 83 C (nvidia-smi), 45-min
+    cap a run; reports via the PC's token door to `/api/pc/bench` (last 20) and `errors/pc-bench-latest.json`.
+    Nothing the server says shapes what runs. Guards PB. The tournament scoring pass is
     still CPU-only: measure it on a real slate (`--source cache`) before moving it.
 - **Showdown vs Classic on real results** (`research/dfs_format_validation.py`, report
   `research/reports/dfs_format_validation.md`). It grades every exported board on real DraftKings points

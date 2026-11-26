@@ -212,6 +212,21 @@ def _match_worlds(meta, pool):
 # VIGIL_GPU=1 in the evaluator's lane); the first chunk is recomputed on the CPU and compared cell by cell,
 # and any mismatch or error sends the whole job back to the CPU, ledgered. The server never has CuPy.
 GPU_HIST_BATCH = 50
+# What computed the latest prepare()'s thresholds and how long it took; the PC's evaluator lane puts it on
+# the result the tab shows, so the GPU's real-workload timing is visible from the owner's phone.
+LAST_COMPUTE = {}
+# Worlds per bincount. The owner's bench (2026-11-26, synthetic 20,000 x 300,000): 50 a call 9.0 s of
+# histograms, 250 a call 1.3 s (whole kernel 20.1x the CPU, 2.3 GB of VRAM, every cell equal). 250 is the
+# candidate; the default stays 50 until the real workload is timed ("gpu_hist_batch" in vigil-pc.cfg sets
+# VIGIL_GPU_HIST_BATCH in the evaluator lane).
+
+
+def _gpu_hist_batch():
+    try:
+        v = int(os.environ.get("VIGIL_GPU_HIST_BATCH") or GPU_HIST_BATCH)
+    except ValueError:
+        v = GPU_HIST_BATCH
+    return max(1, min(v, 1000))
 
 
 def _thresholds_cpu(B, w, qs):
@@ -261,7 +276,7 @@ def _thresholds_gpu(cp, X, WfT, w, qs, chunk):
     NB, RES = dfs_tourney._NB, dfs_tourney._RES
     W, M = X.shape[1], WfT.shape[1]
     Xd, WfTd = cp.asarray(X), cp.asarray(WfT)
-    hb = max(1, min(GPU_HIST_BATCH, chunk))
+    hb = max(1, min(_gpu_hist_batch(), chunk))
     wt = cp.tile(cp.asarray(w, dtype=cp.float64), hb)
     qh = [float(q) + 1e-12 for q in qs]
     T = cp.zeros((W, len(qs)), dtype=cp.int32)
@@ -296,7 +311,7 @@ def field_thresholds(X, WfT, w, qs, chunk, xp=None):
             ref = _cpu_chunks(X, WfT, w, qs, chunk, upto=chunk)
             bad = int((T[:len(ref)] != ref).sum())
             if bad == 0:
-                return T, "GPU (first chunk verified on the CPU)"
+                return T, f"GPU (batch {max(1, min(_gpu_hist_batch(), chunk))}; first chunk verified on the CPU)"
             errlog.note("EVAL-gpu-mismatch", msg=f"{bad} of {ref.size} first-chunk thresholds differ; CPU used")
         except Exception as e:
             errlog.note("EVAL-gpu", e)
@@ -309,6 +324,8 @@ def prepare(path, meta, n=FINAL_N, workers=None, log=print, pool=None):
     reused. `pool` lets a test pass the worlds in."""
     out = os.path.join(path, "final.npz")
     if os.path.isfile(out):
+        LAST_COMPUTE.clear()
+        LAST_COMPUTE.update(device="saved thresholds reused (computed on this slate's first evaluation)", seconds=0.0)
         return out
     import dfs_tourney
     if pool is None:
@@ -337,6 +354,8 @@ def prepare(path, meta, n=FINAL_N, workers=None, log=print, pool=None):
     chunk = max(16, int(dfs_tourney._CHUNK_ELEMS // max(1, len(idx))))
     WfT = np.ascontiguousarray(Wf.T)
     T, device = field_thresholds(X, WfT, w, qs, chunk)
+    LAST_COMPUTE.clear()
+    LAST_COMPUTE.update(device=device, seconds=round(time.time() - t0, 1), worlds=int(W), field=int(len(idx)))
     log(f"[eval] {meta['id']}: field of {len(idx):,} scored on {W:,} final worlds on the {device} "
         f"({time.time() - t0:.0f}s)")
     def write(tmp):

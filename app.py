@@ -2637,6 +2637,33 @@ def api_dfs_eval_status():
     return jsonify({"id": rid, "status": "unknown", "why": "no such request (expired after six hours, or never queued)"})
 
 
+# The PC's GPU benchmark reports (2026-11-26; pc_worker._task_gpu_bench): the owner, away for Thanksgiving,
+# asked for "benchmark results back to the server, including actual data source, runtime, memory consumption
+# and numerical agreement". The PC posts through its own token door; reading is behind the site's auth like
+# every other route, and the error-log workflow copies it to the data branch (errors/pc-bench-latest.json).
+# The last 20 runs, a report capped at 200 KB: a record, never an instruction -- nothing here tells the PC
+# what to run.
+_PC_BENCH = "pcbench_log"
+_PC_BENCH_KEEP = 20
+
+
+@app.route("/api/pc/bench", methods=["GET", "POST"])
+def api_pc_bench():
+    if request.method == "POST":
+        if not _pc_auth_ok():
+            return jsonify({"error": "auth"}), 403
+        d = request.get_json(force=True, silent=True)
+        if not isinstance(d, dict) or not isinstance(d.get("results"), list):
+            return jsonify({"error": "a report is {results: [...], ...}"}), 400
+        if len(json.dumps(d)) > 200_000:
+            return jsonify({"error": "report too large"}), 413
+        d["received_ts"] = time.time()
+        runs = (_tourney_json(_PC_BENCH).get("runs") or [])[-(_PC_BENCH_KEEP - 1):] + [d]
+        _tourney_json_save(_PC_BENCH, {"runs": runs})
+        return jsonify({"ok": True, "kept": len(runs)})
+    return jsonify({"runs": _tourney_json(_PC_BENCH).get("runs") or []})
+
+
 @app.route("/api/dfs/eval/requests")
 def api_dfs_eval_requests():
     """The PC's door: the evaluation requests not yet answered, oldest first."""

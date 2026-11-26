@@ -36,7 +36,7 @@ CLAIM_TIMEOUT = 300
 # About 1-5 MB a board, a handful a week.
 # The game viewer's pieces (nfl_viewer) too: built up to a week ahead, served
 # to kickoff + 4 h, and a game-day build that fails must not leave a hole.
-_KEEP_LONG = ("cl_tourney_", "sd_tourney_", "tourney_requests.", "tourney_attempts.", "nflview_")
+_KEEP_LONG = ("cl_tourney_", "sd_tourney_", "tourney_requests.", "tourney_attempts.", "nflview_", "pcbench_")
 _KEEP_LONG_S = 8 * 86400
 
 

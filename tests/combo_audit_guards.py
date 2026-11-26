@@ -24911,6 +24911,16 @@ except Exception as _ev_e:                 # a guard file that cannot run is a f
     ck("guards_evaluator runs to the end", False, f"{type(_ev_e).__name__}: {_ev_e} " + _ev_tb.format_exc()[-600:])
 
 print("=" * 72)
+print("PB. The PC's unattended GPU benchmark (2026-11-26): its door, the deadline rule, fixed configurations,")
+print("    real data only, the temperature limit, the report on the data branch (tests/guards_pcbench.py)")
+print("=" * 72)
+try:
+    __import__("guards_pcbench").run(ck)
+except Exception as _pb_e:                 # a guard file that cannot run is a failed guard, never a skipped one
+    import traceback as _pb_tb
+    ck("guards_pcbench runs to the end", False, f"{type(_pb_e).__name__}: {_pb_e} " + _pb_tb.format_exc()[-600:])
+
+print("=" * 72)
 print("DR. The registered NFL deep-weight read (2026-11-26, research/reports/nfl_deep_weight_rule.md): the frozen")
 print("    weight, the unit, the clauses, the clustered SE, the export, the script pinned by hash (tests/guards_deep_rule.py)")
 print("=" * 72)

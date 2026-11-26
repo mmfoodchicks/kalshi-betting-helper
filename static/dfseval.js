@@ -181,5 +181,6 @@ function _dxeShow(res) {
     ${res.development_note ? `<div class="small" style="color:var(--hold);margin-bottom:4px">⚠ ${_dxeEsc(res.development_note)}</div>` : ""}
     ${(res.missing_from_final || []).length ? `<div class="small" style="color:var(--hold)">No final worlds for: ${res.missing_from_final.map(_dxeEsc).join(", ")}</div>` : ""}
     <div style="overflow-x:auto"><table class="small dxe-table"><thead><tr><th style="text-align:left">lineup</th><th>$</th><th>proj</th><th>mean</th><th>P50</th><th>P90</th><th>P99</th><th>top 1%</th><th>top 0.1%</th><th>cash</th><th title="experimental">EV (exp.)</th></tr></thead><tbody>${body}</tbody></table></div>
-    <div class="small" style="color:var(--muted);margin-top:4px">${cname ? _dxeEsc(cname.name) + " · " : ""}${(res.worlds || 0).toLocaleString()} final worlds · answered in ${res.seconds ?? "-"}s · look ${res.looks || 1}</div>`;
+    <div class="small" style="color:var(--muted);margin-top:4px">${cname ? _dxeEsc(cname.name) + " · " : ""}${(res.worlds || 0).toLocaleString()} final worlds · answered in ${res.seconds ?? "-"}s · look ${res.looks || 1}</div>
+    ${res.compute && res.compute.device ? `<div class="small" style="color:var(--muted)">Field thresholds: ${_dxeEsc(res.compute.device)}${res.compute.seconds ? ` in ${_dxeEsc(res.compute.seconds)}s` : ""}${res.compute.worlds ? ` (${Number(res.compute.worlds).toLocaleString()} worlds x ${Number(res.compute.field || 0).toLocaleString()} field lineups)` : ""}</div>` : ""}`;
 }

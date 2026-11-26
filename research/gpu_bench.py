@@ -110,6 +110,21 @@ def _build_running():
     return None
 
 
+def _gpu_stats():
+    """The GPU's temperature, memory and load from nvidia-smi (shipped with NVIDIA's driver), or None."""
+    import subprocess
+    try:
+        r = subprocess.run(["nvidia-smi", "--query-gpu=temperature.gpu,memory.used,memory.total,utilization.gpu,power.draw",
+                            "--format=csv,noheader,nounits"], capture_output=True, text=True, timeout=15)
+        if r.returncode != 0 or not r.stdout.strip():
+            return None
+        t, mu, mt, ut, pw = [x.strip() for x in r.stdout.strip().splitlines()[0].split(",")]
+        f = lambda x: float(x) if x.replace(".", "", 1).isdigit() else None
+        return {"temp_c": f(t), "mem_used_mb": f(mu), "mem_total_mb": f(mt), "util_pct": f(ut), "power_w": f(pw)}
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return None
+
+
 def _peak_ram_mb():
     try:
         import resource
@@ -138,20 +153,33 @@ def inputs(args, np):
                         p = os.path.join(root, slate, a)
                         if os.path.isfile(os.path.join(p, "field_idx.npy")):
                             arts.append((os.path.getmtime(p), p))
+            if not ents or not arts:
+                print(f"[bench] no real slate to read: {len(ents)} worlds-cache entries, {len(arts)} evaluator "
+                      "artifacts (a board built since 2026-11-26 leaves both); using synthetic inputs")
             if ents and arts:
                 path = sorted(arts)[-1][1]
                 with open(os.path.join(path, "meta.json")) as f:
                     meta = json.load(f)
                 idx = np.load(os.path.join(path, "field_idx.npy")).astype(np.int64)
-                hit = pool_cache.load(os.path.basename(ents[0][0]))
-                pool = hit[0] if hit else {}
-                rows = [pool.get(p["name"], {}).get("arr") for p in meta["players"]]
-                if all(r for r in rows):
-                    W = min(min(len(r) for r in rows), args.worlds)
-                    X = np.asarray([r[:W] for r in rows], dtype=np.float32)
+                # the newest cached worlds that hold every player of the newest artifact's slate, the most
+                # worlds first (a tournament build's 180,000 before an evaluator's 40,000); at most four looked at
+                best = None
+                for ent in ents[:4]:
+                    hit = pool_cache.load(os.path.basename(ent[0]))
+                    pool = hit[0] if hit else {}
+                    rows = [pool.get(p["name"], {}).get("arr") for p in meta["players"]]
+                    if all(r for r in rows) and (best is None or min(len(r) for r in rows) > best[0]):
+                        best = (min(len(r) for r in rows), rows, os.path.basename(ent[0]))
+                if best:
+                    W = min(best[0], args.worlds)
+                    X = np.asarray([r[:W] for r in best[1]], dtype=np.float32)
                     idx = idx[: args.field]
-                    return X, idx, np.full(len(idx), 1.0 / len(idx)), f"cache: {meta['id']} ({len(rows)} players)"
-                print("[bench] the cached worlds are not this artifact's slate; using synthetic inputs")
+                    return (X, idx, np.full(len(idx), 1.0 / len(idx)),
+                            f"cache: {meta['id']} ({len(best[1])} players, {best[0]:,} cached worlds, entry {best[2][:12]})")
+                print("[bench] no cached worlds hold this artifact's slate")
+            if args.source == "cache":
+                raise RuntimeError("no real slate to benchmark: a board built since 2026-11-26 leaves both its "
+                                   "cached worlds and its evaluator artifact")
         except Exception as e:
             if args.source == "cache":
                 raise
@@ -276,6 +304,11 @@ def main():
                          "and it sums the same weights in the same order, so it would only add minutes")
     ap.add_argument("--hist-batch", type=int, default=50,
                     help="worlds per batched bincount (memory: hist-batch x field x 12 bytes)")
+    ap.add_argument("--gpu-batches", default="",
+                    help="several GPU batch sizes in one run, e.g. 50,250: each batched pass is timed and compared "
+                         "with the same CPU reference (the first is the main GPU run's)")
+    ap.add_argument("--max-gpu-temp", type=float, default=83.0,
+                    help="skip the GPU runs (or stop between them) when nvidia-smi reads the GPU at or above this")
     ap.add_argument("--threads", type=int, default=max(1, (os.cpu_count() or 2) // 2))
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--cpu-only", action="store_true")
@@ -307,6 +340,15 @@ def main():
         rep["cpu"] = tc
         cpu = (Bc, Tc, Tcb)
         print(f"[bench]   {tc}")
+    batches = [int(b) for b in str(args.gpu_batches).split(",") if b.strip().isdigit() and int(b) > 0]
+    if batches:
+        args.hist_batch = batches[0]
+    rep["gpu_stats_before"] = _gpu_stats()
+    hot = (rep["gpu_stats_before"] or {}).get("temp_c")
+    if not args.cpu_only and hot is not None and hot >= args.max_gpu_temp:
+        rep["gpu"] = {"error": f"skipped: GPU at {hot} C, at or above --max-gpu-temp {args.max_gpu_temp}"}
+        print(f"[bench] GPU at {hot} C -- skipping the GPU runs")
+        args.cpu_only = True
     if not args.cpu_only:
         try:
             a = time.time()
@@ -327,6 +369,24 @@ def main():
             rep["gpu"] = tg
             gpu = (Bg, Tg, Tgb)
             print(f"[bench]   {tg}")
+            # further batch sizes: the batched pass alone, against the same CPU reference
+            ref = cpu[1] if cpu and cpu[1] is not None else None
+            rep["gpu_batches"] = {str(args.hist_batch): {"hist_batched_s": tg.get("hist_batched_s"),
+                                                         "total_batched_s": tg.get("total_batched_s"),
+                                                         "peak_vram_mb": tg.get("peak_vram_mb"),
+                                                         "mismatches_vs_cpu": _mis(ref, Tgb)}}
+            for hb in batches[1:]:
+                st = _gpu_stats() or {}
+                if st.get("temp_c") is not None and st["temp_c"] >= args.max_gpu_temp:
+                    rep["gpu_batches"][str(hb)] = {"skipped": f"GPU at {st['temp_c']} C"}
+                    break
+                pool.free_all_blocks()
+                tb, _B2, _T2, Tb2 = run(cp, X, idx, w, args.chunk, FRACTIONS, "gpu", "batched", hb)
+                rep["gpu_batches"][str(hb)] = {"hist_batched_s": tb.get("hist_batched_s"),
+                                               "total_batched_s": tb.get("total_batched_s"),
+                                               "peak_vram_mb": round(pool.total_bytes() / 1024 / 1024, 1),
+                                               "mismatches_vs_cpu": _mis(ref, Tb2)}
+                print(f"[bench]   batch {hb}: {rep['gpu_batches'][str(hb)]}")
         except ImportError:
             rep["gpu"] = {"error": 'CuPy is not installed: pip install "cupy-cuda12x[ctk]"'}
             print('[bench] CuPy not installed: the CPU figures stand alone (pip install "cupy-cuda12x[ctk]")')
@@ -373,6 +433,7 @@ def main():
     if sp:
         rep["speedups"] = sp
         print(f"[bench] speed-ups (x faster): {sp}")
+    rep["gpu_stats_after"] = _gpu_stats()
     out = args.out or f"gpu_bench_{time.strftime('%Y%m%d_%H%M%S')}.json"
     with open(out, "w") as f:
         json.dump(rep, f, indent=1)
