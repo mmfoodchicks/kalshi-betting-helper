@@ -24951,6 +24951,22 @@ except Exception as _ui_e:                 # a guard file that cannot run is a f
     ck("guards_ui runs to the end", False, f"{type(_ui_e).__name__}: {_ui_e} " + _ui_tb.format_exc()[-600:])
 
 print("=" * 72)
+print("AUTO. Guard files that register themselves (2026-11-26): every tests/guards_auto_<name>.py runs here, in")
+print("    name order, so parallel workstreams each add a file instead of all editing this one")
+print("=" * 72)
+import glob as _glob_auto
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+_auto_files = sorted(_glob_auto.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "guards_auto_*.py")))
+for _f_auto in _auto_files:
+    _m_auto = os.path.basename(_f_auto)[:-3]
+    try:
+        __import__(_m_auto).run(ck)
+    except Exception as _e_auto:          # a guard file that cannot run is a failed guard, never a skipped one
+        import traceback as _tb_auto
+        ck(f"{_m_auto} runs to the end", False, f"{type(_e_auto).__name__}: {_e_auto} " + _tb_auto.format_exc()[-600:])
+print(f"    ({len(_auto_files)} self-registered guard file(s))")
+
+print("=" * 72)
 print("MX. The matchup upgrade (2026-10-23): prop math, the NBA engine, the NFL matchup data and model,")
 print("    the Matchups tab's plumbing, the rushing data layer and model (2026-10-24) -- each guard file also runs alone (python3 tests/guards_<name>.py)")
 print("=" * 72)
