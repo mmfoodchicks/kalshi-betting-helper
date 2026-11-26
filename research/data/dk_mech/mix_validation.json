@@ -1,0 +1,4737 @@
+{
+ "validation": [
+  198005475,
+  198150093
+ ],
+ "fit_file": "mix_fit.json",
+ "contests": {
+  "198005475": {
+   "label": "CIN @ WAS (week 11)",
+   "representable_pct": 90.32,
+   "entries": 63663,
+   "legal_lineups": 769040,
+   "players": 24,
+   "models": {
+    "M0": {
+     "nll_per_entry": 9.42011,
+     "collision": {
+      "real": 0.0010803688658468137,
+      "model": 0.0001555175859818097,
+      "model_over_real": 0.1439
+     },
+     "copies_hist_pct": {
+      "real": {
+       "1": 6.981,
+       "2-5": 15.717,
+       "6-20": 27.0,
+       "21-100": 31.524,
+       "101+": 18.779
+      },
+      "model": {
+       "1": 21.141,
+       "2-5": 32.857,
+       "6-20": 30.683,
+       "21-100": 15.32,
+       "101+": 0.0
+      },
+      "l1": 69.966
+     },
+     "distinct_lineups": {
+      "real": 10065,
+      "model": 23261
+     },
+     "real_top20_builds": {
+      "real_copies": [
+       760,
+       516,
+       501,
+       373,
+       350,
+       287,
+       285,
+       285,
+       283,
+       279,
+       273,
+       273,
+       272,
+       267,
+       261,
+       244,
+       243,
+       239,
+       233,
+       222
+      ],
+      "model_expected": [
+       81.1,
+       74.1,
+       31.0,
+       47.2,
+       26.7,
+       40.7,
+       127.3,
+       34.0,
+       10.2,
+       24.4,
+       63.8,
+       65.8,
+       29.7,
+       19.8,
+       60.1,
+       43.2,
+       26.7,
+       20.7,
+       20.4,
+       12.4
+      ],
+      "within_factor": 1,
+      "median_abs_log_ratio": 2.212,
+      "geo_mean_ratio": 0.116
+     },
+     "model_top20_builds": {
+      "model_expected": [
+       127.3,
+       109.6,
+       100.1,
+       97.2,
+       84.9,
+       81.1,
+       81.1,
+       78.7,
+       74.1,
+       72.0,
+       69.8,
+       65.8,
+       65.8,
+       65.8,
+       63.8,
+       61.9,
+       60.1,
+       60.1,
+       58.3,
+       58.3
+      ],
+      "real_copies": [
+       285,
+       100,
+       143,
+       31,
+       127,
+       46,
+       760,
+       162,
+       516,
+       100,
+       30,
+       273,
+       52,
+       85,
+       273,
+       198,
+       261,
+       61,
+       141,
+       14
+      ],
+      "within_factor": 12
+     },
+     "captain_mae": 2.163,
+     "flex_mae": 4.264,
+     "joint_mae": 2.099,
+     "salary_mean": {
+      "real": 49334.7,
+      "model": 47874.0
+     },
+     "salary_mean_abs_err": 1460.7,
+     "salary_left_pct": {
+      "real": {
+       "0": 11.78,
+       "100-200": 25.56,
+       "300-500": 22.98,
+       "600-1000": 19.44,
+       "1100-2000": 14.53,
+       "2100+": 5.71
+      },
+      "model": {
+       "0": 3.07,
+       "100-200": 7.99,
+       "300-500": 11.29,
+       "600-1000": 14.83,
+       "1100-2000": 23.55,
+       "2100+": 39.27
+      }
+     },
+     "salary_left_l1": 85.16,
+     "team_split_pct": {
+      "real": {
+       "3-3": 34.66,
+       "4-2": 45.4,
+       "5-1": 19.95
+      },
+      "model": {
+       "3-3": 37.17,
+       "4-2": 48.6,
+       "5-1": 14.23
+      }
+     },
+     "team_split_l1": 11.43,
+     "captain_position_pct": {
+      "real": {
+       "QB": 35.45,
+       "RB": 12.02,
+       "WR": 37.94,
+       "TE": 12.25,
+       "K": 1.13,
+       "DST": 1.2
+      },
+      "model": {
+       "QB": 53.69,
+       "RB": 7.56,
+       "WR": 21.15,
+       "TE": 11.6,
+       "K": 4.12,
+       "DST": 1.88
+      }
+     },
+     "captain_position_l1": 43.81,
+     "score_w1": 0.499,
+     "score_mean": {
+      "real": 77.9,
+      "model": 78.07
+     },
+     "top_K_mass_pct": {
+      "1": {
+       "real": 0.45,
+       "model": 0.2
+      },
+      "10": {
+       "real": 3.57,
+       "model": 1.42
+      },
+      "100": {
+       "real": 12.31,
+       "model": 7.55
+      },
+      "1000": {
+       "real": 39.01,
+       "model": 29.61
+      },
+      "10000": {
+       "real": 82.21,
+       "model": 72.31
+      }
+     },
+     "verdict": {
+      "A1_aggregate_collision_within_2x": false,
+      "A2_real_top20_within_3x": false,
+      "A2_model_top20_within_3x": false,
+      "A3_copies_histogram_no_worse": true,
+      "A4_captain_mae_non_inferior": true,
+      "A4_flex_mae_non_inferior": true,
+      "A4_joint_mae_non_inferior": true,
+      "A4_salary_mean_abs_err_non_inferior": true,
+      "A4_salary_left_l1_non_inferior": true,
+      "A4_team_split_l1_non_inferior": true,
+      "A4_captain_position_l1_non_inferior": true,
+      "A4_score_w1_non_inferior": true,
+      "duplication_calibrated_here": false
+     },
+     "owner": {
+      "real_top20_in_model_top200": 15,
+      "median_model_over_real_copies": 0.1095,
+      "real_top20_ratios": [
+       0.107,
+       0.144,
+       0.062,
+       0.127,
+       0.076,
+       0.142,
+       0.119,
+       0.447,
+       0.036,
+       0.087,
+       0.234,
+       0.241,
+       0.109,
+       0.074,
+       0.23,
+       0.177,
+       0.11,
+       0.087,
+       0.087,
+       0.056
+      ],
+      "collision_model_over_real": 0.1439,
+      "copies_mass_pct": {
+       "real": {
+        "1": 6.981,
+        "2-10": 27.815,
+        "11+": 65.204
+       },
+       "model": {
+        "1": 21.141,
+        "2-10": 49.129,
+        "11+": 29.73
+       }
+      },
+      "salary_mean": {
+       "real": 49334.7,
+       "model": 47873.8
+      },
+      "category_pct": {
+       "split_3_3": {
+        "real": 34.66,
+        "model": 37.19
+       },
+       "split_4_2": {
+        "real": 45.4,
+        "model": 48.76
+       },
+       "split_5_1": {
+        "real": 19.95,
+        "model": 14.06
+       },
+       "cpt_QB": {
+        "real": 35.45,
+        "model": 53.35
+       },
+       "cpt_RB": {
+        "real": 12.02,
+        "model": 7.6
+       },
+       "cpt_WR": {
+        "real": 37.94,
+        "model": 21.24
+       },
+       "cpt_TE": {
+        "real": 12.25,
+        "model": 11.75
+       },
+       "cpt_K": {
+        "real": 1.13,
+        "model": 4.21
+       },
+       "cpt_DST": {
+        "real": 1.2,
+        "model": 1.85
+       }
+      },
+      "score_quantiles": {
+       "real": {
+        "P50": 77.31,
+        "P90": 93.30999999999999,
+        "P99": 105.50999999999999
+       },
+       "model": {
+        "P50": 77.91,
+        "P90": 93.10999999999999,
+        "P99": 105.21
+       }
+      },
+      "detail": {
+       "salary_abs_err": {
+        "model": 1460.9,
+        "production": 1460.9
+       },
+       "category_abs_err_pp": {
+        "split_3_3": {
+         "model": 2.53,
+         "production": 2.53
+        },
+        "split_4_2": {
+         "model": 3.36,
+         "production": 3.36
+        },
+        "split_5_1": {
+         "model": 5.89,
+         "production": 5.89
+        },
+        "cpt_QB": {
+         "model": 17.9,
+         "production": 17.9
+        },
+        "cpt_RB": {
+         "model": 4.42,
+         "production": 4.42
+        },
+        "cpt_WR": {
+         "model": 16.7,
+         "production": 16.7
+        },
+        "cpt_TE": {
+         "model": 0.5,
+         "production": 0.5
+        },
+        "cpt_K": {
+         "model": 3.08,
+         "production": 3.08
+        },
+        "cpt_DST": {
+         "model": 0.65,
+         "production": 0.65
+        }
+       },
+       "score_quantile_abs_err": {
+        "P50": {
+         "model": 0.6,
+         "production": 0.6
+        },
+        "P90": {
+         "model": 0.2,
+         "production": 0.2
+        },
+        "P99": {
+         "model": 0.3,
+         "production": 0.3
+        }
+       }
+      },
+      "verdict": {
+       "1_recall_10_of_20_in_top_200": true,
+       "2_median_copies_ratio_0.5_to_2": false,
+       "3_collision_within_2x": false,
+       "4_unique_share_within_5pp": false,
+       "4_mass_2_to_10_within_2x": true,
+       "4_mass_11_plus_within_2x": false,
+       "5_ownership_captain_and_flex_mae": true,
+       "5_salary_mean": true,
+       "5_split_and_captain_categories": true,
+       "5_score_quantiles_no_worse": true,
+       "all": false
+      }
+     }
+    },
+    "M1": {
+     "nll_per_entry": 9.03247,
+     "collision": {
+      "real": 0.0010803688658468137,
+      "model": 0.0001274689557589405,
+      "model_over_real": 0.118
+     },
+     "copies_hist_pct": {
+      "real": {
+       "1": 6.981,
+       "2-5": 15.717,
+       "6-20": 27.0,
+       "21-100": 31.524,
+       "101+": 18.779
+      },
+      "model": {
+       "1": 13.878,
+       "2-5": 34.345,
+       "6-20": 40.801,
+       "21-100": 10.976,
+       "101+": 0.0
+      },
+      "l1": 78.653
+     },
+     "distinct_lineups": {
+      "real": 10065,
+      "model": 19282
+     },
+     "real_top20_builds": {
+      "real_copies": [
+       760,
+       516,
+       501,
+       373,
+       350,
+       287,
+       285,
+       285,
+       283,
+       279,
+       273,
+       273,
+       272,
+       267,
+       261,
+       244,
+       243,
+       239,
+       233,
+       222
+      ],
+      "model_expected": [
+       54.8,
+       43.4,
+       38.3,
+       40.5,
+       35.2,
+       37.2,
+       37.2,
+       40.3,
+       20.5,
+       27.9,
+       43.7,
+       33.8,
+       34.1,
+       22.6,
+       50.7,
+       46.2,
+       35.2,
+       27.9,
+       25.2,
+       20.9
+      ],
+      "within_factor": 0,
+      "median_abs_log_ratio": 2.185,
+      "geo_mean_ratio": 0.113
+     },
+     "model_top20_builds": {
+      "model_expected": [
+       71.2,
+       55.2,
+       54.8,
+       53.4,
+       50.7,
+       50.7,
+       49.1,
+       48.2,
+       46.8,
+       46.8,
+       46.2,
+       44.6,
+       44.3,
+       43.7,
+       43.5,
+       43.4,
+       43.0,
+       42.4,
+       42.4,
+       41.0
+      ],
+      "real_copies": [
+       100,
+       30,
+       760,
+       85,
+       261,
+       61,
+       30,
+       101,
+       127,
+       100,
+       244,
+       42,
+       67,
+       273,
+       36,
+       516,
+       198,
+       61,
+       63,
+       162
+      ],
+      "within_factor": 13
+     },
+     "captain_mae": 1.389,
+     "flex_mae": 5.05,
+     "joint_mae": 2.245,
+     "salary_mean": {
+      "real": 49334.7,
+      "model": 49103.2
+     },
+     "salary_mean_abs_err": 231.5,
+     "salary_left_pct": {
+      "real": {
+       "0": 11.78,
+       "100-200": 25.56,
+       "300-500": 22.98,
+       "600-1000": 19.44,
+       "1100-2000": 14.53,
+       "2100+": 5.71
+      },
+      "model": {
+       "0": 8.41,
+       "100-200": 17.22,
+       "300-500": 21.07,
+       "600-1000": 21.63,
+       "1100-2000": 20.93,
+       "2100+": 10.76
+      }
+     },
+     "salary_left_l1": 27.26,
+     "team_split_pct": {
+      "real": {
+       "3-3": 34.66,
+       "4-2": 45.4,
+       "5-1": 19.95
+      },
+      "model": {
+       "3-3": 38.45,
+       "4-2": 48.37,
+       "5-1": 13.19
+      }
+     },
+     "team_split_l1": 13.52,
+     "captain_position_pct": {
+      "real": {
+       "QB": 35.45,
+       "RB": 12.02,
+       "WR": 37.94,
+       "TE": 12.25,
+       "K": 1.13,
+       "DST": 1.2
+      },
+      "model": {
+       "QB": 42.09,
+       "RB": 12.39,
+       "WR": 31.15,
+       "TE": 7.57,
+       "K": 4.7,
+       "DST": 2.1
+      }
+     },
+     "captain_position_l1": 22.95,
+     "score_w1": 1.351,
+     "score_mean": {
+      "real": 77.9,
+      "model": 76.63
+     },
+     "top_K_mass_pct": {
+      "1": {
+       "real": 0.45,
+       "model": 0.06
+      },
+      "10": {
+       "real": 3.57,
+       "model": 0.61
+      },
+      "100": {
+       "real": 12.31,
+       "model": 4.06
+      },
+      "1000": {
+       "real": 39.01,
+       "model": 21.5
+      },
+      "10000": {
+       "real": 82.21,
+       "model": 66.96
+      }
+     },
+     "verdict": {
+      "A1_aggregate_collision_within_2x": false,
+      "A2_real_top20_within_3x": false,
+      "A2_model_top20_within_3x": false,
+      "A3_copies_histogram_no_worse": false,
+      "A4_captain_mae_non_inferior": true,
+      "A4_flex_mae_non_inferior": false,
+      "A4_joint_mae_non_inferior": true,
+      "A4_salary_mean_abs_err_non_inferior": true,
+      "A4_salary_left_l1_non_inferior": true,
+      "A4_team_split_l1_non_inferior": false,
+      "A4_captain_position_l1_non_inferior": true,
+      "A4_score_w1_non_inferior": false,
+      "duplication_calibrated_here": false
+     },
+     "owner": {
+      "real_top20_in_model_top200": 19,
+      "median_model_over_real_copies": 0.1125,
+      "real_top20_ratios": [
+       0.072,
+       0.084,
+       0.077,
+       0.108,
+       0.101,
+       0.13,
+       0.142,
+       0.131,
+       0.073,
+       0.1,
+       0.16,
+       0.124,
+       0.125,
+       0.085,
+       0.194,
+       0.189,
+       0.145,
+       0.117,
+       0.108,
+       0.094
+      ],
+      "collision_model_over_real": 0.118,
+      "copies_mass_pct": {
+       "real": {
+        "1": 6.981,
+        "2-10": 27.815,
+        "11+": 65.204
+       },
+       "model": {
+        "1": 13.878,
+        "2-10": 56.493,
+        "11+": 29.628
+       }
+      },
+      "salary_mean": {
+       "real": 49334.7,
+       "model": 49106.2
+      },
+      "category_pct": {
+       "split_3_3": {
+        "real": 34.66,
+        "model": 38.31
+       },
+       "split_4_2": {
+        "real": 45.4,
+        "model": 48.54
+       },
+       "split_5_1": {
+        "real": 19.95,
+        "model": 13.15
+       },
+       "cpt_QB": {
+        "real": 35.45,
+        "model": 41.99
+       },
+       "cpt_RB": {
+        "real": 12.02,
+        "model": 12.28
+       },
+       "cpt_WR": {
+        "real": 37.94,
+        "model": 31.29
+       },
+       "cpt_TE": {
+        "real": 12.25,
+        "model": 7.69
+       },
+       "cpt_K": {
+        "real": 1.13,
+        "model": 4.71
+       },
+       "cpt_DST": {
+        "real": 1.2,
+        "model": 2.04
+       }
+      },
+      "score_quantiles": {
+       "real": {
+        "P50": 77.31,
+        "P90": 93.30999999999999,
+        "P99": 105.50999999999999
+       },
+       "model": {
+        "P50": 76.49000000000001,
+        "P90": 93.30999999999999,
+        "P99": 105.99000000000001
+       }
+      },
+      "detail": {
+       "salary_abs_err": {
+        "model": 228.5,
+        "production": 1460.9
+       },
+       "category_abs_err_pp": {
+        "split_3_3": {
+         "model": 3.65,
+         "production": 2.53
+        },
+        "split_4_2": {
+         "model": 3.14,
+         "production": 3.36
+        },
+        "split_5_1": {
+         "model": 6.8,
+         "production": 5.89
+        },
+        "cpt_QB": {
+         "model": 6.54,
+         "production": 17.9
+        },
+        "cpt_RB": {
+         "model": 0.26,
+         "production": 4.42
+        },
+        "cpt_WR": {
+         "model": 6.65,
+         "production": 16.7
+        },
+        "cpt_TE": {
+         "model": 4.56,
+         "production": 0.5
+        },
+        "cpt_K": {
+         "model": 3.58,
+         "production": 3.08
+        },
+        "cpt_DST": {
+         "model": 0.84,
+         "production": 0.65
+        }
+       },
+       "score_quantile_abs_err": {
+        "P50": {
+         "model": 0.82,
+         "production": 0.6
+        },
+        "P90": {
+         "model": 0.0,
+         "production": 0.2
+        },
+        "P99": {
+         "model": 0.48,
+         "production": 0.3
+        }
+       }
+      },
+      "verdict": {
+       "1_recall_10_of_20_in_top_200": true,
+       "2_median_copies_ratio_0.5_to_2": false,
+       "3_collision_within_2x": false,
+       "4_unique_share_within_5pp": false,
+       "4_mass_2_to_10_within_2x": false,
+       "4_mass_11_plus_within_2x": false,
+       "5_ownership_captain_and_flex_mae": false,
+       "5_salary_mean": true,
+       "5_split_and_captain_categories": false,
+       "5_score_quantiles_no_worse": false,
+       "all": false
+      }
+     }
+    },
+    "M2": {
+     "nll_per_entry": 8.95478,
+     "collision": {
+      "real": 0.0010803688658468137,
+      "model": 0.00019885742185254333,
+      "model_over_real": 0.1841
+     },
+     "copies_hist_pct": {
+      "real": {
+       "1": 6.981,
+       "2-5": 15.717,
+       "6-20": 27.0,
+       "21-100": 31.524,
+       "101+": 18.779
+      },
+      "model": {
+       "1": 13.9,
+       "2-5": 30.689,
+       "6-20": 36.578,
+       "21-100": 18.834,
+       "101+": 0.0
+      },
+      "l1": 62.938
+     },
+     "distinct_lineups": {
+      "real": 10065,
+      "model": 18362
+     },
+     "real_top20_builds": {
+      "real_copies": [
+       760,
+       516,
+       501,
+       373,
+       350,
+       287,
+       285,
+       285,
+       283,
+       279,
+       273,
+       273,
+       272,
+       267,
+       261,
+       244,
+       243,
+       239,
+       233,
+       222
+      ],
+      "model_expected": [
+       68.3,
+       34.6,
+       32.8,
+       15.3,
+       49.3,
+       37.6,
+       25.7,
+       34.3,
+       38.4,
+       29.1,
+       104.7,
+       29.8,
+       34.5,
+       41.2,
+       55.3,
+       38.7,
+       49.3,
+       29.1,
+       26.6,
+       27.6
+      ],
+      "within_factor": 1,
+      "median_abs_log_ratio": 2.094,
+      "geo_mean_ratio": 0.121
+     },
+     "model_top20_builds": {
+      "model_expected": [
+       269.6,
+       104.7,
+       97.6,
+       94.0,
+       89.6,
+       84.4,
+       83.6,
+       83.5,
+       78.8,
+       74.3,
+       73.9,
+       73.0,
+       69.6,
+       69.0,
+       68.3,
+       67.4,
+       64.5,
+       64.3,
+       62.0,
+       61.6
+      ],
+      "real_copies": [
+       119,
+       273,
+       164,
+       27,
+       100,
+       48,
+       63,
+       75,
+       36,
+       32,
+       5,
+       58,
+       145,
+       41,
+       760,
+       16,
+       21,
+       38,
+       83,
+       34
+      ],
+      "within_factor": 15
+     },
+     "captain_mae": 1.014,
+     "flex_mae": 5.117,
+     "joint_mae": 2.395,
+     "salary_mean": {
+      "real": 49334.7,
+      "model": 49125.3
+     },
+     "salary_mean_abs_err": 209.4,
+     "salary_left_pct": {
+      "real": {
+       "0": 11.78,
+       "100-200": 25.56,
+       "300-500": 22.98,
+       "600-1000": 19.44,
+       "1100-2000": 14.53,
+       "2100+": 5.71
+      },
+      "model": {
+       "0": 11.21,
+       "100-200": 21.63,
+       "300-500": 17.69,
+       "600-1000": 18.5,
+       "1100-2000": 19.6,
+       "2100+": 11.36
+      }
+     },
+     "salary_left_l1": 21.45,
+     "team_split_pct": {
+      "real": {
+       "3-3": 34.66,
+       "4-2": 45.4,
+       "5-1": 19.95
+      },
+      "model": {
+       "3-3": 32.88,
+       "4-2": 44.88,
+       "5-1": 22.25
+      }
+     },
+     "team_split_l1": 4.6,
+     "captain_position_pct": {
+      "real": {
+       "QB": 35.45,
+       "RB": 12.02,
+       "WR": 37.94,
+       "TE": 12.25,
+       "K": 1.13,
+       "DST": 1.2
+      },
+      "model": {
+       "QB": 33.74,
+       "RB": 13.87,
+       "WR": 36.48,
+       "TE": 9.76,
+       "K": 3.27,
+       "DST": 2.86
+      }
+     },
+     "captain_position_l1": 11.31,
+     "score_w1": 2.072,
+     "score_mean": {
+      "real": 77.9,
+      "model": 75.85
+     },
+     "top_K_mass_pct": {
+      "1": {
+       "real": 0.45,
+       "model": 0.04
+      },
+      "10": {
+       "real": 3.57,
+       "model": 0.58
+      },
+      "100": {
+       "real": 12.31,
+       "model": 3.49
+      },
+      "1000": {
+       "real": 39.01,
+       "model": 19.49
+      },
+      "10000": {
+       "real": 82.21,
+       "model": 66.21
+      }
+     },
+     "verdict": {
+      "A1_aggregate_collision_within_2x": false,
+      "A2_real_top20_within_3x": false,
+      "A2_model_top20_within_3x": true,
+      "A3_copies_histogram_no_worse": true,
+      "A4_captain_mae_non_inferior": true,
+      "A4_flex_mae_non_inferior": false,
+      "A4_joint_mae_non_inferior": false,
+      "A4_salary_mean_abs_err_non_inferior": true,
+      "A4_salary_left_l1_non_inferior": true,
+      "A4_team_split_l1_non_inferior": true,
+      "A4_captain_position_l1_non_inferior": true,
+      "A4_score_w1_non_inferior": false,
+      "duplication_calibrated_here": false
+     },
+     "owner": {
+      "real_top20_in_model_top200": 18,
+      "median_model_over_real_copies": 0.1232,
+      "real_top20_ratios": [
+       0.09,
+       0.067,
+       0.065,
+       0.041,
+       0.141,
+       0.131,
+       0.12,
+       0.09,
+       0.136,
+       0.104,
+       0.384,
+       0.109,
+       0.127,
+       0.154,
+       0.212,
+       0.159,
+       0.203,
+       0.122,
+       0.114,
+       0.124
+      ],
+      "collision_model_over_real": 0.1841,
+      "copies_mass_pct": {
+       "real": {
+        "1": 6.981,
+        "2-10": 27.815,
+        "11+": 65.204
+       },
+       "model": {
+        "1": 13.9,
+        "2-10": 49.828,
+        "11+": 36.272
+       }
+      },
+      "salary_mean": {
+       "real": 49334.7,
+       "model": 49122.0
+      },
+      "category_pct": {
+       "split_3_3": {
+        "real": 34.66,
+        "model": 32.83
+       },
+       "split_4_2": {
+        "real": 45.4,
+        "model": 44.82
+       },
+       "split_5_1": {
+        "real": 19.95,
+        "model": 22.35
+       },
+       "cpt_QB": {
+        "real": 35.45,
+        "model": 33.67
+       },
+       "cpt_RB": {
+        "real": 12.02,
+        "model": 13.82
+       },
+       "cpt_WR": {
+        "real": 37.94,
+        "model": 36.58
+       },
+       "cpt_TE": {
+        "real": 12.25,
+        "model": 9.73
+       },
+       "cpt_K": {
+        "real": 1.13,
+        "model": 3.43
+       },
+       "cpt_DST": {
+        "real": 1.2,
+        "model": 2.77
+       }
+      },
+      "score_quantiles": {
+       "real": {
+        "P50": 77.31,
+        "P90": 93.30999999999999,
+        "P99": 105.50999999999999
+       },
+       "model": {
+        "P50": 75.6,
+        "P90": 92.35,
+        "P99": 105.50999999999999
+       }
+      },
+      "detail": {
+       "salary_abs_err": {
+        "model": 212.7,
+        "production": 1460.9
+       },
+       "category_abs_err_pp": {
+        "split_3_3": {
+         "model": 1.83,
+         "production": 2.53
+        },
+        "split_4_2": {
+         "model": 0.58,
+         "production": 3.36
+        },
+        "split_5_1": {
+         "model": 2.4,
+         "production": 5.89
+        },
+        "cpt_QB": {
+         "model": 1.78,
+         "production": 17.9
+        },
+        "cpt_RB": {
+         "model": 1.8,
+         "production": 4.42
+        },
+        "cpt_WR": {
+         "model": 1.36,
+         "production": 16.7
+        },
+        "cpt_TE": {
+         "model": 2.52,
+         "production": 0.5
+        },
+        "cpt_K": {
+         "model": 2.3,
+         "production": 3.08
+        },
+        "cpt_DST": {
+         "model": 1.57,
+         "production": 0.65
+        }
+       },
+       "score_quantile_abs_err": {
+        "P50": {
+         "model": 1.71,
+         "production": 0.6
+        },
+        "P90": {
+         "model": 0.96,
+         "production": 0.2
+        },
+        "P99": {
+         "model": 0.0,
+         "production": 0.3
+        }
+       }
+      },
+      "verdict": {
+       "1_recall_10_of_20_in_top_200": true,
+       "2_median_copies_ratio_0.5_to_2": false,
+       "3_collision_within_2x": false,
+       "4_unique_share_within_5pp": false,
+       "4_mass_2_to_10_within_2x": true,
+       "4_mass_11_plus_within_2x": true,
+       "5_ownership_captain_and_flex_mae": false,
+       "5_salary_mean": true,
+       "5_split_and_captain_categories": false,
+       "5_score_quantiles_no_worse": false,
+       "all": false
+      }
+     }
+    },
+    "M3": {
+     "nll_per_entry": 8.93836,
+     "collision": {
+      "real": 0.0010803688658468137,
+      "model": 0.00020086843356903898,
+      "model_over_real": 0.1859
+     },
+     "copies_hist_pct": {
+      "real": {
+       "1": 6.981,
+       "2-5": 15.717,
+       "6-20": 27.0,
+       "21-100": 31.524,
+       "101+": 18.779
+      },
+      "model": {
+       "1": 14.166,
+       "2-5": 30.441,
+       "6-20": 37.025,
+       "21-100": 18.368,
+       "101+": 0.0
+      },
+      "l1": 63.869
+     },
+     "distinct_lineups": {
+      "real": 10065,
+      "model": 18475
+     },
+     "real_top20_builds": {
+      "real_copies": [
+       760,
+       516,
+       501,
+       373,
+       350,
+       287,
+       285,
+       285,
+       283,
+       279,
+       273,
+       273,
+       272,
+       267,
+       261,
+       244,
+       243,
+       239,
+       233,
+       222
+      ],
+      "model_expected": [
+       71.2,
+       45.0,
+       35.2,
+       24.7,
+       45.3,
+       36.1,
+       81.0,
+       37.1,
+       34.7,
+       26.9,
+       120.5,
+       36.1,
+       35.4,
+       42.4,
+       56.7,
+       42.7,
+       45.3,
+       28.6,
+       24.4,
+       25.9
+      ],
+      "within_factor": 1,
+      "median_abs_log_ratio": 2.058,
+      "geo_mean_ratio": 0.134
+     },
+     "model_top20_builds": {
+      "model_expected": [
+       280.7,
+       120.5,
+       103.5,
+       94.0,
+       91.0,
+       87.2,
+       84.6,
+       83.3,
+       81.4,
+       81.0,
+       79.1,
+       73.4,
+       73.3,
+       72.9,
+       71.2,
+       70.4,
+       69.2,
+       67.9,
+       65.4,
+       65.2
+      ],
+      "real_copies": [
+       119,
+       273,
+       100,
+       75,
+       164,
+       100,
+       27,
+       41,
+       145,
+       285,
+       63,
+       36,
+       35,
+       32,
+       760,
+       48,
+       5,
+       34,
+       58,
+       198
+      ],
+      "within_factor": 15
+     },
+     "captain_mae": 0.993,
+     "flex_mae": 5.314,
+     "joint_mae": 2.449,
+     "salary_mean": {
+      "real": 49334.7,
+      "model": 49107.3
+     },
+     "salary_mean_abs_err": 227.4,
+     "salary_left_pct": {
+      "real": {
+       "0": 11.78,
+       "100-200": 25.56,
+       "300-500": 22.98,
+       "600-1000": 19.44,
+       "1100-2000": 14.53,
+       "2100+": 5.71
+      },
+      "model": {
+       "0": 11.32,
+       "100-200": 21.39,
+       "300-500": 20.25,
+       "600-1000": 18.16,
+       "1100-2000": 17.73,
+       "2100+": 11.15
+      }
+     },
+     "salary_left_l1": 17.28,
+     "team_split_pct": {
+      "real": {
+       "3-3": 34.66,
+       "4-2": 45.4,
+       "5-1": 19.95
+      },
+      "model": {
+       "3-3": 32.59,
+       "4-2": 44.97,
+       "5-1": 22.44
+      }
+     },
+     "team_split_l1": 4.99,
+     "captain_position_pct": {
+      "real": {
+       "QB": 35.45,
+       "RB": 12.02,
+       "WR": 37.94,
+       "TE": 12.25,
+       "K": 1.13,
+       "DST": 1.2
+      },
+      "model": {
+       "QB": 34.58,
+       "RB": 13.59,
+       "WR": 36.39,
+       "TE": 9.4,
+       "K": 3.17,
+       "DST": 2.87
+      }
+     },
+     "captain_position_l1": 10.55,
+     "score_w1": 2.26,
+     "score_mean": {
+      "real": 77.9,
+      "model": 75.65
+     },
+     "top_K_mass_pct": {
+      "1": {
+       "real": 0.45,
+       "model": 0.13
+      },
+      "10": {
+       "real": 3.57,
+       "model": 0.86
+      },
+      "100": {
+       "real": 12.31,
+       "model": 4.11
+      },
+      "1000": {
+       "real": 39.01,
+       "model": 20.46
+      },
+      "10000": {
+       "real": 82.21,
+       "model": 65.32
+      }
+     },
+     "verdict": {
+      "A1_aggregate_collision_within_2x": false,
+      "A2_real_top20_within_3x": false,
+      "A2_model_top20_within_3x": true,
+      "A3_copies_histogram_no_worse": true,
+      "A4_captain_mae_non_inferior": true,
+      "A4_flex_mae_non_inferior": false,
+      "A4_joint_mae_non_inferior": false,
+      "A4_salary_mean_abs_err_non_inferior": true,
+      "A4_salary_left_l1_non_inferior": true,
+      "A4_team_split_l1_non_inferior": true,
+      "A4_captain_position_l1_non_inferior": true,
+      "A4_score_w1_non_inferior": false,
+      "duplication_calibrated_here": false
+     },
+     "owner": {
+      "real_top20_in_model_top200": 18,
+      "median_model_over_real_copies": 0.1277,
+      "real_top20_ratios": [
+       0.094,
+       0.087,
+       0.07,
+       0.066,
+       0.13,
+       0.126,
+       0.13,
+       0.284,
+       0.123,
+       0.097,
+       0.441,
+       0.132,
+       0.13,
+       0.159,
+       0.217,
+       0.175,
+       0.187,
+       0.119,
+       0.105,
+       0.116
+      ],
+      "collision_model_over_real": 0.1859,
+      "copies_mass_pct": {
+       "real": {
+        "1": 6.981,
+        "2-10": 27.815,
+        "11+": 65.204
+       },
+       "model": {
+        "1": 14.166,
+        "2-10": 49.62,
+        "11+": 36.214
+       }
+      },
+      "salary_mean": {
+       "real": 49334.7,
+       "model": 49106.4
+      },
+      "category_pct": {
+       "split_3_3": {
+        "real": 34.66,
+        "model": 32.21
+       },
+       "split_4_2": {
+        "real": 45.4,
+        "model": 44.88
+       },
+       "split_5_1": {
+        "real": 19.95,
+        "model": 22.91
+       },
+       "cpt_QB": {
+        "real": 35.45,
+        "model": 34.47
+       },
+       "cpt_RB": {
+        "real": 12.02,
+        "model": 13.52
+       },
+       "cpt_WR": {
+        "real": 37.94,
+        "model": 36.57
+       },
+       "cpt_TE": {
+        "real": 12.25,
+        "model": 9.41
+       },
+       "cpt_K": {
+        "real": 1.13,
+        "model": 3.25
+       },
+       "cpt_DST": {
+        "real": 1.2,
+        "model": 2.77
+       }
+      },
+      "score_quantiles": {
+       "real": {
+        "P50": 77.31,
+        "P90": 93.30999999999999,
+        "P99": 105.50999999999999
+       },
+       "model": {
+        "P50": 75.54999999999998,
+        "P90": 92.14999999999999,
+        "P99": 105.25
+       }
+      },
+      "detail": {
+       "salary_abs_err": {
+        "model": 228.3,
+        "production": 1460.9
+       },
+       "category_abs_err_pp": {
+        "split_3_3": {
+         "model": 2.45,
+         "production": 2.53
+        },
+        "split_4_2": {
+         "model": 0.52,
+         "production": 3.36
+        },
+        "split_5_1": {
+         "model": 2.96,
+         "production": 5.89
+        },
+        "cpt_QB": {
+         "model": 0.98,
+         "production": 17.9
+        },
+        "cpt_RB": {
+         "model": 1.5,
+         "production": 4.42
+        },
+        "cpt_WR": {
+         "model": 1.37,
+         "production": 16.7
+        },
+        "cpt_TE": {
+         "model": 2.84,
+         "production": 0.5
+        },
+        "cpt_K": {
+         "model": 2.12,
+         "production": 3.08
+        },
+        "cpt_DST": {
+         "model": 1.57,
+         "production": 0.65
+        }
+       },
+       "score_quantile_abs_err": {
+        "P50": {
+         "model": 1.76,
+         "production": 0.6
+        },
+        "P90": {
+         "model": 1.16,
+         "production": 0.2
+        },
+        "P99": {
+         "model": 0.26,
+         "production": 0.3
+        }
+       }
+      },
+      "verdict": {
+       "1_recall_10_of_20_in_top_200": true,
+       "2_median_copies_ratio_0.5_to_2": false,
+       "3_collision_within_2x": false,
+       "4_unique_share_within_5pp": false,
+       "4_mass_2_to_10_within_2x": true,
+       "4_mass_11_plus_within_2x": true,
+       "5_ownership_captain_and_flex_mae": false,
+       "5_salary_mean": true,
+       "5_split_and_captain_categories": false,
+       "5_score_quantiles_no_worse": false,
+       "all": false
+      }
+     }
+    },
+    "M4": {
+     "nll_per_entry": 8.93142,
+     "collision": {
+      "real": 0.0010803688658468137,
+      "model": 0.0001872603606793417,
+      "model_over_real": 0.1733
+     },
+     "copies_hist_pct": {
+      "real": {
+       "1": 6.981,
+       "2-5": 15.717,
+       "6-20": 27.0,
+       "21-100": 31.524,
+       "101+": 18.779
+      },
+      "model": {
+       "1": 13.95,
+       "2-5": 30.04,
+       "6-20": 38.033,
+       "21-100": 17.977,
+       "101+": 0.0
+      },
+      "l1": 64.651
+     },
+     "distinct_lineups": {
+      "real": 10065,
+      "model": 18291
+     },
+     "real_top20_builds": {
+      "real_copies": [
+       760,
+       516,
+       501,
+       373,
+       350,
+       287,
+       285,
+       285,
+       283,
+       279,
+       273,
+       273,
+       272,
+       267,
+       261,
+       244,
+       243,
+       239,
+       233,
+       222
+      ],
+      "model_expected": [
+       66.0,
+       44.5,
+       39.8,
+       28.5,
+       43.9,
+       36.5,
+       64.3,
+       41.9,
+       31.0,
+       27.3,
+       118.8,
+       36.1,
+       37.4,
+       42.4,
+       60.2,
+       48.2,
+       43.9,
+       30.2,
+       24.7,
+       25.1
+      ],
+      "within_factor": 1,
+      "median_abs_log_ratio": 2.067,
+      "geo_mean_ratio": 0.135
+     },
+     "model_top20_builds": {
+      "model_expected": [
+       213.7,
+       118.8,
+       110.5,
+       87.0,
+       86.7,
+       83.5,
+       75.9,
+       73.2,
+       73.1,
+       72.7,
+       71.4,
+       69.7,
+       67.7,
+       66.8,
+       66.0,
+       64.3,
+       63.6,
+       61.8,
+       60.6,
+       60.2
+      ],
+      "real_copies": [
+       119,
+       273,
+       100,
+       75,
+       100,
+       41,
+       164,
+       145,
+       63,
+       35,
+       27,
+       198,
+       34,
+       36,
+       760,
+       285,
+       85,
+       5,
+       32,
+       261
+      ],
+      "within_factor": 16
+     },
+     "captain_mae": 1.035,
+     "flex_mae": 5.275,
+     "joint_mae": 2.439,
+     "salary_mean": {
+      "real": 49334.7,
+      "model": 49111.4
+     },
+     "salary_mean_abs_err": 223.3,
+     "salary_left_pct": {
+      "real": {
+       "0": 11.78,
+       "100-200": 25.56,
+       "300-500": 22.98,
+       "600-1000": 19.44,
+       "1100-2000": 14.53,
+       "2100+": 5.71
+      },
+      "model": {
+       "0": 11.16,
+       "100-200": 21.15,
+       "300-500": 21.15,
+       "600-1000": 17.98,
+       "1100-2000": 17.11,
+       "2100+": 11.45
+      }
+     },
+     "salary_left_l1": 16.64,
+     "team_split_pct": {
+      "real": {
+       "3-3": 34.66,
+       "4-2": 45.4,
+       "5-1": 19.95
+      },
+      "model": {
+       "3-3": 32.51,
+       "4-2": 45.21,
+       "5-1": 22.27
+      }
+     },
+     "team_split_l1": 4.66,
+     "captain_position_pct": {
+      "real": {
+       "QB": 35.45,
+       "RB": 12.02,
+       "WR": 37.94,
+       "TE": 12.25,
+       "K": 1.13,
+       "DST": 1.2
+      },
+      "model": {
+       "QB": 35.58,
+       "RB": 13.85,
+       "WR": 35.52,
+       "TE": 8.98,
+       "K": 3.26,
+       "DST": 2.81
+      }
+     },
+     "captain_position_l1": 11.39,
+     "score_w1": 2.004,
+     "score_mean": {
+      "real": 77.9,
+      "model": 75.9
+     },
+     "top_K_mass_pct": {
+      "1": {
+       "real": 0.45,
+       "model": 0.1
+      },
+      "10": {
+       "real": 3.57,
+       "model": 0.81
+      },
+      "100": {
+       "real": 12.31,
+       "model": 4.17
+      },
+      "1000": {
+       "real": 39.01,
+       "model": 20.96
+      },
+      "10000": {
+       "real": 82.21,
+       "model": 66.04
+      }
+     },
+     "verdict": {
+      "A1_aggregate_collision_within_2x": false,
+      "A2_real_top20_within_3x": false,
+      "A2_model_top20_within_3x": true,
+      "A3_copies_histogram_no_worse": true,
+      "A4_captain_mae_non_inferior": true,
+      "A4_flex_mae_non_inferior": false,
+      "A4_joint_mae_non_inferior": false,
+      "A4_salary_mean_abs_err_non_inferior": true,
+      "A4_salary_left_l1_non_inferior": true,
+      "A4_team_split_l1_non_inferior": true,
+      "A4_captain_position_l1_non_inferior": true,
+      "A4_score_w1_non_inferior": false,
+      "duplication_calibrated_here": false
+     },
+     "owner": {
+      "real_top20_in_model_top200": 20,
+      "median_model_over_real_copies": 0.1266,
+      "real_top20_ratios": [
+       0.087,
+       0.086,
+       0.079,
+       0.076,
+       0.125,
+       0.127,
+       0.147,
+       0.226,
+       0.11,
+       0.098,
+       0.435,
+       0.132,
+       0.138,
+       0.159,
+       0.231,
+       0.198,
+       0.181,
+       0.126,
+       0.106,
+       0.113
+      ],
+      "collision_model_over_real": 0.1733,
+      "copies_mass_pct": {
+       "real": {
+        "1": 6.981,
+        "2-10": 27.815,
+        "11+": 65.204
+       },
+       "model": {
+        "1": 13.95,
+        "2-10": 49.531,
+        "11+": 36.519
+       }
+      },
+      "salary_mean": {
+       "real": 49334.7,
+       "model": 49109.4
+      },
+      "category_pct": {
+       "split_3_3": {
+        "real": 34.66,
+        "model": 32.56
+       },
+       "split_4_2": {
+        "real": 45.4,
+        "model": 45.04
+       },
+       "split_5_1": {
+        "real": 19.95,
+        "model": 22.4
+       },
+       "cpt_QB": {
+        "real": 35.45,
+        "model": 35.46
+       },
+       "cpt_RB": {
+        "real": 12.02,
+        "model": 13.76
+       },
+       "cpt_WR": {
+        "real": 37.94,
+        "model": 35.69
+       },
+       "cpt_TE": {
+        "real": 12.25,
+        "model": 9.02
+       },
+       "cpt_K": {
+        "real": 1.13,
+        "model": 3.33
+       },
+       "cpt_DST": {
+        "real": 1.2,
+        "model": 2.74
+       }
+      },
+      "score_quantiles": {
+       "real": {
+        "P50": 77.31,
+        "P90": 93.30999999999999,
+        "P99": 105.50999999999999
+       },
+       "model": {
+        "P50": 75.75,
+        "P90": 92.39000000000001,
+        "P99": 105.36
+       }
+      },
+      "detail": {
+       "salary_abs_err": {
+        "model": 225.3,
+        "production": 1460.9
+       },
+       "category_abs_err_pp": {
+        "split_3_3": {
+         "model": 2.1,
+         "production": 2.53
+        },
+        "split_4_2": {
+         "model": 0.36,
+         "production": 3.36
+        },
+        "split_5_1": {
+         "model": 2.45,
+         "production": 5.89
+        },
+        "cpt_QB": {
+         "model": 0.01,
+         "production": 17.9
+        },
+        "cpt_RB": {
+         "model": 1.74,
+         "production": 4.42
+        },
+        "cpt_WR": {
+         "model": 2.25,
+         "production": 16.7
+        },
+        "cpt_TE": {
+         "model": 3.23,
+         "production": 0.5
+        },
+        "cpt_K": {
+         "model": 2.2,
+         "production": 3.08
+        },
+        "cpt_DST": {
+         "model": 1.54,
+         "production": 0.65
+        }
+       },
+       "score_quantile_abs_err": {
+        "P50": {
+         "model": 1.56,
+         "production": 0.6
+        },
+        "P90": {
+         "model": 0.92,
+         "production": 0.2
+        },
+        "P99": {
+         "model": 0.15,
+         "production": 0.3
+        }
+       }
+      },
+      "verdict": {
+       "1_recall_10_of_20_in_top_200": true,
+       "2_median_copies_ratio_0.5_to_2": false,
+       "3_collision_within_2x": false,
+       "4_unique_share_within_5pp": false,
+       "4_mass_2_to_10_within_2x": true,
+       "4_mass_11_plus_within_2x": true,
+       "5_ownership_captain_and_flex_mae": false,
+       "5_salary_mean": true,
+       "5_split_and_captain_categories": false,
+       "5_score_quantiles_no_worse": false,
+       "all": false
+      }
+     }
+    },
+    "M5": {
+     "nll_per_entry": 8.8306,
+     "collision": {
+      "real": 0.0010803688658468137,
+      "model": 0.00016766543352480685,
+      "model_over_real": 0.1552
+     },
+     "copies_hist_pct": {
+      "real": {
+       "1": 6.981,
+       "2-5": 15.717,
+       "6-20": 27.0,
+       "21-100": 31.524,
+       "101+": 18.779
+      },
+      "model": {
+       "1": 14.209,
+       "2-5": 31.94,
+       "6-20": 36.991,
+       "21-100": 16.366,
+       "101+": 0.0
+      },
+      "l1": 67.379
+     },
+     "distinct_lineups": {
+      "real": 10065,
+      "model": 18780
+     },
+     "real_top20_builds": {
+      "real_copies": [
+       760,
+       516,
+       501,
+       373,
+       350,
+       287,
+       285,
+       285,
+       283,
+       279,
+       273,
+       273,
+       272,
+       267,
+       261,
+       244,
+       243,
+       239,
+       233,
+       222
+      ],
+      "model_expected": [
+       67.3,
+       45.4,
+       46.1,
+       36.5,
+       46.1,
+       39.6,
+       32.9,
+       48.9,
+       30.1,
+       28.4,
+       106.9,
+       35.4,
+       40.0,
+       39.2,
+       66.2,
+       57.2,
+       46.1,
+       31.2,
+       25.4,
+       24.4
+      ],
+      "within_factor": 1,
+      "median_abs_log_ratio": 2.041,
+      "geo_mean_ratio": 0.137
+     },
+     "model_top20_builds": {
+      "model_expected": [
+       147.3,
+       106.9,
+       101.2,
+       89.2,
+       75.8,
+       75.2,
+       70.5,
+       70.2,
+       69.3,
+       68.9,
+       68.2,
+       67.3,
+       66.2,
+       62.2,
+       61.8,
+       60.0,
+       58.6,
+       57.7,
+       57.4,
+       57.2
+      ],
+      "real_copies": [
+       119,
+       273,
+       100,
+       100,
+       164,
+       63,
+       41,
+       85,
+       75,
+       36,
+       198,
+       760,
+       261,
+       30,
+       35,
+       34,
+       145,
+       27,
+       58,
+       244
+      ],
+      "within_factor": 17
+     },
+     "captain_mae": 1.014,
+     "flex_mae": 5.553,
+     "joint_mae": 2.504,
+     "salary_mean": {
+      "real": 49334.7,
+      "model": 49110.4
+     },
+     "salary_mean_abs_err": 224.3,
+     "salary_left_pct": {
+      "real": {
+       "0": 11.78,
+       "100-200": 25.56,
+       "300-500": 22.98,
+       "600-1000": 19.44,
+       "1100-2000": 14.53,
+       "2100+": 5.71
+      },
+      "model": {
+       "0": 11.44,
+       "100-200": 21.09,
+       "300-500": 21.87,
+       "600-1000": 18.3,
+       "1100-2000": 16.29,
+       "2100+": 11.01
+      }
+     },
+     "salary_left_l1": 14.12,
+     "team_split_pct": {
+      "real": {
+       "3-3": 34.66,
+       "4-2": 45.4,
+       "5-1": 19.95
+      },
+      "model": {
+       "3-3": 33.64,
+       "4-2": 45.08,
+       "5-1": 21.27
+      }
+     },
+     "team_split_l1": 2.66,
+     "captain_position_pct": {
+      "real": {
+       "QB": 35.45,
+       "RB": 12.02,
+       "WR": 37.94,
+       "TE": 12.25,
+       "K": 1.13,
+       "DST": 1.2
+      },
+      "model": {
+       "QB": 36.23,
+       "RB": 14.19,
+       "WR": 35.36,
+       "TE": 8.18,
+       "K": 3.46,
+       "DST": 2.58
+      }
+     },
+     "captain_position_l1": 13.31,
+     "score_w1": 2.342,
+     "score_mean": {
+      "real": 77.9,
+      "model": 75.57
+     },
+     "top_K_mass_pct": {
+      "1": {
+       "real": 0.45,
+       "model": 0.05
+      },
+      "10": {
+       "real": 3.57,
+       "model": 0.72
+      },
+      "100": {
+       "real": 12.31,
+       "model": 4.3
+      },
+      "1000": {
+       "real": 39.01,
+       "model": 21.08
+      },
+      "10000": {
+       "real": 82.21,
+       "model": 63.35
+      }
+     },
+     "verdict": {
+      "A1_aggregate_collision_within_2x": false,
+      "A2_real_top20_within_3x": false,
+      "A2_model_top20_within_3x": true,
+      "A3_copies_histogram_no_worse": true,
+      "A4_captain_mae_non_inferior": true,
+      "A4_flex_mae_non_inferior": false,
+      "A4_joint_mae_non_inferior": false,
+      "A4_salary_mean_abs_err_non_inferior": true,
+      "A4_salary_left_l1_non_inferior": true,
+      "A4_team_split_l1_non_inferior": true,
+      "A4_captain_position_l1_non_inferior": true,
+      "A4_score_w1_non_inferior": false,
+      "duplication_calibrated_here": false
+     },
+     "owner": {
+      "real_top20_in_model_top200": 20,
+      "median_model_over_real_copies": 0.13,
+      "real_top20_ratios": [
+       0.089,
+       0.088,
+       0.092,
+       0.098,
+       0.132,
+       0.138,
+       0.172,
+       0.116,
+       0.106,
+       0.102,
+       0.392,
+       0.13,
+       0.147,
+       0.147,
+       0.254,
+       0.234,
+       0.19,
+       0.13,
+       0.109,
+       0.11
+      ],
+      "collision_model_over_real": 0.1552,
+      "copies_mass_pct": {
+       "real": {
+        "1": 6.981,
+        "2-10": 27.815,
+        "11+": 65.204
+       },
+       "model": {
+        "1": 14.209,
+        "2-10": 51.86,
+        "11+": 33.436
+       }
+      },
+      "salary_mean": {
+       "real": 49334.7,
+       "model": 49106.7
+      },
+      "category_pct": {
+       "split_3_3": {
+        "real": 34.66,
+        "model": 33.42
+       },
+       "split_4_2": {
+        "real": 45.4,
+        "model": 45.53
+       },
+       "split_5_1": {
+        "real": 19.95,
+        "model": 21.05
+       },
+       "cpt_QB": {
+        "real": 35.45,
+        "model": 36.11
+       },
+       "cpt_RB": {
+        "real": 12.02,
+        "model": 14.09
+       },
+       "cpt_WR": {
+        "real": 37.94,
+        "model": 35.51
+       },
+       "cpt_TE": {
+        "real": 12.25,
+        "model": 8.19
+       },
+       "cpt_K": {
+        "real": 1.13,
+        "model": 3.53
+       },
+       "cpt_DST": {
+        "real": 1.2,
+        "model": 2.57
+       }
+      },
+      "score_quantiles": {
+       "real": {
+        "P50": 77.31,
+        "P90": 93.30999999999999,
+        "P99": 105.50999999999999
+       },
+       "model": {
+        "P50": 75.55,
+        "P90": 92.30999999999999,
+        "P99": 105.21
+       }
+      },
+      "detail": {
+       "salary_abs_err": {
+        "model": 228.0,
+        "production": 1460.9
+       },
+       "category_abs_err_pp": {
+        "split_3_3": {
+         "model": 1.24,
+         "production": 2.53
+        },
+        "split_4_2": {
+         "model": 0.13,
+         "production": 3.36
+        },
+        "split_5_1": {
+         "model": 1.1,
+         "production": 5.89
+        },
+        "cpt_QB": {
+         "model": 0.66,
+         "production": 17.9
+        },
+        "cpt_RB": {
+         "model": 2.07,
+         "production": 4.42
+        },
+        "cpt_WR": {
+         "model": 2.43,
+         "production": 16.7
+        },
+        "cpt_TE": {
+         "model": 4.06,
+         "production": 0.5
+        },
+        "cpt_K": {
+         "model": 2.4,
+         "production": 3.08
+        },
+        "cpt_DST": {
+         "model": 1.37,
+         "production": 0.65
+        }
+       },
+       "score_quantile_abs_err": {
+        "P50": {
+         "model": 1.76,
+         "production": 0.6
+        },
+        "P90": {
+         "model": 1.0,
+         "production": 0.2
+        },
+        "P99": {
+         "model": 0.3,
+         "production": 0.3
+        }
+       }
+      },
+      "verdict": {
+       "1_recall_10_of_20_in_top_200": true,
+       "2_median_copies_ratio_0.5_to_2": false,
+       "3_collision_within_2x": false,
+       "4_unique_share_within_5pp": false,
+       "4_mass_2_to_10_within_2x": true,
+       "4_mass_11_plus_within_2x": true,
+       "5_ownership_captain_and_flex_mae": false,
+       "5_salary_mean": true,
+       "5_split_and_captain_categories": false,
+       "5_score_quantiles_no_worse": false,
+       "all": false
+      }
+     }
+    }
+   }
+  },
+  "198150093": {
+   "label": "GB @ LAR (week 12)",
+   "representable_pct": 93.99,
+   "entries": 44048,
+   "legal_lineups": 784884,
+   "players": 24,
+   "models": {
+    "M0": {
+     "nll_per_entry": 9.70825,
+     "collision": {
+      "real": 0.0006375988627740547,
+      "model": 0.00016264164424343441,
+      "model_over_real": 0.2551
+     },
+     "copies_hist_pct": {
+      "real": {
+       "1": 10.057,
+       "2-5": 22.419,
+       "6-20": 30.489,
+       "21-100": 30.149,
+       "101+": 6.886
+      },
+      "model": {
+       "1": 23.294,
+       "2-5": 36.424,
+       "6-20": 29.977,
+       "21-100": 10.305,
+       "101+": 0.0
+      },
+      "l1": 54.484
+     },
+     "distinct_lineups": {
+      "real": 9503,
+      "model": 17579
+     },
+     "real_top20_builds": {
+      "real_copies": [
+       296,
+       274,
+       153,
+       148,
+       145,
+       144,
+       135,
+       134,
+       126,
+       125,
+       125,
+       122,
+       119,
+       119,
+       118,
+       118,
+       110,
+       108,
+       107,
+       104
+      ],
+      "model_expected": [
+       66.9,
+       37.8,
+       0.2,
+       15.8,
+       29.3,
+       7.8,
+       14.1,
+       3.7,
+       11.7,
+       25.0,
+       13.8,
+       38.6,
+       10.7,
+       15.5,
+       12.3,
+       2.8,
+       4.6,
+       47.5,
+       2.8,
+       4.7
+      ],
+      "within_factor": 1,
+      "median_abs_log_ratio": 2.26,
+      "geo_mean_ratio": 0.078
+     },
+     "model_top20_builds": {
+      "model_expected": [
+       88.1,
+       76.8,
+       76.8,
+       73.3,
+       66.9,
+       63.9,
+       58.3,
+       50.8,
+       50.8,
+       49.7,
+       48.6,
+       47.5,
+       47.5,
+       47.5,
+       47.5,
+       44.3,
+       44.3,
+       42.3,
+       38.6,
+       38.6
+      ],
+      "real_copies": [
+       53,
+       72,
+       12,
+       32,
+       296,
+       74,
+       27,
+       9,
+       79,
+       8,
+       14,
+       16,
+       0,
+       6,
+       108,
+       35,
+       7,
+       72,
+       42,
+       122
+      ],
+      "within_factor": 11
+     },
+     "captain_mae": 1.882,
+     "flex_mae": 5.36,
+     "joint_mae": 2.596,
+     "salary_mean": {
+      "real": 48902.7,
+      "model": 48072.2
+     },
+     "salary_mean_abs_err": 830.5,
+     "salary_left_pct": {
+      "real": {
+       "0": 8.63,
+       "100-200": 18.61,
+       "300-500": 19.34,
+       "600-1000": 19.11,
+       "1100-2000": 18.01,
+       "2100+": 16.3
+      },
+      "model": {
+       "0": 3.18,
+       "100-200": 9.46,
+       "300-500": 13.37,
+       "600-1000": 14.7,
+       "1100-2000": 23.12,
+       "2100+": 36.17
+      }
+     },
+     "salary_left_l1": 49.96,
+     "team_split_pct": {
+      "real": {
+       "3-3": 37.46,
+       "4-2": 45.29,
+       "5-1": 17.24
+      },
+      "model": {
+       "3-3": 40.53,
+       "4-2": 49.24,
+       "5-1": 10.23
+      }
+     },
+     "team_split_l1": 14.03,
+     "captain_position_pct": {
+      "real": {
+       "QB": 15.01,
+       "RB": 33.44,
+       "WR": 40.11,
+       "TE": 6.84,
+       "K": 1.1,
+       "DST": 3.5
+      },
+      "model": {
+       "QB": 20.05,
+       "RB": 29.12,
+       "WR": 34.94,
+       "TE": 7.64,
+       "K": 3.54,
+       "DST": 4.71
+      }
+     },
+     "captain_position_l1": 18.98,
+     "score_w1": 3.587,
+     "score_mean": {
+      "real": 71.65,
+      "model": 68.64
+     },
+     "top_K_mass_pct": {
+      "1": {
+       "real": 0.12,
+       "model": 0.2
+      },
+      "10": {
+       "real": 1.5,
+       "model": 1.49
+      },
+      "100": {
+       "real": 6.84,
+       "model": 7.56
+      },
+      "1000": {
+       "real": 29.91,
+       "model": 30.09
+      },
+      "10000": {
+       "real": 77.53,
+       "model": 75.3
+      }
+     },
+     "verdict": {
+      "A1_aggregate_collision_within_2x": false,
+      "A2_real_top20_within_3x": false,
+      "A2_model_top20_within_3x": false,
+      "A3_copies_histogram_no_worse": true,
+      "A4_captain_mae_non_inferior": true,
+      "A4_flex_mae_non_inferior": true,
+      "A4_joint_mae_non_inferior": true,
+      "A4_salary_mean_abs_err_non_inferior": true,
+      "A4_salary_left_l1_non_inferior": true,
+      "A4_team_split_l1_non_inferior": true,
+      "A4_captain_position_l1_non_inferior": true,
+      "A4_score_w1_non_inferior": true,
+      "duplication_calibrated_here": false
+     },
+     "owner": {
+      "real_top20_in_model_top200": 6,
+      "median_model_over_real_copies": 0.1043,
+      "real_top20_ratios": [
+       0.226,
+       0.138,
+       0.001,
+       0.107,
+       0.202,
+       0.054,
+       0.104,
+       0.028,
+       0.093,
+       0.11,
+       0.2,
+       0.317,
+       0.13,
+       0.09,
+       0.104,
+       0.024,
+       0.042,
+       0.44,
+       0.027,
+       0.045
+      ],
+      "collision_model_over_real": 0.2551,
+      "copies_mass_pct": {
+       "real": {
+        "1": 10.057,
+        "2-10": 36.671,
+        "11+": 53.271
+       },
+       "model": {
+        "1": 23.294,
+        "2-10": 53.671,
+        "11+": 23.035
+       }
+      },
+      "salary_mean": {
+       "real": 48902.7,
+       "model": 48064.2
+      },
+      "category_pct": {
+       "split_3_3": {
+        "real": 37.46,
+        "model": 40.57
+       },
+       "split_4_2": {
+        "real": 45.29,
+        "model": 49.45
+       },
+       "split_5_1": {
+        "real": 17.24,
+        "model": 9.98
+       },
+       "cpt_QB": {
+        "real": 15.01,
+        "model": 20.08
+       },
+       "cpt_RB": {
+        "real": 33.44,
+        "model": 29.2
+       },
+       "cpt_WR": {
+        "real": 40.11,
+        "model": 34.92
+       },
+       "cpt_TE": {
+        "real": 6.84,
+        "model": 7.58
+       },
+       "cpt_K": {
+        "real": 1.1,
+        "model": 3.58
+       },
+       "cpt_DST": {
+        "real": 3.5,
+        "model": 4.66
+       }
+      },
+      "score_quantiles": {
+       "real": {
+        "P50": 72.07,
+        "P90": 96.27,
+        "P99": 111.37
+       },
+       "model": {
+        "P50": 67.16999999999999,
+        "P90": 91.65,
+        "P99": 105.77
+       }
+      },
+      "detail": {
+       "salary_abs_err": {
+        "model": 838.5,
+        "production": 838.5
+       },
+       "category_abs_err_pp": {
+        "split_3_3": {
+         "model": 3.11,
+         "production": 3.11
+        },
+        "split_4_2": {
+         "model": 4.16,
+         "production": 4.16
+        },
+        "split_5_1": {
+         "model": 7.26,
+         "production": 7.26
+        },
+        "cpt_QB": {
+         "model": 5.07,
+         "production": 5.07
+        },
+        "cpt_RB": {
+         "model": 4.24,
+         "production": 4.24
+        },
+        "cpt_WR": {
+         "model": 5.19,
+         "production": 5.19
+        },
+        "cpt_TE": {
+         "model": 0.74,
+         "production": 0.74
+        },
+        "cpt_K": {
+         "model": 2.48,
+         "production": 2.48
+        },
+        "cpt_DST": {
+         "model": 1.16,
+         "production": 1.16
+        }
+       },
+       "score_quantile_abs_err": {
+        "P50": {
+         "model": 4.9,
+         "production": 4.9
+        },
+        "P90": {
+         "model": 4.62,
+         "production": 4.62
+        },
+        "P99": {
+         "model": 5.6,
+         "production": 5.6
+        }
+       }
+      },
+      "verdict": {
+       "1_recall_10_of_20_in_top_200": false,
+       "2_median_copies_ratio_0.5_to_2": false,
+       "3_collision_within_2x": false,
+       "4_unique_share_within_5pp": false,
+       "4_mass_2_to_10_within_2x": true,
+       "4_mass_11_plus_within_2x": false,
+       "5_ownership_captain_and_flex_mae": true,
+       "5_salary_mean": true,
+       "5_split_and_captain_categories": true,
+       "5_score_quantiles_no_worse": true,
+       "all": false
+      }
+     }
+    },
+    "M1": {
+     "nll_per_entry": 9.55143,
+     "collision": {
+      "real": 0.0006375988627740547,
+      "model": 0.00011132430265876618,
+      "model_over_real": 0.1746
+     },
+     "copies_hist_pct": {
+      "real": {
+       "1": 10.057,
+       "2-5": 22.419,
+       "6-20": 30.489,
+       "21-100": 30.149,
+       "101+": 6.886
+      },
+      "model": {
+       "1": 16.76,
+       "2-5": 41.694,
+       "6-20": 39.921,
+       "21-100": 1.625,
+       "101+": 0.0
+      },
+      "l1": 70.82
+     },
+     "distinct_lineups": {
+      "real": 9503,
+      "model": 15645
+     },
+     "real_top20_builds": {
+      "real_copies": [
+       296,
+       274,
+       153,
+       148,
+       145,
+       144,
+       135,
+       134,
+       126,
+       125,
+       125,
+       122,
+       119,
+       119,
+       118,
+       118,
+       110,
+       108,
+       107,
+       104
+      ],
+      "model_expected": [
+       25.6,
+       15.7,
+       2.4,
+       15.0,
+       18.9,
+       11.6,
+       15.8,
+       5.6,
+       13.5,
+       14.8,
+       13.0,
+       14.5,
+       10.8,
+       14.9,
+       9.5,
+       6.6,
+       10.4,
+       22.5,
+       8.7,
+       4.2
+      ],
+      "within_factor": 0,
+      "median_abs_log_ratio": 2.376,
+      "geo_mean_ratio": 0.082
+     },
+     "model_top20_builds": {
+      "model_expected": [
+       31.0,
+       26.9,
+       26.9,
+       25.6,
+       24.7,
+       22.5,
+       22.5,
+       22.1,
+       22.0,
+       21.8,
+       21.4,
+       20.9,
+       20.9,
+       20.7,
+       20.5,
+       20.3,
+       20.2,
+       19.9,
+       19.4,
+       19.3
+      ],
+      "real_copies": [
+       53,
+       12,
+       72,
+       296,
+       6,
+       108,
+       16,
+       9,
+       35,
+       38,
+       13,
+       74,
+       42,
+       47,
+       51,
+       18,
+       27,
+       41,
+       2,
+       7
+      ],
+      "within_factor": 15
+     },
+     "captain_mae": 1.919,
+     "flex_mae": 4.842,
+     "joint_mae": 2.361,
+     "salary_mean": {
+      "real": 48902.7,
+      "model": 48959.6
+     },
+     "salary_mean_abs_err": 56.9,
+     "salary_left_pct": {
+      "real": {
+       "0": 8.63,
+       "100-200": 18.61,
+       "300-500": 19.34,
+       "600-1000": 19.11,
+       "1100-2000": 18.01,
+       "2100+": 16.3
+      },
+      "model": {
+       "0": 5.82,
+       "100-200": 15.89,
+       "300-500": 20.61,
+       "600-1000": 20.07,
+       "1100-2000": 23.09,
+       "2100+": 14.53
+      }
+     },
+     "salary_left_l1": 14.61,
+     "team_split_pct": {
+      "real": {
+       "3-3": 37.46,
+       "4-2": 45.29,
+       "5-1": 17.24
+      },
+      "model": {
+       "3-3": 39.83,
+       "4-2": 48.52,
+       "5-1": 11.65
+      }
+     },
+     "team_split_l1": 11.19,
+     "captain_position_pct": {
+      "real": {
+       "QB": 15.01,
+       "RB": 33.44,
+       "WR": 40.11,
+       "TE": 6.84,
+       "K": 1.1,
+       "DST": 3.5
+      },
+      "model": {
+       "QB": 26.29,
+       "RB": 23.85,
+       "WR": 34.24,
+       "TE": 9.42,
+       "K": 3.48,
+       "DST": 2.72
+      }
+     },
+     "captain_position_l1": 32.48,
+     "score_w1": 7.255,
+     "score_mean": {
+      "real": 71.65,
+      "model": 64.4
+     },
+     "top_K_mass_pct": {
+      "1": {
+       "real": 0.12,
+       "model": 0.07
+      },
+      "10": {
+       "real": 1.5,
+       "model": 0.5
+      },
+      "100": {
+       "real": 6.84,
+       "model": 3.52
+      },
+      "1000": {
+       "real": 29.91,
+       "model": 19.22
+      },
+      "10000": {
+       "real": 77.53,
+       "model": 67.99
+      }
+     },
+     "verdict": {
+      "A1_aggregate_collision_within_2x": false,
+      "A2_real_top20_within_3x": false,
+      "A2_model_top20_within_3x": true,
+      "A3_copies_histogram_no_worse": false,
+      "A4_captain_mae_non_inferior": true,
+      "A4_flex_mae_non_inferior": true,
+      "A4_joint_mae_non_inferior": true,
+      "A4_salary_mean_abs_err_non_inferior": true,
+      "A4_salary_left_l1_non_inferior": true,
+      "A4_team_split_l1_non_inferior": true,
+      "A4_captain_position_l1_non_inferior": false,
+      "A4_score_w1_non_inferior": false,
+      "duplication_calibrated_here": false
+     },
+     "owner": {
+      "real_top20_in_model_top200": 11,
+      "median_model_over_real_copies": 0.0929,
+      "real_top20_ratios": [
+       0.086,
+       0.057,
+       0.015,
+       0.101,
+       0.13,
+       0.08,
+       0.117,
+       0.042,
+       0.107,
+       0.104,
+       0.118,
+       0.119,
+       0.125,
+       0.091,
+       0.08,
+       0.056,
+       0.095,
+       0.209,
+       0.082,
+       0.041
+      ],
+      "collision_model_over_real": 0.1746,
+      "copies_mass_pct": {
+       "real": {
+        "1": 10.057,
+        "2-10": 36.671,
+        "11+": 53.271
+       },
+       "model": {
+        "1": 16.76,
+        "2-10": 67.5,
+        "11+": 15.74
+       }
+      },
+      "salary_mean": {
+       "real": 48902.7,
+       "model": 48954.6
+      },
+      "category_pct": {
+       "split_3_3": {
+        "real": 37.46,
+        "model": 39.41
+       },
+       "split_4_2": {
+        "real": 45.29,
+        "model": 49.05
+       },
+       "split_5_1": {
+        "real": 17.24,
+        "model": 11.53
+       },
+       "cpt_QB": {
+        "real": 15.01,
+        "model": 26.21
+       },
+       "cpt_RB": {
+        "real": 33.44,
+        "model": 23.76
+       },
+       "cpt_WR": {
+        "real": 40.11,
+        "model": 34.25
+       },
+       "cpt_TE": {
+        "real": 6.84,
+        "model": 9.61
+       },
+       "cpt_K": {
+        "real": 1.1,
+        "model": 3.45
+       },
+       "cpt_DST": {
+        "real": 3.5,
+        "model": 2.71
+       }
+      },
+      "score_quantiles": {
+       "real": {
+        "P50": 72.07,
+        "P90": 96.27,
+        "P99": 111.37
+       },
+       "model": {
+        "P50": 62.81999999999999,
+        "P90": 87.80000000000001,
+        "P99": 103.47
+       }
+      },
+      "detail": {
+       "salary_abs_err": {
+        "model": 51.9,
+        "production": 838.5
+       },
+       "category_abs_err_pp": {
+        "split_3_3": {
+         "model": 1.95,
+         "production": 3.11
+        },
+        "split_4_2": {
+         "model": 3.76,
+         "production": 4.16
+        },
+        "split_5_1": {
+         "model": 5.71,
+         "production": 7.26
+        },
+        "cpt_QB": {
+         "model": 11.2,
+         "production": 5.07
+        },
+        "cpt_RB": {
+         "model": 9.68,
+         "production": 4.24
+        },
+        "cpt_WR": {
+         "model": 5.86,
+         "production": 5.19
+        },
+        "cpt_TE": {
+         "model": 2.77,
+         "production": 0.74
+        },
+        "cpt_K": {
+         "model": 2.35,
+         "production": 2.48
+        },
+        "cpt_DST": {
+         "model": 0.79,
+         "production": 1.16
+        }
+       },
+       "score_quantile_abs_err": {
+        "P50": {
+         "model": 9.25,
+         "production": 4.9
+        },
+        "P90": {
+         "model": 8.47,
+         "production": 4.62
+        },
+        "P99": {
+         "model": 7.9,
+         "production": 5.6
+        }
+       }
+      },
+      "verdict": {
+       "1_recall_10_of_20_in_top_200": true,
+       "2_median_copies_ratio_0.5_to_2": false,
+       "3_collision_within_2x": false,
+       "4_unique_share_within_5pp": false,
+       "4_mass_2_to_10_within_2x": true,
+       "4_mass_11_plus_within_2x": false,
+       "5_ownership_captain_and_flex_mae": true,
+       "5_salary_mean": true,
+       "5_split_and_captain_categories": false,
+       "5_score_quantiles_no_worse": false,
+       "all": false
+      }
+     }
+    },
+    "M2": {
+     "nll_per_entry": 9.45897,
+     "collision": {
+      "real": 0.0006375988627740547,
+      "model": 0.00018068065216599114,
+      "model_over_real": 0.2834
+     },
+     "copies_hist_pct": {
+      "real": {
+       "1": 10.057,
+       "2-5": 22.419,
+       "6-20": 30.489,
+       "21-100": 30.149,
+       "101+": 6.886
+      },
+      "model": {
+       "1": 17.1,
+       "2-5": 35.379,
+       "6-20": 35.929,
+       "21-100": 11.591,
+       "101+": 0.0
+      },
+      "l1": 50.887
+     },
+     "distinct_lineups": {
+      "real": 9503,
+      "model": 14822
+     },
+     "real_top20_builds": {
+      "real_copies": [
+       296,
+       274,
+       153,
+       148,
+       145,
+       144,
+       135,
+       134,
+       126,
+       125,
+       125,
+       122,
+       119,
+       119,
+       118,
+       118,
+       110,
+       108,
+       107,
+       104
+      ],
+      "model_expected": [
+       18.8,
+       5.4,
+       3.1,
+       23.3,
+       10.2,
+       30.4,
+       18.2,
+       2.1,
+       26.1,
+       21.0,
+       14.5,
+       9.8,
+       18.1,
+       20.3,
+       12.0,
+       8.8,
+       12.7,
+       33.1,
+       15.1,
+       1.6
+      ],
+      "within_factor": 0,
+      "median_abs_log_ratio": 2.156,
+      "geo_mean_ratio": 0.087
+     },
+     "model_top20_builds": {
+      "model_expected": [
+       62.7,
+       60.4,
+       60.2,
+       59.1,
+       57.8,
+       53.4,
+       52.1,
+       50.3,
+       50.3,
+       49.2,
+       46.5,
+       46.3,
+       45.5,
+       43.2,
+       43.2,
+       42.5,
+       42.0,
+       40.4,
+       40.2,
+       40.1
+      ],
+      "real_copies": [
+       16,
+       4,
+       2,
+       53,
+       47,
+       1,
+       27,
+       14,
+       8,
+       72,
+       57,
+       45,
+       26,
+       5,
+       19,
+       38,
+       9,
+       1,
+       6,
+       32
+      ],
+      "within_factor": 10
+     },
+     "captain_mae": 1.937,
+     "flex_mae": 4.432,
+     "joint_mae": 2.429,
+     "salary_mean": {
+      "real": 48902.7,
+      "model": 48975.9
+     },
+     "salary_mean_abs_err": 73.2,
+     "salary_left_pct": {
+      "real": {
+       "0": 8.63,
+       "100-200": 18.61,
+       "300-500": 19.34,
+       "600-1000": 19.11,
+       "1100-2000": 18.01,
+       "2100+": 16.3
+      },
+      "model": {
+       "0": 9.02,
+       "100-200": 20.36,
+       "300-500": 16.66,
+       "600-1000": 17.66,
+       "1100-2000": 20.88,
+       "2100+": 15.41
+      }
+     },
+     "salary_left_l1": 10.03,
+     "team_split_pct": {
+      "real": {
+       "3-3": 37.46,
+       "4-2": 45.29,
+       "5-1": 17.24
+      },
+      "model": {
+       "3-3": 34.58,
+       "4-2": 46.46,
+       "5-1": 18.95
+      }
+     },
+     "team_split_l1": 5.76,
+     "captain_position_pct": {
+      "real": {
+       "QB": 15.01,
+       "RB": 33.44,
+       "WR": 40.11,
+       "TE": 6.84,
+       "K": 1.1,
+       "DST": 3.5
+      },
+      "model": {
+       "QB": 21.75,
+       "RB": 23.47,
+       "WR": 36.76,
+       "TE": 12.21,
+       "K": 2.45,
+       "DST": 3.36
+      }
+     },
+     "captain_position_l1": 26.92,
+     "score_w1": 7.571,
+     "score_mean": {
+      "real": 71.65,
+      "model": 64.08
+     },
+     "top_K_mass_pct": {
+      "1": {
+       "real": 0.12,
+       "model": 0.13
+      },
+      "10": {
+       "real": 1.5,
+       "model": 0.46
+      },
+      "100": {
+       "real": 6.84,
+       "model": 3.78
+      },
+      "1000": {
+       "real": 29.91,
+       "model": 20.28
+      },
+      "10000": {
+       "real": 77.53,
+       "model": 68.88
+      }
+     },
+     "verdict": {
+      "A1_aggregate_collision_within_2x": false,
+      "A2_real_top20_within_3x": false,
+      "A2_model_top20_within_3x": false,
+      "A3_copies_histogram_no_worse": true,
+      "A4_captain_mae_non_inferior": true,
+      "A4_flex_mae_non_inferior": true,
+      "A4_joint_mae_non_inferior": true,
+      "A4_salary_mean_abs_err_non_inferior": true,
+      "A4_salary_left_l1_non_inferior": true,
+      "A4_team_split_l1_non_inferior": true,
+      "A4_captain_position_l1_non_inferior": false,
+      "A4_score_w1_non_inferior": false,
+      "duplication_calibrated_here": false
+     },
+     "owner": {
+      "real_top20_in_model_top200": 7,
+      "median_model_over_real_copies": 0.1158,
+      "real_top20_ratios": [
+       0.064,
+       0.02,
+       0.02,
+       0.157,
+       0.07,
+       0.211,
+       0.135,
+       0.016,
+       0.207,
+       0.116,
+       0.168,
+       0.08,
+       0.171,
+       0.152,
+       0.102,
+       0.074,
+       0.116,
+       0.306,
+       0.141,
+       0.016
+      ],
+      "collision_model_over_real": 0.2834,
+      "copies_mass_pct": {
+       "real": {
+        "1": 10.057,
+        "2-10": 36.671,
+        "11+": 53.271
+       },
+       "model": {
+        "1": 17.1,
+        "2-10": 55.386,
+        "11+": 27.513
+       }
+      },
+      "salary_mean": {
+       "real": 48902.7,
+       "model": 48965.7
+      },
+      "category_pct": {
+       "split_3_3": {
+        "real": 37.46,
+        "model": 34.65
+       },
+       "split_4_2": {
+        "real": 45.29,
+        "model": 46.53
+       },
+       "split_5_1": {
+        "real": 17.24,
+        "model": 18.82
+       },
+       "cpt_QB": {
+        "real": 15.01,
+        "model": 21.77
+       },
+       "cpt_RB": {
+        "real": 33.44,
+        "model": 23.05
+       },
+       "cpt_WR": {
+        "real": 40.11,
+        "model": 36.76
+       },
+       "cpt_TE": {
+        "real": 6.84,
+        "model": 12.71
+       },
+       "cpt_K": {
+        "real": 1.1,
+        "model": 2.35
+       },
+       "cpt_DST": {
+        "real": 3.5,
+        "model": 3.36
+       }
+      },
+      "score_quantiles": {
+       "real": {
+        "P50": 72.07,
+        "P90": 96.27,
+        "P99": 111.37
+       },
+       "model": {
+        "P50": 62.169999999999995,
+        "P90": 86.65,
+        "P99": 103.47
+       }
+      },
+      "detail": {
+       "salary_abs_err": {
+        "model": 63.0,
+        "production": 838.5
+       },
+       "category_abs_err_pp": {
+        "split_3_3": {
+         "model": 2.81,
+         "production": 3.11
+        },
+        "split_4_2": {
+         "model": 1.24,
+         "production": 4.16
+        },
+        "split_5_1": {
+         "model": 1.58,
+         "production": 7.26
+        },
+        "cpt_QB": {
+         "model": 6.76,
+         "production": 5.07
+        },
+        "cpt_RB": {
+         "model": 10.39,
+         "production": 4.24
+        },
+        "cpt_WR": {
+         "model": 3.35,
+         "production": 5.19
+        },
+        "cpt_TE": {
+         "model": 5.87,
+         "production": 0.74
+        },
+        "cpt_K": {
+         "model": 1.25,
+         "production": 2.48
+        },
+        "cpt_DST": {
+         "model": 0.14,
+         "production": 1.16
+        }
+       },
+       "score_quantile_abs_err": {
+        "P50": {
+         "model": 9.9,
+         "production": 4.9
+        },
+        "P90": {
+         "model": 9.62,
+         "production": 4.62
+        },
+        "P99": {
+         "model": 7.9,
+         "production": 5.6
+        }
+       }
+      },
+      "verdict": {
+       "1_recall_10_of_20_in_top_200": false,
+       "2_median_copies_ratio_0.5_to_2": false,
+       "3_collision_within_2x": false,
+       "4_unique_share_within_5pp": false,
+       "4_mass_2_to_10_within_2x": true,
+       "4_mass_11_plus_within_2x": true,
+       "5_ownership_captain_and_flex_mae": true,
+       "5_salary_mean": true,
+       "5_split_and_captain_categories": false,
+       "5_score_quantiles_no_worse": false,
+       "all": false
+      }
+     }
+    },
+    "M3": {
+     "nll_per_entry": 9.42382,
+     "collision": {
+      "real": 0.0006375988627740547,
+      "model": 0.0001874719699403264,
+      "model_over_real": 0.294
+     },
+     "copies_hist_pct": {
+      "real": {
+       "1": 10.057,
+       "2-5": 22.419,
+       "6-20": 30.489,
+       "21-100": 30.149,
+       "101+": 6.886
+      },
+      "model": {
+       "1": 16.161,
+       "2-5": 32.85,
+       "6-20": 39.296,
+       "21-100": 11.693,
+       "101+": 0.0
+      },
+      "l1": 50.684
+     },
+     "distinct_lineups": {
+      "real": 9503,
+      "model": 14103
+     },
+     "real_top20_builds": {
+      "real_copies": [
+       296,
+       274,
+       153,
+       148,
+       145,
+       144,
+       135,
+       134,
+       126,
+       125,
+       125,
+       122,
+       119,
+       119,
+       118,
+       118,
+       110,
+       108,
+       107,
+       104
+      ],
+      "model_expected": [
+       30.4,
+       10.1,
+       3.2,
+       21.2,
+       16.0,
+       29.3,
+       18.4,
+       2.6,
+       24.9,
+       21.7,
+       13.9,
+       13.3,
+       21.3,
+       20.1,
+       12.6,
+       10.3,
+       12.6,
+       33.3,
+       14.5,
+       1.5
+      ],
+      "within_factor": 0,
+      "median_abs_log_ratio": 2.182,
+      "geo_mean_ratio": 0.097
+     },
+     "model_top20_builds": {
+      "model_expected": [
+       94.1,
+       65.8,
+       62.2,
+       55.8,
+       55.0,
+       53.5,
+       53.2,
+       52.2,
+       46.5,
+       46.3,
+       45.5,
+       45.2,
+       42.3,
+       40.8,
+       40.7,
+       39.5,
+       39.2,
+       38.8,
+       38.7,
+       38.3
+      ],
+      "real_copies": [
+       53,
+       72,
+       16,
+       1,
+       4,
+       27,
+       47,
+       2,
+       57,
+       45,
+       8,
+       14,
+       26,
+       9,
+       38,
+       42,
+       1,
+       19,
+       5,
+       11
+      ],
+      "within_factor": 10
+     },
+     "captain_mae": 1.92,
+     "flex_mae": 4.432,
+     "joint_mae": 2.391,
+     "salary_mean": {
+      "real": 48902.7,
+      "model": 48981.9
+     },
+     "salary_mean_abs_err": 79.2,
+     "salary_left_pct": {
+      "real": {
+       "0": 8.63,
+       "100-200": 18.61,
+       "300-500": 19.34,
+       "600-1000": 19.11,
+       "1100-2000": 18.01,
+       "2100+": 16.3
+      },
+      "model": {
+       "0": 9.12,
+       "100-200": 20.74,
+       "300-500": 20.0,
+       "600-1000": 17.62,
+       "1100-2000": 18.18,
+       "2100+": 14.35
+      }
+     },
+     "salary_left_l1": 6.89,
+     "team_split_pct": {
+      "real": {
+       "3-3": 37.46,
+       "4-2": 45.29,
+       "5-1": 17.24
+      },
+      "model": {
+       "3-3": 34.25,
+       "4-2": 46.35,
+       "5-1": 19.39
+      }
+     },
+     "team_split_l1": 6.42,
+     "captain_position_pct": {
+      "real": {
+       "QB": 15.01,
+       "RB": 33.44,
+       "WR": 40.11,
+       "TE": 6.84,
+       "K": 1.1,
+       "DST": 3.5
+      },
+      "model": {
+       "QB": 22.34,
+       "RB": 23.12,
+       "WR": 36.91,
+       "TE": 12.0,
+       "K": 2.33,
+       "DST": 3.3
+      }
+     },
+     "captain_position_l1": 27.44,
+     "score_w1": 7.378,
+     "score_mean": {
+      "real": 71.65,
+      "model": 64.27
+     },
+     "top_K_mass_pct": {
+      "1": {
+       "real": 0.12,
+       "model": 0.21
+      },
+      "10": {
+       "real": 1.5,
+       "model": 0.76
+      },
+      "100": {
+       "real": 6.84,
+       "model": 4.41
+      },
+      "1000": {
+       "real": 29.91,
+       "model": 21.48
+      },
+      "10000": {
+       "real": 77.53,
+       "model": 70.18
+      }
+     },
+     "verdict": {
+      "A1_aggregate_collision_within_2x": false,
+      "A2_real_top20_within_3x": false,
+      "A2_model_top20_within_3x": false,
+      "A3_copies_histogram_no_worse": true,
+      "A4_captain_mae_non_inferior": true,
+      "A4_flex_mae_non_inferior": true,
+      "A4_joint_mae_non_inferior": true,
+      "A4_salary_mean_abs_err_non_inferior": true,
+      "A4_salary_left_l1_non_inferior": true,
+      "A4_team_split_l1_non_inferior": true,
+      "A4_captain_position_l1_non_inferior": false,
+      "A4_score_w1_non_inferior": false,
+      "duplication_calibrated_here": false
+     },
+     "owner": {
+      "real_top20_in_model_top200": 8,
+      "median_model_over_real_copies": 0.1128,
+      "real_top20_ratios": [
+       0.103,
+       0.037,
+       0.021,
+       0.143,
+       0.11,
+       0.204,
+       0.136,
+       0.019,
+       0.197,
+       0.111,
+       0.174,
+       0.109,
+       0.169,
+       0.179,
+       0.107,
+       0.088,
+       0.114,
+       0.308,
+       0.136,
+       0.014
+      ],
+      "collision_model_over_real": 0.294,
+      "copies_mass_pct": {
+       "real": {
+        "1": 10.057,
+        "2-10": 36.671,
+        "11+": 53.271
+       },
+       "model": {
+        "1": 16.161,
+        "2-10": 54.355,
+        "11+": 29.484
+       }
+      },
+      "salary_mean": {
+       "real": 48902.7,
+       "model": 48979.8
+      },
+      "category_pct": {
+       "split_3_3": {
+        "real": 37.46,
+        "model": 34.18
+       },
+       "split_4_2": {
+        "real": 45.29,
+        "model": 46.58
+       },
+       "split_5_1": {
+        "real": 17.24,
+        "model": 19.24
+       },
+       "cpt_QB": {
+        "real": 15.01,
+        "model": 22.31
+       },
+       "cpt_RB": {
+        "real": 33.44,
+        "model": 22.76
+       },
+       "cpt_WR": {
+        "real": 40.11,
+        "model": 37.05
+       },
+       "cpt_TE": {
+        "real": 6.84,
+        "model": 12.31
+       },
+       "cpt_K": {
+        "real": 1.1,
+        "model": 2.23
+       },
+       "cpt_DST": {
+        "real": 3.5,
+        "model": 3.34
+       }
+      },
+      "score_quantiles": {
+       "real": {
+        "P50": 72.07,
+        "P90": 96.27,
+        "P99": 111.37
+       },
+       "model": {
+        "P50": 62.35,
+        "P90": 86.77000000000001,
+        "P99": 103.47
+       }
+      },
+      "detail": {
+       "salary_abs_err": {
+        "model": 77.1,
+        "production": 838.5
+       },
+       "category_abs_err_pp": {
+        "split_3_3": {
+         "model": 3.28,
+         "production": 3.11
+        },
+        "split_4_2": {
+         "model": 1.29,
+         "production": 4.16
+        },
+        "split_5_1": {
+         "model": 2.0,
+         "production": 7.26
+        },
+        "cpt_QB": {
+         "model": 7.3,
+         "production": 5.07
+        },
+        "cpt_RB": {
+         "model": 10.68,
+         "production": 4.24
+        },
+        "cpt_WR": {
+         "model": 3.06,
+         "production": 5.19
+        },
+        "cpt_TE": {
+         "model": 5.47,
+         "production": 0.74
+        },
+        "cpt_K": {
+         "model": 1.13,
+         "production": 2.48
+        },
+        "cpt_DST": {
+         "model": 0.16,
+         "production": 1.16
+        }
+       },
+       "score_quantile_abs_err": {
+        "P50": {
+         "model": 9.72,
+         "production": 4.9
+        },
+        "P90": {
+         "model": 9.5,
+         "production": 4.62
+        },
+        "P99": {
+         "model": 7.9,
+         "production": 5.6
+        }
+       }
+      },
+      "verdict": {
+       "1_recall_10_of_20_in_top_200": false,
+       "2_median_copies_ratio_0.5_to_2": false,
+       "3_collision_within_2x": false,
+       "4_unique_share_within_5pp": false,
+       "4_mass_2_to_10_within_2x": true,
+       "4_mass_11_plus_within_2x": true,
+       "5_ownership_captain_and_flex_mae": true,
+       "5_salary_mean": true,
+       "5_split_and_captain_categories": false,
+       "5_score_quantiles_no_worse": false,
+       "all": false
+      }
+     }
+    },
+    "M4": {
+     "nll_per_entry": 9.36648,
+     "collision": {
+      "real": 0.0006375988627740547,
+      "model": 0.00017647003986770126,
+      "model_over_real": 0.2768
+     },
+     "copies_hist_pct": {
+      "real": {
+       "1": 10.057,
+       "2-5": 22.419,
+       "6-20": 30.489,
+       "21-100": 30.149,
+       "101+": 6.886
+      },
+      "model": {
+       "1": 16.362,
+       "2-5": 32.284,
+       "6-20": 40.909,
+       "21-100": 10.445,
+       "101+": 0.0
+      },
+      "l1": 53.18
+     },
+     "distinct_lineups": {
+      "real": 9503,
+      "model": 14158
+     },
+     "real_top20_builds": {
+      "real_copies": [
+       296,
+       274,
+       153,
+       148,
+       145,
+       144,
+       135,
+       134,
+       126,
+       125,
+       125,
+       122,
+       119,
+       119,
+       118,
+       118,
+       110,
+       108,
+       107,
+       104
+      ],
+      "model_expected": [
+       31.5,
+       10.6,
+       3.0,
+       21.0,
+       18.6,
+       26.3,
+       20.1,
+       2.7,
+       23.0,
+       21.4,
+       14.2,
+       14.0,
+       22.8,
+       19.6,
+       12.1,
+       10.9,
+       13.2,
+       32.5,
+       13.9,
+       1.4
+      ],
+      "within_factor": 0,
+      "median_abs_log_ratio": 2.087,
+      "geo_mean_ratio": 0.098
+     },
+     "model_top20_builds": {
+      "model_expected": [
+       76.4,
+       56.5,
+       50.3,
+       47.0,
+       46.8,
+       45.1,
+       44.7,
+       43.8,
+       42.5,
+       39.7,
+       38.5,
+       38.2,
+       36.9,
+       36.4,
+       36.1,
+       36.0,
+       35.9,
+       34.5,
+       33.6,
+       33.1
+      ],
+      "real_copies": [
+       53,
+       72,
+       16,
+       27,
+       45,
+       1,
+       2,
+       47,
+       4,
+       57,
+       8,
+       14,
+       12,
+       42,
+       38,
+       26,
+       9,
+       11,
+       82,
+       6
+      ],
+      "within_factor": 11
+     },
+     "captain_mae": 1.889,
+     "flex_mae": 4.501,
+     "joint_mae": 2.365,
+     "salary_mean": {
+      "real": 48902.7,
+      "model": 48978.6
+     },
+     "salary_mean_abs_err": 75.9,
+     "salary_left_pct": {
+      "real": {
+       "0": 8.63,
+       "100-200": 18.61,
+       "300-500": 19.34,
+       "600-1000": 19.11,
+       "1100-2000": 18.01,
+       "2100+": 16.3
+      },
+      "model": {
+       "0": 8.78,
+       "100-200": 20.72,
+       "300-500": 20.81,
+       "600-1000": 17.4,
+       "1100-2000": 17.68,
+       "2100+": 14.61
+      }
+     },
+     "salary_left_l1": 7.46,
+     "team_split_pct": {
+      "real": {
+       "3-3": 37.46,
+       "4-2": 45.29,
+       "5-1": 17.24
+      },
+      "model": {
+       "3-3": 34.43,
+       "4-2": 46.45,
+       "5-1": 19.12
+      }
+     },
+     "team_split_l1": 6.07,
+     "captain_position_pct": {
+      "real": {
+       "QB": 15.01,
+       "RB": 33.44,
+       "WR": 40.11,
+       "TE": 6.84,
+       "K": 1.1,
+       "DST": 3.5
+      },
+      "model": {
+       "QB": 22.78,
+       "RB": 23.65,
+       "WR": 36.62,
+       "TE": 11.34,
+       "K": 2.41,
+       "DST": 3.21
+      }
+     },
+     "captain_position_l1": 27.15,
+     "score_w1": 7.311,
+     "score_mean": {
+      "real": 71.65,
+      "model": 64.34
+     },
+     "top_K_mass_pct": {
+      "1": {
+       "real": 0.12,
+       "model": 0.17
+      },
+      "10": {
+       "real": 1.5,
+       "model": 0.7
+      },
+      "100": {
+       "real": 6.84,
+       "model": 4.32
+      },
+      "1000": {
+       "real": 29.91,
+       "model": 21.34
+      },
+      "10000": {
+       "real": 77.53,
+       "model": 70.02
+      }
+     },
+     "verdict": {
+      "A1_aggregate_collision_within_2x": false,
+      "A2_real_top20_within_3x": false,
+      "A2_model_top20_within_3x": false,
+      "A3_copies_histogram_no_worse": true,
+      "A4_captain_mae_non_inferior": true,
+      "A4_flex_mae_non_inferior": true,
+      "A4_joint_mae_non_inferior": true,
+      "A4_salary_mean_abs_err_non_inferior": true,
+      "A4_salary_left_l1_non_inferior": true,
+      "A4_team_split_l1_non_inferior": true,
+      "A4_captain_position_l1_non_inferior": false,
+      "A4_score_w1_non_inferior": false,
+      "duplication_calibrated_here": false
+     },
+     "owner": {
+      "real_top20_in_model_top200": 10,
+      "median_model_over_real_copies": 0.1242,
+      "real_top20_ratios": [
+       0.107,
+       0.039,
+       0.02,
+       0.142,
+       0.129,
+       0.183,
+       0.149,
+       0.02,
+       0.182,
+       0.113,
+       0.172,
+       0.115,
+       0.165,
+       0.191,
+       0.103,
+       0.092,
+       0.12,
+       0.301,
+       0.13,
+       0.014
+      ],
+      "collision_model_over_real": 0.2768,
+      "copies_mass_pct": {
+       "real": {
+        "1": 10.057,
+        "2-10": 36.671,
+        "11+": 53.271
+       },
+       "model": {
+        "1": 16.362,
+        "2-10": 54.275,
+        "11+": 29.363
+       }
+      },
+      "salary_mean": {
+       "real": 48902.7,
+       "model": 48978.4
+      },
+      "category_pct": {
+       "split_3_3": {
+        "real": 37.46,
+        "model": 34.34
+       },
+       "split_4_2": {
+        "real": 45.29,
+        "model": 46.59
+       },
+       "split_5_1": {
+        "real": 17.24,
+        "model": 19.07
+       },
+       "cpt_QB": {
+        "real": 15.01,
+        "model": 22.78
+       },
+       "cpt_RB": {
+        "real": 33.44,
+        "model": 23.35
+       },
+       "cpt_WR": {
+        "real": 40.11,
+        "model": 36.68
+       },
+       "cpt_TE": {
+        "real": 6.84,
+        "model": 11.64
+       },
+       "cpt_K": {
+        "real": 1.1,
+        "model": 2.3
+       },
+       "cpt_DST": {
+        "real": 3.5,
+        "model": 3.25
+       }
+      },
+      "score_quantiles": {
+       "real": {
+        "P50": 72.07,
+        "P90": 96.27,
+        "P99": 111.37
+       },
+       "model": {
+        "P50": 62.37,
+        "P90": 87.13,
+        "P99": 103.77
+       }
+      },
+      "detail": {
+       "salary_abs_err": {
+        "model": 75.7,
+        "production": 838.5
+       },
+       "category_abs_err_pp": {
+        "split_3_3": {
+         "model": 3.12,
+         "production": 3.11
+        },
+        "split_4_2": {
+         "model": 1.3,
+         "production": 4.16
+        },
+        "split_5_1": {
+         "model": 1.83,
+         "production": 7.26
+        },
+        "cpt_QB": {
+         "model": 7.77,
+         "production": 5.07
+        },
+        "cpt_RB": {
+         "model": 10.09,
+         "production": 4.24
+        },
+        "cpt_WR": {
+         "model": 3.43,
+         "production": 5.19
+        },
+        "cpt_TE": {
+         "model": 4.8,
+         "production": 0.74
+        },
+        "cpt_K": {
+         "model": 1.2,
+         "production": 2.48
+        },
+        "cpt_DST": {
+         "model": 0.25,
+         "production": 1.16
+        }
+       },
+       "score_quantile_abs_err": {
+        "P50": {
+         "model": 9.7,
+         "production": 4.9
+        },
+        "P90": {
+         "model": 9.14,
+         "production": 4.62
+        },
+        "P99": {
+         "model": 7.6,
+         "production": 5.6
+        }
+       }
+      },
+      "verdict": {
+       "1_recall_10_of_20_in_top_200": true,
+       "2_median_copies_ratio_0.5_to_2": false,
+       "3_collision_within_2x": false,
+       "4_unique_share_within_5pp": false,
+       "4_mass_2_to_10_within_2x": true,
+       "4_mass_11_plus_within_2x": true,
+       "5_ownership_captain_and_flex_mae": true,
+       "5_salary_mean": true,
+       "5_split_and_captain_categories": false,
+       "5_score_quantiles_no_worse": false,
+       "all": false
+      }
+     }
+    },
+    "M5": {
+     "nll_per_entry": 9.28166,
+     "collision": {
+      "real": 0.0006375988627740547,
+      "model": 0.00016688093559937619,
+      "model_over_real": 0.2617
+     },
+     "copies_hist_pct": {
+      "real": {
+       "1": 10.057,
+       "2-5": 22.419,
+       "6-20": 30.489,
+       "21-100": 30.149,
+       "101+": 6.886
+      },
+      "model": {
+       "1": 16.406,
+       "2-5": 32.16,
+       "6-20": 41.716,
+       "21-100": 9.303,
+       "101+": 0.0
+      },
+      "l1": 55.049
+     },
+     "distinct_lineups": {
+      "real": 9503,
+      "model": 14165
+     },
+     "real_top20_builds": {
+      "real_copies": [
+       296,
+       274,
+       153,
+       148,
+       145,
+       144,
+       135,
+       134,
+       126,
+       125,
+       125,
+       122,
+       119,
+       119,
+       118,
+       118,
+       110,
+       108,
+       107,
+       104
+      ],
+      "model_expected": [
+       32.7,
+       12.0,
+       2.9,
+       21.0,
+       21.8,
+       23.4,
+       22.4,
+       3.4,
+       21.5,
+       20.3,
+       14.1,
+       14.8,
+       21.8,
+       20.0,
+       11.6,
+       9.7,
+       13.0,
+       32.5,
+       13.7,
+       1.8
+      ],
+      "within_factor": 0,
+      "median_abs_log_ratio": 2.08,
+      "geo_mean_ratio": 0.1
+     },
+     "model_top20_builds": {
+      "model_expected": [
+       56.2,
+       45.0,
+       44.9,
+       41.5,
+       40.9,
+       39.5,
+       37.8,
+       36.5,
+       35.4,
+       35.2,
+       35.1,
+       34.3,
+       34.2,
+       33.4,
+       32.7,
+       32.5,
+       32.5,
+       31.6,
+       31.4,
+       31.3
+      ],
+      "real_copies": [
+       53,
+       16,
+       72,
+       47,
+       45,
+       27,
+       2,
+       38,
+       12,
+       6,
+       1,
+       42,
+       11,
+       57,
+       296,
+       108,
+       9,
+       9,
+       9,
+       26
+      ],
+      "within_factor": 11
+     },
+     "captain_mae": 1.85,
+     "flex_mae": 4.533,
+     "joint_mae": 2.345,
+     "salary_mean": {
+      "real": 48902.7,
+      "model": 48964.7
+     },
+     "salary_mean_abs_err": 62.0,
+     "salary_left_pct": {
+      "real": {
+       "0": 8.63,
+       "100-200": 18.61,
+       "300-500": 19.34,
+       "600-1000": 19.11,
+       "1100-2000": 18.01,
+       "2100+": 16.3
+      },
+      "model": {
+       "0": 8.79,
+       "100-200": 20.89,
+       "300-500": 22.1,
+       "600-1000": 17.15,
+       "1100-2000": 16.88,
+       "2100+": 14.2
+      }
+     },
+     "salary_left_l1": 10.39,
+     "team_split_pct": {
+      "real": {
+       "3-3": 37.46,
+       "4-2": 45.29,
+       "5-1": 17.24
+      },
+      "model": {
+       "3-3": 34.49,
+       "4-2": 47.24,
+       "5-1": 18.28
+      }
+     },
+     "team_split_l1": 5.96,
+     "captain_position_pct": {
+      "real": {
+       "QB": 15.01,
+       "RB": 33.44,
+       "WR": 40.11,
+       "TE": 6.84,
+       "K": 1.1,
+       "DST": 3.5
+      },
+      "model": {
+       "QB": 23.45,
+       "RB": 24.28,
+       "WR": 36.01,
+       "TE": 10.55,
+       "K": 2.54,
+       "DST": 3.17
+      }
+     },
+     "captain_position_l1": 27.18,
+     "score_w1": 7.323,
+     "score_mean": {
+      "real": 71.65,
+      "model": 64.33
+     },
+     "top_K_mass_pct": {
+      "1": {
+       "real": 0.12,
+       "model": 0.13
+      },
+      "10": {
+       "real": 1.5,
+       "model": 0.63
+      },
+      "100": {
+       "real": 6.84,
+       "model": 4.36
+      },
+      "1000": {
+       "real": 29.91,
+       "model": 21.71
+      },
+      "10000": {
+       "real": 77.53,
+       "model": 69.94
+      }
+     },
+     "verdict": {
+      "A1_aggregate_collision_within_2x": false,
+      "A2_real_top20_within_3x": false,
+      "A2_model_top20_within_3x": false,
+      "A3_copies_histogram_no_worse": false,
+      "A4_captain_mae_non_inferior": true,
+      "A4_flex_mae_non_inferior": true,
+      "A4_joint_mae_non_inferior": true,
+      "A4_salary_mean_abs_err_non_inferior": true,
+      "A4_salary_left_l1_non_inferior": true,
+      "A4_team_split_l1_non_inferior": true,
+      "A4_captain_position_l1_non_inferior": false,
+      "A4_score_w1_non_inferior": false,
+      "duplication_calibrated_here": false
+     },
+     "owner": {
+      "real_top20_in_model_top200": 10,
+      "median_model_over_real_copies": 0.125,
+      "real_top20_ratios": [
+       0.11,
+       0.044,
+       0.019,
+       0.142,
+       0.15,
+       0.163,
+       0.166,
+       0.025,
+       0.171,
+       0.113,
+       0.163,
+       0.122,
+       0.168,
+       0.184,
+       0.099,
+       0.083,
+       0.118,
+       0.301,
+       0.128,
+       0.017
+      ],
+      "collision_model_over_real": 0.2617,
+      "copies_mass_pct": {
+       "real": {
+        "1": 10.057,
+        "2-10": 36.671,
+        "11+": 53.271
+       },
+       "model": {
+        "1": 16.406,
+        "2-10": 54.757,
+        "11+": 28.422
+       }
+      },
+      "salary_mean": {
+       "real": 48902.7,
+       "model": 48973.6
+      },
+      "category_pct": {
+       "split_3_3": {
+        "real": 37.46,
+        "model": 34.95
+       },
+       "split_4_2": {
+        "real": 45.29,
+        "model": 46.97
+       },
+       "split_5_1": {
+        "real": 17.24,
+        "model": 18.08
+       },
+       "cpt_QB": {
+        "real": 15.01,
+        "model": 23.44
+       },
+       "cpt_RB": {
+        "real": 33.44,
+        "model": 24.1
+       },
+       "cpt_WR": {
+        "real": 40.11,
+        "model": 36.11
+       },
+       "cpt_TE": {
+        "real": 6.84,
+        "model": 10.71
+       },
+       "cpt_K": {
+        "real": 1.1,
+        "model": 2.46
+       },
+       "cpt_DST": {
+        "real": 3.5,
+        "model": 3.19
+       }
+      },
+      "score_quantiles": {
+       "real": {
+        "P50": 72.07,
+        "P90": 96.27,
+        "P99": 111.37
+       },
+       "model": {
+        "P50": 62.72,
+        "P90": 87.77,
+        "P99": 104.05
+       }
+      },
+      "detail": {
+       "salary_abs_err": {
+        "model": 70.9,
+        "production": 838.5
+       },
+       "category_abs_err_pp": {
+        "split_3_3": {
+         "model": 2.51,
+         "production": 3.11
+        },
+        "split_4_2": {
+         "model": 1.68,
+         "production": 4.16
+        },
+        "split_5_1": {
+         "model": 0.84,
+         "production": 7.26
+        },
+        "cpt_QB": {
+         "model": 8.43,
+         "production": 5.07
+        },
+        "cpt_RB": {
+         "model": 9.34,
+         "production": 4.24
+        },
+        "cpt_WR": {
+         "model": 4.0,
+         "production": 5.19
+        },
+        "cpt_TE": {
+         "model": 3.87,
+         "production": 0.74
+        },
+        "cpt_K": {
+         "model": 1.36,
+         "production": 2.48
+        },
+        "cpt_DST": {
+         "model": 0.31,
+         "production": 1.16
+        }
+       },
+       "score_quantile_abs_err": {
+        "P50": {
+         "model": 9.35,
+         "production": 4.9
+        },
+        "P90": {
+         "model": 8.5,
+         "production": 4.62
+        },
+        "P99": {
+         "model": 7.32,
+         "production": 5.6
+        }
+       }
+      },
+      "verdict": {
+       "1_recall_10_of_20_in_top_200": true,
+       "2_median_copies_ratio_0.5_to_2": false,
+       "3_collision_within_2x": false,
+       "4_unique_share_within_5pp": false,
+       "4_mass_2_to_10_within_2x": true,
+       "4_mass_11_plus_within_2x": true,
+       "5_ownership_captain_and_flex_mae": true,
+       "5_salary_mean": true,
+       "5_split_and_captain_categories": false,
+       "5_score_quantiles_no_worse": false,
+       "all": false
+      }
+     }
+    }
+   }
+  }
+ },
+ "duplication_calibrated": {
+  "M0": false,
+  "M1": false,
+  "M2": false,
+  "M3": false,
+  "M4": false,
+  "M5": false
+ },
+ "owner_criteria_all_pass": {
+  "M0": false,
+  "M1": false,
+  "M2": false,
+  "M3": false,
+  "M4": false,
+  "M5": false
+ },
+ "owner_criteria": {
+  "recall_top": 200,
+  "recall_min_of_20": 10,
+  "median_ratio": [
+   0.5,
+   2.0
+  ],
+  "collision_factor": 2.0,
+  "unique_pp": 5.0,
+  "mass_factor": 2.0,
+  "ownership_pp": 0.5,
+  "salary_usd": 200.0,
+  "category_pp": 2.0
+ }
+}

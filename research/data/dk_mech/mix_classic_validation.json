@@ -1,0 +1,553 @@
+{
+ "validation": 197882014,
+ "chosen": {
+  "sigma": 0.1,
+  "w": 0.1,
+  "loss": 6.5285
+ },
+ "entries": 147015,
+ "real": {
+  "C": 1.0041611851540488e-05,
+  "P8": 1.6491632778297156e-05,
+  "P7": 0.0003089442781093119,
+  "salary_mean": 49874.4,
+  "stack_pct": [
+   12.74,
+   51.12,
+   33.45,
+   2.69
+  ],
+  "mean_overlap": 1.6464,
+  "entries_in_duplicated_lineups_pct": 13.675
+ },
+ "served_replica": {
+  "C": 1.462065200102655e-08,
+  "P8": 1.2677400785700236e-07,
+  "P7": 4.311611767948298e-06,
+  "own_top40_mae": 7.246,
+  "joint_mae": 2.257,
+  "salary_mean": 49219.6,
+  "salary_mean_abs_err": 654.8,
+  "stack_pct": [
+   17.37,
+   49.03,
+   28.8,
+   4.81
+  ],
+  "stack_l1": 13.49,
+  "salary_at_cap_pct": 35.64,
+  "bring_back_pct": 34.89,
+  "mean_overlap": 0.8794,
+  "score_w1": 15.18,
+  "entries_in_duplicated_lineups_pct": 0.196,
+  "replica": {
+   "rows": 147015,
+   "steer_mae_by_pass": [
+    1.8414,
+    0.6004,
+    0.2906,
+    0.2067,
+    0.1625,
+    0.1289,
+    0.1224,
+    0.1126,
+    0.1045,
+    0.0999
+   ],
+   "mae_to_targets_pct_points": 0.085
+  }
+ },
+ "model": {
+  "C": 6.159551137951463e-06,
+  "P8": 9.497038832388328e-06,
+  "P7": 0.00014388276169982386,
+  "own_top40_mae": 6.932,
+  "joint_mae": 2.156,
+  "salary_mean": 49290.4,
+  "salary_mean_abs_err": 584.0,
+  "stack_pct": [
+   23.19,
+   46.24,
+   26.25,
+   4.32
+  ],
+  "stack_l1": 24.16,
+  "salary_at_cap_pct": 37.39,
+  "bring_back_pct": 32.74,
+  "mean_overlap": 0.9585,
+  "score_w1": 12.87,
+  "entries_in_duplicated_lineups_pct": 5.678
+ },
+ "collision_model_over_real": 0.6134,
+ "real_top20_builds": [
+  {
+   "lineup": [
+    "Carnell Tate",
+    "CeeDee Lamb",
+    "Chargers",
+    "Dak Prescott",
+    "Elic Ayomanor",
+    "Emmett Johnson",
+    "Jonah Coleman",
+    "Mark Andrews",
+    "Tony Pollard"
+   ],
+   "real_copies": 234,
+   "model_copies": 0,
+   "served_copies": 0
+  },
+  {
+   "lineup": [
+    "Buccaneers",
+    "Cam Ward",
+    "Carnell Tate",
+    "CeeDee Lamb",
+    "D'Andre Swift",
+    "Dawson Knox",
+    "Emmett Johnson",
+    "George Pickens",
+    "Omarion Hampton"
+   ],
+   "real_copies": 150,
+   "model_copies": 0,
+   "served_copies": 0
+  },
+  {
+   "lineup": [
+    "CeeDee Lamb",
+    "Dak Prescott",
+    "Elic Ayomanor",
+    "Emmett Johnson",
+    "James Cook III",
+    "Jaylen Warren",
+    "Jets",
+    "Jordyn Tyson",
+    "Nate Adkins"
+   ],
+   "real_copies": 147,
+   "model_copies": 0,
+   "served_copies": 0
+  },
+  {
+   "lineup": [
+    "Caleb Douglas",
+    "CeeDee Lamb",
+    "Chiefs",
+    "Dak Prescott",
+    "Elic Ayomanor",
+    "Emmett Johnson",
+    "Jonah Coleman",
+    "Mark Andrews",
+    "Tony Pollard"
+   ],
+   "real_copies": 91,
+   "model_copies": 0,
+   "served_copies": 0
+  },
+  {
+   "lineup": [
+    "CeeDee Lamb",
+    "Dak Prescott",
+    "Elic Ayomanor",
+    "Emmett Johnson",
+    "Jonah Coleman",
+    "Jordyn Tyson",
+    "Mark Andrews",
+    "Steelers",
+    "Tony Pollard"
+   ],
+   "real_copies": 83,
+   "model_copies": 0,
+   "served_copies": 0
+  },
+  {
+   "lineup": [
+    "Cam Ward",
+    "Carnell Tate",
+    "CeeDee Lamb",
+    "Chiefs",
+    "Elic Ayomanor",
+    "Emmett Johnson",
+    "Jonah Coleman",
+    "Mark Andrews",
+    "Tony Pollard"
+   ],
+   "real_copies": 65,
+   "model_copies": 0,
+   "served_copies": 0
+  },
+  {
+   "lineup": [
+    "CeeDee Lamb",
+    "Chargers",
+    "Dak Prescott",
+    "Elic Ayomanor",
+    "Emmett Johnson",
+    "George Pickens",
+    "Jonah Coleman",
+    "Mark Andrews",
+    "Omarion Hampton"
+   ],
+   "real_copies": 63,
+   "model_copies": 0,
+   "served_copies": 0
+  },
+  {
+   "lineup": [
+    "Carnell Tate",
+    "CeeDee Lamb",
+    "Dak Prescott",
+    "Elic Ayomanor",
+    "Emmett Johnson",
+    "George Pickens",
+    "Jets",
+    "Jonah Coleman",
+    "Mark Andrews"
+   ],
+   "real_copies": 58,
+   "model_copies": 0,
+   "served_copies": 0
+  },
+  {
+   "lineup": [
+    "Cam Ward",
+    "Carnell Tate",
+    "CeeDee Lamb",
+    "Colston Loveland",
+    "Elic Ayomanor",
+    "Emmett Johnson",
+    "Jets",
+    "Jonah Coleman",
+    "Tony Pollard"
+   ],
+   "real_copies": 55,
+   "model_copies": 0,
+   "served_copies": 0
+  },
+  {
+   "lineup": [
+    "Caleb Douglas",
+    "CeeDee Lamb",
+    "Chiefs",
+    "Colston Loveland",
+    "Dak Prescott",
+    "Emmett Johnson",
+    "Jonah Coleman",
+    "Jordyn Tyson",
+    "Mark Andrews"
+   ],
+   "real_copies": 46,
+   "model_copies": 0,
+   "served_copies": 0
+  },
+  {
+   "lineup": [
+    "Cam Ward",
+    "Carnell Tate",
+    "CeeDee Lamb",
+    "Emmett Johnson",
+    "Jets",
+    "Jonah Coleman",
+    "Jordyn Tyson",
+    "Mark Andrews",
+    "Tony Pollard"
+   ],
+   "real_copies": 43,
+   "model_copies": 0,
+   "served_copies": 0
+  },
+  {
+   "lineup": [
+    "Buccaneers",
+    "Carnell Tate",
+    "CeeDee Lamb",
+    "Dak Prescott",
+    "Elic Ayomanor",
+    "Emmett Johnson",
+    "George Pickens",
+    "Mark Andrews",
+    "Tony Pollard"
+   ],
+   "real_copies": 41,
+   "model_copies": 0,
+   "served_copies": 0
+  },
+  {
+   "lineup": [
+    "Cam Ward",
+    "Carnell Tate",
+    "CeeDee Lamb",
+    "Elic Ayomanor",
+    "Emmett Johnson",
+    "Javonte Williams",
+    "Jonah Coleman",
+    "Mark Andrews",
+    "Steelers"
+   ],
+   "real_copies": 37,
+   "model_copies": 0,
+   "served_copies": 0
+  },
+  {
+   "lineup": [
+    "Cam Ward",
+    "Carnell Tate",
+    "CeeDee Lamb",
+    "Emmett Johnson",
+    "Jonah Coleman",
+    "Mark Andrews",
+    "Rome Odunze",
+    "Steelers",
+    "Tony Pollard"
+   ],
+   "real_copies": 36,
+   "model_copies": 0,
+   "served_copies": 0
+  },
+  {
+   "lineup": [
+    "Cam Skattebo",
+    "CeeDee Lamb",
+    "Chiefs",
+    "Chimere Dike",
+    "Elic Ayomanor",
+    "Emmett Johnson",
+    "Javonte Williams",
+    "Patrick Mahomes",
+    "Sam LaPorta"
+   ],
+   "real_copies": 34,
+   "model_copies": 67,
+   "served_copies": 0
+  },
+  {
+   "lineup": [
+    "CeeDee Lamb",
+    "Dak Prescott",
+    "Dawson Knox",
+    "Elic Ayomanor",
+    "Emmett Johnson",
+    "George Pickens",
+    "Giants",
+    "Jonah Coleman",
+    "Tony Pollard"
+   ],
+   "real_copies": 33,
+   "model_copies": 0,
+   "served_copies": 0
+  },
+  {
+   "lineup": [
+    "Caleb Williams",
+    "Colston Loveland",
+    "Cowboys",
+    "Emmett Johnson",
+    "Javonte Williams",
+    "Jonah Coleman",
+    "Jordyn Tyson",
+    "Luther Burden III",
+    "Rome Odunze"
+   ],
+   "real_copies": 33,
+   "model_copies": 0,
+   "served_copies": 0
+  },
+  {
+   "lineup": [
+    "Broncos",
+    "Cam Ward",
+    "CeeDee Lamb",
+    "Dawson Knox",
+    "Elic Ayomanor",
+    "Emmett Johnson",
+    "George Pickens",
+    "Jonah Coleman",
+    "Tony Pollard"
+   ],
+   "real_copies": 32,
+   "model_copies": 0,
+   "served_copies": 0
+  },
+  {
+   "lineup": [
+    "Chargers",
+    "Ja'Kobi Lane",
+    "James Cook III",
+    "Jameson Williams",
+    "Jared Goff",
+    "Malik Nabers",
+    "Omarion Hampton",
+    "Sam LaPorta",
+    "Tony Pollard"
+   ],
+   "real_copies": 31,
+   "model_copies": 0,
+   "served_copies": 0
+  },
+  {
+   "lineup": [
+    "CeeDee Lamb",
+    "Chargers",
+    "Dak Prescott",
+    "Elic Ayomanor",
+    "Emmett Johnson",
+    "George Pickens",
+    "Jonah Coleman",
+    "Jordyn Tyson",
+    "Mark Andrews"
+   ],
+   "real_copies": 29,
+   "model_copies": 0,
+   "served_copies": 0
+  }
+ ],
+ "real_top20_within_factor": 1,
+ "verdict": {
+  "A1_aggregate_collision_within_2x": true,
+  "A2_real_top20_within_3x": false,
+  "A4_own_top40_mae_non_inferior": true,
+  "A4_joint_mae_non_inferior": true,
+  "A4_salary_mean_abs_err_non_inferior": true,
+  "A4_stack_l1_non_inferior": false,
+  "A4_score_w1_non_inferior": true,
+  "duplication_calibrated_classic_one_week": false
+ },
+ "owner": {
+  "criteria": {
+   "recall_top": 200,
+   "recall_min_of_20": 10,
+   "median_ratio": [
+    0.5,
+    2.0
+   ],
+   "collision_factor": 2.0,
+   "unique_pp": 5.0,
+   "mass_factor": 2.0,
+   "ownership_pp": 0.5,
+   "salary_usd": 200.0,
+   "category_pp": 2.0
+  },
+  "real": {
+   "real_top20_in_field_top200": 20,
+   "median_copies_over_real": 1.0,
+   "copies_mass_pct": {
+    "1": 86.325,
+    "2-10": 11.314,
+    "11+": 2.36
+   },
+   "salary_mean": 49874.4,
+   "categories": {
+    "stack_0": 12.74,
+    "stack_1": 51.12,
+    "stack_2": 33.45,
+    "stack_3+": 2.69,
+    "bring_back": 43.98
+   },
+   "score_quantiles": {
+    "P50": 137.24,
+    "P90": 168.94,
+    "P99": 191.8
+   }
+  },
+  "model": {
+   "real_top20_in_field_top200": 1,
+   "median_copies_over_real": 0.0,
+   "copies_mass_pct": {
+    "1": 94.322,
+    "2-10": 3.629,
+    "11+": 2.049
+   },
+   "salary_mean": 49290.4,
+   "categories": {
+    "stack_0": 23.19,
+    "stack_1": 46.24,
+    "stack_2": 26.25,
+    "stack_3+": 4.32,
+    "bring_back": 32.74
+   },
+   "score_quantiles": {
+    "P50": 124.04,
+    "P90": 155.6,
+    "P99": 180.46
+   }
+  },
+  "production": {
+   "real_top20_in_field_top200": 0,
+   "median_copies_over_real": 0.0,
+   "copies_mass_pct": {
+    "1": 99.804,
+    "2-10": 0.196,
+    "11+": 0.0
+   },
+   "salary_mean": 49219.6,
+   "categories": {
+    "stack_0": 17.37,
+    "stack_1": 49.03,
+    "stack_2": 28.8,
+    "stack_3+": 4.81,
+    "bring_back": 34.89
+   },
+   "score_quantiles": {
+    "P50": 121.72,
+    "P90": 152.06,
+    "P99": 177.16
+   }
+  },
+  "production_collision_over_real": 0.00146,
+  "detail": {
+   "salary_abs_err": {
+    "model": 584.0,
+    "production": 654.8
+   },
+   "category_abs_err_pp": {
+    "stack_0": {
+     "model": 10.45,
+     "production": 4.63
+    },
+    "stack_1": {
+     "model": 4.88,
+     "production": 2.09
+    },
+    "stack_2": {
+     "model": 7.2,
+     "production": 4.65
+    },
+    "stack_3+": {
+     "model": 1.63,
+     "production": 2.12
+    },
+    "bring_back": {
+     "model": 11.24,
+     "production": 9.09
+    }
+   },
+   "score_quantile_abs_err": {
+    "P50": {
+     "model": 13.2,
+     "production": 15.52
+    },
+    "P90": {
+     "model": 13.34,
+     "production": 16.88
+    },
+    "P99": {
+     "model": 11.34,
+     "production": 14.64
+    }
+   }
+  },
+  "verdict": {
+   "1_recall_10_of_20_in_top_200": false,
+   "2_median_copies_ratio_0.5_to_2": false,
+   "3_collision_within_2x": true,
+   "4_unique_share_within_5pp": false,
+   "4_mass_2_to_10_within_2x": false,
+   "4_mass_11_plus_within_2x": true,
+   "5_top40_ownership_mae": true,
+   "5_salary_mean": true,
+   "5_stack_categories": false,
+   "5_score_quantiles_no_worse": true,
+   "all": false
+  }
+ }
+}
