@@ -1136,6 +1136,7 @@ def summarize(raw, base="base", contest=0, top_n=10, metrics=("top1", "cash", "t
             by_s[names[s]] = {
                 "mean": _r(mean[s]), "se": _r(se[s]), "d": _r(d), "se_d": _r(sd_), "z": _r(z, 2),
                 "n_z2": int((np.abs(z) > 2).sum()), "n_z3": int((np.abs(z) > 3).sum()),
+                "mean_z2": _r1(float(np.mean(z ** 2))),
                 "spearman": _r1(spearman(mean[b0], mean[s])), "kendall": _r1(kendall(mean[b0], mean[s])),
                 "split_noise_floor": _r1(_nanmean(nf)), "split_cross": _r1(_nanmean(cx)),
                 "best": best, "regret": _r(rg), "regret_se": _r(rg_se),
@@ -1171,7 +1172,24 @@ def summarize(raw, base="base", contest=0, top_n=10, metrics=("top1", "cash", "t
             for tgt in ((0.001, 0.0005) if m != "cash" else (0.005, 0.0025)):
                 need[f"se_{tgt:g}"] = {"median": int(np.median([worlds_needed(v, tgt) for v in var])),
                                        "max": int(max(worlds_needed(v, tgt) for v in var))}
-        out["metrics"][m] = {"by_scenario": by_s, "by_lineup": by_l, "worlds_needed": need}
+        # The seed check. A reseed scenario is the base on other worlds AND another anchor draw: the engine
+        # levels each game's offences on ANCHOR_N measuring games, one draw a run shared by all its worlds,
+        # which no within-run SE can see. Measured on a synthetic game at production settings (800 games, 2
+        # passes, 8 seeds): a team's mean points moved 0.34-0.41 between seeds against a world-level SE of
+        # 0.16 at 4,000 worlds (0.05 at 40,000). Independent worlds alone would put mean z^2 near 1; what it
+        # reads above 1 is the variance an ABSOLUTE figure carries beyond its SE. Paired differences within one
+        # run share the anchor (share, usage, field, points and condition scenarios leave it untouched), so
+        # their SEs answer "given this run's anchor" and stay calibrated (SN13).
+        rs = [names[i] for i in range(S) if raw["scenarios"][keep[i]].get("reseed")]
+        seed = None
+        if rs:
+            z2 = [by_s[n]["mean_z2"] for n in rs if by_s[n]["mean_z2"] is not None]
+            seed = {"scenarios": rs, "mean_z2": _r1(_nanmean(z2)) if z2 else None,
+                    "share_beyond_2se": _r1(_nanmean([by_s[n]["n_z2"] / max(1, L) for n in rs])),
+                    "expected_if_worlds_only": {"mean_z2": 1.0, "share_beyond_2se": 0.046},
+                    "note": "the base on another seed: what exceeds 1 is the per-run anchor's variance, which an "
+                            "absolute figure carries and a paired difference within one run does not"}
+        out["metrics"][m] = {"by_scenario": by_s, "by_lineup": by_l, "worlds_needed": need, "seed_check": seed}
     return out
 
 
@@ -1259,9 +1277,16 @@ class EngineWorlds:
     own inputs), on `seed` (+ the scenario's reseed). Base inputs are read
     once (Sleeper's week, the engine's context) unless passed in."""
 
-    def __init__(self, week, teams, n, seed, season=None, workers=1, games=None, ctx=None, log=print):
+    def __init__(self, week, teams, n, seed, season=None, workers=1, games=None, ctx=None, log=print,
+                 anchor_n=None):
         import nfl_dfs_sim
         self.week, self.n, self.seed, self.workers, self.log = int(week), int(n), int(seed), int(workers or 1), log
+        # anchor_n: the engine's measuring games (production's ANCHOR_N, 800, when None). More shrinks the
+        # per-run anchor error by sqrt; pool_cache's key does not carry it, so it is mixed into the seed --
+        # a cached entry of one anchor size can never answer for another
+        self.anchor_n = int(anchor_n) if anchor_n else None
+        if self.anchor_n:
+            self.seed = zlib.crc32(f"{self.seed}|anchor_n|{self.anchor_n}".encode())
         self.season = str(season or nfl_dfs_sim._season())
         self.teams = {str(t).upper() for t in teams}
         self._games, self._ctx = games, ctx
@@ -1284,6 +1309,8 @@ class EngineWorlds:
         import nfl_dfs_sim as S
         games, rg = apply_games(self.base_games(), ops)
         ctx, rc = apply_ctx(self.base_ctx(), ops)
+        if self.anchor_n:
+            ctx["anchor_n"] = self.anchor_n
         seed = self.seed if not reseed else zlib.crc32(f"{self.seed}|reseed|{int(reseed)}".encode())
         pool, team_pts, per_game = {}, {}, {}
         for gid, g in sorted(games.items(), key=lambda kv: str(kv[0])):

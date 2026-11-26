@@ -655,7 +655,14 @@ def _hygiene(ck, np, tmp):
        "-- are the weighted scenarios' alone (here the base's own)",
        nr["weight"] == 0.0 and "noise_reference" in s0["by_scenario"]
        and all(r["min"] == r["max"] == mb[r["lineup"]] and r["worst_regret_scenario"] == "base" for r in s0["by_lineup"])
-       and s0["by_scenario"]["noise_reference"]["mean"] != mb)
+       and s0["by_scenario"]["noise_reference"]["mean"] != mb
+       and s0["seed_check"]["scenarios"] == ["noise_reference"]
+       and abs(s0["seed_check"]["mean_z2"] - float(np.mean(np.square(s0["by_scenario"]["noise_reference"]["z"])))) < 1e-3)
+    ew = DS.EngineWorlds(12, ["AAA"], 100, seed=5, season="2026", games={}, ctx={}, anchor_n=3200)
+    ck("SN18 a non-default anchor size is mixed into the worlds' seed (pool_cache's key does not carry it, so an "
+       "entry of one anchor size can never answer for another) and reaches the engine's context",
+       ew.seed != 5 and ew.anchor_n == 3200 and DS.EngineWorlds(12, ["AAA"], 100, seed=5, season="2026").seed == 5
+       and 'ctx["anchor_n"] = self.anchor_n' in src)
 
 
 if __name__ == "__main__":

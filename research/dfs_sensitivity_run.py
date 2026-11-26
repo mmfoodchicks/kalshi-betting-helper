@@ -290,7 +290,7 @@ def demo(out_dir, n_games=4, n_worlds=8000, n_gen=4000, field_n=20000, n_cand=15
 # ---- the real board ------------------------------------------------------------------------------
 def run_board(dg, picked=False, art_id=None, worlds=40000, workers=12, gpu=False, kind="standard",
               lineups_file=None, scenarios_file=None, out_root=None, season=None, per_list=20, dry_run=False,
-              art_root=None, log=print):
+              art_root=None, anchor_n=None, log=print):
     import dfs_sensitivity as DS
     got = load_artifact(dg, picked, art_id, art_root)
     if not got:
@@ -315,7 +315,7 @@ def run_board(dg, picked=False, art_id=None, worlds=40000, workers=12, gpu=False
     cache = use_own_cache()
     fidx, fw = load_field(path)
     ew = DS.EngineWorlds(meta["week"], meta["teams"], worlds, DS.sens_seed(meta["id"]), season=season,
-                         workers=workers, log=log)
+                         workers=workers, log=log, anchor_n=anchor_n)
     runner = DS.Runner(meta, (fidx, fw), lineups, ew, log=log, workers=workers, board=board)
     scen = DS.preset(meta, runner.lus, kind=kind)
     if scenarios_file:
@@ -337,7 +337,7 @@ def run_board(dg, picked=False, art_id=None, worlds=40000, workers=12, gpu=False
     out = write_outputs(raw, summary, meta, dg, picked, out_root=out_root,
                         extra={"estimate_s": round(secs), "seconds": round(time.time() - t0, 1),
                                "worlds": worlds, "seed": DS.sens_seed(meta["id"]), "season": ew.season,
-                               "gpu": bool(gpu), "workers": int(workers)})
+                               "gpu": bool(gpu), "workers": int(workers), "anchor_n": anchor_n})
     log(f"[sens] done in {(time.time() - t0) / 60:.1f} min: {out}")
     return out
 
@@ -363,6 +363,7 @@ def share_digest(summary, raw, top=20):
     noise floor, and the most robust lineups by name. No per-world data; no
     entrant data exists in a run."""
     out = {"artifact": raw.get("artifact"), "contest": summary["contest"], "worlds": summary["worlds"],
+           "seed_check": (summary["metrics"].get("top1") or {}).get("seed_check"),
            "empty_scenarios": summary.get("empty_scenarios"), "scenarios": [], "lineups": []}
     m = summary["metrics"].get("top1") or {}
     for s in raw["scenarios"]:
@@ -419,6 +420,7 @@ def main(argv=None):
     ap.add_argument("--season")
     ap.add_argument("--out")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--anchor-n", type=int, help="the engine's anchor measuring games (default production's 800)")
     ap.add_argument("--synthetic", action="store_true", help="the mechanics demonstration on a made-up slate")
     a = ap.parse_args(argv)
     if a.synthetic:
@@ -431,7 +433,7 @@ def main(argv=None):
     if not a.dg:
         ap.error("--dg is required (or --synthetic)")
     run_board(a.dg, a.picked, a.art_id, a.worlds, a.workers, a.gpu, a.preset, a.lineups, a.scenarios, a.out,
-              a.season, a.per_list, a.dry_run, a.art_root)
+              a.season, a.per_list, a.dry_run, a.art_root, a.anchor_n)
     return 0
 
 
