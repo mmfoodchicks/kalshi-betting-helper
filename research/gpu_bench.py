@@ -36,7 +36,9 @@ Safety: it refuses to start while pc_worker reports a build in progress (the
 light's task file), unless --force; it lowers its own priority; numpy's BLAS
 threads are capped with --threads (default: half the cores).
 
-    pip install cupy-cuda12x          # once, for the GPU half (CUDA 12 driver)
+    pip install "cupy-cuda12x[ctk]"   # once, for the GPU half: CuPy plus the CUDA headers its
+                                      # kernels compile against (plain cupy-cuda12x failed on the
+                                      # owner's PC: "Failed to find CUDA headers")
     python research/gpu_bench.py                       # synthetic, 20,000 worlds x 300,000 lineups
     python research/gpu_bench.py --source cache        # the newest real slate on this PC
     python research/gpu_bench.py --worlds 40000 --field 300000 --out bench.json
@@ -170,7 +172,14 @@ def run(xp, X, idx, w, chunk, fractions, device):
         sync()
         t["matmul_s"] += time.time() - a
         a = time.time()
-        B = xp.clip(xp.floor(S * _RES + 0.5), 0, _NB - 1).astype(xp.int32)
+        # dfs_tourney._buckets exactly: in place on the score matrix, then the
+        # cast (truncation equals floor once clipped at 0). The first version
+        # here built temporaries and read the CPU's bucketing ~4x the matmul
+        # on the owner's PC; production does not pay that.
+        xp.multiply(S, _RES, out=S)
+        S += 0.5
+        xp.clip(S, 0, _NB - 1, out=S)
+        B = S.astype(xp.int32)
         sync()
         t["bucket_s"] += time.time() - a
         if first_b is None:
@@ -246,8 +255,8 @@ def main():
             gpu = (Bg, Tg)
             print(f"[bench]   {tg}")
         except ImportError:
-            rep["gpu"] = {"error": "CuPy is not installed: pip install cupy-cuda12x"}
-            print("[bench] CuPy not installed: the CPU figures stand alone (pip install cupy-cuda12x)")
+            rep["gpu"] = {"error": 'CuPy is not installed: pip install "cupy-cuda12x[ctk]"'}
+            print('[bench] CuPy not installed: the CPU figures stand alone (pip install "cupy-cuda12x[ctk]")')
         except Exception as e:
             rep["gpu"] = {"error": f"{type(e).__name__}: {e}"}
             print(f"[bench] GPU run failed: {type(e).__name__}: {e} (lower --chunk if out of memory)")
