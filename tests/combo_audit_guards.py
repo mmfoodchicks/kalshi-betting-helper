@@ -18906,12 +18906,13 @@ if _Gde.available():
        _w1[0] > _w1[1] > _w1[2], str([round(x, 2) for x in _w1]))
     # (3) DraftKings scoring of the defense and the kicker, by hand
     _me = {k: _npde.array([v]) for k, v in {"td_ret": 1, "blk": 1, "sacks": 0, "int": 0, "fum_lost": 0, "pts": 7, "ret_pts": 7,
-                                           "safety_conceded": 0, "fg_0_39": 1, "fg_40_49": 1, "fg_50p": 1, "xp_made": 2}.items()}
+                                           "td_def": 0, "safety_conceded": 0, "fg_0_39": 1, "fg_40_49": 1, "fg_50p": 1,
+                                           "xp_made": 2}.items()}
     _op = {k: _npde.array([v]) for k, v in {"td_ret": 0, "blk": 0, "sacks": 3, "int": 1, "fum_lost": 1, "pts": 17, "ret_pts": 0,
-                                           "safety_conceded": 1}.items()}
+                                           "td_def": 0, "safety_conceded": 1}.items()}
     # the other offence scored 17 with the ball (2 TD + 2 tries + 1 FG): tier 14-20 = +1;
     # 3 sacks, 1 interception (+2), 1 fumble (+2), a return TD (+6), a safety (+2), a block (+2)
-    ck("DraftKings DST and kicker points come off the same simulated game, by DK's tables: points allowed are what the OTHER offence scored with the ball (its own return scores and the safeties this defense scored excluded), plus sacks, takeaways, return and defensive touchdowns, safeties and blocks; the kicker is 3/4/5 by distance plus his tries",
+    ck("DraftKings DST and kicker points come off the same simulated game, by DK's tables: points allowed are what the OTHER side scored (only its defense's return-TD sixes and the safeties this defense scored excluded -- DraftKings' rule, 2026-11-26), plus sacks, takeaways, return and defensive touchdowns, safeties and blocks; the kicker is 3/4/5 by distance plus his tries",
        float(_Gde.dk_dst(_me, _op)[0]) == 1 + 3 + 2 + 2 + 6 + 2 + 2 and float(_Gde.dk_kicker(_me)[0]) == 3 + 4 + 5 + 2
        and int(_Gde.off_points(_op, _me)[0]) == 17)
     # (4) the level: the drive model and the deep engine, at the slate's weight

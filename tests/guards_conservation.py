@@ -318,11 +318,11 @@ def run(ck):
        sc_bad == 0 and lat_bad == 0, f"{sc_bad} off DK's score, {lat_bad} off the lattice")
     tiers = [(0, 10), (1, 7), (6, 7), (7, 4), (13, 4), (14, 1), (20, 1), (21, 0), (27, 0), (28, -1), (34, -1), (35, -4), (70, -4)]
     one = lambda v: np.asarray([v])                                          # noqa: E731
-    z1 = {k: one(0) for k in ("td_ret", "blk", "sacks", "int", "fum_lost", "pts", "ret_pts", "safety_conceded")}
+    z1 = {k: one(0) for k in ("td_ret", "blk", "sacks", "int", "fum_lost", "pts", "ret_pts", "td_def", "safety_conceded")}
     tier_ok = all(float(G.dk_dst(z1, dict(z1, pts=one(pa)))[0]) == pts_ for pa, pts_ in tiers)
     dst_bad = k_bad = 0
     for me, op in ((bh, ba), (ba, bh)):
-        pa = op["pts"] - op["ret_pts"] - 2 * me["safety_conceded"]
+        pa = op["pts"] - 6 * op["td_def"] - 2 * me["safety_conceded"]
         tier = np.select([pa == 0, pa <= 6, pa <= 13, pa <= 20, pa <= 27, pa <= 34], [10, 7, 4, 1, 0, -1], -4)
         want = tier + op["sacks"] + 2 * op["int"] + 2 * op["fum_lost"] + 6 * me["td_ret"] + 2 * op["safety_conceded"] + 2 * me["blk"]
         dst_bad += int((G.dk_dst(me, op) != want).sum()) + int((pa < 0).sum())
@@ -330,6 +330,36 @@ def run(ck):
     ck("C2 the defense: DK's points-allowed tiers at every edge (0 / 1-6 / 7-13 / 14-20 / 21-27 / 28-34 / 35+), and on the engine's games its score is "
        "the tier + every sack, takeaway, return TD, safety and block of that same game (points allowed never negative)",
        tier_ok and dst_bad == 0, f"tiers {tier_ok}, {dst_bad} defense-worlds off")
+    # C2b: DraftKings' points-allowed rule, verified by the owner on the official
+    # classic and showdown rules (2026-11-26): a kickoff or punt return TD counts
+    # against the other D/ST in full; the six of a pick-six (or a defensive fumble
+    # TD) does not, its try does; the safeties this defense scored stay out.
+    def dst(op_pts, op_td_def=0, me_blk=0, me_safety_conceded=0, me_td_ret=0):
+        me = dict(z1, blk=one(me_blk), safety_conceded=one(me_safety_conceded), td_ret=one(me_td_ret))
+        op = dict(z1, pts=one(op_pts), td_def=one(op_td_def))
+        return float(G.dk_dst(me, op)[0]), int(G.off_points(op, me)[0])
+    cases = {
+        "offence 14": (dst(14), (1.0, 14)),
+        "offence 14 + kickoff return TD + XP": (dst(21), (0.0, 21)),
+        "offence 14 + punt return TD + two-point try": (dst(22), (0.0, 22)),
+        "offence 14 + pick-six + XP (the try counts)": (dst(21, op_td_def=1), (1.0, 15)),
+        "offence 14 + pick-six, try missed": (dst(20, op_td_def=1), (1.0, 14)),
+        "only a pick-six, try missed: a shutout": (dst(6, op_td_def=1), (10.0, 0)),
+        "pick-six and a defensive fumble TD, both tries made": (dst(14, op_td_def=2), (7.0, 2)),
+        "a safety this defense scored stays out (+2 for it)": (dst(16, me_safety_conceded=1), (1.0, 14)),
+        "a blocked kick (+2) and this unit's own return TD (+6)": (dst(14, me_blk=1, me_td_ret=1), (9.0, 14)),
+        "the 34/35 edge": (dst(35), (-4.0, 35)),
+    }
+    bad = {k: v for k, v in cases.items() if v[0] != v[1]}
+    ck("C2b DraftKings' points allowed by event (the owner's verified rule): kickoff and punt return TDs count in full, "
+       "a pick-six's (or defensive fumble TD's) six do not but its try does, a shutout of the offence survives an "
+       "opponent's return six, the safeties this defense scored stay out, blocks and this unit's own return TDs pay, "
+       "and the tiers hold at their edges", not bad, str(bad))
+    td_bad = 0
+    for me, op in ((bh, ba), (ba, bh)):
+        td_bad += int(((me["td_def"] > me["td_ret"]) | (me["td_def"] > op["int"])).sum())
+    ck("C2c on the engine's own games every defensive touchdown is one of the other offence's interceptions and one "
+       "of this side's return touchdowns (a pick-six is the only kind it plays)", td_bad == 0, f"{td_bad} worlds off")
     ck("C3 the kicker is his own field goals by DK's distance tiers (3/4/5) plus his tries, in every world",
        k_bad == 0, f"{k_bad} worlds off")
     # what one unit loses the other gains: an interception costs the QB a point

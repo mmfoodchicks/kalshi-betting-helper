@@ -368,6 +368,12 @@ def _box():
             # every game plays exactly as it did.
             "fg_0_39": 0, "fg_40_49": 0, "fg_50p": 0, "xp_made": 0, "two_made": 0,
             "ret_pts": 0, "blk": 0,
+            # touchdowns this side's DEFENSE scored on a return (pick-six;
+            # the engine plays no fumble-return TD): DraftKings leaves their
+            # six -- not their try -- out of the other D/ST's points allowed,
+            # while a kickoff or punt return TD counts (the owner, verified on
+            # the official classic and showdown rules, 2026-11-26). A counter.
+            "td_def": 0,
             # how this side's drives ended (diagnostics; summed, not averaged)
             "ends": {"td": 0, "fg": 0, "fgm": 0, "punt": 0, "int": 0, "fum": 0, "downs": 0,
                      "safety": 0, "clock": 0}}
@@ -877,6 +883,7 @@ def _snap(S, box, sides, T, rng, playoff):
                 if adv >= 99 or 100 - ytg - adv <= 0:
                     # pick-six
                     box[1 - off]["td_ret"] += 1
+                    box[1 - off]["td_def"] += 1
                     if lg:
                         _ev(S, box, "int", o=off, d=down, t=dist, y=ytg, yd=0, ret=ret, td=0, six=1, to="int")
                     _run_clock(S, box, sides, T, rng, "to", me.tempo, defer_end=True)

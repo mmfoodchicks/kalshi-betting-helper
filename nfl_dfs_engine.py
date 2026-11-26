@@ -59,7 +59,12 @@ except ImportError:                     # the server: no numpy, never this model
     np = None
 
 SIM_MODEL = "engine-deep"
-SIM_MODEL_VERSION = 1
+# 2 (2026-11-26): DraftKings' points allowed by event -- a kickoff or punt
+# return TD against a D/ST counts, a pick-six's six does not (off_points). The
+# version a board's `simulator` stamp carries, so a board built after the fix
+# says so; it is not ENGINE, so no board is rebuilt for it (-0.08 D/ST points a
+# game on average, 3.9% of worlds moved, measured on 20,000 league games).
+SIM_MODEL_VERSION = 2
 
 # Anchoring the deep engine to the blended level: one measuring pass at the
 # profiles' own level (which IS the deep engine's expectation for the
@@ -155,7 +160,7 @@ ENV_SD = 0.14
 # The quantities read off each side's box, per world (counters of
 # nfl_deep_sim._box); `safety_conceded` is the box's ends["safety"].
 BOX_KEYS = ("pts", "pass_att", "comp", "pass_yds", "td_pass", "int", "sacks", "rush_att", "rush_yds",
-            "td_rush", "fum_lost", "kneels", "td_ret", "ret_pts", "blk", "fg_made", "fg_0_39",
+            "td_rush", "fum_lost", "kneels", "td_ret", "ret_pts", "td_def", "blk", "fg_made", "fg_0_39",
             "fg_40_49", "fg_50p", "xp_made", "two_made", "drives", "plays")
 
 
@@ -467,10 +472,19 @@ def dk_offense(c, n):
 
 
 def off_points(box, opp_box):
-    """The points a side scored WITH the ball -- what the other defense
-    'allowed' in DraftKings' sense: everything but its return touchdowns
-    (and their tries) and the safeties its defense scored."""
-    return box["pts"] - box["ret_pts"] - 2 * opp_box["safety_conceded"]
+    """What the OTHER side's D/ST allowed in DraftKings' sense: every point
+    this side scored except the six of each touchdown its own defense scored
+    on a return (a pick-six; the try after it still counts) and the safeties
+    its defense scored. A kickoff or punt return touchdown counts in full.
+
+    The owner verified the rule on DraftKings' official classic and showdown
+    rules (2026-11-26). Until then every return score was left out (`ret_pts`:
+    kick and punt returns and their tries too), so a D/ST that gave up a
+    kickoff-return touchdown was paid as though it had not. Safeties stay
+    out as before: the owner's table does not list them, an open question.
+    Not played by the engine at all: fumble-return and blocked-kick return
+    touchdowns, defensive two-point returns."""
+    return box["pts"] - 6 * box["td_def"] - 2 * opp_box["safety_conceded"]
 
 
 def dk_dst(me, opp):

@@ -798,8 +798,11 @@ data-only `sim-history` branch (which never deploys):
 - **Owner decisions, 2026-11-26.**
   - DraftKings D/ST points allowed include kickoff, punt and blocked-kick return TDs. They exclude the
     opponent defense's pick-six and fumble-return TDs (their conversions count). Verified on the official
-    classic and showdown rules pages; the engine's `off_points` still leaves every return score out:
-    to fix.
+    classic and showdown rules pages. Implemented the same day: `nfl_deep_sim` counts `td_def`
+    (pick-sixes, the only defensive TD it plays) and `nfl_dfs_engine.off_points` is every opponent point
+    less 6 x td_def and the safeties this defense scored (`SIM_MODEL_VERSION` 2). The effect is -0.08
+    D/ST points a game, 3.9% of worlds moved. Guards C2b/C2c in `tests/guards_conservation.py`.
+    Still open: safeties (not in the owner's table), and Sleeper's `pts_allow` on the actuals side.
   - The NFL deep weight stays 0.30 until its registered read. 200 rows = 100 games, paired per game,
     clustered by week, both the registered comparison and the production blend; an inconclusive result
     is insufficient evidence; any replacement protocol uses fresh data.
