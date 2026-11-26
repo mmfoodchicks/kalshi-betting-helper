@@ -813,6 +813,11 @@ data-only `sim-history` branch (which never deploys):
 
 ## The PC offload
 
+The checkout on the owner's PC is `D:\Games\Kalshi Betting\kalshi-betting-helper` (the owner, 2026-11-26).
+The path has a space in it, so quote it in commands: `cd /d "D:\Games\Kalshi Betting\kalshi-betting-helper"`.
+The worker runs from there with `vigil-pc.bat` on the `python` on PATH. One-off tools such as
+`research\gpu_bench.py` run in a second Command Prompt in that folder, never in the worker's window.
+
 The owner's always-on Windows PC runs `pc_loop.py` (git-checks every 60s,
 restarts itself on update) which runs `pc_worker.py`. The loop WAITS on the
 worker, and one cycle can be hours of board builds, so the worker checks for
