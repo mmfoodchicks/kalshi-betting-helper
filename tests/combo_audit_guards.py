@@ -22114,6 +22114,20 @@ try:
        and _h_res["misses"] and "no tight end at FLEX" in _h_res["rules"]
        and _h_res["cross"]["tolerance"] == _dh.CROSS_TOL,
        str({k: _h_res.get(k) for k in ("best", "ours")})[:300])
+    # The owner's backlog (2026-11-26, item 2.3): the NFL look-back read "0% in band" with 0 below and 0 above for
+    # every tournament-board objective -- those lineups are logged with no floor or ceiling, and the rates were
+    # divided by every lineup. Unavailable is None, drawn n/a; the rates read only the lineups with a band.
+    _br_none = _dl_h.band_rates({})
+    _br_all = _dl_h.band_rates({"below_floor": 1, "low": 3, "high": 5, "above_ceiling": 1})
+    _br_part = _dl_h.band_rates({"low": 1, "high": 1})
+    _js_br = open(os.path.join(os.path.dirname(__file__), "..", "static", "app.js")).read()
+    ck("the look-back's band rates read only the lineups that carry a floor and ceiling; lineups with none (the "
+       "tournament boards') are 'n/a', never a measured 0% in band with 0 below and 0 above",
+       _br_none == {"n_banded": 0, "below_floor_pct": None, "in_band_pct": None, "above_ceiling_pct": None}
+       and _br_all == {"n_banded": 10, "below_floor_pct": 10, "in_band_pct": 80, "above_ceiling_pct": 10}
+       and _br_part["in_band_pct"] == 100 and _br_part["n_banded"] == 2
+       and "**band_rates(b)," in _insp.getsource(_dl_h.report)
+       and "r.in_band_pct == null ?" in _js_br and "unavailable, not 0%" in _js_br, str((_br_none, _br_all)))
     import clock as _clk_h
     _h_o = (_dh.hindsight, _dh.capture_tourney, _clk_h.today_et)
     _h_calls = []

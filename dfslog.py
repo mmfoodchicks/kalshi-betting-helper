@@ -707,6 +707,20 @@ def _ready(sport, event_date, today):
     return False
 
 
+def band_rates(buckets):
+    """{"n_banded", "below_floor_pct", "in_band_pct", "above_ceiling_pct"} over the lineups that CARRY a band
+    (floor, median and ceiling). The tournament boards' lineups (objective tourney:<list>) are logged without
+    one, so each had bucket None and the rates, divided by every lineup, read 0% in band, 0 below, 0 above --
+    missing data shown as a measured result (the owner's backlog, 2026-11-26, item 2.3). No band at all is
+    None for every rate, drawn "n/a"."""
+    b = buckets or {}
+    nb = sum(int(b.get(k) or 0) for k in ("below_floor", "low", "high", "above_ceiling"))
+    pct = (lambda k: round(100 * k / nb, 0)) if nb else (lambda k: None)
+    return {"n_banded": nb, "below_floor_pct": pct(int(b.get("below_floor") or 0)),
+            "in_band_pct": pct(int(b.get("low") or 0) + int(b.get("high") or 0)),
+            "above_ceiling_pct": pct(int(b.get("above_ceiling") or 0))}
+
+
 def _bucket(actual, floor, median, ceil):
     if floor is None or median is None or ceil is None:
         return None
@@ -1013,9 +1027,7 @@ def report():
                     "bias_pct": round(100 * (d["actual"] / max(1e-9, d["proj"]) - 1), 1),
                     "beat_proj_pct": round(100 * d["beat"] / n, 0),
                     "player_mae": round(d["abs_err"] / d["n_players"], 1) if d["n_players"] else None,
-                    "below_floor_pct": round(100 * b["below_floor"] / n, 0),
-                    "in_band_pct": round(100 * (b["low"] + b["high"]) / n, 0),
-                    "above_ceiling_pct": round(100 * b["above_ceiling"] / n, 0),
+                    **band_rates(b),
                     "partial": d["partial"]})
     best = {}
     for row in out:
