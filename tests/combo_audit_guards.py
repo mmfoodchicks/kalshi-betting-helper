@@ -12,6 +12,10 @@ import os, sys, datetime, collections, time as _tm
 # checkout, graded them for real, and the accumulated rows eventually crossed
 # a calibration earn-floor and flipped a guard's expected behaviour mid-week.
 os.environ["VIGIL_NO_BG"] = "1"
+# The worlds' disk cache is the PC's (pool_cache): importing pc_worker below
+# would point it inside the checkout. An empty value keeps it off for the whole
+# suite; tests/guards_pool_cache.py points it at a temporary directory itself.
+os.environ["VIGIL_POOL_CACHE_DIR"] = ""
 # The PC worker's flag (pc_worker's __main__) plays the NFL deep layer at 5,000 games: a
 # developer's shell that carries it must not turn this suite into the PC.
 os.environ.pop("VIGIL_PC_WORKER", None)
@@ -24820,6 +24824,16 @@ ck("the snapshot exports the owner's picked build of a slate beside the plain bo
    "/api/dfs/tourney?sport=nfl&dg=$dg&pick=1" in _pk_wf and "get('picked_built_ts')" in _pk_wf
    and "d.get('picked') and d.get('status') != 'none'" in _pk_wf
    and 'f"tourney-{os.environ[\'DG\']}-pick.json"' in _pk_wf)
+
+print("=" * 72)
+print("PC. The simulated worlds cached on the PC's disk (2026-11-26, pool_cache; research/reports/dfs_cache_evaluator.md):")
+print("    versioned keys, exact round trip, integrity, atomic writes, retention, invalidation (tests/guards_pool_cache.py)")
+print("=" * 72)
+try:
+    __import__("guards_pool_cache").run(ck)
+except Exception as _pcg_e:                # a guard file that cannot run is a failed guard, never a skipped one
+    import traceback as _pcg_tb
+    ck("guards_pool_cache runs to the end", False, f"{type(_pcg_e).__name__}: {_pcg_e} " + _pcg_tb.format_exc()[-600:])
 
 print("=" * 72)
 print("UI. The readability pass (2026-11-26): checkbox labels, chips that never break inside themselves, Best Bets'")

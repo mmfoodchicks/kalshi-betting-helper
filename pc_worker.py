@@ -41,6 +41,10 @@ sys.path.insert(0, _HERE)
 # before any model module import resolves its store path.
 os.environ.setdefault("VIGIL_SIM_CACHE_DIR", os.path.join(_HERE, "pc-simcache"))
 os.environ.setdefault("DEEP_CACHE_DIR", os.path.join(_HERE, "pc-deepcache"))
+# The simulated worlds on disk (pool_cache, 2026-11-26): only the PC sets it,
+# so a tournament build, a picked build and the lineup evaluator read the same
+# games instead of simulating them again. Inside pc-simcache (gitignored).
+os.environ.setdefault("VIGIL_POOL_CACHE_DIR", os.path.join(os.environ["VIGIL_SIM_CACHE_DIR"], "poolcache"))
 
 
 def _config():

@@ -193,6 +193,24 @@ jobs:
               fi
             done
           fi
+          # The real fields (2026-11-26, backlog 2.1): every DraftKings standings
+          # summary the PC made (dk_standings: rank knots, ownership, shape and
+          # duplication -- aggregates, no entrant names), so the format-split
+          # validation (research/dfs_format_validation.py) can read where each
+          # board's lineups would have finished. The raw exports never leave the PC.
+          curl -sS -o /tmp/fields.json --max-time 30 "${AUTH[@]}" "$APP_URL/api/dfs/fields" || true
+          if python3 -c "import json; json.load(open('/tmp/fields.json'))" 2>/dev/null; then
+            for cid in $(python3 -c "import json; print(' '.join(str(r['contest_id']) for r in json.load(open('/tmp/fields.json')).get('contests', [])[:40]))"); do
+              curl -sS -o /tmp/fs.json --max-time 30 "${AUTH[@]}" "$APP_URL/api/dfs/fields?cid=$cid" || true
+              if python3 -c "import json,sys; sys.exit(0 if (json.load(open('/tmp/fs.json')).get('summary')) else 1)" 2>/dev/null; then
+                CID="$cid" python3 - <<'PY'
+          import json, os
+          s = json.load(open("/tmp/fs.json"))["summary"]
+          json.dump(s, open(os.path.join(os.environ["ERRORS_DIR"], f"dkfield-{os.environ['CID']}.json"), "w"), indent=1, sort_keys=True)
+          PY
+              fi
+            done
+          fi
           # The records, so a model change can be checked against the live
           # record from this branch (2026-10-29): every predlog bucket against
           # the Kalshi price it was logged beside (/api/sharp), the NFL and

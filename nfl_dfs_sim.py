@@ -1003,6 +1003,35 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
                 # PC): the board is still built, on legacy worlds, and says so
                 errlog.note("NFLENG-context", _e)
                 eng_ctx = None
+        # The PC's disk cache of these worlds (pool_cache; research/reports/
+        # dfs_cache_evaluator.md): keyed on the call, the simulator's code and
+        # every input the worlds are drawn from, so a picked build, a rebuild
+        # or the evaluator's final worlds read the very games a board was
+        # built on instead of simulating them again (158 s of the Thanksgiving
+        # MEGA's build). Engine boards only, and only where the PC set the
+        # directory: the server never touches a matrix.
+        pc_key = pc_call = pc_snap = None
+        if model == "engine" and eng_ctx and eng_ctx.get("profiles"):
+            import pool_cache
+            if pool_cache.enabled():
+                try:
+                    pc_call = {"season": str(season), "week": int(week), "n": int(n), "preseason": bool(preseason),
+                               "teams": sorted(want), "model": model, "seed": seed, "xside": float(xside or 0.0),
+                               "discrete": bool(discrete)}
+                    pc_snap = games
+                    pc_key = pool_cache.key(pc_call, pool_cache.inputs_hash(
+                        games=games, profiles=eng_ctx.get("profiles"), drive=eng_ctx.get("drive"),
+                        weight=eng_ctx.get("weight"), dst=dst_projections(str(season), week),
+                        kickers=kicker_projections(str(season), week)))
+                    hit = pool_cache.load(pc_key)
+                except Exception as _e:
+                    errlog.note("POOLCACHE-key", _e)
+                    pc_key, hit = None, None
+                if hit is not None:
+                    cached_pool, cached_rep, _meta = hit
+                    if cached_rep is not None:
+                        engine_reports[(season, week, tuple(sorted(want)) or None, seed)] = cached_rep
+                    return cached_pool or None
         for gid, g in games.items():
             sim = None
             if model == "engine":
@@ -1171,6 +1200,13 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
                 "games": eng_rep, "fallback_legacy": eng_fallback,
                 "drive_games": len((eng_ctx or {}).get("drive") or {}) // 2,
                 "profiles": len((eng_ctx or {}).get("profiles") or {}), "weight": (eng_ctx or {}).get("weight")}
+            # a game that fell back to the unseeded legacy model is not
+            # reproducible, so its worlds are not filed as if they were
+            if pc_key and pool and not eng_fallback:
+                import pool_cache
+                pool_cache.save(pc_key, pool, pc_call,
+                                engine_report=engine_reports[(season, week, tuple(sorted(want)) or None, seed)],
+                                snapshot=pc_snap)
         return pool or None
     return _cached(("nfl_pool", season, week, n, bool(preseason), tuple(sorted(want)) or None, model, seed, float(xside or 0.0), bool(discrete)),
                    1800, build)
