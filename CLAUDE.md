@@ -847,6 +847,18 @@ data-only `sim-history` branch (which never deploys):
     1.0e-8 to 1.9e-8, each estimate within ~3-8% sampling): a field-MODEL gap, not sampling. Showdown 2.4x
     (sd_dup). Never scaled per lineup. Every board stamps `field_duplication` (the standings' own
     definition); summaries keep `most_copied` and `copies_histogram` from 2026-11-26.
+  - **Duplication mechanisms** (2026-11-26, a Fable agent; `research/reports/dk_mech.md`, `research/dk_mech.py`,
+    `dk_mix.py`, `dk_mix_classic.py`): both pre-registered mixture fields FAILED the owner's five criteria on their
+    held-out contests -- nothing changes a board. Classic's noisy-optimizer cluster (w 0.10, sigma 0.10) reached the
+    AGGREGATE collision on week 11 (0.61x real) while holding 1 of the public's 20 most-copied builds: aggregate
+    accuracy is not lineup accuracy. Findings to build on, not repeat: the duplicates are EXACT, cross-entrant, at
+    the $50,000 cap and near an optimum -- but another projection's (our optimum has 0 real copies; in showdown the
+    public's chalk sits at our projection rank 108-9,074); 150-max entrants are the LEAST duplicated class;
+    production's sampler steered onto the REAL per-player ownership closes ~85x of the classic gap (ownership
+    concentration, sum of own^2 1.5-1.65 real vs 0.87 served), and the served classic field scores 15-29 real
+    points under the real one -- probably the bigger payout/EV error. Next (each the owner's call): a public
+    consensus projection captured before lock; classic ownership concentration and field strength first; the
+    optimizer cluster re-registered with a stack rule on contests not read; weeks 1, 2, 6 raw exports for classic.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 

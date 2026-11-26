@@ -603,3 +603,20 @@ data (none acted on here):
 - Not reproducible from the repository alone: the raw exports (they name
   entrants and stay out of git) and, for the three S7 contests, the committed
   S7 captures and feeds that `research/s7_beta.lifted_pool` reads.
+
+## Provenance of the commits (appended 2026-11-26 on integration; nothing above was edited)
+
+The study was done in an isolated worktree by a Fable agent and its five commits were cherry-picked onto the
+work branch unchanged, in order, keeping their author times (the order is the pre-registration's evidence):
+
+| step | worktree commit | work-branch commit | author time (UTC) |
+|---|---|---|---|
+| Phase A + the mixture pre-registered | `4e510e5` | `8956ac7` | 18:07:36 |
+| the owner's five criteria (B.7), before any validation read | `b6572d4` | `5e09039` | 18:23:09 |
+| classic development fit, frozen | `5b45aec` | `84ec0b3` | 18:33:43 |
+| showdown development fit, frozen | `d294ea5` | `f10eda2` | 19:07:00 |
+| the validation read | `da831de` | `520dbe8` | 19:17:35 |
+
+Reviewed on integration: no entrant handle, EntryId or per-entrant row in any committed file (the one match of
+"user" is a label, `"unit": "user"`); handles were used in memory only.
+
