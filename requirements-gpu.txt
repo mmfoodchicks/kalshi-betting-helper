@@ -1,0 +1,8 @@
+# OPTIONAL, installed by hand only -- pc_loop never installs this file (it installs
+# requirements.txt and requirements-pc.txt). The lineup evaluator can run its
+# field thresholds on an NVIDIA GPU when vigil-pc.cfg says "gpu": true
+# (dfs_evaluate.field_thresholds, verified against the CPU on every job).
+# CuPy plus the CUDA headers its kernels compile against; plain cupy-cuda12x
+# failed on the owner's PC with "Failed to find CUDA headers" (2026-11-26):
+#     pip install "cupy-cuda12x[ctk]"
+cupy-cuda12x[ctk]

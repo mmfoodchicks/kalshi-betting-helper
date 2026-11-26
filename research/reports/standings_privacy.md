@@ -66,6 +66,55 @@ There are two ways to take the old commits out of public view. Both are your dec
   - Workflows that push to `sim-history` use the built-in token and keep working.
 - **What it cannot undo.** Copies already cloned or indexed by anyone before the flip.
 
+#### Option A readiness, checked 2026-11-26 evening (the owner chose A; nothing has been changed on GitHub)
+
+**What was verified from here:**
+
+| item | finding | what to do |
+|---|---|---|
+| GitHub Actions minutes | 147 workflow runs in the last 30 days, about **240 billed minutes** (guards ~91, error-log ~88, nightly ~56, weekly ~4; each run rounded up to the minute). The Free plan includes 2,000 a month for private repositories. | Nothing. There is room for about 8x today's usage. Check Settings > Billing after the first month. |
+| Workflows that write to `sim-history` | They use the built-in `GITHUB_TOKEN`, which works the same in a private repository. | Nothing. |
+| The app reading its own repository | **One dependency:** on every restart, `deep_history.restore_from_github` pulls the MLB deep-sim history back from `sim-history` over anonymous raw.githubusercontent URLs. In a private repository that request is refused. The restore is best-effort, so the app starts normally and the failure is ledgered (`APP-restore_history`). MLB simulation is paused for the off-season (`MLB_SIMS_PAUSED`), so nothing is lost now. | Before MLB resumes, either give the app a read-only, single-repository token (a small code change: the app holds no GitHub credentials today, so that is your call), or accept that the MLB history calendar starts empty after a restart. |
+| The PC worker | pc_loop fetches anonymously over HTTPS (`git fetch`, then `git pull --ff-only`). Hardened in this commit: its git now runs with prompts off and a 300-second timeout. A missing credential therefore shows as a pull error on the light while the PC keeps building on its current code, instead of hanging the loop on a sign-in window. | The sign-in steps below, BEFORE flipping. |
+| Third-party raw.githubusercontent reads | dynastyprocess, Sackmann and TML are other people's public repositories, unaffected. | Nothing. |
+
+**What only the owner can check: Render.**
+
+- Render Dashboard > the Vigil service > Settings > Build & Deploy: the repository should show as connected
+  through GitHub.
+- On GitHub: Settings > Applications > Installed GitHub Apps > Render > Configure > Repository access should
+  read "All repositories" or list `kalshi-betting-helper`. If it does, a private repository deploys as before.
+- If the service was created from a public URL rather than the app, reconnect it through the app first.
+  Otherwise the next deploy after the flip fails. The running service keeps running either way.
+
+**The PC worker's sign-in, step by step** (before flipping, in a second Command Prompt; the worker can keep
+running):
+
+1. `cd /d "D:\Games\Kalshi Betting\kalshi-betting-helper"`, then `git log -1 --oneline`. It must show the
+   commit that hardened pc_loop's git, or a later one. The PC pulls on its own between builds. Do not flip
+   before this, or an unattended fetch could still wait on a prompt.
+2. `git config --global credential.helper` should print `manager`. Git for Windows ships Git Credential
+   Manager. If it prints nothing: `git config --global credential.helper manager`.
+3. `git credential-manager github login`. A browser opens: sign in as the repository's owner and approve.
+4. `git credential-manager github list` should show that account.
+5. Flip the repository to private: GitHub > the repository > Settings > General > Danger Zone > Change
+   visibility > Private.
+6. In the same Command Prompt: `git fetch`. It must finish with no prompt and no error. That confirms the
+   stored credential works.
+7. Within a minute or two, check the PC light shows no pull error. pc_loop fetches every 60 seconds.
+
+Fallback if step 3 is unavailable (an older Git Credential Manager): create a fine-grained token (GitHub >
+Settings > Developer settings > Fine-grained tokens) with repository access "Only select repositories ->
+kalshi-betting-helper", permission "Contents: Read-only", and an expiry of your choosing. After the flip, run
+`git fetch` once in the Command Prompt; when asked, enter your GitHub username, then paste the token at the
+second prompt; Git Credential Manager stores it.
+
+**After the flip.**
+
+- Links to files in the repository need a signed-in browser, including any shared with ChatGPT.
+- If Vigil should ever be public again, publish a fresh, sanitized repository rather than this history.
+- **What A cannot do:** anything already cloned or cached while the repository was public stays out there.
+
 ### Option B: rewrite history to drop the three files
 
 - **Every commit hash from `479caa2` on changes:** 121 commits, almost two months of history.
@@ -114,6 +163,6 @@ There are two ways to take the old commits out of public view. Both are your dec
 7. **Roll back if needed.** The bundle from step 2 restores the old history exactly: clone from the bundle and
    force-push.
 
-**Recommendation.** Take A if the Actions minutes fit, because it fixes the exposure without breaking two months
+**Recommendation (the owner has since chosen A).** Take A if the Actions minutes fit, because it fixes the exposure without breaking two months
 of provenance. If the repository must stay public, take B, in a quiet window, with the bundle kept offline. This
 session does neither without your go-ahead.

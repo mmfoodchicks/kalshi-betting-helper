@@ -95,13 +95,30 @@ real contests have their board on the data branch:
 **Unchanged:** expected copies, the tie-split EV and first place on both board kinds. `money_gate` already
 marks them non-authoritative on every board (`duplicates_exact: false`), and nothing here moves that.
 
-**Registered, not built:** a field model may be called calibrated on duplication for a format only when all
-three hold:
+**Registered, not built** (the numbers set 2026-11-26 evening, before any validation contest is read, at the
+owner's request). A field model may be called calibrated on duplication for a format only when every item
+below holds on EVERY validation contest of that format: at least 5 new contests built after this commit, each
+with the board's stamped figure. Each item is reported per contest, pass or fail, beside the current
+production field's value.
 
-1. At least 5 NEW contests of that format (built after this commit), each with the board's stamped figure.
-2. Every one has the model within a factor of 2 of the real C (|log ratio| < log 2).
-3. The real 20 most-copied builds (`most_copied`, kept from this commit; players only, never an entrant) are
-   among the field model's most probable lineups at a rate the rule states before the data.
+1. **Aggregate.** The model's collision C is within a factor of 2 of the real one.
+2. **Individual lineups, recall.** At least 10 of the real 20 most-copied builds (`most_copied`) are among the
+   model's 200 most probable lineups.
+3. **Individual lineups, counts.** Over those real top-20 builds, the median of (model expected copies / real
+   copies) lies in [0.5, 2.0].
+4. **Not by inflating everything.**
+   - The share of real entries in UNIQUE lineups is matched within +/-5 points.
+   - The duplicate-count histogram's mass at 2-10 copies, and at 11+, are each within a factor of 2.
+
+   This is the check against multiplying every lineup's duplication.
+5. **The rest no worse.** Against the current production field on the same contest:
+   - top-40 ownership MAE no more than 0.5 points worse;
+   - mean salary used within $200 of real, or no worse than production;
+   - stacking and team-split categories no more than 2 points worse in any category;
+   - field score quantiles P50 / P90 / P99 no worse.
+
+The Fable study (`research/reports/dk_mech.md`, in progress) registers the same numbers for its mixture model
+before its validation read.
 
 Until then no constant is moved on these numbers. The showdown knob (0.468%) and any classic lineup-level
 mechanism (an "optimizer cluster" in the field: some share of entrants submitting the projection-optimal and

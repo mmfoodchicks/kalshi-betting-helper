@@ -203,6 +203,106 @@ def _match_worlds(meta, pool):
     return rows, missing
 
 
+# ---- the field's per-world thresholds, on the CPU or the PC's GPU ------------------------------------
+# The owner's RTX 4070 SUPER measured this kernel 7.8x the CPU (research/gpu_bench.py, 20,000 worlds x
+# 300,000 lineups, 2026-11-26: 102.5 s against 11.6 s + 1.5 s start-up, every bucket and threshold equal):
+# the score products and the bucketing are 12-18x on the GPU; the histograms only gain once many worlds
+# share one bincount (world j's buckets offset by j x _NB), because one world a call is ~10 tiny kernels
+# and the syncs cupy.bincount makes to size its output. Opt-in ("gpu": true in vigil-pc.cfg sets
+# VIGIL_GPU=1 in the evaluator's lane); the first chunk is recomputed on the CPU and compared cell by cell,
+# and any mismatch or error sends the whole job back to the CPU, ledgered. The server never has CuPy.
+GPU_HIST_BATCH = 50
+
+
+def _thresholds_cpu(B, w, qs):
+    """Production's form, one world a call: the lowest bucket whose field mass strictly above is at most
+    each fraction (that mass never rises with the bucket)."""
+    import dfs_tourney
+    T = np.zeros((B.shape[0], len(qs)), dtype=np.int32)
+    for j in range(B.shape[0]):
+        hist = np.bincount(B[j], weights=w, minlength=dfs_tourney._NB)
+        above = np.cumsum(hist[::-1])[::-1] - hist            # field mass strictly above each bucket
+        T[j] = np.searchsorted(-above, -(qs + 1e-12), side="left")
+    return T
+
+
+def _cpu_chunks(X, WfT, w, qs, chunk, upto=None):
+    import dfs_tourney
+    W = X.shape[1] if upto is None else min(upto, X.shape[1])
+    T = np.zeros((W, len(qs)), dtype=np.int32)
+    for a in range(0, W, chunk):
+        Xc = np.ascontiguousarray(X[:, a:min(a + chunk, W)].T)
+        T[a:a + Xc.shape[0]] = _thresholds_cpu(dfs_tourney._buckets(Xc @ WfT), w, qs)   # the board's bucketing
+    return T
+
+
+def _gpu():
+    """CuPy on the first device when the evaluator lane asked for it, else None."""
+    if os.environ.get("VIGIL_GPU") != "1":
+        return None
+    try:
+        try:
+            import cupy                          # PC-only extra, never in requirements.txt
+        except ImportError:
+            errlog.note("EVAL-gpu-init", msg="gpu requested but CuPy is not installed; CPU used")
+            return None
+        cupy.cuda.Device(0).use()
+        return cupy
+    except Exception as e:                       # a broken install, no device, no driver: the CPU answers
+        errlog.note("EVAL-gpu-init", e)
+        return None
+
+
+def _thresholds_gpu(cp, X, WfT, w, qs, chunk):
+    """The same thresholds on the GPU: dfs_tourney._buckets in place, then GPU_HIST_BATCH worlds a
+    bincount and, per fraction, the count of buckets whose mass above exceeds it -- searchsorted's left
+    point on a row that never rises."""
+    import dfs_tourney
+    NB, RES = dfs_tourney._NB, dfs_tourney._RES
+    W, M = X.shape[1], WfT.shape[1]
+    Xd, WfTd = cp.asarray(X), cp.asarray(WfT)
+    hb = max(1, min(GPU_HIST_BATCH, chunk))
+    wt = cp.tile(cp.asarray(w, dtype=cp.float64), hb)
+    qh = [float(q) + 1e-12 for q in qs]
+    T = cp.zeros((W, len(qs)), dtype=cp.int32)
+    for a in range(0, W, chunk):
+        S = cp.ascontiguousarray(Xd[:, a:a + chunk].T) @ WfTd
+        cp.multiply(S, RES, out=S)
+        S += 0.5
+        cp.clip(S, 0, NB - 1, out=S)
+        B = S.astype(cp.int32)
+        del S
+        for u in range(0, B.shape[0], hb):
+            n = min(hb, B.shape[0] - u)
+            off = (cp.arange(n, dtype=cp.int32) * NB)[:, None]
+            hist = cp.bincount((B[u:u + n] + off).ravel(), weights=wt[:n * M], minlength=n * NB).reshape(n, NB)
+            above = cp.cumsum(hist[:, ::-1], axis=1)[:, ::-1] - hist
+            for k, q in enumerate(qh):
+                T[a + u:a + u + n, k] = cp.count_nonzero(above > q, axis=1)
+        del B
+    out = cp.asnumpy(T)
+    del Xd, WfTd, wt, T
+    cp.get_default_memory_pool().free_all_blocks()
+    return out
+
+
+def field_thresholds(X, WfT, w, qs, chunk, xp=None):
+    """(T, device): every final world's threshold buckets. The GPU when asked and verified on the first
+    chunk against the CPU exactly, else the CPU. `xp` lets a test hand in the array module."""
+    cp = xp if xp is not None else _gpu()
+    if cp is not None:
+        try:
+            T = _thresholds_gpu(cp, X, WfT, w, qs, chunk)
+            ref = _cpu_chunks(X, WfT, w, qs, chunk, upto=chunk)
+            bad = int((T[:len(ref)] != ref).sum())
+            if bad == 0:
+                return T, "GPU (first chunk verified on the CPU)"
+            errlog.note("EVAL-gpu-mismatch", msg=f"{bad} of {ref.size} first-chunk thresholds differ; CPU used")
+        except Exception as e:
+            errlog.note("EVAL-gpu", e)
+    return _cpu_chunks(X, WfT, w, qs, chunk), "CPU"
+
+
 def prepare(path, meta, n=FINAL_N, workers=None, log=print, pool=None):
     """Simulate the slate's final worlds (through the worlds cache) and score
     the board's field on them once. Idempotent: an existing final.npz is
@@ -233,19 +333,12 @@ def prepare(path, meta, n=FINAL_N, workers=None, log=print, pool=None):
     cpt = 1.5 if meta["kind"] == "showdown" else None
     Wf = dfs_tourney.lineup_matrix(idx, P, cpt_mult=cpt)
     qs = np.asarray(_fractions(meta), dtype=np.float64)
-    T = np.zeros((W, len(qs)), dtype=np.int32)
     t0 = time.time()
     chunk = max(16, int(dfs_tourney._CHUNK_ELEMS // max(1, len(idx))))
     WfT = np.ascontiguousarray(Wf.T)
-    for a in range(0, W, chunk):
-        Xc = np.ascontiguousarray(X[:, a:a + chunk].T)
-        B = dfs_tourney._buckets(Xc @ WfT)                       # the board's own bucketing
-        for j in range(B.shape[0]):
-            hist = np.bincount(B[j], weights=w, minlength=dfs_tourney._NB)
-            above = np.cumsum(hist[::-1])[::-1] - hist            # field mass strictly above each bucket
-            # the lowest bucket whose mass above is at most q (above never rises with the bucket)
-            T[a + j] = np.searchsorted(-above, -(qs + 1e-12), side="left")
-    log(f"[eval] {meta['id']}: field of {len(idx):,} scored on {W:,} final worlds ({time.time() - t0:.0f}s)")
+    T, device = field_thresholds(X, WfT, w, qs, chunk)
+    log(f"[eval] {meta['id']}: field of {len(idx):,} scored on {W:,} final worlds on the {device} "
+        f"({time.time() - t0:.0f}s)")
     def write(tmp):
         # float32, exactly the matrix the board itself scores (dfs_tourney builds X as float32)
         np.savez(os.path.join(tmp, "final.npz"), X=X, T=T, qs=qs,

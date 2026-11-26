@@ -192,11 +192,18 @@ Each look is read once, when every earlier-kicked game is settled.
 - `REINSTATE_030`: a boundary is crossed. The weight returns to 0.30. The improvement is **established**.
 - `STOPPED_FUTILITY_STAYS_ZERO` (the second look) or `STAYS_ZERO` (the last): the weight stays 0. The
   improvement is **NOT ESTABLISHED**, which is not evidence that there is none.
-  - The output carries the one-sided 95% upper bound on the gain: the largest improvement the data still
-    cannot exclude.
-  - Only when that bound is under **0.005 nats a game** (registered now as "negligible") does it say "no
+  - The output carries the largest improvement the data still cannot exclude.
+  - Only when that bound is under **0.005 nats a game** (registered as "negligible") does it say "no
     meaningful improvement".
-  - The 100-game read's 0 is worded the same way.
+  - **The bound accounts for the looks and the early stopping.** It is a one-sided 95% *repeated* confidence
+    bound: the same O'Brien-Fleming shape, C x sqrt(3/k) with C = 1.709, converted to t on weeks - 1. C is set
+    so the bound covers the true gain at all three looks at once, so it stays valid wherever the test stops:
+    simulated, it misses about 5% of the time under early stopping (guard DR16).
+  - A fixed-sample bound read at the stopping look would understate the uncertainty; it is not reported.
+  - The 100-game read is a single look, so its bound is the ordinary one-sided 95% bound and is worded the
+    same way.
+- **Every prospective output also carries the power caveat** (`power_note`): 80% at 0.015 assumes
+  independent games, against 58% and 45% at weekly correlations of 0.05 and 0.10.
 - `CONTINUE`: otherwise.
 
 **9. Engine changes during the window** (the registered refit, 2027's table refits): the read reports the
@@ -248,5 +255,12 @@ Only DraftKings' and Kalshi's figures were computed for this check.
   - Every 0 carries "not established" and the upper bound.
   - No per-game deep or drive figure was looked at to make any of these changes. The only figures read were
     DraftKings' and Kalshi's on the `nfl_book` rows, to trace the audit's 0.5243 (section 7).
+- **2026-11-26, evening (before the trigger; no per-game figure looked at).** The owner approved the rule and
+  asked that the bounds account for sequential testing and early stopping, and that the power caveat be
+  reported clearly. read script sha256: `d12b7e34df75d552b3e3eff61f72df2e9d7f68bac8e2842c058ac07612072ec2`
+  - The prospective test's reported bound is now the repeated confidence bound (`RCI_C` 1.709,
+    `rci_upper`).
+  - Every output carries `POWER_NOTE`.
+  - The decision rule, boundaries, looks and effect size are unchanged.
 - Any later edit to the read script: a dated line here giving the reason and the new hash, BEFORE the
   trigger. After the trigger: none.

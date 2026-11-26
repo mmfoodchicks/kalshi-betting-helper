@@ -9017,6 +9017,12 @@ _declared40 = {"flask", "werkzeug", "gunicorn", "qrcode", "tzdata"}
 _pc40 = {_l.split(">=")[0].split("==")[0].strip().lower()
          for _l in open(_os.path.join(_root, "requirements-pc.txt"))
          if _l.strip() and not _l.startswith("#")}
+# The GPU's CuPy (2026-11-26) is opt-in and installed by hand (requirements-gpu.txt, which pc_loop never
+# installs): allowed as a PC-only extra on the same terms -- only behind try/except ImportError. The
+# distribution is cupy-cuda12x[ctk]; the module it imports is cupy.
+_gpu40 = open(_os.path.join(_root, "requirements-gpu.txt")).read()
+if "cupy-cuda12x[ctk]" in _gpu40 and "never installs this file" in _gpu40:
+    _pc40.add("cupy")
 _undeclared40 = []
 for _f40 in sorted(_os.listdir(_root)):
     if not _f40.endswith(".py"):
@@ -17335,6 +17341,13 @@ ck("no tracked file is a DraftKings standings export (by name, or by DraftKings'
    "owner, 2026-11-26: 'Add safeguards against accidentally committing raw standings again'",
    not _s7bad and "**/contest-standings-*.csv.gz" in _s7gi and "research/data/dk_standings/*.csv.gz" in _s7gi
    and "EntryId,EntryName" in _s7ss and "*contest-standings*" in _s7ss and "gzip -dc" in _s7ss, str(_s7bad))
+_pcl_src = open(_os.path.join(_root, "pc_loop.py")).read()
+ck("the PC loop's git never waits for a person: prompts off for the terminal and Git Credential Manager, and a "
+   "timeout, so a repository that starts asking for credentials (the private-repo option, standings_privacy.md) "
+   "is an ordinary fetch failure on the light, never a loop hung on a sign-in window",
+   '_GIT_ENV = {"GIT_TERMINAL_PROMPT": "0", "GCM_INTERACTIVE": "never"}' in _pcl_src
+   and "env={**os.environ, **_GIT_ENV}, timeout=_GIT_TIMEOUT_S)" in _pcl_src
+   and "except subprocess.TimeoutExpired:" in _pcl_src)
 _s7 = _json18.load(open(_os.path.join(_root, "research", "data", "s7_field.json")))
 _s7c = _s7["contests"]
 _s7s = {str(r["contest"]): r for r in _s7["summary"]}
@@ -24891,6 +24904,7 @@ print("=" * 72)
 try:
     _ev_mod = __import__("guards_evaluator")
     _ev_mod.run(ck)
+    _ev_mod.run_gpu(ck)
     _ev_mod.run_wiring(ck)
 except Exception as _ev_e:                 # a guard file that cannot run is a failed guard, never a skipped one
     import traceback as _ev_tb

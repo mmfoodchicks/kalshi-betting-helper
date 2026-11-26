@@ -156,26 +156,42 @@ def run(ck):
        "futility at the second look, and every look's statistic is kept",
        R.PRO_LOOKS == (130, 260, 390) and ok_b and ok_t and R.PRO_FUTILITY_LOOK == 2
        and pre["fresh_graded_games"] == 110 and set(pre) == {"fresh_graded_games", "fresh_pending_games",
-                                                            "looks_at", "decision"}
+                                                            "looks_at", "decision", "power_note"}
        and pre["decision"] == R.CONTINUE and full["decision"] == R.REINSTATE
        and last.get("t", 0) > last.get("boundary_t", 1e9) and [x["games"] for x in full["looks"]][:1] == [130]
        and null["decision"] == R.FUTILE and [x["games"] for x in null["looks"]] == [130, 260],
        f"{pre} {full.get('decision')} {[(x['games'], round(x['t'], 2), round(x['boundary_t'], 2)) for x in full.get('looks', [])]} "
        f"{null.get('decision')}")
     # a deep figure much noisier than the drive's: the gain is not established (seed 1), or the blend is
-    # clearly worse and every value the data allow is negligible (seed 3)
+    # clearly worse and every value the data allow, by the repeated-confidence bound, is negligible (seed 5)
     noisy = R.prospective(_rows(100 + 400, 100 + 400, seed=1, deep_sd=0.25, drive_sd=0.10), [], t_last)
-    worse = R.prospective(_rows(100 + 400, 100 + 400, seed=3, deep_sd=0.35, drive_sd=0.10), [], t_last)
+    worse = R.prospective(_rows(100 + 400, 100 + 400, seed=5, deep_sd=0.5, drive_sd=0.10), [], t_last)
     ck("DR15 failing to establish an improvement is never written as 'no improvement': a stop with the weight at 0 "
        "says NOT ESTABLISHED and carries the 95% upper bound on the gain the data still allow; only a bound under "
        f"{R.NEGLIGIBLE} nats may be called 'no meaningful improvement' (the owner: 'Preserve the distinction')",
        noisy["decision"] in (R.STAYS_ZERO, R.FUTILE) and "NOT ESTABLISHED" in noisy.get("conclusion", "")
        and "not evidence that there is none" in noisy.get("conclusion", "")
-       and noisy["looks"][-1]["upper95"] > R.NEGLIGIBLE
+       and noisy["looks"][-1]["upper95_rci"] > R.NEGLIGIBLE
        and worse["decision"] == R.FUTILE and worse["conclusion"].startswith("no meaningful improvement")
-       and worse["looks"][-1]["upper95"] < R.NEGLIGIBLE
+       and worse["looks"][-1]["upper95_rci"] < R.NEGLIGIBLE
        and "no meaningful improvement" in R._conclusion(0.0, 0.004) and "NOT ESTABLISHED" in R._conclusion(0.0, 0.006),
        f"{noisy.get('decision')} {noisy.get('conclusion')} | {worse.get('decision')} {worse.get('conclusion')}")
+
+    # the reported bound survives the looks and the stopping: the repeated-confidence constant covers all three
+    # looks at once (simulated here on Brownian paths, as the constant was), and it is wider than the
+    # fixed-sample bound at every look
+    import numpy as _np
+    _rg = _np.random.default_rng(5)
+    _S = _rg.standard_normal((400000, 3)).cumsum(axis=1)
+    _Zs = _S / _np.sqrt(_np.arange(1, 4))
+    _miss = (_Zs > R.RCI_C * _np.sqrt(3 / _np.arange(1, 4))).any(axis=1).mean()
+    _st = {"mean": 0.01, "se": 0.005, "weeks": 20}
+    ck("DR16 the bound after a sequential stop is a REPEATED confidence bound (C = 1.709 x sqrt(3/k), t on weeks - 1): "
+       "it misses the true gain at ANY look about 5% of the time under early stopping, wider than the fixed-sample "
+       "bound at every look; every prospective output carries the weekly-dependence power caveat (80% / 58% / 45%)",
+       0.045 < _miss < 0.055 and all(R.rci_upper(_st, k) > R.upper_bound(_st) for k in (1, 2, 3))
+       and "58%" in R.POWER_NOTE and "45%" in R.POWER_NOTE and "power_note" in pre,
+       f"miss {_miss}")
 
     rep = open(_REPORT).read() if os.path.exists(_REPORT) else ""
     pinned = re.findall(r"read script sha256: `([0-9a-f]{64})`", rep)

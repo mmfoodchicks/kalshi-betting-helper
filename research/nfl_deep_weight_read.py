@@ -65,6 +65,15 @@ PRO_LOOKS = (130, 260, 390)
 PRO_BOUNDS_Z = (3.471, 2.454, 2.004)
 PRO_FUTILITY_LOOK = 2
 NEGLIGIBLE = 0.005        # an improvement below this is "no meaningful improvement" (report section 6)
+# The bound reported after a sequential stop must survive the looks and the stopping: a fixed-sample
+# bound read at whichever look the test stopped understates the uncertainty. It is the REPEATED
+# confidence interval (Jennison & Turnbull): the same O'Brien-Fleming shape, C x sqrt(3/k), with C set
+# so a one-sided 95% bound holds at all three looks at once, whatever the stopping (C = 1.709 by
+# 4,000,000 simulated Brownian paths; the same simulation reads the test's own 2.004 at 2.500%).
+RCI_C = 1.709
+POWER_NOTE = ("80% power at 0.015 nats a game assumes independent games; with weekly dependence it is 58% "
+              "(intra-week correlation 0.05) and 45% (0.10) -- report section 6. False positives hold at 2.4-2.6% "
+              "either way.")
 
 
 def _betacf(a, b, x, itmax=300, eps=3e-15):
@@ -329,6 +338,14 @@ def read(rows, hist):
     return status
 
 
+def rci_upper(st, k):
+    """One-sided 95% repeated-confidence upper bound on the mean gain at look k (t on weeks - 1):
+    simultaneous over the looks, so valid wherever the test stopped."""
+    if not st.get("se") or st["se"] != st["se"] or st.get("weeks", 0) < 2:
+        return None
+    return st["mean"] + t_boundary(RCI_C * math.sqrt(len(PRO_LOOKS) / k), st["weeks"]) * st["se"]
+
+
 def _conclusion(gain, ub):
     if ub is not None and ub < NEGLIGIBLE:
         return (f"no meaningful improvement: every value the data allow is below {NEGLIGIBLE} nats a game "
@@ -352,7 +369,7 @@ def prospective(rows, hist, after_ts):
     fresh = [g for g in graded if g["kickoff"] > after_ts]
     pend = [p for p in pending if p["kickoff"] > after_ts]
     out = {"fresh_graded_games": len(fresh), "fresh_pending_games": len(pend), "looks_at": list(PRO_LOOKS),
-           "looks": []}
+           "looks": [], "power_note": POWER_NOTE}
     for k, (n, zb) in enumerate(zip(PRO_LOOKS, PRO_BOUNDS_Z), start=1):
         if len(fresh) < n:
             break
@@ -362,7 +379,7 @@ def prospective(rows, hist, after_ts):
         st = clustered(ds, "drive_cal", "blend_cal")
         bound = t_boundary(zb, st["weeks"])
         look = {"look": k, "games": n, "weeks": st["weeks"], "boundary_z": zb, "boundary_t": bound,
-                "t": st["z"], "mean": st["mean"], "se": st["se"], "upper95": upper_bound(st),
+                "t": st["z"], "mean": st["mean"], "se": st["se"], "upper95_rci": rci_upper(st, k),
                 "raw_blend_vs_drive": clustered(ds, "drive", "blend"),
                 "deep_vs_drive_cal": clustered(ds, "drive_cal", "deep")}
         out["looks"].append(look)
@@ -372,12 +389,12 @@ def prospective(rows, hist, after_ts):
             return out
         if (k == PRO_FUTILITY_LOOK and not st["mean"] > 0) or k == len(PRO_LOOKS):
             out["decision"] = FUTILE if k == PRO_FUTILITY_LOOK and not st["mean"] > 0 else STAYS_ZERO
-            out["conclusion"] = _conclusion(st["mean"], look["upper95"])
+            out["conclusion"] = _conclusion(st["mean"], look["upper95_rci"])
             return out
     out["decision"] = CONTINUE
     if not out["looks"]:
         # counts only before the first look
-        out = {k: out[k] for k in ("fresh_graded_games", "fresh_pending_games", "looks_at", "decision")}
+        out = {k: out[k] for k in ("fresh_graded_games", "fresh_pending_games", "looks_at", "decision", "power_note")}
     return out
 
 

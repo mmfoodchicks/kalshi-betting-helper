@@ -62,6 +62,15 @@ def _config():
     return url, tok
 
 
+def _cfg_flag(key):
+    """A true/false switch from vigil-pc.cfg; absent or unreadable is False."""
+    try:
+        with open(os.path.join(_HERE, "vigil-pc.cfg")) as fh:
+            return bool(json.load(fh).get(key))
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
 _COMMIT_CACHE = [None]
 
 
@@ -1424,6 +1433,11 @@ def eval_main():
         os.nice(10)
     except (AttributeError, OSError):
         pass                                     # Windows: the loop's process priority stands
+    if _cfg_flag("gpu"):
+        # "gpu": true in vigil-pc.cfg: the field's thresholds on the GPU, each job's first chunk checked
+        # against the CPU cell by cell (dfs_evaluate.field_thresholds); anything else answers on the CPU
+        os.environ["VIGIL_GPU"] = "1"
+        print("[vigil-pc] evaluator: GPU requested in vigil-pc.cfg (verified against the CPU on every job)")
     while True:
         try:
             reqs = _api(url, tok, "/api/dfs/eval/requests").get("requests") or []

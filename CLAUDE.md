@@ -790,6 +790,13 @@ data-only `sim-history` branch (which never deploys):
     (`optimizer:<list>`) on those worlds: out of sample for both. Ties are not split, so EV is
     experimental; `looks` flags repeat comparisons as development data. Exact against a brute force
     (`tests/guards_evaluator.py`, EV).
+  - **The GPU** (2026-11-26; `research/gpu_bench.py` on the owner's RTX 4070 SUPER: the field-threshold
+    kernel 7.8x the CPU, 102.5 s vs 11.6 s + 1.5 s start-up, every bucket and threshold equal, once the
+    histograms take 50 worlds a bincount -- one world a call was launch/sync-bound). The evaluator uses it
+    when `"gpu": true` is in vigil-pc.cfg (`dfs_evaluate.field_thresholds`, VIGIL_GPU=1 in the eval lane
+    only): every job's first chunk is recomputed on the CPU and compared cell by cell, and a mismatch or any
+    error sends the whole job to the CPU (`EVAL-gpu-mismatch` / `EVAL-gpu`). The tournament scoring pass is
+    still CPU-only: measure it on a real slate (`--source cache`) before moving it.
 - **Showdown vs Classic on real results** (`research/dfs_format_validation.py`, report
   `research/reports/dfs_format_validation.md`). It grades every exported board on real DraftKings points
   against the projection-optimal lineup on the board's own pool. No 2-6-game classic has been graded yet,
@@ -914,7 +921,9 @@ Saturday-night Millionaire) on the slate's card (`last_attempt`), each in
 the ledger as `TOURN-attempt` (showdowns `TOURN-attempt-sd`) -- read the
 error-log snapshot before guessing why a board is missing. The builders say
 why they returned nothing (`dfs_tourney.last_refusal`). A request lives until
-its slate locks (`starts_ts`). `vigil-pc.bat` is frozen on purpose (cmd reads .bat by byte offset,
+its slate locks (`starts_ts`). pc_loop's git runs with prompts off (`GIT_TERMINAL_PROMPT=0`, `GCM_INTERACTIVE=never`) and a 300 s timeout
+(2026-11-26): a repository that starts asking for credentials is a pull error on the light, never a loop hung
+on a sign-in window. `vigil-pc.bat` is frozen on purpose (cmd reads .bat by byte offset,
 so a self-pulling batch file corrupts itself); all logic lives in Python.
 
 ## Hard-won gotchas

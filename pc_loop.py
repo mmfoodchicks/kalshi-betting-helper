@@ -49,8 +49,23 @@ UPDATE_WAITING = 3              # pc_worker's exit code when it stopped for newe
 _PULL_ERR = [""]                # the last pull's failure, "" while pulls succeed
 
 
+# git here runs unattended. If the repository ever needs credentials the PC has
+# not stored (the owner is weighing making it private, research/reports/
+# standings_privacy.md), git must FAIL rather than open a terminal prompt or Git
+# Credential Manager's sign-in window and wait for a person -- an unanswered
+# prompt would hang the loop for good. With prompts off, a missing credential is
+# an ordinary fetch failure: the loop says so on the light and keeps building on
+# the code it has. The timeout covers a stalled network the same way.
+_GIT_ENV = {"GIT_TERMINAL_PROMPT": "0", "GCM_INTERACTIVE": "never"}
+_GIT_TIMEOUT_S = 300
+
+
 def _git(*args):
-    r = subprocess.run(["git", *args], cwd=_HERE, capture_output=True, text=True)
+    try:
+        r = subprocess.run(["git", *args], cwd=_HERE, capture_output=True, text=True,
+                           env={**os.environ, **_GIT_ENV}, timeout=_GIT_TIMEOUT_S)
+    except subprocess.TimeoutExpired:
+        return 1, f"git {args[0] if args else ''} timed out after {_GIT_TIMEOUT_S}s"
     # a failure's reason is on stderr ("Your local changes would be overwritten
     # ..."); the heartbeat carries it to the light
     out = r.stdout if r.returncode == 0 else (r.stderr or r.stdout)

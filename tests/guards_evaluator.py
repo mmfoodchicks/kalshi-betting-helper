@@ -188,6 +188,63 @@ def _showdown(ck, np):
        + meta["players"][6]["cpt_salary"] - meta["players"][6]["salary"])
 
 
+def run_gpu(ck):
+    """The evaluator's thresholds on the PC's GPU (2026-11-26): equal to the original one-world loop, verified on
+    the first chunk, every failure back on the CPU. CuPy is not here, so numpy stands in for it -- the code path
+    and its arithmetic are what is checked; the owner's RTX 4070 SUPER measured the same kernel equal to the CPU
+    on every one of 75,000,000 buckets and 160,000 thresholds (research/gpu_bench.py)."""
+    import inspect
+    import types
+    import numpy as np
+    import dfs_evaluate as E
+    import dfs_tourney as T
+    rng = np.random.default_rng(2)
+    P, W, M = 60, 700, 20000
+    X = (np.rint(rng.gamma(2.0, 4.0, size=(P, W)) * 50.0) / 50.0).astype(np.float32)    # DraftKings' 0.02 lattice
+    idx = np.stack([rng.choice(P, 9, replace=False) for _ in range(M)])
+    w = rng.dirichlet(np.ones(M) * 0.5)                                                  # very uneven field weights
+    WfT = np.ascontiguousarray(T.lineup_matrix(idx, P).T)
+    qs = np.asarray([0.0, 0.001, 0.01, 0.1, 0.2], dtype=np.float64)
+    chunk = 128
+    ref = np.zeros((W, len(qs)), np.int32)
+    for a in range(0, W, chunk):                                      # the pre-GPU loop, verbatim
+        B = T._buckets(np.ascontiguousarray(X[:, a:a + chunk].T) @ WfT)
+        for j in range(B.shape[0]):
+            hist = np.bincount(B[j], weights=w, minlength=T._NB)
+            above = np.cumsum(hist[::-1])[::-1] - hist
+            ref[a + j] = np.searchsorted(-above, -(qs + 1e-12), side="left")
+    fake = types.SimpleNamespace(**{k: getattr(np, k) for k in dir(np) if not k.startswith("__")})
+    fake.asnumpy = np.asarray
+    fake.get_default_memory_pool = lambda: types.SimpleNamespace(free_all_blocks=lambda: None)
+    Tc, dc = E.field_thresholds(X, WfT, w, qs, chunk)
+    Tg, dg = E.field_thresholds(X, WfT, w, qs, chunk, xp=fake)
+    bad = types.SimpleNamespace(**vars(fake))
+    bad.count_nonzero = lambda a, axis=None: np.count_nonzero(a, axis=axis) + 1
+    Tb, db = E.field_thresholds(X, WfT, w, qs, chunk, xp=bad)
+    boom = types.SimpleNamespace(**vars(fake))
+    boom.tile = lambda *a: (_ for _ in ()).throw(MemoryError("out of VRAM"))
+    Tx, dx = E.field_thresholds(X, WfT, w, qs, chunk, xp=boom)
+    saved = os.environ.pop("VIGIL_GPU", None)
+    off = E._gpu() is None
+    if saved is not None:
+        os.environ["VIGIL_GPU"] = saved
+    ck("EV13 the evaluator's thresholds: the CPU path is the old one-world loop to the cell, and the GPU path "
+       "(several worlds a bincount, a count per fraction) gives the same cells on DraftKings' lattice with "
+       "uneven field weights", (Tc == ref).all() and dc == "CPU" and (Tg == ref).all() and dg.startswith("GPU"),
+       f"{dc} {dg} cpu {int((Tc != ref).sum())} gpu {int((Tg != ref).sum())}")
+    ck("EV14 the GPU never answers unchecked: a first chunk that differs from the CPU in one cell, or any error "
+       "(out of memory), sends the whole job to the CPU (ledgered EVAL-gpu-mismatch / EVAL-gpu) with the right "
+       "answer; with no switch the GPU is never tried",
+       db == "CPU" and (Tb == ref).all() and dx == "CPU" and (Tx == ref).all() and off, f"{db} {dx} {off}")
+    pw = open(os.path.join(_ROOT, "pc_worker.py")).read()
+    ex = open(os.path.join(_ROOT, "vigil-pc.cfg.example")).read()
+    ck("EV15 the switch is the owner's: \"gpu\": true in vigil-pc.cfg sets VIGIL_GPU=1 in the evaluator's lane only "
+       "(the example ships it false), and the evaluator's log names the device that answered",
+       'if _cfg_flag("gpu"):' in pw and 'os.environ["VIGIL_GPU"] = "1"' in pw and '"gpu": false' in ex
+       and inspect.getsource(E.prepare).count("field_thresholds(X, WfT, w, qs, chunk)") == 1
+       and "on the {device}" in inspect.getsource(E.prepare))
+
+
 def run_wiring(ck):
     """The request path and the tab (no numpy needed): the routes' shapes, the
     PC's doors, the PC lane, the page's script."""
@@ -236,6 +293,7 @@ if __name__ == "__main__":
         (PASS if cond else FAIL).append((name, detail))
         print(("PASS " if cond else "FAIL ") + name + ("" if cond else f"   {detail}"))
     run(ck)
+    run_gpu(ck)
     run_wiring(ck)
     print(f"{len(PASS)} passed, {len(FAIL)} failed")
     sys.exit(1 if FAIL else 0)
