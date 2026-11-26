@@ -1179,7 +1179,7 @@ def run_subset(W, X, f, grid, rows, chunk=500, progress=None, workers=1):
     return out
 
 
-def greedy_cover(P, k):
+def greedy_cover(P, k, limits=None):
     """Greedy shared-field cover over a (candidates, worlds) matrix of
     per-world make-it probabilities. Returns (chosen rows best first,
     P(at least one chosen makes it) after each pick).
@@ -1197,10 +1197,24 @@ def greedy_cover(P, k):
 
     Two identical entries therefore gain nothing from the second copy, which
     is the whole point: the old product-of-misses form paid 19% for a pair of
-    10% twins, and paid most where the entries were most alike."""
+    10% twins, and paid most where the entries were most alike.
+
+    `limits` (dfs_portfolio.Limits: the owner's exposure, team and overlap
+    caps over these rows; None as before) is a CONSTRAINT inside the step,
+    not a filter on the answer: a candidate that would break a cap as the
+    next entry is skipped and the best of the rest (the same gain, the same
+    lowest-index tie-break) is taken; with nothing feasible left the cover
+    stops short of k and its report says which caps refused the rest
+    (limits.reports, one per call). Filtering the uncapped cover afterwards
+    would keep entries chosen for worlds a dropped entry was covering. With
+    limits None this is the loop it always was, line for line."""
     P = np.asarray(P)
     K, N = P.shape
+    if limits is not None:
+        limits.reset(k)
     if not K or not N:
+        if limits is not None:
+            limits.finish(k, [], 1 if k else None)
         return [], []
     # rows held at once in the gain pass: 4M floats keeps the temporary near
     # 30MB instead of the whole (candidates, worlds) block
@@ -1208,6 +1222,7 @@ def greedy_cover(P, k):
     chosen = []
     cov = np.zeros(N, dtype=np.float64)
     p_any = []
+    stop = None
     for _ in range(min(k, K)):
         gain = np.empty(K, dtype=np.float64)
         for a in range(0, K, rows_at_once):
@@ -1215,14 +1230,25 @@ def greedy_cover(P, k):
             gain[a:a + rows_at_once] = np.maximum(blk - cov[None, :], 0.0).sum(axis=1)
         if chosen:
             gain[chosen] = -1.0
-        j = int(np.argmax(gain))
+        if limits is not None:
+            free = int(np.argmax(gain))
+            gain[limits.blocked(len(chosen) + 1)] = -2.0
+            j = int(np.argmax(gain))
+            if gain[j] < 0.0:                   # every candidate left breaks a cap
+                stop = len(chosen) + 1
+                break
+            limits.take(j, changed=j != free)
+        else:
+            j = int(np.argmax(gain))
         chosen.append(j)
         cov = np.maximum(cov, P[j].astype(np.float64))
         p_any.append(float(cov.mean()))
+    if limits is not None:
+        limits.finish(k, chosen, stop)
     return chosen, p_any
 
 
-def portfolio_vs_field(Wc, Wf, wf, X, grids, cand_idx, k, chunk=500, rank="top1", workers=1):
+def portfolio_vs_field(Wc, Wf, wf, X, grids, cand_idx, k, chunk=500, rank="top1", workers=1, limits=None):
     """Greedy cover over candidate lineups, per contest: each pick adds the
     most `rank` probability (top1 or top01) in the worlds the picks so far
     leave uncovered. Returns, per contest, (chosen candidate positions best
@@ -1274,7 +1300,9 @@ def portfolio_vs_field(Wc, Wf, wf, X, grids, cand_idx, k, chunk=500, rank="top1"
         extra["ckpt"] = spec
     parts = _par_map(_make_it_range, jobs, w, arrays, extra)
     P = np.concatenate(parts, axis=2) if parts else np.zeros((len(grids), len(cand_idx), 0), dtype=np.float32)
-    return [greedy_cover(P[gi], k) for gi in range(len(grids))]
+    # `limits` (the owner's portfolio caps, dfs_portfolio.Limits) binds every contest's cover; each
+    # appends its own report, in contest order
+    return [greedy_cover(P[gi], k, limits=limits) for gi in range(len(grids))]
 
 
 def _make_it_range(job):
@@ -1303,10 +1331,10 @@ def _make_it_range(job):
     return out
 
 
-def portfolio(W, X, f, grid, cand_idx, k, chunk=500, workers=1):
+def portfolio(W, X, f, grid, cand_idx, k, chunk=500, workers=1, limits=None):
     """Showdown form of portfolio_vs_field: one contest, the field is every
     legal lineup. Returns (chosen, p_any per prefix)."""
-    return portfolio_vs_field(W, W, f, X, [grid], cand_idx, k, chunk=chunk, workers=workers)[0]
+    return portfolio_vs_field(W, W, f, X, [grid], cand_idx, k, chunk=chunk, workers=workers, limits=limits)[0]
 
 
 # ---- NFL showdown adapter ----------------------------------------------------
@@ -1401,6 +1429,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     are waived (the free slots still obey them; _sd_allowed is untouched)."""
     if np is None:
         raise RuntimeError("numpy is required for the tournament")
+    import dfs_portfolio
     import dk
     import nfl_dfs
     import nfl_dfs_sim
@@ -1574,6 +1603,12 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
                                              entry_ok=entry_ok, cpt_ok=cpt_ok)
     if idx is None:
         return _refuse("no legal lineup fits under the salary cap")
+    if pk and pk.rules and allowed.any():
+        # the owner's roster rules narrow OUR entries only (the universe and the field's weights are untouched),
+        # each rule on its own so the one that empties the board is named
+        allowed, emptied = dfs_portfolio.apply_masks(allowed, dfs_portfolio.showdown_rules_mask(idx, ents, pk.rules))
+        if emptied:
+            return _refuse(f"player picker: no lineup we may enter meets your rules: {emptied} left none")
     if pk and not allowed.any():
         # a board of empty lists is not an answer to the owner's Build (Fable's build review, M2)
         return _refuse("player picker: no lineup holds your picks under the cap and the house rules for the "
@@ -1657,7 +1692,11 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     kmax = max(portfolio_sizes)
     log(f"[tourney] scored ({t3 - t2:.0f}s); covering worlds with a portfolio of {kmax} "
         f"from the {len(cand):,} strongest...")
-    chosen, p_any = portfolio(W, X, f, grid, cand, kmax, chunk=chunk, workers=_workers(workers))
+    # the owner's portfolio caps (pick.port): a constraint inside the cover, held at every reported size
+    lim, lim_notes = (dfs_portfolio.limits_for(idx[cand], ents, pk.port, forced, sizes=portfolio_sizes,
+                                               lead_forced=[pk.captain] if pk.captain else [])
+                      if (pk and pk.port and len(cand)) else (None, []))
+    chosen, p_any = portfolio(W, X, f, grid, cand, kmax, chunk=chunk, workers=_workers(workers), limits=lim)
     ports = {}
     for k in portfolio_sizes:
         kk = min(k, len(chosen))
@@ -1695,6 +1734,21 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
                              "measured_in": "research/s4_crossfit.py (8 cross-fit cells)",
                              "fix": "disjoint selection/scoring worlds in the builder"},
                          "entries": [row(int(cand[j]), "cover") for j in chosen[:kk]]}
+        # display-only, on every portfolio: how concentrated it is (capped or not)
+        ports[str(k)]["concentration"] = dfs_portfolio.concentration(
+            ports[str(k)]["entries"], forced=forced,
+            warn_pct=(pk.port.player_pct if (pk and pk.port) else None))
+        if lim is not None:
+            # this size's own reading of the one cover: its entries, and how many of them the caps changed
+            ports[str(k)]["limits"] = dict(lim.reports[-1], k=k, entries=kk, short=kk < k,
+                                           caps_changed_picks=int(sum(lim.changed[:kk])))
+    if lim is not None:
+        pk_notes_port = list(lim_notes)
+        if lim.reports[-1]["short"]:
+            pk_notes_port.append(f"your portfolio caps left {len(chosen)} of {kmax} entries: no candidate left fits "
+                                 f"them (refused by: {', '.join(sorted(lim.reports[-1].get('stopped_by') or {}))})")
+    else:
+        pk_notes_port = list(lim_notes)
     t4 = time.time()
     if pk and not pk.captain and forced:
         listed = {int(i) for a in (by_win, by_ev, by_top1, by_money) for i in a} | {int(cand[j]) for j in chosen[:kmax]}
@@ -1773,7 +1827,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
             "players": players_out,
             "excluded": excluded[:40],
             "roster_source": nfl_dfs.roster_state(),
-            **({"pick": nfl_dfs.pick_stamp(pk, pk_waived)} if pk else {}),
+            **({"pick": nfl_dfs.pick_stamp(pk, pk_waived, pk_notes_port)} if pk else {}),
             "timings": {"sims_s": round(t1 - t0, 1), "enumerate_s": round(t2 - t1, 1),
                         "score_s": round(t3 - t2, 1), "portfolio_s": round(t4 - t3, 1),
                         "total_s": round(t4 - t0, 1)}})
@@ -3296,6 +3350,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     no excluded one."""
     if np is None:
         raise RuntimeError("numpy is required for the tournament")
+    import dfs_portfolio
     import dk
     import nfl_dfs
     import nfl_dfs_sim
@@ -3509,6 +3564,10 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     if pk:
         # only rows that can be listed take the draw budget below and the `grafted` count
         idx_c = idx_c[(forced_m[idx_c].sum(axis=1) == int(forced_m.sum())) & ~excl_m[idx_c].any(axis=1)]
+        if pk.rules and len(idx_c):
+            # ... and that meet the owner's roster rules (OUR entries only; the field was drawn above, unruled)
+            idx_c = idx_c[dfs_portfolio.apply_masks(np.ones(len(idx_c), dtype=bool),
+                                                    dfs_portfolio.classic_rules_mask(idx_c, ents, pk.rules))[0]]
     if pk and len(idx_c) > int(cand_n):
         # one forced man grafted into every slot he can take is up to four rows
         # a draw: held to the draw count, so a picked board scores about what a
@@ -3524,7 +3583,17 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     safe = safe_lineups(X, ents, keep, gen)
     idx_s = _slot_rows(safe, pos) if safe else np.zeros((0, 9), dtype=idx_chalk.dtype)
     t_pk = time.time()
-    if pk:
+    if pk and not (pk.force or pk.exclude):
+        # a pick of rules and caps alone (2026-11-26): no player moves the pool, so the second solve would be the
+        # first again; the candidates are the plain board's, the rules filter them below
+        idx_o2 = idx_s2 = np.zeros((0, 9), dtype=idx_chalk.dtype)
+        held_o2 = held_s2 = 0
+        parts = [a for a in (idx_chalk, idx_s, idx_o, idx_o2, idx_s2, idx_c)]
+        both = np.concatenate([a for a in parts if len(a)], axis=0)
+        src_both = np.concatenate([np.full(len(a), k, dtype=np.int8) for k, a in enumerate(parts) if len(a)])
+        keep_d = distinct_rows(both)
+        both, src_both = both[keep_d], src_both[keep_d]
+    elif pk:
         # the SECOND solve, for our candidates only: the picked pool (the
         # excluded and the unforced field-only out, every forced man in) with
         # the forced rows raised by _SAFE_FORCE over the generation worlds --
@@ -3567,6 +3636,12 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
             # a board of empty lists is not an answer to the owner's Build (Fable's build review, M2)
             return _refuse("player picker: no candidate lineup holds your picks under the cap and the house rules "
                            "for the players left free")
+        if pk.rules:
+            # the owner's roster rules, each on its own so the one that empties the board is named
+            allowed, emptied = dfs_portfolio.apply_masks(allowed, dfs_portfolio.classic_rules_mask(idx_k, ents, pk.rules))
+            if emptied:
+                return _refuse(f"player picker: no candidate lineup we may enter meets your rules: {emptied} left none "
+                               f"(beside the house rules and your picks)")
     keys_k = [tuple(r.tolist()) for r in np.sort(idx_k, axis=1)]
     is_opt = np.asarray([opt_count.get(k, 0) for k in keys_k])
     copies_share = np.asarray([f_count.get(k, 0) / M for k in keys_k])
@@ -3588,8 +3663,14 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     cand = ok[np.argsort(-res[0]["top1"][ok])][:int(candidates)] if len(ok) else ok
     log(f"[tourney] classic {dg}: scored ({t5 - t4:.0f}s); portfolios of {k_port} per contest from "
         f"the {len(cand):,} strongest...")
+    # the owner's portfolio caps (pick.port): a constraint inside every contest's cover
+    # held at 5, 10 and k entries, as the showdown board's reported sizes (the tab's smaller prefixes show their
+    # own concentration; a cap at one or two entries would forbid any shared player outright)
+    lim, lim_notes = (dfs_portfolio.limits_for(idx_k[cand], ents, pk.port, pk.force,
+                                               sizes=tuple(x for x in (5, 10) if x < k_port) + (k_port,))
+                      if (pk and pk.port and len(cand)) else (None, []))
     ports = portfolio_vs_field(Wc, Wf, wf, Xe, grids, cand, k_port, chunk=ch,
-                               workers=_workers(workers)) if len(cand) else []
+                               workers=_workers(workers), limits=lim) if len(cand) else []
     t6 = time.time()
 
     def row(i, gi, rank_by):
@@ -3634,9 +3715,21 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                           for i in ok[np.lexsort((-r["ev"][ok], -np.round(r["money"][ok], 6)))][:top]],
             "money_places": int(grids[gi]["money_places"]),
             "portfolio": {"entries": [row(int(cand[j]), gi, "cover") for j in chosen],
-                          "p_any_top1_pct": [round(100.0 * v, 1) for v in p_any]},
+                          "p_any_top1_pct": [round(100.0 * v, 1) for v in p_any],
+                          **({"limits": lim.reports[gi]} if lim is not None else {})},
             "chalk": row(chalk_i, gi, "chalk") if chalk_i is not None else None,
         }
+    # display-only, on every contest's portfolio: how concentrated it is (capped or not)
+    for rs in results.values():
+        rs["portfolio"]["concentration"] = dfs_portfolio.concentration(
+            rs["portfolio"]["entries"], forced=(pk.force if pk else ()),
+            warn_pct=(pk.port.player_pct if (pk and pk.port) else None))
+    port_notes = list(lim_notes)
+    if lim is not None:
+        short = [c["name"] for c, rep_ in zip(contests, lim.reports) if rep_["short"]]
+        if short:
+            port_notes.append(f"your portfolio caps left the portfolio short of {k_port} entries in "
+                              f"{', '.join(short)}: no candidate left fits them")
     # The probes come last and read only: the candidates, their ranking and
     # the portfolio above are finished before a probe is even resolved.
     if probes is None:
@@ -3744,7 +3837,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
             "players": players_out,
             "excluded": excluded[:60],
             "roster_source": nfl_dfs.roster_state(),
-            **({"pick": dict(nfl_dfs.pick_stamp(pk, pk_waived), second_solve=int(len(idx_o2)),
+            **({"pick": dict(nfl_dfs.pick_stamp(pk, pk_waived, port_notes), second_solve=int(len(idx_o2)),
                              second_solve_held=held_o2, steady=int(len(idx_s2)), steady_held=held_s2,
                              grafted=int(len(idx_c)), allowed=int(allowed.sum()))}
                if pk else {}),

@@ -14851,14 +14851,18 @@ _s4_sd = _s4_src[_s4_src.index("def build_nfl_showdown("):_s4_src.index("# ---- 
 ck("the showdown board's reported portfolio coverage is IN-SAMPLE: one world set feeds the shortlist, the greedy cover and the reported number, with no held-out split anywhere",
    'cand = ok[np.argsort(-res["top1"][ok])][:int(candidates)]' in _s4_sd
    # repinned 2026-10-18: the cover runs on every core; the same worlds feed it
-   and "chosen, p_any = portfolio(W, X, f, grid, cand, kmax, chunk=chunk, workers=_workers(workers))" in _s4_sd
+   # repinned 2026-11-26: the call also passes the owner's portfolio caps (limits=, None unless a picked Build
+   # set them -- tests/guards_auto_portfolio.py); the worlds and the shortlist are the same
+   and "chosen, p_any = portfolio(W, X, f, grid, cand, kmax, chunk=chunk, workers=_workers(workers)" in _s4_sd
    and '"p_any_top1_pct": round(100.0 * p_any[kk - 1], 1)' in _s4_sd
    and "fold" not in _s4_sd.lower(),
    "S4.2 adds the cross-fit; until then this is what the number means")
 ck("and the selection objective is top 1%, not top 0.1%: the greedy's rank argument is defaulted, never passed, so the tail objective has never driven a served board",
    # repinned 2026-10-18: both signatures gained workers; the rank default is untouched
-   'def portfolio_vs_field(Wc, Wf, wf, X, grids, cand_idx, k, chunk=500, rank="top1", workers=1):' in _s4_src
-   and "return portfolio_vs_field(W, W, f, X, [grid], cand_idx, k, chunk=chunk, workers=workers)[0]" in _s4_src
+   # repinned 2026-11-26: both gained limits=None (the owner's portfolio caps, tests/guards_auto_portfolio.py);
+   # the rank default and the rank-free call are what this pins, and they are unchanged
+   'def portfolio_vs_field(Wc, Wf, wf, X, grids, cand_idx, k, chunk=500, rank="top1", workers=1' in _s4_src
+   and "return portfolio_vs_field(W, W, f, X, [grid], cand_idx, k, chunk=chunk, workers=workers" in _s4_src
    and "rank=" not in _s4_sd,
    "S4 asks whether it should be; it has not been tested before")
 
@@ -15109,7 +15113,8 @@ import inspect as _insp_s4
 ck("and PRODUCTION DID NOT CHANGE: the greedy still defaults to top 1%, no caller passes a rank, and S4 touched no production module at all",
    _insp_s4.signature(_dt14.portfolio_vs_field).parameters["rank"].default == "top1"
    and "rank=" not in _s4_sd
-   and "return portfolio_vs_field(W, W, f, X, [grid], cand_idx, k, chunk=chunk, workers=workers)[0]" in _s4_src,
+   # repinned 2026-11-26: the call passes limits= after workers (the owner's caps); still no rank
+   and "return portfolio_vs_field(W, W, f, X, [grid], cand_idx, k, chunk=chunk, workers=workers" in _s4_src,
    "an objective change would have to be written, not inherited")
 # Assert the ABSENCE of money by naming the exact symbols, not by searching for
 # the letters "ev": the first version of this guard did that and matched "every",
@@ -15231,7 +15236,8 @@ if _dt14.available():
        and bool(_np14.all(_np14.diff(_np14.asarray(_gm["F"])) >= 0)),
        str({c: int((_np14.diff(_np14.asarray(_gm[c])) > 1e-12).sum()) for c in ("top1", "top01", "cash")}))
     ck("the production cover and the research cover are the same function, not two copies that can drift",
-       "greedy_cover(P[gi], k)" in _insp.getsource(_dt14.portfolio_vs_field)
+       # repinned 2026-11-26: the call passes the owner's caps (limits=; None is the loop it always was)
+       "greedy_cover(P[gi], k" in _insp.getsource(_dt14.portfolio_vs_field)
        and "np.max(grid[\"top1\"]" in open(_os.path.join(_root, "research", "stage4.py")).read()
        and "np.prod(1.0 - grid[" not in open(_os.path.join(_root, "research", "stage4.py")).read())
 else:

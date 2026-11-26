@@ -243,7 +243,45 @@ _PK_BIAS = 1000.0       # points, more than any lineup scores: polish and kicks 
                         # man out. Inside the search only; never in a reported number.
 _PK_MAX = 30            # names one pick may list
 _PICK_SHAPE = {"QB": 1, "RB": 3, "WR": 4, "TE": 1, "DST": 1}   # _lineup_ok and the boards' solver alike
-Pick = collections.namedtuple("Pick", "exclude force captain")  # raw DK names; force holds the captain
+# raw DK names; force holds the captain. `rules` (dfs_portfolio.Rules: the stack, the bring-back, a team
+# maximum, a minimum salary) and `port` (dfs_portfolio.Port: exposure, team and overlap caps) are the owner's
+# restrictions for the same build (2026-11-26), None when he set none -- a pick that names nobody can still
+# carry them.
+Pick = collections.namedtuple("Pick", "exclude force captain rules port", defaults=(None, None))
+
+
+# The owner's roster rules as the classic search reads them (_build_one, _lineup_ok); the stack and a required
+# bring-back ride the search's own stack_min / bring_min instead.
+OptRules = collections.namedtuple("OptRules", "team_max min_salary no_bring")
+
+
+def _opt_rules(rules):
+    """OptRules from a pick's dfs_portfolio.Rules, or None when none of the three is set."""
+    if not rules:
+        return None
+    r = OptRules(rules.team_max, rules.min_salary, rules.bring == "forbidden")
+    return r if (r.team_max or r.min_salary or r.no_bring) else None
+
+
+def _pk_rule_shape(pk, stack_min, bring_min):
+    """(stack_min, bring_min, OptRules or None, notes): the sheet's stack and
+    bring-back with the owner's rules in place of the objective's defaults,
+    each replacement said. Without rules, the defaults unchanged."""
+    rl = getattr(pk, "rules", None) if pk else None
+    if not rl:
+        return stack_min, bring_min, None, []
+    notes = []
+    if rl.stack and rl.stack != stack_min:
+        notes.append(f"your stack (the quarterback and {rl.stack} of his receivers) replaces "
+                     + (f"this objective's {stack_min}" if stack_min else "the stack you switched off"))
+        stack_min = rl.stack
+    if rl.bring == "required":
+        bring_min = 1
+    elif rl.bring == "forbidden":
+        if bring_min:
+            notes.append("your rule of no bring-back replaces this objective's bring-back")
+        bring_min = 0
+    return stack_min, bring_min, _opt_rules(rl), notes
 
 
 def _pk_entry(x):
@@ -259,13 +297,17 @@ def _pk_entry(x):
 
 def pick_parse(raw):
     """The request's `pick` -- {exclude: [{name, team, id}], force: [...],
-    captain: {...} or null} -- as (name, TEAM, id) triples, or None when it
-    names nobody. ValueError on a malformed one. Always its own key: the
-    sheet's body already carries `exclude` for GAMES (dk.slate_for)."""
+    captain: {...} or null, rules: {...}, portfolio: {...}} -- as (name, TEAM,
+    id) triples, or None when it sets nothing. ValueError on a malformed one.
+    Always its own key: the sheet's body already carries `exclude` for GAMES
+    (dk.slate_for). `rules` and `portfolio` (dfs_portfolio.parse_rules /
+    parse_port, 2026-11-26) appear only when set, so a players-only pick
+    parses exactly as it always did."""
+    import dfs_portfolio
     if not raw:
         return None
     if not isinstance(raw, dict):
-        raise ValueError("pick must be an object: {exclude, force, captain}")
+        raise ValueError("pick must be an object: {exclude, force, captain, rules, portfolio}")
     ex, fo = raw.get("exclude") or [], raw.get("force") or []
     if not isinstance(ex, list) or not isinstance(fo, list):
         raise ValueError("pick.exclude and pick.force must be lists")
@@ -274,8 +316,31 @@ def pick_parse(raw):
            "captain": _pk_entry(cap) if cap else None}
     if len(out["exclude"]) + len(out["force"]) + (1 if out["captain"] else 0) > _PK_MAX:
         raise ValueError(f"a pick names at most {_PK_MAX} players")
-    if not (out["exclude"] or out["force"] or out["captain"]):
+    rules, port = dfs_portfolio.parse_rules(raw.get("rules")), dfs_portfolio.parse_port(raw.get("portfolio"))
+    if rules:
+        out["rules"] = rules
+    if port:
+        out["portfolio"] = port
+    if not (out["exclude"] or out["force"] or out["captain"] or rules or port):
         return None
+    return out
+
+
+def pick_dump(pp):
+    """A parsed pick back in the request's JSON shape (the Build queue stores
+    it; pick_parse reads it again unchanged)."""
+    if not pp:
+        return None
+    ent = lambda t: {"name": t[0], "team": t[1], "id": t[2]}
+    out = {"exclude": [ent(t) for t in pp.get("exclude") or []], "force": [ent(t) for t in pp.get("force") or []],
+           "captain": ent(pp["captain"]) if pp.get("captain") else None}
+    if pp.get("rules"):
+        out["rules"] = dict(pp["rules"])
+    if pp.get("portfolio"):
+        po = dict(pp["portfolio"])
+        if po.get("players"):
+            po["players"] = [{"name": n, "team": t, "id": i, "max_pct": c} for n, t, i, c in po["players"]]
+        out["portfolio"] = po
     return out
 
 
@@ -326,6 +391,118 @@ def _cheapest_fill(slots, cands):
     return tot
 
 
+def _dearest_fill(slots, cands):
+    """The dearest salary that fills `slots` from `cands` -- _cheapest_fill's
+    mirror (the specific slots take their dearest men, the FLEX the dearest
+    left: an exchange argument makes that the maximum) -- or None. An upper
+    bound on what a lineup can spend, so a minimum salary above it is refused
+    by arithmetic."""
+    used, tot = set(), 0
+    for s in sorted(slots, key=lambda s: s == "FLEX"):
+        best = max((c for c in cands if c[0] not in used and s in c[2]), key=lambda c: c[1], default=None)
+        if best is None:
+            return None
+        used.add(best[0])
+        tot += best[1]
+    return tot
+
+
+# The tournament board's own team cap (dfs_tourney.CL_MAX_PER_TEAM, a house rule waived only for forced men).
+# Read here by value so the web worker's queue check needs no numpy module; a guard holds the two equal.
+_BOARD_TEAM_CAP = 3
+
+
+def _pk_rules_classic(rules, port, fo, live, info, pos_of, team_of, open_slots, board, stack=True):
+    """Why the owner's roster rules cannot hold on this classic slate around his
+    picks, by arithmetic alone, or None. Conflicts between his own choices are
+    refused, never resolved quietly: a team maximum under his forced count of
+    one team, a stack the team maximum cannot seat, a forced receiver facing
+    his forced quarterback under "no bring-back", a minimum salary above the
+    dearest lineup the slate allows."""
+    if port and port.max_overlap is not None and port.max_overlap > len(ROSTER) - 1:
+        return f"a classic lineup holds {len(ROSTER)}: two entries can share at most {len(ROSTER) - 1}"
+    if not rules:
+        return None
+    by_team = collections.Counter(team_of(nm) for nm in fo)
+    if rules.team_max:
+        over = sorted((t, k) for t, k in by_team.items() if k > rules.team_max)
+        if over:
+            return (f"you forced {over[0][1]} players from {over[0][0]}, over your maximum of {rules.team_max} "
+                    f"from one team")
+        # the house stack (one receiver; the board always stacks) counts too: a maximum of 1 left no lineup
+        stack_n = rules.stack or (1 if (stack or board) else 0)
+        if stack_n and stack_n + 1 > rules.team_max:
+            return (f"a quarterback and {stack_n} of his receivers is {stack_n + 1} players from one team, "
+                    f"over your maximum of {rules.team_max}")
+    fq = next((nm for nm in fo if pos_of(nm) == "QB"), None)
+    if rules.stack:
+        if board and rules.stack + 1 > _BOARD_TEAM_CAP and not (fq and by_team[team_of(fq)] >= rules.stack + 1):
+            return (f"the board holds {_BOARD_TEAM_CAP} players from one team (a house rule waived only for forced "
+                    f"players): a quarterback and {rules.stack} receivers needs {rules.stack + 1} -- force them, or "
+                    f"stack fewer")
+        if fq:
+            mates = [nm for nm in live + sorted(fo) if nm != fq and team_of(nm) == team_of(fq)
+                     and pos_of(nm) in ("WR", "TE")]
+            if len(mates) < rules.stack:
+                return (f"{fq}'s team has {len(mates)} receivers and tight ends left: your stack needs "
+                        f"{rules.stack}")
+    if rules.bring and fq:
+        opp = _opp_of(team_of(fq), info[fq].get("game"))
+        if rules.bring == "forbidden":
+            bad = sorted(nm for nm in fo if team_of(nm) == opp and pos_of(nm) in ("WR", "TE"))
+            if opp and bad:
+                return f"you forced {bad[0]}, a receiver facing your quarterback {fq}, under \"no bring-back\""
+        elif opp and not any(team_of(nm) == opp and pos_of(nm) in ("WR", "TE") for nm in live + sorted(fo)):
+            return f"every receiver and tight end facing {fq} is excluded or out: your rule requires a bring-back"
+    if rules.min_salary:
+        cands = [(nm, int(float(info[nm]["salary"])), _elig(pos_of(nm))) for nm in live]
+        top = _dearest_fill(open_slots, cands)
+        most = None if top is None else top + sum(int(float(info[nm]["salary"])) for nm in fo)
+        if most is not None and min(most, CAP) < rules.min_salary:
+            return (f"the dearest lineup this slate allows around your picks spends ${min(most, CAP):,}, under your "
+                    f"${rules.min_salary:,} minimum")
+    return None
+
+
+def _pk_rules_showdown(rules, port, fo, live, info, team_of, csal, captain):
+    """The showdown side of _pk_rules_classic: the stack and bring-back rules
+    are classic rules (refused here, never ignored), a team maximum under three
+    leaves no lineup (six players over two teams), the forced count of one team
+    must fit it, and the minimum salary must be reachable."""
+    if port and port.max_overlap is not None and port.max_overlap > len(SHOWDOWN_ROSTER) - 1:
+        return (f"a showdown lineup holds {len(SHOWDOWN_ROSTER)}: two entries can share at most "
+                f"{len(SHOWDOWN_ROSTER) - 1}")
+    if not rules:
+        return None
+    if rules.stack or rules.bring:
+        return ("the stack and bring-back rules are classic rules: a showdown pick takes the team maximum and the "
+                "minimum salary")
+    if rules.team_max:
+        if rules.team_max < 3:
+            return (f"six players over two teams put at least three on one: a maximum of {rules.team_max} from one "
+                    f"team leaves no showdown lineup")
+        by_team = collections.Counter(team_of(nm) for nm in fo)
+        over = sorted((t, k) for t, k in by_team.items() if k > rules.team_max)
+        if over:
+            return (f"you forced {over[0][1]} players from {over[0][0]}, over your maximum of {rules.team_max} "
+                    f"from one team")
+    if rules.min_salary:
+        flex = {nm: int(float(info[nm]["salary"])) for nm in info}
+        best = None
+        for c in ([captain] if captain else sorted(fo) + sorted(live)):
+            rest = [nm for nm in fo if nm != c]
+            n_open = len(SHOWDOWN_ROSTER) - 1 - len(rest)
+            pool = sorted((flex[nm] for nm in live if nm != c), reverse=True)
+            if n_open < 0 or len(pool) < n_open:
+                continue
+            cost = csal(c) + sum(flex[nm] for nm in rest) + sum(pool[:n_open])
+            best = cost if best is None else max(best, cost)
+        if best is not None and min(best, CAP) < rules.min_salary:
+            return (f"the dearest showdown lineup this slate allows around your picks spends ${min(best, CAP):,}, "
+                    f"under your ${rules.min_salary:,} minimum")
+    return None
+
+
 def pick_resolve(pp, rows, mode, cap=CAP, stack=True, board=False):
     """(Pick, None) or (None, why): a parsed pick resolved to this slate's raw
     DraftKings names and checked by arithmetic alone -- the names, DraftKings'
@@ -369,6 +546,22 @@ def pick_resolve(pp, rows, mode, cap=CAP, stack=True, board=False):
     both = sorted(ex & fo)
     if both:
         return None, f"{both[0]} is both excluded and forced"
+    import dfs_portfolio
+    rules = dfs_portfolio.Rules(**{k: (pp.get("rules") or {}).get(k) for k in dfs_portfolio.Rules._fields}) \
+        if pp.get("rules") else None
+    port = None
+    if pp.get("portfolio"):
+        po = pp["portfolio"]
+        caps = {}
+        for name, team, pid, pct in po.get("players") or []:
+            nm, why = _pk_find((name, team, pid), rows, norm)
+            if why:
+                return None, f"portfolio cap: {why}"
+            if nm in fo and pct < 100:
+                return None, (f"{nm} is forced into every lineup, so a {pct}% cap on him cannot hold: take one of "
+                              f"the two back")
+            caps[nm] = pct
+        port = dfs_portfolio.Port(po.get("player_pct"), caps, po.get("team_pct"), po.get("max_overlap"))
     info, cpt_sal = {}, {}
     for r in rows:
         if (r.get("roster_pos") or "").upper() == "CPT":
@@ -417,7 +610,10 @@ def pick_resolve(pp, rows, mode, cap=CAP, stack=True, board=False):
         if best > cap:
             return None, (f"your picks cost ${best:,} with the open slots filled as cheaply as this slate allows, "
                           f"over the ${cap:,} cap")
-        return Pick(frozenset(ex), frozenset(fo), captain), None
+        why = _pk_rules_showdown(rules, port, fo, live, info, team_of, csal, captain)
+        if why:
+            return None, why
+        return Pick(frozenset(ex), frozenset(fo), captain, rules, port), None
     counts = collections.Counter(pos_of(nm) for nm in fo)
     for p, k in counts.items():
         if p not in _PICK_SHAPE:
@@ -435,7 +631,7 @@ def pick_resolve(pp, rows, mode, cap=CAP, stack=True, board=False):
             if opp and team_of(o) == opp:
                 return None, (f"the {d} defense plays {o}'s team: the builder never pairs a defense with an "
                               f"offense it faces; drop one")
-    if stack:
+    if stack or (rules and rules.stack):
         for q in (nm for nm in fo if pos_of(nm) == "QB"):
             mates = [nm for nm in live + sorted(fo) if nm != q and team_of(nm) == team_of(q) and pos_of(nm) in ("WR", "TE")]
             if not mates:
@@ -456,7 +652,10 @@ def pick_resolve(pp, rows, mode, cap=CAP, stack=True, board=False):
     if cost > cap:
         return None, (f"your picks cost ${cost:,} with the open slots filled as cheaply as this slate allows, "
                       f"over the ${cap:,} cap")
-    return Pick(frozenset(ex), frozenset(fo), None), None
+    why = _pk_rules_classic(rules, port, fo, live, info, pos_of, team_of, open_slots, board, stack)
+    if why:
+        return None, why
+    return Pick(frozenset(ex), frozenset(fo), None, rules, port), None
 
 
 def _pk_restore(pk, kept, dx, pre_gate, waived):
@@ -521,9 +720,13 @@ def _pk_what(pk):
 
 
 def pick_stamp(pk, waived=(), notes=()):
-    """What a picked build says it was built under (the card, the board)."""
+    """What a picked build says it was built under (the card, the board). The
+    owner's roster rules and portfolio caps ride beside the names only when
+    set (dfs_portfolio.stamp), so a players-only stamp is what it always was."""
+    import dfs_portfolio
     return {"exclude": sorted(pk.exclude), "force": sorted(pk.force), "captain": pk.captain,
-            "waived": list(waived), "notes": list(notes)}
+            "waived": list(waived), "notes": list(notes),
+            **dfs_portfolio.stamp(getattr(pk, "rules", None), getattr(pk, "port", None))}
 
 
 # ---- The depth-chart gate ---------------------------------------------------
@@ -958,13 +1161,17 @@ def _sd_allowed(p, cap_p, picked):
     return True
 
 
-def _sd_fill(cands, budget, objective, rng, cpt_team, greedy=False, cap_p=None, seed=None):
+def _sd_fill(cands, budget, objective, rng, cpt_team, greedy=False, cap_p=None, seed=None, rules=None):
     """Five FLEX under `budget`, spanning both teams with the captain, under
     the construction rules (_sd_allowed) when the captain is given. `seed`
     (the picker's forced FLEX, never among `cands`) fills the first slots: the
     rules then bind the free slots only, the forced men COUNTING against them
     (a forced punt leaves one punt to the rest), and _sd_allowed itself is
-    untouched -- its five rejections are pinned (S5)."""
+    untouched -- its five rejections are pinned (S5).
+
+    `rules` (team_max, floor): the owner's team maximum, the captain counted,
+    and the FLEX salary the minimum leaves after the captain's -- the last
+    slot takes only a man who reaches it (2026-11-26; None as before)."""
     picked, sal, teams = [], 0, {cpt_team}
     if seed:
         picked = list(seed)
@@ -984,6 +1191,11 @@ def _sd_fill(cands, budget, objective, rng, cpt_team, greedy=False, cap_p=None, 
         for slot in range(len(picked), 5):
             pool = [p for p in cands if p["_free"] and sal + p["salary"] <= budget
                     and (cap_p is None or _sd_allowed(p, cap_p, picked))]
+            if rules:
+                tmax, floor = rules
+                on = collections.Counter([cpt_team] + [q["team"] for q in picked])
+                pool = [p for p in pool if (not tmax or on[p["team"]] < tmax)
+                        and (slot < 4 or not floor or sal + p["salary"] >= floor)]
             # Last slot and still one-sided -> it has to come from the other team.
             if slot == 4 and len(teams) < SHOWDOWN_MIN_TEAMS:
                 other = [p for p in pool if p["team"] and p["team"] not in teams]
@@ -1083,6 +1295,13 @@ def _showdown_bests(players, cap, objective, restarts=_SD_RESTARTS, rng=None, pi
     rich = sum(1 for p in players if p.get("pos") in _SD_GPP_CPT_POS
                and p["cpt_salary"] >= _SD_MIN_CPT_SALARY) >= 3
     forced = [p for p in players if "_pk" in p] if pick else []
+    rl = getattr(pick, "rules", None) if pick else None
+
+    def sd_rules(cap_p):
+        # the owner's team maximum and minimum salary (pick_resolve refuses the classic-only rules here)
+        if not rl or not (rl.team_max or rl.min_salary):
+            return None
+        return (rl.team_max, (rl.min_salary - cap_p["cpt_salary"]) if rl.min_salary else None)
     per = {}                                    # captain name -> {frozenset: cand}
     for cap_p in players:
         if pick and pick.captain and cap_p["name"] != pick.captain:
@@ -1112,7 +1331,7 @@ def _showdown_bests(players, cap, objective, restarts=_SD_RESTARTS, rng=None, pi
         # unpicked search was exact on all sixty (2026-10-30)
         for i in range((2 * restarts if pick else restarts) + 1):
             r = _sd_fill(others, budget, objective, rng, cap_p["team"], greedy=(i == 0),
-                         cap_p=cap_p, seed=seed or None)
+                         cap_p=cap_p, seed=seed or None, rules=sd_rules(cap_p))
             if not r:
                 continue
             picked, sal = r
@@ -1205,7 +1424,7 @@ def _reserve(asc, slots, used):
 
 
 def _build_one(by_pos, cap, objective, stack_team=None, stack_min=0, rng=random,
-               bring_min=0, fixed=None, cheapest=False, asc=None):
+               bring_min=0, fixed=None, cheapest=False, asc=None, rules=None):
     """One greedy-randomized valid lineup. With a stack, the QB slot is HELD to
     the stack team (catchers without their quarterback are not a stack) and
     WR/TE/FLEX slots seed from his team so they boom together. `bring_min`
@@ -1232,8 +1451,52 @@ def _build_one(by_pos, cap, objective, stack_team=None, stack_min=0, rng=random,
     order the tight end's slot always took the stack, so a lineup whose
     bring-back had to be the tight end was never built (a receiver, a back and
     a receiver forced on three teams: no fill of 2,000 beside a legal 222.3).
-    The unpicked fill is untouched (`asc` None)."""
+    The unpicked fill is untouched (`asc` None).
+
+    `rules` (_opt_rules: the owner's team maximum, minimum salary and "no
+    bring-back", 2026-11-26) filter every slot's pool: a team at its maximum
+    offers no one, a receiver facing the quarterback is skipped under "no
+    bring-back", and the LAST open slot takes only a man who lifts the salary
+    to the minimum (a fill that cannot is dropped, as a fill over the cap is).
+    _lineup_ok holds the same rules on the finished lineup, so the polish and
+    the kicks keep them. None draws exactly what it always drew."""
     used, lineup, sal, stacked, brought = set(), [], 0, 0, 0
+    tcnt = collections.Counter() if rules else None
+    qb_opp = [None, False]              # the seated quarterback's opponent ("no bring-back"); one seated
+
+    def rule_ok(p, last=False):
+        tm = (p.get("team") or "").upper()
+        if rules.team_max:
+            room = rules.team_max - tcnt[tm]
+            if room <= 0:
+                return False
+            # the stack (and the bring-back) still owed come from one team each: a back or a defense of that
+            # team may take a place only if it leaves room for them. Without this the slot order seated the
+            # stack team's back first and a QB + 2 stack under a maximum of 3 died in 13 of 55 brute-force
+            # cases (2026-11-26).
+            for team, owed, helps in (
+                    (stack_team, max(0, stack_min - stacked) + (0 if qb_opp[1] else 1),
+                     (p["pos"] in ("WR", "TE") and stacked < stack_min) or (p["pos"] == "QB" and not qb_opp[1])),
+                    (stack_opp, max(0, bring_min - brought), p["pos"] in ("WR", "TE") and brought < bring_min)):
+                if team and p.get("team") == team and room - 1 < owed - (1 if helps else 0):
+                    return False
+        if rules.no_bring:
+            if p["pos"] in ("WR", "TE") and qb_opp[0] and tm == qb_opp[0]:
+                return False
+            if p["pos"] == "QB" and p.get("opp") and any(
+                    q["pos"] in ("WR", "TE") and (q.get("team") or "").upper() == p["opp"].upper() for q in lineup):
+                return False
+        if last and rules.min_salary and sal + p["salary"] < rules.min_salary:
+            return False
+        return True
+
+    def counted(p):
+        if rules:
+            tcnt[(p.get("team") or "").upper()] += 1
+            if p["pos"] == "QB":
+                qb_opp[1] = True
+                if p.get("opp"):
+                    qb_opp[0] = p["opp"].upper()
     stack_opp = None
     dst_opps, off_teams = set(), set()
     taken = set()
@@ -1255,6 +1518,7 @@ def _build_one(by_pos, cap, objective, stack_team=None, stack_min=0, rng=random,
             stacked += 1
         if stack_opp and p.get("team") == stack_opp and p["pos"] in ("WR", "TE"):
             brought += 1
+        counted(p)
         used.add(p["name"]); lineup.append(p); sal += p["salary"]
         if p["pos"] == "DST":
             if p.get("opp"):
@@ -1275,7 +1539,7 @@ def _build_one(by_pos, cap, objective, stack_team=None, stack_min=0, rng=random,
             ok = []
             for c in cands:
                 si = slot_for(c)
-                if si is None:
+                if si is None or (rules and not rule_ok(c)):
                     continue
                 rest = _reserve(asc, [ROSTER[j] for j in range(len(ROSTER)) if j not in taken and j != si],
                                 used | {c["name"]})
@@ -1321,6 +1585,8 @@ def _build_one(by_pos, cap, objective, stack_team=None, stack_min=0, rng=random,
         else:
             pool = [p for p in pool
                     if (p.get("team") or "").upper() not in dst_opps]
+        if rules:
+            pool = [p for p in pool if rule_ok(p, last=all(j in taken for j in order[k + 1:]))]
         if not pool:
             return None
         cand = pool
@@ -1352,6 +1618,7 @@ def _build_one(by_pos, cap, objective, stack_team=None, stack_min=0, rng=random,
             stacked += 1
         if stack_opp and pick.get("team") == stack_opp and pick["pos"] in ("WR", "TE"):
             brought += 1
+        counted(pick)
         used.add(pick["name"]); lineup.append(pick); sal += pick["salary"]
         if pick["pos"] == "DST":
             if pick.get("opp"):
@@ -1360,16 +1627,19 @@ def _build_one(by_pos, cap, objective, stack_team=None, stack_min=0, rng=random,
             off_teams.add((pick["team"] or "").upper())
     if (len(lineup) != len(ROSTER) or sal > cap
             or (stack_team and stacked < stack_min)
-            or (bring_min and brought < bring_min)):
+            or (bring_min and brought < bring_min)
+            or (rules and rules.min_salary and sal < rules.min_salary)):
         return None
     return lineup, sal
 
 
-def _lineup_ok(lu, cap, stack_min=0, bring_min=0, exclude=None):
+def _lineup_ok(lu, cap, stack_min=0, bring_min=0, exclude=None, rules=None):
     """Every rule _build_one enforces, on a finished lineup: the roster shape
     (QB, DST and TE exactly one -- a TE is never the FLEX here -- RB 2-3 and WR
     3-4 for seven skill players), the cap, the QB's stack and bring-back, no
-    player facing the lineup's own defense, and the portfolio's overlap rule."""
+    player facing the lineup's own defense, the portfolio's overlap rule, and
+    the owner's `rules` (_opt_rules: the team maximum -- a defense counts for
+    its team, as on the board -- the minimum salary, "no bring-back")."""
     if len(lu) != len(ROSTER) or len({p["name"] for p in lu}) != len(ROSTER):
         return False
     if sum(p["salary"] for p in lu) > cap:
@@ -1396,10 +1666,18 @@ def _lineup_ok(lu, cap, stack_min=0, bring_min=0, exclude=None):
         names = frozenset(p["name"] for p in lu)
         if any(len(names & x) > len(ROSTER) - exclude[1] for x in exclude[0]):
             return False
+    if rules:
+        if rules.min_salary and sum(p["salary"] for p in lu) < rules.min_salary:
+            return False
+        if rules.team_max and max(collections.Counter((p.get("team") or "").upper() for p in lu).values()) > rules.team_max:
+            return False
+        if rules.no_bring and qb.get("opp") and any(p["pos"] in ("WR", "TE") and (p.get("team") or "").upper()
+                                                   == qb["opp"].upper() for p in lu):
+            return False
     return True
 
 
-def _polish(lu, players, objective, cap, stack_min=0, bring_min=0, exclude=None):
+def _polish(lu, players, objective, cap, stack_min=0, bring_min=0, exclude=None, rules=None):
     """Hill-climb a valid lineup to a local optimum of the objective by
     one-player and two-player swaps that keep every rule (_lineup_ok).
 
@@ -1441,7 +1719,7 @@ def _polish(lu, players, objective, cap, stack_min=0, bring_min=0, exclude=None)
                                                           n_wr + (pos == "WR") - (out["pos"] == "WR")):
                         continue
                     new = cur[:i] + [c] + cur[i + 1:]
-                    if _lineup_ok(new, cap, stack_min, bring_min, exclude):
+                    if _lineup_ok(new, cap, stack_min, bring_min, exclude, rules):
                         best = (gain, new)
                         break
         if best is None:                                    # two-player swaps
@@ -1474,7 +1752,7 @@ def _polish(lu, players, objective, cap, stack_min=0, bring_min=0, exclude=None)
                                             or sal[a["name"]] + sal[b["name"]] > room):
                                         continue
                                     new = [x for j, x in enumerate(cur) if j not in (i, k)] + [a, b]
-                                    if _lineup_ok(new, cap, stack_min, bring_min, exclude):
+                                    if _lineup_ok(new, cap, stack_min, bring_min, exclude, rules):
                                         best = (gain, new)
                                         break
         if best is not None:
@@ -1483,7 +1761,7 @@ def _polish(lu, players, objective, cap, stack_min=0, bring_min=0, exclude=None)
     return cur
 
 
-def _kick(lu, players, objective, cap, stack_min=0, bring_min=0, exclude=None):
+def _kick(lu, players, objective, cap, stack_min=0, bring_min=0, exclude=None, rules=None):
     """Iterated local search on a polished lineup: bar each of its players in
     turn, re-polish without him (_polish over the rest of the pool), then let
     him compete back (a full _polish); keep any lineup that beats the current
@@ -1502,11 +1780,11 @@ def _kick(lu, players, objective, cap, stack_min=0, bring_min=0, exclude=None):
             rest = [p for p in players if p["name"] != out["name"]]
             # the barred player's slot is refilled by the best LEGAL fill of the
             # rest of the pool (the drop is allowed: that is the perturbation)
-            start = _refill(cur, out, rest, objective, cap, stack_min, bring_min, exclude)
+            start = _refill(cur, out, rest, objective, cap, stack_min, bring_min, exclude, rules)
             if start is None:
                 continue
-            cand = _polish(start, rest, objective, cap, stack_min, bring_min, exclude)
-            cand = _polish(cand, players, objective, cap, stack_min, bring_min, exclude)
+            cand = _polish(start, rest, objective, cap, stack_min, bring_min, exclude, rules)
+            cand = _polish(cand, players, objective, cap, stack_min, bring_min, exclude, rules)
             v = val(cand)
             if v > cur_v + 1e-9:
                 cur, cur_v, improved = cand, v, True
@@ -1514,7 +1792,7 @@ def _kick(lu, players, objective, cap, stack_min=0, bring_min=0, exclude=None):
     return cur
 
 
-def _dst_kick(lu, players, objective, cap, stack_min=0, bring_min=0, exclude=None):
+def _dst_kick(lu, players, objective, cap, stack_min=0, bring_min=0, exclude=None, rules=None):
     """The one move no swap neighbourhood crosses: a different DEFENSE, which
     bars every player on the team it faces. For each other defense, the
     lineup's players on that team are replaced by the cheapest legal player of
@@ -1552,17 +1830,17 @@ def _dst_kick(lu, players, objective, cap, stack_min=0, bring_min=0, exclude=Non
             names.discard(p["name"])
             names.add(sub_["name"])
             start[i] = sub_
-        if not ok or not _lineup_ok(start, cap, stack_min, bring_min, exclude):
+        if not ok or not _lineup_ok(start, cap, stack_min, bring_min, exclude, rules):
             continue
-        cand = _kick(_polish(start, players, objective, cap, stack_min, bring_min, exclude),
-                     players, objective, cap, stack_min, bring_min, exclude)
+        cand = _kick(_polish(start, players, objective, cap, stack_min, bring_min, exclude, rules),
+                     players, objective, cap, stack_min, bring_min, exclude, rules)
         v = val(cand)
         if v > best_v + 1e-9:
             best, best_v = cand, v
     return best
 
 
-def _refill(cur, out, pool, objective, cap, stack_min, bring_min, exclude):
+def _refill(cur, out, pool, objective, cap, stack_min, bring_min, exclude, rules=None):
     """`cur` with `out` replaced by the best-valued player of `pool` that keeps
     every rule (a drop in value is allowed), or None when no single player
     fits."""
@@ -1573,14 +1851,15 @@ def _refill(cur, out, pool, objective, cap, stack_min, bring_min, exclude):
         if c["name"] in names:
             continue
         new = cur[:i] + [c] + cur[i + 1:]
-        if _lineup_ok(new, cap, stack_min, bring_min, exclude):
+        if _lineup_ok(new, cap, stack_min, bring_min, exclude, rules):
             best = new
             break
     return best
 
 
 def optimize(players, cap, objective, stack_min=0, restarts=2000, bring_min=0,
-             exclude=None, seed=None, polish_top=None, starts_per_team=1, thorough=True, fixed=None):
+             exclude=None, seed=None, polish_top=None, starts_per_team=1, thorough=True, fixed=None,
+             rules=None):
     """The best lineup for an additive objective under every _build_one rule:
     random greedy fills (_build_one), the best fill of EVERY stack team
     polished by one- and two-player swaps (_polish), the winner kicked
@@ -1618,12 +1897,16 @@ def optimize(players, cap, objective, stack_min=0, restarts=2000, bring_min=0,
     if fq is not None and fq.get("team"):
         teams = [fq["team"]]            # a forced quarterback is the stack
     best_by = {}                        # stack team -> {roster: (score, lineup)}
+    if rules and starts_per_team == 1:
+        # tighter rules make the swap landscape rugged (a team maximum blocks the one-player moves between
+        # stacks): three polished starts a stack team reached the brute-force optimum where one did not
+        starts_per_team = 3
 
     def keep(r):
         if not r:
             return
         lineup, _sal = r
-        if not _lineup_ok(lineup, cap, stack_min, bring_min, exclude):
+        if not _lineup_ok(lineup, cap, stack_min, bring_min, exclude, rules):
             return
         score = sum(_value(p, objective) for p in lineup)
         qb_team = next((p.get("team") for p in lineup if p["pos"] == "QB"), None)
@@ -1633,28 +1916,39 @@ def optimize(players, cap, objective, stack_min=0, restarts=2000, bring_min=0,
             fills[key] = (score, lineup)
             if len(fills) > starts_per_team:
                 fills.pop(min(fills, key=lambda k: fills[k][0]))
-    asc = {pos: sorted(v, key=lambda p: (p["salary"], p["name"])) for pos, v in by_pos.items()} if fixed else None
+    # the picked fill's salary reserve and up-front stack also carry the owner's roster rules: without them a
+    # QB + 2 stack under a team maximum of 3 completed no fill for one of two stack teams (2026-11-26)
+    asc = {pos: sorted(v, key=lambda p: (p["salary"], p["name"])) for pos, v in by_pos.items()} \
+        if (fixed or rules) else None
     for _ in range(restarts):
         st = rng.choice(teams) if (stack_min and teams) else None
         keep(_build_one(by_pos, cap, objective, stack_team=st, stack_min=stack_min,
-                        rng=rng, bring_min=bring_min, fixed=fixed, asc=asc))
-    if fixed:
+                        rng=rng, bring_min=bring_min, fixed=fixed, asc=asc, rules=rules))
+    if fixed or rules:
         for st in (teams if stack_min else [None]):
             keep(_build_one(by_pos, cap, objective, stack_team=st, stack_min=stack_min,
-                            bring_min=bring_min, fixed=fixed, cheapest=True, asc=asc))
+                            bring_min=bring_min, fixed=fixed, cheapest=True, asc=asc, rules=rules))
+    if rules and stack_min:
+        # a stack team the owner's rules left without a single fill gets a second round of its own: under a team
+        # maximum of 3 on the four-team brute-force pool one stack completed 0.3% of fills, and its 1,000 of the
+        # shared draws found none -- the polish cannot walk to another stack (three players at once)
+        for st in [t for t in teams if t not in best_by]:
+            for _ in range(restarts):
+                keep(_build_one(by_pos, cap, objective, stack_team=st, stack_min=stack_min,
+                                rng=rng, bring_min=bring_min, fixed=fixed, asc=asc, rules=rules))
     best = None
     ranked = sorted((f for fills in best_by.values() for f in fills.values()), key=lambda x: -x[0])
     for _score, lineup in (ranked[:polish_top] if polish_top else ranked):
-        lu = _polish(lineup, players, objective, cap, stack_min, bring_min, exclude)
+        lu = _polish(lineup, players, objective, cap, stack_min, bring_min, exclude, rules)
         sc = sum(_value(p, objective) for p in lu)
         if best is None or sc > best[0] + 1e-9:
             best = (sc, lu)
     if best is None:
         return None
-    lu = _kick(best[1], players, objective, cap, stack_min, bring_min, exclude)
+    lu = _kick(best[1], players, objective, cap, stack_min, bring_min, exclude, rules)
     if not thorough:
         return lu
-    return _dst_kick(lu, players, objective, cap, stack_min, bring_min, exclude)
+    return _dst_kick(lu, players, objective, cap, stack_min, bring_min, exclude, rules)
 
 
 # ---- ownership model --------------------------------------------------------
@@ -2099,6 +2393,43 @@ _SD_RULES = (
 )
 
 
+def _sd_capped_builds(ours, objective, n, pk):
+    """([(cap_p, picked, sal)], notes): the showdown multi-entry under the
+    owner's portfolio caps. The uncapped multi-entry is the best lineup of each
+    of the top n captains; here every captain offers his three best fills
+    (_showdown_bests, per_captain 3; a forced captain his 3n), and the entries
+    are taken best-first -- each captain's best before anyone's second -- as
+    long as they fit the caps (dfs_portfolio.SheetCaps) and the overlap cap.
+    Short of n when nothing left fits, and said."""
+    import dfs_portfolio
+    port = pk.port
+    per = _showdown_bests(ours, CAP, objective, pick=pk, per_captain=(3 * n if pk.captain else 3))
+    rank, seen = [], collections.Counter()
+    for c in per:                              # best first; a captain's k-th fill after every captain's (k-1)-th
+        rank.append((seen[c[1]["name"]], len(rank), c))
+        seen[c[1]["name"]] += 1
+    order = [c for _r, _i, c in sorted(rank, key=lambda x: (x[0], x[1]))]
+    lead_free = {next(p["team"] for p in ours if p["name"] == pk.captain)} if pk.captain else set()
+    caps = dfs_portfolio.SheetCaps(port, n, pk.force, lead_free)
+    notes, ov = [], port.max_overlap
+    n_f = len(pk.force)
+    if ov is not None and ov < n_f:
+        notes.append(f"entries share up to {n_f} players, not {ov}: your {n_f} forced players are in all of them")
+        ov = n_f
+    out, chosen = [], []
+    for _score, cap_p, picked, sal in order:
+        names = [cap_p["name"]] + [q["name"] for q in picked]
+        if caps.fits(names, cap_p.get("team") or "", chosen, ov):
+            caps.take(names, cap_p.get("team") or "")
+            chosen.append(names)
+            out.append((cap_p, picked, sal))
+            if len(out) == n:
+                break
+    if len(out) < n:
+        notes.append(f"the entries stopped at {len(out)} of {n}: no other lineup the search found fits your caps")
+    return out, notes
+
+
 def _build_showdown(csv_players, week, objective, contest, contest_size,
                     entry_fee, prize_pool, first_prize, preseason, field_size=None,
                     n_lineups=1, lock_s=None, payouts=None, pk=None):
@@ -2181,17 +2512,28 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
         if ub:
             ref = max(CPT_MULT * c["proj"] + sum(q["proj"] for q in pk_) for c, pk_, _s in ub)
             unpicked_best = round(CPT_MULT * ub[0][0]["proj"] + sum(q["proj"] for q in ub[0][1]), 1)
-    builds = optimize_showdown_multi(ours, CAP, objective, n_entries, pick=pk)
+    port = pk.port if pk else None
+    if port and n_entries > 1:
+        builds, sd_notes = _sd_capped_builds(ours, objective, n_entries, pk)
+        waived_notes = sd_notes
+    else:
+        builds, waived_notes = optimize_showdown_multi(ours, CAP, objective, n_entries, pick=pk), []
+        if port:
+            waived_notes.append("your portfolio caps apply to a multi-entry build; this is one lineup")
     if pk:
         builds = [b for b in builds if pk.force <= {b[0]["name"]} | {q["name"] for q in b[1]}
                   and (not pk.captain or b[0]["name"] == pk.captain)]
         if not builds:
+            import dfs_portfolio
+            yours = dfs_portfolio.rules_text(pk.rules)
             return {"error": f"player picker: the search found no legal showdown lineup {_pk_what(pk)}"
-                             + (f" with {pk.captain} at captain" if pk.captain else "") + " under the cap",
+                             + (f" with {pk.captain} at captain" if pk.captain else "") + " under the cap"
+                             + (f" and your rules ({'; '.join(yours)})" if yours else ""),
                     "pick_refused": True}
         waived += _sd_pick_waivers(pk, builds, ours, objective)
     if not builds:
         return {"error": "no valid showdown lineup under the cap"}
+    import dfs_portfolio
     all_slots = [[("CPT", c["name"])] + [("FLEX", p["name"]) for p in pk] for c, pk, _s in builds]
     csims = [None for _ in builds]
     if contest:
@@ -2277,6 +2619,10 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
             "max": round(max(totals), 1),
             "lineup": rows, "contest_sim": csim,
             "entries": entries, "n_entries": len(entries),
+            # display-only: how concentrated the entries are, capped or not (dfs_portfolio.concentration)
+            **({"concentration": dfs_portfolio.concentration(
+                entries, forced=pk.force if pk else (), warn_pct=port.player_pct if port else None)}
+               if len(entries) > 1 else {}),
             "rules": list(_SD_RULES), "n_sims": _SD_SIMS,
             # which model made these worlds, so a sheet can be audited for its
             # simulator the way a tournament board already can
@@ -2289,7 +2635,7 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
             "excluded": excluded[:40], "n_excluded": len(excluded),
             "roster_source": roster_state(),
             "teams": teams,
-            **({"pick": pick_stamp(pk, waived), "unpicked_best": unpicked_best} if pk else {}),
+            **({"pick": pick_stamp(pk, waived, waived_notes), "unpicked_best": unpicked_best} if pk else {}),
             "note": "Showdown Captain Mode: 1 CPT at 1.5x points and 1.5x salary, "
                     "plus 5 FLEX from any position, spanning both teams. Players DK "
                     "lists OUT or IR are excluded."}
@@ -2436,15 +2782,34 @@ def build(csv_text, week=None, objective="projection", stack=True, contest=None,
         if not u and bring_min:
             u = optimize(players, CAP, objective, stack_min=stack_min)
         unpicked_proj = sum(p["proj"] for p in u) if u else None
-    lineup = optimize(ours, CAP, objective, stack_min=stack_min, bring_min=bring_min, fixed=fixed)
-    if not lineup and bring_min:
-        lineup = optimize(ours, CAP, objective, stack_min=stack_min, fixed=fixed)
+    # The owner's roster rules (2026-11-26) bind OUR lineups from here on; the
+    # unpicked reference above keeps the objective's own shape. Without rules
+    # every value below is what it was.
+    stack_min, bring_min, orules, rule_notes = _pk_rule_shape(pk, stack_min, bring_min)
+    pk_notes += rule_notes
+    must_bring = bool(pk and pk.rules and pk.rules.bring == "required")
+    import dfs_portfolio
+    port = pk.port if pk else None
+    n_want = max(1, min(20, int(n_lineups or 1)))
+    caps = dfs_portfolio.SheetCaps(port, n_want, pk.force,
+                                   {p.get("team") or "" for p in (fixed or []) if p["pos"] == "QB"}) \
+        if (port and n_want > 1) else None
+    if port and n_want == 1:
+        pk_notes.append("your portfolio caps apply to a multi-entry build; this is one lineup")
+    ours_head = ours
+    if caps:
+        # a cap of 0 entries (a 10% cap on five lineups) keeps a man out of the headline lineup too
+        ours_head = [p for p in ours if p["name"] not in caps.out(ours)]
+    lineup = optimize(ours_head, CAP, objective, stack_min=stack_min, bring_min=bring_min, fixed=fixed, rules=orules)
+    if not lineup and bring_min and not must_bring:
+        lineup = optimize(ours_head, CAP, objective, stack_min=stack_min, fixed=fixed, rules=orules)
         if lineup and pk:
             waived.append("the bring-back: the search found no lineup holding your picks with a receiver from "
                           "the quarterback's opponent")
     if pk and (not lineup or not pk.force <= {p["name"] for p in lineup}):
+        yours = dfs_portfolio.rules_text(pk.rules)
         return {"error": f"player picker: the search found no legal lineup {_pk_what(pk)} under the cap, the "
-                         f"stack and the defense rules",
+                         f"stack and the defense rules" + (f", and your rules ({'; '.join(yours)})" if yours else ""),
                 "pick_refused": True}
     if not lineup:
         return {"error": "no valid lineup under the cap"}
@@ -2461,7 +2826,16 @@ def build(csv_text, week=None, objective="projection", stack=True, contest=None,
         pk_notes.append(f"lineups differ by {max(1, len(ROSTER) - len(pk.force))} players, not {uniq}: your "
                         f"{len(pk.force)} forced players fill the rest")
         uniq = max(1, len(ROSTER) - len(pk.force))
+    if caps and port.max_overlap is not None:
+        # the owner's overlap cap is the same rule from the other side: share at most m, differ by 9 - m
+        n_f = len(pk.force)
+        if port.max_overlap < n_f:
+            pk_notes.append(f"lineups share up to {n_f} players, not {port.max_overlap}: your {n_f} forced "
+                            f"players are in all of them")
+        uniq = max(uniq, len(ROSTER) - max(port.max_overlap, n_f))
     lineups = [lineup]
+    if caps:
+        caps.take([p["name"] for p in lineup], next((p.get("team") or "" for p in lineup if p["pos"] == "QB"), ""))
     if n_lineups > 1:
         import collections as _cl
         rosters = [frozenset(p["name"] for p in lineup)]
@@ -2478,20 +2852,29 @@ def build(csv_text, week=None, objective="projection", stack=True, contest=None,
                 # fourth lineup could not be built
                 capped -= set(pk.force) if pk else set()
                 pool_k = [p for p in ours if p["name"] not in capped]
+            if caps:
+                # the owner's caps, the same way: a man at his cap (or a quarterback of a team at its cap) sits out
+                gone = caps.out(pool_k)
+                pool_k = [p for p in pool_k if p["name"] not in gone]
             cand = optimize(pool_k, CAP, objective, stack_min=stack_min,
                             bring_min=bring_min, restarts=1000,
                             exclude=(rosters, uniq), seed=len(lineups), fixed=fixed,
                             # the defense kick is the headline lineup's (up to
                             # 3 s on a 12-game slate); twenty of them would sit
                             # a web worker on one core for a minute
-                            thorough=False)
+                            thorough=False, rules=orules)
             if not cand:
                 break                     # nothing legal is left at this uniqueness
             names = frozenset(p["name"] for p in cand)
+            if caps:
+                caps.take(names, next((p.get("team") or "" for p in cand if p["pos"] == "QB"), ""))
             lineups.append(cand)
             rosters.append(names)
             expo.update(names)
 
+    if caps and len(lineups) < n_lineups:
+        pk_notes.append(f"the portfolio stopped at {len(lineups)} of {n_lineups}: no legal lineup was left under your "
+                        f"caps and the overlap rule")
     # lineup distribution from the correlated arrays
     L = min(len(p["arr"]) for p in lineup)
     totals = [sum(p["arr"][i] for p in lineup) for i in range(L)]
@@ -2563,6 +2946,10 @@ def build(csv_text, week=None, objective="projection", stack=True, contest=None,
                           "total_salary": sum(p["salary"] for p in lu),
                           "total_proj": round(sum(p["proj"] for p in lu), 1)}
                          for lu in lineups] if len(lineups) > 1 else None),
+            # display-only: how concentrated the multi-entry is, capped or not (dfs_portfolio.concentration)
+            **({"concentration": dfs_portfolio.concentration(
+                [{"lineup": _rows(lu)} for lu in lineups], forced=pk.force if pk else (),
+                warn_pct=port.player_pct if port else None)} if len(lineups) > 1 else {}),
             "n_lineups": len(lineups),
             "salary": sum(p["salary"] for p in lineup), "cap": CAP,
             "proj": round(sum(p["proj"] for p in lineup), 1),
