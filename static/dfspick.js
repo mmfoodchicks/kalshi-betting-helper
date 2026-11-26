@@ -8,10 +8,14 @@
 // up the salary. No inline handlers: one delegated listener, every name escaped, buttons carry pool indices.
 
 const _PK = {
-  sheet: { pool: [], key: "", showdown: false, exclude: [], force: [], captain: null, q: "" },
-  pc: { pool: [], key: "", showdown: false, exclude: [], force: [], captain: null, q: "", dg: "" },
+  sheet: { pool: [], key: "", showdown: false, exclude: [], force: [], captain: null, q: "", rules: {}, port: {}, more: false },
+  pc: { pool: [], key: "", showdown: false, exclude: [], force: [], captain: null, q: "", dg: "", rules: {}, port: {}, more: false },
 };
 const _PK_CAP = 50000;
+// The owner's roster rules and portfolio caps (2026-11-26; dfs_portfolio.py): values as the inputs hold them, ""
+// for unset. They ride the same `pick` as the names and bind OUR lineups only -- the server says so on the result.
+const _PK_RULE_KEYS = ["stack", "bring", "team_max", "min_salary"];
+const _PK_PORT_KEYS = ["player_pct", "team_pct", "max_overlap"];
 
 function _pkEsc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -70,12 +74,13 @@ function _pkStoreKey(ctx) {
 function _pkSave(ctx) {
   const s = _PK[ctx];
   try {
-    localStorage.setItem(_pkStoreKey(ctx), JSON.stringify({ exclude: s.exclude, force: s.force, captain: s.captain }));
+    localStorage.setItem(_pkStoreKey(ctx), JSON.stringify({ exclude: s.exclude, force: s.force, captain: s.captain,
+      rules: s.rules, port: s.port }));
   } catch (e) { /* a private window: the picks live for this page only */ }
 }
 function _pkRestore(ctx) {
   const s = _PK[ctx];
-  s.exclude = []; s.force = []; s.captain = null;
+  s.exclude = []; s.force = []; s.captain = null; s.rules = {}; s.port = {};
   try {
     const v = JSON.parse(localStorage.getItem(_pkStoreKey(ctx)) || "null");
     if (!v) return;
@@ -83,6 +88,10 @@ function _pkRestore(ctx) {
     s.exclude = (v.exclude || []).filter(on);
     s.force = (v.force || []).filter(on);
     s.captain = s.showdown && on(v.captain) ? v.captain : null;
+    const pick = (o, keys) => { const out = {}; for (const k of keys) if (o && o[k] != null && o[k] !== "") out[k] = String(o[k]); return out; };
+    s.rules = pick(v.rules, _PK_RULE_KEYS);
+    s.port = pick(v.port, _PK_PORT_KEYS);
+    s.port.players = ((v.port || {}).players || []).filter(on).map((p) => ({ name: p.name, team: p.team, id: p.id || "", max_pct: String(p.max_pct) }));
   } catch (e) { /* nothing saved, or storage blocked */ }
 }
 
@@ -115,7 +124,7 @@ function dfsPickLoad(ctx, dg) {
   if (next !== s.dg) {
     // another slate: its picks are its own (restored from storage when its pool lands); until then nothing is
     // picked, so a Build pressed while the pool loads never carries the last slate's picks under this one
-    s.exclude = []; s.force = []; s.captain = null; s.pool = []; s.key = "";
+    s.exclude = []; s.force = []; s.captain = null; s.pool = []; s.key = ""; s.rules = {}; s.port = {};
   }
   s.dg = next;
   const box = _pkBox("pc");
@@ -164,6 +173,8 @@ function _pkCheck(ctx) {
   if (s.force.length) bits.push(`${s.force.length} forced: $${sal.toLocaleString()} of $${_PK_CAP.toLocaleString()}`);
   if (s.captain) bits.push(`captain ${_pkEsc(s.captain.name)}`);
   if (s.exclude.length) bits.push(`${s.exclude.length} excluded`);
+  const nr = _pkSetCount(ctx);
+  if (nr) bits.push(`${nr} rule${nr > 1 ? "s" : ""} or cap${nr > 1 ? "s" : ""} set`);
   return bits.join(" · ");
 }
 
@@ -186,7 +197,7 @@ function _pkRender(ctx) {
     const isCap = !!(s.captain && s.captain.name === r.name && s.captain.team === r.team);
     return `<div class="pk-row"><span class="pk-who"><b>${_pkEsc(r.name)}</b> · ${_pkEsc(r.pos)} · ${_pkEsc(r.team)} · $${r.salary.toLocaleString()} · ${status(r)}</span>`
       + `<span class="pk-acts">${btn("exclude", i, "Exclude", _pkIs(s.exclude, r))}${btn("force", i, "Force in", _pkIs(s.force, r))}`
-      + `${s.showdown ? btn("captain", i, "Captain", isCap) : ""}</span></div>`;
+      + `${s.showdown ? btn("captain", i, "Captain", isCap) : ""}${btn("cap", i, "Cap", _pkIs(s.port.players || [], r))}</span></div>`;
   }).join("");
   const chip = (p, kind) => {
     const i = s.pool.findIndex((r) => r.name === p.name && r.team === p.team);
@@ -200,32 +211,100 @@ function _pkRender(ctx) {
     ? "This Build only; the PC's own boards use everyone. Checked against DraftKings' pool when queued; Sleeper's projection and depth chart are checked when the PC builds (about ten minutes)."
     : "This Run only. A forced player is in every lineup (in the lineup; the slot does not change a classic score); an excluded one is in none. The field you are scored against still plays him.";
   box.innerHTML = `<div class="pk-box"><div class="pk-head">🎯 Player picker <span class="pk-faint">${s.showdown ? "showdown" : "classic"} · ${s.pool.length} players</span>`
-    + `${(s.force.length || s.exclude.length || s.captain) ? ` <button type="button" class="track-mini" data-pk-act="clear" data-pk-ctx="${ctx}" data-pk-i="-1">clear</button>` : ""}</div>`
+    + `${(s.force.length || s.exclude.length || s.captain || _pkSetCount(ctx)) ? ` <button type="button" class="track-mini" data-pk-act="clear" data-pk-ctx="${ctx}" data-pk-i="-1">clear</button>` : ""}</div>`
     + `<div class="small pk-note">${sub}</div>`
     + `<input type="search" class="pk-search" data-pk-search="${ctx}" placeholder="Search a player (name, team or position)" value="${_pkEsc(s.q || "")}" autocomplete="off"/>`
     + `<div class="pk-results">${res || (q ? `<div class="small pk-note">No player matches.</div>` : "")}</div>`
     + `<div class="pk-chips">${chips}</div>`
+    + _pkControls(ctx)
     + `<div class="small pk-check">${_pkCheck(ctx)}</div></div>`;
+}
+
+// How many roster rules and portfolio caps are set (per-player caps count one each).
+function _pkSetCount(ctx) {
+  const s = _PK[ctx];
+  const r = s.rules || {}, po = s.port || {};
+  return _PK_RULE_KEYS.filter((k) => r[k] && !(s.showdown && (k === "stack" || k === "bring"))).length
+    + _PK_PORT_KEYS.filter((k) => po[k] != null && po[k] !== "").length + (po.players || []).length;
+}
+
+// The rules and caps, folded under one line: every control is a labelled select or number box in a wrapping row,
+// so it fits a phone. A change re-draws the picker (data-pk-set, the delegated listener below).
+function _pkControls(ctx) {
+  const s = _PK[ctx];
+  const r = s.rules || {}, po = s.port || {};
+  const sel = (grp, key, opts, val) => `<select data-pk-set="${grp}.${key}" data-pk-ctx="${ctx}" style="width:auto;max-width:100%;padding:4px 6px">`
+    + opts.map(([v, l]) => `<option value="${_pkEsc(v)}"${String(val == null ? "" : val) === String(v) ? " selected" : ""}>${_pkEsc(l)}</option>`).join("") + `</select>`;
+  const num = (grp, key, val, lo, hi, step) => `<input type="number" inputmode="numeric" data-pk-set="${grp}.${key}" data-pk-ctx="${ctx}" min="${lo}" max="${hi}" step="${step}" value="${_pkEsc(val == null ? "" : val)}" placeholder="none" style="width:6.5em;padding:4px 6px"/>`;
+  const lab = (txt, ctl) => `<label style="flex:0 1 auto;min-width:0">${_pkEsc(txt)}${ctl}</label>`;
+  const row = (xs) => `<div style="display:flex;flex-wrap:wrap;gap:6px 12px;align-items:flex-end;margin:4px 0 8px">${xs.join("")}</div>`;
+  const size = s.showdown ? 6 : 9;
+  const roster = [];
+  if (!s.showdown) {
+    roster.push(lab("Stack: QB +", sel("rules", "stack", [["", "house rule"], ["1", "1 receiver"], ["2", "2 receivers"], ["3", "3 receivers"], ["4", "4 receivers"]], r.stack)));
+    roster.push(lab("Bring-back", sel("rules", "bring", [["", "either"], ["required", "required"], ["forbidden", "none"]], r.bring)));
+  }
+  const teamMax = s.showdown ? [3, 4, 5] : [1, 2, 3, 4, 5, 6, 7, 8];
+  roster.push(lab("Max per team", sel("rules", "team_max", [["", "any"]].concat(teamMax.map((n) => [String(n), String(n)])), r.team_max)));
+  roster.push(lab("Min salary $", num("rules", "min_salary", r.min_salary, 0, _PK_CAP, 100)));
+  const ov = [["", "any"]];
+  for (let n = 0; n < size; n++) ov.push([String(n), `${n} of ${size}`]);
+  const port = [
+    lab("Max per player %", num("port", "player_pct", po.player_pct, 1, 100, 1)),
+    lab(s.showdown ? "Max per captain's team %" : "Max per QB's team %", num("port", "team_pct", po.team_pct, 1, 100, 1)),
+    lab("Max shared players", sel("port", "max_overlap", ov, po.max_overlap)),
+  ];
+  const caps = (po.players || []).map((p) => {
+    const i = s.pool.findIndex((x) => x.name === p.name && x.team === p.team);
+    return `<span class="pk-chip">${_pkEsc(p.name)} <span class="pk-faint">at most</span> <input type="number" inputmode="numeric" data-pk-cap="${i}" data-pk-ctx="${ctx}" min="0" max="100" step="1" value="${_pkEsc(p.max_pct)}" style="width:4.2em;padding:2px 4px" aria-label="exposure cap for ${_pkEsc(p.name)}"/>% <button type="button" class="pk-x" data-pk-act="drop-cap" data-pk-ctx="${ctx}" data-pk-i="${i}" title="take this cap back">✕</button></span>`;
+  }).join("");
+  const n = _pkSetCount(ctx);
+  const where = ctx === "pc" ? "the board's portfolio (held at 5, 10 and 20 entries)" : "a Run of several lineups";
+  return `<details class="pk-more"${s.more ? " open" : ""}><summary class="small" data-pk-more="${ctx}" style="cursor:pointer;margin:4px 0">Roster rules and portfolio caps${n ? ` <b>(${n} set)</b>` : ""}</summary>`
+    + `<div class="small pk-note">Your lineups only: the field you are scored against is never restricted. DraftKings' rules always hold, and the house rules bend only for players you force.${s.showdown ? " The stack and bring-back rules are classic rules." : ""}</div>`
+    + `<div class="small"><b>Every lineup</b></div>${row(roster)}`
+    + `<div class="small"><b>Portfolio caps</b> <span class="pk-faint">${_pkEsc(where)}; a share of the entries, at least one entry for any cap above 0</span></div>${row(port)}`
+    + (caps ? `<div class="pk-chips">${caps}</div>` : `<div class="small pk-faint">A cap for one player: press Cap beside him above.</div>`)
+    + `</details>`;
 }
 
 // The request body's `pick`, or null when nothing is picked (never a bare `exclude`: that key means games). On
 // Build on the PC, `dg` is the slate the request is for: picks made on another slate's pool are never sent.
+// `rules` and `portfolio` ride only when set (the server reads a pick without them exactly as before).
 function dfsPickPayload(ctx, dg) {
   const s = _PK[ctx];
   if (ctx === "sheet") dfsPickLoadSheet();
   if (ctx === "pc" && (!s.dg || s.key !== `dg:${s.dg}` || (dg != null && String(dg) !== s.dg))) return null;
-  if (!s.exclude.length && !s.force.length && !s.captain) return null;
-  return { exclude: s.exclude.map(_pkEntry), force: s.force.map(_pkEntry), captain: s.captain ? _pkEntry(s.captain) : null };
+  const r = s.rules || {}, po = s.port || {};
+  const rules = {}, port = {};
+  for (const k of _PK_RULE_KEYS) {
+    if (!r[k] || (s.showdown && (k === "stack" || k === "bring"))) continue;
+    rules[k] = k === "bring" ? r[k] : Number(r[k]);
+  }
+  for (const k of _PK_PORT_KEYS) if (po[k] != null && po[k] !== "") port[k] = Number(po[k]);
+  if ((po.players || []).length) port.players = po.players.map((p) => Object.assign(_pkEntry(p), { max_pct: Number(p.max_pct) }));
+  const hasR = Object.keys(rules).length > 0, hasP = Object.keys(port).length > 0;
+  if (!s.exclude.length && !s.force.length && !s.captain && !hasR && !hasP) return null;
+  const out = { exclude: s.exclude.map(_pkEntry), force: s.force.map(_pkEntry), captain: s.captain ? _pkEntry(s.captain) : null };
+  if (hasR) out.rules = rules;
+  if (hasP) out.portfolio = port;
+  return out;
 }
 
 function _pkAct(ctx, act, i) {
   const s = _PK[ctx];
-  if (act === "clear") { s.exclude = []; s.force = []; s.captain = null; _pkSave(ctx); _pkRender(ctx); return; }
+  if (act === "clear") { s.exclude = []; s.force = []; s.captain = null; s.rules = {}; s.port = {}; _pkSave(ctx); _pkRender(ctx); return; }
   const r = s.pool[i];
   if (!r) return;
   const same = (p) => p.name === r.name && p.team === r.team;
   const drop = (list) => list.filter((p) => !same(p));
-  if (act === "exclude" || act === "drop-exclude") {
+  if (act === "cap" || act === "drop-cap") {
+    // a per-player exposure cap starts at the player-wide cap (or half the entries) and is edited on its chip
+    const had = (s.port.players || []).some(same);
+    s.port.players = drop(s.port.players || []);
+    if (act === "cap" && !had) s.port.players.push(Object.assign(_pkEntry(r), { max_pct: String(s.port.player_pct || 50) }));
+    if (act === "cap") s.more = true;
+  } else if (act === "exclude" || act === "drop-exclude") {
     const had = s.exclude.some(same);
     s.exclude = drop(s.exclude);
     if (act === "exclude" && !had) {
@@ -262,6 +341,16 @@ function dfsPickBanner(d) {
   const forced = (pk.force || []).filter((n) => n !== pk.captain);
   if (forced.length) parts.push(`forced in: <b>${forced.map(_pkEsc).join(", ")}</b>`);
   if ((pk.exclude || []).length) parts.push(`excluded: ${(pk.exclude || []).map(_pkEsc).join(", ")}`);
+  if ((pk.rules_text || []).length) parts.push(`your rules: ${pk.rules_text.map(_pkEsc).join("; ")}`);
+  const po = pk.portfolio;
+  if (po) {
+    const caps = [];
+    if (po.player_pct != null) caps.push(`at most ${_pkEsc(po.player_pct)}% of entries per player`);
+    for (const [nm, v] of Object.entries(po.players || {})) caps.push(`${_pkEsc(nm)} at most ${_pkEsc(v)}%`);
+    if (po.team_pct != null) caps.push(`at most ${_pkEsc(po.team_pct)}% built around one team`);
+    if (po.max_overlap != null) caps.push(`at most ${_pkEsc(po.max_overlap)} players shared by two entries`);
+    if (caps.length) parts.push(`portfolio caps: ${caps.join("; ")}`);
+  }
   const waived = (pk.waived || []).map((w) => `<li>${_pkEsc(w)}</li>`).join("");
   const notes = (pk.notes || []).map((w) => `<li>${_pkEsc(w)}</li>`).join("");
   const best = d.unpicked_best != null ? ` The best lineup without your picks projects ${_pkEsc(d.unpicked_best)}.` : "";
@@ -271,6 +360,13 @@ function dfsPickBanner(d) {
 }
 
 document.addEventListener("click", (e) => {
+  // the rules and caps fold: remember whether it is open, so a re-draw after a change keeps it so
+  const m = e.target.closest ? e.target.closest("[data-pk-more]") : null;
+  if (m) {
+    const ctx = m.getAttribute("data-pk-more"), det = m.closest("details");
+    if (_PK[ctx] && det) _PK[ctx].more = !det.open;
+    return;
+  }
   const b = e.target.closest ? e.target.closest("[data-pk-act]") : null;
   if (!b) return;
   e.preventDefault();
@@ -298,7 +394,106 @@ document.addEventListener("change", (e) => {
   if (!t) return;
   if (t.id === "dfsTourneyPickBuild") dfsPickLoad("pc", t.value);
   if (t.id === "dfsSport") dfsPickLoadSheet();
+  const set = t.getAttribute ? t.getAttribute("data-pk-set") : null;
+  const cap = t.getAttribute ? t.getAttribute("data-pk-cap") : null;
+  if (set || cap != null) {
+    const ctx = t.getAttribute("data-pk-ctx");
+    const s = _PK[ctx];
+    if (!s) return;
+    if (set) {
+      const [grp, key] = set.split(".");
+      const bag = grp === "rules" ? s.rules : s.port;
+      if (t.value === "" || t.value == null) delete bag[key]; else bag[key] = String(t.value);
+    } else {
+      const r = s.pool[parseInt(cap, 10)];
+      const p = r && (s.port.players || []).find((x) => x.name === r.name && x.team === r.team);
+      if (p) p.max_pct = String(t.value === "" ? 0 : t.value);
+    }
+    s.more = true;
+    _pkSave(ctx);
+    _pkRender(ctx);
+  }
 });
+
+// ---- Concentration (2026-11-26) -----------------------------------------------------------------------------
+// How concentrated a set of entries is: the same definition as dfs_portfolio.concentration (a guard runs both on
+// the same rows), computed here for whatever prefix of a portfolio the tab shows. Rows are the board's or the
+// sheet's entry rows ({lineup: [{name, team, slot}]}); the lead team is the captain's, else the quarterback's.
+// Percentages round half up in integers on both sides, so the two agree to the digit.
+function _pkLead(r) {
+  const lu = (r && r.lineup) || [];
+  for (const slot of ["CPT", "QB"]) {
+    const p = lu.find((q) => q.slot === slot);
+    if (p) return p.team || "";
+  }
+  return "";
+}
+function dfsConcentration(rows, forced, warnPct) {
+  const fz = new Set(forced || []);
+  const warn = warnPct == null ? 50 : Number(warnPct);
+  const sets = [], teamOf = new Map(), leadN = new Map(), perTeam = new Map();
+  for (const r of rows || []) {
+    const names = [];
+    for (const p of (r.lineup || [])) {
+      const nm = p.name;
+      if (nm == null || names.includes(nm)) continue;
+      names.push(nm);
+      if (!teamOf.has(nm)) teamOf.set(nm, p.team || "");
+      perTeam.set(p.team || "", (perTeam.get(p.team || "") || 0) + 1);
+    }
+    sets.push(new Set(names));
+    const ld = _pkLead(r);
+    leadN.set(ld, (leadN.get(ld) || 0) + 1);
+  }
+  const n = sets.length;
+  const expo = new Map();
+  for (const st of sets) for (const nm of st) expo.set(nm, (expo.get(nm) || 0) + 1);
+  const size = sets.reduce((m, st) => Math.max(m, st.size), 0);
+  let best = 0, pair = null;
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+    let o = 0;
+    for (const nm of sets[i]) if (sets[j].has(nm)) o++;
+    if (o > best) { best = o; pair = [i + 1, j + 1]; }
+  }
+  const pct = (c) => (n ? Math.floor((2000 * c + n) / (2 * n)) / 10 : 0);
+  const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+  const players = [...expo.entries()].sort((a, b) => b[1] - a[1] || cmp(a[0], b[0])).map(([nm, c]) => ({
+    name: nm, team: teamOf.get(nm) || "", n: c, pct: pct(c), forced: fz.has(nm),
+    flag: n >= 3 && !fz.has(nm) && 100 * c > warn * n }));
+  const teamSet = new Set([...perTeam.keys(), ...leadN.keys()]);
+  const teams = [...teamSet].filter((t) => t).sort((a, b) => (leadN.get(b) || 0) - (leadN.get(a) || 0)
+    || (perTeam.get(b) || 0) - (perTeam.get(a) || 0) || cmp(a, b)).map((t) => ({
+    team: t, lead_n: leadN.get(t) || 0, lead_pct: pct(leadN.get(t) || 0),
+    players_avg: n ? Math.floor((200 * (perTeam.get(t) || 0) + n) / (2 * n)) / 100 : 0 }));
+  const flags = players.filter((p) => p.flag).map((p) => `${p.name} is in ${p.n} of ${n} entries (${p.pct}%), above ${warn}%`);
+  if (n >= 3 && size && best >= size - 1) flags.push(`entries ${pair[0]} and ${pair[1]} share ${best} of ${size} players`);
+  return { entries: n, size, warn_pct: warn, players: players.slice(0, 30), teams, max_overlap: best, overlap_pair: pair, flags };
+}
+// The concentration under a portfolio: the most-held players, the team each entry is built around, the largest
+// overlap, any flag -- and, on a capped board, what the caps did (`lim`, the board's limits report).
+function dfsConcentrationHtml(c, lim) {
+  if (!c || !c.entries) return "";
+  const chip = (p) => `<span class="pk-chip" style="padding:1px 8px${p.flag ? ";border-color:var(--no)" : ""}">${_pkEsc(p.name)} <b>${_pkEsc(p.pct)}%</b>${p.forced ? ' <span class="pk-faint">forced</span>' : ""}</span>`;
+  const shown = c.players.filter((p) => p.n >= 2 || p.flag).slice(0, 12);
+  const teams = c.teams.filter((t) => t.lead_n > 0).map((t) => `${_pkEsc(t.team)} ${_pkEsc(t.lead_pct)}%`).join(" · ");
+  const lead = c.size === 6 ? "captain's team" : "quarterback's team";
+  let limTxt = "";
+  if (lim) {
+    const by = Object.keys(lim.stopped_by || {}).join(", ");
+    limTxt = lim.short
+      ? `<div style="color:var(--no)">⚠ Your caps left ${_pkEsc(lim.entries)} of ${_pkEsc(lim.k)} entries: nothing left on the shortlist fits them${by ? ` (refused by the ${_pkEsc(by)} cap${by.includes(",") ? "s" : ""})` : ""}.</div>`
+      : `<div>Your caps held; they changed ${_pkEsc(lim.caps_changed_picks)} of the ${_pkEsc(lim.entries)} picks.</div>`;
+  }
+  const flags = (c.flags || []).map((f) => `<li>${_pkEsc(f)}</li>`).join("");
+  return `<div class="small" style="margin-top:6px;padding:6px 8px;border:1px solid var(--border);border-radius:8px">`
+    + `<div><b>Concentration</b> <span class="pk-faint">${_pkEsc(c.entries)} entries · flagged above ${_pkEsc(c.warn_pct)}%</span></div>`
+    + (shown.length ? `<div class="pk-chips">${shown.map(chip).join("")}</div>` : `<div class="pk-faint">No player is in more than one entry.</div>`)
+    + (teams ? `<div>Built around (${lead}): ${teams}</div>` : "")
+    + `<div>Most players two entries share: <b>${_pkEsc(c.max_overlap)}</b> of ${_pkEsc(c.size)}${c.overlap_pair ? ` (entries ${_pkEsc(c.overlap_pair[0])} and ${_pkEsc(c.overlap_pair[1])})` : ""}</div>`
+    + limTxt
+    + (flags ? `<ul style="margin:2px 0 0 16px;padding:0;color:var(--no)">${flags}</ul>` : "")
+    + `</div>`;
+}
 document.addEventListener("focusin", (e) => {
   const t = e.target;
   if (t && t.getAttribute && t.getAttribute("data-pk-search") === "sheet") {

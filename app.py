@@ -2524,9 +2524,9 @@ def api_dfs_tourney_request():
             pk, why = nfl_dfs.pick_resolve(pp, simulate.parse_dk_csv(sl["csv"]), kind, board=True)
             if why:
                 return jsonify({"error": f"player picker: {why}", "pick_refused": True}), 400
-            pick = {key: [{"name": n, "team": t, "id": i} for n, t, i in pp[key]] for key in ("exclude", "force")}
-            pick["captain"] = ({"name": pp["captain"][0], "team": pp["captain"][1], "id": pp["captain"][2]}
-                               if pp["captain"] else None)
+            # the request keeps the whole pick -- the names, and the owner's roster rules and portfolio caps
+            # (2026-11-26) -- in its JSON shape; the PC parses it again (pc_worker._picked_builds)
+            pick = nfl_dfs.pick_dump(pp)
             pick_names = nfl_dfs.pick_stamp(pk)
     replaced = bool(reqs.get(str(dg))) and _tourney_req_live(reqs[str(dg)], now)
     if body.get("cancel"):
@@ -2763,7 +2763,8 @@ def api_dfs_tourney_list():
         if not pk:
             return {"pick": False, "label": label}
         bits = ([f"{', '.join(pk.get('force') or [])} forced"] if pk.get("force") else []) + \
-               ([f"{', '.join(pk.get('exclude') or [])} out"] if pk.get("exclude") else [])
+               ([f"{', '.join(pk.get('exclude') or [])} out"] if pk.get("exclude") else []) + \
+               (["your roster rules"] if pk.get("rules") else []) + (["your portfolio caps"] if pk.get("portfolio") else [])
         return {"pick": True, "label": f"Your build: {label}" + (f" -- {'; '.join(bits)}" if bits else "")}
     try:
         names = [fn for fn in os.listdir(boardshare._DIR) if fn.startswith(prefixes) and fn.endswith(".pkl")]

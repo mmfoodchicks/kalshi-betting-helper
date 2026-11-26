@@ -6851,7 +6851,7 @@ function renderNflDfs(d) {
     const own = p.own != null ? `<span class="small" style="color:var(--faint)"> · own ${p.own}%</span>` : "";
     return `<div class="nfl-dfsrow">
       <span class="nfl-dfsslot">${p.slot}</span>
-      <span class="nfl-dfsname">${p.name} <span class="small" style="color:var(--muted)" title="${p.depth ? "Sleeper depth chart" : ""}">${p.depth || p.pos}${p.team ? " · " + p.team : ""}</span></span>
+      <span class="nfl-dfsname">${escapeHtml(p.name)} <span class="small" style="color:var(--muted)" title="${p.depth ? "Sleeper depth chart" : ""}">${escapeHtml(p.depth || p.pos)}${p.team ? " · " + escapeHtml(p.team) : ""}</span></span>
       <span class="nfl-dfsnum">$${nf(p.salary)}</span>
       <span class="nfl-dfsnum">proj <b>${p.proj}</b></span>
       <span class="nfl-dfsnum">ceil <b class="ev pos">${p.ceiling}</b>${own}</span>
@@ -6863,14 +6863,22 @@ function renderNflDfs(d) {
   // against the same simulated field. Entry 1 is also the card's own numbers.
   const csLine = (c) => c
     ? `<div class="cnums" style="margin:4px 0">${_top1(c)}<span>cash <b>${c.cash_pct}%</b></span>${_roi(c)}</div>` : "";
+  const _conc = (rows) => (typeof dfsConcentrationHtml === "function"
+    ? dfsConcentrationHtml(dfsConcentration(rows, (d.pick || {}).force, ((d.pick || {}).portfolio || {}).player_pct)) : "");
   const entriesHtml = (d.entries && d.entries.length > 1)
     ? `<div style="margin-top:10px"><b>${d.entries.length} entries, one captain each</b> <span class="small" style="color:var(--muted)">- best captain first; every entry obeys the rules below</span></div>`
       + d.entries.map((e, i) => `<div style="margin-top:8px;padding:6px 8px;border:1px solid var(--line,#333);border-radius:8px">
-        <div><b>Entry ${i + 1} · ${e.captain} captain</b> <span class="small" style="color:var(--muted)">$${nf(e.salary)} used, $${nf(e.salary_left)} left · proj ${e.proj} · floor ${e.floor} · median ${e.median} · ceiling <b>${e.ceiling}</b></span></div>
+        <div><b>Entry ${i + 1} · ${escapeHtml(e.captain)} captain</b> <span class="small" style="color:var(--muted)">$${nf(e.salary)} used, $${nf(e.salary_left)} left · proj ${e.proj} · floor ${e.floor} · median ${e.median} · ceiling <b>${e.ceiling}</b></span></div>
         ${csLine(e.contest_sim)}
         <div class="nfl-dfslist">${rowsOf(e.lineup)}</div>
-      </div>`).join("")
-    : "";
+      </div>`).join("") + _conc(d.entries)
+    : (d.lineups && d.lineups.length > 1)
+      ? `<div style="margin-top:10px"><b>${d.lineups.length} lineups</b> <span class="small" style="color:var(--muted)">- the first is the card's own numbers; each differs from the others as the Run asked</span></div>`
+        + d.lineups.slice(1).map((e, i) => `<div style="margin-top:8px;padding:6px 8px;border:1px solid var(--line,#333);border-radius:8px">
+          <div><b>Lineup ${i + 2}</b> <span class="small" style="color:var(--muted)">$${nf(e.total_salary)} · proj ${e.total_proj}</span></div>
+          <div class="nfl-dfslist">${rowsOf(e.lineup)}</div>
+        </div>`).join("") + _conc(d.lineups)
+      : "";
   const rulesHtml = (d.rules && d.rules.length)
     ? `<div class="small" style="margin-top:6px;color:var(--muted)">📐 rules: ${d.rules.map(escapeHtml).join(" · ")}</div>` : "";
   const un = (d.unmatched && d.unmatched.length)
@@ -6897,7 +6905,7 @@ function renderNflDfs(d) {
       <span>ceiling <b class="ev pos">${d.ceiling}</b></span>
     </div>
     ${csHead}
-    ${entriesHtml || `<div class="nfl-dfslist">${rows}</div>`}
+    ${d.entries && d.entries.length > 1 ? entriesHtml : `<div class="nfl-dfslist">${rows}</div>${entriesHtml}`}
     ${rulesHtml}
     ${un}${ex}
     ${flatNote}
@@ -8740,6 +8748,7 @@ function renderDfsTourney(d) {
     ${chalkHtml}
     <div style="margin-top:8px"><b>Portfolio</b> <span class="small" style="color:var(--muted)">- each entry adds the games the ones before it do not cover; the first k rows are the best k</span><div class="small" style="margin-top:2px">${sizeBtns}</div></div>
     ${table(portRows, "portfolio")}
+    ${typeof dfsConcentrationHtml === "function" ? dfsConcentrationHtml(dfsConcentration(portRows, (d.pick || {}).force, ((d.pick || {}).portfolio || {}).player_pct), classic ? ((((d.results || {})[_dfsTourneyCid] || {}).portfolio || {}).limits) : ((((d.portfolio || {})[_dfsTourneyK]) || {}).limits)) : ""}
     <div style="margin-top:8px"><b>Single entries</b> <span class="small" style="margin-left:6px">${listBtns}</span></div>
     ${moneyNote}
     ${_dfsTourneyList === "top_money" && !rr.hasMoney ? "" : table((rr.lists[_dfsTourneyList] || []).slice(0, 8), _dfsTourneyList)}
