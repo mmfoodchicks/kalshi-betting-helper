@@ -2569,6 +2569,105 @@ def api_dfs_tourney_requests():
     return jsonify({"requests": _tourney_pending()})
 
 
+# ---- The lineup evaluator (2026-11-26, dfs_evaluate; research/reports/dfs_cache_evaluator.md) ----
+# The tab queues a lineup; the PC's evaluator lane (pc_worker --eval, every
+# 15 s) scores it on the slate's final worlds and posts the result back. The
+# server only holds small JSON: the queue and the answers. Nothing large and
+# nothing CPU-bound runs here.
+_DFSEVAL_REQ = "dfseval_requests"
+_DFSEVAL_TTL = 6 * 3600
+
+
+def _dfseval_live(reqs, now=None):
+    now = time.time() if now is None else now
+    return {k: v for k, v in (reqs or {}).items() if isinstance(v, dict) and now - (v.get("ts") or 0) < _DFSEVAL_TTL}
+
+
+def _dfseval_clean(lineups):
+    """Up to six lineups of up to nine names; anything else is refused."""
+    out = []
+    if not isinstance(lineups, list) or not 1 <= len(lineups) <= 6:
+        return None
+    for lu in lineups:
+        if not isinstance(lu, dict):
+            return None
+        names = lu.get("names")
+        if not isinstance(names, list) or not 1 <= len(names) <= 9 or not all(isinstance(n, str) and 0 < len(n) <= 80 for n in names):
+            return None
+        cap = lu.get("captain")
+        if cap is not None and (not isinstance(cap, str) or cap not in names):
+            return None
+        out.append({"label": str(lu.get("label") or "custom lineup")[:60], "names": names, "captain": cap,
+                    "source": "custom"})        # the tab can only ask for a hand-built lineup
+    return out
+
+
+@app.route("/api/dfs/eval", methods=["POST"])
+def api_dfs_eval_request():
+    d = request.get_json(force=True, silent=True) or {}
+    try:
+        dg = int(d.get("dg"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "bad draft group"}), 400
+    lineups = _dfseval_clean(d.get("lineups"))
+    if lineups is None:
+        return jsonify({"error": "send 1-6 lineups of up to nine player names (and a captain among them)"}), 400
+    import uuid
+    rid = uuid.uuid4().hex[:12]
+    reqs = _dfseval_live(_tourney_json(_DFSEVAL_REQ))
+    reqs[rid] = {"id": rid, "dg": dg, "picked": bool(d.get("picked")), "lineups": lineups, "ts": time.time()}
+    if not _tourney_json_save(_DFSEVAL_REQ, reqs):
+        return jsonify({"error": "could not queue the request"}), 502
+    light = _pc_status()                # the tab says when the PC is off (the request waits for it)
+    return jsonify({"id": rid, "status": "queued", "pc": light})
+
+
+@app.route("/api/dfs/eval")
+def api_dfs_eval_status():
+    rid = "".join(ch for ch in str(request.args.get("id") or "") if ch.isalnum())[:12]
+    if not rid:
+        return jsonify({"error": "no id"}), 400
+    res = _tourney_json(f"dfseval_res_{rid}")
+    if res:
+        return jsonify(dict(res, status="error" if res.get("error") else "done"))
+    req = _dfseval_live(_tourney_json(_DFSEVAL_REQ)).get(rid)
+    if req:
+        light = _pc_status()
+        return jsonify({"id": rid, "status": "queued", "age_s": round(time.time() - req["ts"]), "pc": light})
+    return jsonify({"id": rid, "status": "unknown", "why": "no such request (expired after six hours, or never queued)"})
+
+
+@app.route("/api/dfs/eval/requests")
+def api_dfs_eval_requests():
+    """The PC's door: the evaluation requests not yet answered, oldest first."""
+    if not _pc_auth_ok():
+        return jsonify({"error": "auth"}), 403
+    reqs = _dfseval_live(_tourney_json(_DFSEVAL_REQ))
+    return jsonify({"requests": sorted(reqs.values(), key=lambda r: r.get("ts") or 0)})
+
+
+@app.route("/api/dfs/eval/result", methods=["POST"])
+def api_dfs_eval_result():
+    """The PC's answer to one request: kept beside the queue (small JSON), the
+    request removed."""
+    if not _pc_auth_ok():
+        return jsonify({"error": "auth"}), 403
+    d = request.get_json(force=True, silent=True) or {}
+    rid = "".join(ch for ch in str(d.get("id") or "") if ch.isalnum())[:12]
+    if not rid:
+        return jsonify({"error": "no id"}), 400
+    out = {"id": rid, "ts": time.time()}
+    if d.get("error"):
+        out["error"] = str(d["error"])[:400]
+    else:
+        out["result"] = d.get("result")
+    _tourney_json_save(f"dfseval_res_{rid}", out)
+    reqs = _dfseval_live(_tourney_json(_DFSEVAL_REQ))
+    reqs.pop(rid, None)
+    _tourney_json_save(_DFSEVAL_REQ, reqs)
+    return jsonify({"ok": True})
+
+
 @app.route("/api/dfs/tourney/attempt", methods=["POST"])
 def api_dfs_tourney_attempt():
     """The PC's report on a slate it owed a build and could not build (its

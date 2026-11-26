@@ -1609,9 +1609,15 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
         errlog.note("TOURN-status", e)
         st_sig, st_cls = None, {}
     _built = int(time.time())
+    # The lineup evaluator's artifact (dfs_evaluate; PC only, never raises):
+    # this board's players, its contest's full payout table and the field it
+    # scored against, so a hand-built lineup is scored on that field later.
+    import dfs_evaluate
+    _eval_art = dfs_evaluate.save_artifact("showdown", dg, bool(pk), ents, idx, f, [contest], week, preseason,
+                                           model, n_sims, teams, _built)
     return plain({"version": VERSION, "engine": SD_ENGINE,
             "kind": "showdown", "sport": "nfl", "draft_group_id": int(dg),
-            "built_ts": _built, "status_sig": st_sig, "status": st_cls,
+            "built_ts": _built, "status_sig": st_sig, "status": st_cls, "eval_artifact": _eval_art,
             # freshness, so a board can be audited for WHEN it was built
             # rather than only for what it says: a board made on Thursday and
             # served on Sunday used to look identical to one made at lock.
@@ -3509,8 +3515,16 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     except Exception as e:
         errlog.note("TOURN-status", e)
         st_sig, st_cls = None, {}
+    _built = int(time.time())
+    # The lineup evaluator's artifact (dfs_evaluate; PC only, never raises):
+    # the board's players in its order, every contest's full payout table (the
+    # board drops them) and the field sample it scored against -- unseeded, so
+    # it cannot be drawn again.
+    import dfs_evaluate
+    _eval_art = dfs_evaluate.save_artifact("classic", dg, bool(pk), ents, idx_f, None, contests, week, preseason,
+                                           model, n_sims, slate_teams, _built)
     return plain({"version": VERSION, "engine": ENGINE, "kind": "classic", "sport": "nfl", "draft_group_id": int(dg),
-            "built_ts": int(time.time()), "status_sig": st_sig, "status": st_cls,
+            "built_ts": _built, "status_sig": st_sig, "status": st_cls, "eval_artifact": _eval_art,
             "pool_sig": pool_sig(slate["csv"]),
             "contests": [results[str(c["id"])]["contest"] for c in contests],
             "slate": {"n_players": slate.get("n_players"), "dropped": slate.get("dropped"),

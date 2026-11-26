@@ -8750,6 +8750,8 @@ function renderDfsTourney(d) {
     ${playersHtml}${moreHtml}
     <div class="small" style="color:var(--muted);margin-top:6px">⏱ sims ${Math.round(tm.sims_s || 0)}s${classic ? ` · best lineups ${Math.round(tm.optimal_s || 0)}s · field ${Math.round(tm.field_s || 0)}s` : ` · enumerate ${Math.round(tm.enumerate_s || 0)}s`} · score ${Math.round(tm.score_s || 0)}s · portfolio ${Math.round(tm.portfolio_s || 0)}s${d.rules ? ` · 📐 ${d.rules.map(escapeHtml).join(" · ")}` : ""}</div>
   </div>`;
+  // the lineup evaluator under the board (static/dfseval.js)
+  if (typeof dfsEvalRender === "function") dfsEvalRender(d);
 }
 function initDfsPicker() {
   const sel = $("dfsDkSlate"), csel = $("dfsDkContest");

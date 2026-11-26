@@ -282,6 +282,23 @@ button.danger { color: var(--no); }
 .foldbtn:hover { color: var(--link-hover); text-decoration: underline; }
 .foldbtn[hidden] { display: none; }
 
+/* The custom lineup evaluator (static/dfseval.js). */
+.dxe { margin-top: 12px; }
+.dxe-h { margin: 0 0 4px; font-size: 1rem; }
+.dxe-starts { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.dxe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px 10px; }
+.dxe-slot { flex-direction: row; align-items: center; gap: 8px; }
+.dxe-slotname { width: 38px; flex: 0 0 38px; font-weight: 600; color: var(--text); font-size: 0.8rem; }
+.dxe-slot select { flex: 1 1 auto; min-width: 0; }
+.dxe-meter { margin: 8px 0 4px; }
+.dxe-actions { display: flex; gap: 8px; margin: 6px 0; }
+.dxe-table { border-collapse: collapse; width: 100%; }
+.dxe-table th, .dxe-table td { padding: 4px 6px; text-align: right; border-top: 1px solid var(--border); vertical-align: top; }
+.dxe-table td:first-child, .dxe-table th:first-child { text-align: left; }
+.dxe-table td:first-child { min-width: 200px; }   /* the names wrap one per line below that on a phone */
+.dxe-custom { background: rgba(91, 140, 255, 0.18); color: var(--link); }
+.dxe-corr td, .dxe-corr th { padding: 1px 4px; font-variant-numeric: tabular-nums; }
+
 /* The NFL card's two models: model | away | home, one row each. */
 /* The footnote sits outside the grid: as a spanning row its long line widened
    every column and pushed the away/home figures to the card's edges. */

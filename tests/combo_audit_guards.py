@@ -24836,6 +24836,18 @@ except Exception as _pcg_e:                # a guard file that cannot run is a f
     ck("guards_pool_cache runs to the end", False, f"{type(_pcg_e).__name__}: {_pcg_e} " + _pcg_tb.format_exc()[-600:])
 
 print("=" * 72)
+print("EV. The custom lineup evaluator (2026-11-26, dfs_evaluate; research/reports/dfs_cache_evaluator.md): equal to a")
+print("    brute force on every figure, legality, sources, looks, the request path and the tab (tests/guards_evaluator.py)")
+print("=" * 72)
+try:
+    _ev_mod = __import__("guards_evaluator")
+    _ev_mod.run(ck)
+    _ev_mod.run_wiring(ck)
+except Exception as _ev_e:                 # a guard file that cannot run is a failed guard, never a skipped one
+    import traceback as _ev_tb
+    ck("guards_evaluator runs to the end", False, f"{type(_ev_e).__name__}: {_ev_e} " + _ev_tb.format_exc()[-600:])
+
+print("=" * 72)
 print("UI. The readability pass (2026-11-26): checkbox labels, chips that never break inside themselves, Best Bets'")
 print("    source names, the folded intro notes, the NFL card's models and asks, the bet ledger (tests/guards_ui.py)")
 print("=" * 72)

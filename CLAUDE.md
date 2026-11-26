@@ -772,6 +772,39 @@ data-only `sim-history` branch (which never deploys):
   (`research/sprint_2026_11_26/`), and the readability pass (`tests/guards_ui.py`, section UI: the page's
   own intro notes fold to two lines; a note a board renders at run time never does). Read its section E
   before acting on a recommendation: each needs the owner's call or a test on week 13+ games.
+- **The worlds cache and the lineup evaluator** (2026-11-26; `pool_cache.py`, `dfs_evaluate.py`,
+  `static/dfseval.js`; design `research/reports/dfs_cache_evaluator.md`). Production tournament boards
+  are UNSEEDED (the PC passes no seed), so a picked build used to simulate different worlds from its plain
+  board.
+  - **The cache.** `nfl_dfs_sim.player_pool` on the engine model files its worlds on the PC's disk
+    (`VIGIL_POOL_CACHE_DIR`, set by pc_worker only). The key is the call, the simulator's code and every
+    input. Scores are stored as int32 hundredths only where every value round-trips; writes are atomic and
+    sha256-verified; the store keeps 24 entries / 12 GB. A rebuild or a picked build at the same world count
+    reads the very same games. The suite keeps the cache off (`VIGIL_POOL_CACHE_DIR=""`).
+  - **The artifact.** Every tournament build leaves one: the players, the full payout tables and the field
+    it scored against (`eval_artifact` on the board). A board built before this has none: rebuild it.
+  - **The evaluator.** The tab's "Evaluate your own lineup" queues a lineup (`/api/dfs/eval`, small JSON on
+    the server). The PC's `--eval` lane (pc_loop, every 15 s, nice 10) simulates the slate's FINAL worlds
+    once (40,000, their own seed, through the cache) and scores the field on them into per-world rank
+    thresholds. It then scores the owner's lineup, labelled `custom`, beside the board's own
+    (`optimizer:<list>`) on those worlds: out of sample for both. Ties are not split, so EV is
+    experimental; `looks` flags repeat comparisons as development data. Exact against a brute force
+    (`tests/guards_evaluator.py`, EV).
+- **Showdown vs Classic on real results** (`research/dfs_format_validation.py`, report
+  `research/reports/dfs_format_validation.md`). It grades every exported board on real DraftKings points
+  against the projection-optimal lineup on the board's own pool. No 2-6-game classic has been graded yet,
+  so the small-slate hypothesis is open. Real-field finishes need the owner's standings exports
+  (`dkfield-<cid>.json` on sim-history, three contests so far).
+- **Owner decisions, 2026-11-26.**
+  - DraftKings D/ST points allowed include kickoff, punt and blocked-kick return TDs. They exclude the
+    opponent defense's pick-six and fumble-return TDs (their conversions count). Verified on the official
+    classic and showdown rules pages; the engine's `off_points` still leaves every return score out:
+    to fix.
+  - The NFL deep weight stays 0.30 until its registered read. 200 rows = 100 games, paired per game,
+    clustered by week, both the registered comparison and the production blend; an inconclusive result
+    is insufficient evidence; any replacement protocol uses fresh data.
+  - Where Kalshi is measurably better, the Matchups tab may lead with its de-vigged probability, bid, ask
+    and Vigil's figure shown apart.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 

@@ -1373,6 +1373,69 @@ def _sync_boards(url, tok):
         print(f"[vigil-pc] boards sync failed ({type(e).__name__}: {e}) - next pass retries")
 
 
+# ---- the lineup evaluator's fast lane (2026-11-26, dfs_evaluate) ---------------
+EVAL_POLL_S = 15
+
+
+def _eval_one(url, tok, r, log=print):
+    """Answer one evaluation request: the slate's newest evaluator artifact,
+    its final worlds prepared once (simulated through the worlds cache, the
+    field scored on them), then the owner's lineups and the board's own top
+    ones scored on those worlds. The result, or the reason there is none, is
+    posted back either way."""
+    import boardshare
+    import dfs_evaluate
+    import errlog
+    rid, dg, picked = r.get("id"), int(r.get("dg") or 0), bool(r.get("picked"))
+    out = {"id": rid}
+    try:
+        got = dfs_evaluate.load_artifact(dg, picked)
+        if not got:
+            out["error"] = ("no evaluator artifact for this slate on the PC: its board was built before the "
+                            "evaluator existed (2026-11-26) or on another machine -- rebuild the board, then evaluate")
+        else:
+            path, meta = got
+            t0 = time.time()
+            dfs_evaluate.prepare(path, meta, log=log)
+            kind = "sd" if meta["kind"] == "showdown" else "cl"
+            board, _a = boardshare.get(f"{kind}_tourney_nfl_{dg}{'_pick' if picked else ''}", None)
+            if board and board.get("eval_artifact") not in (None, meta["id"]):
+                board = None            # the served board is a different build: its lineups are not this field's
+            out["result"] = dfs_evaluate.evaluate(path, meta, r.get("lineups") or [], board=board)
+            out["result"]["seconds"] = round(time.time() - t0, 1)
+    except Exception as e:
+        errlog.note("EVAL-pc", e, path=str(dg))
+        out["error"] = f"the PC could not evaluate: {type(e).__name__}: {e}"[:300]
+    try:
+        _api(url, tok, "/api/dfs/eval/result", data=json.dumps(out).encode(),
+             headers={"Content-Type": "application/json"}, timeout=60)
+    except Exception as e:
+        errlog.note("EVAL-post", e, path=str(rid))
+
+
+def eval_main():
+    """The evaluator's poller: every EVAL_POLL_S, the server's pending
+    evaluation requests, answered one by one. pc_loop keeps one running beside
+    the cycle and the boards pass and stops it for an update. Low priority: a
+    slate's first request simulates its final worlds (once, then cached), and
+    a tournament build must keep the cores."""
+    url, tok = _config()
+    try:
+        os.nice(10)
+    except (AttributeError, OSError):
+        pass                                     # Windows: the loop's process priority stands
+    while True:
+        try:
+            reqs = _api(url, tok, "/api/dfs/eval/requests").get("requests") or []
+        except Exception as e:
+            print(f"[vigil-pc] eval poll failed ({type(e).__name__})")
+            reqs = []
+        for r in reqs:
+            print(f"[vigil-pc] evaluating {len(r.get('lineups') or [])} lineup(s) on slate {r.get('dg')}...")
+            _eval_one(url, tok, r)
+        time.sleep(EVAL_POLL_S)
+
+
 def boards_main():
     """One boards pass alone: every board builder the server serves, then the
     boards upload (pc_loop runs it every BOARDS_S in its own process, beside the
@@ -1408,4 +1471,6 @@ if __name__ == "__main__":
     os.environ["VIGIL_PC_WORKER"] = "1"
     if "--boards" in sys.argv[1:]:
         sys.exit(boards_main() or 0)
+    if "--eval" in sys.argv[1:]:
+        sys.exit(eval_main() or 0)
     sys.exit(main() or 0)
