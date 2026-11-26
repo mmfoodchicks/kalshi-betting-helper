@@ -767,6 +767,19 @@ data-only `sim-history` branch (which never deploys):
     any other refusal (a roster lookup down) is tried again next cycle as the plain builds are. The automatic paths
     never see a picked request (`_split_picked`) and a window is consumed by the plain build only. Served on
     `/api/dfs/tourney?dg=&pick=1`. Guards: `tests/guards_picker.py` (section PK).
+  - **Roster rules and portfolio caps** (2026-11-26, `dfs_portfolio.py`; the owner's priorities 5 and 6). The same
+    `pick` carries `rules` (QB + N receivers, a bring-back required or forbidden, a team maximum, a minimum salary)
+    and `portfolio` (a player cap with per-player overrides, a cap on the team an entry is built around -- the
+    quarterback's, or the captain's -- and the most players two entries may share), percent of the entries, at
+    least one entry for any cap above 0. Our entries only, never the field (a board with them keeps its field
+    exactly); conflicts among the owner's own choices are refused at the queue with the rule named
+    (`pick_resolve`); the stack and bring-back are classic-only. The caps are a constraint INSIDE
+    `dfs_tourney.greedy_cover` (`limits`, held at 5, 10 and k entries; the best feasible candidate each step; a
+    starved cover stops short and names the cap); `limits=None` is the old loop line for line. The sheet's search
+    takes the rules (`_opt_rules`: under them the reserve fill and three polished starts a stack team; exact
+    against the brute force) and its multi-entry the caps (`SheetCaps`). Every portfolio, capped or not, carries
+    `concentration` (display only; `static/dfspick.js` dfsConcentration is the same definition for the prefix on
+    screen). Guards: `tests/guards_auto_portfolio.py`.
 - **The 2026-11-26 sprint** (`research/reports/sprint_2026_11_26.md`): the owner's Phase 0-10 backlog
   reconciled item by item (done / partial / missing / rejected / blocked), four audits with their scripts
   (`research/sprint_2026_11_26/`), and the readability pass (`tests/guards_ui.py`, section UI: the page's
