@@ -403,6 +403,92 @@ def verdict(ev, base):
     return out
 
 
+# ---- the owner's criteria (registered in section B.7, before the validation read) ----
+OWNER = {"recall_top": 200, "recall_min_of_20": 10, "median_ratio": (0.5, 2.0), "collision_factor": 2.0,
+         "unique_pp": 5.0, "mass_factor": 2.0, "ownership_pp": 0.5, "salary_usd": 200.0, "category_pp": 2.0}
+OWNER_BUCKETS = ((1, 1), (2, 10), (11, 10 ** 9))
+
+
+def _wquant(v, w, qs):
+    o = np.argsort(v, kind="stable")
+    cw = np.cumsum(w[o])
+    return [float(v[o][min(len(v) - 1, int(np.searchsorted(cw, q * cw[-1])))]) for q in qs]
+
+
+def owner_eval(d, model, size_share):
+    """The figures the owner's five criteria read, for one model on one
+    contest. Salary, the splits and the score quantiles are EXACT over the
+    universe (no sample), the real side over the representable entries; the
+    real 20 most-copied builds are taken over ALL entries, and one the
+    universe cannot hold is a miss with ratio 0."""
+    c, N = d["c"], d["N"]
+    lam, D = expected_counts(d, model, size_share)
+    p = lam / lam.sum()
+    cnt = np.bincount(d["u"], minlength=d["L"])
+    pr = cnt / N
+    u_all = np.full(c.N, -1, dtype=np.int64)
+    u_all[d["rep"]] = d["u"]
+    dup, _per, _inv = M.duplication(c.A, "showdown", c.P)
+    top200 = set(np.argsort(-lam, kind="stable")[:OWNER["recall_top"]].tolist())
+    ratios, found = [], 0
+    for row, copies in dup["_top_rows"]:
+        ui = int(u_all[int(np.where((c.A == np.asarray(row)).all(axis=1))[0][0])])
+        ratios.append(float(lam[ui]) / copies if ui >= 0 else 0.0)
+        found += ui in top200
+    hm, _dist = _pois_bucket_entries(lam, OWNER_BUCKETS)
+    per = cnt[d["u"]]
+    hr = {M._bname(lo, hi): 100 * float(((per >= lo) & (per <= hi)).mean()) for lo, hi in OWNER_BUCKETS}
+    hm = {k: 100 * v / N for k, v in hm.items()}
+    F = d["F"]
+    cats = {"split_3_3": 1.0 - F[:, _C["split_4_2"]] - F[:, _C["split_5_1"]], "split_4_2": F[:, _C["split_4_2"]],
+            "split_5_1": F[:, _C["split_5_1"]],
+            "cpt_QB": 1.0 - sum(F[:, _C["cpt_" + q]] for q in ("RB", "WR", "TE", "K", "DST")),
+            **{"cpt_" + q: F[:, _C["cpt_" + q]] for q in ("RB", "WR", "TE", "K", "DST")}}
+    fp = np.asarray([c.fpts[c.nid[q["name"]]] for q in d["players"]])
+    score = M.CPT_MULT * fp[d["idx"][:, 0]] + fp[d["idx"][:, 1:]].sum(axis=1)
+    qs = (0.5, 0.9, 0.99)
+    return {"real_top20_in_model_top200": int(found), "median_model_over_real_copies": round(float(np.median(ratios)), 4),
+            "real_top20_ratios": [round(r, 3) for r in ratios],
+            "collision_model_over_real": round(float(((lam ** 2).sum() - D.sum()) / (N * (N - 1.0)))
+                                               / float((cnt * (cnt - 1.0)).sum() / (N * (N - 1.0))), 4),
+            "copies_mass_pct": {"real": {k: round(v, 3) for k, v in hr.items()}, "model": {k: round(v, 3) for k, v in hm.items()}},
+            "salary_mean": {"real": round(float(pr @ d["s"]), 1), "model": round(float(p @ d["s"]), 1)},
+            "category_pct": {k: {"real": round(100 * float(pr @ v), 2), "model": round(100 * float(p @ v), 2)} for k, v in cats.items()},
+            "score_quantiles": {"real": dict(zip(("P50", "P90", "P99"), _wquant(score, pr, qs))),
+                                "model": dict(zip(("P50", "P90", "P99"), _wquant(score, p, qs)))}}
+
+
+def owner_verdict(o, ob, ev, evb):
+    """Pass/fail on the owner's five criteria; `ob`, `evb` are production's
+    rule (M0) on the same contest."""
+    W = OWNER
+    hr, hm = o["copies_mass_pct"]["real"], o["copies_mass_pct"]["model"]
+
+    def within(a, b, f):
+        return bool(b > 0 and a > 0 and 1 / f <= a / b <= f)
+    sal = abs(o["salary_mean"]["model"] - o["salary_mean"]["real"])
+    salb = abs(ob["salary_mean"]["model"] - ob["salary_mean"]["real"])
+    cat = {k: abs(v["model"] - v["real"]) for k, v in o["category_pct"].items()}
+    catb = {k: abs(v["model"] - v["real"]) for k, v in ob["category_pct"].items()}
+    sq = {k: abs(o["score_quantiles"]["model"][k] - o["score_quantiles"]["real"][k]) for k in ("P50", "P90", "P99")}
+    sqb = {k: abs(ob["score_quantiles"]["model"][k] - ob["score_quantiles"]["real"][k]) for k in ("P50", "P90", "P99")}
+    v = {"1_recall_10_of_20_in_top_200": bool(o["real_top20_in_model_top200"] >= W["recall_min_of_20"]),
+         "2_median_copies_ratio_0.5_to_2": bool(W["median_ratio"][0] <= o["median_model_over_real_copies"] <= W["median_ratio"][1]),
+         "3_collision_within_2x": bool(1 / W["collision_factor"] <= o["collision_model_over_real"] <= W["collision_factor"]),
+         "4_unique_share_within_5pp": bool(abs(hm["1"] - hr["1"]) <= W["unique_pp"]),
+         "4_mass_2_to_10_within_2x": within(hm["2-10"], hr["2-10"], W["mass_factor"]),
+         "4_mass_11_plus_within_2x": within(hm["11+"], hr["11+"], W["mass_factor"]),
+         "5_ownership_captain_and_flex_mae": bool(ev["captain_mae"] <= evb["captain_mae"] + W["ownership_pp"]
+                                                  and ev["flex_mae"] <= evb["flex_mae"] + W["ownership_pp"]),
+         "5_salary_mean": bool(sal <= W["salary_usd"] or sal <= salb),
+         "5_split_and_captain_categories": bool(all(cat[k] <= catb[k] + W["category_pp"] for k in cat)),
+         "5_score_quantiles_no_worse": bool(all(sq[k] <= sqb[k] for k in sq))}
+    v["all"] = bool(all(v.values()))
+    return v, {"salary_abs_err": {"model": round(sal, 1), "production": round(salb, 1)},
+               "category_abs_err_pp": {k: {"model": round(cat[k], 2), "production": round(catb[k], 2)} for k in cat},
+               "score_quantile_abs_err": {k: {"model": round(sq[k], 2), "production": round(sqb[k], 2)} for k in sq}}
+
+
 def models_from(fit):
     ms = {"M0": {"kind": "production"},
           "M1": {"kind": "single", "cols": list(COMPONENTS["CAS"]), "theta": fit["M1"]["theta"]},
@@ -467,12 +553,20 @@ def run_validate(args, log=print):
     for cid in VAL:
         d = build(cid, ex[cid], args.boards, log)
         evs = {k: evaluate(d, m, share) for k, m in ms.items()}
+        ow = {k: owner_eval(d, m, share) for k, m in ms.items()}
+        models = {}
+        for k, ev in evs.items():
+            ov, od = owner_verdict(ow[k], ow["M0"], ev, evs["M0"])
+            models[k] = dict(ev, verdict=verdict(ev, evs["M0"]), owner=dict(ow[k], detail=od, verdict=ov))
         out["contests"][str(cid)] = {"label": d["c"].spec["label"], "representable_pct": round(100 * d["N"] / d["N_all"], 2),
                                      "entries": d["N"], "legal_lineups": d["L"], "players": len(d["players"]),
-                                     "models": {k: dict(ev, verdict=verdict(ev, evs["M0"])) for k, ev in evs.items()}}
+                                     "models": models}
         log(f"[mix] validation {cid}: collision model/real " + ", ".join(f"{k} {ev['collision']['model_over_real']}" for k, ev in evs.items()))
     out["duplication_calibrated"] = {k: bool(all(out["contests"][str(c)]["models"][k]["verdict"]["duplication_calibrated_here"] for c in VAL))
                                      for k in ms}
+    out["owner_criteria_all_pass"] = {k: bool(all(out["contests"][str(c)]["models"][k]["owner"]["verdict"]["all"] for c in VAL))
+                                      for k in ms}
+    out["owner_criteria"] = OWNER
     with open(VALID, "w") as f:
         json.dump(out, f, indent=1)
     log(f"[mix] wrote {VALID}")

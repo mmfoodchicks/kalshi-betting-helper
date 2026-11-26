@@ -170,3 +170,46 @@ of the served optimizer field** (rebuilt by production's sampler,
 
 Whatever the result, one week each way cannot ship a classic field. It can
 say whether the mechanism deserves the owner's weeks 1, 2 and 6 exports.
+
+### B.7 The owner's acceptance criteria (added before any validation contest was read)
+
+The owner, on reviewing the plan: "Before examining validation contests,
+numerically define the most-copied-lineup acceptance criterion. Investigate
+lineup-level concentration without sacrificing marginal ownership accuracy or
+artificially multiplying every lineup's duplication."
+
+Registered here, in a commit of its own, AFTER the development fits were
+started and BEFORE either `validate` command was run: no fitted model had
+read a validation contest, and the validation columns of section A had not
+been opened. These five govern; B.5's and B.6's stricter individual criterion
+(15 of 20 within a factor 3) is still reported beside them. On EACH
+validation contest, with production's field on the same contest beside every
+figure:
+
+1. **Individual recall.** At least 10 of the real 20 most-copied builds are
+   among the model's 200 most probable lineups. Showdown: by expected copies
+   over the enumerated universe; the real 20 are taken over ALL entries, and a
+   build the universe cannot hold is a miss. Classic (a sampled field, where
+   nearly every lineup has one copy): the model field's 200 most-copied
+   builds at the contest's own entry count, a build with a single copy never
+   counting.
+2. **Individual counts.** Over those real 20 builds, the median of model
+   copies / real copies lies in [0.5, 2.0] (a build the model never holds
+   counts as 0).
+3. **Aggregate.** C within a factor 2 of real (showdown: on the
+   representable support, the only entries the model describes).
+4. **Not by inflating everything.** The share of entries in unique lineups
+   within 5 percentage points of real; the share of entries in lineups with
+   2-10 copies, and with 11+ copies, each within a factor 2 of real.
+5. **Non-inferiority of the rest.** Marginal ownership MAE no more than 0.5
+   pp worse than production (classic: the real top 40; **showdown has 23-30
+   players in a universe, so "top 40" is undefined there and is replaced by
+   the captain MAE and the flex MAE over every universe player, each held to
+   the 0.5 pp**); salary-used mean within $200 of real or no worse than
+   production; no stacking category (classic: the four stack shares and the
+   bring-back; showdown: the three team splits and the six captain positions)
+   worse than production by more than 2 pp; the field's real-points P50, P90
+   and P99 each no worse than production (showdown: exact over the universe,
+   no sample).
+
+A model that fails is a result. Nothing is tuned on a validation contest.

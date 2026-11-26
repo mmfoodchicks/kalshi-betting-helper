@@ -95,6 +95,68 @@ def loss(m, R, base):
     return round(float(sum(parts.values())), 4), {k: round(float(v), 4) for k, v in parts.items()}
 
 
+# ---- the owner's criteria (registered in section B.7, before the validation read) ----
+OWNER = {"recall_top": 200, "recall_min_of_20": 10, "median_ratio": (0.5, 2.0), "collision_factor": 2.0,
+         "unique_pp": 5.0, "mass_factor": 2.0, "ownership_pp": 0.5, "salary_usd": 200.0, "category_pp": 2.0}
+
+
+def _mass(per):
+    return {"1": round(100 * float((per == 1).mean()), 3), "2-10": round(100 * float(((per >= 2) & (per <= 10)).mean()), 3),
+            "11+": round(100 * float((per >= 11).mean()), 3)}
+
+
+def owner_side(c, A, real_rows):
+    """One field (a model's sample at the contest's own entry count) on the
+    owner's criteria. Its "200 most probable lineups" are its 200 most-copied
+    builds, a build with a single copy never counting (in a sampled classic
+    field nearly every lineup has one copy, so "most probable" is only
+    defined where a lineup repeats)."""
+    rf, _rc = M._hash_words(c.P)
+    h = rf[A].sum(axis=1, dtype=np.uint64)
+    u, inv, cnt = np.unique(h, return_inverse=True, return_counts=True)
+    order = np.argsort(-cnt, kind="stable")[:OWNER["recall_top"]]
+    top = {int(u[j]) for j in order if cnt[j] >= 2}
+    look = dict(zip(u.tolist(), cnt.tolist()))
+    ratios, found = [], 0
+    for row, copies in real_rows:
+        hh = int(rf[np.asarray(row)].sum(dtype=np.uint64))
+        ratios.append(look.get(hh, 0) / copies)
+        found += hh in top
+    st = M.structure(c, A)
+    sc = M.scores(c, A)
+    return {"real_top20_in_field_top200": int(found), "median_copies_over_real": round(float(np.median(ratios)), 4),
+            "copies_mass_pct": _mass(cnt[inv]), "salary_mean": st["salary_mean"],
+            "categories": {**{f"stack_{k}": v for k, v in zip(("0", "1", "2", "3+"), st["stack_pct"])}, "bring_back": st["bring_back_pct"]},
+            "score_quantiles": {k: round(float(np.quantile(sc, q)), 2) for k, q in (("P50", 0.5), ("P90", 0.9), ("P99", 0.99))}}
+
+
+def owner_verdict(o, ob, orl, m, base, ratio):
+    W = OWNER
+
+    def within(a, b, f):
+        return bool(a > 0 and b > 0 and 1 / f <= a / b <= f)
+    sal, salb = abs(o["salary_mean"] - orl["salary_mean"]), abs(ob["salary_mean"] - orl["salary_mean"])
+    cat = {k: abs(o["categories"][k] - orl["categories"][k]) for k in o["categories"]}
+    catb = {k: abs(ob["categories"][k] - orl["categories"][k]) for k in o["categories"]}
+    sq = {k: abs(o["score_quantiles"][k] - orl["score_quantiles"][k]) for k in o["score_quantiles"]}
+    sqb = {k: abs(ob["score_quantiles"][k] - orl["score_quantiles"][k]) for k in o["score_quantiles"]}
+    hm, hr = o["copies_mass_pct"], orl["copies_mass_pct"]
+    v = {"1_recall_10_of_20_in_top_200": bool(o["real_top20_in_field_top200"] >= W["recall_min_of_20"]),
+         "2_median_copies_ratio_0.5_to_2": bool(W["median_ratio"][0] <= o["median_copies_over_real"] <= W["median_ratio"][1]),
+         "3_collision_within_2x": bool(1 / W["collision_factor"] <= ratio <= W["collision_factor"]),
+         "4_unique_share_within_5pp": bool(abs(hm["1"] - hr["1"]) <= W["unique_pp"]),
+         "4_mass_2_to_10_within_2x": within(hm["2-10"], hr["2-10"], W["mass_factor"]),
+         "4_mass_11_plus_within_2x": within(hm["11+"], hr["11+"], W["mass_factor"]),
+         "5_top40_ownership_mae": bool(m["own_top40_mae"] <= base["own_top40_mae"] + W["ownership_pp"]),
+         "5_salary_mean": bool(sal <= W["salary_usd"] or sal <= salb),
+         "5_stack_categories": bool(all(cat[k] <= catb[k] + W["category_pp"] for k in cat)),
+         "5_score_quantiles_no_worse": bool(all(sq[k] <= sqb[k] for k in sq))}
+    v["all"] = bool(all(v.values()))
+    return v, {"salary_abs_err": {"model": round(sal, 1), "production": round(salb, 1)},
+               "category_abs_err_pp": {k: {"model": round(cat[k], 2), "production": round(catb[k], 2)} for k in cat},
+               "score_quantile_abs_err": {k: {"model": round(sq[k], 2), "production": round(sqb[k], 2)} for k in sq}}
+
+
 def mix(opt, cas, w, n):
     k = int(round(w * n))
     return np.concatenate([opt[:k], cas[:n - k]], axis=0)
@@ -169,6 +231,12 @@ def run_validate(args, log=print):
                     "entries_in_duplicated_lineups_pct": dup["entries_in_duplicated_lineups_pct"]},
            "served_replica": dict(base, replica=rep), "model": m, "collision_model_over_real": round(ratio, 4),
            "real_top20_builds": rows, "real_top20_within_factor": within, "verdict": v}
+    o_real = owner_side(c, c.A, dup["_top_rows"])
+    o_model, o_base = owner_side(c, A, dup["_top_rows"]), owner_side(c, cas, dup["_top_rows"])
+    ov, od = owner_verdict(o_model, o_base, o_real, m, base, ratio)
+    out["owner"] = {"criteria": OWNER, "real": o_real, "model": o_model, "production": o_base,
+                    "production_collision_over_real": round(base["C"] / R["near"]["pair_share_overlap"]["9_of_9"], 5),
+                    "detail": od, "verdict": ov}
     with open(VALID, "w") as f:
         json.dump(out, f, indent=1)
     log(f"[mixc] validation: C model/real {ratio:.3f}; {within} of 20 builds within 3x; wrote {VALID}")
