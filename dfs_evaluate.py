@@ -262,6 +262,15 @@ def _gpu():
             errlog.note("EVAL-gpu-init", msg="gpu requested but CuPy is not installed; CPU used")
             return None
         cupy.cuda.Device(0).use()
+        # The VRAM budget (vigil-pc.cfg "gpu_vram_fraction" or the build profile's; pc_worker sets
+        # VIGIL_GPU_VRAM_FRAC): CuPy's pool refuses an allocation past that share of the card, the job
+        # raises and field_thresholds answers on the CPU, ledgered EVAL-gpu. Unset: no limit, as before.
+        try:
+            frac = float(os.environ.get("VIGIL_GPU_VRAM_FRAC") or 0)
+        except ValueError:
+            frac = 0.0
+        if 0.0 < frac < 1.0:
+            cupy.get_default_memory_pool().set_limit(fraction=frac)
         return cupy
     except Exception as e:                       # a broken install, no device, no driver: the CPU answers
         errlog.note("EVAL-gpu-init", e)

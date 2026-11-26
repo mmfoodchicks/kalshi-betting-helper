@@ -2,5 +2,6 @@
   "app_url": "https://YOUR-APP.onrender.com",
   "sim_token": "PASTE-YOUR-SIM_TOKEN-HERE",
   "gpu": false,
-  "gpu_hist_batch": 50
+  "gpu_hist_batch": 50,
+  "profile": "standard"
 }

@@ -76,6 +76,86 @@ def _cfg_flag(key):
     return bool(_cfg_value(key))
 
 
+# ---- build profiles and the resumable-build limits (2026-11-26; pc_profiles, build_ckpt) ----
+def _cfg_all():
+    """vigil-pc.cfg as a dict; absent or unreadable is {} (every default)."""
+    try:
+        with open(os.path.join(_HERE, "vigil-pc.cfg")) as fh:
+            cfg = json.load(fh)
+        return cfg if isinstance(cfg, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _profile():
+    """(the configured profile, notes on anything in the config that was
+    ignored). No "profile" key is standard: production's numbers."""
+    import pc_profiles
+    return pc_profiles.from_cfg(_cfg_all())
+
+
+def _ram_gb():
+    """This PC's physical memory in GB: "ram_gb" in vigil-pc.cfg, else the
+    operating system's figure (Windows: GlobalMemoryStatusEx; elsewhere
+    sysconf), else None -- and a profile above standard is then refused, never
+    guessed into a swap storm."""
+    v = _cfg_value("ram_gb")
+    if isinstance(v, (int, float)) and not isinstance(v, bool) and 1 <= v <= 4096:
+        return float(v)
+    try:
+        if os.name == "nt":
+            import ctypes
+
+            class _Mem(ctypes.Structure):
+                _fields_ = [("dwLength", ctypes.c_ulong), ("dwMemoryLoad", ctypes.c_ulong)] + [
+                    (n, ctypes.c_ulonglong) for n in ("ullTotalPhys", "ullAvailPhys", "ullTotalPageFile",
+                                                      "ullAvailPageFile", "ullTotalVirtual", "ullAvailVirtual",
+                                                      "ullAvailExtendedVirtual")]
+            m = _Mem()
+            m.dwLength = ctypes.sizeof(_Mem)
+            if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(m)):
+                return m.ullTotalPhys / 1024 ** 3
+            return None
+        return os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") / 1024 ** 3
+    except (AttributeError, OSError, ValueError):
+        return None
+
+
+def _apply_limits(env=None):
+    """Where the worker RUNS (never at import: the guard suite imports this
+    module and must build its boards the old way): the checkpoint directory
+    beside the worlds cache, and the disk limits, process count and VRAM
+    budget the profile and vigil-pc.cfg set, as the environment variables
+    pool_cache, build_ckpt, dfs_tourney._workers and dfs_evaluate read -- in
+    this process and every child. Returns the notes to print."""
+    env = os.environ if env is None else env
+    p, notes = _profile()
+    env.setdefault("VIGIL_CKPT_DIR", os.path.join(env.get("VIGIL_SIM_CACHE_DIR") or os.path.join(_HERE, "pc-simcache"),
+                                                  "ckpt"))
+    if _cfg_value("checkpoints") is False:
+        env["VIGIL_CKPT_DIR"] = ""              # "checkpoints": false switches resumable builds off
+    env["VIGIL_CKPT_GB"] = f"{p['checkpoint_gb']:g}"
+    env["VIGIL_POOL_CACHE_GB"] = f"{p['cache_gb']:g}"
+    env["VIGIL_POOL_CACHE_ENTRIES"] = str(int(p["cache_entries"]))
+    if p.get("workers"):
+        env["VIGIL_TOURNEY_WORKERS"] = str(int(p["workers"]))
+    if p.get("gpu_vram_fraction"):
+        env["VIGIL_GPU_VRAM_FRAC"] = f"{p['gpu_vram_fraction']:g}"
+    return notes
+
+
+def _cl_profile(start_ts, board, window, picked=False, now=None):
+    """The profile this classic build runs (pc_profiles.choose): the
+    configured one when it fits the time to lock and this PC's memory, the
+    next one down when it does not, standard in the pre-lock window and
+    whenever nothing larger fits. With no "profile" in vigil-pc.cfg this is
+    standard and the caller makes production's call unchanged."""
+    import pc_profiles
+    req, _notes = _profile()
+    return pc_profiles.choose(req, start_ts, time.time() if now is None else now, board, window=window,
+                              picked=picked, ram_gb=_ram_gb())
+
+
 _COMMIT_CACHE = [None]
 
 
@@ -900,7 +980,7 @@ def _cl_full_estimate(board):
     field, the candidates) unchanged."""
     t = (board or {}).get("timings") or {}
     sims = (board or {}).get("sims")
-    if not t.get("total_s"):
+    if not t.get("total_s") or t.get("resumed"):     # a resumed build's times are not a build's (_stamp_profile)
         return float(_CL_FULL_GUESS_S)
     if sims == _CL_SIMS_FULL:
         return float(t["total_s"])
@@ -923,6 +1003,35 @@ def _cl_sims(start_ts, board, now=None, picked=False):
     est = _cl_full_estimate(board) + (float(((board or {}).get("timings") or {}).get("optimal_s") or 0.0)
                                       if picked else 0.0)
     return _CL_SIMS_FULL if start_ts - now > est + 600 else _CL_SIMS_QUICK
+
+
+def _stamp_profile(art, prof):
+    """The profile a classic board ran, the one asked for and why they differ
+    (pc_profiles.stamp), on the board -- so research can compare boards by the
+    worlds behind them. A showdown board (prof None) carries none: its counts
+    are not a profile's."""
+    if not isinstance(art, dict):
+        return
+    if ((art.get("checkpoint") or {}).get("resumed")) and isinstance(art.get("timings"), dict):
+        # a resumed build's stage times are the restart's, not a build's: the
+        # next build's time estimate (_cl_full_estimate, pc_profiles.estimate_s)
+        # must not be scaled from them
+        art["timings"]["resumed"] = True
+    if prof is None:
+        return
+    import pc_profiles
+    art["profile"] = pc_profiles.stamp(prof, sims=art.get("sims"))
+
+
+def _ckpt_landed(art):
+    """The board stands on disk: its build's checkpoint goes (build_ckpt).
+    Never raises -- a checkpoint left behind is pruned by age and size."""
+    try:
+        import build_ckpt
+        build_ckpt.landed(art)
+    except Exception as e:
+        import errlog
+        errlog.note("CKPT-landed", e)
 
 
 def _split_picked(wanted):
@@ -1006,10 +1115,22 @@ def _picked_builds(url, tok, kind, picked, listed):
         print(f"[vigil-pc] tourney {dg}: building the picked {kind} board - {why}...")
         t0 = time.time()
         try:
+            prof = None
             if kind == "classic":
                 plain, _a = boardshare.get(f"cl_tourney_nfl_{dg}", None)
-                art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=_cl_sims(st, plain, picked=True),
-                                                    log=print, pick=pick)
+                # the plain board's profile rule, so a picked build at the same
+                # count reads the plain board's cached worlds; no scheduled
+                # window here (a press is the owner's, whenever it comes) but
+                # the pre-lock minutes still run standard
+                prof = _cl_profile(st, plain, _cl_window_key(st), picked=True)
+                if prof["name"] != "standard":
+                    import pc_profiles
+                    print(f"[vigil-pc] tourney {dg}: profile {prof['name']} - {prof['why']}")
+                    art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, log=print, pick=pick,
+                                                        **pc_profiles.build_kwargs(prof))
+                else:
+                    art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=_cl_sims(st, plain, picked=True),
+                                                        log=print, pick=pick)
             else:
                 art = dfs_tourney.build_nfl_showdown(dg, n_sims=60000, log=print, pick=pick)
         except Exception as e:
@@ -1024,7 +1145,9 @@ def _picked_builds(url, tok, kind, picked, listed):
                 _tourney_state_save(state)
             continue
         art["requested_by"] = {"by": "PC request (picked)", "why": why}
+        _stamp_profile(art, prof)
         boardshare.put(name, art)
+        _ckpt_landed(art)
         print(f"[vigil-pc] tourney {dg}: picked {kind} board done in {time.time() - t0:.0f}s")
         _ship_boards(url, tok)
 
@@ -1092,8 +1215,20 @@ def _task_classic_tourney(url, tok):
         t0 = time.time()
         try:
             n_sims = _cl_sims(_dt_ts(sl.get("starts")), board)
-            print(f"[vigil-pc] classic tourney {dg}: {n_sims:,} worlds")
-            art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=n_sims, log=print)
+            # the build profile (vigil-pc.cfg "profile"; pc_profiles): standard
+            # -- every PC with no such key -- is the call below, unchanged
+            prof = _cl_profile(_dt_ts(sl.get("starts")), board, window)
+            if prof["name"] != "standard":
+                import pc_profiles
+                print(f"[vigil-pc] classic tourney {dg}: profile {prof['name']} "
+                      f"({pc_profiles.n_sims(prof):,} worlds, a {prof['field']:,} field) - {prof['why']}")
+                art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, log=print,
+                                                    **pc_profiles.build_kwargs(prof))
+            else:
+                if prof["requested"] != "standard":
+                    print(f"[vigil-pc] classic tourney {dg}: profile standard, not {prof['requested']} - {prof['why']}")
+                print(f"[vigil-pc] classic tourney {dg}: {n_sims:,} worlds")
+                art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=n_sims, log=print)
         except Exception as e:
             # the window is NOT consumed: a failed build is retried next cycle
             print(f"[vigil-pc] classic tourney {dg}: failed ({type(e).__name__}: {e})")
@@ -1105,7 +1240,9 @@ def _task_classic_tourney(url, tok):
             _report_attempt(url, tok, dg, wanted.get(dg), why_not)
             continue
         art["requested_by"] = {"by": _requested_by(why), "why": why}
+        _stamp_profile(art, prof)
         boardshare.put(name, art)
+        _ckpt_landed(art)
         # consumed only now the build stands, whatever started it: a Build
         # pressed inside a window is that window's build
         _consume_window(state, dg, window, kind="cl_windows")
@@ -1529,15 +1666,19 @@ def _eval_one(url, tok, r, log=print):
         else:
             path, meta = got
             t0 = time.time()
-            dfs_evaluate.prepare(path, meta, log=log)
             kind = "sd" if meta["kind"] == "showdown" else "cl"
             board, _a = boardshare.get(f"{kind}_tourney_nfl_{dg}{'_pick' if picked else ''}", None)
+            # the final worlds: the profile's count when the slate's lock leaves room for them, else 40,000
+            # (pc_profiles.final_worlds); simulated once a slate, so the first evaluation decides
+            n_final, why_final = _eval_final_worlds(board)
+            dfs_evaluate.prepare(path, meta, n=n_final, log=log)
             if board and board.get("eval_artifact") not in (None, meta["id"]):
                 board = None            # the served board is a different build: its lineups are not this field's
             out["result"] = dfs_evaluate.evaluate(path, meta, r.get("lineups") or [], board=board)
             out["result"]["seconds"] = round(time.time() - t0, 1)
             # what computed the field's thresholds and how long it took (or that saved ones were reused)
             out["result"]["compute"] = dict(dfs_evaluate.LAST_COMPUTE)
+            out["result"]["final_worlds_rule"] = why_final
     except Exception as e:
         errlog.note("EVAL-pc", e, path=str(dg))
         out["error"] = f"the PC could not evaluate: {type(e).__name__}: {e}"[:300]
@@ -1546,6 +1687,19 @@ def _eval_one(url, tok, r, log=print):
              headers={"Content-Type": "application/json"}, timeout=60)
     except Exception as e:
         errlog.note("EVAL-post", e, path=str(rid))
+
+
+def _eval_final_worlds(board):
+    """(final worlds, why) for a slate's first evaluation: dfs_evaluate.FINAL_N
+    under the standard profile, else the profile's count when it fits the
+    time to the slate's lock and this PC's memory."""
+    import dfs_evaluate
+    import pc_profiles
+    req, _notes = _profile()
+    if req["final"] == dfs_evaluate.FINAL_N:
+        return dfs_evaluate.FINAL_N, "the configured profile"
+    starts = next((c.get("starts") for c in ((board or {}).get("contests") or []) if c.get("starts")), None)
+    return pc_profiles.final_worlds(req, _dt_ts(starts) if starts else None, time.time(), board, ram_gb=_ram_gb())
 
 
 # Worlds per GPU histogram call in the evaluator unless vigil-pc.cfg says otherwise: the owner's candidate
@@ -1629,6 +1783,8 @@ if __name__ == "__main__":
     # server can afford reads it (nfl_game_sim.deep_n). Set where the worker
     # RUNS, never at import: the guard suite imports this module.
     os.environ["VIGIL_PC_WORKER"] = "1"
+    for _note in _apply_limits():
+        print(f"[vigil-pc] vigil-pc.cfg: {_note}")
     if "--boards" in sys.argv[1:]:
         sys.exit(boards_main() or 0)
     if "--eval" in sys.argv[1:]:

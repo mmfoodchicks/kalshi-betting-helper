@@ -32,6 +32,24 @@ memory-mapped.
 
 Only the PC sets VIGIL_POOL_CACHE_DIR, so the server never writes or reads a
 matrix (Render's memory is the constraint every gotcha in CLAUDE.md is about).
+
+Cached worlds are not extended in place (asked 2026-11-26 for the build
+profiles, pc_profiles: "extend cached worlds with new independent worlds
+rather than regenerating"). An entry of n worlds cannot become the first n of
+a larger one without changing what a call returns, for three reasons in the
+simulator itself: (1) nfl_dfs_engine.simulate_game re-levels the two offences
+(the anchor) with the call's own generator before it plays a world, so worlds
+appended by a second call are played at a second, slightly different pair of
+levels -- one board's worlds would no longer share one anchor, and the engine
+report could name only one of them; (2) the box is dealt to the players with
+draws sized to the whole count (deal_team on n at once), so a seeded call for
+n2 worlds does not begin with the seeded call for n1's, and an extended seeded
+pool would stop being reproducible draw for draw; (3) every player's floor,
+ceiling, sim_mean and the defenses' and kickers' arrays are functions of all n
+worlds. What a larger build saves instead is per GAME: build_ckpt keeps each
+simulated game as it is played, so an interrupted generation resumes, and the
+entry of each count is still simulated once and shared by every build at that
+count. The disk limits are `limits()` (vigil-pc.cfg through the PC worker).
 """
 import hashlib
 import json
@@ -240,11 +258,31 @@ def entries():
     return out
 
 
+def limits():
+    """(entries, bytes) the store is held to: KEEP_ENTRIES and MAX_BYTES unless
+    the PC worker set VIGIL_POOL_CACHE_ENTRIES / VIGIL_POOL_CACHE_GB from
+    vigil-pc.cfg ("cache_entries", "cache_gb", or the build profile's: a
+    550,000-world deep pool is ~1.1 GB an entry against a standard one's
+    0.36). An unreadable value is the default, never zero."""
+    keep, mb = KEEP_ENTRIES, MAX_BYTES
+    try:
+        v = int(os.environ.get("VIGIL_POOL_CACHE_ENTRIES") or 0)
+        keep = v if v > 0 else keep
+    except ValueError:
+        pass
+    try:
+        g = float(os.environ.get("VIGIL_POOL_CACHE_GB") or 0)
+        mb = int(g * 1024 ** 3) if g > 0 else mb
+    except ValueError:
+        pass
+    return keep, mb
+
+
 def prune(keep=None, max_bytes=None):
-    """Drop the oldest entries past KEEP_ENTRIES or MAX_BYTES, and any
-    temporary directory an interrupted write left more than an hour ago."""
-    keep = KEEP_ENTRIES if keep is None else keep
-    max_bytes = MAX_BYTES if max_bytes is None else max_bytes
+    """Drop the oldest entries past the limits (`limits`), and any temporary
+    directory an interrupted write left more than an hour ago."""
+    keep = limits()[0] if keep is None else keep
+    max_bytes = limits()[1] if max_bytes is None else max_bytes
     d = cache_dir()
     if not d or not os.path.isdir(d):
         return 0
