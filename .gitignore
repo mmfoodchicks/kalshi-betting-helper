@@ -54,9 +54,17 @@ research/data/cl_worlds_smoke.json
 research/data/sd_worlds_smoke.json
 research/data/cl_own_smoke.json
 
-# Monday night 2026-10-19 showdown export (S7 prospective test): frozen locally for the scorer,
-# never committed -- it names every entrant (only the summary and the scored artifact are committed)
-research/data/dk_standings/contest-standings-196786690.csv.gz
+# DraftKings standings exports name every entrant: NEVER commit one, anywhere (the owner,
+# 2026-11-26). Three September S7 exports were committed before this rule and were removed from the
+# tree that day (research/reports/standings_privacy.md); research reads private local copies at the
+# same paths, pinned by hash in research/data/dk_standings/manifest.json. Only summaries are
+# committed (research/data/dk_fields/). scripts/secret-scan.sh refuses a staged export too.
+research/data/dk_standings/*.csv
+research/data/dk_standings/*.csv.gz
+research/data/dk_standings/*.zip
+**/contest-standings-*.csv
+**/contest-standings-*.csv.gz
+**/contest-standings-*.zip
 
 # The rushing model's registered dataset (research/reports/nfl_rush_model.md): its RB and QB
 # rows carry PFR- and NGS-derived columns, display-only by the licence default (Q10), so this

@@ -42,7 +42,102 @@ CALIB_PATH = "errors/calib-params-latest.json"
 
 TO_ZERO = "WEIGHT_TO_ZERO"
 EARNED = "STAYS_EARNED"
-INCONCLUSIVE = "INCONCLUSIVE_STAYS_FROZEN"
+# The owner, 2026-11-26 (before the trigger): "Resolve the inconclusive middle case by returning the
+# production weight to zero, consistent with the original 'a null sends it to 0' documentation." The
+# label stays distinct from TO_ZERO so the read says WHICH clause sent it there.
+INCONCLUSIVE = "INCONCLUSIVE_TO_ZERO"
+WEIGHT_AFTER = {TO_ZERO: 0.0, INCONCLUSIVE: 0.0, EARNED: WEIGHT}
+
+# ---- the prospective test (registered 2026-11-26; report section 6) ----------------------------
+# Fresh games only: every game that kicks off after the 100-game read's last game. One candidate,
+# fixed now: reinstate the 0.30 blend. The primary statistic is the PRODUCTION comparison -- the
+# 0.30 blend on the calibrated drive figure against the calibrated drive figure alone, i.e. the deep
+# engine's incremental contribution to the headline -- per game, clustered by week, one-sided.
+# Power (report section 6): planning SD of the per-game difference 0.10 nats, smallest effect
+# designed for 0.015 nats a game, alpha 2.5% one-sided, power 80%. Boundaries are O'Brien-Fleming's
+# for three looks (2.004 x sqrt(3/k)) converted to Student t with (weeks - 1) degrees of freedom at
+# each look: the week-clustered SE over 8-26 weeks runs small, and the plain z boundaries measured a
+# 3.7% false-positive rate in simulation (2.4-2.6% with the t conversion, at any weekly dependence).
+# The t conversion costs power, so the looks are at 130, 260 and 390 fresh games (80.3% at 0.015
+# simulated; 348 games would do with a known SE). A non-binding futility stop at the second look when
+# the mean gain is not above 0 (it can only end the test early with the weight at 0).
+PRO_LOOKS = (130, 260, 390)
+PRO_BOUNDS_Z = (3.471, 2.454, 2.004)
+PRO_FUTILITY_LOOK = 2
+NEGLIGIBLE = 0.005        # an improvement below this is "no meaningful improvement" (report section 6)
+
+
+def _betacf(a, b, x, itmax=300, eps=3e-15):
+    """Continued fraction for the incomplete beta (Numerical Recipes' betacf)."""
+    tiny = 1e-300
+    qab, qap, qam = a + b, a + 1.0, a - 1.0
+    c, d = 1.0, 1.0 - qab * x / qap
+    d = 1.0 / (d if abs(d) > tiny else tiny)
+    h = d
+    for m in range(1, itmax + 1):
+        m2 = 2 * m
+        for aa in (m * (b - m) * x / ((qam + m2) * (a + m2)),
+                   -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2))):
+            d = 1.0 + aa * d
+            d = 1.0 / (d if abs(d) > tiny else tiny)
+            c = 1.0 + aa / c
+            c = c if abs(c) > tiny else tiny
+            h *= d * c
+        if abs(d * c - 1.0) < eps:
+            break
+    return h
+
+
+def _betai(a, b, x):
+    if x <= 0.0:
+        return 0.0
+    if x >= 1.0:
+        return 1.0
+    lb = math.lgamma(a + b) - math.lgamma(a) - math.lgamma(b) + a * math.log(x) + b * math.log(1.0 - x)
+    if x < (a + 1.0) / (a + b + 2.0):
+        return math.exp(lb) * _betacf(a, b, x) / a
+    return 1.0 - math.exp(lb) * _betacf(b, a, 1.0 - x) / b
+
+
+def t_cdf(t, df):
+    """Student t CDF (no scipy on the machines that run this)."""
+    p = 0.5 * _betai(df / 2.0, 0.5, df / (df + t * t))
+    return 1.0 - p if t > 0 else p
+
+
+def t_ppf(q, df):
+    lo, hi = -80.0, 80.0
+    for _ in range(200):
+        mid = (lo + hi) / 2.0
+        if t_cdf(mid, df) < q:
+            lo = mid
+        else:
+            hi = mid
+    return (lo + hi) / 2.0
+
+
+def norm_cdf(z):
+    return 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
+
+
+def t_boundary(z_bound, weeks):
+    """The O'Brien-Fleming z boundary as the same tail probability of Student t on weeks - 1 df."""
+    return t_ppf(norm_cdf(z_bound), max(1, weeks - 1))
+
+
+def upper_bound(st, level=0.95):
+    """One-sided upper confidence bound on the mean gain (t on weeks - 1 df): the data rule out an
+    improvement above it at that level. Failing to establish an improvement is NOT showing there is
+    none; this bound is how large an improvement the data can still not exclude."""
+    if not st.get("se") or st["se"] != st["se"] or st.get("weeks", 0) < 2:
+        return None
+    return st["mean"] + t_ppf(level, st["weeks"] - 1) * st["se"]
+
+
+REINSTATE = "REINSTATE_030"
+CONTINUE = "CONTINUE"
+STAYS_ZERO = "STAYS_ZERO"
+FUTILE = "STOPPED_FUTILITY_STAYS_ZERO"
 
 
 def ll(p, y):
@@ -124,7 +219,7 @@ def games(rows, hist):
         if not ok:
             continue
         acc = {k: 0.0 for k in ("drive", "deep", "blend", "drive_cal", "blend_cal")}
-        kal, nk = 0.0, 0
+        kal, nk, bk, nb = 0.0, 0, 0.0, 0
         for r in ok:
             y = int(r["outcome"])
             pd, pp = float(r["prob"]), float(r["shadow"][SHADOW]["prob"])
@@ -138,9 +233,13 @@ def games(rows, hist):
             if r.get("mkt") is not None:
                 kal += ll(r["mkt"], y)
                 nk += 1
+            bo = (r.get("shadow") or {}).get("nfl_book") or {}
+            if bo.get("prob") is not None:          # DraftKings' line beside it (context only)
+                bk += ll(bo["prob"], y)
+                nb += 1
         g = {k: v / len(ok) for k, v in acc.items()}
         g.update(event=ev, kickoff=kick, week=week_key(kick), rows=len(ok),
-                 kalshi=(kal / nk if nk else None),
+                 kalshi=(kal / nk if nk else None), book=(bk / nb if nb else None),
                  split_build=any(abs(float(r.get("ts") or 0) - float(r["shadow"][SHADOW].get("ts") or 0)) > 3600
                                  for r in ok))
         graded.append(g)
@@ -179,8 +278,10 @@ def clustered(ds, a, b):
 
 def decide(blend_vs_drive, deep_vs_drive):
     """The registered clauses, in order, plus the owner's resolution of the
-    case they do not cover. By convexity of log loss the blend's gain is at
-    least WEIGHT x the deep engine's, so the first two can never both hold."""
+    case they do not cover (inconclusive -> 0). The weight stays only when
+    the deep engine beats the drive sim by more than 2 SE. By convexity of
+    log loss the blend's gain is at least WEIGHT x the deep engine's, so the
+    first two can never both hold."""
     if not blend_vs_drive["mean"] > 0:
         return TO_ZERO
     if deep_vs_drive["mean"] > Z * deep_vs_drive["se"]:
@@ -199,6 +300,7 @@ def read(rows, hist):
     prod = {"blend_vs_drive": clustered(ds, "drive_cal", "blend_cal"),
             "deep_vs_drive": clustered(ds, "drive_cal", "deep")}
     kal = [g for g in ds if g["kalshi"] is not None]
+    bok = [g for g in ds if g["book"] is not None]
     status.update({
         "weight": WEIGHT,
         "dataset": [g["event"] for g in ds],
@@ -211,11 +313,72 @@ def read(rows, hist):
         "kalshi_same_games": ({"games": len(kal), "kalshi": sum(g["kalshi"] for g in kal) / len(kal),
                                "drive": sum(g["drive"] for g in kal) / len(kal),
                                "blend_cal": sum(g["blend_cal"] for g in kal) / len(kal)} if kal else None),
+        "book_same_games": ({"games": len(bok), "book": sum(g["book"] for g in bok) / len(bok),
+                             "drive": sum(g["drive"] for g in bok) / len(bok)} if bok else None),
         "split_build_games": sum(1 for g in ds if g["split_build"]),
     })
     status["decision"] = status["registered"]["decision"]
+    status["weight_after"] = WEIGHT_AFTER[status["decision"]]
+    if status["decision"] != EARNED:
+        # a weight of 0 means the registered bar was not met -- not that the deep engine is no better
+        status["conclusion"] = _conclusion(None, upper_bound(reg["deep_vs_drive"]))
+    # the owner asked for the production blend reported apart: the deep engine's incremental
+    # contribution to the headline is blend_cal against drive_cal alone (reported, never deciding)
+    status["production"]["incremental_contribution_of_deep"] = status["production"]["blend_vs_drive"]
     status["production_agrees"] = status["production"]["decision_if_it_decided"] == status["decision"]
     return status
+
+
+def _conclusion(gain, ub):
+    if ub is not None and ub < NEGLIGIBLE:
+        return (f"no meaningful improvement: every value the data allow is below {NEGLIGIBLE} nats a game "
+                f"(95% upper bound {ub:.4f})")
+    return ("improvement NOT ESTABLISHED -- which is not evidence that there is none: the data still allow an "
+            f"improvement up to {ub:.4f} nats a game (95% upper bound); smaller and larger effects than the "
+            "design's 0.015 remain possible" if ub is not None else "improvement NOT ESTABLISHED (no bound: too few weeks)")
+
+
+def prospective(rows, hist, after_ts):
+    """The registered prospective test on games that kick off AFTER `after_ts`
+    (the 100-game read's last kickoff). Before a look it returns counts only.
+    At each look reached (every earlier-kicked game settled), the production
+    comparison's statistic against that look's t-converted boundary:
+    REINSTATE_030 when it is crossed, a futility stop at the second look when the
+    mean gain is not above 0, STAYS_ZERO at the last look otherwise, else
+    CONTINUE. Every look's statistic is kept in the output so the path cannot be
+    re-read selectively; a stop for the weight at 0 carries the upper bound and
+    says the improvement was NOT ESTABLISHED, never that there is none."""
+    graded, pending = games(rows, hist)
+    fresh = [g for g in graded if g["kickoff"] > after_ts]
+    pend = [p for p in pending if p["kickoff"] > after_ts]
+    out = {"fresh_graded_games": len(fresh), "fresh_pending_games": len(pend), "looks_at": list(PRO_LOOKS),
+           "looks": []}
+    for k, (n, zb) in enumerate(zip(PRO_LOOKS, PRO_BOUNDS_Z), start=1):
+        if len(fresh) < n:
+            break
+        ds = fresh[:n]
+        if any(p["kickoff"] <= ds[-1]["kickoff"] for p in pend):
+            break
+        st = clustered(ds, "drive_cal", "blend_cal")
+        bound = t_boundary(zb, st["weeks"])
+        look = {"look": k, "games": n, "weeks": st["weeks"], "boundary_z": zb, "boundary_t": bound,
+                "t": st["z"], "mean": st["mean"], "se": st["se"], "upper95": upper_bound(st),
+                "raw_blend_vs_drive": clustered(ds, "drive", "blend"),
+                "deep_vs_drive_cal": clustered(ds, "drive_cal", "deep")}
+        out["looks"].append(look)
+        if st["z"] > bound:
+            out["decision"] = REINSTATE
+            out["conclusion"] = "improvement established: the 0.30 blend beats calibrated drive alone"
+            return out
+        if (k == PRO_FUTILITY_LOOK and not st["mean"] > 0) or k == len(PRO_LOOKS):
+            out["decision"] = FUTILE if k == PRO_FUTILITY_LOOK and not st["mean"] > 0 else STAYS_ZERO
+            out["conclusion"] = _conclusion(st["mean"], look["upper95"])
+            return out
+    out["decision"] = CONTINUE
+    if not out["looks"]:
+        # counts only before the first look
+        out = {k: out[k] for k in ("fresh_graded_games", "fresh_pending_games", "looks_at", "decision")}
+    return out
 
 
 def main():
@@ -244,6 +407,7 @@ def main():
               f"({out['graded_rows']} rows), {out['pending_games']} pending. No statistic is printed "
               "before the trigger (research/reports/nfl_deep_weight_rule.md).")
         return 0
+    out["prospective"] = prospective(exp.get("rows") or [], hist, out["last_kickoff"])
     print(json.dumps(out, indent=1, default=str))
     if args.write:
         p = os.path.join(_HERE, "data", "nfl_deep_weight_read.json")

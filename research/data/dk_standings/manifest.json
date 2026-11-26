@@ -23,7 +23,7 @@
    "zip_sha256": "0cd410143f258cad86376ba8a211e0fd7eff2b663f896ccb49b16d78faaa5697"
   },
   "contest-standings-193391013.csv.gz": {
-   "committed": true,
+   "committed": false,
    "contest_detail_at_freeze": {
     "draft_group_id": 151820,
     "entry_fee": 20.0,
@@ -43,10 +43,12 @@
    "kind": "showdown",
    "note": "126,020 rows against a capacity of 132,352: the contest did not fill (overlay of 6,332 entries); the export holds the entries that exist",
    "rows_excluding_header": 126020,
-   "zip_sha256": "ee264b8bd9c9b8195a835223752432d8d41f95f356e66ebc9c1ad016c047ba29"
+   "zip_sha256": "ee264b8bd9c9b8195a835223752432d8d41f95f356e66ebc9c1ad016c047ba29",
+   "removed_from_tree": "2026-11-26",
+   "why_not_committed": "it names every entrant (DraftKings usernames); committed 2026-09-19 before the never-commit rule, removed from the public tree 2026-11-26 at the owner's request (research/reports/standings_privacy.md). The bytes stay with the owner and in private local copies at this path (gitignored), verified by the hashes here; the aggregate artifact research/data/s7_field.json is unchanged"
   },
   "contest-standings-195526287.csv.gz": {
-   "committed": true,
+   "committed": false,
    "contest_detail_at_freeze": {
     "draft_group_id": 153086,
     "entry_fee": 20.0,
@@ -65,7 +67,9 @@
    "gz_sha256": "c162f42cedf4518041f5e9694ade65876432b8a2a73043e109384b6d6cdb4778",
    "kind": "showdown",
    "rows_excluding_header": 88235,
-   "zip_sha256": "b179bb68ca9441622d23ea644929ab10788b8204d57bcaee3bac2dd3e6bf1669"
+   "zip_sha256": "b179bb68ca9441622d23ea644929ab10788b8204d57bcaee3bac2dd3e6bf1669",
+   "removed_from_tree": "2026-11-26",
+   "why_not_committed": "it names every entrant (DraftKings usernames); committed 2026-09-19 before the never-commit rule, removed from the public tree 2026-11-26 at the owner's request (research/reports/standings_privacy.md). The bytes stay with the owner and in private local copies at this path (gitignored), verified by the hashes here; the aggregate artifact research/data/s7_field.json is unchanged"
   },
   "contest-standings-195648007.csv.gz": {
    "committed": false,
@@ -95,7 +99,7 @@
    "zip_sha256": "1b8337c4bf88580d000ec79a42a0ed3b6c2918d9bfa210cb5543a731df074f4e"
   },
   "contest-standings-195677825.csv.gz": {
-   "committed": true,
+   "committed": false,
    "contest_detail_at_freeze": {
     "draft_group_id": 153434,
     "entry_fee": 20.0,
@@ -115,7 +119,9 @@
    "gz_sha256": "1c734a30c6c83edba5ff06be8c84e34ba6e654d4255a068c11c37f4e1dad35d7",
    "kind": "showdown",
    "rows_excluding_header": 88235,
-   "zip_sha256": "c61518b7601190d588638c04b707cc959ffd8f8fe3e9c9bc1f95a606dd1a332b"
+   "zip_sha256": "c61518b7601190d588638c04b707cc959ffd8f8fe3e9c9bc1f95a606dd1a332b",
+   "removed_from_tree": "2026-11-26",
+   "why_not_committed": "it names every entrant (DraftKings usernames); committed 2026-09-19 before the never-commit rule, removed from the public tree 2026-11-26 at the owner's request (research/reports/standings_privacy.md). The bytes stay with the owner and in private local copies at this path (gitignored), verified by the hashes here; the aggregate artifact research/data/s7_field.json is unchanged"
   },
   "contest-standings-196786690.csv.gz": {
    "committed": false,

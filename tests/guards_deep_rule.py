@@ -88,12 +88,13 @@ def run(ck):
 
     st = lambda m_, se: {"mean": m_, "se": se}
     ck("DR5 the clauses in their registered order: the blend not ahead of the drive sim on its point estimate -> 0; "
-       "else the deep engine ahead by more than 2 SE -> 0.30 stays, earned; else INCONCLUSIVE, 0.30 stays frozen "
-       "as insufficient evidence (the owner's resolution of the case the text left open)",
+       "else the deep engine ahead by more than 2 SE -> 0.30 stays, earned; else INCONCLUSIVE -> 0 as well (the "
+       "owner, 2026-11-26: 'returning the production weight to zero, consistent with ... a null sends it to 0')",
        R.decide(st(0.0, 0.01), st(0.5, 0.01)) == R.TO_ZERO and R.decide(st(-0.01, 0.01), st(0.0, 0.01)) == R.TO_ZERO
        and R.decide(st(0.01, 0.01), st(0.021, 0.01)) == R.EARNED
        and R.decide(st(0.01, 0.01), st(0.02, 0.01)) == R.INCONCLUSIVE
-       and R.decide(st(0.01, 0.01), st(-0.05, 0.01)) == R.INCONCLUSIVE)
+       and R.decide(st(0.01, 0.01), st(-0.05, 0.01)) == R.INCONCLUSIVE
+       and R.WEIGHT_AFTER == {R.TO_ZERO: 0.0, R.INCONCLUSIVE: 0.0, R.EARNED: 0.30})
 
     worst = 1.0
     for seed in range(20):
@@ -133,6 +134,48 @@ def run(ck):
        "Monday night share one (Monday night is after midnight UTC), and the Tuesday after starts the next",
        R.week_key(thu) == R.week_key(mon) == "2026-11-24" and R.week_key(tue) == "2026-12-01",
        f"{R.week_key(thu)} {R.week_key(mon)} {R.week_key(tue)}")
+
+    # the prospective test: fresh games only, counts before the first look, O'Brien-Fleming boundaries
+    import math as _m
+    t_last = 1789000000 + 6 * 7 * 86400 + 9 * 3600           # the 100th game of _rows' schedule (game 99)
+    pre = R.prospective(_rows(100 + 110, 210, seed=4), [], t_last)          # 110 fresh: before the first look
+    full = R.prospective(_rows(100 + 400, 100 + 400, seed=4, deep_sd=0.0, drive_sd=0.45), [], t_last)
+    # a null: both models the same figure, so every look's gain is exactly 0 -> futility at the second look
+    same = _rows(100 + 400, 100 + 400, seed=4, deep_sd=0.0, drive_sd=0.0)
+    null = R.prospective(same, [], t_last)
+    ok_b = all(abs(b - round(2.004 * _m.sqrt(3 / k), 3)) < 1e-9 for k, b in enumerate(R.PRO_BOUNDS_Z, start=1))
+    ok_t = (abs(R.t_ppf(0.975, 7) - 2.364624) < 1e-5 and abs(R.t_ppf(0.975, 23) - 2.068658) < 1e-5
+            and abs(R.t_ppf(0.995, 15) - 2.946713) < 1e-5 and abs(R.t_ppf(0.975, 10 ** 6) - 1.959966) < 1e-4
+            and abs(R.t_boundary(2.004, 26) - 2.110) < 2e-3)
+    last = (full.get("looks") or [{}])[-1]
+    ck("DR14 the prospective test (report section 6): only games after the read's last kickoff, looks at 130 / "
+       "260 / 390 with O'Brien-Fleming's one-sided 2.5% boundaries (2.004 x sqrt(3/k)) converted to Student t on "
+       "the look's weeks - 1 (the plain z boundaries over 8-26 week clusters measured 3.7% false positives), the t "
+       "quantiles exact to table values, counts only before the first look, one candidate (0.30) on the "
+       "PRODUCTION comparison; a deep engine far better than a noisy drive model crosses, a null stops for "
+       "futility at the second look, and every look's statistic is kept",
+       R.PRO_LOOKS == (130, 260, 390) and ok_b and ok_t and R.PRO_FUTILITY_LOOK == 2
+       and pre["fresh_graded_games"] == 110 and set(pre) == {"fresh_graded_games", "fresh_pending_games",
+                                                            "looks_at", "decision"}
+       and pre["decision"] == R.CONTINUE and full["decision"] == R.REINSTATE
+       and last.get("t", 0) > last.get("boundary_t", 1e9) and [x["games"] for x in full["looks"]][:1] == [130]
+       and null["decision"] == R.FUTILE and [x["games"] for x in null["looks"]] == [130, 260],
+       f"{pre} {full.get('decision')} {[(x['games'], round(x['t'], 2), round(x['boundary_t'], 2)) for x in full.get('looks', [])]} "
+       f"{null.get('decision')}")
+    # a deep figure much noisier than the drive's: the gain is not established (seed 1), or the blend is
+    # clearly worse and every value the data allow is negligible (seed 3)
+    noisy = R.prospective(_rows(100 + 400, 100 + 400, seed=1, deep_sd=0.25, drive_sd=0.10), [], t_last)
+    worse = R.prospective(_rows(100 + 400, 100 + 400, seed=3, deep_sd=0.35, drive_sd=0.10), [], t_last)
+    ck("DR15 failing to establish an improvement is never written as 'no improvement': a stop with the weight at 0 "
+       "says NOT ESTABLISHED and carries the 95% upper bound on the gain the data still allow; only a bound under "
+       f"{R.NEGLIGIBLE} nats may be called 'no meaningful improvement' (the owner: 'Preserve the distinction')",
+       noisy["decision"] in (R.STAYS_ZERO, R.FUTILE) and "NOT ESTABLISHED" in noisy.get("conclusion", "")
+       and "not evidence that there is none" in noisy.get("conclusion", "")
+       and noisy["looks"][-1]["upper95"] > R.NEGLIGIBLE
+       and worse["decision"] == R.FUTILE and worse["conclusion"].startswith("no meaningful improvement")
+       and worse["looks"][-1]["upper95"] < R.NEGLIGIBLE
+       and "no meaningful improvement" in R._conclusion(0.0, 0.004) and "NOT ESTABLISHED" in R._conclusion(0.0, 0.006),
+       f"{noisy.get('decision')} {noisy.get('conclusion')} | {worse.get('decision')} {worse.get('conclusion')}")
 
     rep = open(_REPORT).read() if os.path.exists(_REPORT) else ""
     pinned = re.findall(r"read script sha256: `([0-9a-f]{64})`", rep)

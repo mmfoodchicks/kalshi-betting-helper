@@ -165,7 +165,7 @@ function _mxLeadCell(l, side, stat, showSide) {
   const sd = showSide ? `<span class="small" style="color:var(--muted)">${_mxSide(side)}</span> ` : "";
   const band = `<span class="small" style="color:var(--muted)">${_mxBand({ p_lo: a.lo, p_hi: a.hi })}</span>`;
   if (a.src !== "kalshi") return `${sd}<b>${_mxPct(a.p)}</b> ${band}`;
-  return `${sd}<b title="${_mxEsc(_MX_LEAD_TIP + _mxRecordText(stat))}" style="cursor:help">Kalshi ${_mxPct(a.p)}</b> <span class="small" style="color:var(--muted);white-space:nowrap">· Vigil ${_mxPct(a.vigil)}</span> ${band}`;
+  return `${sd}<b title="${_mxEsc(_MX_LEAD_TIP + _mxRecordText(stat))}" style="cursor:help;white-space:nowrap">Kalshi ${_mxPct(a.p)}</b> <span class="small" style="color:var(--muted);white-space:nowrap">· Vigil ${_mxPct(a.vigil)}</span> ${band}`;
 }
 // One line above a table: where each forecaster leads, with the log losses that decided it (lower is
 // better) -- said in the open, never only in a tooltip.

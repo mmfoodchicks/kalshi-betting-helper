@@ -17284,16 +17284,57 @@ import hashlib as _hl22
 _s7m = _json18.load(open(_os.path.join(_root, "research", "data", "dk_standings", "manifest.json")))
 _s7dir = _os.path.join(_root, "research", "data", "dk_standings")
 _s7ids = ("193391013", "195526287", "195677825")
-ck("the three Showdown standings exports are frozen: each committed gz hashes to the manifest's gz sha256 and decompresses to its csv sha256, with the row counts recorded (126,020 / 88,235 / 88,235); the classic Millionaire export is pinned by hash and marked not committed with the reason",
-   all(_hl22.sha256(open(_os.path.join(_s7dir, f"contest-standings-{c}.csv.gz"), "rb").read()).hexdigest()
-       == _s7m["files"][f"contest-standings-{c}.csv.gz"]["gz_sha256"]
-       and _hl22.sha256(_gz22.open(_os.path.join(_s7dir, f"contest-standings-{c}.csv.gz"), "rb").read()).hexdigest()
-       == _s7m["files"][f"contest-standings-{c}.csv.gz"]["csv_sha256"]
-       and _s7m["files"][f"contest-standings-{c}.csv.gz"]["committed"] is True for c in _s7ids)
+# 2026-11-26: the three exports name every entrant and were removed from the public tree at the owner's
+# request (research/reports/standings_privacy.md). They are still pinned by hash: a private local copy,
+# where one exists at its old path (gitignored), must hash to the manifest; none is tracked any more.
+import subprocess as _sp22
+_s7tracked = _sp22.run(["git", "ls-files", "research/data/dk_standings/"], cwd=_root, capture_output=True,
+                       text=True).stdout.split()
+_s7local = [c for c in _s7ids if _os.path.exists(_os.path.join(_s7dir, f"contest-standings-{c}.csv.gz"))]
+ck("the three Showdown standings exports stay pinned but are no longer in the tree: the manifest keeps each gz and "
+   "csv sha256 and its row count (126,020 / 88,235 / 88,235), marks it not committed and removed on 2026-11-26 "
+   "with the reason (it names every entrant); git tracks only the manifest there; any private local copy hashes to "
+   "its pin; the classic Millionaire export is still pinned by hash and marked not committed",
+   _s7tracked == ["research/data/dk_standings/manifest.json"]
+   and all(_s7m["files"][f"contest-standings-{c}.csv.gz"]["committed"] is False
+           and _s7m["files"][f"contest-standings-{c}.csv.gz"]["removed_from_tree"] == "2026-11-26"
+           and "names every entrant" in _s7m["files"][f"contest-standings-{c}.csv.gz"]["why_not_committed"]
+           and len(_s7m["files"][f"contest-standings-{c}.csv.gz"]["gz_sha256"]) == 64 for c in _s7ids)
+   and all(_hl22.sha256(open(_os.path.join(_s7dir, f"contest-standings-{c}.csv.gz"), "rb").read()).hexdigest()
+           == _s7m["files"][f"contest-standings-{c}.csv.gz"]["gz_sha256"]
+           and _hl22.sha256(_gz22.open(_os.path.join(_s7dir, f"contest-standings-{c}.csv.gz"), "rb").read()).hexdigest()
+           == _s7m["files"][f"contest-standings-{c}.csv.gz"]["csv_sha256"] for c in _s7local)
    and [_s7m["files"][f"contest-standings-{c}.csv.gz"]["rows_excluding_header"] for c in _s7ids] == [126020, 88235, 88235]
    and "did not fill" in _s7m["files"]["contest-standings-193391013.csv.gz"]["note"]
    and _s7m["files"]["contest-standings-193028206.csv.gz"]["committed"] is False
-   and "clones on every deploy" in _s7m["files"]["contest-standings-193028206.csv.gz"]["why_not_committed"])
+   and "clones on every deploy" in _s7m["files"]["contest-standings-193028206.csv.gz"]["why_not_committed"],
+   f"tracked {_s7tracked}, local copies {_s7local}")
+# No tracked file anywhere may be a DraftKings standings export: by name, or by DraftKings' header in its first
+# 4 KB (gzipped too). Code and docs quote the header in fixtures and prose, so .py / .md are read for names only.
+_s7all = _sp22.run(["git", "ls-files"], cwd=_root, capture_output=True, text=True).stdout.splitlines()
+_s7bad = []
+for _f22 in _s7all:
+    _lf22 = _f22.lower()
+    if "contest-standings" in _lf22 or (("standings" in _lf22) and _lf22.endswith((".csv", ".csv.gz", ".zip"))):
+        _s7bad.append(_f22)
+        continue
+    if _lf22.endswith((".py", ".md")) or _f22 == "scripts/secret-scan.sh" \
+            or not _os.path.isfile(_os.path.join(_root, _f22)):
+        continue
+    try:
+        _op22 = _gz22.open if _lf22.endswith(".gz") else open
+        with _op22(_os.path.join(_root, _f22), "rb") as _fh22:
+            if b"EntryId,EntryName" in _fh22.read(4096):
+                _s7bad.append(_f22)
+    except (OSError, EOFError, _gz22.BadGzipFile):
+        pass
+_s7ss = open(_os.path.join(_root, "scripts", "secret-scan.sh")).read()
+_s7gi = open(_os.path.join(_root, ".gitignore")).read()
+ck("no tracked file is a DraftKings standings export (by name, or by DraftKings' header in its first 4 KB, gzipped "
+   "too), the ignore rules cover every export path, and the pre-commit scan refuses one by name or header -- the "
+   "owner, 2026-11-26: 'Add safeguards against accidentally committing raw standings again'",
+   not _s7bad and "**/contest-standings-*.csv.gz" in _s7gi and "research/data/dk_standings/*.csv.gz" in _s7gi
+   and "EntryId,EntryName" in _s7ss and "*contest-standings*" in _s7ss and "gzip -dc" in _s7ss, str(_s7bad))
 _s7 = _json18.load(open(_os.path.join(_root, "research", "data", "s7_field.json")))
 _s7c = _s7["contests"]
 _s7s = {str(r["contest"]): r for r in _s7["summary"]}
@@ -23129,7 +23170,9 @@ ck("Monday night's final export is summarized as intake does and committed as a 
    _mn_sm["entries"] == 87465 and _mn_sm["with_lineup"] == 87284 and _mn_sm["final"] is True
    and _mn_sm["sha256"] == "1ed58a880b2f729e7196bcc47340ba129ade970f9a50c4997c0bb1ed5204e10d"
    and '"user"' not in _json_mn.dumps(_mn_sm) and _mn_ix["196786690"]["draft_group_id"] == 154960
-   and "research/data/dk_standings/contest-standings-196786690.csv.gz" in open(_os.path.join(_root, ".gitignore")).read())
+   # the export itself is ignored -- since 2026-11-26 by the patterns that cover every standings export
+   and __import__("subprocess").run(["git", "check-ignore", "-q", "research/data/dk_standings/contest-standings-196786690.csv.gz"],
+                                    cwd=_root).returncode == 0)
 _mn_pg = _json_mn.load(open(_os.path.join(_root, "research", "data", "sd_postgame_154960.json")))
 _sn_pg = _json_mn.load(open(_os.path.join(_root, "research", "data", "sd_postgame_154959.json")))
 _pg_src = open(_os.path.join(_root, "research", "sd_postgame.py")).read()

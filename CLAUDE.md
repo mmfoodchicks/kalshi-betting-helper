@@ -805,7 +805,16 @@ data-only `sim-history` branch (which never deploys):
     Still open: safeties (not in the owner's table), and Sleeper's `pts_allow` on the actuals side.
   - The NFL deep weight stays 0.30 until its registered read. 200 rows = 100 games, paired per game,
     clustered by week, both the registered comparison and the production blend; an inconclusive result
-    is insufficient evidence; any replacement protocol uses fresh data. The full rule, every ambiguity
+    is insufficient evidence; any replacement protocol uses fresh data. **Settled the same day (owner):
+    inconclusive -> 0** ("a null sends it to 0"; only deep > drive by 2 SE keeps 0.30, which 100 games
+    cannot reach, so expect 0 at the read); the raw-drive comparison decides; the production blend vs
+    calibrated drive alone is reported apart; the deep engine stays in shadow and the DFS engine's 0.30 is
+    untouched. The only way back is the registered PROSPECTIVE test (report section 6, `prospective()`):
+    fresh games only, one candidate (0.30), production comparison, O'Brien-Fleming looks at 130/260/390
+    converted to Student t on weeks - 1 (plain z over 8-26 week clusters measured 3.7% false positives),
+    futility at look 2, powered 80% at 0.015 nats a game (why 0.015, the dependence table and the schedule
+    are in section 6). A 0 says improvement NOT ESTABLISHED with its upper bound -- never "no improvement"
+    unless the bound is under 0.005. The full rule, every ambiguity
     and its setting, the decision table and the fresh-data protocol: `research/reports/nfl_deep_weight_rule.md`;
     the read as code, pinned there by sha256: `research/nfl_deep_weight_read.py` (counts only before the
     100th game); its data: `errors/nfl-deep-pairs-latest.json` (`/api/predlog/paired`). Guards: section DR.
@@ -934,6 +943,13 @@ so a self-pulling batch file corrupts itself); all logic lives in Python.
   frames (in the row's `tb`): read the error-log snapshot first.
 - The slate builds in a **fresh subprocess** every few minutes; anything cached
   only in memory is re-paid every time. Persist to the deep store instead.
+- **DraftKings standings exports name every entrant: never commit one** (2026-11-26). Three September S7
+  exports had been committed to this public repo; they were removed from the tree that day, their hashes
+  kept in `research/data/dk_standings/manifest.json`, private copies read at the same (gitignored) paths.
+  `scripts/secret-scan.sh` refuses a staged export by name or header and a guard fails on a tracked one.
+  The history still holds them: `research/reports/standings_privacy.md` is the cleanup plan (make the repo
+  private, or a filter-repo rewrite that breaks 63 artifacts' commit provenance and the PC's ff-only pull),
+  awaiting the owner -- do not rewrite history without that approval.
 - Never let in-game information touch a number that claims to be pre-game
   (entry prices, closing lines, "model vs market" comparisons). That mistake
   produced a fake +14.8c CLV and a fake +47% prop ROI.
