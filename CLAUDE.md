@@ -948,6 +948,40 @@ its slate locks (`starts_ts`). pc_loop's git runs with prompts off (`GIT_TERMINA
 on a sign-in window. `vigil-pc.bat` is frozen on purpose (cmd reads .bat by byte offset,
 so a self-pulling batch file corrupts itself); all logic lives in Python.
 
+- **Resumable builds** (2026-11-26, `build_ckpt.py`; the owner closes `vigil-pc.bat` whenever he
+  needs the PC). On the PC only (`VIGIL_CKPT_DIR`, set where the worker RUNS, inside pc-simcache;
+  `"checkpoints": false` in vigil-pc.cfg switches it off; the server and the suite never have it).
+  - **Worlds**: each simulated game is kept as it is played, under pool_cache's own key; the pool
+    is filed in the worlds cache when the last game lands. Cached worlds are NOT extended in place
+    (pool_cache's docstring: the anchor is re-measured per call, the deal and the floors are
+    functions of the whole count).
+  - **The build**: production boards are unseeded, so the generator's entropy is pinned in the
+    checkpoint -- a restart redraws the same field and candidates from the same cached worlds. The
+    best-lineup solves are kept whole; the scoring pass keeps each world range's running sums
+    (written by the range's own worker every 60 s, resumed on the same chunk boundaries, so the
+    sums are the uninterrupted run's bit for bit); the portfolio pass keeps each finished range of
+    its make-it matrix when the whole matrix fits the budget.
+  - **Safety**: every file name carries a sha256 of every input of its pass (matrices byte for
+    byte, weights, grids, ranges, chunking, `dfs_tourney.py`'s source), so a changed input is a
+    different file; every file is checked against its own sha256 and a damaged one is recomputed
+    (`CKPT-integrity`). 6 builds / 8 GB / 8 days (`"checkpoint_gb"`); removed when the board lands
+    (`pc_worker._ckpt_landed`). A board stamps what it resumed (`checkpoint`).
+  - Not resumable: the field and candidate draws and the greedy portfolio pick (redone, minutes).
+    A scheduled window that closed while the PC was off is not re-opened by a checkpoint.
+- **Build profiles** (2026-11-26, `pc_profiles.py`): vigil-pc.cfg `"profile"`: `standard` (the
+  default: production's 20,000 generation + 160,000 ranking worlds, 40,000 final, a 300,000 field --
+  with no key the worker's calls are unchanged), `deep` (50k / 500k / 160k), `maximum` (100k / 1M /
+  500k, a 1M field), `research` (250k / 2M / 1M, a 3M field), `custom` (`profile_custom`). Also
+  `"workers"`, `"cache_gb"`, `"cache_entries"`, `"gpu_vram_fraction"`, `"ram_gb"`.
+  - A profile runs only when it can land: its time scaled from the last board's own stages must fit
+    before lock (x1.25 + 15 min), its estimated memory must fit 80% of the PC's RAM, and the 85-40
+    minute pre-lock rebuild is ALWAYS standard. Otherwise the next one down, then standard. Every
+    classic board stamps `profile` (ran, requested, why).
+  - **The pool is the memory wall**: worlds travel as Python lists (~32 bytes a score), so maximum
+    needs ~58 GB and research ~120 GB on a 500-player slate. They are research targets -- nothing
+    has measured a gain past 160,000 ranking worlds (`cl_worlds.md`).
+  - Generation, ranking and final worlds stay disjoint (`world_split`, the evaluator's own pool).
+
 ## Hard-won gotchas
 
 - Render is memory-constrained. Anything that caches per-process, or spawns a
