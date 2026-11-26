@@ -3669,8 +3669,8 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     lim, lim_notes = (dfs_portfolio.limits_for(idx_k[cand], ents, pk.port, pk.force,
                                                sizes=tuple(x for x in (5, 10) if x < k_port) + (k_port,))
                       if (pk and pk.port and len(cand)) else (None, []))
-    ports = portfolio_vs_field(Wc, Wf, wf, Xe, grids, cand, k_port, chunk=ch,
-                               workers=_workers(workers), limits=lim) if len(cand) else []
+    ports = portfolio_vs_field(Wc, Wf, wf, Xe, grids, cand, k_port, chunk=ch, limits=lim,
+                               workers=_workers(workers)) if len(cand) else []
     t6 = time.time()
 
     def row(i, gi, rank_by):

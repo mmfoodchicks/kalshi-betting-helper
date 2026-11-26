@@ -2857,12 +2857,12 @@ def build(csv_text, week=None, objective="projection", stack=True, contest=None,
                 gone = caps.out(pool_k)
                 pool_k = [p for p in pool_k if p["name"] not in gone]
             cand = optimize(pool_k, CAP, objective, stack_min=stack_min,
-                            bring_min=bring_min, restarts=1000,
+                            bring_min=bring_min, restarts=1000, rules=orules,
                             exclude=(rosters, uniq), seed=len(lineups), fixed=fixed,
                             # the defense kick is the headline lineup's (up to
                             # 3 s on a 12-game slate); twenty of them would sit
                             # a web worker on one core for a minute
-                            thorough=False, rules=orules)
+                            thorough=False)
             if not cand:
                 break                     # nothing legal is left at this uniqueness
             names = frozenset(p["name"] for p in cand)

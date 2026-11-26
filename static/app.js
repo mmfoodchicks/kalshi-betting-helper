@@ -6851,7 +6851,7 @@ function renderNflDfs(d) {
     const own = p.own != null ? `<span class="small" style="color:var(--faint)"> · own ${p.own}%</span>` : "";
     return `<div class="nfl-dfsrow">
       <span class="nfl-dfsslot">${p.slot}</span>
-      <span class="nfl-dfsname">${escapeHtml(p.name)} <span class="small" style="color:var(--muted)" title="${p.depth ? "Sleeper depth chart" : ""}">${escapeHtml(p.depth || p.pos)}${p.team ? " · " + escapeHtml(p.team) : ""}</span></span>
+      <span class="nfl-dfsname">${p.name} <span class="small" style="color:var(--muted)" title="${p.depth ? "Sleeper depth chart" : ""}">${p.depth || p.pos}${p.team ? " · " + p.team : ""}</span></span>
       <span class="nfl-dfsnum">$${nf(p.salary)}</span>
       <span class="nfl-dfsnum">proj <b>${p.proj}</b></span>
       <span class="nfl-dfsnum">ceil <b class="ev pos">${p.ceiling}</b>${own}</span>

@@ -31,6 +31,11 @@ of 20 is exactly 10 and never 9.999.
 
 import collections
 
+try:
+    import numpy as np
+except ImportError:                      # the server: no numpy; the cover and the masks are the PC's
+    np = None
+
 # A player in more than this share of the entries is flagged when the owner set
 # no cap of his own (a cap the cover enforced cannot be exceeded, so with one
 # set the flag threshold is that cap). Half the entries is where a multi-entry
@@ -211,7 +216,6 @@ class Limits:
     report per cover to `reports` (one per contest on a classic board)."""
 
     def __init__(self, members, lead, pcap, tcap, max_overlap=None, sizes=()):
-        import numpy as np
         self.np = np
         self.members = np.asarray(members, dtype=np.int64)
         self.lead = np.asarray(lead, dtype=np.int64)
@@ -464,7 +468,6 @@ def classic_rules_mask(idx, players, rules):
     candidate names the rule that emptied it. The house rules (classic_allowed)
     are applied beside these, never replaced: the owner's stack can only
     tighten the house's one receiver."""
-    import numpy as np
     if not rules:
         return []
     idx = np.asarray(idx)
@@ -496,7 +499,6 @@ def showdown_rules_mask(idx, players, rules):
     """The same for showdown rows (captain first, at his captain's salary):
     the team maximum and the minimum salary (the stack and bring-back rules are
     classic rules; pick_resolve refuses them on a showdown)."""
-    import numpy as np
     if not rules:
         return []
     idx = np.asarray(idx)
@@ -518,7 +520,6 @@ def showdown_rules_mask(idx, players, rules):
 def apply_masks(allowed, masks):
     """(allowed & every mask, None) or (allowed & every mask, the first rule
     after which nothing was left), reading the masks in order."""
-    import numpy as np
     run = np.asarray(allowed, dtype=bool).copy()
     first = None
     for label, m in masks:
