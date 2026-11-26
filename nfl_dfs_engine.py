@@ -394,14 +394,36 @@ def deal_team(players, idx, box, rng, params=None, target_factor=None):
         for k, i in enumerate(recv):
             out[i].update(rec_tgt=tgt[k], rec=rec[k], rec_yd=rec_yd[k], rec_td=rec_td[k])
     # ---- the quarterback's line is the team's passing line
-    if qbs:
-        sh = np.asarray([max(lines[i]["pass_att"], 1e-6) for i in qbs])
-        sh = sh / sh.sum()
+    if len(qbs) == 1:                        # nearly every team: the line is the box's, untouched
         for key, src in (("pass_att", att), ("pass_cmp", comp), ("pass_yd", pyd), ("pass_td", ptd),
                          ("int", box["int"])):
-            parts = _split_int(np.asarray(src).astype(np.int64), sh)
-            for k, i in enumerate(qbs):
-                out[i][key] = parts[k]
+            out[qbs[0]][key] = _split_int(np.asarray(src).astype(np.int64), [1.0])[0]
+    elif qbs:
+        # Two or more quarterbacks (a starter in doubt and his backup both
+        # projected). Split stat by stat on its own, one could be handed a line
+        # no game produces -- 5 attempts, 5 completions and an interception
+        # (the 2026-11-26 conservation audit). Attempts go by the projected
+        # share of the throws, to the whole throw; completions within each
+        # man's attempts, by attempts; interceptions within his incompletions;
+        # touchdowns within his completions; yards by completions, to the yard.
+        # Every team total stays exact: the box keeps comp <= att, int <= att -
+        # comp and td <= comp, so the caps always hold the budget, and any part
+        # a malformed box could not fit goes to the first quarterback rather
+        # than vanishing.
+        sh = np.asarray([max(lines[i]["pass_att"], 1e-6) for i in qbs])
+        sh = sh / sh.sum()
+        a_p = np.stack(_split_int(np.asarray(att).astype(np.int64), sh))
+        c_t, i_t, t_t = (np.asarray(v).astype(np.int64) for v in (comp, box["int"], ptd))
+        def _fit(tot, room):
+            parts = _multinomial_capped(rng, tot, room.astype(np.float64), room)
+            parts[0] += tot - parts.sum(axis=0)
+            return parts
+        c_p = _fit(c_t, a_p)
+        i_p = _fit(i_t, a_p - c_p)
+        t_p = _fit(t_t, c_p)
+        y_p = _split_w(pyd, c_p.astype(np.float64))
+        for k, i in enumerate(qbs):
+            out[i].update(pass_att=a_p[k], pass_cmp=c_p[k], pass_yd=y_p[k], pass_td=t_p[k], int=i_p[k])
     # ---- rushing: carries, yards, touchdowns off the engine's ground game
     rush = [i for i in idx if lines[i]["rush_att"] > 0] or qbs[:1]
     if rush:

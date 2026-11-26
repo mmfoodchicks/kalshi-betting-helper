@@ -150,7 +150,7 @@ def _split_int(total, shares):
     return [base[j] for j in range(k)]
 
 
-def _multinomial_capped(rng, N, shares, cap, rounds=12):
+def _multinomial_capped(rng, N, shares, cap):
     """Counts (k, n) of N trials over k categories with weights (k, n), where
     category i can hold at most cap[i]. The budget is first cut to the room
     that exists, then dealt out in rounds: each round allocates what is still
@@ -178,16 +178,34 @@ def _multinomial_capped(rng, N, shares, cap, rounds=12):
     nothing wrong -- the touchdowns were gone before it looked. A team's
     drawn touchdowns now either land on a player who can hold them or are
     impossible for want of catches and carries, and `_capped_short` reports
-    which."""
+    which.
+
+    Two ways the rounds used to lose touchdowns AND report no surplus (the
+    2026-11-26 conservation audit, research/sprint_2026_11_26/conservation):
+    a world where every man with weight was full while a man with room but
+    zero weight remained stopped dealing (catches 1 and 5, weights 1 and 0,
+    three touchdowns: one dealt, two gone); and a fixed twelve rounds dealt at
+    most twelve overflows (thirteen men with a catch each and thirteen
+    touchdowns: twelve dealt). Both were latent -- every caller gives a floor
+    weight to every man with a catch or carry, and a team needs thirteen
+    touchdowns for the second -- and the fix deals draw-for-draw the same as
+    before wherever neither arises. Now a world with room but no weight left
+    deals by the room itself, and the rounds run until nothing is owed: owed
+    never exceeds the room left (both fall by what is dealt), so every round
+    either clears a world or fills at least one man, and k + 1 rounds always
+    finish (the bound below is that, plus one)."""
     cap = np.asarray(cap)
     room_total = cap.sum(axis=0)
     owed = np.minimum(np.asarray(N).astype(np.int64), room_total.astype(np.int64))
     alloc = np.zeros(cap.shape, dtype=np.int64)
-    for _ in range(rounds):
+    for _ in range(cap.shape[0] + 2):
         if not owed.any():
             break
         room = cap - alloc
         w = np.where(room > 0, shares, 0.0)
+        dead = (owed > 0) & ~(w.sum(axis=0) > 0)
+        if dead.any():                       # room but no weight on it: deal by the room
+            w = np.where(dead[None, :] & (room > 0), room.astype(np.float64), w)
         live = (owed > 0) & (w.sum(axis=0) > 0)
         if not live.any():
             break

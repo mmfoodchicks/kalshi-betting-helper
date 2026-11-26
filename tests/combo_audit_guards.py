@@ -24802,6 +24802,16 @@ except Exception as _pk_e:                 # a guard file that cannot run is a f
     ck("guards_picker runs to the end", False, f"{type(_pk_e).__name__}: {_pk_e} " + _pk_tb.format_exc()[-600:])
 
 print("=" * 72)
+print("CS. Football's conservation laws (2026-11-26, research/sprint_2026_11_26/conservation): the engine's box dealt")
+print("    to the players, the touchdown allocator, the two-quarterback line, DraftKings' 0.02 lattice (tests/guards_conservation.py)")
+print("=" * 72)
+try:
+    __import__("guards_conservation").run(ck)
+except Exception as _cs_e:                 # a guard file that cannot run is a failed guard, never a skipped one
+    import traceback as _cs_tb
+    ck("guards_conservation runs to the end", False, f"{type(_cs_e).__name__}: {_cs_e} " + _cs_tb.format_exc()[-600:])
+
+print("=" * 72)
 print("UI. The readability pass (2026-11-26): checkbox labels, chips that never break inside themselves, Best Bets'")
 print("    source names, the folded intro notes, the NFL card's models and asks, the bet ledger (tests/guards_ui.py)")
 print("=" * 72)
