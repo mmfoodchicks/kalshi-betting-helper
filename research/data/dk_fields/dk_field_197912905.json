@@ -1,0 +1,780 @@
+{
+ "contest": {
+  "draft_group_id": 156781,
+  "entry_fee": 20.0,
+  "first_prize": 250000.0,
+  "max_entries": 65359,
+  "name": "NFL Showdown $1.11M Thursday Night Showdown [$250K to 1st] (IND @ HOU)",
+  "places_paid": 14145,
+  "prize_pool": 1111111.0,
+  "starts": "2026-11-20T01:15:00.0000000Z"
+ },
+ "contest_id": 197912905,
+ "duplicates": {
+  "distinct_lineups": 11603,
+  "distinct_pair_collision": 0.0008037728322900969,
+  "entries_in_duplicated_lineups_pct": 91.72,
+  "max_copies": 502
+ },
+ "entries": 65359,
+ "final": true,
+ "kind": "showdown",
+ "malformed": 0,
+ "max_entry_users_pct": 25.7,
+ "ownership": [
+  {
+   "cpt_pct": 28.31,
+   "dk_pct": {
+    "CPT": 28.19,
+    "FLEX": 61.1
+   },
+   "fpts": 21.46,
+   "name": "C.J. Stroud",
+   "pct": 89.68,
+   "pos": "QB",
+   "salary": 10000,
+   "team": "HOU"
+  },
+  {
+   "cpt_pct": 17.49,
+   "dk_pct": {
+    "CPT": 17.41,
+    "FLEX": 54.34
+   },
+   "fpts": 14.8,
+   "name": "Nico Collins",
+   "pct": 72.07,
+   "pos": "WR",
+   "salary": 10200,
+   "team": "HOU"
+  },
+  {
+   "cpt_pct": 16.71,
+   "dk_pct": {
+    "CPT": 16.64,
+    "FLEX": 39.83
+   },
+   "fpts": 18.4,
+   "name": "David Montgomery",
+   "pct": 56.71,
+   "pos": "RB",
+   "salary": 8200,
+   "team": "HOU"
+  },
+  {
+   "cpt_pct": 7.54,
+   "dk_pct": {
+    "CPT": 7.5,
+    "FLEX": 38.64
+   },
+   "fpts": 6.7,
+   "name": "Jonathan Taylor",
+   "pct": 46.35,
+   "pos": "RB",
+   "salary": 10600,
+   "team": "IND"
+  },
+  {
+   "cpt_pct": 1.81,
+   "dk_pct": {
+    "CPT": 1.8,
+    "FLEX": 35.06
+   },
+   "fpts": 6.0,
+   "name": "Ka'imi Fairbairn",
+   "pct": 37.02,
+   "pos": "K",
+   "salary": 5400,
+   "team": "HOU"
+  },
+  {
+   "cpt_pct": 5.71,
+   "dk_pct": {
+    "CPT": 5.68,
+    "FLEX": 27.84
+   },
+   "fpts": 5.7,
+   "name": "Tank Dell",
+   "pct": 33.67,
+   "pos": "WR",
+   "salary": 6400,
+   "team": "HOU"
+  },
+  {
+   "cpt_pct": 4.41,
+   "dk_pct": {
+    "CPT": 4.39,
+    "FLEX": 28.29
+   },
+   "fpts": 3.3,
+   "name": "Xavier Hutchinson",
+   "pct": 32.82,
+   "pos": "WR",
+   "salary": 6200,
+   "team": "HOU"
+  },
+  {
+   "cpt_pct": 4.27,
+   "dk_pct": {
+    "CPT": 4.25,
+    "FLEX": 28.07
+   },
+   "fpts": 15.0,
+   "name": "Texans",
+   "pct": 32.46,
+   "pos": "DST",
+   "salary": 5800,
+   "team": "HOU"
+  },
+  {
+   "cpt_pct": 2.86,
+   "dk_pct": {
+    "CPT": 2.85,
+    "FLEX": 23.09
+   },
+   "fpts": 3.2,
+   "name": "Tyler Warren",
+   "pct": 26.05,
+   "pos": "TE",
+   "salary": 8400,
+   "team": "IND"
+  },
+  {
+   "cpt_pct": 0.88,
+   "dk_pct": {
+    "CPT": 0.88,
+    "FLEX": 24.43
+   },
+   "fpts": 3.0,
+   "name": "Spencer Shrader",
+   "pct": 25.42,
+   "pos": "K",
+   "salary": 5200,
+   "team": "IND"
+  },
+  {
+   "cpt_pct": 2.19,
+   "dk_pct": {
+    "CPT": 2.18,
+    "FLEX": 22.73
+   },
+   "fpts": 2.1,
+   "name": "Dalton Schultz",
+   "pct": 25.02,
+   "pos": "TE",
+   "salary": 4800,
+   "team": "HOU"
+  },
+  {
+   "cpt_pct": 1.49,
+   "dk_pct": {
+    "CPT": 1.48,
+    "FLEX": 21.91
+   },
+   "fpts": 0.0,
+   "name": "Laquon Treadwell",
+   "pct": 23.49,
+   "pos": "WR",
+   "salary": 4000,
+   "team": "IND"
+  },
+  {
+   "cpt_pct": 1.76,
+   "dk_pct": {
+    "CPT": 1.75,
+    "FLEX": 21.28
+   },
+   "fpts": 5.06,
+   "name": "Daniel Jones",
+   "pct": 23.14,
+   "pos": "QB",
+   "salary": 8800,
+   "team": "IND"
+  },
+  {
+   "cpt_pct": 1.28,
+   "dk_pct": {
+    "CPT": 1.28,
+    "FLEX": 16.84
+   },
+   "fpts": 1.8,
+   "name": "Seth McGowan",
+   "pct": 18.2,
+   "pos": "RB",
+   "salary": 4600,
+   "team": "IND"
+  },
+  {
+   "cpt_pct": 0.98,
+   "dk_pct": {
+    "CPT": 0.98,
+    "FLEX": 9.59
+   },
+   "fpts": 12.0,
+   "name": "Kayshon Boutte",
+   "pct": 10.61,
+   "pos": "WR",
+   "salary": 5000,
+   "team": "HOU"
+  },
+  {
+   "cpt_pct": 0.3,
+   "dk_pct": {
+    "CPT": 0.3,
+    "FLEX": 8.75
+   },
+   "fpts": 6.8,
+   "name": "Anthony Gould",
+   "pct": 9.09,
+   "pos": "WR",
+   "salary": 3000,
+   "team": "IND"
+  },
+  {
+   "cpt_pct": 0.46,
+   "dk_pct": {
+    "CPT": 0.46,
+    "FLEX": 8.52
+   },
+   "fpts": 0.0,
+   "name": "Deion Burks",
+   "pct": 9.02,
+   "pos": "WR",
+   "salary": 2800,
+   "team": "IND"
+  },
+  {
+   "cpt_pct": 0.38,
+   "dk_pct": {
+    "CPT": 0.37,
+    "FLEX": 6.28
+   },
+   "fpts": 5.0,
+   "name": "Ashton Dulin",
+   "pct": 6.69,
+   "pos": "WR",
+   "salary": 3600,
+   "team": "IND"
+  },
+  {
+   "cpt_pct": 0.67,
+   "dk_pct": {
+    "CPT": 0.67,
+    "FLEX": 5.27
+   },
+   "fpts": 4.9,
+   "name": "Emari Demercado",
+   "pct": 5.97,
+   "pos": "RB",
+   "salary": 7400,
+   "team": "HOU"
+  },
+  {
+   "cpt_pct": 0.24,
+   "dk_pct": {
+    "CPT": 0.23,
+    "FLEX": 4.66
+   },
+   "fpts": 3.0,
+   "name": "Colts",
+   "pct": 4.91,
+   "pos": "DST",
+   "salary": 3400,
+   "team": "IND"
+  },
+  {
+   "cpt_pct": 0.05,
+   "dk_pct": {
+    "CPT": 0.05,
+    "FLEX": 4.79
+   },
+   "fpts": 1.8,
+   "name": "Foster Moreau",
+   "pct": 4.86,
+   "pos": "TE",
+   "salary": 1600,
+   "team": "HOU"
+  },
+  {
+   "cpt_pct": 0.02,
+   "dk_pct": {
+    "CPT": 0.02,
+    "FLEX": 2.12
+   },
+   "fpts": 0.0,
+   "name": "Drew Ogletree",
+   "pct": 2.15,
+   "pos": "TE",
+   "salary": 600,
+   "team": "IND"
+  },
+  {
+   "cpt_pct": 0.02,
+   "dk_pct": {
+    "CPT": 0.02,
+    "FLEX": 1.21
+   },
+   "fpts": 0.0,
+   "name": "Nick Westbrook-Ikhine",
+   "pct": 1.24,
+   "pos": "WR",
+   "salary": 2000,
+   "team": "IND"
+  },
+  {
+   "cpt_pct": 0.08,
+   "dk_pct": {
+    "CPT": 0.08,
+    "FLEX": 0.67
+   },
+   "fpts": 0.2,
+   "name": "Anthony Richardson Sr.",
+   "pct": 0.76,
+   "pos": "QB",
+   "salary": 6000,
+   "team": "IND"
+  },
+  {
+   "cpt_pct": 0.03,
+   "dk_pct": {
+    "CPT": 0.03,
+    "FLEX": 0.44
+   },
+   "fpts": 0.0,
+   "name": "Dare Ogunbowale",
+   "pct": 0.47,
+   "pos": "RB",
+   "salary": 4400,
+   "team": "HOU"
+  },
+  {
+   "cpt_pct": 0.01,
+   "dk_pct": {
+    "CPT": 0.01,
+    "FLEX": 0.45
+   },
+   "fpts": 3.6,
+   "name": "Quez Watkins",
+   "pct": 0.46,
+   "pos": "WR",
+   "salary": 1000,
+   "team": "IND"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "CPT": 0.0,
+    "FLEX": 0.41
+   },
+   "fpts": 0.0,
+   "name": "Cade Stover",
+   "pct": 0.42,
+   "pos": "TE",
+   "salary": 200,
+   "team": "HOU"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "CPT": 0.0,
+    "FLEX": 0.33
+   },
+   "fpts": 12.4,
+   "name": "Marlin Klein",
+   "pct": 0.33,
+   "pos": "TE",
+   "salary": 200,
+   "team": "HOU"
+  },
+  {
+   "cpt_pct": 0.01,
+   "dk_pct": {
+    "CPT": 0.01,
+    "FLEX": 0.23
+   },
+   "fpts": 2.6,
+   "name": "DJ Giddens",
+   "pct": 0.24,
+   "pos": "RB",
+   "salary": 1400,
+   "team": "IND"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "FLEX": 0.22
+   },
+   "fpts": 0.0,
+   "name": "Pharaoh Brown",
+   "pct": 0.22,
+   "pos": "TE",
+   "salary": 400,
+   "team": "IND"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "CPT": 0.0,
+    "FLEX": 0.13
+   },
+   "fpts": 0.0,
+   "name": "Nikko Remigio",
+   "pct": 0.13,
+   "pos": "WR",
+   "salary": 200,
+   "team": "HOU"
+  },
+  {
+   "cpt_pct": 0.02,
+   "dk_pct": {
+    "CPT": 0.02,
+    "FLEX": 0.1
+   },
+   "fpts": 0.0,
+   "name": "Davis Mills",
+   "pct": 0.12,
+   "pos": "QB",
+   "salary": 6000,
+   "team": "HOU"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "CPT": 0.0,
+    "FLEX": 0.08
+   },
+   "fpts": 0.0,
+   "name": "Mecole Hardman Jr.",
+   "pct": 0.08,
+   "pos": "WR",
+   "salary": 800,
+   "team": "IND"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "FLEX": 0.03
+   },
+   "fpts": 0.0,
+   "name": "Davon Booth",
+   "pct": 0.03,
+   "pos": "RB",
+   "salary": 200,
+   "team": "IND"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "CPT": 0.0,
+    "FLEX": 0.02
+   },
+   "fpts": 0.0,
+   "name": "Woody Marks",
+   "pct": 0.02,
+   "pos": "RB",
+   "salary": 8600,
+   "team": "HOU"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "CPT": 0.0,
+    "FLEX": 0.01
+   },
+   "fpts": 0.0,
+   "name": "Marvin Harrison Jr.",
+   "pct": 0.02,
+   "pos": "WR",
+   "salary": 7000,
+   "team": "HOU"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "FLEX": 0.01
+   },
+   "fpts": 0.0,
+   "name": "Riley Leonard",
+   "pct": 0.01,
+   "pos": "QB",
+   "salary": 6000,
+   "team": "IND"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "FLEX": 0.01
+   },
+   "fpts": 0.0,
+   "name": "Bryce Oliver",
+   "pct": 0.01,
+   "pos": "WR",
+   "salary": 200,
+   "team": "HOU"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "FLEX": 0.01
+   },
+   "fpts": 0.0,
+   "name": "Joshua Pitsenberger",
+   "pct": 0.01,
+   "pos": "RB",
+   "salary": 200,
+   "team": "HOU"
+  },
+  {
+   "cpt_pct": 0.0,
+   "dk_pct": {
+    "CPT": 0.0,
+    "FLEX": 0.0
+   },
+   "fpts": 0.0,
+   "name": "Samori Toure",
+   "pct": 0.0,
+   "pos": "WR",
+   "salary": 200,
+   "team": "IND"
+  }
+ ],
+ "points": {
+  "cash_line": 76.26,
+  "first": 99.490005,
+  "median": 67.91,
+  "top_0_1pct": 95.39,
+  "top_10pct": 83.159996,
+  "top_1pct": 89.39
+ },
+ "rank_points": [
+  [
+   1,
+   99.490005
+  ],
+  [
+   2,
+   99.490005
+  ],
+  [
+   5,
+   99.490005
+  ],
+  [
+   10,
+   99.490005
+  ],
+  [
+   20,
+   99.19
+  ],
+  [
+   50,
+   95.39
+  ],
+  [
+   100,
+   93.85999
+  ],
+  [
+   200,
+   92.09
+  ],
+  [
+   500,
+   89.86
+  ],
+  [
+   1000,
+   89.39
+  ],
+  [
+   2000,
+   87.56
+  ],
+  [
+   5000,
+   84.86
+  ],
+  [
+   10000,
+   79.28999
+  ],
+  [
+   20000,
+   73.76
+  ],
+  [
+   50000,
+   57.920002
+  ],
+  [
+   65359,
+   0.0
+  ]
+ ],
+ "sha256": "32b8fa05d4fd6e326484ec1537dffb053d623231651c0fccecbe1133f0236c08",
+ "shape": {
+  "resolved": 65073,
+  "salary_mean": 48880.3,
+  "salary_median": 49300.0,
+  "team_split_pct": {
+   "3-3": 20.49,
+   "4-2": 41.31,
+   "5-1": 38.19
+  },
+  "unresolved": 0
+ },
+ "top_lineups": [
+  {
+   "lineup": [
+    [
+     "CPT",
+     "C.J. Stroud"
+    ],
+    [
+     "FLEX",
+     "Jonathan Taylor"
+    ],
+    [
+     "FLEX",
+     "Nico Collins"
+    ],
+    [
+     "FLEX",
+     "David Montgomery"
+    ],
+    [
+     "FLEX",
+     "Texans"
+    ],
+    [
+     "FLEX",
+     "Marlin Klein"
+    ]
+   ],
+   "points": 99.490005,
+   "rank": 1
+  },
+  {
+   "lineup": [
+    [
+     "CPT",
+     "C.J. Stroud"
+    ],
+    [
+     "FLEX",
+     "Jonathan Taylor"
+    ],
+    [
+     "FLEX",
+     "Nico Collins"
+    ],
+    [
+     "FLEX",
+     "David Montgomery"
+    ],
+    [
+     "FLEX",
+     "Texans"
+    ],
+    [
+     "FLEX",
+     "Marlin Klein"
+    ]
+   ],
+   "points": 99.490005,
+   "rank": 1
+  },
+  {
+   "lineup": [
+    [
+     "CPT",
+     "C.J. Stroud"
+    ],
+    [
+     "FLEX",
+     "Jonathan Taylor"
+    ],
+    [
+     "FLEX",
+     "Nico Collins"
+    ],
+    [
+     "FLEX",
+     "David Montgomery"
+    ],
+    [
+     "FLEX",
+     "Texans"
+    ],
+    [
+     "FLEX",
+     "Marlin Klein"
+    ]
+   ],
+   "points": 99.490005,
+   "rank": 1
+  },
+  {
+   "lineup": [
+    [
+     "CPT",
+     "C.J. Stroud"
+    ],
+    [
+     "FLEX",
+     "Jonathan Taylor"
+    ],
+    [
+     "FLEX",
+     "Nico Collins"
+    ],
+    [
+     "FLEX",
+     "David Montgomery"
+    ],
+    [
+     "FLEX",
+     "Texans"
+    ],
+    [
+     "FLEX",
+     "Marlin Klein"
+    ]
+   ],
+   "points": 99.490005,
+   "rank": 1
+  },
+  {
+   "lineup": [
+    [
+     "CPT",
+     "C.J. Stroud"
+    ],
+    [
+     "FLEX",
+     "Jonathan Taylor"
+    ],
+    [
+     "FLEX",
+     "Nico Collins"
+    ],
+    [
+     "FLEX",
+     "David Montgomery"
+    ],
+    [
+     "FLEX",
+     "Texans"
+    ],
+    [
+     "FLEX",
+     "Marlin Klein"
+    ]
+   ],
+   "points": 99.490005,
+   "rank": 1
+  }
+ ],
+ "with_lineup": 65073
+}

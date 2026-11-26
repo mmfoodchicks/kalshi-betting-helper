@@ -1,0 +1,816 @@
+{
+ "contest": {
+  "draft_group_id": 156416,
+  "entry_fee": 20.0,
+  "first_prize": 1000000.0,
+  "max_entries": 147058,
+  "name": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st]",
+  "places_paid": 30413,
+  "prize_pool": 2500000.0,
+  "starts": "2026-11-15T18:00:00.0000000Z"
+ },
+ "contest_id": 197645153,
+ "duplicates": {
+  "distinct_lineups": 136658,
+  "distinct_pair_collision": 4.792902962122342e-06,
+  "entries_in_duplicated_lineups_pct": 10.74,
+  "max_copies": 144
+ },
+ "entries": 147058,
+ "final": true,
+ "kind": "classic",
+ "malformed": 0,
+ "max_entry_users_pct": 16.32,
+ "model": {
+  "bring_back": 0.35,
+  "collision": 1.2e-07,
+  "dst_vs_own_qb": 0.08,
+  "max_own": 0.38,
+  "salary_used": 49400.0,
+  "stack_dist": [
+   0.174,
+   0.49,
+   0.289,
+   0.047
+  ]
+ },
+ "ownership": [
+  {
+   "dk_pct": {
+    "FLEX": 8.42,
+    "RB": 56.36
+   },
+   "fpts": 38.1,
+   "name": "Emmett Johnson",
+   "pct": 64.81,
+   "pos": "RB",
+   "salary": 4700,
+   "team": "KC"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 2.0,
+    "WR": 38.94
+   },
+   "fpts": 16.4,
+   "name": "Justin Jefferson",
+   "pct": 40.97,
+   "pos": "WR",
+   "salary": 6800,
+   "team": "MIN"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 8.94,
+    "RB": 21.9
+   },
+   "fpts": 49.3,
+   "name": "Christian McCaffrey",
+   "pct": 30.85,
+   "pos": "RB",
+   "salary": 8500,
+   "team": "SF"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 3.2,
+    "RB": 22.19
+   },
+   "fpts": 34.2,
+   "name": "Chuba Hubbard",
+   "pct": 25.4,
+   "pos": "RB",
+   "salary": 7200,
+   "team": "CAR"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 2.91,
+    "TE": 22.43
+   },
+   "fpts": 2.4,
+   "name": "Tyler Warren",
+   "pct": 25.35,
+   "pos": "TE",
+   "salary": 4400,
+   "team": "IND"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.29,
+    "WR": 23.38
+   },
+   "fpts": 6.0,
+   "name": "Chris Olave",
+   "pct": 24.67,
+   "pos": "WR",
+   "salary": 7000,
+   "team": "NO"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 3.39,
+    "RB": 20.36
+   },
+   "fpts": 24.7,
+   "name": "James Cook III",
+   "pct": 23.76,
+   "pos": "RB",
+   "salary": 7400,
+   "team": "BUF"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.56,
+    "WR": 21.0
+   },
+   "fpts": 31.2,
+   "name": "Parker Washington",
+   "pct": 22.57,
+   "pos": "WR",
+   "salary": 6200,
+   "team": "JAX"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.86,
+    "WR": 15.48
+   },
+   "fpts": 5.1,
+   "name": "Tank Dell",
+   "pct": 17.35,
+   "pos": "WR",
+   "salary": 3900,
+   "team": "HOU"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 2.52,
+    "WR": 14.46
+   },
+   "fpts": 20.2,
+   "name": "CeeDee Lamb",
+   "pct": 16.99,
+   "pos": "WR",
+   "salary": 8800,
+   "team": "DAL"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 2.24,
+    "WR": 12.97
+   },
+   "fpts": 34.1,
+   "name": "Jaxon Smith-Njigba",
+   "pct": 15.22,
+   "pos": "WR",
+   "salary": 9300,
+   "team": "SEA"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.94,
+    "RB": 13.27
+   },
+   "fpts": 17.7,
+   "name": "Bijan Robinson",
+   "pct": 15.22,
+   "pos": "RB",
+   "salary": 8200,
+   "team": "ATL"
+  },
+  {
+   "dk_pct": {
+    "QB": 14.71
+   },
+   "fpts": 11.98,
+   "name": "Tyler Shough",
+   "pct": 14.72,
+   "pos": "QB",
+   "salary": 5600,
+   "team": "NO"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 4.16,
+    "TE": 9.15
+   },
+   "fpts": 13.4,
+   "name": "George Kittle",
+   "pct": 13.32,
+   "pos": "TE",
+   "salary": 6500,
+   "team": "SF"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 3.26,
+    "TE": 10.05
+   },
+   "fpts": 3.1,
+   "name": "Colby Parkinson",
+   "pct": 13.32,
+   "pos": "TE",
+   "salary": 3000,
+   "team": "LAR"
+  },
+  {
+   "dk_pct": {
+    "DST": 13.05
+   },
+   "fpts": 10.0,
+   "name": "Seahawks",
+   "pct": 13.06,
+   "pos": "DST",
+   "salary": 3300,
+   "team": "SEA"
+  },
+  {
+   "dk_pct": {
+    "DST": 12.73
+   },
+   "fpts": 16.0,
+   "name": "Rams",
+   "pct": 12.73,
+   "pos": "DST",
+   "salary": 3800,
+   "team": "LAR"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 2.22,
+    "RB": 10.21
+   },
+   "fpts": 15.5,
+   "name": "Ollie Gordon II",
+   "pct": 12.43,
+   "pos": "RB",
+   "salary": 5800,
+   "team": "MIA"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 3.88,
+    "RB": 8.34
+   },
+   "fpts": 9.4,
+   "name": "Zach Charbonnet",
+   "pct": 12.23,
+   "pos": "RB",
+   "salary": 5600,
+   "team": "SEA"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.77,
+    "WR": 11.34
+   },
+   "fpts": 6.5,
+   "name": "Tetairoa McMillan",
+   "pct": 12.11,
+   "pos": "WR",
+   "salary": 6700,
+   "team": "CAR"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.08,
+    "WR": 10.84
+   },
+   "fpts": 11.7,
+   "name": "KC Concepcion Jr.",
+   "pct": 11.93,
+   "pos": "WR",
+   "salary": 4800,
+   "team": "CLE"
+  },
+  {
+   "dk_pct": {
+    "QB": 11.8
+   },
+   "fpts": 34.66,
+   "name": "Brock Purdy",
+   "pct": 11.8,
+   "pos": "QB",
+   "salary": 7000,
+   "team": "SF"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.92,
+    "RB": 9.52
+   },
+   "fpts": 20.3,
+   "name": "Bhayshul Tuten",
+   "pct": 11.44,
+   "pos": "RB",
+   "salary": 6600,
+   "team": "JAX"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.2,
+    "WR": 9.93
+   },
+   "fpts": 6.4,
+   "name": "Jakobi Meyers",
+   "pct": 11.14,
+   "pos": "WR",
+   "salary": 4200,
+   "team": "JAX"
+  },
+  {
+   "dk_pct": {
+    "DST": 11.0
+   },
+   "fpts": 12.0,
+   "name": "Colts",
+   "pct": 11.0,
+   "pos": "DST",
+   "salary": 3000,
+   "team": "IND"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.92,
+    "WR": 9.84
+   },
+   "fpts": 13.2,
+   "name": "Rashee Rice",
+   "pct": 10.76,
+   "pos": "WR",
+   "salary": 6100,
+   "team": "KC"
+  },
+  {
+   "dk_pct": {
+    "QB": 10.41
+   },
+   "fpts": 30.78,
+   "name": "Trevor Lawrence",
+   "pct": 10.42,
+   "pos": "QB",
+   "salary": 6600,
+   "team": "JAX"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.66,
+    "WR": 8.73
+   },
+   "fpts": 46.5,
+   "name": "George Pickens",
+   "pct": 10.4,
+   "pos": "WR",
+   "salary": 6300,
+   "team": "DAL"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.81,
+    "WR": 9.13
+   },
+   "fpts": 0.3,
+   "name": "Jalen Coker",
+   "pct": 9.95,
+   "pos": "WR",
+   "salary": 5700,
+   "team": "CAR"
+  },
+  {
+   "dk_pct": {
+    "QB": 9.75
+   },
+   "fpts": 23.34,
+   "name": "Josh Allen",
+   "pct": 9.76,
+   "pos": "QB",
+   "salary": 7500,
+   "team": "BUF"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.83,
+    "WR": 8.54
+   },
+   "fpts": 4.0,
+   "name": "Wan'Dale Robinson",
+   "pct": 9.38,
+   "pos": "WR",
+   "salary": 4500,
+   "team": "TEN"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.03,
+    "WR": 8.1
+   },
+   "fpts": 25.9,
+   "name": "Deebo Samuel Sr.",
+   "pct": 9.14,
+   "pos": "WR",
+   "salary": 5500,
+   "team": "SF"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.26,
+    "TE": 7.85
+   },
+   "fpts": 4.4,
+   "name": "Darren Waller",
+   "pct": 9.11,
+   "pos": "TE",
+   "salary": 3600,
+   "team": "CAR"
+  },
+  {
+   "dk_pct": {
+    "DST": 8.78
+   },
+   "fpts": 12.0,
+   "name": "Dolphins",
+   "pct": 8.79,
+   "pos": "DST",
+   "salary": 2600,
+   "team": "MIA"
+  },
+  {
+   "dk_pct": {
+    "DST": 8.78
+   },
+   "fpts": 6.0,
+   "name": "Texans",
+   "pct": 8.79,
+   "pos": "DST",
+   "salary": 3400,
+   "team": "HOU"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 1.27,
+    "TE": 7.24
+   },
+   "fpts": 5.0,
+   "name": "Travis Kelce",
+   "pct": 8.52,
+   "pos": "TE",
+   "salary": 4700,
+   "team": "KC"
+  },
+  {
+   "dk_pct": {
+    "QB": 8.42
+   },
+   "fpts": 8.1,
+   "name": "Bryce Young",
+   "pct": 8.42,
+   "pos": "QB",
+   "salary": 5800,
+   "team": "CAR"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.47,
+    "WR": 7.92
+   },
+   "fpts": 12.0,
+   "name": "Matthew Golden",
+   "pct": 8.4,
+   "pos": "WR",
+   "salary": 7300,
+   "team": "GB"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.4,
+    "WR": 7.33
+   },
+   "fpts": 19.9,
+   "name": "Drake London",
+   "pct": 7.74,
+   "pos": "WR",
+   "salary": 6600,
+   "team": "ATL"
+  },
+  {
+   "dk_pct": {
+    "FLEX": 0.65,
+    "WR": 6.92
+   },
+   "fpts": 19.0,
+   "name": "Jordyn Tyson",
+   "pct": 7.57,
+   "pos": "WR",
+   "salary": 5000,
+   "team": "NO"
+  }
+ ],
+ "points": {
+  "cash_line": 182.37999,
+  "first": 270.26,
+  "median": 155.84,
+  "top_0_1pct": 248.91998,
+  "top_10pct": 196.9,
+  "top_1pct": 230.02
+ },
+ "rank_points": [
+  [
+   1,
+   270.26
+  ],
+  [
+   2,
+   270.26
+  ],
+  [
+   5,
+   267.31998
+  ],
+  [
+   10,
+   265.38
+  ],
+  [
+   20,
+   262.71997
+  ],
+  [
+   50,
+   255.42
+  ],
+  [
+   100,
+   251.36002
+  ],
+  [
+   200,
+   246.92
+  ],
+  [
+   500,
+   239.95999
+  ],
+  [
+   1000,
+   233.72
+  ],
+  [
+   2000,
+   226.52
+  ],
+  [
+   5000,
+   214.42
+  ],
+  [
+   10000,
+   203.52
+  ],
+  [
+   20000,
+   191.31999
+  ],
+  [
+   50000,
+   169.12
+  ],
+  [
+   100000,
+   141.18
+  ],
+  [
+   147058,
+   0.0
+  ]
+ ],
+ "sha256": "0637947f2a3173bffbf1afda44e2d0135bcdb6a64e66f649651ae5845185d6dd",
+ "shape": {
+  "bring_back_pct": 34.49,
+  "dst_vs_own_qb_pct": 0.351,
+  "resolved": 146985,
+  "salary_at_cap_pct": 47.53,
+  "salary_mean": 49867.5,
+  "salary_median": 49900,
+  "stack_pct": [
+   15.5,
+   53.84,
+   28.94,
+   1.71
+  ],
+  "unresolved": 0
+ },
+ "top_lineups": [
+  {
+   "lineup": [
+    [
+     "DST",
+     "Seahawks"
+    ],
+    [
+     "FLEX",
+     "Christian McCaffrey"
+    ],
+    [
+     "QB",
+     "Brock Purdy"
+    ],
+    [
+     "RB",
+     "Chuba Hubbard"
+    ],
+    [
+     "RB",
+     "Emmett Johnson"
+    ],
+    [
+     "TE",
+     "Gavin Bartholomew"
+    ],
+    [
+     "WR",
+     "George Pickens"
+    ],
+    [
+     "WR",
+     "Deebo Samuel Sr."
+    ],
+    [
+     "WR",
+     "Jordyn Tyson"
+    ]
+   ],
+   "points": 270.26,
+   "rank": 1
+  },
+  {
+   "lineup": [
+    [
+     "DST",
+     "Dolphins"
+    ],
+    [
+     "FLEX",
+     "Christian McCaffrey"
+    ],
+    [
+     "QB",
+     "Brock Purdy"
+    ],
+    [
+     "RB",
+     "Chuba Hubbard"
+    ],
+    [
+     "RB",
+     "Emmett Johnson"
+    ],
+    [
+     "TE",
+     "Gavin Bartholomew"
+    ],
+    [
+     "WR",
+     "George Pickens"
+    ],
+    [
+     "WR",
+     "Parker Washington"
+    ],
+    [
+     "WR",
+     "KC Concepcion Jr."
+    ]
+   ],
+   "points": 270.26,
+   "rank": 1
+  },
+  {
+   "lineup": [
+    [
+     "DST",
+     "Texans"
+    ],
+    [
+     "FLEX",
+     "Chuba Hubbard"
+    ],
+    [
+     "QB",
+     "Dak Prescott"
+    ],
+    [
+     "RB",
+     "Christian McCaffrey"
+    ],
+    [
+     "RB",
+     "Emmett Johnson"
+    ],
+    [
+     "TE",
+     "Gavin Bartholomew"
+    ],
+    [
+     "WR",
+     "George Pickens"
+    ],
+    [
+     "WR",
+     "Parker Washington"
+    ],
+    [
+     "WR",
+     "KC Concepcion Jr."
+    ]
+   ],
+   "points": 268.02,
+   "rank": 3
+  },
+  {
+   "lineup": [
+    [
+     "DST",
+     "Vikings"
+    ],
+    [
+     "FLEX",
+     "Bijan Robinson"
+    ],
+    [
+     "QB",
+     "Dak Prescott"
+    ],
+    [
+     "RB",
+     "Christian McCaffrey"
+    ],
+    [
+     "RB",
+     "Emmett Johnson"
+    ],
+    [
+     "TE",
+     "Gavin Bartholomew"
+    ],
+    [
+     "WR",
+     "George Pickens"
+    ],
+    [
+     "WR",
+     "Deebo Samuel Sr."
+    ],
+    [
+     "WR",
+     "Jordyn Tyson"
+    ]
+   ],
+   "points": 267.52,
+   "rank": 4
+  },
+  {
+   "lineup": [
+    [
+     "DST",
+     "Raiders"
+    ],
+    [
+     "FLEX",
+     "Christian McCaffrey"
+    ],
+    [
+     "QB",
+     "Dak Prescott"
+    ],
+    [
+     "RB",
+     "Chuba Hubbard"
+    ],
+    [
+     "RB",
+     "Emmett Johnson"
+    ],
+    [
+     "TE",
+     "Brevyn Spann-Ford"
+    ],
+    [
+     "WR",
+     "George Pickens"
+    ],
+    [
+     "WR",
+     "Parker Washington"
+    ],
+    [
+     "WR",
+     "Jordyn Tyson"
+    ]
+   ],
+   "points": 267.31998,
+   "rank": 5
+  }
+ ],
+ "with_lineup": 146985
+}

@@ -22632,8 +22632,12 @@ _cs_blob = " ".join(_json_cs.dumps(v) for v in _cs_sums.values())
 ck("the committed summaries are the final exports the owner sent from away -- the week-6 Millionaire (classic, "
    "158,904 entries, first 210.5), the Sunday-night DAL @ GB Showdown (78,431 entries) and the Monday-night WAS @ SF "
    "Showdown (87,465) -- final (no time remaining), carrying no entrant field at all, their sha256 the export's, and no "
-   "export beside them in git",
-   set(_cs_idx) == {"196653900", "196786588", "196786690"}
+   "export beside them in git; and the owner's five of 2026-11-26 (\"I can't go further back\") -- the week-10 and "
+   "week-11 Millionaires (147,058 each), the week-11 Thursday and Monday showdowns (65,359 and 70,588) and the week-12 "
+   "Wednesday showdown (47,058) -- under the same rules",
+   set(_cs_idx) == {"196653900", "196786588", "196786690", "197645153", "197882014", "197912905", "198005475", "198150093"}
+   and [(_cs_sums[c]["kind"], _cs_sums[c]["entries"]) for c in ("197645153", "197882014", "197912905", "198005475", "198150093")]
+   == [("classic", 147058), ("classic", 147058), ("showdown", 65359), ("showdown", 70588), ("showdown", 47058)]
    and _cs_sums["196786690"]["kind"] == "showdown" and _cs_sums["196786690"]["entries"] == 87465
    and _cs_sums["196653900"]["kind"] == "classic" and _cs_sums["196653900"]["entries"] == 158904
    and abs(_cs_sums["196653900"]["points"]["first"] - 210.5) < 0.01
@@ -22656,7 +22660,8 @@ finally:
 ck("listing merges the deep store's index with the committed one, one row a contest, the committed row winning; a "
    "committed summary wins over the deep store's for the same contest (it was made from the FINAL export on purpose), "
    "and a contest only in the deep store still reads from it",
-   sorted(r["contest_id"] for r in _cs_list) == [555, 196653900, 196786588, 196786690]
+   sorted(r["contest_id"] for r in _cs_list) == [555, 196653900, 196786588, 196786690, 197645153, 197882014,
+                                                  197912905, 198005475, 198150093]
    and next(r for r in _cs_list if r["contest_id"] == 196653900)["name"].startswith("NFL $2.75M")
    and (_cs_s1 or {}).get("entries") == 158904 and (_cs_s2 or {}).get("from") == "deep",
    str([(r["contest_id"], r.get("name")) for r in _cs_list]))

@@ -34,5 +34,65 @@
   "sha256": "1ed58a880b2f729e7196bcc47340ba129ade970f9a50c4997c0bb1ed5204e10d",
   "source": "the owner's final export, summarized off the PC and committed (2026-10-20); the export itself stays out of git",
   "starts": "2026-10-20T00:15:00.0000000Z"
+ },
+ "197645153": {
+  "cash_line": 182.37999,
+  "draft_group_id": 156416,
+  "entries": 147058,
+  "final": true,
+  "first": 270.26,
+  "kind": "classic",
+  "name": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st]",
+  "sha256": "0637947f2a3173bffbf1afda44e2d0135bcdb6a64e66f649651ae5845185d6dd",
+  "source": "the owner's final export, summarized off the PC and committed (2026-11-26); the export itself stays out of git",
+  "starts": "2026-11-15T18:00:00.0000000Z"
+ },
+ "197882014": {
+  "cash_line": 157.86,
+  "draft_group_id": 156561,
+  "entries": 147058,
+  "final": true,
+  "first": 219.3,
+  "kind": "classic",
+  "name": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st]",
+  "sha256": "c06b70e826bd102cfe17714e022752c17d60da3b482a87e2917b77300d44e9a4",
+  "source": "the owner's final export, summarized off the PC and committed (2026-11-26); the export itself stays out of git",
+  "starts": "2026-11-22T18:00:00.0000000Z"
+ },
+ "197912905": {
+  "cash_line": 76.26,
+  "draft_group_id": 156781,
+  "entries": 65359,
+  "final": true,
+  "first": 99.490005,
+  "kind": "showdown",
+  "name": "NFL Showdown $1.11M Thursday Night Showdown [$250K to 1st] (IND @ HOU)",
+  "sha256": "32b8fa05d4fd6e326484ec1537dffb053d623231651c0fccecbe1133f0236c08",
+  "source": "the owner's final export, summarized off the PC and committed (2026-11-26); the export itself stays out of git",
+  "starts": "2026-11-20T01:15:00.0000000Z"
+ },
+ "198005475": {
+  "cash_line": 86.649994,
+  "draft_group_id": 156793,
+  "entries": 70588,
+  "final": true,
+  "first": 123.01,
+  "kind": "showdown",
+  "name": "NFL Showdown $1.2M Monday Night Showdown [$300K to 1st] (CIN @ WAS)",
+  "sha256": "6a9df3306b00068bd3b6026b011573972bc3b1fc1ce3118ab9405a86c51d560b",
+  "source": "the owner's final export, summarized off the PC and committed (2026-11-26); the export itself stays out of git",
+  "starts": "2026-11-24T01:15:00.0000000Z"
+ },
+ "198150093": {
+  "cash_line": 86.57,
+  "draft_group_id": 157072,
+  "entries": 47058,
+  "final": true,
+  "first": 119.15,
+  "kind": "showdown",
+  "name": "NFL Showdown $1M Wednesday Night Showdown [$250K to 1st] (GB @ LAR)",
+  "sha256": "64430b564a767b53ce2cd7f92c54a0f5ab978e667ab35c44a446688a5ca9e8b6",
+  "source": "the owner's final export, summarized off the PC and committed (2026-11-26); the export itself stays out of git",
+  "starts": "2026-11-26T01:00:00.0000000Z"
  }
 }
