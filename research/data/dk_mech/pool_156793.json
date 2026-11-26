@@ -1,0 +1,466 @@
+{
+"Andrei Iosivas": {
+"cpt_salary": 4500,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "WR",
+"salary": 3000,
+"team": "CIN"
+},
+"Antonio Williams": {
+"cpt_salary": 10200,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "WR",
+"salary": 6800,
+"team": "WAS"
+},
+"Athan Kaliakmanis": {
+"cpt_salary": 9000,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "QB",
+"salary": 6000,
+"team": "WAS"
+},
+"Austin Ekeler": {
+"cpt_salary": 7800,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "RB",
+"salary": 5200,
+"team": "WAS"
+},
+"Ben Sinnott": {
+"cpt_salary": 3000,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "TE",
+"salary": 2000,
+"team": "WAS"
+},
+"Bengals": {
+"cpt_salary": 6300,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "DST",
+"salary": 4200,
+"team": "CIN"
+},
+"Caden Prieskorn": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "TE",
+"salary": 200,
+"team": "CIN"
+},
+"Cam Grandy": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "TE",
+"salary": 200,
+"team": "CIN"
+},
+"Chase Brown": {
+"cpt_salary": 14100,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "RB",
+"salary": 9400,
+"team": "CIN"
+},
+"Chig Okonkwo": {
+"cpt_salary": 6000,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "TE",
+"salary": 4000,
+"team": "WAS"
+},
+"Colbie Young": {
+"cpt_salary": 3600,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "WR",
+"salary": 2400,
+"team": "CIN"
+},
+"Colson Yankoff": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "TE",
+"salary": 200,
+"team": "WAS"
+},
+"Commanders": {
+"cpt_salary": 5100,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "DST",
+"salary": 3400,
+"team": "WAS"
+},
+"Craig Reynolds": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "RB",
+"salary": 200,
+"team": "WAS"
+},
+"Devin Neal": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "RB",
+"salary": 200,
+"team": "WAS"
+},
+"Dohnte Meyers": {
+"cpt_salary": 5400,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "WR",
+"salary": 3600,
+"team": "CIN"
+},
+"Drew Sample": {
+"cpt_salary": 2400,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "TE",
+"salary": 1600,
+"team": "CIN"
+},
+"Drew Stevens": {
+"cpt_salary": 7500,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "K",
+"salary": 5000,
+"team": "WAS"
+},
+"Dyami Brown": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "WR",
+"salary": 200,
+"team": "WAS"
+},
+"Erick All Jr.": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "TE",
+"salary": 200,
+"team": "CIN"
+},
+"Evan McPherson": {
+"cpt_salary": 8100,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "K",
+"salary": 5400,
+"team": "CIN"
+},
+"Ja'Marr Chase": {
+"cpt_salary": 17400,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "WR",
+"salary": 11600,
+"team": "CIN"
+},
+"Jack Endries": {
+"cpt_salary": 900,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "TE",
+"salary": 600,
+"team": "CIN"
+},
+"Jack Westover": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "TE",
+"salary": 200,
+"team": "WAS"
+},
+"Jacory Croskey-Merritt": {
+"cpt_salary": 8700,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "RB",
+"salary": 5800,
+"team": "WAS"
+},
+"Jaden Bradley": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "WR",
+"salary": 200,
+"team": "WAS"
+},
+"Jayden Daniels": {
+"cpt_salary": 15000,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "QB",
+"salary": 10000,
+"team": "WAS"
+},
+"Jaylin Lane": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "WR",
+"salary": 200,
+"team": "WAS"
+},
+"Jeremy McNichols": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "RB",
+"salary": 200,
+"team": "WAS"
+},
+"Joe Burrow": {
+"cpt_salary": 16500,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "QB",
+"salary": 11000,
+"team": "CIN"
+},
+"Joe Flacco": {
+"cpt_salary": 9000,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "QB",
+"salary": 6000,
+"team": "CIN"
+},
+"John Bates": {
+"cpt_salary": 1800,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "TE",
+"salary": 1200,
+"team": "WAS"
+},
+"Jordan Moore": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "WR",
+"salary": 200,
+"team": "CIN"
+},
+"Ke'Shawn Williams": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "WR",
+"salary": 200,
+"team": "CIN"
+},
+"Kendall Milton": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "RB",
+"salary": 200,
+"team": "CIN"
+},
+"Kentrel Bullock": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "RB",
+"salary": 200,
+"team": "CIN"
+},
+"Luke McCaffrey": {
+"cpt_salary": 1200,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "WR",
+"salary": 800,
+"team": "WAS"
+},
+"Malik Heath": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "WR",
+"salary": 200,
+"team": "WAS"
+},
+"Marcus Mariota": {
+"cpt_salary": 9000,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "QB",
+"salary": 6000,
+"team": "WAS"
+},
+"Mike Gesicki": {
+"cpt_salary": 6900,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "TE",
+"salary": 4600,
+"team": "CIN"
+},
+"Mitch Tinsley": {
+"cpt_salary": 1500,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "WR",
+"salary": 1000,
+"team": "CIN"
+},
+"Nick DeGennaro": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "WR",
+"salary": 200,
+"team": "WAS"
+},
+"Noah Thomas": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "WR",
+"salary": 200,
+"team": "CIN"
+},
+"Quentin Moore": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "TE",
+"salary": 200,
+"team": "WAS"
+},
+"Rachaad White": {
+"cpt_salary": 9300,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "RB",
+"salary": 6200,
+"team": "WAS"
+},
+"Robert Henry Jr.": {
+"cpt_salary": 600,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "RB",
+"salary": 400,
+"team": "WAS"
+},
+"Sam Hartman": {
+"cpt_salary": 9000,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "QB",
+"salary": 6000,
+"team": "WAS"
+},
+"Samaje Perine": {
+"cpt_salary": 6600,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "RB",
+"salary": 4400,
+"team": "CIN"
+},
+"Sean Clifford": {
+"cpt_salary": 9000,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "QB",
+"salary": 6000,
+"team": "CIN"
+},
+"Stefon Diggs": {
+"cpt_salary": 12600,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "WR",
+"salary": 8400,
+"team": "WAS"
+},
+"Tahj Brooks": {
+"cpt_salary": 2100,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "RB",
+"salary": 1400,
+"team": "CIN"
+},
+"Tanner Hudson": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "TE",
+"salary": 200,
+"team": "CIN"
+},
+"Tee Higgins": {
+"cpt_salary": 15900,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "WR",
+"salary": 10600,
+"team": "CIN"
+},
+"Terry McLaurin": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "WR",
+"salary": 200,
+"team": "WAS"
+},
+"Treylon Burks": {
+"cpt_salary": 7200,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "WR",
+"salary": 4800,
+"team": "WAS"
+},
+"Tyler Ott": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "TE",
+"salary": 200,
+"team": "WAS"
+},
+"Van Jefferson": {
+"cpt_salary": 4200,
+"game": "CIN @ WAS",
+"opp": "CIN",
+"pos": "WR",
+"salary": 2800,
+"team": "WAS"
+},
+"William Wagner": {
+"cpt_salary": 300,
+"game": "CIN @ WAS",
+"opp": "WAS",
+"pos": "TE",
+"salary": 200,
+"team": "CIN"
+}
+}

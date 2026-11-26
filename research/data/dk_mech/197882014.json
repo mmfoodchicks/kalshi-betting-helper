@@ -1,0 +1,1954 @@
+{
+ "contest_id": 197882014,
+ "label": "week 11 $2.5M Millionaire",
+ "kind": "classic",
+ "draft_group_id": 156561,
+ "role": "validation",
+ "note": null,
+ "rows": 147058,
+ "entries_with_lineup": 147015,
+ "projection_source": "the board served for draft group 156561",
+ "real": {
+  "duplication": {
+   "entries": 147015,
+   "distinct_lineups": 133222,
+   "max_copies": 234,
+   "distinct_pair_collision": 1.0041611851540488e-05,
+   "entries_in_duplicated_lineups_pct": 13.675,
+   "copies_histogram": {
+    "1": 126911,
+    "2": 4182,
+    "3": 1003,
+    "4": 409,
+    "5": 221,
+    "6": 132,
+    "7": 70,
+    "8": 68,
+    "9": 36,
+    "10": 37,
+    "11": 17,
+    "12": 21,
+    "13": 19,
+    "14": 15,
+    "15": 8,
+    "16": 6,
+    "17": 4,
+    "18": 5,
+    "19": 5,
+    "20": 6,
+    "21": 5,
+    "22": 6,
+    "23": 3,
+    "24": 4,
+    "25": 3,
+    "27": 1,
+    "28": 5,
+    "29": 1,
+    "31": 1,
+    "32": 1,
+    "33": 2,
+    "34": 1,
+    "36": 1,
+    "37": 1,
+    "41": 1,
+    "43": 1,
+    "46": 1,
+    "55": 1,
+    "58": 1,
+    "63": 1,
+    "65": 1,
+    "83": 1,
+    "91": 1,
+    "147": 1,
+    "150": 1,
+    "234": 1
+   },
+   "entries_by_copies_pct": {
+    "1": 86.325,
+    "2-5": 9.6,
+    "6-20": 2.724,
+    "21-100": 0.989,
+    "101+": 0.361
+   },
+   "effective_lineups_1_over_C": 99586
+  },
+  "near": {
+   "pair_share_overlap": {
+    "9_of_9": 1.0041611851540488e-05,
+    "8_of_9": 1.6491632778297156e-05,
+    "7_of_9": 0.0003089442781093119
+   },
+   "pairs": {
+    "exact": 108516.0,
+    "one_swap": 178219.0,
+    "two_swaps": 3338647.0
+   },
+   "near_to_exact_pair_ratio": {
+    "one_swap": 1.6423292417707989,
+    "two_swaps": 30.766403111061962
+   },
+   "entries_with_another_entry_pct": {
+    "exact": 13.675,
+    "within_one_swap": 31.455,
+    "within_two_swaps": 75.559
+   },
+   "entries_with_another_USERS_entry_pct": {
+    "exact": 12.321,
+    "within_one_swap": 28.484,
+    "within_two_swaps": 73.727
+   }
+  },
+  "mean_overlap": 1.6464121049308222,
+  "structure": {
+   "resolved_entries": 147015,
+   "unresolved_entries": 0,
+   "salary_mean": 49874.4,
+   "salary_median": 49900.0,
+   "salary_at_cap_pct": 48.45,
+   "salary_left_100_or_less_pct": 72.29,
+   "salary_49500_plus_pct": 96.31,
+   "salary_48000_or_less_pct": 0.18,
+   "salary_quantiles": {
+    "0.01": 49100.0,
+    "0.05": 49500.0,
+    "0.25": 49800.0,
+    "0.5": 49900.0,
+    "0.75": 50000.0
+   },
+   "stack_pct": [
+    12.74,
+    51.12,
+    33.45,
+    2.69
+   ],
+   "bring_back_pct": 43.98,
+   "qb_with_own_rb_pct": 24.33,
+   "dst_vs_own_qb_pct": 0.306,
+   "max_from_one_team_pct": {
+    "1": 1.5,
+    "2": 43.04,
+    "3": 46.18,
+    "4": 8.18,
+    "5": 0.98
+   },
+   "templates_pct": {
+    "QB+0": 9.24,
+    "QB+0 +bring-back": 3.5,
+    "QB+1": 28.74,
+    "QB+1 +bring-back": 22.38,
+    "QB+2": 16.56,
+    "QB+2 +bring-back": 16.89,
+    "QB+3": 1.48,
+    "QB+3 +bring-back": 1.2
+   },
+   "flex_position_pct": {
+    "RB": 56.39,
+    "WR": 29.01,
+    "TE": 14.6
+   }
+  },
+  "score_quantiles": {
+   "0.001": 71.1,
+   "0.01": 85.44,
+   "0.1": 107.16,
+   "0.25": 120.92,
+   "0.5": 137.24,
+   "0.75": 154.32,
+   "0.9": 168.94,
+   "0.99": 191.8,
+   "0.999": 203.6
+  },
+  "score_mean": 137.7,
+  "score_sd": 23.74,
+  "points_rebuild_max_abs_diff": 0.0,
+  "users": {
+   "entrants": 49908,
+   "entries_per_entrant_mean": 2.95,
+   "duplicate_pairs": 108516.0,
+   "same_user_duplicate_pairs": 25388.0,
+   "same_user_share_of_duplicate_pairs_pct": 23.3956,
+   "collision_cross_user_only": 7.692313667983133e-06,
+   "entries_whose_lineup_another_entrant_holds_pct": 12.321,
+   "entries_repeating_the_entrants_own_lineup_pct": 1.675,
+   "field_mean_overlap": 1.6464121049308222,
+   "classes": {
+    "1": {
+     "entrants": 30791,
+     "entries": 30791,
+     "entries_pct": 20.94,
+     "share_of_entries_in_duplicated_lineups_pct": 17.15,
+     "their_entries_in_a_lineup_another_entrant_holds_pct": 11.2,
+     "their_entries_mean_copies": 2.49,
+     "their_entries_median_copies": 1.0,
+     "distinct_lineups_per_entry_mean": null,
+     "within_entrant_mean_overlap": null
+    },
+    "2-19": {
+     "entrants": 18326,
+     "entries": 67816,
+     "entries_pct": 46.13,
+     "share_of_entries_in_duplicated_lineups_pct": 50.86,
+     "their_entries_in_a_lineup_another_entrant_holds_pct": 13.41,
+     "their_entries_mean_copies": 2.42,
+     "their_entries_median_copies": 1.0,
+     "distinct_lineups_per_entry_mean": 0.9875,
+     "within_entrant_mean_overlap": 2.877
+    },
+    "20-149": {
+     "entrants": 633,
+     "entries": 24708,
+     "entries_pct": 16.81,
+     "share_of_entries_in_duplicated_lineups_pct": 18.75,
+     "their_entries_in_a_lineup_another_entrant_holds_pct": 13.51,
+     "their_entries_mean_copies": 1.81,
+     "their_entries_median_copies": 1.0,
+     "distinct_lineups_per_entry_mean": 0.9858,
+     "within_entrant_mean_overlap": 2.75
+    },
+    "150+": {
+     "entrants": 158,
+     "entries": 23700,
+     "entries_pct": 16.12,
+     "share_of_entries_in_duplicated_lineups_pct": 13.24,
+     "their_entries_in_a_lineup_another_entrant_holds_pct": 9.41,
+     "their_entries_mean_copies": 3.32,
+     "their_entries_median_copies": 1.0,
+     "distinct_lineups_per_entry_mean": 0.9809,
+     "within_entrant_mean_overlap": 2.349
+    }
+   }
+  },
+  "pairs": {
+   "players": 30,
+   "pairs_with_independent_share_0_5pct_plus": 435,
+   "mean_abs_log_lift_weighted": 0.4149,
+   "top_by_joint": [
+    {
+     "a": "Emmett Johnson",
+     "b": "Jonah Coleman",
+     "joint_pct": 26.27,
+     "independent_pct": 24.4,
+     "lift": 1.077
+    },
+    {
+     "a": "Emmett Johnson",
+     "b": "CeeDee Lamb",
+     "joint_pct": 26.21,
+     "independent_pct": 24.55,
+     "lift": 1.068
+    },
+    {
+     "a": "Emmett Johnson",
+     "b": "Tony Pollard",
+     "joint_pct": 24.86,
+     "independent_pct": 25.06,
+     "lift": 0.992
+    },
+    {
+     "a": "Emmett Johnson",
+     "b": "George Pickens",
+     "joint_pct": 18.8,
+     "independent_pct": 18.32,
+     "lift": 1.026
+    },
+    {
+     "a": "Emmett Johnson",
+     "b": "Carnell Tate",
+     "joint_pct": 18.19,
+     "independent_pct": 16.3,
+     "lift": 1.116
+    },
+    {
+     "a": "Emmett Johnson",
+     "b": "Dak Prescott",
+     "joint_pct": 16.31,
+     "independent_pct": 15.36,
+     "lift": 1.062
+    },
+    {
+     "a": "Emmett Johnson",
+     "b": "Mark Andrews",
+     "joint_pct": 15.95,
+     "independent_pct": 14.75,
+     "lift": 1.081
+    },
+    {
+     "a": "Emmett Johnson",
+     "b": "Elic Ayomanor",
+     "joint_pct": 15.37,
+     "independent_pct": 14.11,
+     "lift": 1.089
+    },
+    {
+     "a": "Tony Pollard",
+     "b": "CeeDee Lamb",
+     "joint_pct": 14.87,
+     "independent_pct": 12.3,
+     "lift": 1.208
+    },
+    {
+     "a": "CeeDee Lamb",
+     "b": "Dak Prescott",
+     "joint_pct": 14.36,
+     "independent_pct": 7.54,
+     "lift": 1.904
+    },
+    {
+     "a": "CeeDee Lamb",
+     "b": "Jonah Coleman",
+     "joint_pct": 12.89,
+     "independent_pct": 11.98,
+     "lift": 1.076
+    },
+    {
+     "a": "Emmett Johnson",
+     "b": "Jordyn Tyson",
+     "joint_pct": 12.48,
+     "independent_pct": 11.67,
+     "lift": 1.069
+    }
+   ],
+   "top_lift": [
+    {
+     "a": "Luther Burden III",
+     "b": "Caleb Williams",
+     "joint_pct": 5.14,
+     "independent_pct": 1.22,
+     "lift": 4.221
+    },
+    {
+     "a": "Rome Odunze",
+     "b": "Caleb Williams",
+     "joint_pct": 3.56,
+     "independent_pct": 1.0,
+     "lift": 3.562
+    },
+    {
+     "a": "Colston Loveland",
+     "b": "Caleb Williams",
+     "joint_pct": 4.89,
+     "independent_pct": 1.42,
+     "lift": 3.438
+    },
+    {
+     "a": "Carnell Tate",
+     "b": "Cam Ward",
+     "joint_pct": 8.59,
+     "independent_pct": 3.34,
+     "lift": 2.574
+    },
+    {
+     "a": "Parker Washington",
+     "b": "Isaiah Likely",
+     "joint_pct": 2.99,
+     "independent_pct": 1.48,
+     "lift": 2.013
+    },
+    {
+     "a": "Jordyn Tyson",
+     "b": "Caleb Williams",
+     "joint_pct": 3.03,
+     "independent_pct": 1.51,
+     "lift": 2.008
+    },
+    {
+     "a": "CeeDee Lamb",
+     "b": "Dak Prescott",
+     "joint_pct": 14.36,
+     "independent_pct": 7.54,
+     "lift": 1.904
+    },
+    {
+     "a": "George Pickens",
+     "b": "Dak Prescott",
+     "joint_pct": 10.68,
+     "independent_pct": 5.63,
+     "lift": 1.898
+    },
+    {
+     "a": "Amon-Ra St. Brown",
+     "b": "Emeka Egbuka",
+     "joint_pct": 2.88,
+     "independent_pct": 1.56,
+     "lift": 1.85
+    },
+    {
+     "a": "Elic Ayomanor",
+     "b": "Cam Ward",
+     "joint_pct": 5.05,
+     "independent_pct": 2.89,
+     "lift": 1.749
+    },
+    {
+     "a": "Jordyn Tyson",
+     "b": "Colston Loveland",
+     "joint_pct": 4.2,
+     "independent_pct": 2.57,
+     "lift": 1.633
+    },
+    {
+     "a": "Dak Prescott",
+     "b": "Elic Ayomanor",
+     "joint_pct": 6.78,
+     "independent_pct": 4.34,
+     "lift": 1.563
+    }
+   ],
+   "lowest_lift": [
+    {
+     "a": "Dak Prescott",
+     "b": "Cam Ward",
+     "joint_pct": 0.0,
+     "independent_pct": 3.14,
+     "lift": 0.0
+    },
+    {
+     "a": "Dak Prescott",
+     "b": "Patrick Mahomes",
+     "joint_pct": 0.0,
+     "independent_pct": 2.23,
+     "lift": 0.0
+    },
+    {
+     "a": "Dak Prescott",
+     "b": "Caleb Williams",
+     "joint_pct": 0.0,
+     "independent_pct": 1.99,
+     "lift": 0.0
+    },
+    {
+     "a": "Steelers",
+     "b": "Chiefs",
+     "joint_pct": 0.0,
+     "independent_pct": 2.1,
+     "lift": 0.0
+    },
+    {
+     "a": "Steelers",
+     "b": "Jets",
+     "joint_pct": 0.0,
+     "independent_pct": 1.55,
+     "lift": 0.0
+    },
+    {
+     "a": "Steelers",
+     "b": "Broncos",
+     "joint_pct": 0.0,
+     "independent_pct": 1.46,
+     "lift": 0.0
+    },
+    {
+     "a": "Cam Ward",
+     "b": "Patrick Mahomes",
+     "joint_pct": 0.0,
+     "independent_pct": 1.48,
+     "lift": 0.0
+    },
+    {
+     "a": "Cam Ward",
+     "b": "Caleb Williams",
+     "joint_pct": 0.0,
+     "independent_pct": 1.32,
+     "lift": 0.0
+    },
+    {
+     "a": "Chiefs",
+     "b": "Jets",
+     "joint_pct": 0.0,
+     "independent_pct": 1.45,
+     "lift": 0.0
+    },
+    {
+     "a": "Chiefs",
+     "b": "Broncos",
+     "joint_pct": 0.0,
+     "independent_pct": 1.37,
+     "lift": 0.0
+    },
+    {
+     "a": "Jets",
+     "b": "Broncos",
+     "joint_pct": 0.0,
+     "independent_pct": 1.01,
+     "lift": 0.0
+    },
+    {
+     "a": "Patrick Mahomes",
+     "b": "Caleb Williams",
+     "joint_pct": 0.0,
+     "independent_pct": 0.94,
+     "lift": 0.0
+    }
+   ]
+  },
+  "finish_by_copies": {
+   "1": {
+    "entries": 126911,
+    "mean_points": 135.1,
+    "top_1pct_share_pct": 0.6,
+    "top_10pct_share_pct": 7.43,
+    "top_22pct_share_pct": 17.91
+   },
+   "2-5": {
+    "entries": 14114,
+    "mean_points": 150.5,
+    "top_1pct_share_pct": 2.13,
+    "top_10pct_share_pct": 21.01,
+    "top_22pct_share_pct": 40.36
+   },
+   "6-20": {
+    "entries": 4005,
+    "mean_points": 160.79,
+    "top_1pct_share_pct": 5.87,
+    "top_10pct_share_pct": 35.28,
+    "top_22pct_share_pct": 62.37
+   },
+   "21-100": {
+    "entries": 1454,
+    "mean_points": 169.0,
+    "top_1pct_share_pct": 11.62,
+    "top_10pct_share_pct": 45.74,
+    "top_22pct_share_pct": 81.91
+   },
+   "101+": {
+    "entries": 531,
+    "mean_points": 158.11,
+    "top_1pct_share_pct": 0.0,
+    "top_10pct_share_pct": 44.07,
+    "top_22pct_share_pct": 44.07
+   }
+  },
+  "optimizer_proximity": {
+   "optimum": {
+    "lineup": [
+     "Carnell Tate",
+     "Chiefs",
+     "Elic Ayomanor",
+     "Emmett Johnson",
+     "Javonte Williams",
+     "Patrick Mahomes",
+     "Rashee Rice",
+     "Sam LaPorta",
+     "Tony Pollard"
+    ],
+    "proj": 144.5,
+    "salary": 50000,
+    "real_copies": 0,
+    "rules": "DraftKings' only (positions, the cap): no house rule"
+   },
+   "entries_with_every_player_projected_pct": 99.48,
+   "gap_pts_quantiles": {
+    "0.01": 8.0,
+    "0.1": 12.7,
+    "0.25": 15.6,
+    "0.5": 19.3,
+    "0.75": 23.5,
+    "0.9": 27.6
+   },
+   "entries_within_pts_pct": {
+    "1": 0.0,
+    "2": 0.025,
+    "3": 0.032,
+    "5": 0.11,
+    "8": 1.055,
+    "12": 7.799,
+    "20": 54.794
+   },
+   "players_shared_with_optimum_pct": {
+    "0": 7.924,
+    "1": 26.568,
+    "2": 35.747,
+    "3": 21.701,
+    "4": 6.733,
+    "5": 1.194,
+    "6": 0.127,
+    "7": 0.006,
+    "8": 0.0,
+    "9": 0.0
+   },
+   "by_copies": {
+    "1": {
+     "entries": 126911,
+     "median_gap_pts": 20.1,
+     "within_5_pts_pct": 0.05,
+     "within_10_pts_pct": 1.79,
+     "mean_players_shared_with_optimum": 1.86,
+     "salary_at_cap_pct": 46.79,
+     "salary_mean": 49866
+    },
+    "2-5": {
+     "entries": 14114,
+     "median_gap_pts": 15.2,
+     "within_5_pts_pct": 0.27,
+     "within_10_pts_pct": 7.26,
+     "mean_players_shared_with_optimum": 2.55,
+     "salary_at_cap_pct": 56.8,
+     "salary_mean": 49922
+    },
+    "6-20": {
+     "entries": 4005,
+     "median_gap_pts": 13.3,
+     "within_5_pts_pct": 0.65,
+     "within_10_pts_pct": 14.73,
+     "mean_players_shared_with_optimum": 2.89,
+     "salary_at_cap_pct": 61.12,
+     "salary_mean": 49941
+    },
+    "21-100": {
+     "entries": 1454,
+     "median_gap_pts": 11.3,
+     "within_5_pts_pct": 2.34,
+     "within_10_pts_pct": 32.12,
+     "mean_players_shared_with_optimum": 3.24,
+     "salary_at_cap_pct": 58.12,
+     "salary_mean": 49940
+    },
+    "101+": {
+     "entries": 531,
+     "median_gap_pts": 16.8,
+     "within_5_pts_pct": 0.0,
+     "within_10_pts_pct": 44.07,
+     "mean_players_shared_with_optimum": 2.88,
+     "salary_at_cap_pct": 100.0,
+     "salary_mean": 50000
+    }
+   },
+   "by_user_class": {
+    "1": {
+     "entries": 30791,
+     "median_gap_pts": 19.9,
+     "within_10_pts_pct": 2.91,
+     "salary_at_cap_pct": 49.06,
+     "mean_players_shared_with_optimum": 1.84
+    },
+    "2-19": {
+     "entries": 67816,
+     "median_gap_pts": 19.6,
+     "within_10_pts_pct": 3.24,
+     "salary_at_cap_pct": 49.02,
+     "mean_players_shared_with_optimum": 1.94
+    },
+    "20-149": {
+     "entries": 24708,
+     "median_gap_pts": 18.8,
+     "within_10_pts_pct": 3.19,
+     "salary_at_cap_pct": 47.77,
+     "mean_players_shared_with_optimum": 2.06
+    },
+    "150+": {
+     "entries": 23700,
+     "median_gap_pts": 18.7,
+     "within_10_pts_pct": 2.97,
+     "salary_at_cap_pct": 46.7,
+     "mean_players_shared_with_optimum": 2.12
+    }
+   },
+   "board_listed_lineups_in_real_field": {
+    "197882014:top_ev": {
+     "lineups": 40,
+     "found_in_real_field": 10,
+     "real_copies_total": 20
+    },
+    "197882014:top_money": {
+     "lineups": 40,
+     "found_in_real_field": 6,
+     "real_copies_total": 16
+    },
+    "197882014:top_top1": {
+     "lineups": 40,
+     "found_in_real_field": 9,
+     "real_copies_total": 23
+    },
+    "197882014:top_top01": {
+     "lineups": 40,
+     "found_in_real_field": 11,
+     "real_copies_total": 21
+    },
+    "197882014:top_win": {
+     "lineups": 40,
+     "found_in_real_field": 8,
+     "real_copies_total": 18
+    },
+    "197882015:top_ev": {
+     "lineups": 40,
+     "found_in_real_field": 11,
+     "real_copies_total": 21
+    },
+    "197882015:top_money": {
+     "lineups": 40,
+     "found_in_real_field": 6,
+     "real_copies_total": 16
+    },
+    "197882015:top_top1": {
+     "lineups": 40,
+     "found_in_real_field": 9,
+     "real_copies_total": 23
+    },
+    "197882015:top_top01": {
+     "lineups": 40,
+     "found_in_real_field": 11,
+     "real_copies_total": 21
+    },
+    "197882015:top_win": {
+     "lineups": 40,
+     "found_in_real_field": 11,
+     "real_copies_total": 21
+    }
+   }
+  },
+  "most_copied": [
+   {
+    "lineup": [
+     "Carnell Tate",
+     "CeeDee Lamb",
+     "Chargers",
+     "Dak Prescott",
+     "Elic Ayomanor",
+     "Emmett Johnson",
+     "Jonah Coleman",
+     "Mark Andrews",
+     "Tony Pollard"
+    ],
+    "copies": 234,
+    "entrants": 201,
+    "proj": 136.5,
+    "proj_gap": 8.0,
+    "players_shared_with_optimum": 4,
+    "salary": 50000,
+    "points": 175.2
+   },
+   {
+    "lineup": [
+     "Buccaneers",
+     "Cam Ward",
+     "Carnell Tate",
+     "CeeDee Lamb",
+     "D'Andre Swift",
+     "Dawson Knox",
+     "Emmett Johnson",
+     "George Pickens",
+     "Omarion Hampton"
+    ],
+    "copies": 150,
+    "entrants": 1,
+    "proj": 127.7,
+    "proj_gap": 16.8,
+    "players_shared_with_optimum": 2,
+    "salary": 50000,
+    "points": 152.62
+   },
+   {
+    "lineup": [
+     "CeeDee Lamb",
+     "Dak Prescott",
+     "Elic Ayomanor",
+     "Emmett Johnson",
+     "James Cook III",
+     "Jaylen Warren",
+     "Jets",
+     "Jordyn Tyson",
+     "Nate Adkins"
+    ],
+    "copies": 147,
+    "entrants": 1,
+    "proj": 125.4,
+    "proj_gap": 19.1,
+    "players_shared_with_optimum": 2,
+    "salary": 50000,
+    "points": 136.5
+   },
+   {
+    "lineup": [
+     "Caleb Douglas",
+     "CeeDee Lamb",
+     "Chiefs",
+     "Dak Prescott",
+     "Elic Ayomanor",
+     "Emmett Johnson",
+     "Jonah Coleman",
+     "Mark Andrews",
+     "Tony Pollard"
+    ],
+    "copies": 91,
+    "entrants": 91,
+    "proj": 136.2,
+    "proj_gap": 8.3,
+    "players_shared_with_optimum": 4,
+    "salary": 49900,
+    "points": 172.4
+   },
+   {
+    "lineup": [
+     "CeeDee Lamb",
+     "Dak Prescott",
+     "Elic Ayomanor",
+     "Emmett Johnson",
+     "Jonah Coleman",
+     "Jordyn Tyson",
+     "Mark Andrews",
+     "Steelers",
+     "Tony Pollard"
+    ],
+    "copies": 83,
+    "entrants": 81,
+    "proj": 134.2,
+    "proj_gap": 10.3,
+    "players_shared_with_optimum": 3,
+    "salary": 50000,
+    "points": 168.4
+   },
+   {
+    "lineup": [
+     "Cam Ward",
+     "Carnell Tate",
+     "CeeDee Lamb",
+     "Chiefs",
+     "Elic Ayomanor",
+     "Emmett Johnson",
+     "Jonah Coleman",
+     "Mark Andrews",
+     "Tony Pollard"
+    ],
+    "copies": 65,
+    "entrants": 65,
+    "proj": 137.3,
+    "proj_gap": 7.2,
+    "players_shared_with_optimum": 5,
+    "salary": 49800,
+    "points": 165.52
+   },
+   {
+    "lineup": [
+     "CeeDee Lamb",
+     "Chargers",
+     "Dak Prescott",
+     "Elic Ayomanor",
+     "Emmett Johnson",
+     "George Pickens",
+     "Jonah Coleman",
+     "Mark Andrews",
+     "Omarion Hampton"
+    ],
+    "copies": 63,
+    "entrants": 61,
+    "proj": 129.9,
+    "proj_gap": 14.6,
+    "players_shared_with_optimum": 2,
+    "salary": 50000,
+    "points": 184.5
+   },
+   {
+    "lineup": [
+     "Carnell Tate",
+     "CeeDee Lamb",
+     "Dak Prescott",
+     "Elic Ayomanor",
+     "Emmett Johnson",
+     "George Pickens",
+     "Jets",
+     "Jonah Coleman",
+     "Mark Andrews"
+    ],
+    "copies": 58,
+    "entrants": 58,
+    "proj": 133.2,
+    "proj_gap": 11.3,
+    "players_shared_with_optimum": 3,
+    "salary": 49900,
+    "points": 193.0
+   },
+   {
+    "lineup": [
+     "Cam Ward",
+     "Carnell Tate",
+     "CeeDee Lamb",
+     "Colston Loveland",
+     "Elic Ayomanor",
+     "Emmett Johnson",
+     "Jets",
+     "Jonah Coleman",
+     "Tony Pollard"
+    ],
+    "copies": 55,
+    "entrants": 54,
+    "proj": 135.4,
+    "proj_gap": 9.1,
+    "players_shared_with_optimum": 4,
+    "salary": 50000,
+    "points": 173.02
+   },
+   {
+    "lineup": [
+     "Caleb Douglas",
+     "CeeDee Lamb",
+     "Chiefs",
+     "Colston Loveland",
+     "Dak Prescott",
+     "Emmett Johnson",
+     "Jonah Coleman",
+     "Jordyn Tyson",
+     "Mark Andrews"
+    ],
+    "copies": 46,
+    "entrants": 46,
+    "proj": 130.7,
+    "proj_gap": 13.8,
+    "players_shared_with_optimum": 2,
+    "salary": 50000,
+    "points": 166.6
+   },
+   {
+    "lineup": [
+     "Cam Ward",
+     "Carnell Tate",
+     "CeeDee Lamb",
+     "Emmett Johnson",
+     "Jets",
+     "Jonah Coleman",
+     "Jordyn Tyson",
+     "Mark Andrews",
+     "Tony Pollard"
+    ],
+    "copies": 43,
+    "entrants": 43,
+    "proj": 132.5,
+    "proj_gap": 12.0,
+    "players_shared_with_optimum": 3,
+    "salary": 49900,
+    "points": 160.82
+   },
+   {
+    "lineup": [
+     "Buccaneers",
+     "Carnell Tate",
+     "CeeDee Lamb",
+     "Dak Prescott",
+     "Elic Ayomanor",
+     "Emmett Johnson",
+     "George Pickens",
+     "Mark Andrews",
+     "Tony Pollard"
+    ],
+    "copies": 41,
+    "entrants": 35,
+    "proj": 133.8,
+    "proj_gap": 10.7,
+    "players_shared_with_optimum": 4,
+    "salary": 50000,
+    "points": 163.1
+   },
+   {
+    "lineup": [
+     "Cam Ward",
+     "Carnell Tate",
+     "CeeDee Lamb",
+     "Elic Ayomanor",
+     "Emmett Johnson",
+     "Javonte Williams",
+     "Jonah Coleman",
+     "Mark Andrews",
+     "Steelers"
+    ],
+    "copies": 37,
+    "entrants": 37,
+    "proj": 136.0,
+    "proj_gap": 8.5,
+    "players_shared_with_optimum": 4,
+    "salary": 49900,
+    "points": 174.62
+   },
+   {
+    "lineup": [
+     "Cam Ward",
+     "Carnell Tate",
+     "CeeDee Lamb",
+     "Emmett Johnson",
+     "Jonah Coleman",
+     "Mark Andrews",
+     "Rome Odunze",
+     "Steelers",
+     "Tony Pollard"
+    ],
+    "copies": 36,
+    "entrants": 35,
+    "proj": 134.5,
+    "proj_gap": 10.0,
+    "players_shared_with_optimum": 3,
+    "salary": 50000,
+    "points": 167.32
+   },
+   {
+    "lineup": [
+     "Cam Skattebo",
+     "CeeDee Lamb",
+     "Chiefs",
+     "Chimere Dike",
+     "Elic Ayomanor",
+     "Emmett Johnson",
+     "Javonte Williams",
+     "Patrick Mahomes",
+     "Sam LaPorta"
+    ],
+    "copies": 34,
+    "entrants": 33,
+    "proj": 143.1,
+    "proj_gap": 1.4,
+    "players_shared_with_optimum": 6,
+    "salary": 50000,
+    "points": 154.56
+   },
+   {
+    "lineup": [
+     "CeeDee Lamb",
+     "Dak Prescott",
+     "Dawson Knox",
+     "Elic Ayomanor",
+     "Emmett Johnson",
+     "George Pickens",
+     "Giants",
+     "Jonah Coleman",
+     "Tony Pollard"
+    ],
+    "copies": 33,
+    "entrants": 32,
+    "proj": 132.5,
+    "proj_gap": 12.0,
+    "players_shared_with_optimum": 3,
+    "salary": 49800,
+    "points": 196.9
+   },
+   {
+    "lineup": [
+     "Caleb Williams",
+     "Colston Loveland",
+     "Cowboys",
+     "Emmett Johnson",
+     "Javonte Williams",
+     "Jonah Coleman",
+     "Jordyn Tyson",
+     "Luther Burden III",
+     "Rome Odunze"
+    ],
+    "copies": 33,
+    "entrants": 33,
+    "proj": 131.6,
+    "proj_gap": 12.9,
+    "players_shared_with_optimum": 2,
+    "salary": 50000,
+    "points": 136.34
+   },
+   {
+    "lineup": [
+     "Broncos",
+     "Cam Ward",
+     "CeeDee Lamb",
+     "Dawson Knox",
+     "Elic Ayomanor",
+     "Emmett Johnson",
+     "George Pickens",
+     "Jonah Coleman",
+     "Tony Pollard"
+    ],
+    "copies": 32,
+    "entrants": 32,
+    "proj": 131.5,
+    "proj_gap": 13.0,
+    "players_shared_with_optimum": 3,
+    "salary": 50000,
+    "points": 186.22
+   },
+   {
+    "lineup": [
+     "Chargers",
+     "Ja'Kobi Lane",
+     "James Cook III",
+     "Jameson Williams",
+     "Jared Goff",
+     "Malik Nabers",
+     "Omarion Hampton",
+     "Sam LaPorta",
+     "Tony Pollard"
+    ],
+    "copies": 31,
+    "entrants": 30,
+    "proj": 118.1,
+    "proj_gap": 26.4,
+    "players_shared_with_optimum": 2,
+    "salary": 49500,
+    "points": 109.86
+   },
+   {
+    "lineup": [
+     "CeeDee Lamb",
+     "Chargers",
+     "Dak Prescott",
+     "Elic Ayomanor",
+     "Emmett Johnson",
+     "George Pickens",
+     "Jonah Coleman",
+     "Jordyn Tyson",
+     "Mark Andrews"
+    ],
+    "copies": 29,
+    "entrants": 29,
+    "proj": 130.6,
+    "proj_gap": 13.9,
+    "players_shared_with_optimum": 2,
+    "salary": 50000,
+    "points": 176.2
+   }
+  ],
+  "ownership_top": [
+   {
+    "name": "Emmett Johnson",
+    "pos": "RB",
+    "team": "KC",
+    "salary": 6000,
+    "proj": 19.1,
+    "real_pct": 70.7,
+    "field_pct": 29.3,
+    "opt_pct": 29.52,
+    "casual_pct": 33.45
+   },
+   {
+    "name": "Tony Pollard",
+    "pos": "RB",
+    "team": "TEN",
+    "salary": 6500,
+    "proj": 18.0,
+    "real_pct": 35.44,
+    "field_pct": 17.6,
+    "opt_pct": 17.73,
+    "casual_pct": 17.87
+   },
+   {
+    "name": "CeeDee Lamb",
+    "pos": "WR",
+    "team": "DAL",
+    "salary": 8800,
+    "proj": 22.4,
+    "real_pct": 34.72,
+    "field_pct": 25.7,
+    "opt_pct": 24.0,
+    "casual_pct": 38.14
+   },
+   {
+    "name": "Jonah Coleman",
+    "pos": "RB",
+    "team": "DEN",
+    "salary": 6300,
+    "proj": 17.2,
+    "real_pct": 34.51,
+    "field_pct": 16.0,
+    "opt_pct": 16.39,
+    "casual_pct": 14.25
+   },
+   {
+    "name": "George Pickens",
+    "pos": "WR",
+    "team": "DAL",
+    "salary": 6800,
+    "proj": 15.5,
+    "real_pct": 25.91,
+    "field_pct": 14.9,
+    "opt_pct": 15.23,
+    "casual_pct": 10.03
+   },
+   {
+    "name": "Carnell Tate",
+    "pos": "WR",
+    "team": "TEN",
+    "salary": 5500,
+    "proj": 14.4,
+    "real_pct": 23.06,
+    "field_pct": 11.8,
+    "opt_pct": 11.46,
+    "casual_pct": 13.71
+   },
+   {
+    "name": "Dak Prescott",
+    "pos": "QB",
+    "team": "DAL",
+    "salary": 6700,
+    "proj": 21.3,
+    "real_pct": 21.72,
+    "field_pct": 13.0,
+    "opt_pct": 13.37,
+    "casual_pct": 10.66
+   },
+   {
+    "name": "Mark Andrews",
+    "pos": "TE",
+    "team": "BAL",
+    "salary": 3500,
+    "proj": 7.2,
+    "real_pct": 20.86,
+    "field_pct": 4.6,
+    "opt_pct": 4.85,
+    "casual_pct": 1.44
+   },
+   {
+    "name": "Elic Ayomanor",
+    "pos": "WR",
+    "team": "TEN",
+    "salary": 3700,
+    "proj": 9.8,
+    "real_pct": 19.96,
+    "field_pct": 8.4,
+    "opt_pct": 8.12,
+    "casual_pct": 9.94
+   },
+   {
+    "name": "James Cook III",
+    "pos": "RB",
+    "team": "BUF",
+    "salary": 7900,
+    "proj": 19.1,
+    "real_pct": 16.72,
+    "field_pct": 14.0,
+    "opt_pct": 14.45,
+    "casual_pct": 14.12
+   },
+   {
+    "name": "Jordyn Tyson",
+    "pos": "WR",
+    "team": "NO",
+    "salary": 5200,
+    "proj": 11.0,
+    "real_pct": 16.51,
+    "field_pct": 4.3,
+    "opt_pct": 4.21,
+    "casual_pct": 5.06
+   },
+   {
+    "name": "Omarion Hampton",
+    "pos": "RB",
+    "team": "LAC",
+    "salary": 5200,
+    "proj": 10.3,
+    "real_pct": 15.77,
+    "field_pct": 6.8,
+    "opt_pct": 7.46,
+    "casual_pct": 1.86
+   },
+   {
+    "name": "Colston Loveland",
+    "pos": "TE",
+    "team": "CHI",
+    "salary": 5100,
+    "proj": 11.3,
+    "real_pct": 15.56,
+    "field_pct": 9.0,
+    "opt_pct": 9.34,
+    "casual_pct": 4.41
+   },
+   {
+    "name": "Steelers",
+    "pos": "DST",
+    "team": "PIT",
+    "salary": 3300,
+    "proj": 8.2,
+    "real_pct": 14.98,
+    "field_pct": 5.6,
+    "opt_pct": 7.37,
+    "casual_pct": 2.58
+   },
+   {
+    "name": "Garrett Wilson",
+    "pos": "WR",
+    "team": "NYJ",
+    "salary": 6400,
+    "proj": 15.6,
+    "real_pct": 14.62,
+    "field_pct": 10.7,
+    "opt_pct": 10.24,
+    "casual_pct": 11.82
+   },
+   {
+    "name": "Amon-Ra St. Brown",
+    "pos": "WR",
+    "team": "DET",
+    "salary": 8200,
+    "proj": 19.2,
+    "real_pct": 14.49,
+    "field_pct": 15.6,
+    "opt_pct": 15.41,
+    "casual_pct": 15.51
+   },
+   {
+    "name": "Cam Ward",
+    "pos": "QB",
+    "team": "TEN",
+    "salary": 5500,
+    "proj": 16.9,
+    "real_pct": 14.47,
+    "field_pct": 4.2,
+    "opt_pct": 4.42,
+    "casual_pct": 2.92
+   },
+   {
+    "name": "Chiefs",
+    "pos": "DST",
+    "team": "KC",
+    "salary": 4000,
+    "proj": 12.3,
+    "real_pct": 14.04,
+    "field_pct": 4.1,
+    "opt_pct": 5.03,
+    "casual_pct": 4.36
+   },
+   {
+    "name": "Parker Washington",
+    "pos": "WR",
+    "team": "JAX",
+    "salary": 6700,
+    "proj": 13.7,
+    "real_pct": 14.03,
+    "field_pct": 10.4,
+    "opt_pct": 10.63,
+    "casual_pct": 6.76
+   },
+   {
+    "name": "Dawson Knox",
+    "pos": "TE",
+    "team": "BUF",
+    "salary": 2800,
+    "proj": 3.9,
+    "real_pct": 14.01,
+    "field_pct": 0.2,
+    "opt_pct": 0.0,
+    "casual_pct": 2.27
+   },
+   {
+    "name": "Luther Burden III",
+    "pos": "WR",
+    "team": "CHI",
+    "salary": 6300,
+    "proj": 14.7,
+    "real_pct": 13.34,
+    "field_pct": 15.2,
+    "opt_pct": 15.47,
+    "casual_pct": 10.12
+   },
+   {
+    "name": "Javonte Williams",
+    "pos": "RB",
+    "team": "DAL",
+    "salary": 7300,
+    "proj": 20.8,
+    "real_pct": 12.19,
+    "field_pct": 16.2,
+    "opt_pct": 14.46,
+    "casual_pct": 35.19
+   },
+   {
+    "name": "Rome Odunze",
+    "pos": "WR",
+    "team": "CHI",
+    "salary": 4600,
+    "proj": 11.1,
+    "real_pct": 10.94,
+    "field_pct": 13.0,
+    "opt_pct": 13.38,
+    "casual_pct": 8.16
+   },
+   {
+    "name": "Emeka Egbuka",
+    "pos": "WR",
+    "team": "TB",
+    "salary": 5200,
+    "proj": 10.5,
+    "real_pct": 10.74,
+    "field_pct": 7.2,
+    "opt_pct": 7.39,
+    "casual_pct": 4.06
+   },
+   {
+    "name": "Isaiah Likely",
+    "pos": "TE",
+    "team": "NYG",
+    "salary": 5600,
+    "proj": 14.8,
+    "real_pct": 10.57,
+    "field_pct": 8.4,
+    "opt_pct": 8.39,
+    "casual_pct": 11.37
+   }
+  ],
+  "ownership_concentration_sum_of_squares": 1.6465
+ },
+ "model_field": {
+  "what": "the served optimizer field (FIELD_MODEL 'optimizer', ENGINE 10), rebuilt by production's own sampler; see classic_replica",
+  "replica": {
+   "rows": 147015,
+   "steer_mae_by_pass": [
+    1.8414,
+    0.6004,
+    0.2906,
+    0.2067,
+    0.1625,
+    0.1289,
+    0.1224,
+    0.1126,
+    0.1045,
+    0.0999
+   ],
+   "mae_to_targets_pct_points": 0.085
+  },
+  "board_stamp": {
+   "model": "optimizer",
+   "beta": 0.4093,
+   "kappa": 1.0781,
+   "collision": 1.944450925947531e-08,
+   "n": 300000,
+   "mean_salary": 49274,
+   "max_own_pct": 29.3,
+   "top_share_pct": 0.0023,
+   "achieved": {
+    "bring_back": 0.3492766666666667,
+    "dst_vs_own_qb": 0.005196666666666666,
+    "max_own": 0.29324,
+    "mean_salary": 49274.405666666666,
+    "n": 300000,
+    "stack_dist": [
+     0.17363333333333333,
+     0.4909866666666667,
+     0.28859,
+     0.04679
+    ]
+   }
+  },
+  "sampled": {
+   "duplication": {
+    "entries": 147015,
+    "distinct_lineups": 146867,
+    "max_copies": 4,
+    "distinct_pair_collision": 1.462065200102655e-08,
+    "entries_in_duplicated_lineups_pct": 0.196,
+    "copies_histogram": {
+     "1": 146727,
+     "2": 134,
+     "3": 4,
+     "4": 2
+    },
+    "entries_by_copies_pct": {
+     "1": 99.804,
+     "2-5": 0.196,
+     "6-20": 0.0,
+     "21-100": 0.0,
+     "101+": 0.0
+    },
+    "effective_lineups_1_over_C": 68396403
+   },
+   "near": {
+    "pair_share_overlap": {
+     "9_of_9": 1.462065200102655e-08,
+     "8_of_9": 1.2677400785700236e-07,
+     "7_of_9": 4.311611767948298e-06
+    },
+    "pairs": {
+     "exact": 158.0,
+     "one_swap": 1370.0,
+     "two_swaps": 46594.0
+    },
+    "near_to_exact_pair_ratio": {
+     "one_swap": 8.670886075949367,
+     "two_swaps": 294.8987341772152
+    },
+    "entries_with_another_entry_pct": {
+     "exact": 0.196,
+     "within_one_swap": 1.641,
+     "within_two_swaps": 27.384
+    },
+    "entries_with_another_USERS_entry_pct": {
+     "exact": 0.196,
+     "within_one_swap": 1.641,
+     "within_two_swaps": 27.384
+    }
+   },
+   "mean_overlap": 0.8794137703003525,
+   "structure": {
+    "resolved_entries": 147015,
+    "unresolved_entries": 0,
+    "salary_mean": 49219.6,
+    "salary_median": 49900.0,
+    "salary_at_cap_pct": 35.64,
+    "salary_left_100_or_less_pct": 51.04,
+    "salary_49500_plus_pct": 69.67,
+    "salary_48000_or_less_pct": 14.8,
+    "salary_quantiles": {
+     "0.01": 44000.0,
+     "0.05": 46100.0,
+     "0.25": 49100.0,
+     "0.5": 49900.0,
+     "0.75": 50000.0
+    },
+    "stack_pct": [
+     17.37,
+     49.03,
+     28.8,
+     4.81
+    ],
+    "bring_back_pct": 34.89,
+    "qb_with_own_rb_pct": 16.66,
+    "dst_vs_own_qb_pct": 0.555,
+    "max_from_one_team_pct": {
+     "1": 2.73,
+     "2": 49.65,
+     "3": 36.33,
+     "4": 10.03,
+     "5": 1.2
+    },
+    "templates_pct": {
+     "QB+0": 11.39,
+     "QB+0 +bring-back": 5.98,
+     "QB+1": 31.91,
+     "QB+1 +bring-back": 17.11,
+     "QB+2": 18.64,
+     "QB+2 +bring-back": 10.15,
+     "QB+3": 3.16,
+     "QB+3 +bring-back": 1.65
+    },
+    "flex_position_pct": {
+     "RB": 46.64,
+     "WR": 53.36,
+     "TE": 0.0
+    }
+   },
+   "score_quantiles": {
+    "0.001": 59.1,
+    "0.01": 73.3,
+    "0.1": 94.16,
+    "0.25": 106.9,
+    "0.5": 121.72,
+    "0.75": 137.44,
+    "0.9": 152.06,
+    "0.99": 177.16,
+    "0.999": 194.0
+   },
+   "score_mean": 122.52,
+   "score_sd": 22.56
+  },
+  "replica_gap_pts_quantiles": {
+   "0.01": 14.1,
+   "0.1": 19.5,
+   "0.25": 22.9,
+   "0.5": 26.8,
+   "0.75": 31.0,
+   "0.9": 35.3
+  },
+  "replica_entries_within_pts_pct": {
+   "1": 0.0,
+   "2": 0.0,
+   "3": 0.0,
+   "5": 0.001,
+   "8": 0.024,
+   "12": 0.302,
+   "20": 11.859
+  },
+  "ownership_mae_pct_points": {
+   "board_players": {
+    "field_pct": 2.573,
+    "opt_pct": 2.478,
+    "casual_pct": 3.063
+   },
+   "real_top_40": {
+    "field_pct": 7.231,
+    "opt_pct": 6.886,
+    "casual_pct": 9.572
+   },
+   "real_top_40_not_on_board": []
+  },
+  "joint_ownership_mae_pct_points_top30": 2.257,
+  "joint_real_mean_pct_top30": 3.294,
+  "pairs": {
+   "players": 30,
+   "pairs_with_independent_share_0_5pct_plus": 333,
+   "mean_abs_log_lift_weighted": 0.3782,
+   "top_by_joint": [
+    {
+     "a": "CeeDee Lamb",
+     "b": "Dak Prescott",
+     "joint_pct": 7.7,
+     "independent_pct": 3.45,
+     "lift": 2.235
+    },
+    {
+     "a": "Emmett Johnson",
+     "b": "CeeDee Lamb",
+     "joint_pct": 7.19,
+     "independent_pct": 7.52,
+     "lift": 0.957
+    },
+    {
+     "a": "Luther Burden III",
+     "b": "Caleb Williams",
+     "joint_pct": 4.93,
+     "independent_pct": 1.62,
+     "lift": 3.05
+    },
+    {
+     "a": "George Pickens",
+     "b": "Dak Prescott",
+     "joint_pct": 4.59,
+     "independent_pct": 1.97,
+     "lift": 2.329
+    },
+    {
+     "a": "Emmett Johnson",
+     "b": "Amon-Ra St. Brown",
+     "joint_pct": 4.49,
+     "independent_pct": 4.55,
+     "lift": 0.987
+    },
+    {
+     "a": "Emmett Johnson",
+     "b": "Luther Burden III",
+     "joint_pct": 4.34,
+     "independent_pct": 4.32,
+     "lift": 1.006
+    }
+   ],
+   "top_lift": [
+    {
+     "a": "Colston Loveland",
+     "b": "Caleb Williams",
+     "joint_pct": 3.42,
+     "independent_pct": 0.98,
+     "lift": 3.49
+    },
+    {
+     "a": "Luther Burden III",
+     "b": "Caleb Williams",
+     "joint_pct": 4.93,
+     "independent_pct": 1.62,
+     "lift": 3.05
+    },
+    {
+     "a": "Rome Odunze",
+     "b": "Caleb Williams",
+     "joint_pct": 3.7,
+     "independent_pct": 1.41,
+     "lift": 2.631
+    },
+    {
+     "a": "George Pickens",
+     "b": "Dak Prescott",
+     "joint_pct": 4.59,
+     "independent_pct": 1.97,
+     "lift": 2.329
+    },
+    {
+     "a": "CeeDee Lamb",
+     "b": "Dak Prescott",
+     "joint_pct": 7.7,
+     "independent_pct": 3.45,
+     "lift": 2.235
+    },
+    {
+     "a": "Carnell Tate",
+     "b": "Dak Prescott",
+     "joint_pct": 2.46,
+     "independent_pct": 1.58,
+     "lift": 1.558
+    }
+   ],
+   "lowest_lift": [
+    {
+     "a": "Dak Prescott",
+     "b": "Cam Ward",
+     "joint_pct": 0.0,
+     "independent_pct": 0.55,
+     "lift": 0.0
+    },
+    {
+     "a": "Dak Prescott",
+     "b": "Patrick Mahomes",
+     "joint_pct": 0.0,
+     "independent_pct": 1.66,
+     "lift": 0.0
+    },
+    {
+     "a": "Dak Prescott",
+     "b": "Caleb Williams",
+     "joint_pct": 0.0,
+     "independent_pct": 1.43,
+     "lift": 0.0
+    },
+    {
+     "a": "Colston Loveland",
+     "b": "Isaiah Likely",
+     "joint_pct": 0.0,
+     "independent_pct": 0.76,
+     "lift": 0.0
+    },
+    {
+     "a": "Cam Ward",
+     "b": "Patrick Mahomes",
+     "joint_pct": 0.0,
+     "independent_pct": 0.52,
+     "lift": 0.0
+    },
+    {
+     "a": "Patrick Mahomes",
+     "b": "Caleb Williams",
+     "joint_pct": 0.0,
+     "independent_pct": 1.35,
+     "lift": 0.0
+    }
+   ]
+  }
+ },
+ "oracle_marginals": {
+  "what": "DIAGNOSTIC, not a model: production's sampler steered onto the REAL field's per-player ownership (the answer, read after the contest). What it still misses is not a per-player ownership error.",
+  "replica": {
+   "rows": 147015,
+   "steer_mae_by_pass": [
+    3.0654,
+    1.187,
+    0.7602,
+    0.6591,
+    0.61,
+    0.5769,
+    0.5746,
+    0.5552,
+    0.5414,
+    0.5374
+   ],
+   "mae_to_targets_pct_points": 0.525
+  },
+  "sampled": {
+   "duplication": {
+    "entries": 147015,
+    "distinct_lineups": 140628,
+    "max_copies": 29,
+    "distinct_pair_collision": 1.2214721924908257e-06,
+    "entries_in_duplicated_lineups_pct": 7.12,
+    "copies_histogram": {
+     "1": 136547,
+     "2": 3024,
+     "3": 606,
+     "4": 218,
+     "5": 83,
+     "6": 52,
+     "7": 24,
+     "8": 22,
+     "9": 11,
+     "10": 7,
+     "11": 8,
+     "12": 11,
+     "13": 1,
+     "14": 2,
+     "15": 3,
+     "16": 2,
+     "17": 1,
+     "19": 1,
+     "20": 2,
+     "21": 1,
+     "26": 1,
+     "29": 1
+    },
+    "entries_by_copies_pct": {
+     "1": 92.88,
+     "2-5": 6.226,
+     "6-20": 0.843,
+     "21-100": 0.052,
+     "101+": 0.0
+    },
+    "effective_lineups_1_over_C": 818684
+   },
+   "near": {
+    "pair_share_overlap": {
+     "9_of_9": 1.2214721924908257e-06,
+     "8_of_9": 2.912748500229827e-06,
+     "7_of_9": 8.73448854833985e-05
+    },
+    "pairs": {
+     "exact": 13200.0,
+     "one_swap": 31477.0,
+     "two_swaps": 943904.0
+    },
+    "near_to_exact_pair_ratio": {
+     "one_swap": 2.3846212121212123,
+     "two_swaps": 71.5078787878788
+    },
+    "entries_with_another_entry_pct": {
+     "exact": 7.12,
+     "within_one_swap": 20.045,
+     "within_two_swaps": 77.683
+    },
+    "entries_with_another_USERS_entry_pct": {
+     "exact": 7.12,
+     "within_one_swap": 20.045,
+     "within_two_swaps": 77.683
+    }
+   },
+   "mean_overlap": 1.6017327872999145,
+   "structure": {
+    "resolved_entries": 147015,
+    "unresolved_entries": 0,
+    "salary_mean": 49472.6,
+    "salary_median": 50000.0,
+    "salary_at_cap_pct": 51.45,
+    "salary_left_100_or_less_pct": 65.68,
+    "salary_49500_plus_pct": 78.4,
+    "salary_48000_or_less_pct": 10.35,
+    "salary_quantiles": {
+     "0.01": 45000.0,
+     "0.05": 46900.0,
+     "0.25": 49700.0,
+     "0.5": 50000.0,
+     "0.75": 50000.0
+    },
+    "stack_pct": [
+     17.37,
+     49.03,
+     28.8,
+     4.81
+    ],
+    "bring_back_pct": 34.89,
+    "qb_with_own_rb_pct": 21.04,
+    "dst_vs_own_qb_pct": 0.417,
+    "max_from_one_team_pct": {
+     "1": 2.66,
+     "2": 48.55,
+     "3": 36.58,
+     "4": 10.73,
+     "5": 1.4
+    },
+    "templates_pct": {
+     "QB+0": 11.39,
+     "QB+0 +bring-back": 5.98,
+     "QB+1": 31.91,
+     "QB+1 +bring-back": 17.11,
+     "QB+2": 18.64,
+     "QB+2 +bring-back": 10.15,
+     "QB+3": 3.16,
+     "QB+3 +bring-back": 1.65
+    },
+    "flex_position_pct": {
+     "RB": 47.87,
+     "WR": 52.13,
+     "TE": 0.0
+    }
+   },
+   "score_quantiles": {
+    "0.001": 72.54,
+    "0.01": 86.64,
+    "0.1": 107.74,
+    "0.25": 120.72,
+    "0.5": 135.94,
+    "0.75": 151.54,
+    "0.9": 165.7,
+    "0.99": 188.3,
+    "0.999": 202.3
+   },
+   "score_mean": 136.33,
+   "score_sd": 22.36
+  },
+  "gap_pts_quantiles": {
+   "0.01": 10.5,
+   "0.1": 15.2,
+   "0.25": 18.1,
+   "0.5": 21.6,
+   "0.75": 25.3,
+   "0.9": 29.0
+  },
+  "joint_ownership_mae_pct_points_top30": 0.718,
+  "pairs": {
+   "players": 30,
+   "pairs_with_independent_share_0_5pct_plus": 430,
+   "mean_abs_log_lift_weighted": 0.4286,
+   "top_by_joint": [
+    {
+     "a": "Emmett Johnson",
+     "b": "CeeDee Lamb",
+     "joint_pct": 24.11,
+     "independent_pct": 25.15,
+     "lift": 0.959
+    },
+    {
+     "a": "Emmett Johnson",
+     "b": "Tony Pollard",
+     "joint_pct": 20.81,
+     "independent_pct": 23.19,
+     "lift": 0.897
+    },
+    {
+     "a": "Emmett Johnson",
+     "b": "Jonah Coleman",
+     "joint_pct": 20.67,
+     "independent_pct": 22.71,
+     "lift": 0.91
+    },
+    {
+     "a": "Emmett Johnson",
+     "b": "George Pickens",
+     "joint_pct": 18.54,
+     "independent_pct": 18.69,
+     "lift": 0.992
+    }
+   ],
+   "top_lift": [
+    {
+     "a": "Colston Loveland",
+     "b": "Caleb Williams",
+     "joint_pct": 6.18,
+     "independent_pct": 1.21,
+     "lift": 5.09
+    },
+    {
+     "a": "Carnell Tate",
+     "b": "Cam Ward",
+     "joint_pct": 8.17,
+     "independent_pct": 3.5,
+     "lift": 2.336
+    },
+    {
+     "a": "Luther Burden III",
+     "b": "Caleb Williams",
+     "joint_pct": 2.82,
+     "independent_pct": 1.26,
+     "lift": 2.245
+    },
+    {
+     "a": "Cam Ward",
+     "b": "Chiefs",
+     "joint_pct": 2.34,
+     "independent_pct": 1.16,
+     "lift": 2.014
+    }
+   ],
+   "lowest_lift": [
+    {
+     "a": "Dak Prescott",
+     "b": "Cam Ward",
+     "joint_pct": 0.0,
+     "independent_pct": 3.18,
+     "lift": 0.0
+    },
+    {
+     "a": "Dak Prescott",
+     "b": "Patrick Mahomes",
+     "joint_pct": 0.0,
+     "independent_pct": 2.22,
+     "lift": 0.0
+    },
+    {
+     "a": "Dak Prescott",
+     "b": "Caleb Williams",
+     "joint_pct": 0.0,
+     "independent_pct": 1.99,
+     "lift": 0.0
+    },
+    {
+     "a": "Mark Andrews",
+     "b": "Colston Loveland",
+     "joint_pct": 0.0,
+     "independent_pct": 2.34,
+     "lift": 0.0
+    }
+   ]
+  }
+ }
+}

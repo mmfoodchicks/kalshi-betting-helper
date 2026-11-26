@@ -1,0 +1,426 @@
+{
+"Alec Pierce": {
+"cpt_salary": 12000,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "WR",
+"salary": 8000,
+"team": "IND"
+},
+"Anthony Gould": {
+"cpt_salary": 4500,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "WR",
+"salary": 3000,
+"team": "IND"
+},
+"Anthony Richardson Sr.": {
+"cpt_salary": 9000,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "QB",
+"salary": 6000,
+"team": "IND"
+},
+"Ashton Dulin": {
+"cpt_salary": 5400,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "WR",
+"salary": 3600,
+"team": "IND"
+},
+"Brevin Jordan": {
+"cpt_salary": 300,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "TE",
+"salary": 200,
+"team": "HOU"
+},
+"British Brooks": {
+"cpt_salary": 3600,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "RB",
+"salary": 2400,
+"team": "HOU"
+},
+"Bryce Oliver": {
+"cpt_salary": 300,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "WR",
+"salary": 200,
+"team": "HOU"
+},
+"C.J. Stroud": {
+"cpt_salary": 15000,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "QB",
+"salary": 10000,
+"team": "HOU"
+},
+"Cade Stover": {
+"cpt_salary": 300,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "TE",
+"salary": 200,
+"team": "HOU"
+},
+"Carson Towt": {
+"cpt_salary": 300,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "TE",
+"salary": 200,
+"team": "IND"
+},
+"Colts": {
+"cpt_salary": 5100,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "DST",
+"salary": 3400,
+"team": "IND"
+},
+"D.J. Montgomery": {
+"cpt_salary": 300,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "WR",
+"salary": 200,
+"team": "IND"
+},
+"DJ Giddens": {
+"cpt_salary": 2100,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "RB",
+"salary": 1400,
+"team": "IND"
+},
+"Dalton Schultz": {
+"cpt_salary": 7200,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "TE",
+"salary": 4800,
+"team": "HOU"
+},
+"Daniel Jones": {
+"cpt_salary": 13200,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "QB",
+"salary": 8800,
+"team": "IND"
+},
+"Dare Ogunbowale": {
+"cpt_salary": 6600,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "RB",
+"salary": 4400,
+"team": "HOU"
+},
+"David Montgomery": {
+"cpt_salary": 12300,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "RB",
+"salary": 8200,
+"team": "HOU"
+},
+"Davis Mills": {
+"cpt_salary": 9000,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "QB",
+"salary": 6000,
+"team": "HOU"
+},
+"Davon Booth": {
+"cpt_salary": 300,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "RB",
+"salary": 200,
+"team": "IND"
+},
+"Deion Burks": {
+"cpt_salary": 4200,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "WR",
+"salary": 2800,
+"team": "IND"
+},
+"Drew Ogletree": {
+"cpt_salary": 900,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "TE",
+"salary": 600,
+"team": "IND"
+},
+"Emari Demercado": {
+"cpt_salary": 11100,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "RB",
+"salary": 7400,
+"team": "HOU"
+},
+"Foster Moreau": {
+"cpt_salary": 2400,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "TE",
+"salary": 1600,
+"team": "HOU"
+},
+"Graham Mertz": {
+"cpt_salary": 9000,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "QB",
+"salary": 6000,
+"team": "HOU"
+},
+"Harrison Bryant": {
+"cpt_salary": 300,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "TE",
+"salary": 200,
+"team": "IND"
+},
+"Jayden Higgins": {
+"cpt_salary": 300,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "WR",
+"salary": 200,
+"team": "HOU"
+},
+"Jaylin Noel": {
+"cpt_salary": 300,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "WR",
+"salary": 200,
+"team": "HOU"
+},
+"Jonathan Taylor": {
+"cpt_salary": 15900,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "RB",
+"salary": 10600,
+"team": "IND"
+},
+"Josh Kelly": {
+"cpt_salary": 300,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "WR",
+"salary": 200,
+"team": "HOU"
+},
+"Joshua Pitsenberger": {
+"cpt_salary": 300,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "RB",
+"salary": 200,
+"team": "HOU"
+},
+"Ka'imi Fairbairn": {
+"cpt_salary": 8100,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "K",
+"salary": 5400,
+"team": "HOU"
+},
+"Kayshon Boutte": {
+"cpt_salary": 7500,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "WR",
+"salary": 5000,
+"team": "HOU"
+},
+"Laquon Treadwell": {
+"cpt_salary": 6000,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "WR",
+"salary": 4000,
+"team": "IND"
+},
+"Lewis Bond": {
+"cpt_salary": 300,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "WR",
+"salary": 200,
+"team": "HOU"
+},
+"Marlin Klein": {
+"cpt_salary": 300,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "TE",
+"salary": 200,
+"team": "HOU"
+},
+"Marvin Harrison Jr.": {
+"cpt_salary": 10500,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "WR",
+"salary": 7000,
+"team": "HOU"
+},
+"Mecole Hardman Jr.": {
+"cpt_salary": 1200,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "WR",
+"salary": 800,
+"team": "IND"
+},
+"Mo Alie-Cox": {
+"cpt_salary": 300,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "TE",
+"salary": 200,
+"team": "IND"
+},
+"Nick Westbrook-Ikhine": {
+"cpt_salary": 3000,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "WR",
+"salary": 2000,
+"team": "IND"
+},
+"Nico Collins": {
+"cpt_salary": 15300,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "WR",
+"salary": 10200,
+"team": "HOU"
+},
+"Nikko Remigio": {
+"cpt_salary": 300,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "WR",
+"salary": 200,
+"team": "HOU"
+},
+"Pharaoh Brown": {
+"cpt_salary": 600,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "TE",
+"salary": 400,
+"team": "IND"
+},
+"Quez Watkins": {
+"cpt_salary": 1500,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "WR",
+"salary": 1000,
+"team": "IND"
+},
+"Riley Leonard": {
+"cpt_salary": 9000,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "QB",
+"salary": 6000,
+"team": "IND"
+},
+"Samori Toure": {
+"cpt_salary": 300,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "WR",
+"salary": 200,
+"team": "IND"
+},
+"Seth McGowan": {
+"cpt_salary": 6900,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "RB",
+"salary": 4600,
+"team": "IND"
+},
+"Spencer Shrader": {
+"cpt_salary": 7800,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "K",
+"salary": 5200,
+"team": "IND"
+},
+"Tank Dell": {
+"cpt_salary": 9600,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "WR",
+"salary": 6400,
+"team": "HOU"
+},
+"Texans": {
+"cpt_salary": 8700,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "DST",
+"salary": 5800,
+"team": "HOU"
+},
+"Tyler Warren": {
+"cpt_salary": 12600,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "TE",
+"salary": 8400,
+"team": "IND"
+},
+"Will Mallory": {
+"cpt_salary": 1800,
+"game": "IND @ HOU",
+"opp": "HOU",
+"pos": "TE",
+"salary": 1200,
+"team": "IND"
+},
+"Woody Marks": {
+"cpt_salary": 12900,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "RB",
+"salary": 8600,
+"team": "HOU"
+},
+"Xavier Hutchinson": {
+"cpt_salary": 9300,
+"game": "IND @ HOU",
+"opp": "IND",
+"pos": "WR",
+"salary": 6200,
+"team": "HOU"
+}
+}

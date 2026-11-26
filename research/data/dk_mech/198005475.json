@@ -1,0 +1,2013 @@
+{
+ "contest_id": 198005475,
+ "label": "CIN @ WAS (week 11)",
+ "kind": "showdown",
+ "draft_group_id": 156793,
+ "role": "validation",
+ "note": "the board on this draft group was built for contest 198005473 (the $444 Field General); its pool and projections are the slate's, its field stamp is that contest's",
+ "rows": 70588,
+ "entries_with_lineup": 70488,
+ "projection_source": "the board served for draft group 156793 (10 min before lock)",
+ "real": {
+  "duplication": {
+   "entries": 70488,
+   "distinct_lineups": 12351,
+   "max_copies": 760,
+   "distinct_pair_collision": 0.0009060443160332167,
+   "entries_in_duplicated_lineups_pct": 91.769,
+   "copies_histogram": {
+    "1": 5802,
+    "2": 1905,
+    "3": 1013,
+    "4": 672,
+    "5": 469,
+    "6": 366,
+    "7": 300,
+    "8": 199,
+    "9": 171,
+    "10": 143,
+    "11": 115,
+    "12": 106,
+    "13": 90,
+    "14": 72,
+    "15": 74,
+    "16": 73,
+    "17": 54,
+    "18": 44,
+    "19": 39,
+    "20": 48,
+    "21": 56,
+    "22": 28,
+    "23": 24,
+    "24": 18,
+    "25": 19,
+    "26": 20,
+    "27": 18,
+    "28": 12,
+    "29": 18,
+    "30": 14,
+    "31": 13,
+    "32": 14,
+    "33": 8,
+    "34": 16,
+    "35": 13,
+    "36": 8,
+    "37": 8,
+    "38": 17,
+    "39": 6,
+    "40": 9,
+    "41": 12,
+    "42": 6,
+    "43": 6,
+    "44": 6,
+    "45": 6,
+    "46": 8,
+    "47": 3,
+    "48": 5,
+    "49": 10,
+    "50": 5,
+    "51": 4,
+    "52": 11,
+    "53": 7,
+    "54": 5,
+    "55": 2,
+    "56": 5,
+    "57": 2,
+    "58": 4,
+    "59": 5,
+    "60": 2,
+    "61": 6,
+    "62": 4,
+    "63": 3,
+    "64": 3,
+    "65": 3,
+    "66": 3,
+    "67": 4,
+    "68": 5,
+    "69": 1,
+    "70": 2,
+    "71": 1,
+    "72": 2,
+    "73": 1,
+    "74": 3,
+    "75": 4,
+    "76": 3,
+    "77": 1,
+    "78": 2,
+    "79": 2,
+    "80": 3,
+    "82": 2,
+    "83": 1,
+    "85": 2,
+    "86": 2,
+    "87": 4,
+    "88": 1,
+    "89": 1,
+    "90": 1,
+    "91": 1,
+    "92": 1,
+    "93": 1,
+    "94": 1,
+    "95": 1,
+    "97": 1,
+    "98": 2,
+    "99": 2,
+    "100": 2,
+    "101": 3,
+    "103": 2,
+    "104": 4,
+    "109": 1,
+    "112": 1,
+    "116": 2,
+    "119": 1,
+    "124": 1,
+    "125": 1,
+    "127": 1,
+    "130": 1,
+    "132": 1,
+    "141": 1,
+    "142": 1,
+    "143": 1,
+    "145": 1,
+    "146": 1,
+    "148": 1,
+    "150": 1,
+    "153": 1,
+    "156": 1,
+    "161": 1,
+    "162": 1,
+    "164": 1,
+    "165": 1,
+    "170": 1,
+    "171": 1,
+    "174": 1,
+    "184": 1,
+    "186": 1,
+    "187": 1,
+    "198": 2,
+    "218": 1,
+    "222": 1,
+    "233": 1,
+    "239": 1,
+    "243": 1,
+    "244": 1,
+    "261": 1,
+    "267": 1,
+    "272": 1,
+    "273": 2,
+    "279": 1,
+    "283": 1,
+    "285": 2,
+    "287": 1,
+    "350": 1,
+    "373": 1,
+    "501": 1,
+    "516": 1,
+    "760": 1
+   },
+   "entries_by_copies_pct": {
+    "1": 8.231,
+    "2-5": 16.857,
+    "6-20": 27.325,
+    "21-100": 30.218,
+    "101+": 17.369
+   },
+   "effective_lineups_1_over_C": 1104
+  },
+  "near": {
+   "pair_share_overlap": {
+    "6_of_6": 0.0009060443160332167,
+    "5_of_6": 0.0034913122867583513,
+    "4_of_6": 0.03490783956976384
+   },
+   "pairs": {
+    "exact": 2250835.0,
+    "one_swap": 8673271.0,
+    "two_swaps": 86719585.0
+   },
+   "near_to_exact_pair_ratio": {
+    "one_swap": 3.8533570874808682,
+    "two_swaps": 38.52773970548707
+   },
+   "entries_with_another_entry_pct": {
+    "exact": 91.769,
+    "within_one_swap": 99.78,
+    "within_two_swaps": 99.999
+   },
+   "entries_with_another_USERS_entry_pct": {
+    "exact": 91.695,
+    "within_one_swap": 99.723,
+    "within_two_swaps": 99.996
+   },
+   "same_six_players_any_captain_pair_share": 0.0013931357948814033
+  },
+  "mean_overlap": 1.7349099530499066,
+  "structure": {
+   "resolved_entries": 70488,
+   "unresolved_entries": 0,
+   "salary_mean": 49338.8,
+   "salary_median": 49600.0,
+   "salary_left_pct": {
+    "0": 12.25,
+    "100-200": 25.76,
+    "300-500": 22.93,
+    "600-1000": 19.16,
+    "1100-2000": 14.23,
+    "2100+": 5.66
+   },
+   "team_split_pct": {
+    "3-3": 34.56,
+    "4-2": 45.45,
+    "5-1": 20.0
+   },
+   "captain_position_pct": {
+    "QB": 35.61,
+    "RB": 11.74,
+    "WR": 38.67,
+    "TE": 11.74,
+    "K": 1.06,
+    "DST": 1.18
+   },
+   "flex_kickers_and_defenses_pct": {
+    "0": 61.54,
+    "1": 30.66,
+    "2": 7.49,
+    "3": 0.31,
+    "4": 0.0
+   },
+   "both_quarterbacks_pct": 49.99,
+   "non_qb_captain_with_his_qb_in_flex_pct": 86.13,
+   "qb_captain_own_catchers_pct": {
+    "0": 2.63,
+    "1": 22.05,
+    "2": 47.69,
+    "3": 27.64
+   }
+  },
+  "score_quantiles": {
+   "0.001": 44.25,
+   "0.01": 52.55,
+   "0.1": 62.71,
+   "0.25": 69.71,
+   "0.5": 76.91,
+   "0.75": 84.81,
+   "0.9": 93.21,
+   "0.99": 105.21,
+   "0.999": 112.95
+  },
+  "score_mean": 77.37,
+  "score_sd": 11.56,
+  "points_rebuild_max_abs_diff": 0.0,
+  "users": {
+   "entrants": 20272,
+   "entries_per_entrant_mean": 3.48,
+   "duplicate_pairs": 2250835.0,
+   "same_user_duplicate_pairs": 6130.0,
+   "same_user_share_of_duplicate_pairs_pct": 0.2723,
+   "collision_cross_user_only": 0.0009035767643658205,
+   "entries_whose_lineup_another_entrant_holds_pct": 91.695,
+   "entries_repeating_the_entrants_own_lineup_pct": 1.687,
+   "field_mean_overlap": 1.7349099530499066,
+   "classes": {
+    "1": {
+     "entrants": 13376,
+     "entries": 13376,
+     "entries_pct": 18.98,
+     "share_of_entries_in_duplicated_lineups_pct": 19.51,
+     "their_entries_in_a_lineup_another_entrant_holds_pct": 94.34,
+     "their_entries_mean_copies": 91.05,
+     "their_entries_median_copies": 35.0,
+     "distinct_lineups_per_entry_mean": null,
+     "within_entrant_mean_overlap": null
+    },
+    "2-19": {
+     "entrants": 6451,
+     "entries": 24974,
+     "entries_pct": 35.43,
+     "share_of_entries_in_duplicated_lineups_pct": 36.15,
+     "their_entries_in_a_lineup_another_entrant_holds_pct": 93.45,
+     "their_entries_mean_copies": 83.05,
+     "their_entries_median_copies": 29.0,
+     "distinct_lineups_per_entry_mean": 0.985,
+     "within_entrant_mean_overlap": 2.28
+    },
+    "20-149": {
+     "entrants": 319,
+     "entries": 13238,
+     "entries_pct": 18.78,
+     "share_of_entries_in_duplicated_lineups_pct": 18.65,
+     "their_entries_in_a_lineup_another_entrant_holds_pct": 91.09,
+     "their_entries_mean_copies": 53.7,
+     "their_entries_median_copies": 16.0,
+     "distinct_lineups_per_entry_mean": 0.9843,
+     "within_entrant_mean_overlap": 2.079
+    },
+    "150+": {
+     "entrants": 126,
+     "entries": 18900,
+     "entries_pct": 26.81,
+     "share_of_entries_in_duplicated_lineups_pct": 25.69,
+     "their_entries_in_a_lineup_another_entrant_holds_pct": 87.93,
+     "their_entries_mean_copies": 30.12,
+     "their_entries_median_copies": 10.0,
+     "distinct_lineups_per_entry_mean": 0.9918,
+     "within_entrant_mean_overlap": 1.923
+    }
+   }
+  },
+  "pairs": {
+   "players": 20,
+   "pairs_with_independent_share_0_5pct_plus": 190,
+   "mean_abs_log_lift_weighted": 0.1427,
+   "top_by_joint": [
+    {
+     "a": "Joe Burrow",
+     "b": "Ja'Marr Chase",
+     "joint_pct": 61.73,
+     "independent_pct": 61.51,
+     "lift": 1.003
+    },
+    {
+     "a": "Joe Burrow",
+     "b": "Jayden Daniels",
+     "joint_pct": 49.69,
+     "independent_pct": 52.83,
+     "lift": 0.941
+    },
+    {
+     "a": "Joe Burrow",
+     "b": "Chig Okonkwo",
+     "joint_pct": 45.43,
+     "independent_pct": 45.57,
+     "lift": 0.997
+    },
+    {
+     "a": "Ja'Marr Chase",
+     "b": "Jayden Daniels",
+     "joint_pct": 36.98,
+     "independent_pct": 42.43,
+     "lift": 0.871
+    },
+    {
+     "a": "Ja'Marr Chase",
+     "b": "Chig Okonkwo",
+     "joint_pct": 36.47,
+     "independent_pct": 36.6,
+     "lift": 0.996
+    },
+    {
+     "a": "Joe Burrow",
+     "b": "Tee Higgins",
+     "joint_pct": 36.1,
+     "independent_pct": 36.2,
+     "lift": 0.997
+    },
+    {
+     "a": "Jayden Daniels",
+     "b": "Chig Okonkwo",
+     "joint_pct": 33.11,
+     "independent_pct": 31.43,
+     "lift": 1.053
+    },
+    {
+     "a": "Joe Burrow",
+     "b": "Chase Brown",
+     "joint_pct": 26.61,
+     "independent_pct": 29.75,
+     "lift": 0.895
+    },
+    {
+     "a": "Joe Burrow",
+     "b": "Mike Gesicki",
+     "joint_pct": 23.89,
+     "independent_pct": 22.99,
+     "lift": 1.039
+    },
+    {
+     "a": "Ja'Marr Chase",
+     "b": "Tee Higgins",
+     "joint_pct": 21.18,
+     "independent_pct": 29.08,
+     "lift": 0.728
+    },
+    {
+     "a": "Chig Okonkwo",
+     "b": "Tee Higgins",
+     "joint_pct": 20.83,
+     "independent_pct": 21.54,
+     "lift": 0.967
+    },
+    {
+     "a": "Ja'Marr Chase",
+     "b": "Chase Brown",
+     "joint_pct": 19.02,
+     "independent_pct": 23.9,
+     "lift": 0.796
+    }
+   ],
+   "top_lift": [
+    {
+     "a": "Evan McPherson",
+     "b": "Bengals",
+     "joint_pct": 2.79,
+     "independent_pct": 2.07,
+     "lift": 1.351
+    },
+    {
+     "a": "Chase Brown",
+     "b": "Bengals",
+     "joint_pct": 5.12,
+     "independent_pct": 3.82,
+     "lift": 1.338
+    },
+    {
+     "a": "Tee Higgins",
+     "b": "Jack Endries",
+     "joint_pct": 6.86,
+     "independent_pct": 5.56,
+     "lift": 1.234
+    },
+    {
+     "a": "Ja'Marr Chase",
+     "b": "Ben Sinnott",
+     "joint_pct": 9.76,
+     "independent_pct": 8.1,
+     "lift": 1.205
+    },
+    {
+     "a": "Ja'Marr Chase",
+     "b": "Drew Sample",
+     "joint_pct": 16.31,
+     "independent_pct": 13.84,
+     "lift": 1.178
+    },
+    {
+     "a": "Ja'Marr Chase",
+     "b": "Jack Endries",
+     "joint_pct": 10.95,
+     "independent_pct": 9.45,
+     "lift": 1.159
+    },
+    {
+     "a": "Jayden Daniels",
+     "b": "Jack Endries",
+     "joint_pct": 9.36,
+     "independent_pct": 8.12,
+     "lift": 1.153
+    },
+    {
+     "a": "Tee Higgins",
+     "b": "Ben Sinnott",
+     "joint_pct": 5.33,
+     "independent_pct": 4.77,
+     "lift": 1.118
+    },
+    {
+     "a": "Drew Stevens",
+     "b": "Rachaad White",
+     "joint_pct": 1.06,
+     "independent_pct": 0.96,
+     "lift": 1.105
+    },
+    {
+     "a": "Evan McPherson",
+     "b": "Drew Stevens",
+     "joint_pct": 2.71,
+     "independent_pct": 2.46,
+     "lift": 1.102
+    },
+    {
+     "a": "Joe Burrow",
+     "b": "Jack Endries",
+     "joint_pct": 12.94,
+     "independent_pct": 11.77,
+     "lift": 1.099
+    },
+    {
+     "a": "Jayden Daniels",
+     "b": "Antonio Williams",
+     "joint_pct": 9.67,
+     "independent_pct": 8.88,
+     "lift": 1.089
+    }
+   ],
+   "lowest_lift": [
+    {
+     "a": "Mike Gesicki",
+     "b": "Jack Endries",
+     "joint_pct": 0.94,
+     "independent_pct": 3.53,
+     "lift": 0.265
+    },
+    {
+     "a": "Dohnte Meyers",
+     "b": "Jack Endries",
+     "joint_pct": 0.76,
+     "independent_pct": 2.49,
+     "lift": 0.303
+    },
+    {
+     "a": "Drew Sample",
+     "b": "Dohnte Meyers",
+     "joint_pct": 1.12,
+     "independent_pct": 3.65,
+     "lift": 0.307
+    },
+    {
+     "a": "Drew Sample",
+     "b": "Jack Endries",
+     "joint_pct": 0.87,
+     "independent_pct": 2.65,
+     "lift": 0.328
+    },
+    {
+     "a": "Jack Endries",
+     "b": "Bengals",
+     "joint_pct": 0.53,
+     "independent_pct": 1.51,
+     "lift": 0.349
+    },
+    {
+     "a": "Samaje Perine",
+     "b": "Jack Endries",
+     "joint_pct": 0.68,
+     "independent_pct": 1.89,
+     "lift": 0.358
+    },
+    {
+     "a": "Drew Sample",
+     "b": "Bengals",
+     "joint_pct": 0.9,
+     "independent_pct": 2.21,
+     "lift": 0.405
+    },
+    {
+     "a": "Ben Sinnott",
+     "b": "Rachaad White",
+     "joint_pct": 0.36,
+     "independent_pct": 0.83,
+     "lift": 0.435
+    },
+    {
+     "a": "Mike Gesicki",
+     "b": "Drew Sample",
+     "joint_pct": 2.4,
+     "independent_pct": 5.17,
+     "lift": 0.464
+    },
+    {
+     "a": "Jack Endries",
+     "b": "Ben Sinnott",
+     "joint_pct": 0.78,
+     "independent_pct": 1.55,
+     "lift": 0.502
+    },
+    {
+     "a": "Drew Sample",
+     "b": "Samaje Perine",
+     "joint_pct": 1.41,
+     "independent_pct": 2.77,
+     "lift": 0.51
+    },
+    {
+     "a": "Evan McPherson",
+     "b": "Jack Endries",
+     "joint_pct": 1.27,
+     "independent_pct": 2.47,
+     "lift": 0.512
+    }
+   ]
+  },
+  "finish_by_copies": {
+   "1": {
+    "entries": 5802,
+    "mean_points": 73.41,
+    "top_1pct_share_pct": 1.15,
+    "top_10pct_share_pct": 8.05,
+    "top_22pct_share_pct": 17.2
+   },
+   "2-5": {
+    "entries": 11882,
+    "mean_points": 76.35,
+    "top_1pct_share_pct": 1.3,
+    "top_10pct_share_pct": 9.71,
+    "top_22pct_share_pct": 22.39
+   },
+   "6-20": {
+    "entries": 19261,
+    "mean_points": 77.11,
+    "top_1pct_share_pct": 1.34,
+    "top_10pct_share_pct": 10.45,
+    "top_22pct_share_pct": 21.23
+   },
+   "21-100": {
+    "entries": 21300,
+    "mean_points": 78.0,
+    "top_1pct_share_pct": 1.06,
+    "top_10pct_share_pct": 9.03,
+    "top_22pct_share_pct": 23.94
+   },
+   "101+": {
+    "entries": 12243,
+    "mean_points": 79.54,
+    "top_1pct_share_pct": 0.0,
+    "top_10pct_share_pct": 12.18,
+    "top_22pct_share_pct": 21.72
+   }
+  },
+  "optimizer_proximity": {
+   "universe_players": 24,
+   "legal_lineups": 769040,
+   "representable_entries_pct": 90.32,
+   "optimum": {
+    "proj": 107.05,
+    "salary": 49100,
+    "real_copies": 285
+   },
+   "note": "rank 1 is the highest projected lineup; shares are of ALL entries with a lineup (an unrepresentable entry is in no top-K)",
+   "entries_in_projection_top_K_pct": {
+    "1": {
+     "real": 0.404,
+     "production_field": 0.2,
+     "uniform": 0.0001
+    },
+    "10": {
+     "real": 3.22,
+     "production_field": 1.423,
+     "uniform": 0.0013
+    },
+    "100": {
+     "real": 11.117,
+     "production_field": 7.545,
+     "uniform": 0.013
+    },
+    "1000": {
+     "real": 35.234,
+     "production_field": 29.613,
+     "uniform": 0.13
+    },
+    "10000": {
+     "real": 74.248,
+     "production_field": 72.308,
+     "uniform": 1.3003
+    },
+    "100000": {
+     "real": 89.953,
+     "production_field": 98.73,
+     "uniform": 13.0032
+    }
+   },
+   "by_copies": {
+    "1": {
+     "entries": 5802,
+     "representable_pct": 76.59,
+     "top_100_pct": 0.09,
+     "top_1000_pct": 1.65,
+     "top_10000_pct": 23.46,
+     "median_rank_pctile": 2.348,
+     "median_gap_pts": 18.0,
+     "salary_left_0_pct": 2.81
+    },
+    "2-5": {
+     "entries": 11882,
+     "representable_pct": 84.21,
+     "top_100_pct": 0.28,
+     "top_1000_pct": 6.08,
+     "top_10000_pct": 47.26,
+     "median_rank_pctile": 1.091,
+     "median_gap_pts": 14.8,
+     "salary_left_0_pct": 6.25
+    },
+    "6-20": {
+     "entries": 19261,
+     "representable_pct": 89.24,
+     "top_100_pct": 1.38,
+     "top_1000_pct": 18.17,
+     "top_10000_pct": 71.87,
+     "median_rank_pctile": 0.474,
+     "median_gap_pts": 12.0,
+     "salary_left_0_pct": 11.73
+    },
+    "21-100": {
+     "entries": 21300,
+     "representable_pct": 94.22,
+     "top_100_pct": 9.81,
+     "top_1000_pct": 47.31,
+     "top_10000_pct": 91.85,
+     "median_rank_pctile": 0.128,
+     "median_gap_pts": 8.6,
+     "salary_left_0_pct": 12.48
+    },
+    "101+": {
+     "entries": 12243,
+     "representable_pct": 97.65,
+     "top_100_pct": 44.46,
+     "top_1000_pct": 85.28,
+     "top_10000_pct": 97.65,
+     "median_rank_pctile": 0.014,
+     "median_gap_pts": 4.7,
+     "salary_left_0_pct": 18.66
+    }
+   },
+   "by_user_class": {
+    "1": {
+     "entries": 13376,
+     "top_100_pct": 16.32,
+     "top_1000_pct": 42.53,
+     "top_10000_pct": 79.35,
+     "median_gap_pts": 9.1,
+     "salary_left_0_pct": 13.19
+    },
+    "2-19": {
+     "entries": 24974,
+     "top_100_pct": 13.59,
+     "top_1000_pct": 39.36,
+     "top_10000_pct": 76.88,
+     "median_gap_pts": 9.7,
+     "salary_left_0_pct": 13.57
+    },
+    "20-149": {
+     "entries": 13238,
+     "top_100_pct": 9.32,
+     "top_1000_pct": 33.09,
+     "top_10000_pct": 72.76,
+     "median_gap_pts": 10.45,
+     "salary_left_0_pct": 11.17
+    },
+    "150+": {
+     "entries": 18900,
+     "top_100_pct": 5.43,
+     "top_1000_pct": 26.12,
+     "top_10000_pct": 68.21,
+     "median_gap_pts": 11.2,
+     "salary_left_0_pct": 8.69
+    }
+   },
+   "rank_pctile_quantiles_representable": {
+    "0.1": 0.01,
+    "0.25": 0.05,
+    "0.5": 0.24,
+    "0.75": 0.86,
+    "0.9": 2.26
+   },
+   "gap_pts_quantiles_representable": {
+    "0.1": 4.0,
+    "0.25": 6.67,
+    "0.5": 10.1,
+    "0.75": 13.95,
+    "0.9": 17.85
+   }
+  },
+  "most_copied": [
+   {
+    "lineup": [
+     "Chig Okonkwo (CPT)",
+     "Ja'Marr Chase",
+     "Jack Endries",
+     "Jayden Daniels",
+     "Joe Burrow",
+     "Tee Higgins"
+    ],
+    "copies": 760,
+    "entrants": 733,
+    "proj_rank": 7,
+    "proj_gap": 1.5,
+    "salary": 49800,
+    "production_expected_copies": 89.84,
+    "points": 83.56
+   },
+   {
+    "lineup": [
+     "Chig Okonkwo (CPT)",
+     "Chase Brown",
+     "Drew Sample",
+     "Ja'Marr Chase",
+     "Jayden Daniels",
+     "Joe Burrow"
+    ],
+    "copies": 516,
+    "entrants": 472,
+    "proj_rank": 9,
+    "proj_gap": 1.8,
+    "salary": 49600,
+    "production_expected_copies": 82.09,
+    "points": 74.46
+   },
+   {
+    "lineup": [
+     "Jayden Daniels (CPT)",
+     "Chig Okonkwo",
+     "Dohnte Meyers",
+     "Ja'Marr Chase",
+     "Joe Burrow",
+     "Treylon Burks"
+    ],
+    "copies": 501,
+    "entrants": 493,
+    "proj_rank": 108,
+    "proj_gap": 4.7,
+    "salary": 50000,
+    "production_expected_copies": 34.35,
+    "points": 73.39
+   },
+   {
+    "lineup": [
+     "Jayden Daniels (CPT)",
+     "Chig Okonkwo",
+     "Dohnte Meyers",
+     "Ja'Marr Chase",
+     "Joe Burrow",
+     "Mike Gesicki"
+    ],
+    "copies": 373,
+    "entrants": 364,
+    "proj_rank": 35,
+    "proj_gap": 3.3,
+    "salary": 49800,
+    "production_expected_copies": 52.31,
+    "points": 81.09
+   },
+   {
+    "lineup": [
+     "Chig Okonkwo (CPT)",
+     "Antonio Williams",
+     "Ja'Marr Chase",
+     "Jayden Daniels",
+     "Joe Burrow",
+     "Mike Gesicki"
+    ],
+    "copies": 350,
+    "entrants": 339,
+    "proj_rank": 158,
+    "proj_gap": 5.2,
+    "salary": 50000,
+    "production_expected_copies": 29.56,
+    "points": 100.86
+   },
+   {
+    "lineup": [
+     "Ja'Marr Chase (CPT)",
+     "Chig Okonkwo",
+     "Drew Sample",
+     "Jacory Croskey-Merritt",
+     "Jayden Daniels",
+     "Joe Burrow"
+    ],
+    "copies": 287,
+    "entrants": 285,
+    "proj_rank": 51,
+    "proj_gap": 3.8,
+    "salary": 49800,
+    "production_expected_copies": 45.02,
+    "points": 80.31
+   },
+   {
+    "lineup": [
+     "Jayden Daniels (CPT)",
+     "Chig Okonkwo",
+     "Joe Burrow",
+     "Mike Gesicki",
+     "Tee Higgins",
+     "Treylon Burks"
+    ],
+    "copies": 285,
+    "entrants": 280,
+    "proj_rank": 86,
+    "proj_gap": 4.4,
+    "salary": 50000,
+    "production_expected_copies": 37.59,
+    "points": 89.09
+   },
+   {
+    "lineup": [
+     "Joe Burrow (CPT)",
+     "Chig Okonkwo",
+     "Drew Sample",
+     "Evan McPherson",
+     "Ja'Marr Chase",
+     "Jayden Daniels"
+    ],
+    "copies": 285,
+    "entrants": 278,
+    "proj_rank": 1,
+    "proj_gap": 0.0,
+    "salary": 49100,
+    "production_expected_copies": 140.98,
+    "points": 82.01
+   },
+   {
+    "lineup": [
+     "Ja'Marr Chase (CPT)",
+     "Chase Brown",
+     "Chig Okonkwo",
+     "Dohnte Meyers",
+     "Joe Burrow",
+     "Mike Gesicki"
+    ],
+    "copies": 283,
+    "entrants": 279,
+    "proj_rank": 901,
+    "proj_gap": 8.4,
+    "salary": 50000,
+    "production_expected_copies": 11.3,
+    "points": 68.15
+   },
+   {
+    "lineup": [
+     "Stefon Diggs (CPT)",
+     "Chig Okonkwo",
+     "Ja'Marr Chase",
+     "Jack Endries",
+     "Jayden Daniels",
+     "Joe Burrow"
+    ],
+    "copies": 279,
+    "entrants": 275,
+    "proj_rank": 195,
+    "proj_gap": 5.5,
+    "salary": 49800,
+    "production_expected_copies": 27.02,
+    "points": 78.71
+   },
+   {
+    "lineup": [
+     "Joe Burrow (CPT)",
+     "Chig Okonkwo",
+     "Drew Sample",
+     "Evan McPherson",
+     "Ja'Marr Chase",
+     "Tee Higgins"
+    ],
+    "copies": 273,
+    "entrants": 270,
+    "proj_rank": 15,
+    "proj_gap": 2.3,
+    "salary": 49700,
+    "production_expected_copies": 70.65,
+    "points": 77.25
+   },
+   {
+    "lineup": [
+     "Ja'Marr Chase (CPT)",
+     "Chig Okonkwo",
+     "Drew Sample",
+     "Evan McPherson",
+     "Jayden Daniels",
+     "Joe Burrow"
+    ],
+    "copies": 273,
+    "entrants": 268,
+    "proj_rank": 12,
+    "proj_gap": 2.2,
+    "salary": 49400,
+    "production_expected_copies": 72.8,
+    "points": 74.61
+   },
+   {
+    "lineup": [
+     "Tee Higgins (CPT)",
+     "Chig Okonkwo",
+     "Jayden Daniels",
+     "Joe Burrow",
+     "Mike Gesicki",
+     "Samaje Perine"
+    ],
+    "copies": 272,
+    "entrants": 271,
+    "proj_rank": 119,
+    "proj_gap": 4.85,
+    "salary": 49900,
+    "production_expected_copies": 32.84,
+    "points": 95.41
+   },
+   {
+    "lineup": [
+     "Joe Burrow (CPT)",
+     "Chase Brown",
+     "Chig Okonkwo",
+     "Dohnte Meyers",
+     "Ja'Marr Chase",
+     "Mike Gesicki"
+    ],
+    "copies": 267,
+    "entrants": 264,
+    "proj_rank": 295,
+    "proj_gap": 6.2,
+    "salary": 49700,
+    "production_expected_copies": 21.89,
+    "points": 75.55
+   },
+   {
+    "lineup": [
+     "Joe Burrow (CPT)",
+     "Bengals",
+     "Chig Okonkwo",
+     "Dohnte Meyers",
+     "Ja'Marr Chase",
+     "Jayden Daniels"
+    ],
+    "copies": 261,
+    "entrants": 254,
+    "proj_rank": 17,
+    "proj_gap": 2.5,
+    "salary": 49900,
+    "production_expected_copies": 66.53,
+    "points": 74.31
+   },
+   {
+    "lineup": [
+     "Jayden Daniels (CPT)",
+     "Antonio Williams",
+     "Chig Okonkwo",
+     "Drew Sample",
+     "Ja'Marr Chase",
+     "Joe Burrow"
+    ],
+    "copies": 244,
+    "entrants": 241,
+    "proj_rank": 47,
+    "proj_gap": 3.6,
+    "salary": 50000,
+    "production_expected_copies": 47.81,
+    "points": 93.29
+   },
+   {
+    "lineup": [
+     "Chig Okonkwo (CPT)",
+     "Ben Sinnott",
+     "Chase Brown",
+     "Ja'Marr Chase",
+     "Jayden Daniels",
+     "Joe Burrow"
+    ],
+    "copies": 243,
+    "entrants": 239,
+    "proj_rank": 156,
+    "proj_gap": 5.2,
+    "salary": 50000,
+    "production_expected_copies": 29.56,
+    "points": 72.56
+   },
+   {
+    "lineup": [
+     "Tee Higgins (CPT)",
+     "Chig Okonkwo",
+     "Jack Endries",
+     "Jayden Daniels",
+     "Joe Burrow",
+     "Stefon Diggs"
+    ],
+    "copies": 239,
+    "entrants": 238,
+    "proj_rank": 263,
+    "proj_gap": 6.05,
+    "salary": 49900,
+    "production_expected_copies": 22.9,
+    "points": 84.81
+   },
+   {
+    "lineup": [
+     "Ja'Marr Chase (CPT)",
+     "Antonio Williams",
+     "Chig Okonkwo",
+     "Jack Endries",
+     "Jayden Daniels",
+     "Joe Burrow"
+    ],
+    "copies": 233,
+    "entrants": 231,
+    "proj_rank": 276,
+    "proj_gap": 6.1,
+    "salary": 49800,
+    "production_expected_copies": 22.56,
+    "points": 94.21
+   },
+   {
+    "lineup": [
+     "Tee Higgins (CPT)",
+     "Chig Okonkwo",
+     "Drew Sample",
+     "Ja'Marr Chase",
+     "Jacory Croskey-Merritt",
+     "Joe Burrow"
+    ],
+    "copies": 222,
+    "entrants": 217,
+    "proj_rank": 658,
+    "proj_gap": 7.75,
+    "salary": 49900,
+    "production_expected_copies": 13.74,
+    "points": 77.65
+   }
+  ],
+  "ownership_top": [
+   {
+    "name": "Joe Burrow",
+    "pos": "QB",
+    "team": "CIN",
+    "salary": 11000,
+    "proj": 26.5,
+    "real_pct": 87.51,
+    "real_cpt_pct": 22.77,
+    "field_cpt_pct": 37.4,
+    "field_flex_pct": 54.0,
+    "opt_cpt_pct": 17.83,
+    "opt_flex_pct": 62.3
+   },
+   {
+    "name": "Ja'Marr Chase",
+    "pos": "WR",
+    "team": "CIN",
+    "salary": 11600,
+    "proj": 22.1,
+    "real_pct": 70.29,
+    "real_cpt_pct": 20.59,
+    "field_cpt_pct": 10.6,
+    "field_flex_pct": 46.0,
+    "opt_cpt_pct": 15.8,
+    "opt_flex_pct": 36.59
+   },
+   {
+    "name": "Jayden Daniels",
+    "pos": "QB",
+    "team": "WAS",
+    "salary": 10000,
+    "proj": 21.1,
+    "real_pct": 60.37,
+    "real_cpt_pct": 12.75,
+    "field_cpt_pct": 15.9,
+    "field_flex_pct": 52.0,
+    "opt_cpt_pct": 13.04,
+    "opt_flex_pct": 43.73
+   },
+   {
+    "name": "Chig Okonkwo",
+    "pos": "TE",
+    "team": "WAS",
+    "salary": 4000,
+    "proj": 10.3,
+    "real_pct": 52.07,
+    "real_cpt_pct": 7.74,
+    "field_cpt_pct": 6.3,
+    "field_flex_pct": 38.9,
+    "opt_cpt_pct": 4.99,
+    "opt_flex_pct": 32.54
+   },
+   {
+    "name": "Tee Higgins",
+    "pos": "WR",
+    "team": "CIN",
+    "salary": 10600,
+    "proj": 18.8,
+    "real_pct": 41.37,
+    "real_cpt_pct": 9.92,
+    "field_cpt_pct": 5.2,
+    "field_flex_pct": 30.6,
+    "opt_cpt_pct": 11.6,
+    "opt_flex_pct": 32.59
+   },
+   {
+    "name": "Chase Brown",
+    "pos": "RB",
+    "team": "CIN",
+    "salary": 9400,
+    "proj": 15.5,
+    "real_pct": 33.99,
+    "real_cpt_pct": 8.15,
+    "field_cpt_pct": 2.9,
+    "field_flex_pct": 21.6,
+    "opt_cpt_pct": 9.43,
+    "opt_flex_pct": 30.4
+   },
+   {
+    "name": "Mike Gesicki",
+    "pos": "TE",
+    "team": "CIN",
+    "salary": 4600,
+    "proj": 8.4,
+    "real_pct": 26.27,
+    "real_cpt_pct": 2.89,
+    "field_cpt_pct": 2.3,
+    "field_flex_pct": 21.4,
+    "opt_cpt_pct": 2.87,
+    "opt_flex_pct": 21.82
+   },
+   {
+    "name": "Stefon Diggs",
+    "pos": "WR",
+    "team": "WAS",
+    "salary": 8400,
+    "proj": 13.3,
+    "real_pct": 23.74,
+    "real_cpt_pct": 4.12,
+    "field_cpt_pct": 2.3,
+    "field_flex_pct": 17.7,
+    "opt_cpt_pct": 4.7,
+    "opt_flex_pct": 21.44
+   },
+   {
+    "name": "Drew Sample",
+    "pos": "TE",
+    "team": "CIN",
+    "salary": 1600,
+    "proj": 4.6,
+    "real_pct": 19.69,
+    "real_cpt_pct": 0.48,
+    "field_cpt_pct": 1.7,
+    "field_flex_pct": 23.3,
+    "opt_cpt_pct": 0.69,
+    "opt_flex_pct": 19.87
+   },
+   {
+    "name": "Dohnte Meyers",
+    "pos": "WR",
+    "team": "CIN",
+    "salary": 3600,
+    "proj": 4.8,
+    "real_pct": 18.55,
+    "real_cpt_pct": 0.92,
+    "field_cpt_pct": 0.8,
+    "field_flex_pct": 11.8,
+    "opt_cpt_pct": 0.58,
+    "opt_flex_pct": 10.87
+   },
+   {
+    "name": "Evan McPherson",
+    "pos": "K",
+    "team": "CIN",
+    "salary": 5400,
+    "proj": 9.2,
+    "real_pct": 18.38,
+    "real_cpt_pct": 0.71,
+    "field_cpt_pct": 2.3,
+    "field_flex_pct": 20.0,
+    "opt_cpt_pct": 1.11,
+    "opt_flex_pct": 22.4
+   },
+   {
+    "name": "Treylon Burks",
+    "pos": "WR",
+    "team": "WAS",
+    "salary": 4800,
+    "proj": 7.0,
+    "real_pct": 16.56,
+    "real_cpt_pct": 1.38,
+    "field_cpt_pct": 1.3,
+    "field_flex_pct": 14.4,
+    "opt_cpt_pct": 1.63,
+    "opt_flex_pct": 14.79
+   },
+   {
+    "name": "Jacory Croskey-Merritt",
+    "pos": "RB",
+    "team": "WAS",
+    "salary": 5800,
+    "proj": 7.6,
+    "real_pct": 15.74,
+    "real_cpt_pct": 1.87,
+    "field_cpt_pct": 1.0,
+    "field_flex_pct": 11.7,
+    "opt_cpt_pct": 3.05,
+    "opt_flex_pct": 16.53
+   },
+   {
+    "name": "Antonio Williams",
+    "pos": "WR",
+    "team": "WAS",
+    "salary": 6800,
+    "proj": 8.3,
+    "real_pct": 14.71,
+    "real_cpt_pct": 1.51,
+    "field_cpt_pct": 0.7,
+    "field_flex_pct": 9.1,
+    "opt_cpt_pct": 1.43,
+    "opt_flex_pct": 12.73
+   },
+   {
+    "name": "Samaje Perine",
+    "pos": "RB",
+    "team": "CIN",
+    "salary": 4400,
+    "proj": 7.7,
+    "real_pct": 14.04,
+    "real_cpt_pct": 0.82,
+    "field_cpt_pct": 1.9,
+    "field_flex_pct": 19.2,
+    "opt_cpt_pct": 4.87,
+    "opt_flex_pct": 26.05
+   },
+   {
+    "name": "Jack Endries",
+    "pos": "TE",
+    "team": "CIN",
+    "salary": 600,
+    "proj": 1.6,
+    "real_pct": 13.45,
+    "real_cpt_pct": 0.19,
+    "field_cpt_pct": 0.6,
+    "field_flex_pct": 13.1,
+    "opt_cpt_pct": 0.07,
+    "opt_flex_pct": 8.61
+   },
+   {
+    "name": "Drew Stevens",
+    "pos": "K",
+    "team": "WAS",
+    "salary": 5000,
+    "proj": 8.3,
+    "real_pct": 13.38,
+    "real_cpt_pct": 0.35,
+    "field_cpt_pct": 1.9,
+    "field_flex_pct": 18.8,
+    "opt_cpt_pct": 0.8,
+    "opt_flex_pct": 19.1
+   },
+   {
+    "name": "Ben Sinnott",
+    "pos": "TE",
+    "team": "WAS",
+    "salary": 2000,
+    "proj": 1.2,
+    "real_pct": 11.53,
+    "real_cpt_pct": 0.41,
+    "field_cpt_pct": 0.3,
+    "field_flex_pct": 8.1,
+    "opt_cpt_pct": 0.04,
+    "opt_flex_pct": 2.82
+   },
+   {
+    "name": "Bengals",
+    "pos": "DST",
+    "team": "CIN",
+    "salary": 4200,
+    "proj": 6.5,
+    "real_pct": 11.25,
+    "real_cpt_pct": 0.91,
+    "field_cpt_pct": 1.2,
+    "field_flex_pct": 15.1,
+    "opt_cpt_pct": 0.82,
+    "opt_flex_pct": 14.32
+   },
+   {
+    "name": "Rachaad White",
+    "pos": "RB",
+    "team": "WAS",
+    "salary": 6200,
+    "proj": 8.7,
+    "real_pct": 7.19,
+    "real_cpt_pct": 0.54,
+    "field_cpt_pct": 1.2,
+    "field_flex_pct": 13.3,
+    "opt_cpt_pct": 2.81,
+    "opt_flex_pct": 17.9
+   },
+   {
+    "name": "Van Jefferson",
+    "pos": "WR",
+    "team": "WAS",
+    "salary": 2800,
+    "proj": 2.8,
+    "real_pct": 6.09,
+    "real_cpt_pct": 0.11,
+    "field_cpt_pct": 0.4,
+    "field_flex_pct": 9.6,
+    "opt_cpt_pct": 0.16,
+    "opt_flex_pct": 6.6
+   },
+   {
+    "name": "Commanders",
+    "pos": "DST",
+    "team": "WAS",
+    "salary": 3400,
+    "proj": 4.1,
+    "real_pct": 5.81,
+    "real_cpt_pct": 0.28,
+    "field_cpt_pct": 0.6,
+    "field_flex_pct": 10.9,
+    "opt_cpt_pct": 0.48,
+    "opt_flex_pct": 10.23
+   },
+   {
+    "name": "Austin Ekeler",
+    "pos": "RB",
+    "team": "WAS",
+    "salary": 5200,
+    "proj": 5.4,
+    "real_pct": 5.63,
+    "real_cpt_pct": 0.35,
+    "field_cpt_pct": 0.5,
+    "field_flex_pct": 8.0,
+    "opt_cpt_pct": 1.15,
+    "opt_flex_pct": 10.27
+   },
+   {
+    "name": "Luke McCaffrey",
+    "pos": "WR",
+    "team": "WAS",
+    "salary": 800,
+    "proj": null,
+    "real_pct": 2.8,
+    "real_cpt_pct": 0.03
+   },
+   {
+    "name": "John Bates",
+    "pos": "TE",
+    "team": "WAS",
+    "salary": 1200,
+    "proj": 1.6,
+    "real_pct": 2.2,
+    "real_cpt_pct": 0.02,
+    "field_cpt_pct": 0.5,
+    "field_flex_pct": 11.6,
+    "opt_cpt_pct": 0.06,
+    "opt_flex_pct": 5.5
+   }
+  ],
+  "ownership_concentration_sum_of_squares": 2.5877
+ },
+ "model_field": {
+  "what": "softmax(beta x projection) over the universe with the most popular lineup at 0.2% of the field (dfs_tourney.field_weights, FIELD_TOP_SHARE): production's rule on this universe",
+  "beta": 0.3004,
+  "exact_pair_collision_sum_p2": 0.00015551758598180966,
+  "top_expected_copies_at_N": 141.0,
+  "board_stamp": {
+   "beta": 0.3004,
+   "top_share_pct": 0.2,
+   "top_copies": 2.5,
+   "lineups_legal": 769040,
+   "field_duplication": null
+  },
+  "sample_rows": 63663,
+  "sampled": {
+   "duplication": {
+    "entries": 63663,
+    "distinct_lineups": 23326,
+    "max_copies": 138,
+    "distinct_pair_collision": 0.00015507904055635767,
+    "entries_in_duplicated_lineups_pct": 78.769,
+    "copies_histogram": {
+     "1": 13516,
+     "2": 3896,
+     "3": 1859,
+     "4": 1060,
+     "5": 678,
+     "6": 432,
+     "7": 341,
+     "8": 263,
+     "9": 177,
+     "10": 154,
+     "11": 136,
+     "12": 106,
+     "13": 93,
+     "14": 71,
+     "15": 70,
+     "16": 45,
+     "17": 48,
+     "18": 38,
+     "19": 30,
+     "20": 36,
+     "21": 26,
+     "22": 23,
+     "23": 20,
+     "24": 13,
+     "25": 19,
+     "26": 11,
+     "27": 14,
+     "28": 16,
+     "29": 12,
+     "30": 7,
+     "31": 8,
+     "32": 4,
+     "33": 9,
+     "34": 5,
+     "35": 5,
+     "36": 5,
+     "37": 6,
+     "38": 6,
+     "39": 9,
+     "40": 3,
+     "41": 5,
+     "42": 3,
+     "43": 2,
+     "44": 4,
+     "45": 3,
+     "46": 4,
+     "47": 1,
+     "50": 2,
+     "51": 2,
+     "52": 1,
+     "53": 2,
+     "54": 1,
+     "55": 2,
+     "57": 1,
+     "58": 2,
+     "59": 1,
+     "60": 2,
+     "61": 1,
+     "62": 1,
+     "66": 1,
+     "67": 1,
+     "68": 1,
+     "70": 1,
+     "73": 2,
+     "75": 1,
+     "76": 1,
+     "80": 2,
+     "82": 2,
+     "96": 1,
+     "101": 1,
+     "128": 1,
+     "138": 1
+    },
+    "entries_by_copies_pct": {
+     "1": 21.231,
+     "2-5": 32.985,
+     "6-20": 31.018,
+     "21-100": 14.19,
+     "101+": 0.576
+    },
+    "effective_lineups_1_over_C": 6448
+   },
+   "near": {
+    "pair_share_overlap": {
+     "6_of_6": 0.00015507904055635767,
+     "5_of_6": 0.0030947595460716405,
+     "4_of_6": 0.030723150525270495
+    },
+    "pairs": {
+     "exact": 314261.0,
+     "one_swap": 6271397.0,
+     "two_swaps": 62259142.0
+    },
+    "near_to_exact_pair_ratio": {
+     "one_swap": 19.956014268394743,
+     "two_swaps": 198.1128488740251
+    },
+    "entries_with_another_entry_pct": {
+     "exact": 78.769,
+     "within_one_swap": 99.895,
+     "within_two_swaps": 100.0
+    },
+    "entries_with_another_USERS_entry_pct": {
+     "exact": 78.769,
+     "within_one_swap": 99.895,
+     "within_two_swaps": 100.0
+    },
+    "same_six_players_any_captain_pair_share": 0.00041695432945128047
+   },
+   "mean_overlap": 1.6554850005738069,
+   "structure": {
+    "resolved_entries": 63663,
+    "unresolved_entries": 0,
+    "salary_mean": 47874.0,
+    "salary_median": 48500.0,
+    "salary_left_pct": {
+     "0": 3.07,
+     "100-200": 7.99,
+     "300-500": 11.29,
+     "600-1000": 14.83,
+     "1100-2000": 23.55,
+     "2100+": 39.27
+    },
+    "team_split_pct": {
+     "3-3": 37.17,
+     "4-2": 48.6,
+     "5-1": 14.23
+    },
+    "captain_position_pct": {
+     "QB": 53.69,
+     "RB": 7.56,
+     "WR": 21.15,
+     "TE": 11.6,
+     "K": 4.12,
+     "DST": 1.88
+    },
+    "flex_kickers_and_defenses_pct": {
+     "0": 46.04,
+     "1": 43.17,
+     "2": 10.24,
+     "3": 0.55,
+     "4": 0.0
+    },
+    "both_quarterbacks_pct": 60.7,
+    "non_qb_captain_with_his_qb_in_flex_pct": 77.53,
+    "qb_captain_own_catchers_pct": {
+     "0": 14.13,
+     "1": 37.44,
+     "2": 36.11,
+     "3": 12.33
+    }
+   },
+   "score_quantiles": {
+    "0.001": 41.95,
+    "0.01": 50.51,
+    "0.1": 62.89,
+    "0.25": 70.15,
+    "0.5": 78.0,
+    "0.75": 86.16,
+    "0.9": 93.11,
+    "0.99": 105.25,
+    "0.999": 114.61
+   },
+   "score_mean": 78.07,
+   "score_sd": 11.76
+  },
+  "real_on_the_same_support": {
+   "duplication": {
+    "entries": 63663,
+    "distinct_lineups": 10065,
+    "max_copies": 760,
+    "distinct_pair_collision": 0.0010803688658468137,
+    "entries_in_duplicated_lineups_pct": 93.019,
+    "copies_histogram": {
+     "1": 4444,
+     "2": 1560,
+     "3": 843,
+     "4": 583,
+     "5": 405,
+     "6": 312,
+     "7": 253,
+     "8": 167,
+     "9": 157,
+     "10": 131,
+     "11": 99,
+     "12": 98,
+     "13": 87,
+     "14": 60,
+     "15": 68,
+     "16": 66,
+     "17": 52,
+     "18": 36,
+     "19": 37,
+     "20": 47,
+     "21": 49,
+     "22": 28,
+     "23": 20,
+     "24": 16,
+     "25": 18,
+     "26": 19,
+     "27": 16,
+     "28": 12,
+     "29": 18,
+     "30": 14,
+     "31": 12,
+     "32": 13,
+     "33": 8,
+     "34": 16,
+     "35": 11,
+     "36": 8,
+     "37": 7,
+     "38": 15,
+     "39": 6,
+     "40": 8,
+     "41": 11,
+     "42": 6,
+     "43": 6,
+     "44": 5,
+     "45": 6,
+     "46": 8,
+     "47": 3,
+     "48": 5,
+     "49": 10,
+     "50": 5,
+     "51": 4,
+     "52": 10,
+     "53": 7,
+     "54": 5,
+     "55": 1,
+     "56": 5,
+     "57": 2,
+     "58": 4,
+     "59": 4,
+     "60": 2,
+     "61": 6,
+     "62": 3,
+     "63": 3,
+     "64": 3,
+     "65": 2,
+     "66": 3,
+     "67": 4,
+     "68": 5,
+     "69": 1,
+     "70": 2,
+     "71": 1,
+     "72": 2,
+     "73": 1,
+     "74": 3,
+     "75": 4,
+     "76": 2,
+     "77": 1,
+     "78": 2,
+     "79": 2,
+     "80": 3,
+     "82": 2,
+     "83": 1,
+     "85": 2,
+     "86": 2,
+     "87": 4,
+     "88": 1,
+     "89": 1,
+     "90": 1,
+     "91": 1,
+     "92": 1,
+     "93": 1,
+     "94": 1,
+     "95": 1,
+     "97": 1,
+     "98": 2,
+     "99": 1,
+     "100": 2,
+     "101": 3,
+     "103": 2,
+     "104": 3,
+     "109": 1,
+     "112": 1,
+     "116": 2,
+     "119": 1,
+     "124": 1,
+     "125": 1,
+     "127": 1,
+     "130": 1,
+     "132": 1,
+     "141": 1,
+     "142": 1,
+     "143": 1,
+     "145": 1,
+     "146": 1,
+     "148": 1,
+     "150": 1,
+     "153": 1,
+     "156": 1,
+     "161": 1,
+     "162": 1,
+     "164": 1,
+     "165": 1,
+     "170": 1,
+     "171": 1,
+     "174": 1,
+     "186": 1,
+     "187": 1,
+     "198": 2,
+     "218": 1,
+     "222": 1,
+     "233": 1,
+     "239": 1,
+     "243": 1,
+     "244": 1,
+     "261": 1,
+     "267": 1,
+     "272": 1,
+     "273": 2,
+     "279": 1,
+     "283": 1,
+     "285": 2,
+     "287": 1,
+     "350": 1,
+     "373": 1,
+     "501": 1,
+     "516": 1,
+     "760": 1
+    },
+    "entries_by_copies_pct": {
+     "1": 6.981,
+     "2-5": 15.717,
+     "6-20": 27.0,
+     "21-100": 31.524,
+     "101+": 18.779
+    },
+    "effective_lineups_1_over_C": 926
+   },
+   "near": {
+    "pair_share_overlap": {
+     "6_of_6": 0.0010803688658468137,
+     "5_of_6": 0.003932271538363144,
+     "4_of_6": 0.036968516350221234
+    },
+    "pairs": {
+     "exact": 2189321.0,
+     "one_swap": 7968579.0,
+     "two_swaps": 74915107.0
+    },
+    "near_to_exact_pair_ratio": {
+     "one_swap": 3.6397490363450586,
+     "two_swaps": 34.218420688423485
+    },
+    "entries_with_another_entry_pct": {
+     "exact": 93.019,
+     "within_one_swap": 99.881,
+     "within_two_swaps": 100.0
+    },
+    "entries_with_another_USERS_entry_pct": {
+     "exact": 92.968,
+     "within_one_swap": 99.835,
+     "within_two_swaps": 100.0
+    },
+    "same_six_players_any_captain_pair_share": 0.001663664256479274
+   },
+   "mean_overlap": 1.7566668182761047,
+   "structure": {
+    "resolved_entries": 63663,
+    "unresolved_entries": 0,
+    "salary_mean": 49334.7,
+    "salary_median": 49600.0,
+    "salary_left_pct": {
+     "0": 11.78,
+     "100-200": 25.56,
+     "300-500": 22.98,
+     "600-1000": 19.44,
+     "1100-2000": 14.53,
+     "2100+": 5.71
+    },
+    "team_split_pct": {
+     "3-3": 34.66,
+     "4-2": 45.4,
+     "5-1": 19.95
+    },
+    "captain_position_pct": {
+     "QB": 35.45,
+     "RB": 12.02,
+     "WR": 37.94,
+     "TE": 12.25,
+     "K": 1.13,
+     "DST": 1.2
+    },
+    "flex_kickers_and_defenses_pct": {
+     "0": 59.45,
+     "1": 32.16,
+     "2": 8.04,
+     "3": 0.34,
+     "4": 0.0
+    },
+    "both_quarterbacks_pct": 48.59,
+    "non_qb_captain_with_his_qb_in_flex_pct": 85.38,
+    "qb_captain_own_catchers_pct": {
+     "0": 2.61,
+     "1": 22.52,
+     "2": 48.6,
+     "3": 26.27
+    }
+   },
+   "score_quantiles": {
+    "0.001": 44.88,
+    "0.01": 52.9,
+    "0.1": 63.15,
+    "0.25": 70.01,
+    "0.5": 77.31,
+    "0.75": 85.39,
+    "0.9": 93.31,
+    "0.99": 105.5,
+    "0.999": 113.18
+   },
+   "score_mean": 77.9,
+   "score_sd": 11.54
+  },
+  "ownership_mae_pct_points": {
+   "captain": 2.19,
+   "flex": 4.349
+  },
+  "joint_ownership_mae_pct_points": 2.099,
+  "pairs": {
+   "players": 20,
+   "pairs_with_independent_share_0_5pct_plus": 190,
+   "mean_abs_log_lift_weighted": 0.1236,
+   "top_by_joint": [
+    {
+     "a": "Joe Burrow",
+     "b": "Jayden Daniels",
+     "joint_pct": 60.7,
+     "independent_pct": 61.96,
+     "lift": 0.98
+    },
+    {
+     "a": "Joe Burrow",
+     "b": "Ja'Marr Chase",
+     "joint_pct": 49.56,
+     "independent_pct": 51.51,
+     "lift": 0.962
+    },
+    {
+     "a": "Joe Burrow",
+     "b": "Chig Okonkwo",
+     "joint_pct": 40.95,
+     "independent_pct": 40.99,
+     "lift": 0.999
+    },
+    {
+     "a": "Ja'Marr Chase",
+     "b": "Jayden Daniels",
+     "joint_pct": 32.9,
+     "independent_pct": 38.15,
+     "lift": 0.862
+    },
+    {
+     "a": "Joe Burrow",
+     "b": "Tee Higgins",
+     "joint_pct": 31.09,
+     "independent_pct": 33.06,
+     "lift": 0.94
+    },
+    {
+     "a": "Jayden Daniels",
+     "b": "Chig Okonkwo",
+     "joint_pct": 29.44,
+     "independent_pct": 30.37,
+     "lift": 0.969
+    }
+   ],
+   "top_lift": [
+    {
+     "a": "Ja'Marr Chase",
+     "b": "Jack Endries",
+     "joint_pct": 9.2,
+     "independent_pct": 7.64,
+     "lift": 1.204
+    },
+    {
+     "a": "Ja'Marr Chase",
+     "b": "Drew Sample",
+     "joint_pct": 16.44,
+     "independent_pct": 14.17,
+     "lift": 1.16
+    },
+    {
+     "a": "Ja'Marr Chase",
+     "b": "Ben Sinnott",
+     "joint_pct": 5.39,
+     "independent_pct": 4.78,
+     "lift": 1.129
+    },
+    {
+     "a": "Tee Higgins",
+     "b": "Jack Endries",
+     "joint_pct": 5.42,
+     "independent_pct": 4.9,
+     "lift": 1.104
+    },
+    {
+     "a": "Tee Higgins",
+     "b": "Ben Sinnott",
+     "joint_pct": 3.29,
+     "independent_pct": 3.07,
+     "lift": 1.074
+    },
+    {
+     "a": "Jayden Daniels",
+     "b": "Jack Endries",
+     "joint_pct": 9.64,
+     "independent_pct": 9.19,
+     "lift": 1.049
+    }
+   ],
+   "lowest_lift": [
+    {
+     "a": "Jack Endries",
+     "b": "Ben Sinnott",
+     "joint_pct": 0.38,
+     "independent_pct": 1.15,
+     "lift": 0.328
+    },
+    {
+     "a": "Drew Sample",
+     "b": "Jack Endries",
+     "joint_pct": 1.25,
+     "independent_pct": 3.41,
+     "lift": 0.366
+    },
+    {
+     "a": "Drew Sample",
+     "b": "Ben Sinnott",
+     "joint_pct": 0.82,
+     "independent_pct": 2.13,
+     "lift": 0.386
+    },
+    {
+     "a": "Dohnte Meyers",
+     "b": "Jack Endries",
+     "joint_pct": 0.82,
+     "independent_pct": 1.66,
+     "lift": 0.493
+    },
+    {
+     "a": "Drew Sample",
+     "b": "Dohnte Meyers",
+     "joint_pct": 1.72,
+     "independent_pct": 3.09,
+     "lift": 0.557
+    },
+    {
+     "a": "Jack Endries",
+     "b": "Bengals",
+     "joint_pct": 1.23,
+     "independent_pct": 2.2,
+     "lift": 0.56
+    }
+   ]
+  },
+  "board_ownership_mae_all_entries": {
+   "field_cpt_pct": 2.151,
+   "opt_cpt_pct": 1.135,
+   "field_flex_pct": 4.166,
+   "opt_flex_pct": 4.861
+  }
+ }
+}

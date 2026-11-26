@@ -1,0 +1,1907 @@
+{
+ "contest_id": 198150093,
+ "label": "GB @ LAR (week 12)",
+ "kind": "showdown",
+ "draft_group_id": 157072,
+ "role": "validation",
+ "note": null,
+ "rows": 47058,
+ "entries_with_lineup": 46864,
+ "projection_source": "the board served for draft group 157072 (109 min before lock)",
+ "real": {
+  "duplication": {
+   "entries": 46864,
+   "distinct_lineups": 10932,
+   "max_copies": 296,
+   "distinct_pair_collision": 0.00057016257707438,
+   "entries_in_duplicated_lineups_pct": 88.439,
+   "copies_histogram": {
+    "1": 5418,
+    "2": 1785,
+    "3": 965,
+    "4": 578,
+    "5": 417,
+    "6": 271,
+    "7": 211,
+    "8": 147,
+    "9": 135,
+    "10": 112,
+    "11": 91,
+    "12": 85,
+    "13": 62,
+    "14": 58,
+    "15": 56,
+    "16": 40,
+    "17": 43,
+    "18": 32,
+    "19": 27,
+    "20": 21,
+    "21": 25,
+    "22": 21,
+    "23": 19,
+    "24": 15,
+    "25": 17,
+    "26": 17,
+    "27": 17,
+    "28": 10,
+    "29": 10,
+    "30": 13,
+    "31": 15,
+    "32": 6,
+    "33": 11,
+    "34": 7,
+    "35": 8,
+    "36": 10,
+    "37": 3,
+    "38": 7,
+    "39": 5,
+    "40": 2,
+    "41": 5,
+    "42": 8,
+    "43": 1,
+    "44": 5,
+    "45": 4,
+    "46": 7,
+    "47": 6,
+    "48": 1,
+    "50": 4,
+    "51": 4,
+    "52": 5,
+    "53": 4,
+    "54": 2,
+    "55": 3,
+    "56": 2,
+    "57": 5,
+    "59": 5,
+    "60": 5,
+    "61": 1,
+    "62": 2,
+    "63": 3,
+    "64": 2,
+    "66": 1,
+    "67": 2,
+    "69": 2,
+    "70": 1,
+    "71": 3,
+    "72": 2,
+    "73": 1,
+    "74": 3,
+    "75": 3,
+    "78": 2,
+    "79": 1,
+    "80": 1,
+    "81": 1,
+    "82": 1,
+    "85": 1,
+    "86": 1,
+    "87": 1,
+    "90": 1,
+    "91": 2,
+    "94": 1,
+    "95": 1,
+    "98": 1,
+    "99": 1,
+    "101": 1,
+    "102": 1,
+    "104": 1,
+    "107": 1,
+    "108": 1,
+    "110": 1,
+    "118": 2,
+    "119": 2,
+    "122": 1,
+    "125": 2,
+    "126": 1,
+    "134": 1,
+    "135": 1,
+    "144": 1,
+    "145": 1,
+    "148": 1,
+    "153": 1,
+    "274": 1,
+    "296": 1
+   },
+   "entries_by_copies_pct": {
+    "1": 11.561,
+    "2-5": 23.178,
+    "6-20": 29.816,
+    "21-100": 28.973,
+    "101+": 6.472
+   },
+   "effective_lineups_1_over_C": 1754
+  },
+  "near": {
+   "pair_share_overlap": {
+    "6_of_6": 0.00057016257707438,
+    "5_of_6": 0.0036353405709371556,
+    "4_of_6": 0.03642922801051454
+   },
+   "pairs": {
+    "exact": 626092.0,
+    "one_swap": 3991945.0,
+    "two_swaps": 40002710.0
+   },
+   "near_to_exact_pair_ratio": {
+    "one_swap": 6.3759719018930126,
+    "two_swaps": 63.89270266989516
+   },
+   "entries_with_another_entry_pct": {
+    "exact": 88.439,
+    "within_one_swap": 99.823,
+    "within_two_swaps": 99.996
+   },
+   "entries_with_another_USERS_entry_pct": {
+    "exact": 88.339,
+    "within_one_swap": 99.804,
+    "within_two_swaps": 99.996
+   },
+   "same_six_players_any_captain_pair_share": 0.0010672913214912413
+  },
+  "mean_overlap": 1.802155771360796,
+  "structure": {
+   "resolved_entries": 46864,
+   "unresolved_entries": 0,
+   "salary_mean": 48912.4,
+   "salary_median": 49400.0,
+   "salary_left_pct": {
+    "0": 8.67,
+    "100-200": 18.95,
+    "300-500": 19.61,
+    "600-1000": 19.06,
+    "1100-2000": 17.71,
+    "2100+": 16.01
+   },
+   "team_split_pct": {
+    "3-3": 37.47,
+    "4-2": 45.57,
+    "5-1": 16.95
+   },
+   "captain_position_pct": {
+    "QB": 15.66,
+    "RB": 33.1,
+    "WR": 40.0,
+    "TE": 6.78,
+    "K": 1.08,
+    "DST": 3.39
+   },
+   "flex_kickers_and_defenses_pct": {
+    "0": 45.0,
+    "1": 39.75,
+    "2": 14.66,
+    "3": 0.55,
+    "4": 0.04
+   },
+   "both_quarterbacks_pct": 27.46,
+   "non_qb_captain_with_his_qb_in_flex_pct": 69.58,
+   "qb_captain_own_catchers_pct": {
+    "0": 3.33,
+    "1": 23.98,
+    "2": 50.42,
+    "3": 22.27
+   }
+  },
+  "score_quantiles": {
+   "0.001": 26.72,
+   "0.01": 33.57,
+   "0.1": 46.22,
+   "0.25": 56.93,
+   "0.5": 71.5,
+   "0.75": 84.75,
+   "0.9": 95.65,
+   "0.99": 111.37,
+   "0.999": 118.87
+  },
+  "score_mean": 71.25,
+  "score_sd": 18.36,
+  "points_rebuild_max_abs_diff": 0.0,
+  "users": {
+   "entrants": 13544,
+   "entries_per_entrant_mean": 3.46,
+   "duplicate_pairs": 626092.0,
+   "same_user_duplicate_pairs": 11554.0,
+   "same_user_share_of_duplicate_pairs_pct": 1.8454,
+   "collision_cross_user_only": 0.0005596407074202118,
+   "entries_whose_lineup_another_entrant_holds_pct": 88.339,
+   "entries_repeating_the_entrants_own_lineup_pct": 1.462,
+   "field_mean_overlap": 1.802155771360796,
+   "classes": {
+    "1": {
+     "entrants": 9289,
+     "entries": 9289,
+     "entries_pct": 19.82,
+     "share_of_entries_in_duplicated_lineups_pct": 20.57,
+     "their_entries_in_a_lineup_another_entrant_holds_pct": 91.76,
+     "their_entries_mean_copies": 38.29,
+     "their_entries_median_copies": 18.0,
+     "distinct_lineups_per_entry_mean": null,
+     "within_entrant_mean_overlap": null
+    },
+    "2-19": {
+     "entrants": 3970,
+     "entries": 14712,
+     "entries_pct": 31.39,
+     "share_of_entries_in_duplicated_lineups_pct": 32.28,
+     "their_entries_in_a_lineup_another_entrant_holds_pct": 90.71,
+     "their_entries_mean_copies": 34.74,
+     "their_entries_median_copies": 16.0,
+     "distinct_lineups_per_entry_mean": 0.9848,
+     "within_entrant_mean_overlap": 2.394
+    },
+    "20-149": {
+     "entrants": 184,
+     "entries": 7713,
+     "entries_pct": 16.46,
+     "share_of_entries_in_duplicated_lineups_pct": 16.14,
+     "their_entries_in_a_lineup_another_entrant_holds_pct": 86.59,
+     "their_entries_mean_copies": 23.45,
+     "their_entries_median_copies": 10.0,
+     "distinct_lineups_per_entry_mean": 0.9916,
+     "within_entrant_mean_overlap": 2.152
+    },
+    "150+": {
+     "entrants": 101,
+     "entries": 15150,
+     "entries_pct": 32.33,
+     "share_of_entries_in_duplicated_lineups_pct": 31.01,
+     "their_entries_in_a_lineup_another_entrant_holds_pct": 84.83,
+     "their_entries_mean_copies": 16.6,
+     "their_entries_median_copies": 6.0,
+     "distinct_lineups_per_entry_mean": 0.9898,
+     "within_entrant_mean_overlap": 1.979
+    }
+   }
+  },
+  "pairs": {
+   "players": 20,
+   "pairs_with_independent_share_0_5pct_plus": 189,
+   "mean_abs_log_lift_weighted": 0.1702,
+   "top_by_joint": [
+    {
+     "a": "Jordan Love",
+     "b": "Matthew Golden",
+     "joint_pct": 49.2,
+     "independent_pct": 49.42,
+     "lift": 0.996
+    },
+    {
+     "a": "Jordan Love",
+     "b": "Christian Watson",
+     "joint_pct": 41.07,
+     "independent_pct": 41.43,
+     "lift": 0.991
+    },
+    {
+     "a": "Jordan Love",
+     "b": "Blake Corum",
+     "joint_pct": 40.18,
+     "independent_pct": 43.56,
+     "lift": 0.922
+    },
+    {
+     "a": "Jordan Love",
+     "b": "Kyren Williams",
+     "joint_pct": 37.53,
+     "independent_pct": 42.57,
+     "lift": 0.882
+    },
+    {
+     "a": "Matthew Golden",
+     "b": "Blake Corum",
+     "joint_pct": 36.72,
+     "independent_pct": 37.22,
+     "lift": 0.986
+    },
+    {
+     "a": "Matthew Golden",
+     "b": "Kyren Williams",
+     "joint_pct": 33.04,
+     "independent_pct": 36.37,
+     "lift": 0.908
+    },
+    {
+     "a": "Blake Corum",
+     "b": "Kyren Williams",
+     "joint_pct": 28.81,
+     "independent_pct": 32.06,
+     "lift": 0.899
+    },
+    {
+     "a": "Blake Corum",
+     "b": "Christian Watson",
+     "joint_pct": 28.51,
+     "independent_pct": 31.21,
+     "lift": 0.914
+    },
+    {
+     "a": "Matthew Golden",
+     "b": "Christian Watson",
+     "joint_pct": 28.44,
+     "independent_pct": 35.4,
+     "lift": 0.803
+    },
+    {
+     "a": "Jordan Love",
+     "b": "Matthew Stafford",
+     "joint_pct": 27.35,
+     "independent_pct": 34.3,
+     "lift": 0.797
+    },
+    {
+     "a": "Kyren Williams",
+     "b": "Christian Watson",
+     "joint_pct": 26.26,
+     "independent_pct": 30.49,
+     "lift": 0.861
+    },
+    {
+     "a": "Matthew Golden",
+     "b": "Matthew Stafford",
+     "joint_pct": 23.41,
+     "independent_pct": 29.31,
+     "lift": 0.799
+    }
+   ],
+   "top_lift": [
+    {
+     "a": "Trey Smack",
+     "b": "Packers",
+     "joint_pct": 3.39,
+     "independent_pct": 2.36,
+     "lift": 1.433
+    },
+    {
+     "a": "Brandon McManus",
+     "b": "Rams",
+     "joint_pct": 6.28,
+     "independent_pct": 4.73,
+     "lift": 1.328
+    },
+    {
+     "a": "Matthew Stafford",
+     "b": "Tutu Atwell",
+     "joint_pct": 5.2,
+     "independent_pct": 3.97,
+     "lift": 1.307
+    },
+    {
+     "a": "Kyren Williams",
+     "b": "Rams",
+     "joint_pct": 14.97,
+     "independent_pct": 11.49,
+     "lift": 1.303
+    },
+    {
+     "a": "Christian Watson",
+     "b": "Xavier Smith",
+     "joint_pct": 4.26,
+     "independent_pct": 3.4,
+     "lift": 1.253
+    },
+    {
+     "a": "Matthew Stafford",
+     "b": "Konata Mumpfield",
+     "joint_pct": 16.64,
+     "independent_pct": 13.77,
+     "lift": 1.209
+    },
+    {
+     "a": "Jordan Love",
+     "b": "Savion Williams",
+     "joint_pct": 12.11,
+     "independent_pct": 10.06,
+     "lift": 1.204
+    },
+    {
+     "a": "Matthew Stafford",
+     "b": "Rams",
+     "joint_pct": 11.14,
+     "independent_pct": 9.26,
+     "lift": 1.204
+    },
+    {
+     "a": "Christian Watson",
+     "b": "Davis Allen",
+     "joint_pct": 5.1,
+     "independent_pct": 4.25,
+     "lift": 1.199
+    },
+    {
+     "a": "Christian Watson",
+     "b": "Packers",
+     "joint_pct": 9.87,
+     "independent_pct": 8.29,
+     "lift": 1.19
+    },
+    {
+     "a": "Matthew Stafford",
+     "b": "Xavier Smith",
+     "joint_pct": 3.34,
+     "independent_pct": 2.82,
+     "lift": 1.187
+    },
+    {
+     "a": "Blake Corum",
+     "b": "Rams",
+     "joint_pct": 13.94,
+     "independent_pct": 11.76,
+     "lift": 1.186
+    }
+   ],
+   "lowest_lift": [
+    {
+     "a": "Rams",
+     "b": "Xavier Smith",
+     "joint_pct": 0.37,
+     "independent_pct": 1.28,
+     "lift": 0.286
+    },
+    {
+     "a": "CJ Daniels",
+     "b": "Xavier Smith",
+     "joint_pct": 0.42,
+     "independent_pct": 1.37,
+     "lift": 0.308
+    },
+    {
+     "a": "Rams",
+     "b": "Davis Allen",
+     "joint_pct": 0.52,
+     "independent_pct": 1.6,
+     "lift": 0.328
+    },
+    {
+     "a": "Rams",
+     "b": "Savion Williams",
+     "joint_pct": 0.89,
+     "independent_pct": 2.72,
+     "lift": 0.328
+    },
+    {
+     "a": "Rams",
+     "b": "Kaleb Johnson",
+     "joint_pct": 0.62,
+     "independent_pct": 1.83,
+     "lift": 0.337
+    },
+    {
+     "a": "Trey Smack",
+     "b": "Davis Allen",
+     "joint_pct": 0.42,
+     "independent_pct": 1.21,
+     "lift": 0.35
+    },
+    {
+     "a": "Brandon McManus",
+     "b": "Xavier Smith",
+     "joint_pct": 0.51,
+     "independent_pct": 1.44,
+     "lift": 0.352
+    },
+    {
+     "a": "CJ Daniels",
+     "b": "Davis Allen",
+     "joint_pct": 0.61,
+     "independent_pct": 1.71,
+     "lift": 0.358
+    },
+    {
+     "a": "Trey Smack",
+     "b": "Xavier Smith",
+     "joint_pct": 0.35,
+     "independent_pct": 0.97,
+     "lift": 0.365
+    },
+    {
+     "a": "CJ Daniels",
+     "b": "Rams",
+     "joint_pct": 1.7,
+     "independent_pct": 4.51,
+     "lift": 0.376
+    },
+    {
+     "a": "Packers",
+     "b": "Xavier Smith",
+     "joint_pct": 0.36,
+     "independent_pct": 0.95,
+     "lift": 0.377
+    },
+    {
+     "a": "Tutu Atwell",
+     "b": "Davis Allen",
+     "joint_pct": 0.28,
+     "independent_pct": 0.69,
+     "lift": 0.41
+    }
+   ]
+  },
+  "finish_by_copies": {
+   "1": {
+    "entries": 5418,
+    "mean_points": 63.86,
+    "top_1pct_share_pct": 0.07,
+    "top_10pct_share_pct": 3.53,
+    "top_22pct_share_pct": 11.04
+   },
+   "2-5": {
+    "entries": 10862,
+    "mean_points": 67.1,
+    "top_1pct_share_pct": 0.15,
+    "top_10pct_share_pct": 5.23,
+    "top_22pct_share_pct": 15.48
+   },
+   "6-20": {
+    "entries": 13973,
+    "mean_points": 71.04,
+    "top_1pct_share_pct": 0.27,
+    "top_10pct_share_pct": 9.02,
+    "top_22pct_share_pct": 21.61
+   },
+   "21-100": {
+    "entries": 13578,
+    "mean_points": 76.56,
+    "top_1pct_share_pct": 3.02,
+    "top_10pct_share_pct": 17.0,
+    "top_22pct_share_pct": 31.64
+   },
+   "101+": {
+    "entries": 3033,
+    "mean_points": 76.46,
+    "top_1pct_share_pct": 0.0,
+    "top_10pct_share_pct": 11.84,
+    "top_22pct_share_pct": 23.61
+   }
+  },
+  "optimizer_proximity": {
+   "universe_players": 24,
+   "legal_lineups": 784884,
+   "representable_entries_pct": 93.99,
+   "optimum": {
+    "proj": 84.5,
+    "salary": 50000,
+    "real_copies": 53
+   },
+   "note": "rank 1 is the highest projected lineup; shares are of ALL entries with a lineup (an unrepresentable entry is in no top-K)",
+   "entries_in_projection_top_K_pct": {
+    "1": {
+     "real": 0.113,
+     "production_field": 0.2,
+     "uniform": 0.0001
+    },
+    "10": {
+     "real": 1.413,
+     "production_field": 1.488,
+     "uniform": 0.0013
+    },
+    "100": {
+     "real": 6.429,
+     "production_field": 7.557,
+     "uniform": 0.0127
+    },
+    "1000": {
+     "real": 28.115,
+     "production_field": 30.091,
+     "uniform": 0.1274
+    },
+    "10000": {
+     "real": 72.873,
+     "production_field": 75.295,
+     "uniform": 1.2741
+    },
+    "100000": {
+     "real": 93.669,
+     "production_field": 99.263,
+     "uniform": 12.7407
+    }
+   },
+   "by_copies": {
+    "1": {
+     "entries": 5418,
+     "representable_pct": 81.76,
+     "top_100_pct": 0.09,
+     "top_1000_pct": 2.07,
+     "top_10000_pct": 28.87,
+     "median_rank_pctile": 2.007,
+     "median_gap_pts": 11.45,
+     "salary_left_0_pct": 0.86
+    },
+    "2-5": {
+     "entries": 10862,
+     "representable_pct": 90.91,
+     "top_100_pct": 0.39,
+     "top_1000_pct": 7.74,
+     "top_10000_pct": 55.75,
+     "median_rank_pctile": 0.885,
+     "median_gap_pts": 9.2,
+     "salary_left_0_pct": 2.53
+    },
+    "6-20": {
+     "entries": 13973,
+     "representable_pct": 96.11,
+     "top_100_pct": 3.39,
+     "top_1000_pct": 24.54,
+     "top_10000_pct": 78.47,
+     "median_rank_pctile": 0.371,
+     "median_gap_pts": 7.3,
+     "salary_left_0_pct": 7.55
+    },
+    "21-100": {
+     "entries": 13578,
+     "representable_pct": 97.81,
+     "top_100_pct": 10.47,
+     "top_1000_pct": 48.52,
+     "top_10000_pct": 93.44,
+     "median_rank_pctile": 0.13,
+     "median_gap_pts": 5.6,
+     "salary_left_0_pct": 15.39
+    },
+    "101+": {
+     "entries": 3033,
+     "representable_pct": 100.0,
+     "top_100_pct": 35.28,
+     "top_1000_pct": 72.73,
+     "top_10000_pct": 94.96,
+     "median_rank_pctile": 0.039,
+     "median_gap_pts": 4.05,
+     "salary_left_0_pct": 14.97
+    }
+   },
+   "by_user_class": {
+    "1": {
+     "entries": 9289,
+     "top_100_pct": 8.26,
+     "top_1000_pct": 32.77,
+     "top_10000_pct": 76.8,
+     "median_gap_pts": 6.75,
+     "salary_left_0_pct": 13.14
+    },
+    "2-19": {
+     "entries": 14712,
+     "top_100_pct": 8.47,
+     "top_1000_pct": 33.4,
+     "top_10000_pct": 76.3,
+     "median_gap_pts": 6.7,
+     "salary_left_0_pct": 11.76
+    },
+    "20-149": {
+     "entries": 7713,
+     "top_100_pct": 6.13,
+     "top_1000_pct": 27.52,
+     "top_10000_pct": 71.74,
+     "median_gap_pts": 7.5,
+     "salary_left_0_pct": 6.26
+    },
+    "150+": {
+     "entries": 15150,
+     "top_100_pct": 3.48,
+     "top_1000_pct": 20.43,
+     "top_10000_pct": 67.72,
+     "median_gap_pts": 8.1,
+     "salary_left_0_pct": 4.26
+    }
+   },
+   "rank_pctile_quantiles_representable": {
+    "0.1": 0.02,
+    "0.25": 0.09,
+    "0.5": 0.37,
+    "0.75": 1.12,
+    "0.9": 2.51
+   },
+   "gap_pts_quantiles_representable": {
+    "0.1": 3.6,
+    "0.25": 5.1,
+    "0.5": 7.3,
+    "0.75": 9.75,
+    "0.9": 12.2
+   }
+  },
+  "most_copied": [
+   {
+    "lineup": [
+     "Kyren Williams (CPT)",
+     "Brandon McManus",
+     "CJ Daniels",
+     "Christian Watson",
+     "Jordan Love",
+     "Matthew Golden"
+    ],
+    "copies": 296,
+    "entrants": 292,
+    "proj_rank": 5,
+    "proj_gap": 0.6,
+    "salary": 49900,
+    "production_expected_copies": 71.21,
+    "points": 73.77
+   },
+   {
+    "lineup": [
+     "CJ Daniels (CPT)",
+     "Blake Corum",
+     "Christian Watson",
+     "Jordan Love",
+     "Kyren Williams",
+     "Matthew Golden"
+    ],
+    "copies": 274,
+    "entrants": 265,
+    "proj_rank": 21,
+    "proj_gap": 1.85,
+    "salary": 49600,
+    "production_expected_copies": 40.17,
+    "points": 80.02
+   },
+   {
+    "lineup": [
+     "Tyler Higbee (CPT)",
+     "Christian Watson",
+     "Konata Mumpfield",
+     "Matthew Golden",
+     "Matthew Stafford",
+     "Tutu Atwell"
+    ],
+    "copies": 153,
+    "entrants": 4,
+    "proj_rank": 25150,
+    "proj_gap": 13.1,
+    "salary": 49600,
+    "production_expected_copies": 0.23,
+    "points": 40.5
+   },
+   {
+    "lineup": [
+     "Jordan Love (CPT)",
+     "Blake Corum",
+     "Brandon McManus",
+     "CJ Daniels",
+     "Christian Watson",
+     "Matthew Golden"
+    ],
+    "copies": 148,
+    "entrants": 147,
+    "proj_rank": 217,
+    "proj_gap": 3.75,
+    "salary": 49900,
+    "production_expected_copies": 16.82,
+    "points": 85.83
+   },
+   {
+    "lineup": [
+     "Kyren Williams (CPT)",
+     "Blake Corum",
+     "CJ Daniels",
+     "Jordan Love",
+     "Matthew Golden",
+     "Tucker Kraft"
+    ],
+    "copies": 145,
+    "entrants": 145,
+    "proj_rank": 43,
+    "proj_gap": 2.4,
+    "salary": 49900,
+    "production_expected_copies": 31.22,
+    "points": 76.17
+   },
+   {
+    "lineup": [
+     "Matthew Golden (CPT)",
+     "Blake Corum",
+     "Christian Watson",
+     "Jordan Love",
+     "Packers",
+     "Savion Williams"
+    ],
+    "copies": 144,
+    "entrants": 142,
+    "proj_rank": 823,
+    "proj_gap": 5.3,
+    "salary": 49900,
+    "production_expected_copies": 8.27,
+    "points": 72.07
+   },
+   {
+    "lineup": [
+     "Blake Corum (CPT)",
+     "Brandon McManus",
+     "Jordan Love",
+     "Kyren Williams",
+     "Matthew Golden",
+     "Trey Smack"
+    ],
+    "copies": 135,
+    "entrants": 128,
+    "proj_rank": 298,
+    "proj_gap": 4.0,
+    "salary": 50000,
+    "production_expected_copies": 15.0,
+    "points": 106.27
+   },
+   {
+    "lineup": [
+     "Blake Corum (CPT)",
+     "Christian Watson",
+     "Davis Allen",
+     "Jordan Love",
+     "Konata Mumpfield",
+     "Matthew Golden"
+    ],
+    "copies": 134,
+    "entrants": 134,
+    "proj_rank": 2380,
+    "proj_gap": 6.9,
+    "salary": 49400,
+    "production_expected_copies": 3.97,
+    "points": 93.57
+   },
+   {
+    "lineup": [
+     "Matthew Golden (CPT)",
+     "Blake Corum",
+     "CJ Daniels",
+     "Christian Watson",
+     "Jordan Love",
+     "Trey Smack"
+    ],
+    "copies": 126,
+    "entrants": 126,
+    "proj_rank": 421,
+    "proj_gap": 4.4,
+    "salary": 49900,
+    "production_expected_copies": 12.49,
+    "points": 75.97
+   },
+   {
+    "lineup": [
+     "CJ Daniels (CPT)",
+     "Blake Corum",
+     "Jordan Love",
+     "Kyren Williams",
+     "Matthew Golden",
+     "Matthew Stafford"
+    ],
+    "copies": 125,
+    "entrants": 120,
+    "proj_rank": 310,
+    "proj_gap": 4.05,
+    "salary": 49800,
+    "production_expected_copies": 14.66,
+    "points": 68.12
+   },
+   {
+    "lineup": [
+     "Jordan Love (CPT)",
+     "CJ Daniels",
+     "Christian Watson",
+     "Kyren Williams",
+     "Matthew Golden",
+     "Savion Williams"
+    ],
+    "copies": 125,
+    "entrants": 125,
+    "proj_rank": 71,
+    "proj_gap": 2.75,
+    "salary": 49700,
+    "production_expected_copies": 26.6,
+    "points": 56.93
+   },
+   {
+    "lineup": [
+     "Kyren Williams (CPT)",
+     "Blake Corum",
+     "Brandon McManus",
+     "Jordan Love",
+     "Matthew Golden",
+     "Rams"
+    ],
+    "copies": 122,
+    "entrants": 120,
+    "proj_rank": 20,
+    "proj_gap": 1.8,
+    "salary": 49500,
+    "production_expected_copies": 41.1,
+    "points": 99.77
+   },
+   {
+    "lineup": [
+     "Matthew Golden (CPT)",
+     "Blake Corum",
+     "CJ Daniels",
+     "Jordan Love",
+     "Kyren Williams",
+     "Tyler Higbee"
+    ],
+    "copies": 119,
+    "entrants": 117,
+    "proj_rank": 227,
+    "proj_gap": 3.8,
+    "salary": 49900,
+    "production_expected_copies": 16.44,
+    "points": 68.37
+   },
+   {
+    "lineup": [
+     "Kyren Williams (CPT)",
+     "Blake Corum",
+     "Konata Mumpfield",
+     "Matthew Golden",
+     "Matthew Stafford",
+     "Rams"
+    ],
+    "copies": 119,
+    "entrants": 118,
+    "proj_rank": 487,
+    "proj_gap": 4.6,
+    "salary": 49700,
+    "production_expected_copies": 11.4,
+    "points": 87.65
+   },
+   {
+    "lineup": [
+     "Matthew Golden (CPT)",
+     "Blake Corum",
+     "Brandon McManus",
+     "CJ Daniels",
+     "Christian Watson",
+     "Jordan Love"
+    ],
+    "copies": 118,
+    "entrants": 118,
+    "proj_rank": 397,
+    "proj_gap": 4.3,
+    "salary": 49500,
+    "production_expected_copies": 13.08,
+    "points": 82.97
+   },
+   {
+    "lineup": [
+     "Matthew Golden (CPT)",
+     "Blake Corum",
+     "Brandon McManus",
+     "Jordan Love",
+     "Konata Mumpfield",
+     "Tucker Kraft"
+    ],
+    "copies": 118,
+    "entrants": 116,
+    "proj_rank": 3220,
+    "proj_gap": 7.5,
+    "salary": 49700,
+    "production_expected_copies": 3.02,
+    "points": 81.77
+   },
+   {
+    "lineup": [
+     "CJ Daniels (CPT)",
+     "Christian Watson",
+     "Jordan Love",
+     "Matthew Golden",
+     "Matthew Stafford",
+     "Tyler Higbee"
+    ],
+    "copies": 110,
+    "entrants": 109,
+    "proj_rank": 1751,
+    "proj_gap": 6.45,
+    "salary": 50000,
+    "production_expected_copies": 4.88,
+    "points": 39.02
+   },
+   {
+    "lineup": [
+     "Jordan Love (CPT)",
+     "CJ Daniels",
+     "Christian Watson",
+     "Kyren Williams",
+     "Matthew Golden",
+     "Packers"
+    ],
+    "copies": 108,
+    "entrants": 107,
+    "proj_rank": 15,
+    "proj_gap": 1.35,
+    "salary": 49900,
+    "production_expected_copies": 50.5,
+    "points": 56.83
+   },
+   {
+    "lineup": [
+     "Konata Mumpfield (CPT)",
+     "Blake Corum",
+     "Jordan Love",
+     "Matthew Golden",
+     "Matthew Stafford",
+     "Rams"
+    ],
+    "copies": 107,
+    "entrants": 107,
+    "proj_rank": 3249,
+    "proj_gap": 7.5,
+    "salary": 50000,
+    "production_expected_copies": 3.02,
+    "points": 78.97
+   },
+   {
+    "lineup": [
+     "Blake Corum (CPT)",
+     "CJ Daniels",
+     "Christian Watson",
+     "Jordan Love",
+     "Konata Mumpfield",
+     "Matthew Golden"
+    ],
+    "copies": 104,
+    "entrants": 104,
+    "proj_rank": 1708,
+    "proj_gap": 6.4,
+    "salary": 49000,
+    "production_expected_copies": 5.0,
+    "points": 90.17
+   }
+  ],
+  "ownership_top": [
+   {
+    "name": "Jordan Love",
+    "pos": "QB",
+    "team": "GB",
+    "salary": 10600,
+    "proj": 16.9,
+    "real_pct": 76.05,
+    "real_cpt_pct": 10.41,
+    "field_cpt_pct": 15.4,
+    "field_flex_pct": 51.7,
+    "opt_cpt_pct": 5.68,
+    "opt_flex_pct": 52.08
+   },
+   {
+    "name": "Matthew Golden",
+    "pos": "WR",
+    "team": "GB",
+    "salary": 9800,
+    "proj": 15.8,
+    "real_pct": 64.98,
+    "real_cpt_pct": 18.13,
+    "field_cpt_pct": 13.9,
+    "field_flex_pct": 48.3,
+    "opt_cpt_pct": 14.1,
+    "opt_flex_pct": 36.31
+   },
+   {
+    "name": "Blake Corum",
+    "pos": "RB",
+    "team": "LAR",
+    "salary": 7600,
+    "proj": 11.8,
+    "real_pct": 57.28,
+    "real_cpt_pct": 16.71,
+    "field_cpt_pct": 6.3,
+    "field_flex_pct": 32.8,
+    "opt_cpt_pct": 12.02,
+    "opt_flex_pct": 29.32
+   },
+   {
+    "name": "Kyren Williams",
+    "pos": "RB",
+    "team": "LAR",
+    "salary": 8600,
+    "proj": 15.6,
+    "real_pct": 55.97,
+    "real_cpt_pct": 15.2,
+    "field_cpt_pct": 21.4,
+    "field_flex_pct": 52.8,
+    "opt_cpt_pct": 19.57,
+    "opt_flex_pct": 37.96
+   },
+   {
+    "name": "Christian Watson",
+    "pos": "WR",
+    "team": "GB",
+    "salary": 10000,
+    "proj": 16.4,
+    "real_pct": 54.48,
+    "real_cpt_pct": 12.64,
+    "field_cpt_pct": 17.3,
+    "field_flex_pct": 50.8,
+    "opt_cpt_pct": 15.07,
+    "opt_flex_pct": 35.45
+   },
+   {
+    "name": "Matthew Stafford",
+    "pos": "QB",
+    "team": "LAR",
+    "salary": 10200,
+    "proj": 14.2,
+    "real_pct": 45.1,
+    "real_cpt_pct": 5.23,
+    "field_cpt_pct": 4.7,
+    "field_flex_pct": 28.0,
+    "opt_cpt_pct": 5.91,
+    "opt_flex_pct": 47.31
+   },
+   {
+    "name": "Konata Mumpfield",
+    "pos": "WR",
+    "team": "LAR",
+    "salary": 5200,
+    "proj": 7.2,
+    "real_pct": 30.53,
+    "real_cpt_pct": 4.97,
+    "field_cpt_pct": 1.4,
+    "field_flex_pct": 14.5,
+    "opt_cpt_pct": 3.92,
+    "opt_flex_pct": 20.86
+   },
+   {
+    "name": "Tucker Kraft",
+    "pos": "TE",
+    "team": "GB",
+    "salary": 7000,
+    "proj": 10.1,
+    "real_pct": 25.73,
+    "real_cpt_pct": 3.34,
+    "field_cpt_pct": 3.0,
+    "field_flex_pct": 22.5,
+    "opt_cpt_pct": 4.46,
+    "opt_flex_pct": 25.03
+   },
+   {
+    "name": "Brandon McManus",
+    "pos": "K",
+    "team": "LAR",
+    "salary": 4600,
+    "proj": 7.3,
+    "real_pct": 23.04,
+    "real_cpt_pct": 0.65,
+    "field_cpt_pct": 2.1,
+    "field_flex_pct": 19.3,
+    "opt_cpt_pct": 1.26,
+    "opt_flex_pct": 25.62
+   },
+   {
+    "name": "CJ Daniels",
+    "pos": "WR",
+    "team": "LAR",
+    "salary": 2000,
+    "proj": 4.1,
+    "real_pct": 21.97,
+    "real_cpt_pct": 2.38,
+    "field_cpt_pct": 0.8,
+    "field_flex_pct": 14.0,
+    "opt_cpt_pct": 0.75,
+    "opt_flex_pct": 12.39
+   },
+   {
+    "name": "Rams",
+    "pos": "DST",
+    "team": "LAR",
+    "salary": 4000,
+    "proj": 7.5,
+    "real_pct": 20.53,
+    "real_cpt_pct": 1.99,
+    "field_cpt_pct": 3.3,
+    "field_flex_pct": 26.4,
+    "opt_cpt_pct": 1.69,
+    "opt_flex_pct": 20.66
+   },
+   {
+    "name": "Tyler Higbee",
+    "pos": "TE",
+    "team": "LAR",
+    "salary": 6400,
+    "proj": 8.6,
+    "real_pct": 20.15,
+    "real_cpt_pct": 2.28,
+    "field_cpt_pct": 1.8,
+    "field_flex_pct": 15.8,
+    "opt_cpt_pct": 4.62,
+    "opt_flex_pct": 24.73
+   },
+   {
+    "name": "Trey Smack",
+    "pos": "K",
+    "team": "GB",
+    "salary": 5000,
+    "proj": 7.2,
+    "real_pct": 15.53,
+    "real_cpt_pct": 0.41,
+    "field_cpt_pct": 1.5,
+    "field_flex_pct": 15.8,
+    "opt_cpt_pct": 1.35,
+    "opt_flex_pct": 22.94
+   },
+   {
+    "name": "Packers",
+    "pos": "DST",
+    "team": "GB",
+    "salary": 3600,
+    "proj": 5.9,
+    "real_pct": 15.22,
+    "real_cpt_pct": 1.4,
+    "field_cpt_pct": 1.4,
+    "field_flex_pct": 16.5,
+    "opt_cpt_pct": 1.47,
+    "opt_flex_pct": 15.59
+   },
+   {
+    "name": "Savion Williams",
+    "pos": "WR",
+    "team": "GB",
+    "salary": 3400,
+    "proj": 4.5,
+    "real_pct": 13.23,
+    "real_cpt_pct": 0.49,
+    "field_cpt_pct": 0.5,
+    "field_flex_pct": 9.8,
+    "opt_cpt_pct": 0.39,
+    "opt_flex_pct": 8.55
+   },
+   {
+    "name": "Colby Parkinson",
+    "pos": "TE",
+    "team": "LAR",
+    "salary": 4400,
+    "proj": 7.2,
+    "real_pct": 12.47,
+    "real_cpt_pct": 0.83,
+    "field_cpt_pct": 2.2,
+    "field_flex_pct": 20.2,
+    "opt_cpt_pct": 2.51,
+    "opt_flex_pct": 21.89
+   },
+   {
+    "name": "Kaleb Johnson",
+    "pos": "RB",
+    "team": "GB",
+    "salary": 5600,
+    "proj": 5.9,
+    "real_pct": 8.93,
+    "real_cpt_pct": 0.84,
+    "field_cpt_pct": 0.5,
+    "field_flex_pct": 7.1,
+    "opt_cpt_pct": 1.47,
+    "opt_flex_pct": 11.37
+   },
+   {
+    "name": "Tutu Atwell",
+    "pos": "WR",
+    "team": "LAR",
+    "salary": 4800,
+    "proj": 4.9,
+    "real_pct": 8.81,
+    "real_cpt_pct": 0.87,
+    "field_cpt_pct": 0.4,
+    "field_flex_pct": 6.6,
+    "opt_cpt_pct": 1.26,
+    "opt_flex_pct": 11.27
+   },
+   {
+    "name": "Davis Allen",
+    "pos": "TE",
+    "team": "LAR",
+    "salary": 2400,
+    "proj": 3.6,
+    "real_pct": 7.8,
+    "real_cpt_pct": 0.32,
+    "field_cpt_pct": 0.5,
+    "field_flex_pct": 9.5,
+    "opt_cpt_pct": 0.44,
+    "opt_flex_pct": 9.06
+   },
+   {
+    "name": "Xavier Smith",
+    "pos": "WR",
+    "team": "LAR",
+    "salary": 2200,
+    "proj": 3.3,
+    "real_pct": 6.24,
+    "real_cpt_pct": 0.45,
+    "field_cpt_pct": 0.4,
+    "field_flex_pct": 8.8,
+    "opt_cpt_pct": 0.34,
+    "opt_flex_pct": 8.27
+   },
+   {
+    "name": "MarShawn Lloyd",
+    "pos": "RB",
+    "team": "GB",
+    "salary": 6600,
+    "proj": 6.4,
+    "real_pct": 4.31,
+    "real_cpt_pct": 0.26,
+    "field_cpt_pct": 0.4,
+    "field_flex_pct": 5.9,
+    "opt_cpt_pct": 1.4,
+    "opt_flex_pct": 13.33
+   },
+   {
+    "name": "Chris Brooks",
+    "pos": "RB",
+    "team": "GB",
+    "salary": 2600,
+    "proj": 4.2,
+    "real_pct": 4.09,
+    "real_cpt_pct": 0.06,
+    "field_cpt_pct": 0.6,
+    "field_flex_pct": 11.2,
+    "opt_cpt_pct": 0.28,
+    "opt_flex_pct": 7.12
+   },
+   {
+    "name": "J. Michael Sturdivant",
+    "pos": "WR",
+    "team": "GB",
+    "salary": 1200,
+    "proj": null,
+    "real_pct": 1.98,
+    "real_cpt_pct": 0.04
+   },
+   {
+    "name": "Joshua Karty",
+    "pos": "K",
+    "team": "LAR",
+    "salary": 4600,
+    "proj": null,
+    "real_pct": 1.02,
+    "real_cpt_pct": 0.02
+   },
+   {
+    "name": "Jonnu Smith",
+    "pos": "TE",
+    "team": "GB",
+    "salary": 1600,
+    "proj": 1.6,
+    "real_pct": 0.83,
+    "real_cpt_pct": 0.0,
+    "field_cpt_pct": 0.1,
+    "field_flex_pct": 5.3,
+    "opt_cpt_pct": 0.02,
+    "opt_flex_pct": 1.59
+   }
+  ],
+  "ownership_concentration_sum_of_squares": 2.5962
+ },
+ "model_field": {
+  "what": "softmax(beta x projection) over the universe with the most popular lineup at 0.2% of the field (dfs_tourney.field_weights, FIELD_TOP_SHARE): production's rule on this universe",
+  "beta": 0.458,
+  "exact_pair_collision_sum_p2": 0.00016264164424343444,
+  "top_expected_copies_at_N": 93.7,
+  "board_stamp": {
+   "beta": 0.458,
+   "top_share_pct": 0.2,
+   "top_copies": 94.1,
+   "lineups_legal": 784884,
+   "field_duplication": null
+  },
+  "sample_rows": 44048,
+  "sampled": {
+   "duplication": {
+    "entries": 44048,
+    "distinct_lineups": 17413,
+    "max_copies": 91,
+    "distinct_pair_collision": 0.0001640340741266938,
+    "entries_in_duplicated_lineups_pct": 77.157,
+    "copies_histogram": {
+     "1": 10062,
+     "2": 2974,
+     "3": 1444,
+     "4": 825,
+     "5": 509,
+     "6": 376,
+     "7": 227,
+     "8": 188,
+     "9": 145,
+     "10": 117,
+     "11": 87,
+     "12": 72,
+     "13": 56,
+     "14": 54,
+     "15": 36,
+     "16": 26,
+     "17": 24,
+     "18": 21,
+     "19": 15,
+     "20": 16,
+     "21": 15,
+     "22": 17,
+     "23": 10,
+     "24": 7,
+     "25": 12,
+     "26": 7,
+     "27": 1,
+     "28": 4,
+     "29": 7,
+     "30": 4,
+     "31": 3,
+     "32": 2,
+     "33": 9,
+     "34": 4,
+     "35": 3,
+     "36": 3,
+     "37": 2,
+     "38": 2,
+     "39": 2,
+     "40": 2,
+     "42": 3,
+     "43": 1,
+     "44": 2,
+     "45": 1,
+     "46": 1,
+     "47": 1,
+     "48": 1,
+     "49": 2,
+     "50": 1,
+     "51": 2,
+     "53": 1,
+     "56": 1,
+     "60": 2,
+     "66": 1,
+     "75": 1,
+     "89": 1,
+     "91": 1
+    },
+    "entries_by_copies_pct": {
+     "1": 22.843,
+     "2-5": 36.608,
+     "6-20": 30.594,
+     "21-100": 9.955,
+     "101+": 0.0
+    },
+    "effective_lineups_1_over_C": 6096
+   },
+   "near": {
+    "pair_share_overlap": {
+     "6_of_6": 0.0001640340741266938,
+     "5_of_6": 0.0026287530381372583,
+     "4_of_6": 0.030579040611533145
+    },
+    "pairs": {
+     "exact": 159128.0,
+     "one_swap": 2550130.0,
+     "two_swaps": 29664456.0
+    },
+    "near_to_exact_pair_ratio": {
+     "one_swap": 16.02565230506259,
+     "two_swaps": 186.41883263787642
+    },
+    "entries_with_another_entry_pct": {
+     "exact": 77.157,
+     "within_one_swap": 99.952,
+     "within_two_swaps": 100.0
+    },
+    "entries_with_another_USERS_entry_pct": {
+     "exact": 77.157,
+     "within_one_swap": 99.952,
+     "within_two_swaps": 100.0
+    },
+    "same_six_players_any_captain_pair_share": 0.0005059236043234899
+   },
+   "mean_overlap": 1.7298612063999828,
+   "structure": {
+    "resolved_entries": 44048,
+    "unresolved_entries": 0,
+    "salary_mean": 48072.2,
+    "salary_median": 48600.0,
+    "salary_left_pct": {
+     "0": 3.18,
+     "100-200": 9.46,
+     "300-500": 13.37,
+     "600-1000": 14.7,
+     "1100-2000": 23.12,
+     "2100+": 36.17
+    },
+    "team_split_pct": {
+     "3-3": 40.53,
+     "4-2": 49.24,
+     "5-1": 10.23
+    },
+    "captain_position_pct": {
+     "QB": 20.05,
+     "RB": 29.12,
+     "WR": 34.94,
+     "TE": 7.64,
+     "K": 3.54,
+     "DST": 4.71
+    },
+    "flex_kickers_and_defenses_pct": {
+     "0": 38.42,
+     "1": 46.37,
+     "2": 14.25,
+     "3": 0.96,
+     "4": 0.0
+    },
+    "both_quarterbacks_pct": 16.55,
+    "non_qb_captain_with_his_qb_in_flex_pct": 45.86,
+    "qb_captain_own_catchers_pct": {
+     "0": 12.46,
+     "1": 43.35,
+     "2": 32.83,
+     "3": 11.36
+    }
+   },
+   "score_quantiles": {
+    "0.001": 28.37,
+    "0.01": 36.17,
+    "0.1": 48.05,
+    "0.25": 56.25,
+    "0.5": 67.17,
+    "0.75": 81.07,
+    "0.9": 91.45,
+    "0.99": 105.65,
+    "0.999": 113.04
+   },
+   "score_mean": 68.64,
+   "score_sd": 16.49
+  },
+  "real_on_the_same_support": {
+   "duplication": {
+    "entries": 44048,
+    "distinct_lineups": 9503,
+    "max_copies": 296,
+    "distinct_pair_collision": 0.0006375988627740547,
+    "entries_in_duplicated_lineups_pct": 89.943,
+    "copies_histogram": {
+     "1": 4430,
+     "2": 1563,
+     "3": 884,
+     "4": 538,
+     "5": 389,
+     "6": 256,
+     "7": 205,
+     "8": 139,
+     "9": 125,
+     "10": 107,
+     "11": 88,
+     "12": 81,
+     "13": 61,
+     "14": 57,
+     "15": 54,
+     "16": 39,
+     "17": 42,
+     "18": 30,
+     "19": 27,
+     "20": 21,
+     "21": 24,
+     "22": 20,
+     "23": 18,
+     "24": 13,
+     "25": 16,
+     "26": 17,
+     "27": 17,
+     "28": 10,
+     "29": 8,
+     "30": 11,
+     "31": 15,
+     "32": 6,
+     "33": 11,
+     "34": 7,
+     "35": 8,
+     "36": 10,
+     "37": 3,
+     "38": 7,
+     "39": 5,
+     "40": 2,
+     "41": 4,
+     "42": 8,
+     "43": 1,
+     "44": 5,
+     "45": 4,
+     "46": 7,
+     "47": 6,
+     "48": 1,
+     "50": 4,
+     "51": 4,
+     "52": 5,
+     "53": 4,
+     "54": 2,
+     "55": 3,
+     "56": 2,
+     "57": 5,
+     "59": 5,
+     "60": 5,
+     "61": 1,
+     "62": 2,
+     "63": 3,
+     "64": 2,
+     "66": 1,
+     "67": 2,
+     "69": 2,
+     "70": 1,
+     "71": 3,
+     "72": 2,
+     "73": 1,
+     "74": 3,
+     "75": 3,
+     "78": 2,
+     "79": 1,
+     "80": 1,
+     "81": 1,
+     "82": 1,
+     "85": 1,
+     "86": 1,
+     "87": 1,
+     "90": 1,
+     "91": 2,
+     "94": 1,
+     "95": 1,
+     "98": 1,
+     "99": 1,
+     "101": 1,
+     "102": 1,
+     "104": 1,
+     "107": 1,
+     "108": 1,
+     "110": 1,
+     "118": 2,
+     "119": 2,
+     "122": 1,
+     "125": 2,
+     "126": 1,
+     "134": 1,
+     "135": 1,
+     "144": 1,
+     "145": 1,
+     "148": 1,
+     "153": 1,
+     "274": 1,
+     "296": 1
+    },
+    "entries_by_copies_pct": {
+     "1": 10.057,
+     "2-5": 22.419,
+     "6-20": 30.489,
+     "21-100": 30.149,
+     "101+": 6.886
+    },
+    "effective_lineups_1_over_C": 1568
+   },
+   "near": {
+    "pair_share_overlap": {
+     "6_of_6": 0.0006375988627740547,
+     "5_of_6": 0.003975504866177892,
+     "4_of_6": 0.037891827828364595
+    },
+    "pairs": {
+     "exact": 618529.0,
+     "one_swap": 3856602.0,
+     "two_swaps": 36758526.0
+    },
+    "near_to_exact_pair_ratio": {
+     "one_swap": 6.2351191294183455,
+     "two_swaps": 59.42894512625924
+    },
+    "entries_with_another_entry_pct": {
+     "exact": 89.943,
+     "within_one_swap": 99.905,
+     "within_two_swaps": 100.0
+    },
+    "entries_with_another_USERS_entry_pct": {
+     "exact": 89.884,
+     "within_one_swap": 99.898,
+     "within_two_swaps": 100.0
+    },
+    "same_six_players_any_captain_pair_share": 0.0011928415450883291
+   },
+   "mean_overlap": 1.8156531558342424,
+   "structure": {
+    "resolved_entries": 44048,
+    "unresolved_entries": 0,
+    "salary_mean": 48902.7,
+    "salary_median": 49400.0,
+    "salary_left_pct": {
+     "0": 8.63,
+     "100-200": 18.61,
+     "300-500": 19.34,
+     "600-1000": 19.11,
+     "1100-2000": 18.01,
+     "2100+": 16.3
+    },
+    "team_split_pct": {
+     "3-3": 37.46,
+     "4-2": 45.29,
+     "5-1": 17.24
+    },
+    "captain_position_pct": {
+     "QB": 15.01,
+     "RB": 33.44,
+     "WR": 40.11,
+     "TE": 6.84,
+     "K": 1.1,
+     "DST": 3.5
+    },
+    "flex_kickers_and_defenses_pct": {
+     "0": 43.74,
+     "1": 40.54,
+     "2": 15.12,
+     "3": 0.56,
+     "4": 0.03
+    },
+    "both_quarterbacks_pct": 26.71,
+    "non_qb_captain_with_his_qb_in_flex_pct": 69.23,
+    "qb_captain_own_catchers_pct": {
+     "0": 3.13,
+     "1": 24.54,
+     "2": 51.61,
+     "3": 20.72
+    }
+   },
+   "score_quantiles": {
+    "0.001": 26.77,
+    "0.01": 33.72,
+    "0.1": 46.57,
+    "0.25": 57.37,
+    "0.5": 72.07,
+    "0.75": 85.43,
+    "0.9": 96.27,
+    "0.99": 111.37,
+    "0.999": 118.87
+   },
+   "score_mean": 71.65,
+   "score_sd": 18.46
+  },
+  "ownership_mae_pct_points": {
+   "captain": 1.91,
+   "flex": 5.321
+  },
+  "joint_ownership_mae_pct_points": 2.596,
+  "pairs": {
+   "players": 20,
+   "pairs_with_independent_share_0_5pct_plus": 190,
+   "mean_abs_log_lift_weighted": 0.1198,
+   "top_by_joint": [
+    {
+     "a": "Kyren Williams",
+     "b": "Christian Watson",
+     "joint_pct": 48.18,
+     "independent_pct": 50.8,
+     "lift": 0.948
+    },
+    {
+     "a": "Jordan Love",
+     "b": "Kyren Williams",
+     "joint_pct": 47.12,
+     "independent_pct": 50.14,
+     "lift": 0.94
+    },
+    {
+     "a": "Matthew Golden",
+     "b": "Kyren Williams",
+     "joint_pct": 43.43,
+     "independent_pct": 46.16,
+     "lift": 0.941
+    },
+    {
+     "a": "Jordan Love",
+     "b": "Christian Watson",
+     "joint_pct": 41.18,
+     "independent_pct": 45.89,
+     "lift": 0.897
+    },
+    {
+     "a": "Matthew Golden",
+     "b": "Christian Watson",
+     "joint_pct": 37.94,
+     "independent_pct": 42.25,
+     "lift": 0.898
+    },
+    {
+     "a": "Jordan Love",
+     "b": "Matthew Golden",
+     "joint_pct": 36.46,
+     "independent_pct": 41.7,
+     "lift": 0.874
+    }
+   ],
+   "top_lift": [
+    {
+     "a": "Matthew Stafford",
+     "b": "Xavier Smith",
+     "joint_pct": 3.38,
+     "independent_pct": 2.94,
+     "lift": 1.15
+    },
+    {
+     "a": "Matthew Stafford",
+     "b": "Davis Allen",
+     "joint_pct": 3.6,
+     "independent_pct": 3.22,
+     "lift": 1.119
+    },
+    {
+     "a": "Matthew Stafford",
+     "b": "CJ Daniels",
+     "joint_pct": 5.39,
+     "independent_pct": 4.87,
+     "lift": 1.108
+    },
+    {
+     "a": "Jordan Love",
+     "b": "CJ Daniels",
+     "joint_pct": 11.05,
+     "independent_pct": 10.1,
+     "lift": 1.095
+    },
+    {
+     "a": "Matthew Golden",
+     "b": "CJ Daniels",
+     "joint_pct": 10.13,
+     "independent_pct": 9.29,
+     "lift": 1.089
+    },
+    {
+     "a": "Jordan Love",
+     "b": "Xavier Smith",
+     "joint_pct": 6.63,
+     "independent_pct": 6.11,
+     "lift": 1.086
+    }
+   ],
+   "lowest_lift": [
+    {
+     "a": "CJ Daniels",
+     "b": "Xavier Smith",
+     "joint_pct": 0.5,
+     "independent_pct": 1.36,
+     "lift": 0.37
+    },
+    {
+     "a": "CJ Daniels",
+     "b": "Davis Allen",
+     "joint_pct": 0.57,
+     "independent_pct": 1.49,
+     "lift": 0.386
+    },
+    {
+     "a": "Davis Allen",
+     "b": "Xavier Smith",
+     "joint_pct": 0.37,
+     "independent_pct": 0.9,
+     "lift": 0.406
+    },
+    {
+     "a": "CJ Daniels",
+     "b": "Tutu Atwell",
+     "joint_pct": 0.5,
+     "independent_pct": 1.03,
+     "lift": 0.489
+    },
+    {
+     "a": "Tutu Atwell",
+     "b": "Xavier Smith",
+     "joint_pct": 0.31,
+     "independent_pct": 0.62,
+     "lift": 0.492
+    },
+    {
+     "a": "Savion Williams",
+     "b": "Xavier Smith",
+     "joint_pct": 0.46,
+     "independent_pct": 0.93,
+     "lift": 0.496
+    }
+   ]
+  },
+  "board_ownership_mae_all_entries": {
+   "field_cpt_pct": 1.839,
+   "opt_cpt_pct": 1.392,
+   "field_flex_pct": 5.312,
+   "opt_flex_pct": 5.302
+  }
+ }
+}

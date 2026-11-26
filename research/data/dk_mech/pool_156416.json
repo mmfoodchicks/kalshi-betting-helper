@@ -1,0 +1,3600 @@
+{
+"49ers": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "DST",
+"salary": 3600,
+"team": "SF"
+},
+"AJ Barner": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "TE",
+"salary": 3900,
+"team": "SEA"
+},
+"AJ Dillon": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "RB",
+"salary": 4000,
+"team": "CAR"
+},
+"AJ Henning": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "WR",
+"salary": 3000,
+"team": "MIA"
+},
+"Aaron Jones Sr.": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "RB",
+"salary": 5600,
+"team": "MIN"
+},
+"Adonai Mitchell": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "WR",
+"salary": 4900,
+"team": "NYJ"
+},
+"Adrian Martinez": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "QB",
+"salary": 4000,
+"team": "SEA"
+},
+"Ahmani Marshall": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "RB",
+"salary": 4000,
+"team": "CAR"
+},
+"Aidan O'Connell": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "QB",
+"salary": 4000,
+"team": "LV"
+},
+"Al-Jay Henderson": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "RB",
+"salary": 4000,
+"team": "NYJ"
+},
+"Alec Pierce": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "WR",
+"salary": 5000,
+"team": "IND"
+},
+"Alex Bachman": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "WR",
+"salary": 3000,
+"team": "LAR"
+},
+"Alvin Kamara": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "RB",
+"salary": 5000,
+"team": "NO"
+},
+"Ameer Abdullah": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "RB",
+"salary": 4000,
+"team": "JAX"
+},
+"Andrew Armstrong": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "WR",
+"salary": 3000,
+"team": "KC"
+},
+"Andrew Beck": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "RB",
+"salary": 4000,
+"team": "NYJ"
+},
+"Andrew DePaola": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "TE",
+"salary": 2500,
+"team": "MIN"
+},
+"Andy Dalton": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "QB",
+"salary": 4000,
+"team": "ATL"
+},
+"Anthony Gould": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "WR",
+"salary": 3000,
+"team": "IND"
+},
+"Anthony Richardson Sr.": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "QB",
+"salary": 4400,
+"team": "IND"
+},
+"Anthony Smith": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "WR",
+"salary": 3000,
+"team": "DAL"
+},
+"Anthony Tyus III": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "RB",
+"salary": 4000,
+"team": "CAR"
+},
+"Antwane Wells Jr.": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "WR",
+"salary": 3000,
+"team": "ATL"
+},
+"Arian Smith": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "WR",
+"salary": 3000,
+"team": "NYJ"
+},
+"Ashton Dulin": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "WR",
+"salary": 3100,
+"team": "IND"
+},
+"Ashton Jeanty": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "RB",
+"salary": 5400,
+"team": "LV"
+},
+"Audric Estime": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "RB",
+"salary": 4500,
+"team": "NO"
+},
+"Austin Hooper": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "TE",
+"salary": 2500,
+"team": "ATL"
+},
+"Austin Trammell": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "WR",
+"salary": 3000,
+"team": "JAX"
+},
+"Bam Knight": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "RB",
+"salary": 4700,
+"team": "ARI"
+},
+"Barion Brown": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "WR",
+"salary": 3000,
+"team": "NO"
+},
+"Beaux Collins": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "WR",
+"salary": 3000,
+"team": "ATL"
+},
+"Ben Sims": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "TE",
+"salary": 2500,
+"team": "SEA"
+},
+"Ben VanSumeren": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "RB",
+"salary": 4000,
+"team": "KC"
+},
+"Ben Yurosek": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "TE",
+"salary": 2500,
+"team": "MIN"
+},
+"Bhayshul Tuten": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "RB",
+"salary": 6600,
+"team": "JAX"
+},
+"Bijan Robinson": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "RB",
+"salary": 8200,
+"team": "ATL"
+},
+"Bills": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "DST",
+"salary": 3500,
+"team": "BUF"
+},
+"Blake Corum": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "RB",
+"salary": 5100,
+"team": "LAR"
+},
+"Blake Whiteheart": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "TE",
+"salary": 2500,
+"team": "CLE"
+},
+"Bo Melton": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "WR",
+"salary": 3000,
+"team": "GB"
+},
+"Brady Cook": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "QB",
+"salary": 4000,
+"team": "MIA"
+},
+"Brady Russell": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "RB",
+"salary": 4000,
+"team": "SEA"
+},
+"Braelon Allen": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "RB",
+"salary": 5400,
+"team": "NYJ"
+},
+"Brandin Cooks": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "WR",
+"salary": 3500,
+"team": "SF"
+},
+"Brandon Aiyuk": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "WR",
+"salary": 3000,
+"team": "SF"
+},
+"Brashard Smith": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "RB",
+"salary": 4000,
+"team": "KC"
+},
+"Brayden Willis": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "TE",
+"salary": 2500,
+"team": "SF"
+},
+"Breece Hall": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "RB",
+"salary": 5900,
+"team": "NYJ"
+},
+"Brenden Bates": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "TE",
+"salary": 2500,
+"team": "JAX"
+},
+"Brennan Presley": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "WR",
+"salary": 3000,
+"team": "LAR"
+},
+"Brenton Strange": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "TE",
+"salary": 4100,
+"team": "JAX"
+},
+"Brevin Jordan": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "TE",
+"salary": 2500,
+"team": "HOU"
+},
+"Brevyn Spann-Ford": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "TE",
+"salary": 3200,
+"team": "DAL"
+},
+"Brian Robinson Jr.": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "RB",
+"salary": 4000,
+"team": "ATL"
+},
+"Brian Thomas Jr.": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "WR",
+"salary": 3700,
+"team": "JAX"
+},
+"British Brooks": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "RB",
+"salary": 4000,
+"team": "HOU"
+},
+"Brock Bowers": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "TE",
+"salary": 7600,
+"team": "LV"
+},
+"Brock Lampe": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "RB",
+"salary": 4000,
+"team": "BUF"
+},
+"Brock Purdy": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "QB",
+"salary": 7000,
+"team": "SF"
+},
+"Browns": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "DST",
+"salary": 2500,
+"team": "CLE"
+},
+"Bryce Lance": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "WR",
+"salary": 3000,
+"team": "NO"
+},
+"Bryce Oliver": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "WR",
+"salary": 3000,
+"team": "HOU"
+},
+"Bryce Young": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "QB",
+"salary": 5800,
+"team": "CAR"
+},
+"Brycen Tremayne": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "WR",
+"salary": 3000,
+"team": "CAR"
+},
+"Bub Means": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "WR",
+"salary": 3000,
+"team": "KC"
+},
+"C.J. Stroud": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "QB",
+"salary": 5900,
+"team": "HOU"
+},
+"CJ Daniels": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "WR",
+"salary": 3000,
+"team": "LAR"
+},
+"CJ Donaldson": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "RB",
+"salary": 4000,
+"team": "NO"
+},
+"CJ Williams": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "WR",
+"salary": 3000,
+"team": "JAX"
+},
+"Cade Klubnik": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "QB",
+"salary": 4000,
+"team": "NYJ"
+},
+"Cade Stover": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "TE",
+"salary": 2500,
+"team": "HOU"
+},
+"Caleb Douglas": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "WR",
+"salary": 4400,
+"team": "MIA"
+},
+"Calvin Ridley": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "WR",
+"salary": 3500,
+"team": "TEN"
+},
+"Cam Miller": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "QB",
+"salary": 4000,
+"team": "GB"
+},
+"Cam Ward": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "QB",
+"salary": 4800,
+"team": "TEN"
+},
+"Camden Brown": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "WR",
+"salary": 3000,
+"team": "DAL"
+},
+"Cardinals": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "DST",
+"salary": 2200,
+"team": "ARI"
+},
+"Carlos Washington Jr.": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "RB",
+"salary": 4000,
+"team": "MIA"
+},
+"Carnell Tate": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "WR",
+"salary": 5200,
+"team": "TEN"
+},
+"Carsen Ryan": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "TE",
+"salary": 2500,
+"team": "CLE"
+},
+"Carson Beck": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "QB",
+"salary": 4200,
+"team": "ARI"
+},
+"Carson Towt": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "TE",
+"salary": 2500,
+"team": "IND"
+},
+"Carson Wentz": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "QB",
+"salary": 4700,
+"team": "MIN"
+},
+"Carter Runyon": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "TE",
+"salary": 2500,
+"team": "LV"
+},
+"Casey Washington": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "WR",
+"salary": 3000,
+"team": "CAR"
+},
+"Cedric Tillman": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "WR",
+"salary": 3000,
+"team": "NO"
+},
+"CeeDee Lamb": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "WR",
+"salary": 8800,
+"team": "DAL"
+},
+"Charlie Woerner": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "TE",
+"salary": 2500,
+"team": "ATL"
+},
+"Chiefs": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "DST",
+"salary": 3200,
+"team": "KC"
+},
+"Chimere Dike": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "WR",
+"salary": 3000,
+"team": "TEN"
+},
+"Chip Trayanum": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "RB",
+"salary": 4000,
+"team": "NYJ"
+},
+"Chris Bell": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "WR",
+"salary": 3200,
+"team": "MIA"
+},
+"Chris Blair": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "WR",
+"salary": 3000,
+"team": "ATL"
+},
+"Chris Brazzell II": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "WR",
+"salary": 3000,
+"team": "CAR"
+},
+"Chris Brooks": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "RB",
+"salary": 4000,
+"team": "GB"
+},
+"Chris Collier": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "RB",
+"salary": 4000,
+"team": "LV"
+},
+"Chris Olave": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "WR",
+"salary": 7000,
+"team": "NO"
+},
+"Chris Rodriguez Jr.": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "RB",
+"salary": 5100,
+"team": "JAX"
+},
+"Christian Kirk": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "WR",
+"salary": 3000,
+"team": "SF"
+},
+"Christian McCaffrey": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "RB",
+"salary": 8500,
+"team": "SF"
+},
+"Christian Watson": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "WR",
+"salary": 7700,
+"team": "GB"
+},
+"Chuba Hubbard": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "RB",
+"salary": 7200,
+"team": "CAR"
+},
+"Cody White": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "WR",
+"salary": 3000,
+"team": "LV"
+},
+"Colby Parkinson": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "TE",
+"salary": 3000,
+"team": "LAR"
+},
+"Cole Turner": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "TE",
+"salary": 2500,
+"team": "MIA"
+},
+"Coleman Owen": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "WR",
+"salary": 3000,
+"team": "GB"
+},
+"Colts": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "DST",
+"salary": 3000,
+"team": "IND"
+},
+"Connor Heyward": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "RB",
+"salary": 4000,
+"team": "LV"
+},
+"Cooper Kupp": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "WR",
+"salary": 3600,
+"team": "SEA"
+},
+"Cowboys": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "DST",
+"salary": 2300,
+"team": "DAL"
+},
+"Cyrus Allen": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "WR",
+"salary": 3000,
+"team": "KC"
+},
+"D.J. Montgomery": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "WR",
+"salary": 3000,
+"team": "IND"
+},
+"DJ Giddens": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "RB",
+"salary": 4800,
+"team": "IND"
+},
+"DJ Herman": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "RB",
+"salary": 4000,
+"team": "MIA"
+},
+"DJ Moore": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "WR",
+"salary": 5800,
+"team": "BUF"
+},
+"Dak Prescott": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "QB",
+"salary": 6400,
+"team": "DAL"
+},
+"Dalton Kincaid": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "TE",
+"salary": 5100,
+"team": "BUF"
+},
+"Dalton Schultz": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "TE",
+"salary": 3400,
+"team": "HOU"
+},
+"Damon Bankston": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "RB",
+"salary": 4000,
+"team": "MIN"
+},
+"Dan Villari": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "TE",
+"salary": 2500,
+"team": "LAR"
+},
+"Daniel Bellinger": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "TE",
+"salary": 2500,
+"team": "TEN"
+},
+"Daniel Jones": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "QB",
+"salary": 4900,
+"team": "IND"
+},
+"Daniel Sobkowicz": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "WR",
+"salary": 3000,
+"team": "HOU"
+},
+"Dare Ogunbowale": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "RB",
+"salary": 4000,
+"team": "HOU"
+},
+"Dareke Young": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "WR",
+"salary": 3000,
+"team": "LV"
+},
+"Darren Waller": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "TE",
+"salary": 3600,
+"team": "CAR"
+},
+"Davante Adams": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "WR",
+"salary": 3000,
+"team": "LAR"
+},
+"David Martin-Robinson": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "TE",
+"salary": 2500,
+"team": "TEN"
+},
+"David Montgomery": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "RB",
+"salary": 5200,
+"team": "HOU"
+},
+"David Moore": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "WR",
+"salary": 3000,
+"team": "CAR"
+},
+"Davis Allen": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "TE",
+"salary": 2700,
+"team": "LAR"
+},
+"Davis Mills": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "QB",
+"salary": 4000,
+"team": "HOU"
+},
+"Davon Booth": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "RB",
+"salary": 4000,
+"team": "IND"
+},
+"Dawson Knox": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "TE",
+"salary": 2600,
+"team": "BUF"
+},
+"De'Von Achane": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "RB",
+"salary": 4000,
+"team": "MIA"
+},
+"De'Zhaun Stribling": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "WR",
+"salary": 3000,
+"team": "SF"
+},
+"Dean Connors": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "RB",
+"salary": 4000,
+"team": "LAR"
+},
+"DeeJay Dallas": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "RB",
+"salary": 4000,
+"team": "MIN"
+},
+"Deebo Samuel Sr.": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "WR",
+"salary": 5500,
+"team": "SF"
+},
+"Deion Burks": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "WR",
+"salary": 3000,
+"team": "IND"
+},
+"Demarcus Robinson": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "WR",
+"salary": 4500,
+"team": "SF"
+},
+"Demond Claiborne": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "RB",
+"salary": 4000,
+"team": "MIN"
+},
+"Denzel Boston": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "WR",
+"salary": 5200,
+"team": "CLE"
+},
+"Deshaun Watson": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "QB",
+"salary": 5100,
+"team": "CLE"
+},
+"Devaughn Vele": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "WR",
+"salary": 4900,
+"team": "NO"
+},
+"Deven Thompkins": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "WR",
+"salary": 3000,
+"team": "LV"
+},
+"Devin Culp": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "TE",
+"salary": 2500,
+"team": "MIN"
+},
+"Devin Duvernay": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "WR",
+"salary": 3000,
+"team": "ARI"
+},
+"Dillon Bell": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "WR",
+"salary": 3000,
+"team": "MIN"
+},
+"Dillon Gabriel": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "QB",
+"salary": 4000,
+"team": "CLE"
+},
+"Dolphins": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "DST",
+"salary": 2600,
+"team": "MIA"
+},
+"Dont'e Thornton Jr.": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "WR",
+"salary": 3000,
+"team": "LV"
+},
+"Drake Dabney": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "TE",
+"salary": 2500,
+"team": "GB"
+},
+"Drake London": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "WR",
+"salary": 6600,
+"team": "ATL"
+},
+"Drew Lock": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "QB",
+"salary": 5000,
+"team": "SEA"
+},
+"Drew Ogletree": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "TE",
+"salary": 2500,
+"team": "IND"
+},
+"Dylan Drummond": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "WR",
+"salary": 3000,
+"team": "ATL"
+},
+"Dylan Laube": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "RB",
+"salary": 4000,
+"team": "LV"
+},
+"Dylan Sampson": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "RB",
+"salary": 5000,
+"team": "CLE"
+},
+"E.J. Jenkins": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "TE",
+"salary": 2500,
+"team": "ATL"
+},
+"Elic Ayomanor": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "WR",
+"salary": 3200,
+"team": "TEN"
+},
+"Elijah Arroyo": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "TE",
+"salary": 2500,
+"team": "SEA"
+},
+"Elijah Higgins": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "TE",
+"salary": 2500,
+"team": "ARI"
+},
+"Emanuel Wilson": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "RB",
+"salary": 4100,
+"team": "SEA"
+},
+"Emari Demercado": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "RB",
+"salary": 4200,
+"team": "HOU"
+},
+"Emmanuel Henderson Jr.": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "WR",
+"salary": 3000,
+"team": "SEA"
+},
+"Emmett Johnson": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "RB",
+"salary": 4700,
+"team": "KC"
+},
+"Eric Saubert": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "TE",
+"salary": 2500,
+"team": "SEA"
+},
+"Evan Hull": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "RB",
+"salary": 4000,
+"team": "ARI"
+},
+"Falcons": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "DST",
+"salary": 2500,
+"team": "ATL"
+},
+"Feleipe Franks": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "TE",
+"salary": 2500,
+"team": "CAR"
+},
+"Fernando Mendoza": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "QB",
+"salary": 4600,
+"team": "LV"
+},
+"Foster Moreau": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "TE",
+"salary": 2500,
+"team": "HOU"
+},
+"Frank Gore Jr.": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "RB",
+"salary": 4000,
+"team": "BUF"
+},
+"Gardner Minshew II": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "QB",
+"salary": 4700,
+"team": "ARI"
+},
+"Garrett Nussmeier": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "QB",
+"salary": 4000,
+"team": "KC"
+},
+"Garrett Wilson": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "WR",
+"salary": 6500,
+"team": "NYJ"
+},
+"Gavin Bartholomew": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "TE",
+"salary": 2500,
+"team": "MIN"
+},
+"Geno Smith": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "QB",
+"salary": 4800,
+"team": "NYJ"
+},
+"George Holani": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "RB",
+"salary": 4000,
+"team": "SEA"
+},
+"George Kittle": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "TE",
+"salary": 6500,
+"team": "SF"
+},
+"George Pickens": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "WR",
+"salary": 6300,
+"team": "DAL"
+},
+"Graham Mertz": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "QB",
+"salary": 4000,
+"team": "HOU"
+},
+"Greg Dortch": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "WR",
+"salary": 3000,
+"team": "BUF"
+},
+"Greg Dulcich": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "TE",
+"salary": 3300,
+"team": "MIA"
+},
+"Gunnar Helm": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "TE",
+"salary": 3000,
+"team": "TEN"
+},
+"Harold Fannin Jr.": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "TE",
+"salary": 4900,
+"team": "CLE"
+},
+"Harrison Wallace III": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "WR",
+"salary": 3000,
+"team": "ARI"
+},
+"Hassan Haskins": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "RB",
+"salary": 4000,
+"team": "CLE"
+},
+"Haynes King": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "QB",
+"salary": 4000,
+"team": "CAR"
+},
+"Hendon Hooker": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "QB",
+"salary": 4000,
+"team": "TEN"
+},
+"Hunter Long": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "TE",
+"salary": 2500,
+"team": "ARI"
+},
+"Hunter Luepke": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "RB",
+"salary": 4000,
+"team": "DAL"
+},
+"Ian Thomas": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "TE",
+"salary": 2500,
+"team": "LV"
+},
+"Irvin Charles": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "WR",
+"salary": 3000,
+"team": "SEA"
+},
+"Isaac Guerendo": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "RB",
+"salary": 4000,
+"team": "SF"
+},
+"Isaiah Bond": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "WR",
+"salary": 3000,
+"team": "CLE"
+},
+"Isaiah Davis": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "RB",
+"salary": 4000,
+"team": "NYJ"
+},
+"Isaiah Neyor": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "WR",
+"salary": 3000,
+"team": "GB"
+},
+"Isaiah Williams": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "WR",
+"salary": 3000,
+"team": "NYJ"
+},
+"Israel Abanikanda": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "RB",
+"salary": 4000,
+"team": "DAL"
+},
+"J'Mari Taylor": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "RB",
+"salary": 4000,
+"team": "JAX"
+},
+"J. Michael Sturdivant": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "WR",
+"salary": 3000,
+"team": "GB"
+},
+"Ja'Mori Maclin": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "WR",
+"salary": 3000,
+"team": "BUF"
+},
+"Ja'Tavion Sanders": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "TE",
+"salary": 2500,
+"team": "CAR"
+},
+"Ja'seem Reed": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "WR",
+"salary": 3000,
+"team": "CAR"
+},
+"Jack Bech": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "WR",
+"salary": 3000,
+"team": "LV"
+},
+"Jack Stoll": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "TE",
+"salary": 2500,
+"team": "SF"
+},
+"Jack Strand": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "QB",
+"salary": 4000,
+"team": "ATL"
+},
+"Jackson Hawes": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "TE",
+"salary": 2500,
+"team": "BUF"
+},
+"Jacob Cowing": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "WR",
+"salary": 3400,
+"team": "SF"
+},
+"Jacob De Jesus": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "WR",
+"salary": 3000,
+"team": "KC"
+},
+"Jadarian Price": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "RB",
+"salary": 5100,
+"team": "SEA"
+},
+"Jaguars": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "DST",
+"salary": 4000,
+"team": "JAX"
+},
+"Jahan Dotson": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "WR",
+"salary": 3600,
+"team": "ATL"
+},
+"Jake Bobo": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "WR",
+"salary": 3000,
+"team": "SEA"
+},
+"Jake Briningstool": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "TE",
+"salary": 2500,
+"team": "KC"
+},
+"Jake Ferguson": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "TE",
+"salary": 3700,
+"team": "DAL"
+},
+"Jake Tonges": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "TE",
+"salary": 2500,
+"team": "SF"
+},
+"Jakobi Meyers": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "WR",
+"salary": 4200,
+"team": "JAX"
+},
+"Jaleel McLaughlin": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "RB",
+"salary": 4000,
+"team": "CLE"
+},
+"Jalen Brooks": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "WR",
+"salary": 3000,
+"team": "ARI"
+},
+"Jalen Coker": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "WR",
+"salary": 5700,
+"team": "CAR"
+},
+"Jalen Cropper": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "WR",
+"salary": 3000,
+"team": "NO"
+},
+"Jalen Milroe": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "QB",
+"salary": 4000,
+"team": "SEA"
+},
+"Jalen Nailor": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "WR",
+"salary": 3100,
+"team": "LV"
+},
+"Jalen Reagor": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "WR",
+"salary": 3000,
+"team": "MIA"
+},
+"Jalen Royals": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "WR",
+"salary": 3500,
+"team": "KC"
+},
+"Jalen Tolbert": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "WR",
+"salary": 3000,
+"team": "MIA"
+},
+"Jam Miller": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "RB",
+"salary": 4000,
+"team": "ATL"
+},
+"Jamaal Pritchett": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "WR",
+"salary": 3000,
+"team": "NYJ"
+},
+"James Conner": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "RB",
+"salary": 4400,
+"team": "ARI"
+},
+"James Cook III": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "RB",
+"salary": 7400,
+"team": "BUF"
+},
+"James Mitchell": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "TE",
+"salary": 2500,
+"team": "DAL"
+},
+"James Proche II": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "WR",
+"salary": 3000,
+"team": "ARI"
+},
+"James Winchester": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "TE",
+"salary": 2500,
+"team": "KC"
+},
+"Jared Wayne": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "WR",
+"salary": 3000,
+"team": "MIA"
+},
+"Jared Wiley": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "TE",
+"salary": 2500,
+"team": "KC"
+},
+"Jaren Kanak": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "TE",
+"salary": 2500,
+"team": "TEN"
+},
+"Jarquez Hunter": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "RB",
+"salary": 4000,
+"team": "NO"
+},
+"Jashaun Corbin": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "RB",
+"salary": 4000,
+"team": "DAL"
+},
+"Jauan Jennings": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "WR",
+"salary": 3300,
+"team": "MIN"
+},
+"Javonte Williams": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "RB",
+"salary": 7500,
+"team": "DAL"
+},
+"Jaxon Smith-Njigba": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "WR",
+"salary": 9300,
+"team": "SEA"
+},
+"Jayden Higgins": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "WR",
+"salary": 3000,
+"team": "HOU"
+},
+"Jayden Reed": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "WR",
+"salary": 3000,
+"team": "GB"
+},
+"Jaydn Ott": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "RB",
+"salary": 4000,
+"team": "KC"
+},
+"Jaylen Wright": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "RB",
+"salary": 4100,
+"team": "MIA"
+},
+"Jaylin Noel": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "WR",
+"salary": 3000,
+"team": "HOU"
+},
+"Jeff Caldwell": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "WR",
+"salary": 3000,
+"team": "KC"
+},
+"Jelani Woods": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "TE",
+"salary": 2500,
+"team": "NYJ"
+},
+"Jeremiyah Love": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "RB",
+"salary": 4000,
+"team": "ARI"
+},
+"Jeremy Ruckert": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "TE",
+"salary": 2500,
+"team": "NYJ"
+},
+"Jermar Jefferson": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "RB",
+"salary": 4000,
+"team": "ARI"
+},
+"Jerome Ford": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "RB",
+"salary": 4000,
+"team": "ARI"
+},
+"Jerry Jeudy": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "WR",
+"salary": 3000,
+"team": "CLE"
+},
+"Jeshaun Jones": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "WR",
+"salary": 3000,
+"team": "MIN"
+},
+"Jets": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "DST",
+"salary": 2100,
+"team": "NYJ"
+},
+"Jimmy Holiday": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "WR",
+"salary": 3000,
+"team": "KC"
+},
+"Jimmy Horn Jr.": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "WR",
+"salary": 3000,
+"team": "CLE"
+},
+"Joe Royer": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "TE",
+"salary": 2500,
+"team": "CLE"
+},
+"Joel Wilson": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "TE",
+"salary": 2500,
+"team": "TEN"
+},
+"Joey Aguilar": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "QB",
+"salary": 4000,
+"team": "ARI"
+},
+"John FitzPatrick": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "TE",
+"salary": 2500,
+"team": "CLE"
+},
+"John Metchie III": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "WR",
+"salary": 3200,
+"team": "CAR"
+},
+"John Michael Gyllenborg": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "TE",
+"salary": 2500,
+"team": "KC"
+},
+"Jonathan Mingo": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "WR",
+"salary": 3000,
+"team": "DAL"
+},
+"Jonathan Taylor": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "RB",
+"salary": 7800,
+"team": "IND"
+},
+"Jonathon Brooks": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "RB",
+"salary": 4700,
+"team": "CAR"
+},
+"Jonnu Smith": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "TE",
+"salary": 2500,
+"team": "GB"
+},
+"Jordan Addison": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "WR",
+"salary": 4800,
+"team": "MIN"
+},
+"Jordan Hudson": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "WR",
+"salary": 3000,
+"team": "DAL"
+},
+"Jordan James": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "RB",
+"salary": 4000,
+"team": "SF"
+},
+"Jordan Love": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "QB",
+"salary": 6500,
+"team": "GB"
+},
+"Jordan Mason": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "RB",
+"salary": 5300,
+"team": "MIN"
+},
+"Jordan Waters": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "RB",
+"salary": 4000,
+"team": "LAR"
+},
+"Jordan Watkins": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "WR",
+"salary": 3800,
+"team": "SF"
+},
+"Jordan Whittington": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "WR",
+"salary": 3200,
+"team": "LAR"
+},
+"Jordyn Tyson": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "WR",
+"salary": 5000,
+"team": "NO"
+},
+"Joseph Manjack": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "WR",
+"salary": 3000,
+"team": "NYJ"
+},
+"Josh Allen": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "QB",
+"salary": 7500,
+"team": "BUF"
+},
+"Josh Cameron": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "WR",
+"salary": 3300,
+"team": "JAX"
+},
+"Josh Downs": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "WR",
+"salary": 4700,
+"team": "KC"
+},
+"Josh Jacobs": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "RB",
+"salary": 6300,
+"team": "GB"
+},
+"Josh Johnson": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "QB",
+"salary": 4000,
+"team": "ARI"
+},
+"Josh Kelly": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "WR",
+"salary": 3000,
+"team": "HOU"
+},
+"Josh Oliver": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "TE",
+"salary": 2500,
+"team": "MIN"
+},
+"Josh Whyle": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "TE",
+"salary": 2500,
+"team": "GB"
+},
+"Joshua Palmer": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "WR",
+"salary": 3300,
+"team": "BUF"
+},
+"Joshua Pitsenberger": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "RB",
+"salary": 4000,
+"team": "HOU"
+},
+"Julius Chestnut": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "RB",
+"salary": 4000,
+"team": "TEN"
+},
+"Justin Fields": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "QB",
+"salary": 4500,
+"team": "KC"
+},
+"Justin Jefferson": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "WR",
+"salary": 6800,
+"team": "MIN"
+},
+"Justin Joly": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "TE",
+"salary": 2500,
+"team": "MIA"
+},
+"Justin Watson": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "WR",
+"salary": 3000,
+"team": "KC"
+},
+"Juwan Johnson": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "TE",
+"salary": 4000,
+"team": "NO"
+},
+"K.J. Osborn": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "WR",
+"salary": 3000,
+"team": "TEN"
+},
+"KC Concepcion Jr.": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "WR",
+"salary": 4800,
+"team": "CLE"
+},
+"KaVontae Turpin": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "WR",
+"salary": 3000,
+"team": "DAL"
+},
+"Kaelon Black": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "RB",
+"salary": 5000,
+"team": "SF"
+},
+"Kaleb Johnson": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "RB",
+"salary": 4600,
+"team": "GB"
+},
+"Kalel Mullings": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "RB",
+"salary": 4000,
+"team": "TEN"
+},
+"Kayshon Boutte": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "WR",
+"salary": 3800,
+"team": "HOU"
+},
+"Kaytron Allen": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "RB",
+"salary": 4300,
+"team": "MIA"
+},
+"Keenan Allen": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "WR",
+"salary": 5100,
+"team": "SF"
+},
+"Keleki Latu": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "TE",
+"salary": 2500,
+"team": "BUF"
+},
+"Kendre Miller": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "RB",
+"salary": 4000,
+"team": "DAL"
+},
+"Kendrick Bourne": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "WR",
+"salary": 3000,
+"team": "ARI"
+},
+"Kene Nwangwu": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "RB",
+"salary": 4000,
+"team": "NYJ"
+},
+"Kenneth Walker III": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "RB",
+"salary": 9200,
+"team": "KC"
+},
+"Kenny Fletcher Jr.": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "TE",
+"salary": 2500,
+"team": "GB"
+},
+"Kenny Pickett": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "QB",
+"salary": 4000,
+"team": "CAR"
+},
+"Kenyon Sadiq": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "TE",
+"salary": 2800,
+"team": "NYJ"
+},
+"Keon Coleman": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "WR",
+"salary": 4600,
+"team": "BUF"
+},
+"Kevin Austin Jr.": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "WR",
+"salary": 3000,
+"team": "NO"
+},
+"Kevin Coleman Jr.": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "WR",
+"salary": 3000,
+"team": "MIA"
+},
+"KhaDarel Hodge": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "WR",
+"salary": 3000,
+"team": "SF"
+},
+"Khalil Dinkins": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "TE",
+"salary": 2500,
+"team": "SF"
+},
+"Khalil Herbert": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "RB",
+"salary": 4200,
+"team": "ATL"
+},
+"Khalil Shakir": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "WR",
+"salary": 5300,
+"team": "BUF"
+},
+"Kirk Cousins": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "QB",
+"salary": 5300,
+"team": "MIN"
+},
+"Konata Mumpfield": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "WR",
+"salary": 4000,
+"team": "LAR"
+},
+"Kurtis Rourke": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "QB",
+"salary": 4000,
+"team": "SF"
+},
+"Kyle Allen": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "QB",
+"salary": 4500,
+"team": "BUF"
+},
+"Kyle Juszczyk": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "RB",
+"salary": 4000,
+"team": "SF"
+},
+"Kyle McCord": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "QB",
+"salary": 4000,
+"team": "MIA"
+},
+"Kyle Pitts Sr.": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "TE",
+"salary": 3800,
+"team": "ATL"
+},
+"Kyle Trask": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "QB",
+"salary": 4000,
+"team": "DAL"
+},
+"Kylen Granson": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "TE",
+"salary": 2500,
+"team": "TEN"
+},
+"Kyler Murray": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "QB",
+"salary": 5400,
+"team": "MIN"
+},
+"Kyren Williams": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "RB",
+"salary": 7100,
+"team": "LAR"
+},
+"Laquon Treadwell": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "WR",
+"salary": 3000,
+"team": "IND"
+},
+"LeQuint Allen Jr.": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "RB",
+"salary": 4000,
+"team": "JAX"
+},
+"Lewis Bond": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "WR",
+"salary": 3000,
+"team": "HOU"
+},
+"Luke Farrell": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "TE",
+"salary": 2500,
+"team": "SF"
+},
+"Luke Musgrave": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "TE",
+"salary": 2500,
+"team": "GB"
+},
+"Luke Schoonmaker": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "TE",
+"salary": 2500,
+"team": "DAL"
+},
+"Mac Jones": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "QB",
+"salary": 4000,
+"team": "SF"
+},
+"Malachi Corley": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "WR",
+"salary": 3000,
+"team": "CLE"
+},
+"Malik Benson": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "WR",
+"salary": 3000,
+"team": "LV"
+},
+"Malik Davis": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "RB",
+"salary": 4000,
+"team": "DAL"
+},
+"Malik McClain": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "WR",
+"salary": 3000,
+"team": "NYJ"
+},
+"Malik Washington": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "WR",
+"salary": 4700,
+"team": "MIA"
+},
+"Malik Willis": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "QB",
+"salary": 5200,
+"team": "MIA"
+},
+"MarShawn Lloyd": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "RB",
+"salary": 4800,
+"team": "GB"
+},
+"Mark Redman": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "TE",
+"salary": 2500,
+"team": "GB"
+},
+"Marlin Klein": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "TE",
+"salary": 2500,
+"team": "HOU"
+},
+"Marvin Harrison Jr.": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "WR",
+"salary": 4200,
+"team": "HOU"
+},
+"Mason Taylor": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "TE",
+"salary": 2900,
+"team": "NYJ"
+},
+"Mason Tipton": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "WR",
+"salary": 3000,
+"team": "NO"
+},
+"Matt Lauter": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "TE",
+"salary": 2500,
+"team": "NO"
+},
+"Matthew Caldwell": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "QB",
+"salary": 4000,
+"team": "LAR"
+},
+"Matthew Golden": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "WR",
+"salary": 7300,
+"team": "GB"
+},
+"Matthew Stafford": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "QB",
+"salary": 6200,
+"team": "LAR"
+},
+"Max Bredeson": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "RB",
+"salary": 4000,
+"team": "MIN"
+},
+"Max Brosmer": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "QB",
+"salary": 4000,
+"team": "MIN"
+},
+"Max Klare": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "TE",
+"salary": 2500,
+"team": "LAR"
+},
+"Mecole Hardman Jr.": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "WR",
+"salary": 3000,
+"team": "IND"
+},
+"Michael Burton": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "RB",
+"salary": 4000,
+"team": "CLE"
+},
+"Michael Carter": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "RB",
+"salary": 4000,
+"team": "TEN"
+},
+"Michael Mayer": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "TE",
+"salary": 3100,
+"team": "LV"
+},
+"Michael Penix Jr.": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "QB",
+"salary": 4900,
+"team": "ATL"
+},
+"Michael Trigg": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "TE",
+"salary": 2500,
+"team": "DAL"
+},
+"Michael Wilson": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "WR",
+"salary": 6400,
+"team": "ARI"
+},
+"Michael Wortham": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "WR",
+"salary": 3000,
+"team": "JAX"
+},
+"Mike Evans": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "WR",
+"salary": 6000,
+"team": "SF"
+},
+"Mike Washington Jr.": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "RB",
+"salary": 4900,
+"team": "LV"
+},
+"Mitchell Evans": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "TE",
+"salary": 2500,
+"team": "CAR"
+},
+"Mitchell Trubisky": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "QB",
+"salary": 4000,
+"team": "TEN"
+},
+"Mo Alie-Cox": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "TE",
+"salary": 2500,
+"team": "IND"
+},
+"Moliki Matavao": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "TE",
+"salary": 2500,
+"team": "NO"
+},
+"Montorie Foster Jr.": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "WR",
+"salary": 3000,
+"team": "SEA"
+},
+"Myles Price": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "WR",
+"salary": 3000,
+"team": "MIN"
+},
+"Nate Boerkircher": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "TE",
+"salary": 2600,
+"team": "JAX"
+},
+"Nate Carter": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "RB",
+"salary": 4000,
+"team": "KC"
+},
+"Nick Kallerup": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "TE",
+"salary": 2500,
+"team": "SEA"
+},
+"Nick Mullens": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "QB",
+"salary": 4000,
+"team": "JAX"
+},
+"Nick Muse": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "TE",
+"salary": 2500,
+"team": "ATL"
+},
+"Nick Singleton": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "RB",
+"salary": 4000,
+"team": "TEN"
+},
+"Nick Westbrook-Ikhine": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "WR",
+"salary": 3000,
+"team": "IND"
+},
+"Nico Collins": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "WR",
+"salary": 6900,
+"team": "HOU"
+},
+"Nikko Remigio": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "WR",
+"salary": 3000,
+"team": "HOU"
+},
+"Noah Fant": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "TE",
+"salary": 2800,
+"team": "NO"
+},
+"Noah Gray": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "TE",
+"salary": 2700,
+"team": "KC"
+},
+"Odell Beckham Jr.": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "WR",
+"salary": 3000,
+"team": "MIN"
+},
+"Olamide Zaccheaus": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "WR",
+"salary": 3000,
+"team": "ATL"
+},
+"Ollie Gordon II": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "RB",
+"salary": 5800,
+"team": "MIA"
+},
+"Omar Cooper Jr.": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "WR",
+"salary": 5400,
+"team": "NYJ"
+},
+"Omari Evans": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "WR",
+"salary": 3000,
+"team": "KC"
+},
+"Oscar Delp": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "TE",
+"salary": 2500,
+"team": "NO"
+},
+"Owen Wright": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "RB",
+"salary": 4000,
+"team": "LV"
+},
+"Packers": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "DST",
+"salary": 2900,
+"team": "GB"
+},
+"Panthers": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "DST",
+"salary": 3100,
+"team": "CAR"
+},
+"Parker Washington": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "WR",
+"salary": 6200,
+"team": "JAX"
+},
+"Patrick Gurd": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "TE",
+"salary": 2500,
+"team": "LV"
+},
+"Patrick Mahomes": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "QB",
+"salary": 6000,
+"team": "KC"
+},
+"Pharaoh Brown": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "TE",
+"salary": 2500,
+"team": "IND"
+},
+"Phillip Dorsett II": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "WR",
+"salary": 3000,
+"team": "LV"
+},
+"Pierre Strong Jr.": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "RB",
+"salary": 4300,
+"team": "GB"
+},
+"Princeton Fant": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "TE",
+"salary": 2500,
+"team": "DAL"
+},
+"Puka Nacua": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "WR",
+"salary": 9000,
+"team": "LAR"
+},
+"Quez Watkins": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "WR",
+"salary": 3000,
+"team": "IND"
+},
+"Quincy Skinner Jr.": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "WR",
+"salary": 3000,
+"team": "GB"
+},
+"Quinn Ewers": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "QB",
+"salary": 4000,
+"team": "JAX"
+},
+"Quinshon Judkins": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "RB",
+"salary": 5500,
+"team": "CLE"
+},
+"Quintin Morris": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "TE",
+"salary": 2500,
+"team": "JAX"
+},
+"Raheim Sanders": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "RB",
+"salary": 4000,
+"team": "CLE"
+},
+"Raiders": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "DST",
+"salary": 2400,
+"team": "LV"
+},
+"Rams": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "DST",
+"salary": 3800,
+"team": "LAR"
+},
+"Rashee Rice": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "WR",
+"salary": 6100,
+"team": "KC"
+},
+"Rashid Shaheed": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "WR",
+"salary": 4100,
+"team": "SEA"
+},
+"Ray Davis": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "RB",
+"salary": 4400,
+"team": "BUF"
+},
+"Reggie Virgil": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "WR",
+"salary": 3400,
+"team": "ARI"
+},
+"Ricky Pearsall": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "WR",
+"salary": 3000,
+"team": "SF"
+},
+"Ricky White III": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "WR",
+"salary": 3000,
+"team": "SEA"
+},
+"Riley Leonard": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "QB",
+"salary": 4000,
+"team": "IND"
+},
+"Rivaldo Fairweather": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "TE",
+"salary": 2500,
+"team": "ARI"
+},
+"Robbie Ouzts": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "RB",
+"salary": 4000,
+"team": "SEA"
+},
+"Roman Hemby": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "RB",
+"salary": 4000,
+"team": "LV"
+},
+"Ronnie Rivers": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "RB",
+"salary": 4000,
+"team": "LAR"
+},
+"Ryan Flournoy": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "WR",
+"salary": 5300,
+"team": "DAL"
+},
+"Saints": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "DST",
+"salary": 2700,
+"team": "NO"
+},
+"Sam Darnold": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "QB",
+"salary": 5500,
+"team": "SEA"
+},
+"Sam Howell": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "QB",
+"salary": 4000,
+"team": "DAL"
+},
+"Savion Williams": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "WR",
+"salary": 3900,
+"team": "GB"
+},
+"Seahawks": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "DST",
+"salary": 3300,
+"team": "SEA"
+},
+"Seth McGowan": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "RB",
+"salary": 5300,
+"team": "IND"
+},
+"Seydou Traore": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "TE",
+"salary": 2500,
+"team": "MIA"
+},
+"Shane Buechele": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "QB",
+"salary": 4000,
+"team": "BUF"
+},
+"Shawn Bowman": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "TE",
+"salary": 2500,
+"team": "ARI"
+},
+"Shedeur Sanders": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "QB",
+"salary": 4600,
+"team": "CLE"
+},
+"Shedrick Jackson": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "WR",
+"salary": 3000,
+"team": "ARI"
+},
+"Simi Fehoko": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "WR",
+"salary": 3000,
+"team": "ARI"
+},
+"Sincere McCormick": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "RB",
+"salary": 4000,
+"team": "SF"
+},
+"Skyler Bell": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "WR",
+"salary": 3000,
+"team": "BUF"
+},
+"Skyy Moore": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "WR",
+"salary": 3000,
+"team": "GB"
+},
+"Spencer Rattler": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "QB",
+"salary": 4000,
+"team": "NO"
+},
+"Stephen Gosnell": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "WR",
+"salary": 3000,
+"team": "BUF"
+},
+"Sterling Shepard": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "WR",
+"salary": 3000,
+"team": "NYJ"
+},
+"Stetson Bennett IV": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "QB",
+"salary": 4000,
+"team": "LAR"
+},
+"Stone Smartt": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "TE",
+"salary": 2500,
+"team": "NO"
+},
+"T.J. Hockenson": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "TE",
+"salary": 4300,
+"team": "MIN"
+},
+"Tai Felton": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "WR",
+"salary": 3000,
+"team": "MIN"
+},
+"Tank Dell": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "WR",
+"salary": 3900,
+"team": "HOU"
+},
+"Tanner Koziol": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "TE",
+"salary": 2500,
+"team": "JAX"
+},
+"Taylen Green": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "QB",
+"salary": 4000,
+"team": "CLE"
+},
+"Teagan Quitoriano": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "TE",
+"salary": 2500,
+"team": "ARI"
+},
+"Terrance Ferguson": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "TE",
+"salary": 3500,
+"team": "LAR"
+},
+"Tetairoa McMillan": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "WR",
+"salary": 6700,
+"team": "CAR"
+},
+"Texans": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "DST",
+"salary": 3400,
+"team": "HOU"
+},
+"Thomas Odukoya": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "TE",
+"salary": 2500,
+"team": "KC"
+},
+"Thomas Yassmin": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "TE",
+"salary": 2500,
+"team": "GB"
+},
+"Tim Jones": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "WR",
+"salary": 3000,
+"team": "JAX"
+},
+"Tim Patrick": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "WR",
+"salary": 3000,
+"team": "NYJ"
+},
+"Tip Reiman": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "TE",
+"salary": 2500,
+"team": "ARI"
+},
+"Titans": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "DST",
+"salary": 2000,
+"team": "TEN"
+},
+"Tommy Tremble": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "TE",
+"salary": 2900,
+"team": "CAR"
+},
+"Tony Pollard": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "RB",
+"salary": 6000,
+"team": "TEN"
+},
+"Tory Horton": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "WR",
+"salary": 3100,
+"team": "SEA"
+},
+"Travis Etienne Jr.": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "RB",
+"salary": 5500,
+"team": "NO"
+},
+"Travis Hunter": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "WR",
+"salary": 3100,
+"team": "JAX"
+},
+"Travis Kelce": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "TE",
+"salary": 4700,
+"team": "KC"
+},
+"Tre Tucker": {
+"game": "SEA @ LV",
+"opp": "SEA",
+"pos": "WR",
+"salary": 5100,
+"team": "LV"
+},
+"Tre Watson": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "TE",
+"salary": 2500,
+"team": "MIA"
+},
+"Trebor Pena": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "WR",
+"salary": 3000,
+"team": "JAX"
+},
+"Trent Sherfield Sr.": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "WR",
+"salary": 3000,
+"team": "BUF"
+},
+"Trevor Etienne": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "RB",
+"salary": 4000,
+"team": "CAR"
+},
+"Trevor Lawrence": {
+"game": "JAX @ TEN",
+"opp": "TEN",
+"pos": "QB",
+"salary": 6600,
+"team": "JAX"
+},
+"Trey Benson": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "RB",
+"salary": 4000,
+"team": "ARI"
+},
+"Trey McBride": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "TE",
+"salary": 7100,
+"team": "ARI"
+},
+"Trey Sermon": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "RB",
+"salary": 4000,
+"team": "ATL"
+},
+"Treyton Welch": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "TE",
+"salary": 2500,
+"team": "NO"
+},
+"Tua Tagovailoa": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "QB",
+"salary": 4000,
+"team": "ATL"
+},
+"Tucker Kraft": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "TE",
+"salary": 5000,
+"team": "GB"
+},
+"Tutu Atwell": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "WR",
+"salary": 3700,
+"team": "LAR"
+},
+"Ty Chandler": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "RB",
+"salary": 4000,
+"team": "NO"
+},
+"Ty Johnson": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "RB",
+"salary": 4900,
+"team": "BUF"
+},
+"Ty Simpson": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "QB",
+"salary": 4000,
+"team": "LAR"
+},
+"Tyjae Spears": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "RB",
+"salary": 4600,
+"team": "TEN"
+},
+"Tylan Wallace": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "WR",
+"salary": 3000,
+"team": "CLE"
+},
+"Tyler Allgeier": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "RB",
+"salary": 5200,
+"team": "ARI"
+},
+"Tyler Goodson": {
+"game": "SF @ DAL",
+"opp": "SF",
+"pos": "RB",
+"salary": 4500,
+"team": "DAL"
+},
+"Tyler Higbee": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "TE",
+"salary": 4200,
+"team": "LAR"
+},
+"Tyler Shough": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "QB",
+"salary": 5600,
+"team": "NO"
+},
+"Tyler Warren": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "TE",
+"salary": 4400,
+"team": "IND"
+},
+"Tyquan Thornton": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "WR",
+"salary": 3000,
+"team": "KC"
+},
+"Tyrell Shavers": {
+"game": "BUF @ NYJ",
+"opp": "NYJ",
+"pos": "WR",
+"salary": 3000,
+"team": "BUF"
+},
+"Tyren Montgomery": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "WR",
+"salary": 3000,
+"team": "TEN"
+},
+"Tyrod Taylor": {
+"game": "MIN @ GB",
+"opp": "MIN",
+"pos": "QB",
+"salary": 4000,
+"team": "GB"
+},
+"Velus Jones Jr.": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "RB",
+"salary": 4000,
+"team": "SEA"
+},
+"Vikings": {
+"game": "MIN @ GB",
+"opp": "GB",
+"pos": "DST",
+"salary": 2800,
+"team": "MIN"
+},
+"Vinny Anthony II": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "WR",
+"salary": 3000,
+"team": "ATL"
+},
+"Wan'Dale Robinson": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "WR",
+"salary": 4500,
+"team": "TEN"
+},
+"Wesley Grimes": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "WR",
+"salary": 3000,
+"team": "SF"
+},
+"Will Kacmarek": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "TE",
+"salary": 2500,
+"team": "MIA"
+},
+"Will Levis": {
+"game": "BUF @ NYJ",
+"opp": "BUF",
+"pos": "QB",
+"salary": 4000,
+"team": "NYJ"
+},
+"Will Mallory": {
+"game": "MIA @ IND",
+"opp": "MIA",
+"pos": "TE",
+"salary": 2500,
+"team": "IND"
+},
+"Will Pauling": {
+"game": "SF @ DAL",
+"opp": "DAL",
+"pos": "WR",
+"salary": 3000,
+"team": "SF"
+},
+"Will Sheppard": {
+"game": "MIA @ IND",
+"opp": "IND",
+"pos": "WR",
+"salary": 3000,
+"team": "MIA"
+},
+"Woody Marks": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "RB",
+"salary": 5700,
+"team": "HOU"
+},
+"Xavier Guillory": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "WR",
+"salary": 3000,
+"team": "CLE"
+},
+"Xavier Hutchinson": {
+"game": "HOU @ CLE",
+"opp": "CLE",
+"pos": "WR",
+"salary": 4000,
+"team": "HOU"
+},
+"Xavier Legette": {
+"game": "CAR @ NO",
+"opp": "NO",
+"pos": "WR",
+"salary": 3400,
+"team": "CAR"
+},
+"Xavier Restrepo": {
+"game": "JAX @ TEN",
+"opp": "JAX",
+"pos": "WR",
+"salary": 3000,
+"team": "TEN"
+},
+"Xavier Smith": {
+"game": "LAR @ ARI",
+"opp": "ARI",
+"pos": "WR",
+"salary": 3000,
+"team": "LAR"
+},
+"Xavier Worthy": {
+"game": "KC @ ATL",
+"opp": "ATL",
+"pos": "WR",
+"salary": 4300,
+"team": "KC"
+},
+"Zach Charbonnet": {
+"game": "SEA @ LV",
+"opp": "LV",
+"pos": "RB",
+"salary": 5600,
+"team": "SEA"
+},
+"Zach Wilson": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "QB",
+"salary": 4000,
+"team": "NO"
+},
+"Zach Wood": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "TE",
+"salary": 2500,
+"team": "NO"
+},
+"Zachariah Branch": {
+"game": "KC @ ATL",
+"opp": "KC",
+"pos": "WR",
+"salary": 3000,
+"team": "ATL"
+},
+"Zaire Mitchell-Paden": {
+"game": "HOU @ CLE",
+"opp": "HOU",
+"pos": "TE",
+"salary": 2500,
+"team": "CLE"
+},
+"Zamir White": {
+"game": "CAR @ NO",
+"opp": "CAR",
+"pos": "RB",
+"salary": 4000,
+"team": "NO"
+},
+"Zay Jones": {
+"game": "LAR @ ARI",
+"opp": "LAR",
+"pos": "WR",
+"salary": 3000,
+"team": "ARI"
+}
+}

@@ -1,0 +1,458 @@
+{
+"Alex Bachman": {
+"cpt_salary": 300,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "WR",
+"salary": 200,
+"team": "LAR"
+},
+"Blake Corum": {
+"cpt_salary": 11400,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "RB",
+"salary": 7600,
+"team": "LAR"
+},
+"Blake Grupe": {
+"cpt_salary": 6900,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "K",
+"salary": 4600,
+"team": "LAR"
+},
+"Bo Melton": {
+"cpt_salary": 1500,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "WR",
+"salary": 1000,
+"team": "GB"
+},
+"Brandon McManus": {
+"cpt_salary": 6900,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "K",
+"salary": 4600,
+"team": "LAR"
+},
+"Brennan Presley": {
+"cpt_salary": 300,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "WR",
+"salary": 200,
+"team": "LAR"
+},
+"CJ Daniels": {
+"cpt_salary": 3000,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "WR",
+"salary": 2000,
+"team": "LAR"
+},
+"Cam Miller": {
+"cpt_salary": 9000,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "QB",
+"salary": 6000,
+"team": "GB"
+},
+"Chris Brooks": {
+"cpt_salary": 3900,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "RB",
+"salary": 2600,
+"team": "GB"
+},
+"Christian Watson": {
+"cpt_salary": 15000,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "WR",
+"salary": 10000,
+"team": "GB"
+},
+"Colby Parkinson": {
+"cpt_salary": 6600,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "TE",
+"salary": 4400,
+"team": "LAR"
+},
+"Coleman Owen": {
+"cpt_salary": 300,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "WR",
+"salary": 200,
+"team": "GB"
+},
+"Dan Villari": {
+"cpt_salary": 300,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "TE",
+"salary": 200,
+"team": "LAR"
+},
+"Davante Adams": {
+"cpt_salary": 13500,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "WR",
+"salary": 9000,
+"team": "LAR"
+},
+"Davis Allen": {
+"cpt_salary": 3600,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "TE",
+"salary": 2400,
+"team": "LAR"
+},
+"Dean Connors": {
+"cpt_salary": 300,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "RB",
+"salary": 200,
+"team": "LAR"
+},
+"Drake Dabney": {
+"cpt_salary": 300,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "TE",
+"salary": 200,
+"team": "GB"
+},
+"Isaiah Neyor": {
+"cpt_salary": 300,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "WR",
+"salary": 200,
+"team": "GB"
+},
+"J. Michael Sturdivant": {
+"cpt_salary": 1800,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "WR",
+"salary": 1200,
+"team": "GB"
+},
+"Jayden Reed": {
+"cpt_salary": 300,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "WR",
+"salary": 200,
+"team": "GB"
+},
+"Jonnu Smith": {
+"cpt_salary": 2400,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "TE",
+"salary": 1600,
+"team": "GB"
+},
+"Jordan Love": {
+"cpt_salary": 15900,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "QB",
+"salary": 10600,
+"team": "GB"
+},
+"Jordan Waters": {
+"cpt_salary": 300,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "RB",
+"salary": 200,
+"team": "LAR"
+},
+"Jordan Whittington": {
+"cpt_salary": 300,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "WR",
+"salary": 200,
+"team": "LAR"
+},
+"Josh Jacobs": {
+"cpt_salary": 12000,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "RB",
+"salary": 8000,
+"team": "GB"
+},
+"Josh Whyle": {
+"cpt_salary": 300,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "TE",
+"salary": 200,
+"team": "GB"
+},
+"Joshua Karty": {
+"cpt_salary": 6900,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "K",
+"salary": 4600,
+"team": "LAR"
+},
+"Kaleb Johnson": {
+"cpt_salary": 8400,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "RB",
+"salary": 5600,
+"team": "GB"
+},
+"Kenny Fletcher Jr.": {
+"cpt_salary": 300,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "TE",
+"salary": 200,
+"team": "GB"
+},
+"Konata Mumpfield": {
+"cpt_salary": 7800,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "WR",
+"salary": 5200,
+"team": "LAR"
+},
+"Kyren Williams": {
+"cpt_salary": 12900,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "RB",
+"salary": 8600,
+"team": "LAR"
+},
+"Luke Musgrave": {
+"cpt_salary": 300,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "TE",
+"salary": 200,
+"team": "GB"
+},
+"MarShawn Lloyd": {
+"cpt_salary": 9900,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "RB",
+"salary": 6600,
+"team": "GB"
+},
+"Mark Redman": {
+"cpt_salary": 900,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "TE",
+"salary": 600,
+"team": "GB"
+},
+"Matthew Caldwell": {
+"cpt_salary": 9000,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "QB",
+"salary": 6000,
+"team": "LAR"
+},
+"Matthew Golden": {
+"cpt_salary": 14700,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "WR",
+"salary": 9800,
+"team": "GB"
+},
+"Matthew Stafford": {
+"cpt_salary": 15300,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "QB",
+"salary": 10200,
+"team": "LAR"
+},
+"Max Klare": {
+"cpt_salary": 600,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "TE",
+"salary": 400,
+"team": "LAR"
+},
+"Packers": {
+"cpt_salary": 5400,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "DST",
+"salary": 3600,
+"team": "GB"
+},
+"Pierre Strong Jr.": {
+"cpt_salary": 2100,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "RB",
+"salary": 1400,
+"team": "GB"
+},
+"Puka Nacua": {
+"cpt_salary": 300,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "WR",
+"salary": 200,
+"team": "LAR"
+},
+"Quincy Skinner Jr.": {
+"cpt_salary": 300,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "WR",
+"salary": 200,
+"team": "GB"
+},
+"Rams": {
+"cpt_salary": 6000,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "DST",
+"salary": 4000,
+"team": "LAR"
+},
+"Ronnie Rivers": {
+"cpt_salary": 4500,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "RB",
+"salary": 3000,
+"team": "LAR"
+},
+"Savion Williams": {
+"cpt_salary": 5100,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "WR",
+"salary": 3400,
+"team": "GB"
+},
+"Skyy Moore": {
+"cpt_salary": 1200,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "WR",
+"salary": 800,
+"team": "GB"
+},
+"Stetson Bennett IV": {
+"cpt_salary": 9000,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "QB",
+"salary": 6000,
+"team": "LAR"
+},
+"Terrance Ferguson": {
+"cpt_salary": 8100,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "TE",
+"salary": 5400,
+"team": "LAR"
+},
+"Thomas Yassmin": {
+"cpt_salary": 300,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "TE",
+"salary": 200,
+"team": "GB"
+},
+"Trey Smack": {
+"cpt_salary": 7500,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "K",
+"salary": 5000,
+"team": "GB"
+},
+"Tucker Kraft": {
+"cpt_salary": 10500,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "TE",
+"salary": 7000,
+"team": "GB"
+},
+"Tutu Atwell": {
+"cpt_salary": 7200,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "WR",
+"salary": 4800,
+"team": "LAR"
+},
+"Ty Simpson": {
+"cpt_salary": 9000,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "QB",
+"salary": 6000,
+"team": "LAR"
+},
+"Tyler Higbee": {
+"cpt_salary": 9600,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "TE",
+"salary": 6400,
+"team": "LAR"
+},
+"Tyler Scott": {
+"cpt_salary": 300,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "WR",
+"salary": 200,
+"team": "LAR"
+},
+"Tyrod Taylor": {
+"cpt_salary": 9000,
+"game": "GB @ LAR",
+"opp": "LAR",
+"pos": "QB",
+"salary": 6000,
+"team": "GB"
+},
+"Xavier Smith": {
+"cpt_salary": 3300,
+"game": "GB @ LAR",
+"opp": "GB",
+"pos": "WR",
+"salary": 2200,
+"team": "LAR"
+}
+}

@@ -1,0 +1,2054 @@
+{
+ "contest_id": 193391013,
+ "label": "NE @ SEA (S7, week 1)",
+ "kind": "showdown",
+ "draft_group_id": 151820,
+ "role": "development",
+ "note": null,
+ "rows": 126020,
+ "entries_with_lineup": 125800,
+ "projection_source": "S7's lifted pool: every DraftKings pool player with a Sleeper projection under the game's teams (research/s7_beta.lifted_pool); post-game reconstruction (pool, roster and feeds captured after the game)",
+ "real": {
+  "duplication": {
+   "entries": 125800,
+   "distinct_lineups": 18620,
+   "max_copies": 537,
+   "distinct_pair_collision": 0.0004581751915523857,
+   "entries_in_duplicated_lineups_pct": 93.05,
+   "copies_histogram": {
+    "1": 8743,
+    "2": 2628,
+    "3": 1414,
+    "4": 917,
+    "5": 654,
+    "6": 540,
+    "7": 416,
+    "8": 309,
+    "9": 306,
+    "10": 243,
+    "11": 186,
+    "12": 139,
+    "13": 148,
+    "14": 113,
+    "15": 126,
+    "16": 107,
+    "17": 96,
+    "18": 90,
+    "19": 76,
+    "20": 69,
+    "21": 66,
+    "22": 45,
+    "23": 69,
+    "24": 51,
+    "25": 51,
+    "26": 38,
+    "27": 34,
+    "28": 37,
+    "29": 45,
+    "30": 34,
+    "31": 34,
+    "32": 27,
+    "33": 33,
+    "34": 27,
+    "35": 29,
+    "36": 19,
+    "37": 30,
+    "38": 25,
+    "39": 14,
+    "40": 15,
+    "41": 16,
+    "42": 16,
+    "43": 17,
+    "44": 18,
+    "45": 17,
+    "46": 17,
+    "47": 13,
+    "48": 13,
+    "49": 15,
+    "50": 13,
+    "51": 10,
+    "52": 14,
+    "53": 13,
+    "54": 12,
+    "55": 15,
+    "56": 7,
+    "57": 10,
+    "58": 14,
+    "59": 8,
+    "60": 5,
+    "61": 4,
+    "62": 9,
+    "63": 5,
+    "64": 4,
+    "65": 10,
+    "66": 10,
+    "67": 4,
+    "68": 8,
+    "69": 3,
+    "70": 8,
+    "71": 6,
+    "72": 8,
+    "73": 4,
+    "74": 4,
+    "75": 8,
+    "76": 5,
+    "77": 5,
+    "78": 6,
+    "79": 3,
+    "80": 3,
+    "81": 4,
+    "82": 7,
+    "83": 3,
+    "84": 1,
+    "85": 4,
+    "86": 1,
+    "87": 1,
+    "88": 6,
+    "89": 5,
+    "90": 1,
+    "91": 3,
+    "92": 4,
+    "93": 3,
+    "94": 2,
+    "95": 1,
+    "96": 4,
+    "97": 2,
+    "98": 5,
+    "99": 4,
+    "100": 3,
+    "101": 2,
+    "102": 3,
+    "103": 1,
+    "104": 1,
+    "106": 1,
+    "107": 2,
+    "108": 1,
+    "109": 3,
+    "110": 1,
+    "111": 3,
+    "112": 4,
+    "113": 3,
+    "114": 2,
+    "115": 1,
+    "116": 1,
+    "117": 3,
+    "118": 2,
+    "119": 3,
+    "120": 3,
+    "121": 1,
+    "122": 1,
+    "123": 1,
+    "124": 5,
+    "125": 2,
+    "126": 1,
+    "130": 1,
+    "131": 3,
+    "132": 1,
+    "133": 2,
+    "134": 3,
+    "135": 2,
+    "136": 2,
+    "137": 2,
+    "138": 1,
+    "139": 2,
+    "143": 1,
+    "145": 2,
+    "146": 1,
+    "148": 1,
+    "150": 1,
+    "151": 1,
+    "155": 1,
+    "156": 1,
+    "158": 2,
+    "160": 1,
+    "161": 3,
+    "165": 1,
+    "166": 1,
+    "167": 2,
+    "169": 1,
+    "171": 2,
+    "173": 1,
+    "174": 2,
+    "176": 1,
+    "179": 1,
+    "181": 1,
+    "187": 1,
+    "188": 1,
+    "192": 1,
+    "201": 1,
+    "202": 1,
+    "203": 1,
+    "205": 1,
+    "206": 1,
+    "211": 1,
+    "217": 1,
+    "224": 2,
+    "231": 1,
+    "236": 1,
+    "241": 1,
+    "242": 1,
+    "244": 1,
+    "248": 2,
+    "250": 1,
+    "253": 1,
+    "255": 1,
+    "260": 1,
+    "278": 1,
+    "279": 1,
+    "290": 1,
+    "318": 1,
+    "326": 1,
+    "336": 1,
+    "337": 1,
+    "353": 1,
+    "392": 1,
+    "427": 1,
+    "504": 1,
+    "537": 1
+   },
+   "entries_by_copies_pct": {
+    "1": 6.95,
+    "2-5": 13.065,
+    "6-20": 24.409,
+    "21-100": 37.726,
+    "101+": 17.851
+   },
+   "effective_lineups_1_over_C": 2183
+  },
+  "near": {
+   "pair_share_overlap": {
+    "6_of_6": 0.0004581751915523857,
+    "5_of_6": 0.003165828001974179,
+    "4_of_6": 0.03761323041244372
+   },
+   "pairs": {
+    "exact": 3625429.0,
+    "one_swap": 25050428.0,
+    "two_swaps": 297624356.0
+   },
+   "near_to_exact_pair_ratio": {
+    "one_swap": 6.909645175784714,
+    "two_swaps": 82.09355527304493
+   },
+   "entries_with_another_entry_pct": {
+    "exact": 93.05,
+    "within_one_swap": 99.89,
+    "within_two_swaps": 99.993
+   },
+   "entries_with_another_USERS_entry_pct": {
+    "exact": 92.897,
+    "within_one_swap": 99.864,
+    "within_two_swaps": 99.984
+   },
+   "same_six_players_any_captain_pair_share": 0.0009082576286841915
+  },
+  "mean_overlap": 1.8561731627020372,
+  "structure": {
+   "resolved_entries": 125800,
+   "unresolved_entries": 0,
+   "salary_mean": 48712.1,
+   "salary_median": 49400.0,
+   "salary_left_pct": {
+    "0": 13.84,
+    "100-200": 16.24,
+    "300-500": 15.48,
+    "600-1000": 17.92,
+    "1100-2000": 16.84,
+    "2100+": 19.66
+   },
+   "team_split_pct": {
+    "3-3": 38.73,
+    "4-2": 47.74,
+    "5-1": 13.53
+   },
+   "captain_position_pct": {
+    "QB": 20.1,
+    "RB": 29.62,
+    "WR": 36.77,
+    "TE": 6.28,
+    "K": 2.7,
+    "DST": 4.53
+   },
+   "flex_kickers_and_defenses_pct": {
+    "0": 45.65,
+    "1": 41.51,
+    "2": 11.9,
+    "3": 0.86,
+    "4": 0.09
+   },
+   "both_quarterbacks_pct": 33.67,
+   "non_qb_captain_with_his_qb_in_flex_pct": 70.28,
+   "qb_captain_own_catchers_pct": {
+    "0": 6.12,
+    "1": 32.98,
+    "2": 47.68,
+    "3": 13.23
+   }
+  },
+  "score_quantiles": {
+   "0.001": 22.62,
+   "0.01": 29.5,
+   "0.1": 42.93,
+   "0.25": 53.09,
+   "0.5": 65.63,
+   "0.75": 74.32,
+   "0.9": 80.52,
+   "0.99": 90.52,
+   "0.999": 97.12
+  },
+  "score_mean": 63.36,
+  "score_sd": 14.4,
+  "points_rebuild_max_abs_diff": 0.0,
+  "users": {
+   "entrants": 42368,
+   "entries_per_entrant_mean": 2.97,
+   "duplicate_pairs": 3625429.0,
+   "same_user_duplicate_pairs": 4368.0,
+   "same_user_share_of_duplicate_pairs_pct": 0.1205,
+   "collision_cross_user_only": 0.00045762317157441873,
+   "entries_whose_lineup_another_entrant_holds_pct": 92.897,
+   "entries_repeating_the_entrants_own_lineup_pct": 2.114,
+   "field_mean_overlap": 1.8561731627020372,
+   "classes": {
+    "1": {
+     "entrants": 28978,
+     "entries": 28978,
+     "entries_pct": 23.03,
+     "share_of_entries_in_duplicated_lineups_pct": 23.71,
+     "their_entries_in_a_lineup_another_entrant_holds_pct": 95.79,
+     "their_entries_mean_copies": 78.99,
+     "their_entries_median_copies": 44.0,
+     "distinct_lineups_per_entry_mean": null,
+     "within_entrant_mean_overlap": null
+    },
+    "2-19": {
+     "entrants": 12665,
+     "entries": 47236,
+     "entries_pct": 37.55,
+     "share_of_entries_in_duplicated_lineups_pct": 38.45,
+     "their_entries_in_a_lineup_another_entrant_holds_pct": 95.1,
+     "their_entries_mean_copies": 70.67,
+     "their_entries_median_copies": 37.0,
+     "distinct_lineups_per_entry_mean": 0.9813,
+     "within_entrant_mean_overlap": 2.425
+    },
+    "20-149": {
+     "entrants": 530,
+     "entries": 20336,
+     "entries_pct": 16.17,
+     "share_of_entries_in_duplicated_lineups_pct": 16.09,
+     "their_entries_in_a_lineup_another_entrant_holds_pct": 92.58,
+     "their_entries_mean_copies": 45.63,
+     "their_entries_median_copies": 19.0,
+     "distinct_lineups_per_entry_mean": 0.9789,
+     "within_entrant_mean_overlap": 2.205
+    },
+    "150+": {
+     "entrants": 195,
+     "entries": 29250,
+     "entries_pct": 23.25,
+     "share_of_entries_in_duplicated_lineups_pct": 21.75,
+     "their_entries_in_a_lineup_another_entrant_holds_pct": 86.69,
+     "their_entries_mean_copies": 28.1,
+     "their_entries_median_copies": 10.0,
+     "distinct_lineups_per_entry_mean": 0.9891,
+     "within_entrant_mean_overlap": 1.989
+    }
+   }
+  },
+  "pairs": {
+   "players": 20,
+   "pairs_with_independent_share_0_5pct_plus": 182,
+   "mean_abs_log_lift_weighted": 0.1473,
+   "top_by_joint": [
+    {
+     "a": "Drake Maye",
+     "b": "Jaxon Smith-Njigba",
+     "joint_pct": 48.65,
+     "independent_pct": 53.1,
+     "lift": 0.916
+    },
+    {
+     "a": "Drake Maye",
+     "b": "Rhamondre Stevenson",
+     "joint_pct": 44.4,
+     "independent_pct": 46.82,
+     "lift": 0.948
+    },
+    {
+     "a": "Jaxon Smith-Njigba",
+     "b": "Rhamondre Stevenson",
+     "joint_pct": 39.23,
+     "independent_pct": 42.97,
+     "lift": 0.913
+    },
+    {
+     "a": "Drake Maye",
+     "b": "A.J. Brown",
+     "joint_pct": 37.69,
+     "independent_pct": 37.92,
+     "lift": 0.994
+    },
+    {
+     "a": "Jaxon Smith-Njigba",
+     "b": "Sam Darnold",
+     "joint_pct": 35.07,
+     "independent_pct": 35.78,
+     "lift": 0.98
+    },
+    {
+     "a": "Drake Maye",
+     "b": "Sam Darnold",
+     "joint_pct": 33.58,
+     "independent_pct": 38.99,
+     "lift": 0.861
+    },
+    {
+     "a": "Drake Maye",
+     "b": "Jadarian Price",
+     "joint_pct": 31.46,
+     "independent_pct": 34.63,
+     "lift": 0.908
+    },
+    {
+     "a": "Jaxon Smith-Njigba",
+     "b": "A.J. Brown",
+     "joint_pct": 28.84,
+     "independent_pct": 34.8,
+     "lift": 0.829
+    },
+    {
+     "a": "Jaxon Smith-Njigba",
+     "b": "Jadarian Price",
+     "joint_pct": 28.22,
+     "independent_pct": 31.78,
+     "lift": 0.888
+    },
+    {
+     "a": "Rhamondre Stevenson",
+     "b": "Jadarian Price",
+     "joint_pct": 27.5,
+     "independent_pct": 28.02,
+     "lift": 0.981
+    },
+    {
+     "a": "Rhamondre Stevenson",
+     "b": "Sam Darnold",
+     "joint_pct": 27.04,
+     "independent_pct": 31.55,
+     "lift": 0.857
+    },
+    {
+     "a": "Rhamondre Stevenson",
+     "b": "A.J. Brown",
+     "joint_pct": 26.59,
+     "independent_pct": 30.68,
+     "lift": 0.867
+    }
+   ],
+   "top_lift": [
+    {
+     "a": "Andy Borregales",
+     "b": "Patriots",
+     "joint_pct": 2.22,
+     "independent_pct": 1.59,
+     "lift": 1.396
+    },
+    {
+     "a": "Sam Darnold",
+     "b": "Elijah Arroyo",
+     "joint_pct": 4.6,
+     "independent_pct": 3.38,
+     "lift": 1.361
+    },
+    {
+     "a": "Jaxon Smith-Njigba",
+     "b": "Corey Kiner",
+     "joint_pct": 2.53,
+     "independent_pct": 1.99,
+     "lift": 1.269
+    },
+    {
+     "a": "A.J. Brown",
+     "b": "Corey Kiner",
+     "joint_pct": 1.76,
+     "independent_pct": 1.42,
+     "lift": 1.234
+    },
+    {
+     "a": "Jaxon Smith-Njigba",
+     "b": "Elijah Arroyo",
+     "joint_pct": 5.52,
+     "independent_pct": 4.61,
+     "lift": 1.198
+    },
+    {
+     "a": "A.J. Brown",
+     "b": "Elijah Arroyo",
+     "joint_pct": 3.89,
+     "independent_pct": 3.29,
+     "lift": 1.183
+    },
+    {
+     "a": "A.J. Brown",
+     "b": "Patriots",
+     "joint_pct": 7.38,
+     "independent_pct": 6.29,
+     "lift": 1.172
+    },
+    {
+     "a": "Romeo Doubs",
+     "b": "Rashid Shaheed",
+     "joint_pct": 6.85,
+     "independent_pct": 5.87,
+     "lift": 1.167
+    },
+    {
+     "a": "Jaxon Smith-Njigba",
+     "b": "Mack Hollins",
+     "joint_pct": 4.31,
+     "independent_pct": 3.7,
+     "lift": 1.167
+    },
+    {
+     "a": "Jason Myers",
+     "b": "Seahawks",
+     "joint_pct": 7.13,
+     "independent_pct": 6.16,
+     "lift": 1.158
+    },
+    {
+     "a": "Sam Darnold",
+     "b": "Seahawks",
+     "joint_pct": 12.54,
+     "independent_pct": 10.97,
+     "lift": 1.144
+    },
+    {
+     "a": "Jaxon Smith-Njigba",
+     "b": "DeMario Douglas",
+     "joint_pct": 9.67,
+     "independent_pct": 8.46,
+     "lift": 1.143
+    }
+   ],
+   "lowest_lift": [
+    {
+     "a": "Seahawks",
+     "b": "Corey Kiner",
+     "joint_pct": 0.14,
+     "independent_pct": 0.61,
+     "lift": 0.221
+    },
+    {
+     "a": "Seahawks",
+     "b": "DeMario Douglas",
+     "joint_pct": 0.87,
+     "independent_pct": 2.59,
+     "lift": 0.337
+    },
+    {
+     "a": "Jason Myers",
+     "b": "Elijah Arroyo",
+     "joint_pct": 0.69,
+     "independent_pct": 1.9,
+     "lift": 0.361
+    },
+    {
+     "a": "Andy Borregales",
+     "b": "DeMario Douglas",
+     "joint_pct": 0.55,
+     "independent_pct": 1.53,
+     "lift": 0.362
+    },
+    {
+     "a": "Seahawks",
+     "b": "Elijah Arroyo",
+     "joint_pct": 0.53,
+     "independent_pct": 1.41,
+     "lift": 0.373
+    },
+    {
+     "a": "Cooper Kupp",
+     "b": "Elijah Arroyo",
+     "joint_pct": 0.39,
+     "independent_pct": 1.04,
+     "lift": 0.376
+    },
+    {
+     "a": "AJ Barner",
+     "b": "Corey Kiner",
+     "joint_pct": 0.24,
+     "independent_pct": 0.62,
+     "lift": 0.387
+    },
+    {
+     "a": "DeMario Douglas",
+     "b": "Mack Hollins",
+     "joint_pct": 0.25,
+     "independent_pct": 0.64,
+     "lift": 0.388
+    },
+    {
+     "a": "AJ Barner",
+     "b": "Elijah Arroyo",
+     "joint_pct": 0.58,
+     "independent_pct": 1.42,
+     "lift": 0.406
+    },
+    {
+     "a": "Seahawks",
+     "b": "Mack Hollins",
+     "joint_pct": 0.46,
+     "independent_pct": 1.13,
+     "lift": 0.406
+    },
+    {
+     "a": "Patriots",
+     "b": "Elijah Arroyo",
+     "joint_pct": 0.35,
+     "independent_pct": 0.83,
+     "lift": 0.415
+    },
+    {
+     "a": "AJ Barner",
+     "b": "Patriots",
+     "joint_pct": 1.18,
+     "independent_pct": 2.72,
+     "lift": 0.433
+    }
+   ]
+  },
+  "finish_by_copies": {
+   "1": {
+    "entries": 8743,
+    "mean_points": 55.6,
+    "top_1pct_share_pct": 0.34,
+    "top_10pct_share_pct": 4.47,
+    "top_22pct_share_pct": 10.15
+   },
+   "2-5": {
+    "entries": 16436,
+    "mean_points": 59.26,
+    "top_1pct_share_pct": 0.8,
+    "top_10pct_share_pct": 6.66,
+    "top_22pct_share_pct": 14.86
+   },
+   "6-20": {
+    "entries": 30706,
+    "mean_points": 61.36,
+    "top_1pct_share_pct": 0.47,
+    "top_10pct_share_pct": 8.92,
+    "top_22pct_share_pct": 18.37
+   },
+   "21-100": {
+    "entries": 47459,
+    "mean_points": 64.41,
+    "top_1pct_share_pct": 1.74,
+    "top_10pct_share_pct": 10.48,
+    "top_22pct_share_pct": 22.95
+   },
+   "101+": {
+    "entries": 22456,
+    "mean_points": 69.91,
+    "top_1pct_share_pct": 0.55,
+    "top_10pct_share_pct": 15.05,
+    "top_22pct_share_pct": 34.8
+   }
+  },
+  "optimizer_proximity": {
+   "universe_players": 25,
+   "legal_lineups": 1040958,
+   "representable_entries_pct": 96.65,
+   "optimum": {
+    "proj": 96.75,
+    "salary": 50000,
+    "real_copies": 136
+   },
+   "note": "rank 1 is the highest projected lineup; shares are of ALL entries with a lineup (an unrepresentable entry is in no top-K)",
+   "entries_in_projection_top_K_pct": {
+    "1": {
+     "real": 0.108,
+     "production_field": 0.2,
+     "uniform": 0.0001
+    },
+    "10": {
+     "real": 0.953,
+     "production_field": 1.659,
+     "uniform": 0.001
+    },
+    "100": {
+     "real": 4.733,
+     "production_field": 9.422,
+     "uniform": 0.0096
+    },
+    "1000": {
+     "real": 22.471,
+     "production_field": 34.225,
+     "uniform": 0.0961
+    },
+    "10000": {
+     "real": 71.057,
+     "production_field": 78.754,
+     "uniform": 0.9607
+    },
+    "100000": {
+     "real": 95.549,
+     "production_field": 99.354,
+     "uniform": 9.6065
+    }
+   },
+   "by_copies": {
+    "1": {
+     "entries": 8743,
+     "representable_pct": 86.88,
+     "top_100_pct": 0.0,
+     "top_1000_pct": 0.86,
+     "top_10000_pct": 16.61,
+     "median_rank_pctile": 2.707,
+     "median_gap_pts": 17.1,
+     "salary_left_0_pct": 0.09
+    },
+    "2-5": {
+     "entries": 16436,
+     "representable_pct": 93.39,
+     "top_100_pct": 0.14,
+     "top_1000_pct": 3.92,
+     "top_10000_pct": 41.86,
+     "median_rank_pctile": 1.111,
+     "median_gap_pts": 13.1,
+     "salary_left_0_pct": 0.59
+    },
+    "6-20": {
+     "entries": 30706,
+     "representable_pct": 96.21,
+     "top_100_pct": 1.13,
+     "top_1000_pct": 11.27,
+     "top_10000_pct": 65.58,
+     "median_rank_pctile": 0.557,
+     "median_gap_pts": 10.8,
+     "salary_left_0_pct": 2.91
+    },
+    "21-100": {
+     "entries": 47459,
+     "representable_pct": 98.52,
+     "top_100_pct": 4.74,
+     "top_1000_pct": 27.78,
+     "top_10000_pct": 83.57,
+     "median_rank_pctile": 0.253,
+     "median_gap_pts": 8.75,
+     "salary_left_0_pct": 13.8
+    },
+    "101+": {
+     "entries": 22456,
+     "representable_pct": 99.5,
+     "top_100_pct": 14.85,
+     "top_1000_pct": 48.57,
+     "top_10000_pct": 94.68,
+     "median_rank_pctile": 0.112,
+     "median_gap_pts": 7.0,
+     "salary_left_0_pct": 42.58
+    }
+   },
+   "by_user_class": {
+    "1": {
+     "entries": 28978,
+     "top_100_pct": 4.43,
+     "top_1000_pct": 23.9,
+     "top_10000_pct": 76.8,
+     "median_gap_pts": 9.55,
+     "salary_left_0_pct": 20.65
+    },
+    "2-19": {
+     "entries": 47236,
+     "top_100_pct": 5.3,
+     "top_1000_pct": 24.81,
+     "top_10000_pct": 74.86,
+     "median_gap_pts": 9.55,
+     "salary_left_0_pct": 16.8
+    },
+    "20-149": {
+     "entries": 20336,
+     "top_100_pct": 5.26,
+     "top_1000_pct": 22.41,
+     "top_10000_pct": 69.05,
+     "median_gap_pts": 9.95,
+     "salary_left_0_pct": 9.59
+    },
+    "150+": {
+     "entries": 29250,
+     "top_100_pct": 3.75,
+     "top_1000_pct": 17.31,
+     "top_10000_pct": 60.62,
+     "median_gap_pts": 10.75,
+     "salary_left_0_pct": 5.34
+    }
+   },
+   "rank_pctile_quantiles_representable": {
+    "0.1": 0.02,
+    "0.25": 0.11,
+    "0.5": 0.4,
+    "0.75": 1.02,
+    "0.9": 2.23
+   },
+   "gap_pts_quantiles_representable": {
+    "0.1": 4.45,
+    "0.25": 6.95,
+    "0.5": 9.85,
+    "0.75": 12.8,
+    "0.9": 16.1
+   }
+  },
+  "most_copied": [
+   {
+    "lineup": [
+     "Jadarian Price (CPT)",
+     "Drake Maye",
+     "Hunter Henry",
+     "Jason Myers",
+     "Jaxon Smith-Njigba",
+     "Rhamondre Stevenson"
+    ],
+    "copies": 537,
+    "entrants": 529,
+    "proj_rank": 4119,
+    "proj_gap": 9.85,
+    "salary": 50000,
+    "production_expected_copies": 6.34,
+    "points": 80.82
+   },
+   {
+    "lineup": [
+     "Rhamondre Stevenson (CPT)",
+     "DeMario Douglas",
+     "Drake Maye",
+     "George Holani",
+     "Jaxon Smith-Njigba",
+     "Sam Darnold"
+    ],
+    "copies": 504,
+    "entrants": 485,
+    "proj_rank": 126,
+    "proj_gap": 3.55,
+    "salary": 49800,
+    "production_expected_copies": 66.77,
+    "points": 74.19
+   },
+   {
+    "lineup": [
+     "Rhamondre Stevenson (CPT)",
+     "A.J. Brown",
+     "DeMario Douglas",
+     "Drake Maye",
+     "George Holani",
+     "Jaxon Smith-Njigba"
+    ],
+    "copies": 427,
+    "entrants": 424,
+    "proj_rank": 158,
+    "proj_gap": 3.85,
+    "salary": 50000,
+    "production_expected_copies": 59.69,
+    "points": 79.27
+   },
+   {
+    "lineup": [
+     "Rhamondre Stevenson (CPT)",
+     "AJ Barner",
+     "Drake Maye",
+     "Hunter Henry",
+     "Jadarian Price",
+     "Jaxon Smith-Njigba"
+    ],
+    "copies": 392,
+    "entrants": 386,
+    "proj_rank": 216,
+    "proj_gap": 4.25,
+    "salary": 49800,
+    "production_expected_copies": 51.4,
+    "points": 80.47
+   },
+   {
+    "lineup": [
+     "Jadarian Price (CPT)",
+     "Drake Maye",
+     "Hunter Henry",
+     "Jaxon Smith-Njigba",
+     "Sam Darnold",
+     "Seahawks"
+    ],
+    "copies": 353,
+    "entrants": 349,
+    "proj_rank": 1374,
+    "proj_gap": 7.35,
+    "salary": 50000,
+    "production_expected_copies": 16.14,
+    "points": 72.84
+   },
+   {
+    "lineup": [
+     "Drake Maye (CPT)",
+     "Elijah Arroyo",
+     "Hunter Henry",
+     "Jaxon Smith-Njigba",
+     "Rhamondre Stevenson",
+     "Sam Darnold"
+    ],
+    "copies": 337,
+    "entrants": 314,
+    "proj_rank": 7,
+    "proj_gap": 0.7,
+    "salary": 49800,
+    "production_expected_copies": 193.69,
+    "points": 69.05
+   },
+   {
+    "lineup": [
+     "Jaxon Smith-Njigba (CPT)",
+     "AJ Barner",
+     "Jadarian Price",
+     "Rhamondre Stevenson",
+     "Sam Darnold",
+     "Seahawks"
+    ],
+    "copies": 336,
+    "entrants": 327,
+    "proj_rank": 602,
+    "proj_gap": 5.8,
+    "salary": 49900,
+    "production_expected_copies": 28.8,
+    "points": 82.92
+   },
+   {
+    "lineup": [
+     "A.J. Brown (CPT)",
+     "AJ Barner",
+     "Drake Maye",
+     "Jadarian Price",
+     "Jason Myers",
+     "Rhamondre Stevenson"
+    ],
+    "copies": 326,
+    "entrants": 315,
+    "proj_rank": 3400,
+    "proj_gap": 9.35,
+    "salary": 50000,
+    "production_expected_copies": 7.64,
+    "points": 53.82
+   },
+   {
+    "lineup": [
+     "Jadarian Price (CPT)",
+     "Drake Maye",
+     "Jason Myers",
+     "Jaxon Smith-Njigba",
+     "Rhamondre Stevenson",
+     "Seahawks"
+    ],
+    "copies": 318,
+    "entrants": 315,
+    "proj_rank": 5140,
+    "proj_gap": 10.45,
+    "salary": 49600,
+    "production_expected_copies": 5.07,
+    "points": 88.22
+   },
+   {
+    "lineup": [
+     "Hunter Henry (CPT)",
+     "A.J. Brown",
+     "Drake Maye",
+     "George Holani",
+     "Jaxon Smith-Njigba",
+     "Rhamondre Stevenson"
+    ],
+    "copies": 290,
+    "entrants": 284,
+    "proj_rank": 260,
+    "proj_gap": 4.45,
+    "salary": 50000,
+    "production_expected_copies": 47.7,
+    "points": 73.42
+   },
+   {
+    "lineup": [
+     "Jaxon Smith-Njigba (CPT)",
+     "Drake Maye",
+     "Hunter Henry",
+     "Jason Myers",
+     "Sam Darnold",
+     "Seahawks"
+    ],
+    "copies": 279,
+    "entrants": 275,
+    "proj_rank": 417,
+    "proj_gap": 5.2,
+    "salary": 49900,
+    "production_expected_copies": 36.04,
+    "points": 82.74
+   },
+   {
+    "lineup": [
+     "Hunter Henry (CPT)",
+     "Drake Maye",
+     "George Holani",
+     "Jaxon Smith-Njigba",
+     "Rhamondre Stevenson",
+     "Sam Darnold"
+    ],
+    "copies": 278,
+    "entrants": 275,
+    "proj_rank": 205,
+    "proj_gap": 4.15,
+    "salary": 49800,
+    "production_expected_copies": 53.36,
+    "points": 68.34
+   },
+   {
+    "lineup": [
+     "Hunter Henry (CPT)",
+     "Drake Maye",
+     "Jadarian Price",
+     "Jaxon Smith-Njigba",
+     "Rhamondre Stevenson",
+     "Romeo Doubs"
+    ],
+    "copies": 260,
+    "entrants": 248,
+    "proj_rank": 860,
+    "proj_gap": 6.45,
+    "salary": 50000,
+    "production_expected_copies": 22.59,
+    "points": 72.72
+   },
+   {
+    "lineup": [
+     "Rhamondre Stevenson (CPT)",
+     "Drake Maye",
+     "Hunter Henry",
+     "Jason Myers",
+     "Jaxon Smith-Njigba",
+     "Romeo Doubs"
+    ],
+    "copies": 255,
+    "entrants": 249,
+    "proj_rank": 576,
+    "proj_gap": 5.75,
+    "salary": 50000,
+    "production_expected_copies": 29.35,
+    "points": 76.37
+   },
+   {
+    "lineup": [
+     "Drake Maye (CPT)",
+     "AJ Barner",
+     "Hunter Henry",
+     "Jaxon Smith-Njigba",
+     "Rhamondre Stevenson",
+     "Romeo Doubs"
+    ],
+    "copies": 253,
+    "entrants": 251,
+    "proj_rank": 33,
+    "proj_gap": 1.8,
+    "salary": 50000,
+    "production_expected_copies": 128.41,
+    "points": 71.83
+   },
+   {
+    "lineup": [
+     "Drake Maye (CPT)",
+     "A.J. Brown",
+     "AJ Barner",
+     "Hunter Henry",
+     "Jason Myers",
+     "Jaxon Smith-Njigba"
+    ],
+    "copies": 250,
+    "entrants": 247,
+    "proj_rank": 365,
+    "proj_gap": 5.0,
+    "salary": 50000,
+    "production_expected_copies": 38.84,
+    "points": 69.93
+   },
+   {
+    "lineup": [
+     "Jaxon Smith-Njigba (CPT)",
+     "George Holani",
+     "Hunter Henry",
+     "Jadarian Price",
+     "Rhamondre Stevenson",
+     "Sam Darnold"
+    ],
+    "copies": 248,
+    "entrants": 244,
+    "proj_rank": 2805,
+    "proj_gap": 8.9,
+    "salary": 49900,
+    "production_expected_copies": 9.04,
+    "points": 75.12
+   },
+   {
+    "lineup": [
+     "Hunter Henry (CPT)",
+     "A.J. Brown",
+     "Drake Maye",
+     "Jadarian Price",
+     "Jason Myers",
+     "Jaxon Smith-Njigba"
+    ],
+    "copies": 248,
+    "entrants": 246,
+    "proj_rank": 3827,
+    "proj_gap": 9.65,
+    "salary": 50000,
+    "production_expected_copies": 6.83,
+    "points": 70.82
+   },
+   {
+    "lineup": [
+     "Rhamondre Stevenson (CPT)",
+     "DeMario Douglas",
+     "Drake Maye",
+     "Jadarian Price",
+     "Jaxon Smith-Njigba",
+     "Romeo Doubs"
+    ],
+    "copies": 244,
+    "entrants": 239,
+    "proj_rank": 615,
+    "proj_gap": 5.85,
+    "salary": 50000,
+    "production_expected_copies": 28.27,
+    "points": 78.57
+   },
+   {
+    "lineup": [
+     "Seahawks (CPT)",
+     "A.J. Brown",
+     "Drake Maye",
+     "Jaxon Smith-Njigba",
+     "Patriots",
+     "Sam Darnold"
+    ],
+    "copies": 242,
+    "entrants": 235,
+    "proj_rank": 125,
+    "proj_gap": 3.55,
+    "salary": 49600,
+    "production_expected_copies": 66.77,
+    "points": 73.64
+   }
+  ],
+  "ownership_top": [
+   {
+    "name": "Drake Maye",
+    "pos": "QB",
+    "team": "NE",
+    "salary": 10000,
+    "proj": 19.7,
+    "real_pct": 76.07,
+    "real_cpt_pct": 14.79
+   },
+   {
+    "name": "Jaxon Smith-Njigba",
+    "pos": "WR",
+    "team": "SEA",
+    "salary": 10600,
+    "proj": 19.7,
+    "real_pct": 69.8,
+    "real_cpt_pct": 15.78
+   },
+   {
+    "name": "Rhamondre Stevenson",
+    "pos": "RB",
+    "team": "NE",
+    "salary": 8400,
+    "proj": 16.4,
+    "real_pct": 61.55,
+    "real_cpt_pct": 15.25
+   },
+   {
+    "name": "Sam Darnold",
+    "pos": "QB",
+    "team": "SEA",
+    "salary": 9400,
+    "proj": 17.1,
+    "real_pct": 51.25,
+    "real_cpt_pct": 5.29
+   },
+   {
+    "name": "A.J. Brown",
+    "pos": "WR",
+    "team": "NE",
+    "salary": 9600,
+    "proj": 16.8,
+    "real_pct": 49.85,
+    "real_cpt_pct": 9.26
+   },
+   {
+    "name": "Jadarian Price",
+    "pos": "RB",
+    "team": "SEA",
+    "salary": 7200,
+    "proj": 9.8,
+    "real_pct": 45.53,
+    "real_cpt_pct": 11.94
+   },
+   {
+    "name": "Hunter Henry",
+    "pos": "TE",
+    "team": "NE",
+    "salary": 4800,
+    "proj": 9.4,
+    "real_pct": 29.62,
+    "real_cpt_pct": 3.47
+   },
+   {
+    "name": "Jason Myers",
+    "pos": "K",
+    "team": "SEA",
+    "salary": 5400,
+    "proj": 7.0,
+    "real_pct": 28.79,
+    "real_cpt_pct": 2.22
+   },
+   {
+    "name": "Romeo Doubs",
+    "pos": "WR",
+    "team": "NE",
+    "salary": 6600,
+    "proj": 10.6,
+    "real_pct": 26.28,
+    "real_cpt_pct": 3.78
+   },
+   {
+    "name": "Rashid Shaheed",
+    "pos": "WR",
+    "team": "SEA",
+    "salary": 6400,
+    "proj": 9.1,
+    "real_pct": 22.34,
+    "real_cpt_pct": 4.63
+   },
+   {
+    "name": "AJ Barner",
+    "pos": "TE",
+    "team": "SEA",
+    "salary": 4600,
+    "proj": 9.3,
+    "real_pct": 21.57,
+    "real_cpt_pct": 2.39
+   },
+   {
+    "name": "Seahawks",
+    "pos": "DST",
+    "team": "SEA",
+    "salary": 4400,
+    "proj": 8.8,
+    "real_pct": 21.4,
+    "real_cpt_pct": 3.37
+   },
+   {
+    "name": "George Holani",
+    "pos": "RB",
+    "team": "SEA",
+    "salary": 4200,
+    "proj": 5.6,
+    "real_pct": 17.22,
+    "real_cpt_pct": 2.07
+   },
+   {
+    "name": "Cooper Kupp",
+    "pos": "WR",
+    "team": "SEA",
+    "salary": 5200,
+    "proj": 7.9,
+    "real_pct": 15.78,
+    "real_cpt_pct": 1.89
+   },
+   {
+    "name": "Andy Borregales",
+    "pos": "K",
+    "team": "NE",
+    "salary": 5000,
+    "proj": 6.2,
+    "real_pct": 12.63,
+    "real_cpt_pct": 0.48
+   },
+   {
+    "name": "Patriots",
+    "pos": "DST",
+    "team": "NE",
+    "salary": 3400,
+    "proj": 6.7,
+    "real_pct": 12.62,
+    "real_cpt_pct": 1.16
+   },
+   {
+    "name": "DeMario Douglas",
+    "pos": "WR",
+    "team": "NE",
+    "salary": 3000,
+    "proj": 6.5,
+    "real_pct": 12.12,
+    "real_cpt_pct": 0.75
+   },
+   {
+    "name": "Elijah Arroyo",
+    "pos": "TE",
+    "team": "SEA",
+    "salary": 1600,
+    "proj": 3.9,
+    "real_pct": 6.6,
+    "real_cpt_pct": 0.27
+   },
+   {
+    "name": "Mack Hollins",
+    "pos": "WR",
+    "team": "NE",
+    "salary": 3600,
+    "proj": 3.6,
+    "real_pct": 5.3,
+    "real_cpt_pct": 0.36
+   },
+   {
+    "name": "Corey Kiner",
+    "pos": "RB",
+    "team": "NE",
+    "salary": 2400,
+    "proj": 2.5,
+    "real_pct": 2.85,
+    "real_cpt_pct": 0.2
+   },
+   {
+    "name": "Kyle Williams",
+    "pos": "WR",
+    "team": "NE",
+    "salary": 2600,
+    "proj": 0.3,
+    "real_pct": 2.58,
+    "real_cpt_pct": 0.24
+   },
+   {
+    "name": "Eli Raridon",
+    "pos": "TE",
+    "team": "NE",
+    "salary": 1800,
+    "proj": 4.6,
+    "real_pct": 2.57,
+    "real_cpt_pct": 0.11
+   },
+   {
+    "name": "Montorie Foster Jr.",
+    "pos": "WR",
+    "team": "SEA",
+    "salary": 200,
+    "proj": null,
+    "real_pct": 1.32,
+    "real_cpt_pct": 0.07
+   },
+   {
+    "name": "Emanuel Wilson",
+    "pos": "RB",
+    "team": "SEA",
+    "salary": 4000,
+    "proj": 2.4,
+    "real_pct": 1.16,
+    "real_cpt_pct": 0.09
+   },
+   {
+    "name": "Eric Saubert",
+    "pos": "TE",
+    "team": "SEA",
+    "salary": 600,
+    "proj": 0.5,
+    "real_pct": 0.78,
+    "real_cpt_pct": 0.02
+   }
+  ],
+  "ownership_concentration_sum_of_squares": 2.656
+ },
+ "model_field": {
+  "what": "softmax(beta x projection) over the universe with the most popular lineup at 0.2% of the field (dfs_tourney.field_weights, FIELD_TOP_SHARE): production's rule on this universe",
+  "beta": 0.3737,
+  "exact_pair_collision_sum_p2": 0.0002106550964737857,
+  "top_expected_copies_at_N": 251.6,
+  "board_stamp": null,
+  "sample_rows": 121587,
+  "sampled": {
+   "duplication": {
+    "entries": 121587,
+    "distinct_lineups": 27716,
+    "max_copies": 258,
+    "distinct_pair_collision": 0.00021086312620642475,
+    "entries_in_duplicated_lineups_pct": 88.877,
+    "copies_histogram": {
+     "1": 13524,
+     "2": 4525,
+     "3": 2346,
+     "4": 1430,
+     "5": 991,
+     "6": 764,
+     "7": 596,
+     "8": 473,
+     "9": 378,
+     "10": 290,
+     "11": 259,
+     "12": 217,
+     "13": 169,
+     "14": 169,
+     "15": 128,
+     "16": 124,
+     "17": 100,
+     "18": 86,
+     "19": 76,
+     "20": 59,
+     "21": 60,
+     "22": 62,
+     "23": 61,
+     "24": 50,
+     "25": 49,
+     "26": 36,
+     "27": 36,
+     "28": 49,
+     "29": 38,
+     "30": 32,
+     "31": 35,
+     "32": 29,
+     "33": 21,
+     "34": 29,
+     "35": 22,
+     "36": 11,
+     "37": 15,
+     "38": 17,
+     "39": 17,
+     "40": 15,
+     "41": 8,
+     "42": 16,
+     "43": 12,
+     "44": 16,
+     "45": 13,
+     "46": 16,
+     "47": 7,
+     "48": 7,
+     "49": 9,
+     "50": 7,
+     "51": 9,
+     "52": 9,
+     "53": 12,
+     "54": 6,
+     "55": 7,
+     "56": 6,
+     "57": 5,
+     "58": 7,
+     "59": 4,
+     "60": 5,
+     "61": 6,
+     "62": 4,
+     "63": 2,
+     "64": 5,
+     "65": 1,
+     "66": 4,
+     "67": 1,
+     "68": 5,
+     "69": 1,
+     "70": 4,
+     "71": 3,
+     "72": 4,
+     "73": 1,
+     "74": 1,
+     "75": 4,
+     "76": 4,
+     "77": 3,
+     "78": 1,
+     "79": 3,
+     "80": 3,
+     "82": 4,
+     "83": 2,
+     "84": 2,
+     "85": 2,
+     "86": 3,
+     "88": 3,
+     "90": 2,
+     "91": 5,
+     "92": 2,
+     "93": 3,
+     "94": 4,
+     "95": 2,
+     "96": 1,
+     "97": 1,
+     "98": 1,
+     "99": 1,
+     "100": 2,
+     "101": 1,
+     "102": 1,
+     "104": 1,
+     "105": 1,
+     "107": 1,
+     "108": 1,
+     "110": 1,
+     "111": 1,
+     "112": 1,
+     "113": 1,
+     "117": 1,
+     "118": 1,
+     "120": 1,
+     "122": 1,
+     "126": 1,
+     "127": 2,
+     "128": 2,
+     "130": 1,
+     "135": 2,
+     "137": 2,
+     "139": 1,
+     "140": 1,
+     "144": 1,
+     "146": 1,
+     "148": 1,
+     "150": 2,
+     "154": 1,
+     "162": 1,
+     "163": 1,
+     "164": 2,
+     "165": 1,
+     "171": 1,
+     "180": 1,
+     "188": 1,
+     "195": 1,
+     "200": 1,
+     "205": 1,
+     "210": 1,
+     "217": 1,
+     "254": 1,
+     "258": 1
+    },
+    "entries_by_copies_pct": {
+     "1": 11.123,
+     "2-5": 22.011,
+     "6-20": 31.775,
+     "21-100": 29.394,
+     "101+": 5.697
+    },
+    "effective_lineups_1_over_C": 4742
+   },
+   "near": {
+    "pair_share_overlap": {
+     "6_of_6": 0.00021086312620642475,
+     "5_of_6": 0.0033580660134045507,
+     "4_of_6": 0.036983480771259486
+    },
+    "pairs": {
+     "exact": 1558624.0,
+     "one_swap": 24821610.0,
+     "two_swaps": 273368520.0
+    },
+    "near_to_exact_pair_ratio": {
+     "one_swap": 15.925335424066356,
+     "two_swaps": 175.3909345679266
+    },
+    "entries_with_another_entry_pct": {
+     "exact": 88.877,
+     "within_one_swap": 99.984,
+     "within_two_swaps": 100.0
+    },
+    "entries_with_another_USERS_entry_pct": {
+     "exact": 88.877,
+     "within_one_swap": 99.984,
+     "within_two_swaps": 100.0
+    },
+    "same_six_players_any_captain_pair_share": 0.0006995743915636796
+   },
+   "mean_overlap": 1.8165323802494928,
+   "structure": {
+    "resolved_entries": 121587,
+    "unresolved_entries": 0,
+    "salary_mean": 47821.4,
+    "salary_median": 48400.0,
+    "salary_left_pct": {
+     "0": 4.52,
+     "100-200": 8.1,
+     "300-500": 9.89,
+     "600-1000": 14.87,
+     "1100-2000": 22.35,
+     "2100+": 40.29
+    },
+    "team_split_pct": {
+     "3-3": 38.98,
+     "4-2": 49.96,
+     "5-1": 11.06
+    },
+    "captain_position_pct": {
+     "QB": 35.73,
+     "RB": 16.03,
+     "WR": 35.56,
+     "TE": 7.37,
+     "K": 1.18,
+     "DST": 4.14
+    },
+    "flex_kickers_and_defenses_pct": {
+     "0": 49.67,
+     "1": 41.66,
+     "2": 8.26,
+     "3": 0.41,
+     "4": 0.0
+    },
+    "both_quarterbacks_pct": 42.91,
+    "non_qb_captain_with_his_qb_in_flex_pct": 64.11,
+    "qb_captain_own_catchers_pct": {
+     "0": 14.46,
+     "1": 40.45,
+     "2": 35.56,
+     "3": 9.54
+    }
+   },
+   "score_quantiles": {
+    "0.001": 22.5,
+    "0.01": 29.9,
+    "0.1": 43.95,
+    "0.25": 54.24,
+    "0.5": 66.37,
+    "0.75": 75.44,
+    "0.9": 82.17,
+    "0.99": 91.38,
+    "0.999": 97.32
+   },
+   "score_mean": 64.46,
+   "score_sd": 14.47
+  },
+  "real_on_the_same_support": {
+   "duplication": {
+    "entries": 121587,
+    "distinct_lineups": 16949,
+    "max_copies": 537,
+    "distinct_pair_collision": 0.0004866309417566455,
+    "entries_in_duplicated_lineups_pct": 93.753,
+    "copies_histogram": {
+     "1": 7596,
+     "2": 2426,
+     "3": 1320,
+     "4": 858,
+     "5": 621,
+     "6": 516,
+     "7": 400,
+     "8": 300,
+     "9": 297,
+     "10": 231,
+     "11": 177,
+     "12": 133,
+     "13": 142,
+     "14": 110,
+     "15": 124,
+     "16": 101,
+     "17": 94,
+     "18": 83,
+     "19": 74,
+     "20": 68,
+     "21": 63,
+     "22": 44,
+     "23": 66,
+     "24": 49,
+     "25": 51,
+     "26": 38,
+     "27": 34,
+     "28": 35,
+     "29": 44,
+     "30": 34,
+     "31": 32,
+     "32": 26,
+     "33": 33,
+     "34": 26,
+     "35": 28,
+     "36": 19,
+     "37": 30,
+     "38": 24,
+     "39": 14,
+     "40": 15,
+     "41": 16,
+     "42": 16,
+     "43": 17,
+     "44": 17,
+     "45": 17,
+     "46": 17,
+     "47": 13,
+     "48": 13,
+     "49": 15,
+     "50": 13,
+     "51": 10,
+     "52": 14,
+     "53": 13,
+     "54": 12,
+     "55": 15,
+     "56": 7,
+     "57": 10,
+     "58": 14,
+     "59": 8,
+     "60": 5,
+     "61": 4,
+     "62": 9,
+     "63": 5,
+     "64": 4,
+     "65": 10,
+     "66": 10,
+     "67": 4,
+     "68": 8,
+     "69": 3,
+     "70": 8,
+     "71": 6,
+     "72": 8,
+     "73": 4,
+     "74": 4,
+     "75": 8,
+     "76": 5,
+     "77": 5,
+     "78": 6,
+     "79": 3,
+     "80": 3,
+     "81": 4,
+     "82": 7,
+     "83": 2,
+     "84": 1,
+     "85": 4,
+     "86": 1,
+     "87": 1,
+     "88": 5,
+     "89": 5,
+     "90": 1,
+     "91": 3,
+     "92": 4,
+     "93": 3,
+     "94": 2,
+     "95": 1,
+     "96": 4,
+     "97": 2,
+     "98": 5,
+     "99": 4,
+     "100": 3,
+     "101": 2,
+     "102": 3,
+     "103": 1,
+     "104": 1,
+     "106": 1,
+     "107": 2,
+     "108": 1,
+     "109": 3,
+     "110": 1,
+     "111": 3,
+     "112": 3,
+     "113": 3,
+     "114": 2,
+     "115": 1,
+     "116": 1,
+     "117": 3,
+     "118": 2,
+     "119": 3,
+     "120": 3,
+     "121": 1,
+     "122": 1,
+     "123": 1,
+     "124": 5,
+     "125": 2,
+     "126": 1,
+     "130": 1,
+     "131": 3,
+     "132": 1,
+     "133": 2,
+     "134": 3,
+     "135": 2,
+     "136": 2,
+     "137": 2,
+     "138": 1,
+     "139": 2,
+     "143": 1,
+     "145": 2,
+     "146": 1,
+     "148": 1,
+     "150": 1,
+     "151": 1,
+     "155": 1,
+     "156": 1,
+     "158": 2,
+     "160": 1,
+     "161": 3,
+     "165": 1,
+     "166": 1,
+     "167": 2,
+     "169": 1,
+     "171": 2,
+     "173": 1,
+     "174": 2,
+     "176": 1,
+     "179": 1,
+     "181": 1,
+     "187": 1,
+     "188": 1,
+     "192": 1,
+     "201": 1,
+     "202": 1,
+     "203": 1,
+     "205": 1,
+     "206": 1,
+     "211": 1,
+     "217": 1,
+     "224": 2,
+     "231": 1,
+     "236": 1,
+     "241": 1,
+     "242": 1,
+     "244": 1,
+     "248": 2,
+     "250": 1,
+     "253": 1,
+     "255": 1,
+     "260": 1,
+     "278": 1,
+     "279": 1,
+     "290": 1,
+     "318": 1,
+     "326": 1,
+     "336": 1,
+     "337": 1,
+     "353": 1,
+     "392": 1,
+     "427": 1,
+     "504": 1,
+     "537": 1
+    },
+    "entries_by_copies_pct": {
+     "1": 6.247,
+     "2-5": 12.624,
+     "6-20": 24.297,
+     "21-100": 38.455,
+     "101+": 18.377
+    },
+    "effective_lineups_1_over_C": 2055
+   },
+   "near": {
+    "pair_share_overlap": {
+     "6_of_6": 0.0004866309417566455,
+     "5_of_6": 0.0033347097575202557,
+     "4_of_6": 0.03806102061708635
+    },
+    "pairs": {
+     "exact": 3597000.0,
+     "one_swap": 24648969.0,
+     "two_swaps": 281333305.0
+    },
+    "near_to_exact_pair_ratio": {
+     "one_swap": 6.852646371976647,
+     "two_swaps": 78.21331804281346
+    },
+    "entries_with_another_entry_pct": {
+     "exact": 93.753,
+     "within_one_swap": 99.95,
+     "within_two_swaps": 100.0
+    },
+    "entries_with_another_USERS_entry_pct": {
+     "exact": 93.642,
+     "within_one_swap": 99.942,
+     "within_two_swaps": 99.999
+    },
+    "same_six_players_any_captain_pair_share": 0.0009650338025439561
+   },
+   "mean_overlap": 1.8594426343678716,
+   "structure": {
+    "resolved_entries": 121587,
+    "unresolved_entries": 0,
+    "salary_mean": 48719.1,
+    "salary_median": 49400.0,
+    "salary_left_pct": {
+     "0": 13.92,
+     "100-200": 16.27,
+     "300-500": 15.39,
+     "600-1000": 17.92,
+     "1100-2000": 16.8,
+     "2100+": 19.7
+    },
+    "team_split_pct": {
+     "3-3": 38.55,
+     "4-2": 47.71,
+     "5-1": 13.73
+    },
+    "captain_position_pct": {
+     "QB": 20.01,
+     "RB": 29.87,
+     "WR": 36.24,
+     "TE": 6.45,
+     "K": 2.77,
+     "DST": 4.67
+    },
+    "flex_kickers_and_defenses_pct": {
+     "0": 44.66,
+     "1": 42.11,
+     "2": 12.26,
+     "3": 0.89,
+     "4": 0.09
+    },
+    "both_quarterbacks_pct": 32.73,
+    "non_qb_captain_with_his_qb_in_flex_pct": 69.93,
+    "qb_captain_own_catchers_pct": {
+     "0": 6.0,
+     "1": 32.64,
+     "2": 47.99,
+     "3": 13.37
+    }
+   },
+   "score_quantiles": {
+    "0.001": 23.14,
+    "0.01": 29.54,
+    "0.1": 42.84,
+    "0.25": 52.84,
+    "0.5": 65.62,
+    "0.75": 74.42,
+    "0.9": 80.65,
+    "0.99": 90.52,
+    "0.999": 97.12
+   },
+   "score_mean": 63.33,
+   "score_sd": 14.45
+  },
+  "ownership_mae_pct_points": {
+   "captain": 1.789,
+   "flex": 4.87
+  },
+  "joint_ownership_mae_pct_points": 2.896,
+  "pairs": {
+   "players": 20,
+   "pairs_with_independent_share_0_5pct_plus": 187,
+   "mean_abs_log_lift_weighted": 0.1121,
+   "top_by_joint": [
+    {
+     "a": "Drake Maye",
+     "b": "Jaxon Smith-Njigba",
+     "joint_pct": 57.12,
+     "independent_pct": 60.06,
+     "lift": 0.951
+    },
+    {
+     "a": "Drake Maye",
+     "b": "Rhamondre Stevenson",
+     "joint_pct": 46.44,
+     "independent_pct": 49.1,
+     "lift": 0.946
+    },
+    {
+     "a": "Jaxon Smith-Njigba",
+     "b": "Rhamondre Stevenson",
+     "joint_pct": 43.09,
+     "independent_pct": 46.33,
+     "lift": 0.93
+    },
+    {
+     "a": "Drake Maye",
+     "b": "Sam Darnold",
+     "joint_pct": 42.91,
+     "independent_pct": 46.29,
+     "lift": 0.927
+    },
+    {
+     "a": "Jaxon Smith-Njigba",
+     "b": "Sam Darnold",
+     "joint_pct": 38.85,
+     "independent_pct": 43.68,
+     "lift": 0.889
+    },
+    {
+     "a": "Drake Maye",
+     "b": "A.J. Brown",
+     "joint_pct": 37.83,
+     "independent_pct": 41.64,
+     "lift": 0.908
+    }
+   ],
+   "top_lift": [
+    {
+     "a": "Jaxon Smith-Njigba",
+     "b": "Elijah Arroyo",
+     "joint_pct": 10.21,
+     "independent_pct": 9.26,
+     "lift": 1.103
+    },
+    {
+     "a": "Rhamondre Stevenson",
+     "b": "Elijah Arroyo",
+     "joint_pct": 8.23,
+     "independent_pct": 7.57,
+     "lift": 1.088
+    },
+    {
+     "a": "Sam Darnold",
+     "b": "Elijah Arroyo",
+     "joint_pct": 7.67,
+     "independent_pct": 7.14,
+     "lift": 1.075
+    },
+    {
+     "a": "A.J. Brown",
+     "b": "Elijah Arroyo",
+     "joint_pct": 6.87,
+     "independent_pct": 6.42,
+     "lift": 1.07
+    },
+    {
+     "a": "Drake Maye",
+     "b": "Elijah Arroyo",
+     "joint_pct": 10.36,
+     "independent_pct": 9.81,
+     "lift": 1.056
+    },
+    {
+     "a": "Jaxon Smith-Njigba",
+     "b": "Corey Kiner",
+     "joint_pct": 4.41,
+     "independent_pct": 4.19,
+     "lift": 1.052
+    }
+   ],
+   "lowest_lift": [
+    {
+     "a": "Elijah Arroyo",
+     "b": "Corey Kiner",
+     "joint_pct": 0.22,
+     "independent_pct": 0.68,
+     "lift": 0.325
+    },
+    {
+     "a": "DeMario Douglas",
+     "b": "Elijah Arroyo",
+     "joint_pct": 1.16,
+     "independent_pct": 2.37,
+     "lift": 0.488
+    },
+    {
+     "a": "Patriots",
+     "b": "Elijah Arroyo",
+     "joint_pct": 1.17,
+     "independent_pct": 2.23,
+     "lift": 0.524
+    },
+    {
+     "a": "Elijah Arroyo",
+     "b": "Mack Hollins",
+     "joint_pct": 0.36,
+     "independent_pct": 0.67,
+     "lift": 0.543
+    },
+    {
+     "a": "George Holani",
+     "b": "Elijah Arroyo",
+     "joint_pct": 0.65,
+     "independent_pct": 1.2,
+     "lift": 0.544
+    },
+    {
+     "a": "Jason Myers",
+     "b": "Elijah Arroyo",
+     "joint_pct": 0.72,
+     "independent_pct": 1.3,
+     "lift": 0.552
+    }
+   ]
+  }
+ }
+}
