@@ -992,6 +992,7 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
         eng_ctx, eng_dst, eng_k, eng_rep = None, {}, {}, {}
         eng_fallback = []
         if model == "engine":
+            import build_ckpt as _ckpt
             import nfl_dfs_engine
             _np = nfl_dfs_engine.np
             if _np is None:
@@ -1036,8 +1037,18 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
             sim = None
             if model == "engine":
                 child = _seeds.child_seed(seed, season, week, gid, "engine") if seed is not None else None
-                sim = (nfl_dfs_engine.simulate_game(g, n, _np.random.default_rng(child), eng_ctx)
-                       if eng_ctx and eng_ctx.get("profiles") else None)
+                # Resumable generation (build_ckpt, PC only): each game's worlds
+                # are kept as they are played under the pool's own cache key, so
+                # a build stopped mid-slate plays only the games it had not
+                # finished. Games are independent draws (a child seed each, or
+                # fresh entropy each), so the resumed pool is the same kind of
+                # sample; a seeded one is the same pool draw for draw.
+                sim = _ckpt.game_load(pc_key, gid, n) if pc_key else None
+                if sim is None:
+                    sim = (nfl_dfs_engine.simulate_game(g, n, _np.random.default_rng(child), eng_ctx)
+                           if eng_ctx and eng_ctx.get("profiles") else None)
+                    if sim is not None and pc_key:
+                        _ckpt.game_save(pc_key, gid, sim)
                 if sim is None:
                     eng_fallback.append(str(g.get("label") or gid))
                     errlog.note("NFLENG-fallback", msg=f"{g.get('label')}: no deep profile for a side; "
@@ -1207,6 +1218,8 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
                 pool_cache.save(pc_key, pool, pc_call,
                                 engine_report=engine_reports[(season, week, tuple(sorted(want)) or None, seed)],
                                 snapshot=pc_snap)
+            if pc_key:
+                _ckpt.games_clear(pc_key)       # the pool is filed (or a game fell back): the per-game files go
         return pool or None
     return _cached(("nfl_pool", season, week, n, bool(preseason), tuple(sorted(want)) or None, model, seed, float(xside or 0.0), bool(discrete)),
                    1800, build)

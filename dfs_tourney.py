@@ -39,6 +39,7 @@ import itertools
 import math
 import time
 
+import build_ckpt
 import errlog
 
 try:
@@ -902,6 +903,10 @@ def _world_tables(b, f, F_grid, E_log=None, nE=0):
 # and parallel run the same range function (_score_range), so they differ
 # only in the order the per-range sums are added.
 _PAR = {}
+# The build being checkpointed (build_ckpt.Build), set by the entry points
+# for the length of one build and read by the passes; None everywhere
+# VIGIL_CKPT_DIR is not set -- the server, the guard suite, research.
+_CKPT = [None]
 
 
 class _SharedArrays:
@@ -1033,7 +1038,19 @@ def _score_range(job):
     acc = np.zeros((K, G.shape[1]), dtype=np.float64)
     acc2 = np.zeros((K, G2.shape[1]), dtype=np.float64)
     opt = np.zeros(WcT.shape[1], dtype=np.int64)
-    for start in range(a, b, chunk):
+    # Resumable (build_ckpt): the range's running sums and the next world are
+    # written every ck["every"] seconds and at its end, and a restarted range
+    # carries on from them on the SAME chunk boundaries -- the additions happen
+    # in the order they always did, so the sums are the uninterrupted run's
+    # bit for bit. No checkpoint (the server, the suite): the old loop exactly.
+    ck, first = _PAR.get("ckpt"), a
+    if ck:
+        got = build_ckpt.range_load(ck, a, b, chunk)
+        if got is not None and all(k in got for k in ("acc", "acc2", "opt")) and got["acc"].shape == acc.shape \
+                and got["acc2"].shape == acc2.shape and got["opt"].shape == opt.shape:
+            acc, acc2, opt, first = got["acc"], got["acc2"], got["opt"], got["next"]
+    t_save = time.time()
+    for start in range(first, b, chunk):
         Xc = np.ascontiguousarray(X[:, start:min(b, start + chunk)].T)   # (c, P)
         Sc = Xc @ WcT                                                    # (c, K)
         opt += np.bincount(np.argmax(Sc, axis=1), minlength=WcT.shape[1])
@@ -1046,10 +1063,35 @@ def _score_range(job):
             bj = Bc[j]
             acc += G[iF][bj]
             acc2 += G2[iFE][bj]
+        if ck and (start + chunk >= b or time.time() - t_save >= ck["every"]):
+            build_ckpt.range_save(ck, a, b, chunk, min(b, start + chunk), acc=acc, acc2=acc2, opt=opt)
+            t_save = time.time()
     return acc, acc2, opt
 
 
-def run_vs_field(Wc, Wf, wf, X, grids, chunk=500, progress=None, workers=1, cand_idx=None):
+def _pass_checkpoint(name, checkpoint, jobs, N, save_bytes, *parts):
+    """The range functions' checkpoint spec for one pass of the build being
+    checkpointed (`checkpoint`, else the entry point's _CKPT), or None. The
+    signature hashes every input the pass reads (`parts`) and its world
+    ranges, so a changed candidate, field lineup, world, weight, grid or
+    chunk is a different set of files. Never raises: a pass that cannot be
+    checkpointed is the old pass."""
+    b = checkpoint if checkpoint is not None else _CKPT[0]
+    if b is None:
+        return None
+    try:
+        spec = build_ckpt.pass_spec(b, name, build_ckpt.sig(name, [list(j) for j in jobs], *parts), save_bytes)
+        if spec and name == "score":
+            done, full, of = build_ckpt.pass_progress(spec, jobs)
+            if done:
+                b.note(name, f"{done:,} of {N:,} worlds ({full} of {of} ranges finished) from the checkpoint")
+        return spec
+    except Exception as e:
+        errlog.note("CKPT-sig", e)
+        return None
+
+
+def run_vs_field(Wc, Wf, wf, X, grids, chunk=500, progress=None, workers=1, cand_idx=None, checkpoint=None):
     """Score candidates against a field in every world. Wc (K, P) candidate
     lineup weights, Wf (M, P) the field's lineups with probability wf (M,)
     summing to one (showdown: every legal lineup and the field model;
@@ -1082,6 +1124,12 @@ def run_vs_field(Wc, Wf, wf, X, grids, chunk=500, progress=None, workers=1, cand
             raise ValueError("cand_idx reads candidates out of the field: pass the field as Wc too")
         extra["cand_idx"] = np.asarray(cand_idx, dtype=np.int64)
     jobs = _range_jobs(N, w, ch)
+    # (a range's file is its sums: candidates x columns, and the best-lineup tally)
+    spec = _pass_checkpoint("score", checkpoint, jobs, N,
+                            8 * len(jobs) * ((K if cand_idx is None else len(cand_idx)) * (G.shape[1] + G2.shape[1]) + K),
+                            arrays, extra)
+    if spec:
+        extra["ckpt"] = spec
     t0 = time.time()
     parts = _par_map(_score_range, jobs, w, arrays, extra,
                      progress=(lambda k: progress(jobs[k - 1][1], N, time.time() - t0)) if progress else None)
@@ -1217,6 +1265,13 @@ def portfolio_vs_field(Wc, Wf, wf, X, grids, cand_idx, k, chunk=500, rank="top1"
               "X": np.ascontiguousarray(X, dtype=np.float32), "wf": np.asarray(wf, dtype=np.float64)}
     extra = {"F_grid": grids[0]["F"], "tabs": [g[rank] for g in grids]}
     jobs = _range_jobs(N, w, ch)
+    # each finished range's matrix is kept (build_ckpt) when the whole pass's
+    # fits the checkpoint budget: contests x candidates x worlds float32. The
+    # build's checkpoint comes from _CKPT, never an argument: the signature
+    # above is pinned by the S4 guard (the rank default) and stays as it was.
+    spec = _pass_checkpoint("makeit", None, jobs, N, 4 * len(grids) * len(cand_idx) * N, arrays, extra)
+    if spec:
+        extra["ckpt"] = spec
     parts = _par_map(_make_it_range, jobs, w, arrays, extra)
     P = np.concatenate(parts, axis=2) if parts else np.zeros((len(grids), len(cand_idx), 0), dtype=np.float32)
     return [greedy_cover(P[gi], k) for gi in range(len(grids))]
@@ -1229,6 +1284,12 @@ def _make_it_range(job):
     WfT, WkT, X, wf, F_grid, tabs = (_PAR["WfT"], _PAR["WkT"], _PAR["X"], _PAR["wf"],
                                      _PAR["F_grid"], _PAR["tabs"])
     out = np.zeros((len(tabs), WkT.shape[1], b - a), dtype=np.float32)
+    ck = _PAR.get("ckpt")
+    if ck:
+        got = build_ckpt.range_load(ck, a, b, chunk)
+        if got is not None and got["next"] >= b and "out" in got and got["out"].shape == out.shape \
+                and got["out"].dtype == out.dtype:
+            return got["out"]            # a finished range of the interrupted build, as it was computed
     for start in range(a, b, chunk):
         Xc = np.ascontiguousarray(X[:, start:min(b, start + chunk)].T)
         Bf = _buckets(Xc @ WfT)
@@ -1237,6 +1298,8 @@ def _make_it_range(job):
             pos = _world_tables(Bf[j], wf, F_grid)
             for gi, tab in enumerate(tabs):
                 out[gi, :, start - a + j] = tab[pos][Bk[j]]
+    if ck:
+        build_ckpt.range_save(ck, a, b, chunk, b, out=out)
     return out
 
 
@@ -1344,6 +1407,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     import simulate
     t0 = time.time()
     _REFUSAL[0] = ""
+    _CKPT[0] = None
     slate = dk.slate_for("nfl", draft_group_id=int(dg))
     if not slate:
         return _refuse("DraftKings has no player pool posted for this slate")
@@ -1537,6 +1601,12 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     # only the rows the board reads are looked up: the lineups we may enter
     # and the chalk (run_subset; the same figures as run() on them, exactly)
     rows = np.union1d(np.where(allowed)[0], [int(np.argmax(f))])
+    # Resumable on the PC (build_ckpt; None wherever VIGIL_CKPT_DIR is unset):
+    # nothing here is drawn, so the worlds, the universe and the field's
+    # weights are the whole key, and a restart finds the passes' ranges.
+    ck_b = build_ckpt.open_build("showdown", int(dg), contest.get("id"), int(n_sims), int(C), seed, model,
+                                 [e["name"] for e in ents], idx, np.asarray(f, dtype=np.float64), rows, X)
+    _CKPT[0] = ck_b
     res = run_subset(W, X, f, grid, rows, chunk=chunk, workers=_workers(workers),
                      progress=lambda done, n, dt: log(f"[tourney]   {done:,}/{n:,} worlds, {dt:.0f}s"))
     t3 = time.time()
@@ -1660,9 +1730,11 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     import dfs_evaluate
     _eval_art = dfs_evaluate.save_artifact("showdown", dg, bool(pk), ents, idx, f, [contest], week, preseason,
                                            model, n_sims, teams, _built)
+    _CKPT[0] = None
     return plain({"version": VERSION, "engine": SD_ENGINE,
             "kind": "showdown", "sport": "nfl", "draft_group_id": int(dg),
             "built_ts": _built, "status_sig": st_sig, "status": st_cls, "eval_artifact": _eval_art,
+            **({"checkpoint": ck_b.stamp()} if ck_b is not None else {}),
             "field_duplication": field_duplication(idx, f, "showdown"),
             # freshness, so a board can be audited for WHEN it was built
             # rather than only for what it says: a board made on Thursday and
@@ -3166,6 +3238,12 @@ def board_model(model=None, preseason=False):
 def _workers(workers=None):
     """Processes to play an engine board's worlds on: every core the PC has."""
     import os
+    if not workers:
+        # "workers" in vigil-pc.cfg (pc_worker._apply_limits): the owner's cap on the processes a build may take
+        try:
+            workers = int(os.environ.get("VIGIL_TOURNEY_WORKERS") or 0)
+        except ValueError:
+            workers = 0
     return max(1, int(workers or os.cpu_count() or 1))
 
 
@@ -3180,6 +3258,20 @@ def _engine_report(model, week, teams, seed):
         if w_ == week and t_ == want and sd_ == seed:
             return rep
     return None
+
+
+def _ck_memo(name, parts, fn):
+    """fn()'s answer, kept in the running build's checkpoint under a hash of
+    `parts` (everything fn reads); plain fn() where there is no checkpoint."""
+    b = _CKPT[0]
+    if b is None:
+        return fn()
+    try:
+        memo_sig = build_ckpt.sig(name, *parts)
+    except Exception as e:
+        errlog.note("CKPT-sig", e)
+        return fn()
+    return b.memo(name, memo_sig, fn)
 
 
 def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_worlds=None,
@@ -3211,6 +3303,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     rng = np.random.default_rng(seed)
     t0 = time.time()
     _REFUSAL[0] = ""
+    _CKPT[0] = None
     slate = dk.slate_for("nfl", draft_group_id=int(dg))
     if not slate:
         return _refuse("DraftKings has no player pool posted for this slate")
@@ -3326,6 +3419,20 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     fo = np.asarray([bool(e.get("_field_only")) for e in ents])
     forced_m = np.asarray([bool(pk) and e["name"] in pk.force for e in ents])
     excl_m = np.asarray([bool(pk) and e["name"] in pk.exclude for e in ents])
+    # Resumable on the PC (build_ckpt; None wherever VIGIL_CKPT_DIR is unset,
+    # and then nothing below differs from the build before 2026-11-26). The
+    # key is this build's worlds and pool; an unseeded build takes its
+    # generator's entropy from the checkpoint, so a restart redraws the same
+    # field and candidates and the scoring pass finds its ranges. Nothing has
+    # drawn from `rng` yet.
+    ck_b = build_ckpt.open_build(
+        "classic", int(dg), [int(c["id"]) for c in contests], int(n_sims), int(N), int(opt_worlds), int(field_n),
+        int(cand_n), int(cal_n), int(candidates), int(k_port), seed, model,
+        (sorted(pk.force), sorted(pk.exclude)) if pk else None,
+        [(e["name"], e["pos"], e["team"], e["salary"], e["proj"], bool(e.get("_field_only"))) for e in ents], X)
+    if ck_b is not None and seed is None:
+        rng = np.random.default_rng(ck_b.rng_entropy())
+    _CKPT[0] = ck_b
     t1 = time.time()
     log(f"[tourney] classic {dg}: pool {P} players ({len(extra)} field-only) x {N:,} worlds "
         f"({t1 - t0:.0f}s); the best lineup of each of {min(N, opt_worlds):,} worlds...")
@@ -3334,10 +3441,10 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     keep = _solver_pool(X, pos, gen)
     n_opt = len(gen)
     every = max(1, (n_opt // 4 // 64) * 64)
-    opt_L, opt_v = optimal_lineups(
+    opt_L, opt_v = _ck_memo("optimal", (X, keep, (gen.start, gen.stop), sal, pos), lambda: optimal_lineups(
         X[keep][:, gen.start:gen.stop], sal[keep], [pos[i] for i in keep], chunk=64, workers=_workers(workers),
         progress=lambda done, n, dt: log(f"[tourney]   {done:,}/{n:,} worlds solved, {dt:.0f}s")
-        if done % every == 0 or done == n else None)
+        if done % every == 0 or done == n else None))
     opt_L = [tuple(int(keep[i]) for i in L) for L in opt_L]
     opt_count = {}
     for L in opt_L:
@@ -3426,7 +3533,8 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                                   | set(np.where(forced_m)[0].tolist())), dtype=np.int64)
         X2 = np.array(X[keep2][:, gen.start:gen.stop], dtype=np.float32)
         X2[forced_m[keep2]] += _SAFE_FORCE
-        opt2_L, _v2 = optimal_lineups(X2, sal[keep2], [pos[i] for i in keep2], chunk=64, workers=_workers(workers))
+        opt2_L, _v2 = _ck_memo("optimal2", (X2, sal[keep2], [pos[i] for i in keep2]), lambda: optimal_lineups(
+            X2, sal[keep2], [pos[i] for i in keep2], chunk=64, workers=_workers(workers)))
         idx_o2 = _slot_rows(sorted({tuple(sorted(int(keep2[i]) for i in L)) for L in opt2_L if L}), pos)
         safe2 = safe_lineups(X, ents, keep2, gen, n_cols=2 * _SAFE_COLS, forced=forced_m)
         idx_s2 = _slot_rows(safe2, pos) if safe2 else np.zeros((0, 9), dtype=idx_chalk.dtype)
@@ -3569,8 +3677,11 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     import dfs_evaluate
     _eval_art = dfs_evaluate.save_artifact("classic", dg, bool(pk), ents, idx_f, None, contests, week, preseason,
                                            model, n_sims, slate_teams, _built)
+    _CKPT[0] = None
     return plain({"version": VERSION, "engine": ENGINE, "kind": "classic", "sport": "nfl", "draft_group_id": int(dg),
             "built_ts": _built, "status_sig": st_sig, "status": st_cls, "eval_artifact": _eval_art,
+            # what a restarted build took from disk (PC only; pc_worker removes the checkpoint once the board stands)
+            **({"checkpoint": ck_b.stamp()} if ck_b is not None else {}),
             "field_duplication": field_duplication(idx_f, None, "classic"),
             "pool_sig": pool_sig(slate["csv"]),
             "contests": [results[str(c["id"])]["contest"] for c in contests],
