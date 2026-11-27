@@ -111,3 +111,17 @@ independent confirmation of the 2027 result.
 | `research/nfl_coach_r5_read_2027.py` | the 2027 read (not run): R5's frozen read on the amendment's block |
 | `research/nfl_coach_family_2027.py`, `research/data/nfl_coach/family_2027.json` | C and D |
 | `tests/guards_auto_nfl_coach_r5_2027.py` | 7 guards, section N5A (AUTO) |
+
+## F. With R6 (2026-11-27, after the owner approved R6)
+
+R6's 2027 primary joins the family, which now has four tests: R2-H2, R4, R5's amendment and R6.
+
+- **Holm's steps** are now z 2.241, 2.128, 1.960 and 1.645.
+- **Without a correction,** four tests at z > 2 would carry an 8.8% family-wise rate if the tests were
+  independent.
+- **Every member's power with four tests,** and R6's correlation with the other three on the development games
+  (all within +/-0.09), are in `research/reports/nfl_coach_r6.md` section C and
+  `research/data/nfl_coach/family_2027_r6.json`. The latter was written by `research/nfl_coach_family_2027_r6.py`,
+  a new file.
+- **This report's sections C-D and `family_2027.json` are what R5's amendment pinned, and they stand as
+  registered.** Once R6 exists, the four-test family is the one reported.
