@@ -292,3 +292,31 @@ already been appended by then. Sections B.1 and C say "the same deal draws", and
   is what was registered, with a little more variance than the text implied.
 - **Guard NQ3 is unaffected.** It checks R3's deal against R2's on one generator directly and passes.
 - **R4 does share deal draws with R3's dealing.** Guard N4-3 holds it to the R2 arm's seeds.
+
+### G addendum, 2026-11-27: the offset measured (`research/nfl_coach_r3_seed_check.py`, `research/data/nfl_coach/r3_seed_check.json`)
+
+The owner asked for two things: show that the offset causes no bias, and measure what it does to power. The
+check replays section C's development comparison (2026 weeks 1-12, 232 team-games, 4 seed sets x 200 games). It
+runs the arms as registered, and again with the R3 arm's deal re-seeded onto the R2 arm's generators (aligned).
+It first asserts that its replay equals `nfl_coach_sim_r3.simulate`'s own lines.
+
+| endpoint | as registered - aligned (mean, SE) | one read's SD, registered / aligned | power at 190 team-games |
+|---|---|---|---|
+| criterion 3: the starter's dropbacks CRPS | 0.000000 (exactly; SE 0) | 0.863 / 0.863 (ratio 1.000) | 0.81 at -0.181, 1.00 at -0.363, either way |
+| criterion 4: the starter's passing yards CRPS | 0.000000 (exactly) | 6.170 / 6.170 (ratio 1.000) | unchanged |
+| not registered: the starter's carries CRPS | +0.0031 +/- 0.0035 (z 0.88) | 0.180 / 0.153 (ratio 1.175) | -- |
+
+- **Nothing registered can move.** R3's deal gives every pass attempt, sack, spike and completion's yards to
+  whichever quarterback is in, with no draw. The deal generator only chooses carriers and targets. So the
+  dropbacks and passing yards behind criteria 3 and 4 are the same under any deal seed: all 185,600 compared draws
+  were identical. Criterion 2 (the hazard's log loss) never touches the deal.
+- **Bias and power, both exactly nil for the registered read.** The bias is exactly 0, and the registered read's
+  variance and power are exactly what an aligned stream would give.
+- **The erratum's "a little more variance" does not apply to any registered criterion.** It holds only for
+  deal-drawn quantities. On the starter's own carries, which are not registered, the offset added no detectable
+  bias (z 0.88). It did lose the common-random-number pairing: the paired SD was 17.5% wider, so a test on such a
+  quantity would need ~1.38x the games for the same power.
+- **Guard N5-7** (`tests/guards_auto_nfl_coach_r5.py`) pins the reason, not just this number. It deals one game
+  with six generators, requires the quarterback's dropbacks and yards to come out equal, and requires the replay
+  file's identical count.
+- **R3's registration and pinned files are untouched.**

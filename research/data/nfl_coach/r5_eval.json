@@ -1,0 +1,87 @@
+{
+ "corner_secondary_power": {
+  "critical_count": 9,
+  "power_if_x1.5": 0.2389,
+  "power_if_x2.3": 0.7123,
+  "r5_expected_season": 4.5
+ },
+ "credit": "nflverse-data play-by-play, players and injuries (CC BY 4.0)",
+ "hazard_2026_w1_12_r5_minus_r4_gain": {
+  "gain_per_pulled_team_game": 0.0007,
+  "n": 328,
+  "sd": 0.0444,
+  "se": 0.0024,
+  "z": 0.29
+ },
+ "power": {
+  "effect_smaller_dev_season": 1.339,
+  "power_2se": 0.9115,
+  "power_at_30_games": 0.7689,
+  "power_half_effect": 0.3726,
+  "sd_larger": 2.6814,
+  "window_games_expected": 45
+ },
+ "real_2016_2024": {
+  "back_games": 263,
+  "back_played_a_receiver_sat": 0.1917,
+  "back_sat": 0.5133,
+  "back_sat_receivers_played": 0.1,
+  "both_games": 120,
+  "share_when_playing_median": 0.6,
+  "top2_games": 184,
+  "top2_none": 0.2446
+ },
+ "real_2025_2026": {
+  "back_games": 43,
+  "back_played_a_receiver_sat": 0.2857,
+  "back_sat": 0.6512,
+  "back_sat_receivers_played": 0.0,
+  "both_games": 21,
+  "share_when_playing_median": 0.5,
+  "top2_games": 34,
+  "top2_none": 0.5
+ },
+ "sim": {
+  "r4": {
+   "back_games": 500,
+   "back_played_a_receiver_sat": 0.5021,
+   "back_sat": 0.052,
+   "back_sat_receivers_played": 0.0041,
+   "share_when_playing_median": 0.444,
+   "top2_games": 250,
+   "top2_none": 0.088
+  },
+  "r5": {
+   "back_games": 512,
+   "back_played_a_receiver_sat": 0.2556,
+   "back_sat": 0.4883,
+   "back_sat_receivers_played": 0.0789,
+   "share_when_playing_median": 0.625,
+   "top2_games": 272,
+   "top2_none": 0.2132
+  }
+ },
+ "unit": {
+  "2016_2024_in_sample": {
+   "gain_per_pulled_team_game": 1.2206,
+   "n": 424,
+   "sd": 2.6498,
+   "se": 0.1287,
+   "z": 9.49
+  },
+  "2025": {
+   "gain_per_pulled_team_game": 1.339,
+   "n": 57,
+   "sd": 2.6814,
+   "se": 0.3552,
+   "z": 3.77
+  },
+  "2026": {
+   "gain_per_pulled_team_game": 1.5086,
+   "n": 27,
+   "sd": 2.6205,
+   "se": 0.5043,
+   "z": 2.99
+  }
+ }
+}
