@@ -3150,6 +3150,9 @@ function initNFL() {
       // The combo maker belongs to the week board -- it builds slips out of the
       // markets on THAT slate, so it has no meaning under futures or win totals.
       $("nflComboBox").classList.toggle("hidden", s !== "week");
+      // The Pick6 paper ledger (static/pick6log.js) sits under the Pick 6 view, for every sport.
+      $("p6LedgerBox").classList.toggle("hidden", s !== "pick6");
+      if (s === "pick6" && typeof p6LedgerShow === "function") p6LedgerShow();
       if (s === "week") { initNFLWeek(); return; }
       if (simViews.includes(s)) { _nflSimView = s; initNFLSim(); return; }
       _nflSub = s;                         // "futures" | "wins" share the projection load

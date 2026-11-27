@@ -275,6 +275,11 @@
         </div>
         <div id="nflSimSummary" class="small"></div>
         <div id="nflSimResults" class="markets"><div class="empty">Simulating the week in the background (~10s)…</div></div>
+        <div id="p6LedgerBox" class="card p6l hidden">
+          <h2>Pick6 paper ledger</h2>
+          <p class="sub">Every sport's DraftKings Pick6 entries, typed in by hand (DraftKings publishes no Pick6 line feed): the picks, the entry type and the payout schedule <b>as DraftKings states it on the entry</b>, and a paper stake. Each pick keeps <b>Vigil's own probability</b> at the moment you save it where a Pick 6 board prices that exact line, and says "no model figure" where none does. After the game, NFL, NBA and MLB picks grade themselves off the box score (other sports: type the final stat), under DraftKings' void rules as far as a source we could read states them - the rules box says which are unverified. The record: hit rate by sport, stat and side, Vigil's calibration on the picks it priced, and the paper ROI, small samples flagged.</p>
+          <div id="p6LedgerBody"><div class="empty">Loading the ledger…</div></div>
+        </div>
       </div>
       <div id="nflWeekBox">
         <div class="row-between" style="margin:2px 0 8px">
@@ -868,6 +873,7 @@
   <script src="/static/nflview.js?v={{ v }}"></script>
   <script src="/static/dfspick.js?v={{ v }}"></script>
   <script src="/static/dfseval.js?v={{ v }}"></script>
+  <script src="/static/pick6log.js?v={{ v }}"></script>
   <script src="/static/research.js?v={{ v }}"></script>
 </body>
 </html>
