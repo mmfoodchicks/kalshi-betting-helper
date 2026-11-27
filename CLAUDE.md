@@ -1088,8 +1088,19 @@ data-only `sim-history` branch (which never deploys):
   is losing to Kalshi, Kalshi's YES/NO price chart, paper positions. **CF Benchmarks via Kalshi**
   (`/trade-api/v2/cfbenchmarks/values?id=BRTI`, the `cfbenchmarks_value` WebSocket with the 60-second averages)
   needs SIGNED Kalshi API-key requests and an account entitlement -- not used; the four-exchange proxy stays until
-  the owner supplies a key (env, never committed). Stage 2 (Beginner Mode in dollars, the random-walk null for the
-  final reversal, the hybrid hold / cash-out / switch research) is in progress.
+  the owner supplies a key (env, never committed; a separate signing module -- the paper-only guard forbids signing
+  code in `crypto_terminal.py`). **Stage 2** (`research/reports/crypto_hybrid.md`, rule first in df45623): Beginner
+  Mode is the default (dollars; Quick-Order sizing with Kalshi's fee rounded up per order; cash-out at the BID after
+  the fee; paper positions priced by prices the SERVER reads, never the page's). "Was that the last dip?": the random
+  walk's textbook answer is badly calibrated on real data (final low said 4% where it held 13%); a challenger beat it
+  on the final low, final high and re-crossing the strike (z 3.5, 7.1, 3.8) and is shown with the walk beside it.
+  Hold / cash out / switch at $10 on Kalshi's REAL books (1-minute fill delay, every fee, 3,320 held-out windows):
+  hold -$638, trade-only -$814, take-profit +15c -$712, the learned time-aware hybrid +$141 (+4.2c a window +/- 17.8)
+  -- NO strategy is profitable past 2 SE; the hybrid learned to trust Kalshi's mid over Vigil's model. The proxy is
+  off the official minute average by only 1.6-3.7 bp; the live record's 20.8 bp is mostly the price's own move in the
+  last minute. Not yet: live logging of the direction and reversal predictions (only v1's settlement rows are graded
+  live), the 30-second horizon, order-book imbalance, regime-switching models. Browser buffers capped at 480 bars, the
+  feed closed when the tab hides; the library's sha256 pinned. Guards 60 in `tests/guards_auto_crypto.py`.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 
