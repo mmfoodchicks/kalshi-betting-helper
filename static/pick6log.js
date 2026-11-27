@@ -119,7 +119,7 @@ function _p6lEntry(e) {
   const picks = (e.picks || []).map((p) => {
     // a whole-number line: the figure is P(side | not a tie), the modeled outright and tie beside it
     const vig = p.p_model != null && p.p_tie != null
-      ? `<span title="${_p6lEsc(p.model_src)}">Vigil <b>${_p6lPct(p.p_model)}%</b> if not a tie <span class="p6l-muted">(outright ${_p6lPct(p.p_outright)}%, tie ${_p6lPct(p.p_tie)}%; modeled)</span></span>`
+      ? `<span title="${_p6lEsc(p.model_src)}">Vigil <b>${_p6lPct(p.p_model)}%</b> if not a tie <span class="p6l-muted">(outright ${_p6lPct(p.p_outright)}%, tie ${_p6lPct(p.p_tie)}% by the rounding convention; modeled)</span></span>`
       : p.p_model != null
       ? `<span title="${_p6lEsc(p.model_src)}">Vigil <b>${_p6lPct(p.p_model)}%</b></span>`
       : `<span class="p6l-muted" title="${_p6lEsc(p.model_src)}">no model figure</span>`;
