@@ -69,10 +69,31 @@ PARDON = {
     "nhl": {"excluded": "goalies",
             "exit": "a skater who participates in the first period and records no ice time afterward"},
 }
-# The market kinds a pick may be. Only "full" (a full-game player stat) can be
-# pardoned; every registry stat is one. A hand-typed stat names its kind.
-KINDS = {"full": "Full-game player stat", "event": "Event-based (First, Longest, Game High...)",
-         "part": "Part of the game (a half, a quarter, a period...)"}
+# The market kinds a pick may be, each with DraftKings' participation
+# requirement for it. Only "full" (a full-game player stat) can be pardoned;
+# every registry stat is one. A hand-typed stat names its kind. The specialized
+# requirements are the tables on pick6.draftkings.com/pick6-rules-and-scoring-nba
+# and -mlb as the owner read them (2026-11-27); he did not list every category,
+# so "event" and "part" -- anything else -- carry no requirement the ledger
+# could check: nothing is established automatically and the owner's typed
+# outcome (or Void) decides.
+KINDS = {
+    "full": {"label": "Full-game player stat", "sports": None, "req": "the sport's standard minimum"},
+    "nba_q1": {"label": "First-quarter points / rebounds / assists (NBA)", "sports": ("nba",),
+               "req": "participates during the first quarter"},
+    "nba_first": {"label": "First basket, first dunk and other game-first markets (NBA)", "sports": ("nba",),
+                  "req": "starts the game"},
+    "nba_first_2h": {"label": "Second-half first scorer (NBA)", "sports": ("nba",),
+                     "req": "starts the second half"},
+    "mlb_first": {"label": "First hit, first RBI, first home run and other first-event markets (MLB)",
+                  "sports": ("mlb",), "req": "in the starting lineup and at least one plate appearance"},
+    "mlb_k_race": {"label": "Pitcher strikeout race (MLB; player 'A vs B')", "sports": ("mlb",),
+                   "req": "both listed pitchers start, and at least one records three strikeouts"},
+    "event": {"label": "Other event-based market (First, Longest, Game High...)", "sports": None, "req": None},
+    "part": {"label": "Other part-of-game market (a half, a quarter, a period...)", "sports": None, "req": None},
+}
+# the specialized kinds a grader checks from its box (check_kind)
+_CHECKED_KINDS = ("nba_q1", "nba_first", "nba_first_2h", "mlb_first", "mlb_k_race")
 
 # Vigil's figure is attached only off a board built within this many seconds of
 # the entry: the views serve boards on a 30-minute TTL and the PC rebuilds them
@@ -187,8 +208,17 @@ RULES = [
      "text": "Certain specialized stat categories have exceptions to the standard requirement, and the ledger "
              "does not know which. A stat that can come without the standard participation -- MLB runs, stolen "
              "bases and H+R+RBI for a player in the box with no plate appearance (a pinch runner) -- goes to "
-             "manual review when participation is borderline, never a guess.",
-     "source": _DK_PAGES},
+             "manual review when participation is borderline, never a guess. The categories the owner read "
+             "(choose the market kind on a hand-typed stat): NBA first-quarter points, rebounds, assists -- he "
+             "plays in the first quarter (ESPN's starter flag or first-quarter play-by-play); NBA first basket, "
+             "first dunk and other game-first markets -- he starts the game (the starter flag); NBA "
+             "second-half first scorer -- he starts the second half (his first third-quarter record: on the "
+             "floor before any entry); MLB first hit, RBI, home run and other first-event markets -- starting "
+             "lineup and a plate appearance (statsapi's battingOrder, plateAppearances); MLB strikeout race "
+             "('A vs B') -- both pitchers start and one records three strikeouts (gamesStarted, strikeOuts). "
+             "Not met: void. Not established: review. Any other event-based or part-game market: nothing is "
+             "checked, your typed outcome or Void decides.",
+     "source": "pick6.draftkings.com/pick6-rules-and-scoring-nba and -mlb, read by the owner 2026-11-27"},
     {"id": "tie", "verified": True, "basis": _DK_CONFIRMED,
      "text": "A final stat exactly on the line is VOID, More or Less: the pick leaves the entry like a "
              "did-not-play. (Until the owner read the pages the ledger scored a tie as a loss, the "
@@ -202,8 +232,9 @@ RULES = [
              "kickers excluded); NBA and WNBA, a player who plays in the first half and records no playing "
              "time afterward; MLB, a hitter with exactly one plate appearance (pitchers excluded); NHL, a "
              "skater who plays in the first period and records no ice time afterward (goalies excluded). A "
-             "successful More pick and every Less pick keep their normal grade; a sport the policy does not "
-             "list is not pardoned. The grader voids a pick only where the box ESTABLISHES the exit and grades a "
+             "successful More pick and every Less pick keep their normal grade. Confirmed by the owner: a "
+             "pardoned pick is a void, and only these five sports are covered -- any other is not pardoned. "
+             "The grader voids a pick only where the box ESTABLISHES the exit and grades a "
              "loss only where it establishes the pick does not qualify: MLB reads the plate appearances; the "
              "NFL reads Sleeper's first-half yards, which prove a second-half snap when the full-game yards "
              "differ but cannot prove none (Sleeper carries no snaps by half); the NBA reads ESPN's "
@@ -221,9 +252,11 @@ RULES = [
              "x times the stake (stake included). Pick6 pays from prize pools, so the figure is DraftKings', "
              "never ours. A count your rows describe pays only what they list; an all-or-nothing schedule "
              "with a live miss pays 0; a reduced entry (a void, a tie, a pardon) with no row for its live "
-             "count waits for DraftKings' figure. An entry settles only when every pick is decided, and the "
-             "record counts nothing still in review.",
-     "source": "the owner's entry; RotoGrinders (peer-to-peer prize pools)"},
+             "count waits for DraftKings' figure. An entry left with zero or one non-void pick is REFUNDED "
+             "(stake back) whatever that pick did -- DraftKings' standard rule as the owner read it; whether "
+             "the refund is cash or Pick6 credits he has not stated. An entry settles only when every pick is "
+             "decided, and the record counts nothing still in review.",
+     "source": "the owner's entry and his reading of DraftKings' rules (2026-11-27); RotoGrinders (prize pools)"},
     {"id": "picks", "verified": True, "basis": "third-party guides",
      "text": "2 to 6 picks, at least two different players, each player and stat once.",
      "source": "FantasyLife and RotoGrinders' Pick6 guides"},
@@ -236,10 +269,14 @@ RULES = [
     {"id": "model", "verified": True, "basis": "this ledger's rule",
      "text": "Vigil's figure is read when you save an entry on or before its game date. NFL: the week sim's "
              "stat histograms give ANY half-point line exactly (the PC files them with its board build; "
-             "passing, rushing, receiving yards, receptions, rush + rec and pass + rush yards); without them, "
-             "the Pick 6 board's one line a player and stat. Baseball: every line the Pick 6 sheet's sim "
-             "tracked. LoL: the Pick 6 board's line. A whole-number line, any other stat or sport, or a later "
-             "entry says \"no model figure\" and is left out of the calibration.",
+             "passing, rushing, receiving yards, receptions, rush + rec and pass + rush yards), and a "
+             "whole-number line as MODELED More / tie / Less probabilities: the sim's yards and catches are "
+             "continuous, so a 'tie' is the mass within half a unit of the line -- a convention for a box that "
+             "counts in whole numbers, not a calibrated real-world rate. A whole-line pick's figure is "
+             "P(side | not a tie), the one the record scores (a tie is void), with the outright P(side) and "
+             "P(tie) shown beside it. Without the histograms, the Pick 6 board's one line a player and stat. "
+             "Baseball: every line the Pick 6 sheet's sim tracked. LoL: the Pick 6 board's line. Any other "
+             "stat or sport, or a later entry, says \"no model figure\" and is left out of the calibration.",
      "source": "this ledger's own rule"},
 ]
 
@@ -268,7 +305,8 @@ def _ensure():
                 payout_x REAL, payout REAL, pnl REAL,
                 credits INTEGER DEFAULT 0,       -- paid with a void pick: DraftKings pays that in credits
                 settled_at INTEGER,
-                why TEXT,                        -- what an unsettled entry waits for
+                why TEXT,                        -- what an unsettled entry waits for, or why it was refunded
+                refunded INTEGER DEFAULT 0,      -- settled at the stake: under two non-void picks left
                 notes TEXT
             )""")
         c.execute("""
@@ -294,13 +332,21 @@ def _ensure():
                 review TEXT,                     -- what a 'review' pick waits on: participation | pardon
                 evidence TEXT,                   -- JSON: the participation figures the box carried
                 void_cause TEXT,                 -- a void's cause: dnp | tie | pardon | owner
-                kind TEXT DEFAULT 'full'         -- full | event | part (KINDS): only 'full' can be pardoned
+                kind TEXT DEFAULT 'full',        -- a KINDS key: only 'full' can be pardoned
+                p_outright REAL,                 -- a whole-number line: Vigil's modeled P(side), ties counted
+                p_tie REAL                       -- ...and its modeled P(tie); p_model is then P(side | no tie)
             )""")
         c.execute("CREATE INDEX IF NOT EXISTS idx_pick6_picks_entry ON pick6_picks(entry_id)")
         c.execute("CREATE INDEX IF NOT EXISTS idx_pick6_picks_result ON pick6_picks(result)")
+        ecols = {r[1] for r in c.execute("PRAGMA table_info(pick6_entries)")}
+        if "refunded" not in ecols:                       # tables made before the refund rule
+            try:
+                c.execute("ALTER TABLE pick6_entries ADD COLUMN refunded INTEGER DEFAULT 0")
+            except Exception as e:
+                errlog.note("P6L-migrate", e)
         cols = {r[1] for r in c.execute("PRAGMA table_info(pick6_picks)")}
         for col in ("review TEXT", "evidence TEXT", "void_cause TEXT",   # tables made before 2026-11-27's rules
-                    "kind TEXT DEFAULT 'full'"):
+                    "kind TEXT DEFAULT 'full'", "p_outright REAL", "p_tie REAL"):
             if col.split()[0] not in cols:
                 try:
                     c.execute(f"ALTER TABLE pick6_picks ADD COLUMN {col}")
@@ -429,6 +475,10 @@ def validate(d, today=None):
         kind = "full" if stat != "custom" else str(p.get("kind") or "full").strip().lower()
         if kind not in KINDS:
             raise ValueError(f"pick {i}'s market kind must be one of {', '.join(KINDS)}")
+        if KINDS[kind]["sports"] and sport not in KINDS[kind]["sports"]:
+            raise ValueError(f"pick {i}'s market kind is {'/'.join(KINDS[kind]['sports']).upper()} only")
+        if kind == "mlb_k_race" and len(_race_names(player)) != 2:
+            raise ValueError(f"pick {i}: a strikeout race names both pitchers, 'A vs B'")
         picks.append({"player": player, "stat": stat, "stat_label": label, "line": round(line, 2), "side": side,
                       "kind": kind})
     if len({_norm(p["player"]) for p in picks}) < 2:
@@ -468,18 +518,29 @@ def _nfl_prob(game_date, pick, now):
     # (nfl_dfs_sim.stat_hist): the PC's board build files them as their own piece.
     dists, dage = boardshare.get(nfl_dfs_sim.dists_name(season, week), _MODEL_MAX_AGE_S)
     if dists and dists.get("dists"):
-        m = pick["line"] - 0.5
-        if abs(m - round(m)) > 1e-9:
-            return None, ("Vigil's sim prices half-point lines only (its yards and catches are continuous, and a "
-                          "real tie on a whole line is void)")
         hits = [d for name, d in dists["dists"].items() if _norm(name) == nm]
         if len(hits) == 1:
             h = hits[0].get(pick["stat"])
             if h is None:
                 return None, f"Vigil's week-{week} sim gives him no {pick['stat_label'].lower()}"
-            p_more = nfl_dfs_sim.hist_over(h, dists["n"], pick["line"])
-            return (_side_prob(p_more, "More", pick["side"]),
-                    f"NFL week sim, week {week}, any line ({dists['n']:,} worlds, {int(dage // 60)} min old)")
+            tag = f"NFL week sim, week {week}, {dists['n']:,} worlds, {int(dage // 60)} min old"
+            mtl = nfl_dfs_sim.hist_mtl(h, dists["n"], pick["line"])
+            if mtl is None:                 # a half-point line: no tie, the exact count
+                p_more = nfl_dfs_sim.hist_over(h, dists["n"], pick["line"])
+                if p_more is None:
+                    return None, "Vigil's sim prices half-point and whole-number lines only"
+                return _side_prob(p_more, "More", pick["side"]), f"{tag}, any line"
+            # A whole-number line: DraftKings voids a tie, so the figure the
+            # record scores (it leaves ties out) is P(side | not a tie); the
+            # outright P(side) and the modeled P(tie) are kept beside it.
+            side_p = mtl["more"] if pick["side"] == "More" else mtl["less"]
+            if mtl["tie"] >= 1.0:
+                return None, f"{tag}: every modeled world ties this line"
+            cond = side_p / (1.0 - mtl["tie"])
+            return (cond, (f"{tag}, whole line, MODELED (not a calibrated real-world rate): More "
+                           f"{100 * mtl['more']:.1f}%, tie {100 * mtl['tie']:.1f}%, Less {100 * mtl['less']:.1f}%; "
+                           f"{pick['side']} {100 * cond:.1f}% if not a tie (a tie is void)"),
+                    {"p_outright": round(side_p, 4), "p_tie": round(mtl["tie"], 4)})
     if pick["stat"] not in labels:
         return None, f"no NFL week-{week} stat histograms built in the last 6 h for this player (the PC builds them)"
     board, age = boardshare.get(f"nfl_sim_board_{season}_w{week}_0", _MODEL_MAX_AGE_S)
@@ -549,7 +610,9 @@ _PRICERS = {"nfl": _nfl_prob, "mlb": _mlb_prob, "lol": _lol_prob}
 
 
 def model_prob(sport, game_date, pick, historical=False, now=None):
-    """(Vigil's P(this side wins), where it came from) or (None, why none)."""
+    """(Vigil's P(this side wins), where it came from) or (None, why none); a
+    whole-number NFL line adds a third item, {"p_outright", "p_tie"}, and its
+    figure is then P(side | not a tie) -- the one the record scores."""
     if historical:
         return None, "saved after its game date: no pre-game figure"
     if pick.get("stat") == "custom":
@@ -558,13 +621,15 @@ def model_prob(sport, game_date, pick, historical=False, now=None):
     if fn is None:
         return None, f"Vigil has no {SPORTS[sport]['label']} Pick 6 model"
     try:
-        p, src = fn(game_date, pick, now or time.time())
+        got = fn(game_date, pick, now or time.time())
     except Exception as e:
         errlog.note("P6L-model", e, path=f"{sport} {pick.get('stat')}")
         return None, "Vigil's board could not be read"
+    p, src = got[0], got[1]
     if p is None:
         return None, src
-    return round(min(max(float(p), 0.0), 1.0), 4), src
+    p = round(min(max(float(p), 0.0), 1.0), 4)
+    return (p, src, got[2]) if len(got) > 2 else (p, src)
 
 
 # ---- grading ------------------------------------------------------------------------
@@ -610,6 +675,13 @@ def settle(n_picks, results, rows):
     voids = ("void", "tie") if TIE_RULE == "void" else ("void",)
     live = [r for r in results if r not in voids]
     n, k = len(live), sum(1 for r in live if r == "hit")
+    if n <= 1:
+        # DraftKings (the owner, 2026-11-27): voids and pardons lower an entry's
+        # pick level, and one left with zero or one non-void pick is REFUNDED
+        # under the standard rules -- whatever that pick did. Stake back, x 1.
+        return ("settled", n, k, 1.0, 0,
+                f"refunded: {n} non-void pick{'s' if n != 1 else ''} left (DraftKings refunds an entry under two "
+                "picks; whether in cash or Pick6 credits the owner has not stated)")
     table = {(int(r[0]), int(r[1])): float(r[2]) for r in rows}
     reduced = n < n_picks
     if (k, n) in table:
@@ -634,12 +706,13 @@ def _settle_entry(c, entry_id, now):
     st, n, k, x, credits, why = settle(e["n_picks"], results, json.loads(e["schedule"]))
     if st == "settled":
         pay = round(e["stake"] * x, 2)
+        refunded = 1 if (why or "").startswith("refunded") else 0
         c.execute("""UPDATE pick6_entries SET status=?, n_live=?, n_hit=?, payout_x=?, payout=?, pnl=?,
-                     credits=?, settled_at=?, why=NULL WHERE id=?""",
-                  (st, n, k, x, pay, round(pay - e["stake"], 2), credits, int(now), entry_id))
+                     credits=?, settled_at=?, why=?, refunded=? WHERE id=?""",
+                  (st, n, k, x, pay, round(pay - e["stake"], 2), credits, int(now), why, refunded, entry_id))
     else:
         c.execute("""UPDATE pick6_entries SET status=?, n_live=?, n_hit=?, payout_x=NULL, payout=NULL,
-                     pnl=NULL, credits=0, settled_at=NULL, why=? WHERE id=?""", (st, n, k, why, entry_id))
+                     pnl=NULL, credits=0, settled_at=NULL, why=?, refunded=0 WHERE id=?""", (st, n, k, why, entry_id))
 
 
 def _write_grade(c, pick_id, result, actual, by, note, p, now, review=None, evidence=None, cause=None):
@@ -682,7 +755,7 @@ def pardon_check(sport, block, kind, ev):
     what the data establishes decides (the owner, 2026-11-27: "mark the result
     for manual review rather than inventing an outcome")."""
     if kind != "full":
-        return "loss", f"no pardon: a {KINDS.get(kind, kind).split(' (')[0].lower()} market is not a full-game stat"
+        return "loss", f"no pardon: a {KINDS.get(kind, {'label': kind})['label'].split(' (')[0].lower()} market is not a full-game stat"
     rule = PARDON.get(sport)
     if rule is None:
         return "loss", f"no pardon: DraftKings' Pardon Policy lists no {SPORTS[sport]['label']} rule"
@@ -863,19 +936,79 @@ def mlb_participation(bat, pit):
 
 def parse_mlb_box(box, out=None):
     """One statsapi box score: every player on both rosters, with his
-    participation in each block (mlb_participation)."""
+    participation in each block (mlb_participation), and what the specialized
+    markets read (mlb_first_kind; the strikeout race's start and strikeouts)."""
     out = {} if out is None else out
-    for side in ("home", "away"):
-        for pl in ((box.get("teams") or {}).get(side, {}).get("players") or {}).values():
-            nm = _norm((pl.get("person") or {}).get("fullName"))
-            if not nm:
-                continue
-            st = pl.get("stats") or {}
-            bat, pit = st.get("batting") or {}, st.get("pitching") or {}
-            num = lambda b: {k: float(v) for k, v in b.items() if isinstance(v, (int, float))}  # noqa: E731
-            out.setdefault(nm, []).append({"part": mlb_participation(bat, pit),
-                                           "stats": {"bat": num(bat), "pit": num(pit)}})
+    pls = [pl for side in ("home", "away")
+           for pl in ((box.get("teams") or {}).get(side, {}).get("players") or {}).values()]
+    carries_bo = any(pl.get("battingOrder") for pl in pls)   # does this feed carry the lineup at all?
+    for pl in pls:
+        nm = _norm((pl.get("person") or {}).get("fullName"))
+        if not nm:
+            continue
+        st = pl.get("stats") or {}
+        bat, pit = st.get("batting") or {}, st.get("pitching") or {}
+        num = lambda b: {k: float(v) for k, v in b.items() if isinstance(v, (int, float))}  # noqa: E731
+        started = (False if not pit else None if pit.get("gamesStarted") is None
+                   else float(pit.get("gamesStarted") or 0) >= 1)
+        out.setdefault(nm, []).append({"part": mlb_participation(bat, pit),
+                                       "spec": {"mlb_first": mlb_first_kind(pl.get("battingOrder"), bat, carries_bo)},
+                                       "pitch_start": started, "ks": float(pit.get("strikeOuts") or 0),
+                                       "stats": {"bat": num(bat), "pit": num(pit)}})
     return out
+
+
+def mlb_first_kind(batting_order, bat, carries_bo):
+    """(status, evidence) for an MLB first-event market (first hit, RBI, home
+    run...): DraftKings requires the starting lineup AND a plate appearance.
+    statsapi's battingOrder is "100".."900" for a starter, "101", "102"... for
+    a substitute in that slot; a player without one is not in the lineup when
+    the feed carries it for others, unknown when it carries none."""
+    pa = None if bat.get("plateAppearances") is None else float(bat.get("plateAppearances") or 0)
+    try:
+        bo = int(str(batting_order)) if batting_order not in (None, "") else None
+    except ValueError:
+        bo = None
+    ev = {"batting_order": bo, "pa": pa}
+    if bo is None:
+        return ("not_met" if carries_bo and batting_order in (None, "") else "unknown"), ev
+    if bo % 100 != 0:
+        return "not_met", ev
+    if pa is None:
+        return "unknown", ev
+    return ("met" if pa >= 1 else "not_met"), ev
+
+
+def _race_names(player):
+    """The two pitchers of a strikeout race, typed 'A vs B'."""
+    return [x.strip() for x in re.split(r"\s+vs\.?\s+", str(player or ""), flags=re.I) if x.strip()]
+
+
+def check_kind(box, pick):
+    """(status, evidence) for a hand-typed specialized market's participation
+    requirement (KINDS), off the box the sport's grader reads, or None when
+    this kind is not checked here. The strikeout race needs BOTH pitchers'
+    starts: either one not starting voids it, as does neither reaching three
+    strikeouts; a pitcher not found once in the box leaves it unknown."""
+    kind = pick.get("kind") or "full"
+    if kind not in _CHECKED_KINDS or pick["sport"] not in (KINDS[kind]["sports"] or ()):
+        return None
+    if kind == "mlb_k_race":
+        rows = [box.get(_norm(n)) or [] for n in _race_names(pick["player"])]
+        if len(rows) != 2 or any(len(r) != 1 for r in rows):
+            return "unknown", {"pitchers_found": [len(r) for r in rows]}
+        starts, ks = [r[0]["pitch_start"] for r in rows], [r[0]["ks"] for r in rows]
+        ev = {"starts": ["?" if s is None else "yes" if s else "no" for s in starts],
+              "strikeouts": [int(k) for k in ks]}
+        if any(s is False for s in starts):
+            return "not_met", ev
+        if any(s is None for s in starts):
+            return "unknown", ev
+        return ("met" if max(ks) >= 3 else "not_met"), ev
+    rows = box.get(_norm(pick["player"])) or []
+    if len(rows) != 1:
+        return "unknown", {"found": len(rows)}
+    return rows[0].get("spec", {}).get(kind) or ("unknown", {})
 
 
 def nba_participation(r, dnp, halves=None):
@@ -888,7 +1021,7 @@ def nba_participation(r, dnp, halves=None):
     any_stat = any(r.get(k) for k in ("pts", "fga", "fta", "reb", "ast", "stl", "blk", "tov", "pf"))
     ev = {"minutes": float(r.get("min") or 0), "dnp": bool(dnp), "any_stat": bool(any_stat)}
     if halves is not None:
-        first, second = halves
+        first, second = halves[0], halves[1]
         ev["first_half"] = bool(r.get("starter")) or r.get("pid") in first
         ev["second_half"] = second.get(r.get("pid"))
     else:
@@ -913,20 +1046,33 @@ def nba_halves(d):
     start, never an in-and-out at one dead ball (a free-throw swap plays no
     time). ESPN does not log who starts a period, so this PROVES time after
     halftime when it finds it and proves nothing when it does not. None
-    without play-by-play."""
+    without play-by-play.
+
+    Also returned, for the specialized markets (check_kind): `periods`
+    {player: periods with time on the floor}, `touched` {player: periods with
+    any record at all}, and `first_how` {player: {period: "in" | "on"}} -- his
+    FIRST record in each period in play order: entering ("in": he did not start
+    that period) or on the floor / leaving ("on": no entry came first, so he
+    was on the floor when it began, since every in-period substitution is
+    logged)."""
     import nba_matchup_data as M
     import nba_pbp as P
     rec = P.parse_summary(d) if d.get("plays") else None
     if not rec:
         return None
     a, W = rec["plays"], P.PLAY_W
-    first, second, subs = set(), {}, {}
+    first, second, subs, periods, touched, first_how = set(), {}, {}, {}, {}, {}
 
     def seen(pid, per, clk):
+        periods.setdefault(pid, set()).add(per)
         if per <= 2:
             first.add(pid)
         elif pid not in second:
             second[pid] = _per_label(per, clk)
+
+    def record(pid, per, how):
+        touched.setdefault(pid, set()).add(per)
+        first_how.setdefault(pid, {}).setdefault(per, how)
     for j in range(0, len(a), W):
         p = a[j:j + W]
         per, clk = p[P.I_PER], p[P.I_CLK]
@@ -934,8 +1080,10 @@ def nba_halves(d):
             for pid, how in ((p[P.I_P1], "in"), (p[P.I_P2], "out")):
                 if pid:
                     subs.setdefault(pid, set()).add((per, clk, how))
+                    record(pid, per, "in" if how == "in" else "on")
             continue
         for pid in M._actors(p):
+            record(pid, per, "on")
             seen(pid, per, clk)
     for pid, stamps in subs.items():
         for per, clk, how in sorted(stamps):
@@ -943,7 +1091,7 @@ def nba_halves(d):
                 continue
             if (how == "in" and clk > 0) or (how == "out" and clk < M._period_len(per)):
                 seen(pid, per, clk)
-    return first, second
+    return first, second, periods, touched, first_how
 
 
 def parse_nba_summary(d, out=None):
@@ -964,14 +1112,52 @@ def parse_nba_summary(d, out=None):
     except Exception as e:                  # the box still grades; the Pardon then waits for review
         errlog.note("P6L-nba-halves", e)
         halves = None
-    for r in nba_matchup_data.parse_box(d, sides):
+    rows = nba_matchup_data.parse_box(d, sides)
+    starters = {}                           # a team's starter flags are trusted only when it lists five
+    for r in rows:
+        starters[r["side"]] = starters.get(r["side"], 0) + (1 if r.get("starter") else 0)
+    for r in rows:
         nm = _norm(r.get("name"))
         if nm:
+            listed = starters.get(r["side"], 0) >= 5
             out.setdefault(nm, []).append({"part": {"": nba_participation(r, dnp.get(str(r.get("pid")), False),
                                                                            halves)},
+                                           "spec": {k: nba_kind(k, r, listed, halves) for k in
+                                                    ("nba_q1", "nba_first", "nba_first_2h")},
                                            "stats": {"": {k: float(r[k]) for k in ("pts", "reb", "ast", "tpm",
                                                                                      "stl", "blk", "tov")}}})
     return out
+
+
+def nba_kind(kind, r, listed, halves):
+    """(status, evidence) for an NBA specialized market's requirement (KINDS),
+    off ESPN's box starter flags (trusted only where the team lists its five)
+    and the play-by-play (nba_halves). Q1: a starter, or time on the floor in
+    the first quarter, is met; a bench player with no first-quarter record at
+    all did not play it (every first-quarter entry is a logged substitution);
+    anything else -- an in-and-out at one dead ball -- is review. Game-first:
+    the starter flag decides. Second-half first scorer: his first third-quarter
+    record decides (on the floor before any entry: he started it; an entry: he
+    did not); none, review."""
+    pid, starter = r.get("pid"), bool(r.get("starter"))
+    if kind == "nba_first":
+        ev = {"starter": starter if listed else None}
+        return ("met" if starter else "not_met") if listed else "unknown", ev
+    if halves is None:
+        ev = {"starter": starter if listed else None, "play_by_play": False}
+        return ("met" if kind == "nba_q1" and listed and starter else "unknown"), ev
+    periods, touched, first_how = halves[2], halves[3], halves[4]
+    if kind == "nba_q1":
+        q1 = 1 in periods.get(pid, set())
+        ev = {"starter": starter if listed else None, "q1_time": q1}
+        if (listed and starter) or q1:
+            return "met", ev
+        if listed and 1 not in touched.get(pid, set()):
+            return "not_met", ev
+        return "unknown", ev
+    how = first_how.get(pid, {}).get(3)
+    ev = {"q3_first_record": {"on": "on the floor", "in": "an entry"}.get(how, "none")}
+    return {"on": "met", "in": "not_met"}.get(how, "unknown"), ev
 
 
 def _first_tuesday_after(d):
@@ -1061,7 +1247,20 @@ def grade_pick(box, pick, source):
     for a hand-graded stat."""
     stat = SPORTS[pick["sport"]]["stats"].get(pick["stat"])
     if stat is None:
-        return "pending", None, "graded by hand: type his final stat", None, None, None
+        # a hand-typed stat: the owner types the outcome, but a specialized
+        # market's participation requirement is checked here where the box can
+        chk = check_kind(box, pick)
+        if chk is None:
+            return "pending", None, "graded by hand: type his final stat", None, None, None
+        status, ev = chk
+        req = KINDS[pick["kind"]]["req"]
+        evs = _ev_text(ev)
+        if status == "not_met":
+            return "void", None, f"requirement not met ({req}; {evs}): void", None, ev, "dnp"
+        if status == "met":
+            return "pending", None, f"requirement met ({req}; {evs}): type the outcome", None, ev, None
+        return ("review", None, f"requirement not established ({req}; {evs}): decide whether it was met",
+                "participation", ev, None)
     block, fields, special = stat[1], stat[2], bool(stat[3]) if len(stat) > 3 else False
     rows = box.get(_norm(pick["player"])) or []
     if not rows:
@@ -1091,8 +1290,10 @@ def grade_due(now=None, today=None, boxes=None, max_fetch=_MAX_FETCH):
         due = [dict(r) for r in c.execute(
             f"""SELECT p.id, p.entry_id, p.sport, p.player, p.stat, p.line, p.side, p.p_model, p.kind, e.game_date
                 FROM pick6_picks p JOIN pick6_entries e ON e.id = p.entry_id
-                WHERE p.result = 'pending' AND p.stat != 'custom' AND p.sport IN ({','.join('?' * len(auto))})
-                ORDER BY e.game_date LIMIT 500""", auto)]
+                WHERE p.result = 'pending' AND p.sport IN ({','.join('?' * len(auto))})
+                  AND (p.stat != 'custom'
+                       OR (p.kind IN ({','.join('?' * len(_CHECKED_KINDS))}) AND p.evidence IS NULL))
+                ORDER BY e.game_date LIMIT 500""", auto + list(_CHECKED_KINDS))]
     groups = {}
     for p in due:
         if ready(p["sport"], p["game_date"], today):
@@ -1154,7 +1355,10 @@ def add_entry(d, now=None, today=None, pricer=None):
     e = validate(d, today=today)
     pricer = pricer or model_prob
     for p in e["picks"]:
-        p["p_model"], p["model_src"] = pricer(e["sport"], e["game_date"], p, historical=bool(e["historical"]), now=now)
+        got = pricer(e["sport"], e["game_date"], p, historical=bool(e["historical"]), now=now)
+        p["p_model"], p["model_src"] = got[0], got[1]
+        extra = got[2] if len(got) > 2 else {}
+        p["p_outright"], p["p_tie"] = extra.get("p_outright"), extra.get("p_tie")
     with store._lock, store._conn() as c:
         cur = c.execute("""INSERT INTO pick6_entries (created_at, sport, game_date, entry_type, schedule, stake,
                            n_picks, historical, status, notes) VALUES (?,?,?,?,?,?,?,?, 'open', ?)""",
@@ -1163,9 +1367,10 @@ def add_entry(d, now=None, today=None, pricer=None):
         eid = cur.lastrowid
         for i, p in enumerate(e["picks"]):
             c.execute("""INSERT INTO pick6_picks (entry_id, idx, sport, player, stat, stat_label, line, side,
-                         p_model, model_src, kind, result, note) VALUES (?,?,?,?,?,?,?,?,?,?,?, 'pending', ?)""",
+                         p_model, model_src, kind, p_outright, p_tie, result, note)
+                         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?, 'pending', ?)""",
                       (eid, i, e["sport"], p["player"], p["stat"], p["stat_label"], p["line"], p["side"],
-                       p["p_model"], p["model_src"], p["kind"],
+                       p["p_model"], p["model_src"], p["kind"], p["p_outright"], p["p_tie"],
                        None if SPORTS[e["sport"]]["grader"] and p["stat"] != "custom"
                        else "graded by hand: type his final stat"))
     return entry(eid)
@@ -1282,8 +1487,8 @@ def listing(limit=30, offset=0, ids=None):
             e["schedule"] = json.loads(e["schedule"])
             e["picks"] = []
         for r in c.execute(f"""SELECT id, entry_id, idx, player, stat, stat_label, line, side, p_model, model_src,
-                               result, actual, graded_by, graded_at, note, review, evidence, void_cause, kind
-                               FROM pick6_picks
+                               result, actual, graded_by, graded_at, note, review, evidence, void_cause, kind,
+                               p_outright, p_tie FROM pick6_picks
                                WHERE entry_id IN ({','.join('?' * len(by))}) ORDER BY entry_id, idx""", list(by)):
             p = dict(r)
             ev = json.loads(p.pop("evidence")) if p.get("evidence") else None
@@ -1426,4 +1631,5 @@ def meta():
             # DraftKings' Pardon rules by sport, and the market kinds a hand-typed stat may be
             "pardon": {k: v["exit"] + (f" ({v['excluded']} excluded)" if v.get("excluded") else "")
                        for k, v in PARDON.items()},
-            "kinds": [{"key": k, "label": v} for k, v in KINDS.items()]}
+            "kinds": [{"key": k, "label": v["label"], "sports": list(v["sports"] or []), "req": v["req"]}
+                      for k, v in KINDS.items()]}
