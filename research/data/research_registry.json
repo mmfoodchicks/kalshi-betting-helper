@@ -315,6 +315,19 @@
   "result": "research/data/nfl_coach/read_r4.json"
  },
  {
+  "id": "coach_r5_2027",
+  "area": "Coaching engine",
+  "kind": "registered",
+  "title": "Coaching R5 on 2027 (owner-approved amendment): the second unit as drawn decisions",
+  "decides": "R5's criteria verbatim (the second unit's gain over R4 above 2 SE; the hazard not worse by 2 SE; the trailing corner a secondary) on the 2027 regular season; Holm over the 2027 family (R2-H2, R4, R5) reported beside each verdict",
+  "registration": "research/data/nfl_coach/prereg_r5_2027.json",
+  "script": "research/nfl_coach_r5_read_2027.py",
+  "not_before": "2028-01-13T06:00:00Z",
+  "waits_for": "R1's and R4's reads committed first; the 2027 regular season (shared with R2-H2, R4, C4 and C3-N)",
+  "report": "research/reports/nfl_coach_family_2027.md",
+  "result": "research/data/nfl_coach/read_r5_2027.json"
+ },
+ {
   "id": "coach_r5",
   "area": "Coaching engine",
   "kind": "registered",
@@ -323,7 +336,7 @@
   "registration": "research/data/nfl_coach/prereg_r5.json",
   "script": "research/nfl_coach_r5_read.py",
   "not_before": "2029-01-16T06:00:00Z",
-  "waits_for": "R1's and R4's reads committed first; the 2028 regular season (fresh: no registered window or development set holds it)",
+  "waits_for": "R1's and R4's reads committed first; the 2028 regular season (fresh: no registered window or development set holds it); now a REPLICATION after the 2027 amendment (coach_r5_2027)",
   "report": "research/reports/nfl_coach_r5.md",
   "result": "research/data/nfl_coach/read_r5.json"
  }

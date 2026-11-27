@@ -1,0 +1,127 @@
+{
+ "amends": {
+  "block_sha256": "d20d0e137cadebdd1134d9fd9bbdcb676971c0ca3c187a7e2c717d2766b1a65b",
+  "file": "research/data/nfl_coach/prereg_r5.json",
+  "file_sha256": "8aad4ca30bf0556f445e8a32201f16a34b0970267ada113f9bdb39597b21e7bf"
+ },
+ "block_sha256": "02d486e9be991a67b7c2bc05b08d8854f2138f22dccc5319c0d0f643bb794b5b",
+ "criteria": {
+  "1": "tests/guards_auto_nfl_coach_r5.py exits 0",
+  "2": "unit gain > 2 SE (SE over strategic pulled team-games)",
+  "3": "hazard gain > -2 SE (a guardrail)"
+ },
+ "criteria_unchanged": "criteria, statistics, the secondary and the 30-game floor are prereg_r5.json's, copied verbatim; the implementation is frozen by the pins below (R5's files as prereg_r5.json pins them, plus this amendment's read wrapper, guard and family analysis)",
+ "files": {
+  "nfl_coach_sim.py": "631a398b024f85adf9d275ce7c02ebbe3deb8dd2160bed062b3fb4e136f244e2",
+  "nfl_coach_sim_r2.py": "67ae6c8e54cdd68f57f04719fdb914d489dc4b622560ceb615b71166c39eccca",
+  "nfl_coach_sim_r3.py": "acd00092a91300c4ccd5f244b8d76dc0fa6a75337e4ddf1a857805c4c2cbe06c",
+  "nfl_coach_sim_r4.py": "f9249362d216be1160bc9bb3a8bb70d52586266d5e1697d6bae2c80da38523f3",
+  "nfl_coach_sim_r5.py": "b23b0cdddfb46829e043c8d9a1e756192617fe44eccecef295caa28adee473e5",
+  "nfl_deep_sim.py": "22a221d7810495db3f8f7bb1bef7c4e16c3bbbf282902a95f133cecdabc29820",
+  "nfl_pbp.py": "660234badefc3e3b5f0e1417a48431e4ad8ff33aab5df8a207834faa4862865d",
+  "research/data/nfl_coach/family_2027.json": "02fcbe328077664d87bda6c48dc79ac8b143ca8f5c92d246f2de1f906ad909bb",
+  "research/data/nfl_coach_r2_tables.json": "e589314e654897e81e665e4a25eba9bd845b9fed71790e747a518f54ee4daa1b",
+  "research/data/nfl_coach_r3_tables.json": "6dfdc15cfb89ea660b126f0a7906bc023d817a46e524acb4c7b33f09ca979977",
+  "research/data/nfl_coach_r4_tables.json": "8ce1bce2c8c9e5b9387a75f647f75b4ba612d90c952c9c4b26a62b4eb5984291",
+  "research/data/nfl_coach_r5_tables.json": "fcf3521e7c7b5323e5147b71f6d60708543bcfeb6fd5fe654e7e9ff588c7da43",
+  "research/data/nfl_coach_tables.json": "ffe45e30f03c6f5d0879834c7c43f08ca7463525399ded0f9a2a9937df2189d8",
+  "research/nfl_coach_data.py": "3c7a8680e1a9cf5e2efd14ff6fed7ad26d4ce21775f05e97faf21912e3f846ad",
+  "research/nfl_coach_family_2027.py": "1df26ab3a7ce906124fe5ea24ef924623cc0152a7b433d93999d4170f1d748c9",
+  "research/nfl_coach_r2_data.py": "ed17b05c9b2544f782b7befb307b7ae27dcc63d2b581d0b8f877feab7d59ada1",
+  "research/nfl_coach_r3_qb.py": "916140d754ec5aec036686ecd39391df2b9f05f7e4e3d94ab6dd4525faa90685",
+  "research/nfl_coach_r4_data.py": "a98124e44c435bd129a0c26d8e184dcf13e0e7204f9efd47e68f492c08832135",
+  "research/nfl_coach_r4_evidence.py": "b75353e6fca559a4df21f8edf2d46d5243621d1294a0608da215bf79ec6bf7c6",
+  "research/nfl_coach_r4_fit.py": "4cb45103c899e6f58a1b2df4763be98591e5686348dbf41e2fbcba943166db2c",
+  "research/nfl_coach_r5_eval.py": "4bfd23a2fb5bc439741ec775751c5672d247fa414e2cc19773c226ba23b06804",
+  "research/nfl_coach_r5_fit.py": "d2729c454d84d80dad6dc4a81add3fe1837d3ba2507216a43c5a506303057249",
+  "research/nfl_coach_r5_read.py": "8cb32e19231274504a970f52926e3276d0b6b9816c47eff790d41f9f4805b7c5",
+  "research/nfl_coach_r5_read_2027.py": "305e65b7bbb8fd38b444feeef10f943c2cc47ef83c6733c9772d9b07d1646551",
+  "tests/guards_auto_nfl_coach_r5.py": "eebc86f4ee56dc7e17be0936adeddf986a588e9ea67d9419bab324956524bca8",
+  "tests/guards_auto_nfl_coach_r5_2027.py": "76bde61f1a096da1edaba8e0311e6b6ec26b760d196997e3b620eb53fd734b75"
+ },
+ "frozen": "no R5 file may change on the strength of any 2027 game; a change is a new version with its own registration on games no read has seen",
+ "min_strategic_pulled_team_games": 30,
+ "multiplicity": {
+  "owner_approved_family": "R1's criterion 4 and C4 only, at a family-wise one-sided 5% over every scheduled look and C4's conditional eligibility (prereg_c4.json); no other read is in it",
+  "proposed_2027_family": {
+   "method": "Holm, family-wise one-sided 0.05",
+   "rule": "every original verdict stands as its own rule gives it (each at z > 2, one-sided 0.0228); the family statement is reported BESIDE them: a test is family-confirmed when Holm's step-down at these thresholds rejects it, ordered by z",
+   "tests": [
+    "R2-H2 criterion 2",
+    "R4 criterion 2",
+    "R5 criterion 2 (2027 amendment)"
+   ],
+   "uncorrected_familywise_if_independent": 0.0667,
+   "z_thresholds": [
+    2.128,
+    1.96,
+    1.6449
+   ]
+  },
+  "reads_on_2026_weeks_13_18": [
+   "R1 (criteria 1-4)",
+   "the coaching DFS read",
+   "R2-H1",
+   "R3",
+   "R4 (with 2027)"
+  ],
+  "reads_on_2027": [
+   "R2-H2 (the regular season)",
+   "R4 (with 2026 weeks 13-18)",
+   "C4 (weeks 1-9, run only if R1 fails criterion 4 alone)",
+   "R5 (this amendment)",
+   "C3-N (not coaching: the deep engine's season scale, the same games)"
+  ],
+  "shared_games": "the 2027 tests read the same games: R5's units are a subset of R4's (every strategic pulled team-game is a pulled one) and both sit inside R2-H2's team-games. On the development seasons the correlation of the tests' MEANS (n_shared / sqrt(nA nB) x the per-unit correlation) was R4 x R5 +0.22 (2025) / +0.08 (2026), R2-H2 x R4 -0.10 / +0.05, R2-H2 x R5 +0.02 / -0.05 (family_2027.json): small, positive where the units nest. Holm holds under any dependence. A pass on shared games is weaker evidence than the same pass on independent games: joint passes are not independent confirmations, and a defect common to R3's pull or R4's labels moves R4 and R5 together."
+ },
+ "not_before_utc": "2028-01-13T06:00:00Z",
+ "owner_approval": {
+  "date": "2026-11-27",
+  "words": "Allow R5 to use the 2027 regular season rather than waiting until January 2029. Freeze its implementation and acceptance criteria now. Account explicitly for dependence and multiple comparisons across R1-R5. Preserve all original registrations and verdicts. Do not modify R5 based on the shared evaluation games."
+ },
+ "power": "2027 should hold ~45 strategic pulled team-games (424 in 2016-2024; 57 in 2025): criterion 2's power ~0.91 at the development effect (+1.34, SD 2.68) under its own z > 2, ~0.89 at the 2027 family's strictest Holm step (z 2.128); at the 30-game floor ~0.77 and ~0.73. Criterion 3 fails ~2.3% by chance; the corner secondary as in prereg_r5.json. Power is the chance the test passes IF R5 is better by the stated amount, never the probability that it is.",
+ "read_order": "R1's read (on/after 2027-01-06) first; then R2-H2's and R4's (both on/after 2028-01-13, either order); then this read, which refuses until R1's and R4's results are committed; prereg_r5.json's 2028 read (on/after 2029-01-16) last, as a REPLICATION on games no 2027 read sees",
+ "replication": "prereg_r5.json stays byte-identical and its 2028 read stands as a later, independent replication: a 2027 PASS is the primary result, the 2028 read its confirmation, and each verdict is reported as its own rule gives it",
+ "requires_reads": [
+  "R1",
+  "R4"
+ ],
+ "secondary": "reported, never part of the verdict: the trailing corner's real pulls against R5's expectation, one-sided Poisson P(X >= real) < 0.05 = the post-2021 excess persists on fresh games (the evidence a corner-specific term would need)",
+ "settings": {
+  "files": "play_by_play_2028.csv.gz, players.csv, injuries_2028.csv in the read's directory (nflverse, fresh); the kind of pull is R4's classifier (descriptions, the next week's report; week 18's from the descriptions alone)",
+  "simulation": "none: every statistic is a likelihood of what happened, at the frozen tables"
+ },
+ "statistics": {
+  "cell": "nfl_coach_r5_fit.cell (trailing 17-27 at the drive's first snap, 2:01-8:00 left): real pulls against R4's and R5's expected",
+  "hazard": "nfl_coach_r5_eval.hazard_score over every team-game: the pull's log loss, R4's (R3's hazard) minus R5's, per team-game (positive = R5 better)",
+  "unit": "nfl_coach_r5_eval.unit_score over every strategic pulled team-game in the window (nfl_coach_r5_fit.unit_rows): log-likelihood of the lead back's and the top two targets' touches after the pull, R5 minus R4 (positive = R5 better)"
+ },
+ "version": "coach-r5.0",
+ "what": "the second unit after a STRATEGIC quarterback pull as drawn per-player decisions (the lead back sits with q_b, each of the top two targets with q_w given the back's decision, a player who plays at his season share shifted by d) against R4's per-snap odds; R3's hazard form refitted on 2016-2025 (every richer form was refused) as a guardrail; the trailing corner R3 missed as a registered secondary",
+ "window": [
+  {
+   "season": 2027,
+   "weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+   ]
+  }
+ ],
+ "written_utc": "2026-11-27T15:24:10Z"
+}
