@@ -1,0 +1,975 @@
+{
+ "bonus": {
+  "pass_yd": {
+   "discrete": {
+    "brier": 0.127,
+    "mass_in_half_yard_below": 0.0,
+    "n": 513,
+    "pred_rate": 0.2398
+   },
+   "legacy": {
+    "brier": 0.1162,
+    "mass_in_half_yard_below": 0.0013,
+    "n": 513,
+    "pred_rate": 0.1736
+   },
+   "observed_rate": 0.1345
+  },
+  "rec_yd": {
+   "discrete": {
+    "brier": 0.0835,
+    "mass_in_half_yard_below": 0.0,
+    "n": 1367,
+    "pred_rate": 0.1329
+   },
+   "legacy": {
+    "brier": 0.0852,
+    "mass_in_half_yard_below": 0.0013,
+    "n": 1367,
+    "pred_rate": 0.0527
+   },
+   "observed_rate": 0.1017
+  },
+  "rush_yd": {
+   "discrete": {
+    "brier": 0.1042,
+    "mass_in_half_yard_below": 0.0,
+    "n": 699,
+    "pred_rate": 0.1537
+   },
+   "legacy": {
+    "brier": 0.1055,
+    "mass_in_half_yard_below": 0.0019,
+    "n": 699,
+    "pred_rate": 0.0874
+   },
+   "observed_rate": 0.123
+  }
+ },
+ "conservation": {
+  "discrete_violations": {
+   "cmp": 0,
+   "pass_td": 0,
+   "pass_yd": 0
+  },
+  "legacy": {
+   "mean_abs_yard_gap": 13.34,
+   "qb_tds_differ_from_receivers_pct": 74.24,
+   "qb_yards_differ_from_receivers_pct": 97.28,
+   "team_worlds": 1026000
+  }
+ },
+ "correlation": {
+  "QB-QB opponents": {
+   "discrete": 0.116,
+   "legacy": 0.183,
+   "observed": {
+    "corr": 0.239,
+    "n": 256
+   }
+  },
+  "QB-RB same team": {
+   "discrete": 0.199,
+   "legacy": 0.247,
+   "observed": {
+    "corr": 0.06,
+    "n": 1459
+   }
+  },
+  "QB-TE same team": {
+   "discrete": 0.342,
+   "legacy": 0.374,
+   "observed": {
+    "corr": 0.205,
+    "n": 1398
+   }
+  },
+  "QB-WR same team": {
+   "discrete": 0.412,
+   "legacy": 0.419,
+   "observed": {
+    "corr": 0.272,
+    "n": 2357
+   }
+  },
+  "RB-RB opponents": {
+   "discrete": 0.049,
+   "legacy": 0.105,
+   "observed": {
+    "corr": -0.047,
+    "n": 2083
+   }
+  },
+  "RB-RB same team": {
+   "discrete": 0.063,
+   "legacy": 0.148,
+   "observed": {
+    "corr": -0.057,
+    "n": 1429
+   }
+  },
+  "RB-WR same team": {
+   "discrete": 0.07,
+   "legacy": 0.183,
+   "observed": {
+    "corr": -0.009,
+    "n": 6713
+   }
+  },
+  "TE-WR same team": {
+   "discrete": 0.11,
+   "legacy": 0.31,
+   "observed": {
+    "corr": -0.003,
+    "n": 6417
+   }
+  },
+  "WR-WR same team": {
+   "discrete": 0.116,
+   "legacy": 0.334,
+   "observed": {
+    "corr": -0.022,
+    "n": 4380
+   }
+  }
+ },
+ "correlation_max_abs_diff": 0.218,
+ "dk": {
+  "discrete": {
+   "cover_10_90": 0.8351,
+   "mean_abs_mean_minus_proj": 0.297,
+   "mean_sd": 5.627,
+   "n": 5738,
+   "pit_ks": 0.0176
+  },
+  "legacy": {
+   "cover_10_90": 0.4193,
+   "mean_abs_mean_minus_proj": 0.134,
+   "mean_sd": 3.796,
+   "n": 5738,
+   "pit_ks": 0.3022
+  }
+ },
+ "exact_count_log_score": {
+  "discrete": {
+   "mean": -1.9418,
+   "n": 3299
+  },
+  "legacy": {
+   "mean": -2.6539,
+   "n": 3299
+  }
+ },
+ "floor_ceiling": {
+  "discrete": {
+   "actual_above_q90": 0.1129,
+   "actual_below_q10": 0.0519,
+   "mean_q10": 1.92,
+   "mean_q90": 15.36,
+   "n": 5738,
+   "worlds_on_dk_lattice": 1.0
+  },
+  "legacy": {
+   "actual_above_q90": 0.1938,
+   "actual_below_q10": 0.3869,
+   "mean_q10": 3.8,
+   "mean_q90": 12.56,
+   "n": 5738,
+   "worlds_on_dk_lattice": 0.0
+  }
+ },
+ "fp_ties": {
+  "definition": "share of worlds in which two same-team pass catchers (WR-WR, TE-WR) score exactly the same DraftKings points; observed: share of real pairs",
+  "discrete": 0.09244,
+  "legacy": 1e-05,
+  "observed": 0.07493,
+  "observed_pairs": 10797,
+  "pairs": 10942
+ },
+ "lines": {
+  "discrete": {
+   "pass_yd": {
+    "brier": 0.16648,
+    "log_loss": 0.50981,
+    "n": 4617,
+    "reliability": [
+     {
+      "bin": "0-10%",
+      "hit": 0.1579,
+      "mean_p": 0.086,
+      "n": 19
+     },
+     {
+      "bin": "10-20%",
+      "hit": 0.093,
+      "mean_p": 0.164,
+      "n": 473
+     },
+     {
+      "bin": "20-30%",
+      "hit": 0.1485,
+      "mean_p": 0.2481,
+      "n": 761
+     },
+     {
+      "bin": "30-40%",
+      "hit": 0.2873,
+      "mean_p": 0.3489,
+      "n": 623
+     },
+     {
+      "bin": "40-50%",
+      "hit": 0.4446,
+      "mean_p": 0.4493,
+      "n": 551
+     },
+     {
+      "bin": "50-60%",
+      "hit": 0.5881,
+      "mean_p": 0.5499,
+      "n": 522
+     },
+     {
+      "bin": "60-70%",
+      "hit": 0.7069,
+      "mean_p": 0.6506,
+      "n": 522
+     },
+     {
+      "bin": "70-80%",
+      "hit": 0.8506,
+      "mean_p": 0.7514,
+      "n": 569
+     },
+     {
+      "bin": "80-90%",
+      "hit": 0.9254,
+      "mean_p": 0.8445,
+      "n": 496
+     },
+     {
+      "bin": "90-100%",
+      "hit": 0.9383,
+      "mean_p": 0.92,
+      "n": 81
+     }
+    ]
+   },
+   "rec": {
+    "brier": 0.1591,
+    "log_loss": 0.48597,
+    "n": 21748,
+    "reliability": [
+     {
+      "bin": "0-10%",
+      "hit": 0.0738,
+      "mean_p": 0.0489,
+      "n": 3453
+     },
+     {
+      "bin": "10-20%",
+      "hit": 0.15,
+      "mean_p": 0.1488,
+      "n": 3499
+     },
+     {
+      "bin": "20-30%",
+      "hit": 0.2439,
+      "mean_p": 0.2473,
+      "n": 2612
+     },
+     {
+      "bin": "30-40%",
+      "hit": 0.3492,
+      "mean_p": 0.3484,
+      "n": 1979
+     },
+     {
+      "bin": "40-50%",
+      "hit": 0.4527,
+      "mean_p": 0.4501,
+      "n": 1913
+     },
+     {
+      "bin": "50-60%",
+      "hit": 0.5677,
+      "mean_p": 0.5496,
+      "n": 1781
+     },
+     {
+      "bin": "60-70%",
+      "hit": 0.6616,
+      "mean_p": 0.65,
+      "n": 1643
+     },
+     {
+      "bin": "70-80%",
+      "hit": 0.7618,
+      "mean_p": 0.75,
+      "n": 1650
+     },
+     {
+      "bin": "80-90%",
+      "hit": 0.8642,
+      "mean_p": 0.8489,
+      "n": 1782
+     },
+     {
+      "bin": "90-100%",
+      "hit": 0.9457,
+      "mean_p": 0.9376,
+      "n": 1436
+     }
+    ]
+   },
+   "rec_yd": {
+    "brier": 0.15656,
+    "log_loss": 0.47952,
+    "n": 26694,
+    "reliability": [
+     {
+      "bin": "0-10%",
+      "hit": 0.0649,
+      "mean_p": 0.0462,
+      "n": 6257
+     },
+     {
+      "bin": "10-20%",
+      "hit": 0.1449,
+      "mean_p": 0.1484,
+      "n": 4776
+     },
+     {
+      "bin": "20-30%",
+      "hit": 0.2352,
+      "mean_p": 0.2471,
+      "n": 3988
+     },
+     {
+      "bin": "30-40%",
+      "hit": 0.3216,
+      "mean_p": 0.3481,
+      "n": 2910
+     },
+     {
+      "bin": "40-50%",
+      "hit": 0.4368,
+      "mean_p": 0.4482,
+      "n": 2404
+     },
+     {
+      "bin": "50-60%",
+      "hit": 0.5402,
+      "mean_p": 0.549,
+      "n": 1966
+     },
+     {
+      "bin": "60-70%",
+      "hit": 0.6508,
+      "mean_p": 0.6492,
+      "n": 1747
+     },
+     {
+      "bin": "70-80%",
+      "hit": 0.7725,
+      "mean_p": 0.7475,
+      "n": 1486
+     },
+     {
+      "bin": "80-90%",
+      "hit": 0.8629,
+      "mean_p": 0.8441,
+      "n": 1072
+     },
+     {
+      "bin": "90-100%",
+      "hit": 0.9318,
+      "mean_p": 0.9125,
+      "n": 88
+     }
+    ]
+   },
+   "rush_yd": {
+    "brier": 0.1496,
+    "log_loss": 0.45841,
+    "n": 12102,
+    "reliability": [
+     {
+      "bin": "0-10%",
+      "hit": 0.0389,
+      "mean_p": 0.0476,
+      "n": 2571
+     },
+     {
+      "bin": "10-20%",
+      "hit": 0.1249,
+      "mean_p": 0.1491,
+      "n": 2074
+     },
+     {
+      "bin": "20-30%",
+      "hit": 0.206,
+      "mean_p": 0.2474,
+      "n": 1665
+     },
+     {
+      "bin": "30-40%",
+      "hit": 0.292,
+      "mean_p": 0.3476,
+      "n": 1267
+     },
+     {
+      "bin": "40-50%",
+      "hit": 0.402,
+      "mean_p": 0.4489,
+      "n": 1087
+     },
+     {
+      "bin": "50-60%",
+      "hit": 0.5108,
+      "mean_p": 0.5507,
+      "n": 924
+     },
+     {
+      "bin": "60-70%",
+      "hit": 0.6092,
+      "mean_p": 0.651,
+      "n": 852
+     },
+     {
+      "bin": "70-80%",
+      "hit": 0.7123,
+      "mean_p": 0.7504,
+      "n": 789
+     },
+     {
+      "bin": "80-90%",
+      "hit": 0.8523,
+      "mean_p": 0.8459,
+      "n": 684
+     },
+     {
+      "bin": "90-100%",
+      "hit": 0.963,
+      "mean_p": 0.9221,
+      "n": 189
+     }
+    ]
+   }
+  },
+  "legacy": {
+   "pass_yd": {
+    "brier": 0.16142,
+    "log_loss": 0.49407,
+    "n": 4617,
+    "reliability": [
+     {
+      "bin": "0-10%",
+      "hit": 0.0804,
+      "mean_p": 0.0828,
+      "n": 224
+     },
+     {
+      "bin": "10-20%",
+      "hit": 0.1311,
+      "mean_p": 0.1474,
+      "n": 793
+     },
+     {
+      "bin": "20-30%",
+      "hit": 0.2242,
+      "mean_p": 0.2482,
+      "n": 571
+     },
+     {
+      "bin": "30-40%",
+      "hit": 0.3546,
+      "mean_p": 0.3504,
+      "n": 454
+     },
+     {
+      "bin": "40-50%",
+      "hit": 0.4467,
+      "mean_p": 0.4501,
+      "n": 403
+     },
+     {
+      "bin": "50-60%",
+      "hit": 0.5607,
+      "mean_p": 0.5514,
+      "n": 387
+     },
+     {
+      "bin": "60-70%",
+      "hit": 0.6939,
+      "mean_p": 0.6504,
+      "n": 379
+     },
+     {
+      "bin": "70-80%",
+      "hit": 0.7608,
+      "mean_p": 0.7495,
+      "n": 439
+     },
+     {
+      "bin": "80-90%",
+      "hit": 0.8848,
+      "mean_p": 0.853,
+      "n": 564
+     },
+     {
+      "bin": "90-100%",
+      "hit": 0.9305,
+      "mean_p": 0.9325,
+      "n": 403
+     }
+    ]
+   },
+   "rec": {
+    "brier": 0.17648,
+    "log_loss": 0.66763,
+    "n": 21748,
+    "reliability": [
+     {
+      "bin": "0-10%",
+      "hit": 0.1281,
+      "mean_p": 0.0216,
+      "n": 7807
+     },
+     {
+      "bin": "10-20%",
+      "hit": 0.2322,
+      "mean_p": 0.1457,
+      "n": 1727
+     },
+     {
+      "bin": "20-30%",
+      "hit": 0.34,
+      "mean_p": 0.2468,
+      "n": 1197
+     },
+     {
+      "bin": "30-40%",
+      "hit": 0.369,
+      "mean_p": 0.3482,
+      "n": 954
+     },
+     {
+      "bin": "40-50%",
+      "hit": 0.458,
+      "mean_p": 0.449,
+      "n": 821
+     },
+     {
+      "bin": "50-60%",
+      "hit": 0.4859,
+      "mean_p": 0.5508,
+      "n": 889
+     },
+     {
+      "bin": "60-70%",
+      "hit": 0.5377,
+      "mean_p": 0.6495,
+      "n": 861
+     },
+     {
+      "bin": "70-80%",
+      "hit": 0.6191,
+      "mean_p": 0.7511,
+      "n": 961
+     },
+     {
+      "bin": "80-90%",
+      "hit": 0.6631,
+      "mean_p": 0.8513,
+      "n": 1315
+     },
+     {
+      "bin": "90-100%",
+      "hit": 0.8299,
+      "mean_p": 0.9767,
+      "n": 5216
+     }
+    ]
+   },
+   "rec_yd": {
+    "brier": 0.1774,
+    "log_loss": 0.70246,
+    "n": 26694,
+    "reliability": [
+     {
+      "bin": "0-10%",
+      "hit": 0.118,
+      "mean_p": 0.0161,
+      "n": 12996
+     },
+     {
+      "bin": "10-20%",
+      "hit": 0.2538,
+      "mean_p": 0.1454,
+      "n": 2049
+     },
+     {
+      "bin": "20-30%",
+      "hit": 0.2973,
+      "mean_p": 0.2476,
+      "n": 1389
+     },
+     {
+      "bin": "30-40%",
+      "hit": 0.331,
+      "mean_p": 0.3479,
+      "n": 1136
+     },
+     {
+      "bin": "40-50%",
+      "hit": 0.3824,
+      "mean_p": 0.4501,
+      "n": 1025
+     },
+     {
+      "bin": "50-60%",
+      "hit": 0.4496,
+      "mean_p": 0.5491,
+      "n": 943
+     },
+     {
+      "bin": "60-70%",
+      "hit": 0.4691,
+      "mean_p": 0.6493,
+      "n": 1004
+     },
+     {
+      "bin": "70-80%",
+      "hit": 0.5523,
+      "mean_p": 0.7508,
+      "n": 1090
+     },
+     {
+      "bin": "80-90%",
+      "hit": 0.617,
+      "mean_p": 0.8531,
+      "n": 1329
+     },
+     {
+      "bin": "90-100%",
+      "hit": 0.7568,
+      "mean_p": 0.9671,
+      "n": 3733
+     }
+    ]
+   },
+   "rush_yd": {
+    "brier": 0.16728,
+    "log_loss": 0.60242,
+    "n": 12102,
+    "reliability": [
+     {
+      "bin": "0-10%",
+      "hit": 0.0885,
+      "mean_p": 0.0183,
+      "n": 5231
+     },
+     {
+      "bin": "10-20%",
+      "hit": 0.2283,
+      "mean_p": 0.1455,
+      "n": 1073
+     },
+     {
+      "bin": "20-30%",
+      "hit": 0.279,
+      "mean_p": 0.2476,
+      "n": 706
+     },
+     {
+      "bin": "30-40%",
+      "hit": 0.3025,
+      "mean_p": 0.3479,
+      "n": 552
+     },
+     {
+      "bin": "40-50%",
+      "hit": 0.3536,
+      "mean_p": 0.4499,
+      "n": 509
+     },
+     {
+      "bin": "50-60%",
+      "hit": 0.4372,
+      "mean_p": 0.549,
+      "n": 494
+     },
+     {
+      "bin": "60-70%",
+      "hit": 0.497,
+      "mean_p": 0.6501,
+      "n": 495
+     },
+     {
+      "bin": "70-80%",
+      "hit": 0.536,
+      "mean_p": 0.7513,
+      "n": 528
+     },
+     {
+      "bin": "80-90%",
+      "hit": 0.5922,
+      "mean_p": 0.8533,
+      "n": 694
+     },
+     {
+      "bin": "90-100%",
+      "hit": 0.7797,
+      "mean_p": 0.9682,
+      "n": 1820
+     }
+    ]
+   }
+  }
+ },
+ "meta": {
+  "games": 257,
+  "note": "development comparison; nothing fitted; 2026 week 13+ sealed and never read",
+  "seconds": 77.3,
+  "weeks_read": {
+   "2025": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ],
+   "2026": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "window": {
+   "2025": [
+    1,
+    12
+   ],
+   "2026": [
+    1,
+    12
+   ]
+  },
+  "worlds": 2000
+ },
+ "moments": {
+  "pass_td": {
+   "mean_ratio_discrete_over_legacy": {
+    "ci95": [
+     1.0312,
+     1.056
+    ],
+    "ratio": 1.0442
+   },
+   "spread": {
+    "discrete": {
+     "model_var": 0.166,
+     "realized_mse": 0.117,
+     "realized_over_model": 0.705
+    },
+    "legacy": {
+     "model_var": 0.155,
+     "realized_mse": 0.113,
+     "realized_over_model": 0.732
+    }
+   },
+   "var_ratio_discrete_over_legacy": {
+    "ci95": [
+     1.0594,
+     1.0893
+    ],
+    "ratio": 1.0742
+   }
+  },
+  "pass_yd": {
+   "mean_ratio_discrete_over_legacy": {
+    "ci95": [
+     1.0207,
+     1.0327
+    ],
+    "ratio": 1.0269
+   },
+   "spread": {
+    "discrete": {
+     "model_var": 11524.812,
+     "realized_mse": 5449.13,
+     "realized_over_model": 0.473
+    },
+    "legacy": {
+     "model_var": 6091.581,
+     "realized_mse": 5361.677,
+     "realized_over_model": 0.88
+    }
+   },
+   "var_ratio_discrete_over_legacy": {
+    "ci95": [
+     1.8297,
+     1.9682
+    ],
+    "ratio": 1.8919
+   }
+  },
+  "rec": {
+   "mean_ratio_discrete_over_legacy": {
+    "ci95": [
+     0.9988,
+     1.0008
+    ],
+    "ratio": 0.9999
+   },
+   "spread": {
+    "discrete": {
+     "model_var": 2.744,
+     "realized_mse": 2.644,
+     "realized_over_model": 0.963
+    },
+    "legacy": {
+     "model_var": 0.776,
+     "realized_mse": 2.64,
+     "realized_over_model": 3.403
+    }
+   },
+   "var_ratio_discrete_over_legacy": {
+    "ci95": [
+     3.4967,
+     3.5748
+    ],
+    "ratio": 3.5382
+   }
+  },
+  "rec_td": {
+   "mean_ratio_discrete_over_legacy": {
+    "ci95": [
+     0.9973,
+     1.0016
+    ],
+    "ratio": 0.9995
+   },
+   "spread": {
+    "discrete": {
+     "model_var": 0.142,
+     "realized_mse": 0.134,
+     "realized_over_model": 0.94
+    },
+    "legacy": {
+     "model_var": 0.142,
+     "realized_mse": 0.134,
+     "realized_over_model": 0.944
+    }
+   },
+   "var_ratio_discrete_over_legacy": {
+    "ci95": [
+     1.0003,
+     1.0065
+    ],
+    "ratio": 1.0036
+   }
+  },
+  "rec_yd": {
+   "mean_ratio_discrete_over_legacy": {
+    "ci95": [
+     0.9983,
+     1.0007
+    ],
+    "ratio": 0.9996
+   },
+   "spread": {
+    "discrete": {
+     "model_var": 560.951,
+     "realized_mse": 497.023,
+     "realized_over_model": 0.886
+    },
+    "legacy": {
+     "model_var": 113.331,
+     "realized_mse": 497.026,
+     "realized_over_model": 4.386
+    }
+   },
+   "var_ratio_discrete_over_legacy": {
+    "ci95": [
+     4.8811,
+     5.0073
+    ],
+    "ratio": 4.9497
+   }
+  },
+  "rush_td": {
+   "mean_ratio_discrete_over_legacy": {
+    "ci95": [
+     0.9986,
+     1.0044
+    ],
+    "ratio": 1.0016
+   },
+   "spread": {
+    "discrete": {
+     "model_var": 0.091,
+     "realized_mse": 0.087,
+     "realized_over_model": 0.954
+    },
+    "legacy": {
+     "model_var": 0.089,
+     "realized_mse": 0.087,
+     "realized_over_model": 0.982
+    }
+   },
+   "var_ratio_discrete_over_legacy": {
+    "ci95": [
+     1.0234,
+     1.0314
+    ],
+    "ratio": 1.0276
+   }
+  },
+  "rush_yd": {
+   "mean_ratio_discrete_over_legacy": {
+    "ci95": [
+     0.9991,
+     1.0012
+    ],
+    "ratio": 1.0001
+   },
+   "spread": {
+    "discrete": {
+     "model_var": 321.414,
+     "realized_mse": 293.803,
+     "realized_over_model": 0.914
+    },
+    "legacy": {
+     "model_var": 87.07,
+     "realized_mse": 293.994,
+     "realized_over_model": 3.377
+    }
+   },
+   "var_ratio_discrete_over_legacy": {
+    "ci95": [
+     3.6363,
+     3.7414
+    ],
+    "ratio": 3.6914
+   }
+  }
+ },
+ "td_reception_corr": {
+  "definition": "within one receiver's worlds, corr(receptions, receiving TDs), averaged over receivers projected 2+ catches; observed: corr of (actual - projection) for both, over player-weeks",
+  "discrete": 0.32,
+  "legacy": 0.151,
+  "observed": 0.287,
+  "observed_n": 2164
+ }
+}

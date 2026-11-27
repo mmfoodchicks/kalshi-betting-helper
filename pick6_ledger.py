@@ -268,7 +268,8 @@ RULES = [
      "source": "the DFS look-back's, the prop recorder's and the Matchups engine's box sources"},
     {"id": "model", "verified": True, "basis": "this ledger's rule",
      "text": "Vigil's figure is read when you save an entry on or before its game date. NFL: the week sim's "
-             "stat histograms give ANY half-point line exactly (the PC files them with its board build; "
+             "stat histograms give ANY half-point line exactly as the board's own worlds count it -- a model "
+             "probability, not a calibrated one (the PC files them with its board build; "
              "passing, rushing, receiving yards, receptions, rush + rec and pass + rush yards), and a "
              "whole-number line as MODELED More / tie / Less probabilities: the sim's yards and catches are "
              "continuous, so a 'tie' is the mass within half a unit of the line -- a convention for a box that "
@@ -538,7 +539,7 @@ def _nfl_prob(game_date, pick, now):
                 return None, f"{tag}: every modeled world ties this line"
             cond = side_p / (1.0 - mtl["tie"])
             return (cond, (f"{tag}, whole line, MODELED (not a calibrated real-world rate): More "
-                           f"{100 * mtl['more']:.1f}%, tie {100 * mtl['tie']:.1f}%, Less {100 * mtl['less']:.1f}%; "
+                           f"{100 * mtl['more']:.1f}%, tie {100 * mtl['tie']:.1f}% (the continuous sim's mass within half a unit: a rounding convention, not a simulated count), Less {100 * mtl['less']:.1f}%; "
                            f"{pick['side']} {100 * cond:.1f}% if not a tie (a tie is void)"),
                     {"p_outright": round(side_p, 4), "p_tie": round(mtl["tie"], 4)})
     if pick["stat"] not in labels:

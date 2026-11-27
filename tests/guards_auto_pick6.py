@@ -925,7 +925,7 @@ def _run_v3(ck):
     ck("R4 the card says it: a refunded entry reads 'refunded · stake back (cash or credits not stated)', a whole-line "
        "figure reads 'if not a tie' with the outright and tie and 'modeled', and the market kinds offered are the "
        "entry's sport's",
-       "refunded · stake back (cash or credits not stated)" in js and "if not a tie" in js and "; modeled)" in js
+       "refunded · stake back (cash or credits not stated)" in js and "if not a tie" in js and "by the rounding convention; modeled)" in js
        and "k.sports.includes(dr.sport)" in js)
 
 
