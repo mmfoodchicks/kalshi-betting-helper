@@ -89,6 +89,19 @@
   "result": "research/data/nfl_coach/read_r2_h2.json"
  },
  {
+  "id": "coach_r3",
+  "area": "Coaching engine",
+  "kind": "registered",
+  "title": "Coaching R3: the starting quarterback's blowout substitution",
+  "decides": "the learned pull hazard beats a constant by > 2 SE, the starter's dropbacks CRPS beats R2's by > 2 SE, his passing yards CRPS not worse by more than 1 SE, and the R3 guard file passes",
+  "registration": "research/data/nfl_coach/prereg_r3.json",
+  "script": "research/nfl_coach_r3_read.py",
+  "not_before": "2027-01-06T06:00:00Z",
+  "waits_for": "R1's read committed first; 2026 weeks 13-18 (shared with R1 and R2-H1, a different statistic)",
+  "report": "research/reports/nfl_coach_r3.md",
+  "result": "research/data/nfl_coach/read_r3.json"
+ },
+ {
   "id": "cl_field2",
   "area": "DFS field",
   "kind": "registered",

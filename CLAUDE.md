@@ -859,6 +859,22 @@ data-only `sim-history` branch (which never deploys):
   passive log, conservation exact), +0.8 to +1.1 nats a team-game on who carried or was targeted in
   development. H1 reads 2026 weeks 13-18 after R1's read (the owner's call on sharing those games is open), H2
   (adaptation) after 2027. Nothing reaches a DFS world until H1 passes and a separate DFS-link test does.
+  **R3** (`nfl_coach_sim_r3.py`, `coach-r3.0`; `research/reports/nfl_coach_r3.md`, `prereg_r3.json`, commit 59b15fc):
+  the starting quarterback's substitution, a per-drive logistic hazard in margin against time left (lead and
+  deficit apart), learned on 2016-2023 with recent seasons up-weighted; +0.28 / +0.26 nats a team-game over a
+  constant (z 6.7, 5.5); a pulled starter stays out (6 returns in 410 decided-game pulls); conservation exact.
+  Not built (no evidence or out of R3's reach): coach-specific pull habits, a starter already out, a backup's
+  play selection (real, 4.7 SE, needs R4's fork of R1's call), a persistent pull for backs (they rotate, R2
+  deals it). Known miss: trailing 17-27 late, under-predicted ~2.7x.
+- **The deep engine's market anchor spreads 1.21x too wide** (2026-11-27, `research/data/c3_margin_scale.json`,
+  C3 addendum): `nfl_deep_data.market_margins` converts Kalshi's win totals to points with
+  `nfl_season._PTS_PER_WIN` 2.25, the drive engine's constant (set to undo ITS compression; the drive season sim
+  returns the market's wins at slope 1.04), but the deep engine does not compress (realized vs anchored 1.007),
+  so a deep season seeded from the market returns its wins at slope 1.206 +/- 0.031. An implementation error
+  against `market_margins`' own contract. NOT fixed yet: the registered NFL deep-weight read is grading the
+  deep engine as it stands; the owner's call on timing (proposed: its own constant, ~1.84, measured at higher n,
+  with a slope-1 guard, right after that read). C3-N (the analytic resolution at 1.842) is registered on fresh
+  games, read not before 2028-01-12.
 - **Classic field, second pass** (2026-11-27, `research/reports/cl_field2.md`, development weeks 10-11):
   the served field's 15-29 point deficit is per-player ownership (one chalk back carries most of it);
   steering onto a noisy-optimizer share of Sleeper's line moved by Kalshi's prop means (F1c) closed it to
