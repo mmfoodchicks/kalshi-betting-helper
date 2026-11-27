@@ -165,7 +165,55 @@ feed for weeks 13-18 (the harness fetches and caches that file).
 2. On the date: check out the registration commit in a clean worktree (it pins `nfl_dfs_engine.py` and the
    harness, which production may have moved by then), build the table, run the read.
 
-## 5. Guards (`tests/guards_auto_nfl_coach2.py`, 18 checks, section NF)
+## 4a. The owner's rulings of 2026-11-27, and the family rate verified
+
+**The 5% family-wise rate is approved**, on the condition that the calculation is shown to cover every
+scheduled look and the conditional eligibility. `research/nfl_coach_family_check.py` simulates both tests end
+to end under no effect (output `research/data/nfl_coach/family_check.json`). Neither registration was edited.
+
+What one simulated world is:
+
+1. **R1's criterion 4**: a t statistic on R1's games, Student t on games - 1 degrees of freedom, rejected
+   above the registered 2.0.
+2. **The gate.** The confirmatory test runs only if R1 fails criterion 4 and passes the other four. Nothing
+   is assumed about how often the other four pass. The worst case for a false positive is that they always
+   pass, so the confirmatory test runs every time criterion 4 fails. That is what is simulated. Any lower
+   pass rate only lowers the family rate.
+3. **The confirmatory test** on fresh 2027 games, independent of R1's: look 1 on the first 136 games, look 2
+   on all 272. The two looks share the first 136 games, so they carry the design's correlation (information
+   fraction 0.5). Each look is compared with its z boundary converted to Student t on games - 1 (2.825 and
+   1.975), as the read does.
+
+A world is a false positive if R1 rejects or the confirmatory test confirms.
+
+| variant | worlds | R1 criterion 4 | confirmatory alone | **family, worst-case gate** | with the futility stop |
+|---|---|---|---|---|---|
+| normal, R1 at its fewest 90 games | 4,000,000 | 2.43% | 2.59% | **4.954% +/- 0.011%** | 4.925% |
+| normal, R1 at 96 games | 4,000,000 | 2.43% | 2.57% | **4.942% +/- 0.011%** | 4.913% |
+| heavy-tailed (each game Student t on 3 df) | 400,000 | 2.27% | 2.50% | **4.700% +/- 0.033%** | 4.674% |
+
+- The Bonferroni bound is 2.427% + 2.573% = **5.000%**. Every simulated family rate is under it, three
+  standard errors included.
+- The simulated rate sits a little under the bound because the two tests cannot both be the first to reject.
+- The confirmatory test alone reads 2.59% in the first row against its nominal 2.57%. That is 2 Monte Carlo
+  standard errors; the family rate has room for it.
+
+**What power is and is not.** The power figures in sections 2 and 4 are the chance the test passes *if* the
+engine really is better by that amount. They are not the probability that the engine is better. A failed
+test here can mean insufficient evidence, and at these sample sizes that is the likely meaning.
+
+**R1's original verdict is preserved permanently.** No later test changes it.
+
+**The DFS read may use 2026 weeks 13-18** (the owner's ruling), with the implementation, endpoints and
+criteria frozen as registered. The dependence is acknowledged:
+
+- R1's read and the DFS read use the same games, so their results are not independent. A week of unusual
+  football moves both.
+- They answer different questions with different statistics, and each has its own false-positive rate: the
+  5% family above for win probability, 2.5% for the DFS claim. No joint rate over the two is claimed.
+- Neither result may be offered as independent confirmation of the other.
+
+## 5. Guards (`tests/guards_auto_nfl_coach2.py`, 20 checks, section NF)
 
 - NF0: R1's block hash and pinned engine, tables and code.
 - NF1: the three-verdict report states the registered verdict first and cannot change it.
@@ -175,17 +223,15 @@ feed for weeks 13-18 (the harness fetches and caches that file).
   decision at each look.
 - NF9-NF12: the DFS registration, the absence of the window's rows, its refusals, its three outcomes.
 - NF13-NF15: the DFS variant leaves production alone.
+- NF16-NF17: the family rate simulated end to end, committed and re-run, at or under 5%.
 
 ## 6. For the owner
 
-1. **The family rate is 5% one-sided.** R1 alone was 2.4%. A confirmatory test cannot be added at no cost;
-   5% is my choice of the total, written before any result. Say so if he wants it tighter: at 2.5% for the
-   family the confirmatory test would have almost nothing left to spend.
+1. **The family rate is 5% one-sided: approved by the owner 2026-11-27**, verified in section 4a.
 2. **Both new tests are weak at the effect sizes seen so far.** That is stated before the reads, as he
    asked. A "not confirmed" or "not established" is the likely outcome even if the gain is real.
 3. **The DFS `--dry` run must be done on the PC before 2027-01-06**, and the read itself needs the deep
    store. I could not run either here.
-4. **The DFS window is the same games as R1's.** I think that is sound, for the reason in section 4. If he
-   would rather it wait for games no read has touched, it needs a new registration on 2027.
+4. **The DFS window is the same games as R1's: allowed by the owner 2026-11-27**, dependence stated in 4a.
 5. **Run every read from a checkout of its registration commit.** All three pin files that later work will
    edit.
