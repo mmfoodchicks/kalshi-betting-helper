@@ -487,6 +487,33 @@ def hist_over(h, n, line):
     return sum(cnt[first:]) / n
 
 
+def hist_mtl(h, n, line):
+    """{"more", "tie", "less"} counts and probabilities at a WHOLE-number line L
+    off a stat_hist, or None off the integers. The week board draws yards and
+    catches CONTINUOUSLY (_build_board never passes discrete=True; only the
+    showdown experiment does), so no world ever lands exactly on L: "tie" here
+    is the mass the sim puts in (L - 0.5, L + 0.5] -- a world rounded to the
+    nearest whole yard or catch, halves down, is a tie -- a modeling convention
+    for a box that counts in integers, not a simulated event. More is the mass
+    above L + 0.5 and Less at or below L - 0.5, exactly the half-line counts on
+    either side, so more + tie + less = n in counts. These are modeled
+    probabilities, not calibrated real-world ones."""
+    import array
+    if abs(line - round(line)) > 1e-9:
+        return None
+    L = int(round(line))
+    if h is None:                       # every world 0
+        cm, ct = (n, 0) if L < 0 else (0, n if L == 0 else 0)
+    else:
+        lo, code, raw = h
+        cnt = array.array(code)
+        cnt.frombytes(raw)
+        cm = sum(cnt[max(0, L + 1 - lo):])
+        ct = cnt[L - lo] if 0 <= L - lo < len(cnt) else 0
+    cl = n - cm - ct
+    return {"counts": (cm, ct, cl), "n": n, "more": cm / n, "tie": ct / n, "less": cl / n}
+
+
 def simulate_game(game, n=4000, with_samples=False, preseason=False, discrete=False,
                   with_components=False, with_dists=False):
     """Correlated MC of one game. Returns per-player fantasy-point distributions,
