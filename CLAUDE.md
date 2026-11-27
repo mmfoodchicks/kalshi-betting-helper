@@ -891,7 +891,20 @@ data-only `sim-history` branch (which never deploys):
   strategic pull (lead back 0.530; each top-two target 0.478 if the back sat, 0.050 if not; fitted jointly): lead
   back sits the rest of the game 48.8% simulated vs 51.3% real (R4 5.2%), +1.34 / +1.51 nats a pulled team-game
   over R4 in development; no-pull parity with R4. Registered on the 2028 regular season (the first season R1-R4
-  have not taken), read on/after 2029-01-16, 30+ strategic pulls.
+  have not taken), read on/after 2029-01-16, 30+ strategic pulls. **Amended by the owner (2026-11-27)**: R5's
+  primary read is the 2027 regular season (`prereg_r5_2027.json`, block 02d486e9; its files pinned now; criteria
+  copied verbatim; read on/after 2028-01-13 after R1, R2-H2 and R4), `prereg_r5.json` byte-identical and its 2028
+  read a REPLICATION. The 2027 coaching family (R2-H2, R4, R5 primaries) is reported under Holm at a family-wise
+  one-sided 5% beside each test's own z > 2 verdict (`research/reports/nfl_coach_family_2027.md`: statistics
+  correlate at most +0.22, R4 x R5; a shared-games pass is weaker evidence than an independent one).
+  **Coaching evolution** (`research/nfl_coach_evo.py`, `research/reports/nfl_coach_evo.md`, rule committed first in
+  ae6e018): walk-forward 2019-2026 wk 12 over five tables -- the clock runoff drifts (a season-level random walk
+  +0.169 nats a game, z 9.8, half-life ~1 season: more clock between snaps since 2016), backs' target share
+  (+0.022, z 3.9) and the pull hazard (+0.0056, z 2.5; league odds ~1.7x since 2022) drift, the call and
+  no-huddle do not; pooled the random walk gains +0.147 (z 4.4) but its no-huddle loss trips the rule's 1-SE veto,
+  so full history stays and nothing enters R1-R5. League drift explains a tenth to a sixth of the trailing-pull
+  gap. A per-table scheme (random walk for clock, targets, pull) would be R6, a new engine version, tested
+  prospectively -- the owner's call, and on which games.
 - **The deep engine's market anchor spreads 1.21x too wide** (2026-11-27, `research/data/c3_margin_scale.json`,
   C3 addendum): `nfl_deep_data.market_margins` converts Kalshi's win totals to points with
   `nfl_season._PTS_PER_WIN` 2.25, the drive engine's constant (set to undo ITS compression; the drive season sim
