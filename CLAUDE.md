@@ -849,7 +849,16 @@ data-only `sim-history` branch (which never deploys):
   win probability) is expected to FAIL for power. The owner (2026-11-27): the original verdict stands
   permanently; a SEPARATE confirmatory test on fresh games with its own error control, realism reported
   apart from winner prediction, an independent DFS validation path; nothing reaches a DFS world or board
-  until validated. Coach personalities, personnel, fatigue and adaptation are R2+ (evidence first).
+  until validated. **R2** (`nfl_coach_sim_r2.py`, `coach-r2.0`; evidence `research/reports/nfl_coach_r2_evidence.md`,
+  registration `prereg_r2.json`, commit dfc026e): the evidence audit over 2016-2025 -- head-coach pass rate over
+  expected, no-huddle and pace are real team-season traits that persist only with the same coach (r 0.5-0.7
+  vs ~0.1 after a change); two-point rate, halftime breaks, fatigue, adaptation to the opponent's strengths and
+  any staff-vs-staff interaction showed no evidence; adaptation to in-game success is real (z 18, placebo 0)
+  and registered at the decision level only; offensive coordinators have no lawful structured source. Built:
+  who gets the ball by situation (role x score / field zone / down, mean-preserving, dealt snap by snap from R1's
+  passive log, conservation exact), +0.8 to +1.1 nats a team-game on who carried or was targeted in
+  development. H1 reads 2026 weeks 13-18 after R1's read (the owner's call on sharing those games is open), H2
+  (adaptation) after 2027. Nothing reaches a DFS world until H1 passes and a separate DFS-link test does.
 - **Classic field, second pass** (2026-11-27, `research/reports/cl_field2.md`, development weeks 10-11):
   the served field's 15-29 point deficit is per-player ownership (one chalk back carries most of it);
   steering onto a noisy-optimizer share of Sleeper's line moved by Kalshi's prop means (F1c) closed it to
