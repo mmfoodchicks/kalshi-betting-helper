@@ -288,3 +288,9 @@ python3 tests/guards_auto_nfl_coach.py
 
 The tables carry a build timestamp, so a refit differs from the committed file in that field and the
 registration pins the committed one.
+
+## 10. Registration commit
+
+The registration, the read, the engine and the tables it pins were committed together as `eaca95d` (this
+worktree; the hash changes if the commit is cherry-picked, the registration block `ba0bae08` and the pinned
+file hashes do not). Full guard suite at that commit: 3,878 passed, 0 failed.
