@@ -1051,10 +1051,14 @@ data-only `sim-history` branch (which never deploys):
   continuous draws; the classic sheet and the NFL tab's WEEK BOARD (Pick 6 view, the ledger's figures, Sim and Best
   ball cards) are CONTINUOUS -- Sleeper's means times shared multipliers, TDs Poisson apart from the yards, no
   target, catch or carry drawn. Against 257 real games (2025 wk 1-12, 2026 wk 1-5) the week board's player spreads
-  are 3-4x too NARROW (receptions 3.40, rec yards 4.39, rush yards 3.38; real DK points under its 10th percentile
-  38.7% of the time, inside 10-90 41.9%) -- its prop and Pick6 probabilities are overconfident. The experimental
+  are too NARROW: real VARIANCE 3.40 / 4.39 / 3.38x its own for receptions / rec yards / rush yards (a variance
+  ratio -- in SD about 1.8-2.1x; passing yards 0.88x, slightly wide; the first summary read the ratio as an SD and
+  said "3-4x", corrected the same day); real DK points under its 10th percentile 38.7% of the time, inside 10-90
+  41.9%; the Sim / Best ball cards' OWN floor/ceiling/boom over 5,738 player-weeks: under the floor 37.5%, over the
+  ceiling 19.3%, boom 22.5% vs 11.7% shown. Its prop and Pick6 probabilities are overconfident, and every surface
+  showing one now says so (muted label, no number changed; each ledger pick stores `model_kind`). The experimental
   discrete allocation (`nfl_discrete_alloc.py`, `ENABLED_IN_PRODUCTION = False`, nothing imports it) fixes those
-  spreads (0.89-0.96, half-line log loss 0.486/0.480/0.458 vs 0.668/0.702/0.602, DK points KS 0.018 vs 0.302) but
+  spreads (variance ratios 0.89-0.96, half-line log loss 0.486/0.480/0.458 vs 0.668/0.702/0.602, DK points KS 0.018 vs 0.302) but
   plays QB passing yards ~2x too wide and +2.7% / +4.4% high: NOT shipped; a registered test first (the constrained
   model, which already draws counts, is the nearer candidate). The 99.6-vs-100 bonus question is immaterial
   (0.13-0.19% of mass): the week board's bonuses run low because its spread is narrow. Guards DA1-DA5.
