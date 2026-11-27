@@ -128,6 +128,7 @@ function _p6lEntry(e) {
       <div class="p6l-pline"><span class="p6side ${p.side === "More" ? "more" : "less"}">${_p6lEsc(p.side)} ${_p6lEsc(p.line)}</span>
         <b>${_p6lEsc(p.player)}</b> <span class="p6l-muted">${_p6lEsc(p.stat_label)}</span></div>
       <div class="p6l-pline">${vig} · ${_p6lResult(p)}${p.actual != null ? ` actual <b>${_p6lEsc(p.actual)}</b>` : ""}${by}</div>
+      ${p.model_caveat ? `<div class="small p6l-muted">${_p6lEsc(p.model_caveat)}</div>` : ""}
       ${p.note ? `<div class="small p6l-muted">${_p6lEsc(p.note)}</div>` : ""}
       ${p.evidence ? `<div class="small p6l-muted">evidence: ${_p6lEsc(p.evidence)}</div>` : ""}
       ${(p.decisions || []).length ? `<div class="p6l-own">${p.decisions.map((k) => `<button type="button" class="${k === "met" || k === "loss" ? "" : "primary"}" data-p6l-decide="${p.id}" data-p6l-d="${_p6lEsc(k)}">${_p6lEsc(_P6L_DECIDE[k] || k)}</button>`).join("")}</div>` : ""}

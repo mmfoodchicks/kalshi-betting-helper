@@ -416,15 +416,17 @@ def run(ck):
        and m_stat[0] is None and m_nba[0] is None and "no NBA Pick 6 model" in m_nba[1],
        str([m_same, m_other, m_line, m_stat, m_nba]))
     ck("P8a with the week sim's histograms ANY half-point line is priced exactly (79.5: 2 of 8 worlds over; the Less "
-       "side at 74.5: 4 of 8 at or under), the yardage sums too (rush + rec at 77.5) -- each the same two-item "
-       "answer as before -- and a stat the sim gives him none of says so",
-       d_any == (0.25, d_any[1]) and "any line" in d_any[1] and d_less[0] == 0.5 and len(d_less) == 2
+       "side at 74.5: 4 of 8 at or under), the yardage sums too (rush + rec at 77.5) -- each a figure, its source "
+       "and its model kind (no outright or tie: a half-point line has none) -- and a stat the sim gives him none "
+       "of says so",
+       d_any == (0.25, d_any[1], {"model": "nfl_week_hist"}) and "any line" in d_any[1] and d_less[0] == 0.5
+       and d_less[2] == {"model": "nfl_week_hist"}
        and d_combo[0] == 0.5 and d_none[0] is None and "gives him no receptions" in d_none[1],
        str([d_any, d_less, d_combo, d_none]))
     ck("P8c a WHOLE-number line is priced as MODELED More / tie / Less off the same histogram (75: 2 of 8 worlds above "
        "75.5, 2 within (74.5, 75.5], 4 at or under 74.5); the figure the ledger keeps is P(More | not a tie) = 2/6, "
        "the record's (a tie is void), with the outright P(More) and P(tie) beside it and the source saying modeled",
-       d_whole[0] == 0.3333 and d_whole[2] == {"p_outright": 0.25, "p_tie": 0.25}
+       d_whole[0] == 0.3333 and d_whole[2] == {"p_outright": 0.25, "p_tie": 0.25, "model": "nfl_week_hist"}
        and "MODELED" in d_whole[1] and "not a calibrated real-world rate" in d_whole[1] and "if not a tie" in d_whole[1]
        and d_whole_less[0] == 0.6667 and d_whole_less[2]["p_outright"] == 0.5, str([d_whole, d_whole_less]))
     src = inspect.getsource(L._nfl_prob) + inspect.getsource(L._mlb_prob) + inspect.getsource(L._lol_prob)
@@ -728,6 +730,7 @@ def run(ck):
        and "starts the second half" in L.KINDS["nba_first_2h"]["req"] and "three strikeouts" in L.KINDS["mlb_k_race"]["req"]
        and "exactly one plate appearance" in L.PARDON["mlb"]["exit"] and "goalies" in L.PARDON["nhl"]["excluded"])
     _run_v3(ck)
+    _run_v4(ck)
 
 
 def _mlb_pl(name, order=None, bat=None, pit=None):
@@ -927,6 +930,142 @@ def _run_v3(ck):
        "entry's sport's",
        "refunded · stake back (cash or credits not stated)" in js and "if not a tie" in js and "by the rounding convention; modeled)" in js
        and "k.sports.includes(dr.sport)" in js)
+
+
+def _run_v4(ck):
+    """2026-11-27, after the integer-stats study: every pick keeps WHICH model gave Vigil's figure, and every
+    surface that shows a week-board probability says the board is measured overconfident -- labels only."""
+    import json
+    import sqlite3
+    import boardshare
+    import nfl_dfs_sim
+    import nfl_game_sim
+    import pick6_ledger as L
+    import store
+
+    # ---- P14 the model kind, per pick, and the figures themselves unchanged ------------------------------
+    saved = (boardshare.get, nfl_game_sim.current_week)
+    board = {"props": [{"player": "Ja'Marr Chase", "stat": "rec yds", "line": 74.5, "side": "More", "prob": 61.0}]}
+    xs = [60.2, 74.5, 74.6, 80.0, 91.3, 70.0, 75.1, 74.4]
+    h = nfl_dfs_sim.stat_hist(xs)
+    pieces = {"dists": (None, None)}
+    boardshare.get = lambda name, max_age: ((board, 600) if name.startswith("nfl_sim_board_")
+                                            else pieces["dists"] if name.startswith("nfl_sim_dists_") else (None, None))
+    nfl_game_sim.current_week = lambda preseason=False, day=None: 13
+    try:
+        pk = lambda **kw: dict({"player": "JaMarr Chase", "stat": "rec_yd", "stat_label": "Receiving yards",  # noqa: E731
+                                "line": 74.5, "side": "More"}, **kw)
+        lean = L.model_prob("nfl", "2026-11-29", pk())
+        pieces["dists"] = ({"n": len(xs), "dists": {"Ja'Marr Chase": {"rec_yd": h}}}, 300)
+        half = L.model_prob("nfl", "2026-11-29", pk(line=79.5))
+        whole = L.model_prob("nfl", "2026-11-29", pk(line=75))
+    finally:
+        boardshare.get, nfl_game_sim.current_week = saved
+    mt = nfl_dfs_sim.hist_mtl(h, len(xs), 75)
+    ck("P14 every priced pick names the model that gave its figure -- the week board's histograms (any line) or its "
+       "own Pick 6 lean line, both the CONTINUOUS week board; the baseball sheet; the LoL board -- and the figure "
+       "itself is the board's, untouched: the lean is its prob / 100, a half line the histogram's own count "
+       "(hist_over), a whole line More / (1 - tie) off hist_mtl",
+       lean[0] == 0.61 and lean[2] == {"model": "nfl_week_lean"}
+       and half[0] == round(nfl_dfs_sim.hist_over(h, len(xs), 79.5), 4) and half[2]["model"] == "nfl_week_hist"
+       and whole[0] == round(mt["more"] / (1 - mt["tie"]), 4) and whole[2]["model"] == "nfl_week_hist"
+       and set(L.MODEL_KINDS) == {"nfl_week_hist", "nfl_week_lean", "mlb_sheet", "lol_board"}
+       and all(k in L.MODEL_KINDS for k, _ in L._KIND_PREFIX)
+       and '{"model": "mlb_sheet"}' in inspect.getsource(L._mlb_prob)
+       and '{"model": "lol_board"}' in inspect.getsource(L._lol_prob),
+       str([lean, half, whole]))
+
+    tmp = tempfile.mkdtemp(prefix="p6l4-")
+    saved_db, saved_ens = store.DB_PATH, L._ensured[0]
+    try:
+        # an OLD table (no model_kind column), its picks priced by each board, then the migration
+        store.DB_PATH, L._ensured[0] = os.path.join(tmp, "old.db"), False
+        with sqlite3.connect(store.DB_PATH) as c:
+            c.execute("""CREATE TABLE pick6_picks (id INTEGER PRIMARY KEY AUTOINCREMENT, entry_id INTEGER NOT NULL,
+                         idx INTEGER NOT NULL, sport TEXT NOT NULL, player TEXT NOT NULL, stat TEXT NOT NULL,
+                         stat_label TEXT NOT NULL, line REAL NOT NULL, side TEXT NOT NULL, p_model REAL,
+                         model_src TEXT, result TEXT DEFAULT 'pending')""")
+            olds = [(0.25, "NFL week sim, week 13, 8 worlds, 5 min old, any line"),
+                    (0.61, "NFL Pick 6 board, week 13, 10 min old"), (0.55, "baseball Pick 6 sheet, NYY @ BOS"),
+                    (0.58, "LoL Pick 6 board, 3 min old"), (None, "Vigil has no NBA Pick 6 model"),
+                    (None, "NFL Pick 6 board missing: a text that merely starts alike, with no figure")]
+            for i, (p, src) in enumerate(olds):
+                c.execute("INSERT INTO pick6_picks (entry_id, idx, sport, player, stat, stat_label, line, side, "
+                          "p_model, model_src) VALUES (1, ?, 'nfl', 'X', 'rec_yd', 'Receiving yards', 74.5, 'More', ?, ?)",
+                          (i, p, src))
+        L._ensure()
+        with sqlite3.connect(store.DB_PATH) as c:
+            back = [r[0] for r in c.execute("SELECT model_kind FROM pick6_picks ORDER BY idx")]
+            figs = [r[0] for r in c.execute("SELECT p_model FROM pick6_picks ORDER BY idx")]
+        # a new ledger: the kind stored at entry, the caveat beside every week-board figure only
+        store.DB_PATH, L._ensured[0] = os.path.join(tmp, "new.db"), False
+        kinds = {"Ja'Marr Chase": (0.6, "NFL week sim, week 13, any line", {"model": "nfl_week_hist"}),
+                 "Josh Allen": (0.7, "NFL Pick 6 board, week 13", {"model": "nfl_week_lean"})}
+        pricer = lambda sport, gd, p, historical=False, now=None: kinds.get(p["player"], (None, "no model figure"))  # noqa: E731
+        e = L.add_entry({"sport": "nfl", "game_date": "2026-11-29", "stake": 5, "schedule": "3/3=5", "picks": [
+            {"player": "Ja'Marr Chase", "stat": "rec_yd", "line": 74.5, "side": "More"},
+            {"player": "Josh Allen", "stat": "pass_yd", "line": 244.5, "side": "More"},
+            {"player": "Derrick Henry", "stat": "rush_yd", "line": 80.5, "side": "Less"}]},
+            now=1_800_000_000, today=_TODAY, pricer=pricer)
+        ps = e["picks"]
+    finally:
+        store.DB_PATH, L._ensured[0] = saved_db, saved_ens
+    ck("P14b the kind is STORED on each pick (a pick with no figure keeps none), the listing says the week board's "
+       "caveat beside its figures and only there, and a ledger made before the column reads each old pick's kind "
+       "back from its source text exactly (no figure, no kind; no figure moved)",
+       [p["model_kind"] for p in ps] == ["nfl_week_hist", "nfl_week_lean", None]
+       and [p["p_model"] for p in ps] == [0.6, 0.7, None]
+       and ps[0]["model_caveat"] == L.WEEK_BOARD_CAVEAT and ps[1]["model_caveat"] == L.WEEK_BOARD_CAVEAT
+       and ps[2]["model_caveat"] is None
+       and back == ["nfl_week_hist", "nfl_week_lean", "mlb_sheet", "lol_board", None, None]
+       and figs == [p for p, _ in olds], str([back, [(p["model_kind"], p["model_caveat"] is not None) for p in ps]]))
+
+    # ---- P15 the wording, held to the measurement that produced it ---------------------------------------
+    ev = json.load(open(os.path.join(_ROOT, "research", "data", "nfl_discrete_alloc_eval.json")))
+    sp = {s: ev["moments"][s]["spread"]["legacy"]["realized_over_model"] for s in ("rec", "rec_yd", "rush_yd", "pass_yd")}
+    cd = ev["card"]
+    appjs = open(os.path.join(_ROOT, "static", "app.js"), encoding="utf-8").read()
+    js = open(os.path.join(_ROOT, "static", "pick6log.js"), encoding="utf-8").read()
+    hsrc = open(os.path.join(_ROOT, "research", "nfl_discrete_alloc_eval.py"), encoding="utf-8").read()
+    ssrc = open(os.path.join(_ROOT, "nfl_dfs_sim.py"), encoding="utf-8").read()
+    m_prop = re.search(r'const NFL_WEEK_PROP_CAVEAT = "([^"]*)";', appjs)
+    m_card = re.search(r'const NFL_WEEK_CARD_CAVEAT = "([^"]*)";', appjs)
+    wc = L.WEEK_BOARD_CAVEAT
+    lo3, hi3 = min(sp["rec"], sp["rec_yd"], sp["rush_yd"]), max(sp["rec"], sp["rec_yd"], sp["rush_yd"])
+    card_txt = m_card.group(1) if m_card else ""
+    fn = appjs[appjs.index("function _nflWeekCaveat("):appjs.index("function renderNFLSim()")]
+    model_rule = next(r["text"] for r in L.RULES if r["id"] == "model")
+    ck("P15 the week board is said to be measured overconfident wherever its probabilities show -- the Pick 6 view, "
+       "the ledger's NFL picks and its rules (one text, the ledger's and the page's equal), the Sim and Best ball "
+       "cards (their OWN floor / ceiling / boom, measured as the card computes them) -- every figure in the words "
+       "the committed evaluation's, beside its definition; escaped, muted, no inline handler",
+       m_prop is not None and m_prop.group(1) == wc and "measured overconfident" in wc
+       and f"{lo3:.1f}-{hi3:.1f}x" in wc and f"passing yards {sp['pass_yd']}x" in wc
+       and f"against {ev['meta']['games']} real 2025-26 games" in wc
+       and "research/reports/nfl_discrete_alloc.md" in wc and wc in model_rule
+       and f"{100 * cd['actual_below_floor']:.1f}% of real DraftKings scores fell under its floor" in card_txt
+       and f"{100 * cd['actual_above_ceiling']:.1f}% over its ceiling" in card_txt
+       and f"came {cd['boom_obs_pct']:.1f}% of the time against {cd['boom_pred_pct']:.1f}% shown" in card_txt
+       and f"against {ev['meta']['games']} real 2025-26 games" in card_txt
+       # the meaning: the card figures ARE the board's floor (10th pct), ceiling (90th) and boom (1.5 x proj)
+       and "floor = 10th and ceiling = 90th percentile" in cd["definition"]
+       and '"card": {"floor": r["floor"], "ceiling": r["ceiling"], "boom_pct": r["boom_pct"]' in hsrc
+       and '"floor": round(pct(arr, 0.10), 1)' in ssrc and '"ceiling": round(pct(arr, 0.90), 1)' in ssrc
+       and "boom = proj * 1.5" in ssrc and 'card["boom_obs"] += int(act["dk"] >= 1.5 * cd["proj"])' in hsrc
+       and "escapeHtml(text)" in fn and "var(--muted)" in fn and not re.search(r"\son[a-z]+=", fn)
+       and appjs.count("_nflWeekCaveat(NFL_WEEK_CARD_CAVEAT)") == 2 and appjs.count("_nflWeekCaveat(NFL_WEEK_PROP_CAVEAT)") == 1
+       and "${p.model_caveat ? `<div class=\"small p6l-muted\">${_p6lEsc(p.model_caveat)}</div>` : \"\"}" in js,
+       f"prop={m_prop is not None and m_prop.group(1) == wc} card={card_txt[:80]}")
+
+    # ---- P16 no number moved: the views print exactly what they printed ----------------------------------
+    sims = appjs[appjs.index("function renderNFLSimCards("):appjs.index("async function loadNFL()")]
+    ck("P16 labels only: the Sim cards still print proj / floor / ceil / boom as the board sends them, Best ball its "
+       "ceiling and boom, the Pick 6 view its lean %, and the ledger Vigil's figure -- the same template text, "
+       "nothing rescaled or rounded (and the board itself is pinned byte for byte by DA4)",
+       all(t in sims for t in ("proj <b>${p.proj_pts}</b>", "floor ${p.floor}", "ceil <b class=\"ev pos\">${p.ceiling}</b>",
+                               "boom ${p.boom_pct}%", "<b class=\"ev pos\">${p.ceiling}</b></span>",
+                               "<span class=\"fr-num\">${p.boom_pct}%</span>", "<b>${p.prob}%</b>"))
+       and "Vigil <b>${_p6lPct(p.p_model)}%</b>" in js)
 
 
 if __name__ == "__main__":

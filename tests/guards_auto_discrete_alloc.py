@@ -87,10 +87,13 @@ def run(ck):
         if os.path.basename(p) == "nfl_discrete_alloc.py":
             continue
         src = open(p, encoding="utf-8").read()
-        if re.search(r"\bnfl_discrete_alloc\b", src):
+        # an IMPORT in any form (the ledger's caveat cites the report research/reports/nfl_discrete_alloc.md,
+        # which is a sentence, not a use)
+        if re.search(r"^\s*(?:import|from)\s+nfl_discrete_alloc\b|import_module\(\s*['\"]nfl_discrete_alloc\b"
+                     r"|__import__\(\s*['\"]nfl_discrete_alloc\b", src, re.M):
             importers.append(os.path.basename(p))
     dg = legacy_digest()
-    ck("DA4 production is untouched: no app module names nfl_discrete_alloc (only the research harness and these "
+    ck("DA4 production is untouched: no app module imports nfl_discrete_alloc (only the research harness and these "
        "guards do), its switch ENABLED_IN_PRODUCTION is False, and the legacy week-board simulator gives the pinned "
        "output for a seeded game, byte for byte",
        not importers and D.ENABLED_IN_PRODUCTION is False and dg == LEGACY_DIGEST, f"{importers} {dg}")

@@ -46,6 +46,14 @@
    "observed_rate": 0.123
   }
  },
+ "card": {
+  "actual_above_ceiling": 0.1931,
+  "actual_below_floor": 0.3754,
+  "boom_obs_pct": 22.46,
+  "boom_pred_pct": 11.68,
+  "definition": "the week board's OWN Sim / Best ball figures per player-week (nfl_dfs_sim.simulate_game: floor = 10th and ceiling = 90th percentile of its points pinned to the projection, boom = P(points >= 1.5 x projection)) against his real DraftKings points",
+  "n": 5738
+ },
  "conservation": {
   "discrete_violations": {
    "cmp": 0,
@@ -731,7 +739,7 @@
  "meta": {
   "games": 257,
   "note": "development comparison; nothing fitted; 2026 week 13+ sealed and never read",
-  "seconds": 77.3,
+  "seconds": 105.1,
   "weeks_read": {
    "2025": [
     1,
