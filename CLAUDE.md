@@ -998,6 +998,17 @@ data-only `sim-history` branch (which never deploys):
   world count bit for bit; 387 players / 210 KB on week 13, +1.8 s) as boardshare piece
   `nfl_sim_dists_<season>_w<NN>_0`, built only where `VIGIL_PC_WORKER` is set; whole-number lines are not priced
   (continuous yards, no tie mass). The joint worlds stay on the PC.
+  **v3 (the owner's confirmations, 2026-11-27):** a pardoned pick is a void; the Pardon covers only NFL, NBA,
+  WNBA, MLB and NHL; an entry left with 0 or 1 non-void pick is REFUNDED (stake back, P/L 0, a push in ROI; cash
+  or credits not stated by the owner). DraftKings' specialized participation rules are market kinds (`KINDS`),
+  checked from each grader's own box: NBA first-quarter stats need Q1 participation (starter flag or a logged Q1
+  entry), game-first markets need a start (ESPN's `starter` flag, trusted only when a team flags five), the
+  second-half first scorer needs to start the second half (his first Q3 record is not an entry); MLB first-event
+  markets need the starting lineup (`battingOrder` N00) and 1+ PA; a strikeout race needs both pitchers to start
+  and one to reach 3 Ks. Not met is void, not established is review. **Whole-number lines** (`hist_mtl`): the week
+  board's yards AND receptions are continuous, so More / tie / Less there is a MODELED convention (tie = the mass
+  in (L-0.5, L+0.5]); the ledger keeps P(side | not a tie) as Vigil's figure with the outright and tie
+  probabilities beside it, every one labelled "modeled (not a calibrated real-world rate)".
 - **The crypto terminal** (2026-11-27, `crypto_terminal.py`, `static/crypto.js`, the Crypto tab; the owner asked
   for it back in this sprint's backlog; READ-ONLY and paper: nothing places an order). Kalshi's 15-minute up/down and
   hourly above/below contracts on BTC, ETH, SOL, XRP and DOGE, each priced off ITS OWN rules text (the simple average
