@@ -2,6 +2,127 @@
  "errors": [
   {
    "code": "NFL-DRIFT",
+   "id": 2888,
+   "last_ts": 1795788579.5689354,
+   "msg": "Total: the model sits +4.1 points off Kalshi's mid over 101 rungs in 12 games",
+   "n": 2,
+   "path": "Total",
+   "pid": 61,
+   "tb": "",
+   "ts": 1795788579.5689354
+  },
+  {
+   "code": "CRYPTO-log",
+   "id": 2887,
+   "last_ts": 1795787704.3052435,
+   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "n": 1,
+   "path": "BTC",
+   "pid": 61,
+   "tb": "Traceback (most recent call last):\n  File \"/app/crypto_terminal.py\", line 705, in log_tick\n    h = hourly_markets(coin, now, fresh=True)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/crypto_terminal.py\", line 492, in hourly_markets\n    val = _cached((\"hourly\", coin), 15, fetch, fresh=fresh)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/crypto_terminal.py\", line 137, in _cached\n    val = fn()\n          ^^^^\n  File \"/app/crypto_terminal.py\", line 485, in fetch\n    ms = (_kalshi(f\"/markets?event_ticker={ev}&limit=400\") or {}).get(\"markets\") or []\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/crypto_terminal.py\", line 124, in _kalshi\n    return kalshi._get_json(kalshi.BASE + path, timeout=10)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 37, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
+   "ts": 1795787704.3052435
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2886,
+   "last_ts": 1795786755.0605474,
+   "msg": "Total: the model sits +4.1 points off Kalshi's mid over 102 rungs in 12 games",
+   "n": 1,
+   "path": "Total",
+   "pid": 61,
+   "tb": "",
+   "ts": 1795786755.0605474
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2885,
+   "last_ts": 1795786089.5864382,
+   "msg": "Rush Yds: the model sits -5.1 points off Kalshi's mid over 110 rungs in 12 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 7,
+   "tb": "",
+   "ts": 1795786089.5864382
+  },
+  {
+   "code": "CRYPTO-grade",
+   "id": 2884,
+   "last_ts": 1795785547.1740677,
+   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "n": 1,
+   "path": "KXBTC15M-26NOV270815-15",
+   "pid": 7,
+   "tb": "Traceback (most recent call last):\n  File \"/app/crypto_terminal.py\", line 731, in grade_tick\n    ms = (_kalshi(\"/markets?tickers=\" + \",\".join(part)) or {}).get(\"markets\") or []\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/crypto_terminal.py\", line 124, in _kalshi\n    return kalshi._get_json(kalshi.BASE + path, timeout=10)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 37, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
+   "ts": 1795785547.1740677
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2883,
+   "last_ts": 1795784246.7817402,
+   "msg": "Rush Yds: the model sits -5.0 points off Kalshi's mid over 109 rungs in 12 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 7,
+   "tb": "",
+   "ts": 1795784246.7817402
+  },
+  {
+   "code": "CRYPTO-log",
+   "id": 2882,
+   "last_ts": 1795784104.881142,
+   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "n": 1,
+   "path": "ETH",
+   "pid": 7,
+   "tb": "Traceback (most recent call last):\n  File \"/app/crypto_terminal.py\", line 705, in log_tick\n    h = hourly_markets(coin, now, fresh=True)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/crypto_terminal.py\", line 492, in hourly_markets\n    val = _cached((\"hourly\", coin), 15, fetch, fresh=fresh)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/crypto_terminal.py\", line 137, in _cached\n    val = fn()\n          ^^^^\n  File \"/app/crypto_terminal.py\", line 485, in fetch\n    ms = (_kalshi(f\"/markets?event_ticker={ev}&limit=400\") or {}).get(\"markets\") or []\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/crypto_terminal.py\", line 124, in _kalshi\n    return kalshi._get_json(kalshi.BASE + path, timeout=10)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 37, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
+   "ts": 1795784104.881142
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2881,
+   "last_ts": 1795782434.3908727,
+   "msg": "Rush Yds: the model sits -5.1 points off Kalshi's mid over 107 rungs in 12 games",
+   "n": 2,
+   "path": "Rush Yds",
+   "pid": 7,
+   "tb": "",
+   "ts": 1795782434.3908727
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2880,
+   "last_ts": 1795780617.1130347,
+   "msg": "Total: the model sits +4.1 points off Kalshi's mid over 101 rungs in 12 games",
+   "n": 2,
+   "path": "Total",
+   "pid": 7,
+   "tb": "",
+   "ts": 1795780617.1130347
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2879,
+   "last_ts": 1795778786.4520671,
+   "msg": "Total: the model sits +4.3 points off Kalshi's mid over 101 rungs in 12 games",
+   "n": 1,
+   "path": "Total",
+   "pid": 7,
+   "tb": "",
+   "ts": 1795778786.4520671
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2878,
+   "last_ts": 1795778086.2623215,
+   "msg": "Rush Yds: the model sits -5.2 points off Kalshi's mid over 104 rungs in 12 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 9,
+   "tb": "",
+   "ts": 1795778086.2623215
+  },
+  {
+   "code": "NFL-DRIFT",
    "id": 2877,
    "last_ts": 1795776260.6461859,
    "msg": "Rush Yds: the model sits -5.1 points off Kalshi's mid over 104 rungs in 12 games",
@@ -2276,94 +2397,17 @@
    "pid": 17794,
    "tb": "",
    "ts": 1795186562.6065135
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2670,
-   "last_ts": 1795184747.505019,
-   "msg": "Receptions: the model sits -5.9 points off Kalshi's mid over 66 rungs in 11 games",
-   "n": 1,
-   "path": "Receptions",
-   "pid": 17794,
-   "tb": "",
-   "ts": 1795184747.505019
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2669,
-   "last_ts": 1795182937.9351366,
-   "msg": "Receptions: the model sits -6.0 points off Kalshi's mid over 63 rungs in 11 games",
-   "n": 1,
-   "path": "Receptions",
-   "pid": 17794,
-   "tb": "",
-   "ts": 1795182937.9351366
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2668,
-   "last_ts": 1795182116.5029218,
-   "msg": "Receptions: the model sits -6.2 points off Kalshi's mid over 62 rungs in 11 games",
-   "n": 1,
-   "path": "Receptions",
-   "pid": 17761,
-   "tb": "",
-   "ts": 1795182116.5029218
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2667,
-   "last_ts": 1795180300.7031622,
-   "msg": "Receptions: the model sits -6.8 points off Kalshi's mid over 58 rungs in 11 games",
-   "n": 1,
-   "path": "Receptions",
-   "pid": 17761,
-   "tb": "",
-   "ts": 1795180300.7031622
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2666,
-   "last_ts": 1795178475.9332266,
-   "msg": "Receptions: the model sits -6.6 points off Kalshi's mid over 57 rungs in 11 games",
-   "n": 1,
-   "path": "Receptions",
-   "pid": 17761,
-   "tb": "",
-   "ts": 1795178475.9332266
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2665,
-   "last_ts": 1795176657.5156937,
-   "msg": "Receptions: the model sits -6.2 points off Kalshi's mid over 55 rungs in 11 games",
-   "n": 1,
-   "path": "Receptions",
-   "pid": 17761,
-   "tb": "",
-   "ts": 1795176657.5156937
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2664,
-   "last_ts": 1795174842.6173472,
-   "msg": "Receptions: the model sits -6.4 points off Kalshi's mid over 55 rungs in 11 games",
-   "n": 2,
-   "path": "Receptions",
-   "pid": 17761,
-   "tb": "",
-   "ts": 1795174622.6848824
   }
  ],
- "generated_at": 1795777846.4926486,
+ "generated_at": 1795789981.7570949,
  "summary": [
   {
    "code": "NFL-DRIFT",
-   "first_ts": 1795174622.6848824,
-   "last_msg": "Rush Yds: the model sits -5.1 points off Kalshi's mid over 104 rungs in 12 games",
-   "last_ts": 1795776260.6461859,
-   "n": 308,
-   "variants": 209
+   "first_ts": 1795186562.6065135,
+   "last_msg": "Total: the model sits +4.1 points off Kalshi's mid over 101 rungs in 12 games",
+   "last_ts": 1795788579.5689354,
+   "n": 311,
+   "variants": 210
   },
   {
    "code": "KAL-candles",
@@ -2374,12 +2418,28 @@
    "variants": 3
   },
   {
+   "code": "CRYPTO-log",
+   "first_ts": 1795784104.881142,
+   "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "last_ts": 1795787704.3052435,
+   "n": 2,
+   "variants": 2
+  },
+  {
    "code": "MXR-grade-fetch",
    "first_ts": 1795667683.654759,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
    "last_ts": 1795669514.5847714,
    "n": 2,
    "variants": 2
+  },
+  {
+   "code": "CRYPTO-grade",
+   "first_ts": 1795785547.1740677,
+   "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "last_ts": 1795785547.1740677,
+   "n": 1,
+   "variants": 1
   }
  ],
  "window_days": 7

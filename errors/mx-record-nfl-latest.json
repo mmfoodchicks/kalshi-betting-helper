@@ -967,10 +967,10 @@
    "b": 1.0,
    "days": 14,
    "family": "identity",
-   "fitted_ts": 1795755789,
+   "fitted_ts": 1795778457,
    "gain": null,
-   "n": 1074,
-   "n_eff": 118.0,
+   "n": 1085,
+   "n_eff": 120.0,
    "se": null,
    "why": "below the floors"
   },
@@ -980,15 +980,15 @@
    "blend_report": {
     "applied": false,
     "gain_over_platt": null,
-    "n_eff": 566.9,
+    "n_eff": 578.6,
     "se": null
    },
    "days": 14,
    "family": "identity",
-   "fitted_ts": 1795755789,
+   "fitted_ts": 1795778457,
    "gain": null,
-   "n": 4814,
-   "n_eff": 763.0,
+   "n": 4899,
+   "n_eff": 776.0,
    "se": null,
    "why": "nothing scored out of sample yet (it needs 30 games past the first 10 dates)"
   },
@@ -998,15 +998,15 @@
    "blend_report": {
     "applied": false,
     "gain_over_platt": null,
-    "n_eff": 640.7,
+    "n_eff": 652.9,
     "se": null
    },
    "days": 14,
    "family": "identity",
-   "fitted_ts": 1795755790,
+   "fitted_ts": 1795778457,
    "gain": null,
-   "n": 7418,
-   "n_eff": 767.0,
+   "n": 7550,
+   "n_eff": 780.0,
    "se": null,
    "why": "nothing scored out of sample yet (it needs 30 games past the first 10 dates)"
   },
@@ -1016,15 +1016,15 @@
    "blend_report": {
     "applied": false,
     "gain_over_platt": null,
-    "n_eff": 319.0,
+    "n_eff": 326.0,
     "se": null
    },
    "days": 14,
    "family": "identity",
-   "fitted_ts": 1795755790,
+   "fitted_ts": 1795778458,
    "gain": null,
-   "n": 3138,
-   "n_eff": 362.0,
+   "n": 3193,
+   "n_eff": 369.0,
    "se": null,
    "why": "nothing scored out of sample yet (it needs 30 games past the first 10 dates)"
   },
@@ -1034,15 +1034,15 @@
    "blend_report": {
     "applied": false,
     "gain_over_platt": null,
-    "n_eff": 1079.8,
+    "n_eff": 1101.8,
     "se": null
    },
    "days": 14,
    "family": "identity",
-   "fitted_ts": 1795755791,
+   "fitted_ts": 1795778459,
    "gain": null,
-   "n": 2028,
-   "n_eff": 1117.0,
+   "n": 2066,
+   "n_eff": 1139.0,
    "se": null,
    "why": "nothing scored out of sample yet (it needs 30 games past the first 10 dates)"
   }

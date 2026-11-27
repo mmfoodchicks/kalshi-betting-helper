@@ -1,7 +1,7 @@
 {
  "boards": [
   {
-   "age_s": 38834,
+   "age_s": 50970,
    "built_ts": 1795739009,
    "contest": "NFL Showdown $800K Thanksgiving Night Showdown [$200K to 1st] (KC @ BUF)",
    "dg": 157075,
@@ -19,7 +19,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 42369,
+   "age_s": 54505,
    "built_ts": 1795735473,
    "contest": "NFL Showdown $1M Black Friday Showdown [$250K to 1st] (DEN @ PIT)",
    "dg": 157076,
@@ -37,7 +37,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 44859,
+   "age_s": 56994,
    "built_ts": 1795732986,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (LV @ CLE)",
    "dg": 157086,
@@ -55,7 +55,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 48034,
+   "age_s": 60170,
    "built_ts": 1795729808,
    "contest": "NFL Showdown $1.11M Monday Night Showdown [$250K to 1st] (CAR @ TB)",
    "dg": 157087,
@@ -73,7 +73,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 100167,
+   "age_s": 112302,
    "built_ts": 1795677677,
    "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 157066,
@@ -89,7 +89,7 @@
    "worlds": 180000
   },
   {
-   "age_s": 102417,
+   "age_s": 114553,
    "built_ts": 1795675423,
    "contest": "NFL $400K Second Helping Showdown [$100K to 1st] (PHI @ DAL)",
    "dg": 157074,
@@ -107,7 +107,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 107134,
+   "age_s": 119270,
    "built_ts": 1795670711,
    "contest": "NFL $2.5M MEGA Millionaire [$1M to 1st] (Thu)",
    "dg": 156932,
@@ -123,7 +123,7 @@
    "worlds": 180000
   },
   {
-   "age_s": 129592,
+   "age_s": 141728,
    "built_ts": 1795648250,
    "contest": "NFL Showdown $1M Wednesday Night Showdown [$250K to 1st] (GB @ LAR)",
    "dg": 157072,
@@ -141,7 +141,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 139184,
+   "age_s": 151319,
    "built_ts": 1795638661,
    "contest": "NFL $2.5M MEGA Millionaire [$1M to 1st] (Thu)",
    "dg": 156932,
@@ -157,7 +157,7 @@
    "worlds": 180000
   },
   {
-   "age_s": 295516,
+   "age_s": 307652,
    "built_ts": 1795482322,
    "contest": "NFL Showdown $500K Field General [$100K to 1st] (CIN @ WAS)",
    "dg": 156793,
@@ -175,7 +175,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 383953,
+   "age_s": 396089,
    "built_ts": 1795393888,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (MIN vs SF)",
    "dg": 156792,
@@ -193,7 +193,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 409882,
+   "age_s": 422017,
    "built_ts": 1795367963,
    "contest": "NFL $2.5M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 156561,
