@@ -1,0 +1,41 @@
+{
+ "protocol": "research/reports/cl_field2_protocol.md",
+ "protocol_sha256": "de67363429072342fcda4d8945a631a469680be7f1f14d41c8fdd09fadcdaa2a",
+ "frozen": {
+  "source": "kalshi",
+  "sigma": 0.25,
+  "tau": 0.0,
+  "alpha": 0.5,
+  "alpha_c": 1.0,
+  "w": 0.0,
+  "n_pool_min": 10000
+ },
+ "diag": {
+  "score_gain_min_points": 3.0,
+  "sum_own_sq_factor": 1.33,
+  "top40_gain_min_pp": 0.5
+ },
+ "owner_criteria": {
+  "recall_top": 200,
+  "recall_min_of_20": 10,
+  "median_ratio": [
+   0.5,
+   2.0
+  ],
+  "collision_factor": 2.0,
+  "unique_pp": 5.0,
+  "mass_factor": 2.0,
+  "ownership_pp": 0.5,
+  "salary_usd": 200.0,
+  "category_pp": 2.0
+ },
+ "development_contests": [
+  197645153,
+  197882014
+ ],
+ "primary": "F1c",
+ "secondary": "F1",
+ "development_cells_compared": 109,
+ "registered_utc": "2026-11-27T00:36:30Z",
+ "note": "the registration time that counts is this file's commit author time; validation contests lock after it"
+}

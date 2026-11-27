@@ -71,6 +71,7 @@
     <button class="tab" data-tab="combine">🎰 Combos</button>
     <button class="tab" data-tab="futures">🏦 Futures</button>
     <button class="tab" data-tab="ledger">📒 Ledger</button>
+    <button class="tab" data-tab="research">🧪 Research</button>
   </nav>
 
   <main>
@@ -790,6 +791,17 @@
     </section>
    </div><!-- /tab-futures -->
 
+   <div id="tab-research" class="hidden">
+    <section class="card">
+      <div class="row-between">
+        <h2>🧪 Registered tests</h2>
+        <div id="rsCounts" class="stats"></div>
+      </div>
+      <p class="sub" style="margin:4px 0 12px">Every change that waits on a pre-registered read: what it decides, the earliest moment it may be read (Mountain time), and what else it waits for. A rule is written and hashed before its data is seen and read once; a sealed test cannot be opened early.</p>
+      <div id="rsList"></div>
+    </section>
+   </div>
+
    <div id="tab-ledger" class="hidden">
     <section class="card">
       <div class="row-between">
@@ -856,5 +868,6 @@
   <script src="/static/nflview.js?v={{ v }}"></script>
   <script src="/static/dfspick.js?v={{ v }}"></script>
   <script src="/static/dfseval.js?v={{ v }}"></script>
+  <script src="/static/research.js?v={{ v }}"></script>
 </body>
 </html>

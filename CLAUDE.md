@@ -818,13 +818,55 @@ data-only `sim-history` branch (which never deploys):
     the newest REAL cached slate (`gpu_bench --source cache` refuses synthetic), once per bench version, never
     within 3 h of an NFL slate's start or with the lobby unreadable, GPU skipped above 83 C (nvidia-smi), 45-min
     cap a run; reports via the PC's token door to `/api/pc/bench` (last 20) and `errors/pc-bench-latest.json`.
-    Nothing the server says shapes what runs. Guards PB. The tournament scoring pass is
-    still CPU-only: measure it on a real slate (`--source cache`) before moving it.
+    Nothing the server says shapes what runs. Guards PB. **The PC's real-slate bench** (2026-11-27,
+    Thursday's showdown worlds): every bucket and threshold equal, evaluator 139.6 s CPU vs 3.3 s GPU at
+    batch 250 (3.9 s at 50; 2.2 GB VRAM), tournament kernel 211.5 s vs 5.1 s. **The tournament scoring pass on
+    the GPU** (`dfs_tourney._score_range_dev`, 2026-11-27): the products, buckets and the field's integer
+    COUNTS on the device; the per-world tables and gathers in the CPU's own arithmetic, the histogram rebuilt
+    from the counts to the CPU's doubles (`_uniform_sums`: n copies of 1/M added in order) -- so a UNIFORM
+    field only (classic; the showdown universe stays on the CPU); the first range's first chunk recomputed the
+    CPU's way and compared, any difference or error back to the CPU (`TOURN-gpu-mismatch` / `TOURN-gpu`); the
+    board stamps `timings.score_device`. The best-of-candidates tally may break exact ties differently and the
+    classic board never reads it. Off unless `VIGIL_TOURNEY_GPU=1`, which pc_worker sets only when CuPy is
+    installed, "gpu" is not false, and the PC's own bench config `score` (the whole pass, CPU pool vs GPU, every
+    figure compared, CLASSIC slates only) found it exact for the scoring code now running
+    (`dfs_tourney.score_path_sig`). Guards GS1-GS5 (numpy standing in for CuPy must give the CPU's sums exactly).
 - **Showdown vs Classic on real results** (`research/dfs_format_validation.py`, report
   `research/reports/dfs_format_validation.md`). It grades every exported board on real DraftKings points
   against the projection-optimal lineup on the board's own pool. No 2-6-game classic has been graded yet,
   so the small-slate hypothesis is open. Real-field finishes need the owner's standings exports
   (`dkfield-<cid>.json` on sim-history, three contests so far).
+- **The NFL coaching engine** (2026-11-27; audit `research/reports/nfl_coaching_audit.md`, R1
+  `research/reports/nfl_coach_r1.md`). A SEPARATE experimental engine, `nfl_coach_sim.py` (`coach-r1.0`),
+  importing `nfl_deep_sim`'s samplers: timeouts, the clock by fifteen phases x score x no-huddle,
+  situational calls, kneels (victory formation a rule), spikes, the two-minute warning, out of bounds,
+  onside kicks, overtime; tables `research/data/nfl_coach_tables.json` from nflverse 2016-2023 (CC BY 4.0;
+  raw files gitignored). **2026 week 13 on is SEALED** (`research/nfl_coach_data.load_season` drops those
+  rows) for R1's registered read (`prereg_r1.json`, commit eaca95d, read on/after 2027-01-06 by
+  `research/nfl_coach_r1_read.py`, which pins `nfl_coach_sim.py` and its guard file: never edit them; R2+
+  are new files). Development: the end of each half repaired (Q2/Q4 snaps inside 2:00 8.5/5.2 vs real
+  9.0/5.6, production 6.6/3.8), the leader's runoff 41.9 s vs 41.8 (production 26.8). Criterion 4 (late
+  win probability) is expected to FAIL for power. The owner (2026-11-27): the original verdict stands
+  permanently; a SEPARATE confirmatory test on fresh games with its own error control, realism reported
+  apart from winner prediction, an independent DFS validation path; nothing reaches a DFS world or board
+  until validated. **R2** (`nfl_coach_sim_r2.py`, `coach-r2.0`; evidence `research/reports/nfl_coach_r2_evidence.md`,
+  registration `prereg_r2.json`, commit dfc026e): the evidence audit over 2016-2025 -- head-coach pass rate over
+  expected, no-huddle and pace are real team-season traits that persist only with the same coach (r 0.5-0.7
+  vs ~0.1 after a change); two-point rate, halftime breaks, fatigue, adaptation to the opponent's strengths and
+  any staff-vs-staff interaction showed no evidence; adaptation to in-game success is real (z 18, placebo 0)
+  and registered at the decision level only; offensive coordinators have no lawful structured source. Built:
+  who gets the ball by situation (role x score / field zone / down, mean-preserving, dealt snap by snap from R1's
+  passive log, conservation exact), +0.8 to +1.1 nats a team-game on who carried or was targeted in
+  development. H1 reads 2026 weeks 13-18 after R1's read (the owner's call on sharing those games is open), H2
+  (adaptation) after 2027. Nothing reaches a DFS world until H1 passes and a separate DFS-link test does.
+- **Classic field, second pass** (2026-11-27, `research/reports/cl_field2.md`, development weeks 10-11):
+  the served field's 15-29 point deficit is per-player ownership (one chalk back carries most of it);
+  steering onto a noisy-optimizer share of Sleeper's line moved by Kalshi's prop means (F1c) closed it to
+  6.0 / 2.8 in sample, still 0 of the public's 20 most-copied builds. Registered
+  (`research/reports/cl_field2_protocol.md`, commit 3d9194f): the first two Sunday main-slate Millionaires
+  locking after it (2026-11-29, 12-06), each read once, need the owner's standings exports.
+  `dfs_field_capture.py` (from `mlb_recorder`, every 30 min) freezes DraftKings' FPPG / opponent rank /
+  status and ESPN's start and roster percentages at each kickoff, inside the props log's weekly store.
 - **Owner decisions, 2026-11-26.**
   - DraftKings D/ST points allowed include kickoff, punt and blocked-kick return TDs. They exclude the
     opponent defense's pick-six and fumble-return TDs (their conversions count). Verified on the official
@@ -1003,7 +1045,14 @@ so a self-pulling batch file corrupts itself); all logic lives in Python.
     (`tests/guards_auto_memory.py`, MEM1-6). `memory_gb` follows what is held: deep ~14 GB and maximum
     ~13 GB fit a 32 GB PC; research (~28 GB, three copies of a 3M-lineup field matrix) does not -- that
     matrix is the next wall. They are research targets -- nothing has measured a gain past 160,000
-    ranking worlds (`cl_worlds.md`).
+    ranking worlds (`cl_worlds.md`). Exact at scale (`research/hp_memory_exact.py`, 20M scores: X
+    byte-identical, every score, bucket, ranking, tie and field mass equal; a row holding -0.0 stays
+    float64 while built, since int32 has none). **Measured on the PC**: every tournament build carries
+    `memory` (memprobe: process and machine peaks) beside the estimate and posts a `build_memory`
+    report to `/api/pc/bench`; `_task_profile_probe` runs ONE unattended deep probe
+    (`research/profile_probe.py`: interrupted, resumed and fresh builds; resumed must equal fresh) only
+    when its whole budget ends 3 h before any slate and outside the Saturday window, after the cycle's
+    syncs, its process tree stopped at the cap.
   - Generation, ranking and final worlds stay disjoint (`world_split`, the evaluator's own pool).
 
 ## Hard-won gotchas

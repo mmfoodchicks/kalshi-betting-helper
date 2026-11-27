@@ -159,10 +159,14 @@ class Hundredths:
 
 def squeeze(a):
     """A float64 array of scores rounded to 2 dp -> Hundredths when it round-trips exactly (encode's own
-    test), else the float64 array as it is."""
+    test) AND holds no negative zero, else the float64 array as it is. int32 has no -0.0, and np.round turns a
+    tiny negative (floating noise under a zero score) into one: 43,820 of 20 million engine-shaped scores in
+    research/hp_memory_exact.py. No sum, bucket or ranking can tell -0.0 from +0.0, but the compact pool is
+    held to the list pool's exact bits, so such a row keeps its float64 form until it becomes float32."""
     a = np.asarray(a, dtype=np.float64)
     k = np.rint(a * 100.0)
-    if np.all(np.abs(k) < 2 ** 31 - 1) and np.array_equal(k / 100.0, a):
+    if np.all(np.abs(k) < 2 ** 31 - 1) and np.array_equal(k / 100.0, a) \
+            and not np.any(np.signbit(a) & (a == 0.0)):
         return Hundredths(k.astype(np.int32))
     return a
 

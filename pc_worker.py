@@ -146,6 +146,21 @@ def _apply_limits(env=None):
     # build, ~2.3 GB, stays in memory), the file beside the worlds cache.
     env.setdefault("VIGIL_SCRATCH_DIR", os.path.join(env.get("VIGIL_SIM_CACHE_DIR") or os.path.join(_HERE, "pc-simcache"),
                                                      "scratch"))
+    # The tournament's scoring pass on the GPU (dfs_tourney._score_range_dev): only where CuPy is installed,
+    # vigil-pc.cfg does not say "gpu": false, and this PC's own bench compared the GPU path with the CPU's on a
+    # real classic slate, every figure equal, for the scoring code that is running now (_task_gpu_bench,
+    # "score_exact"). Each pass still checks its first chunk against the CPU and falls back on any difference.
+    import importlib.util
+    sdir_b = env.get("VIGIL_SIM_CACHE_DIR") or os.path.join(_HERE, "pc-simcache")
+    try:
+        with open(os.path.join(sdir_b, "gpu_bench_state.json")) as fh:
+            ok = (json.load(fh).get("score_exact") or {}).get("sig")
+    except (OSError, ValueError, AttributeError):
+        ok = None                                # no bench state yet: the CPU scores
+    if (ok and _cfg_value("gpu") is not False and importlib.util.find_spec("cupy") is not None
+            and ok == _score_sig()):
+        env["VIGIL_TOURNEY_GPU"] = "1"
+        notes.append("tournament scoring on the GPU (validated on this PC against the CPU, every figure equal)")
     mk = _cfg_value("makeit_ram_gb")
     ram = _ram_gb()
     try:
@@ -1019,6 +1034,44 @@ def _cl_sims(start_ts, board, now=None, picked=False):
     return _CL_SIMS_FULL if start_ts - now > est + 600 else _CL_SIMS_QUICK
 
 
+def _mem_watch():
+    """A memprobe.Watch for one build, or None when it cannot start (it never stops a build)."""
+    try:
+        import memprobe
+        return memprobe.Watch()
+    except Exception as e:
+        import errlog
+        errlog.note("PCMEM-watch", e)
+        return None
+
+
+def _mem_report(url, tok, art, prof, mem, dg, kind, error=None):
+    """The build's measured memory (memprobe) beside pc_profiles' estimate for it: stamped on the board as
+    `memory` and posted once to /api/pc/bench as a "build_memory" report, so the owner's real builds test the
+    memory model the profiles choose by (research/hp_memory.py fitted it on a synthetic slate here). Never
+    raises: a build stands whatever this does."""
+    if mem is None:
+        return
+    try:
+        got = mem.stop()
+        if prof is not None:
+            import pc_profiles
+            pl, co, ca = pc_profiles._board_shape(art)
+            got["estimate_gb"] = round(pc_profiles.memory_gb(prof, pl, co, ca, ram_gb=_ram_gb()), 1)
+            got["profile"] = prof.get("name")
+        if isinstance(art, dict):
+            art["memory"] = got
+            got["worlds"] = art.get("sims")
+            got["players"] = len(art.get("players") or ())
+        rep = {"kind": "build_memory", "real_data": True, "results": [dict(got, dg=int(dg), build=kind,
+                                                                        error=error, ts=int(time.time()))]}
+        _api(url, tok, "/api/pc/bench", data=json.dumps(rep).encode(), headers={"Content-Type": "application/json"},
+             timeout=30)
+    except Exception as e:
+        import errlog
+        errlog.note("PCMEM-report", e)
+
+
 def _stamp_profile(art, prof):
     """The profile a classic board ran, the one asked for and why they differ
     (pc_profiles.stamp), on the board -- so research can compare boards by the
@@ -1128,6 +1181,7 @@ def _picked_builds(url, tok, kind, picked, listed):
         _yield_point(f"{kind} board {dg} (your picks) - requested by PC request: {why}")
         print(f"[vigil-pc] tourney {dg}: building the picked {kind} board - {why}...")
         t0 = time.time()
+        mem = _mem_watch()
         try:
             prof = None
             if kind == "classic":
@@ -1148,6 +1202,7 @@ def _picked_builds(url, tok, kind, picked, listed):
             else:
                 art = dfs_tourney.build_nfl_showdown(dg, n_sims=60000, log=print, pick=pick)
         except Exception as e:
+            _mem_report(url, tok, None, None, mem, dg, f"{kind} picked", f"{type(e).__name__}: {e}")
             print(f"[vigil-pc] tourney {dg}: picked build failed ({type(e).__name__}: {e})")
             _report_attempt(url, tok, dg, req, f"the picked build failed ({type(e).__name__}: {e})", kind=kind)
             continue
@@ -1160,6 +1215,7 @@ def _picked_builds(url, tok, kind, picked, listed):
             continue
         art["requested_by"] = {"by": "PC request (picked)", "why": why}
         _stamp_profile(art, prof)
+        _mem_report(url, tok, art, prof, mem, dg, f"{kind} picked")
         boardshare.put(name, art)
         _ckpt_landed(art)
         print(f"[vigil-pc] tourney {dg}: picked {kind} board done in {time.time() - t0:.0f}s")
@@ -1227,6 +1283,8 @@ def _task_classic_tourney(url, tok):
         _yield_point(f"classic board {dg} ({sl.get('games')} games) - requested by {_requested_by(why)}: {why}")
         print(f"[vigil-pc] classic tourney {dg} ({sl.get('games')} games): building - {why}...")
         t0 = time.time()
+        mem = _mem_watch()              # what the build really holds, stamped beside the estimate
+        prof = None
         try:
             n_sims = _cl_sims(_dt_ts(sl.get("starts")), board)
             # the build profile (vigil-pc.cfg "profile"; pc_profiles): standard
@@ -1245,6 +1303,7 @@ def _task_classic_tourney(url, tok):
                 art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=n_sims, log=print)
         except Exception as e:
             # the window is NOT consumed: a failed build is retried next cycle
+            _mem_report(url, tok, None, prof, mem, dg, "classic", f"{type(e).__name__}: {e}")
             print(f"[vigil-pc] classic tourney {dg}: failed ({type(e).__name__}: {e})")
             _report_attempt(url, tok, dg, wanted.get(dg), f"the build failed ({type(e).__name__}: {e})")
             continue
@@ -1255,6 +1314,7 @@ def _task_classic_tourney(url, tok):
             continue
         art["requested_by"] = {"by": _requested_by(why), "why": why}
         _stamp_profile(art, prof)
+        _mem_report(url, tok, art, prof, mem, dg, "classic")
         boardshare.put(name, art)
         _ckpt_landed(art)
         # consumed only now the build stands, whatever started it: a Build
@@ -1489,12 +1549,25 @@ _GPU_BENCH_CONFIGS = (
     {"name": "evaluator", "worlds": 40000, "field": 300000, "batches": "50,250"},
     # the tournament board's: 160,000 scoring worlds, the same field
     {"name": "tournament", "worlds": 160000, "field": 300000, "batches": "50,250"},
+    # the tournament's WHOLE scoring pass, the CPU's process pool against the GPU path (dfs_tourney
+    # ._score_range_dev), every figure compared -- on a CLASSIC slate only (the path is the uniform field's);
+    # until a classic board has left its worlds and artifact, this one waits and the others stand
+    {"name": "score", "kernel": "score", "worlds": 160000, "field": 300000, "cands": 20000,
+     "require_kind": "classic", "batches": "250"},
 )
 # three hours, written as seconds: the schedule guard keeps the three-hour product expression out of this
 # file (an old rebuild-on-age rule it was written to catch); this is a deadline margin, not an age
 _GPU_BENCH_CLEAR_S = 10_800
 _GPU_BENCH_RETRY_S = 6 * 3600
 _GPU_BENCH_TIMEOUT_S = 45 * 60
+
+
+def _score_sig():
+    try:
+        import dfs_tourney
+        return dfs_tourney.score_path_sig()
+    except Exception as e:                       # numpy missing on a stand-in: no comparison to match
+        return f"unavailable: {type(e).__name__}"
 
 
 def _gpu_bench_key():
@@ -1533,6 +1606,11 @@ def _task_gpu_bench(url, tok, run=None, now_left=None):
     key = _gpu_bench_key()
     if state.get("done") == key:
         return "done"
+    done_cfg = set((state.get("done_configs") or {}).get(key) or [])
+    # the scoring-pass comparison belongs to the scoring code it compared: a new version of that code is a
+    # new comparison (and the GPU stays off for it until then, _apply_limits)
+    if (state.get("score_exact") or {}).get("sig") not in (None, _score_sig()):
+        done_cfg.discard("score")
     if state.get("tried_key") == key and time.time() - float(state.get("tried_ts") or 0) < _GPU_BENCH_RETRY_S:
         return "waiting"
     try:
@@ -1546,12 +1624,16 @@ def _task_gpu_bench(url, tok, run=None, now_left=None):
     _task_note("GPU benchmark on real cached data")
     results, real = [], True
     for cfg in _GPU_BENCH_CONFIGS:
+        if cfg["name"] in done_cfg:
+            continue                      # reported on real data under this bench version already
         if run is None:
             _yield_point(f"GPU benchmark ({cfg['name']})")
         out = os.path.join(sdir, f"gpu_bench_{cfg['name']}.json")
         cmd = [sys.executable, os.path.join(_HERE, "research", "gpu_bench.py"), "--source", "cache",
                "--worlds", str(cfg["worlds"]), "--field", str(cfg["field"]), "--gpu-batches", cfg["batches"],
                "--force", "--out", out]
+        if cfg.get("kernel"):
+            cmd += ["--kernel", cfg["kernel"], "--cands", str(cfg["cands"]), "--require-kind", cfg["require_kind"]]
         t0, rep, err = time.time(), None, None
         try:
             if os.path.exists(out):
@@ -1569,7 +1651,13 @@ def _task_gpu_bench(url, tok, run=None, now_left=None):
         results.append({"config": dict(cfg), "report": rep, "error": err, "wall_s": round(time.time() - t0, 1)})
         if rep is None or not str(rep.get("inputs", "")).startswith("cache:"):
             real = False
-            break
+            continue                      # this one waits (e.g. no classic slate yet); the others still run
+        done_cfg.add(cfg["name"])
+        if cfg.get("kernel") == "score" and (rep.get("agreement") or {}).get("exact"):
+            state["score_exact"] = {"key": key, "sig": _score_sig(), "inputs": rep.get("inputs"),
+                                    "speedup": rep.get("speedup"), "ts": time.time()}
+    if not results:
+        return "done"
     payload = {"key": key, "commit": _git_commit(), "ts": time.time(), "real_data": real, "results": results}
     try:
         _api(url, tok, "/api/pc/bench", data=json.dumps(payload).encode(),
@@ -1578,7 +1666,8 @@ def _task_gpu_bench(url, tok, run=None, now_left=None):
         print(f"[vigil-pc] GPU benchmark report not delivered ({type(e).__name__}); next cycle retries")
         return "undelivered"
     state.update(tried_key=key, tried_ts=time.time())
-    if real:
+    state["done_configs"] = {key: sorted(done_cfg)}
+    if all(c["name"] in done_cfg for c in _GPU_BENCH_CONFIGS):
         state["done"] = key
     try:
         with open(spath, "w") as fh:
@@ -1587,6 +1676,162 @@ def _task_gpu_bench(url, tok, run=None, now_left=None):
         print(f"[vigil-pc] GPU benchmark state not written ({type(e).__name__})")
     print(f"[vigil-pc] GPU benchmark: {'done on real data' if real else 'no real slate yet'} -- reported")
     return "reported" if real else "no real data"
+
+
+# The deep-profile probe (research/profile_probe.py; the owner, 2026-11-27: "Run the unattended Deep test
+# build on my PC, provided it does not interfere with scheduled production builds or slate deadlines"). Three
+# deep builds of the week's main slate -- interrupted, resumed, fresh -- measured and reported once.
+_PROBE_KEY = "deep-v1"
+_PROBE_TIMEOUT_S = 8 * 3600
+_PROBE_RETRY_S = 6 * 3600
+_PROBE_CLEAR_S = 10_800            # never closer than three hours to any NFL slate's start, as the GPU bench
+_PROBE_MIN_FREE_GB = 40.0          # the deep pool (~1.2 GB), its checkpoints (make-it ranges up to the 8 GB
+                                   # budget) and three boards, with room to spare
+
+
+def _probe_budget_s(board):
+    """Seconds the probe may take: three deep builds scaled from the last board (pc_profiles.estimate_s), with
+    the profiles' own margin, plus half an hour."""
+    import pc_profiles
+    deep = dict(pc_profiles.PROFILES["deep"], name="deep")
+    est, _how = pc_profiles.estimate_s(deep, board)
+    return 3.0 * pc_profiles.TIME_MARGIN * float(est) + 1800.0
+
+
+def _overlaps_window(t0, t1):
+    """Whether [t0, t1] touches a scheduled main-slate window (_CL_WEEK_WINDOWS, Mountain time)."""
+    import datetime
+    step = 900
+    t = t0
+    while t <= t1:
+        d = datetime.datetime.fromtimestamp(t, _mt_zone())
+        for _name, wd, lo, hi in _CL_WEEK_WINDOWS:
+            if d.weekday() == wd and lo <= (d.hour, d.minute) <= hi:
+                return True
+        t += step
+    return False
+
+
+def _run_tree(cmd, cwd=None, capture_output=True, text=True, timeout=None):
+    """subprocess.run's answer for `cmd`, but a timeout stops the whole process TREE (taskkill /T on Windows,
+    the process group elsewhere) before TimeoutExpired is raised: subprocess.run would kill only the direct
+    child and leave a build's grandchildren running into a slate."""
+    import subprocess
+    kw = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
+    proc = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=text, **kw)
+    try:
+        out, err = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True, timeout=60)
+        else:
+            import signal
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            except OSError:
+                proc.kill()
+        proc.communicate(timeout=120)
+        raise
+    return subprocess.CompletedProcess(cmd, proc.returncode, out, err)
+
+
+def _task_profile_probe(url, tok, run=None, now_left=None, slate=None, free_gb=None, now=None):
+    """Run research/profile_probe.py once (per _PROBE_KEY) when it cannot touch a production build: the
+    week's main slate is listed, the whole probe's budget ends three hours before ANY NFL slate starts and
+    outside the Saturday-night window, the disk has room, and the deep profile's memory estimate fits this
+    PC. Posts the report through the PC's token door. `run` / `now_left` / `slate` / `free_gb` / `now` let a
+    guard stand in for the subprocess, the lobby and the clock."""
+    import shutil
+    import subprocess
+    sdir = os.environ.get("VIGIL_SIM_CACHE_DIR") or os.path.join(_HERE, "pc-simcache")
+    spath = os.path.join(sdir, "profile_probe_state.json")
+    try:
+        with open(spath) as fh:
+            state = json.load(fh)
+    except (OSError, ValueError):
+        state = {}
+    if state.get("done") == _PROBE_KEY:
+        return "done"
+    now = time.time() if now is None else now
+    if state.get("tried_key") == _PROBE_KEY and now - float(state.get("tried_ts") or 0) < _PROBE_RETRY_S:
+        return "waiting"
+    try:
+        if slate is None:
+            import dk
+            slate = dk.main_slate(dk.slates("nfl") or [], now=now)
+        left = now_left() if now_left else _next_nfl_start_s()
+    except Exception as e:
+        print(f"[vigil-pc] deep probe: the DraftKings lobby could not be read ({type(e).__name__}); not risking a deadline")
+        return "no lobby"
+    if not slate or not slate.get("draft_group_id"):
+        return "no main slate"
+    import boardshare
+    dg = int(slate["draft_group_id"])
+    board = boardshare.get(f"cl_tourney_nfl_{dg}", None)[0] if run is None else None
+    budget = _probe_budget_s(board)
+    if left is not None and left < budget + _PROBE_CLEAR_S:
+        print(f"[vigil-pc] deep probe: a slate starts in {left / 3600:.1f} h and the probe needs ~{budget / 3600:.1f} h"
+              " plus three clear; not now")
+        return "deadline"
+    if _overlaps_window(now, now + budget):
+        print("[vigil-pc] deep probe: it would run into the Saturday-night build window; not now")
+        return "window"
+    try:
+        free = free_gb if free_gb is not None else shutil.disk_usage(sdir).free / 1024 ** 3
+    except OSError:
+        free = 0.0
+    import pc_profiles
+    ram = _ram_gb()
+    need = pc_profiles.memory_gb(dict(pc_profiles.PROFILES["deep"], name="deep"), ram_gb=ram)
+    why = None
+    if free < _PROBE_MIN_FREE_GB:
+        why = f"only {free:.0f} GB free on the cache disk ({_PROBE_MIN_FREE_GB:.0f} needed)"
+    elif ram is None or need > pc_profiles.MEM_FRACTION * ram:
+        why = f"the deep profile's estimate ~{need:.0f} GB does not fit this PC ({ram} GB)"
+    rep, err = None, why
+    if why is None:
+        if run is None:
+            _yield_point("deep profile probe")      # between builds: newer code waiting goes first
+        _task_note(f"deep profile probe of slate {dg} (three builds, ~{budget / 3600:.1f} h)")
+        out = os.path.join(sdir, "profile_probe.json")
+        try:
+            if os.path.exists(out):
+                os.remove(out)
+            # capped at its own budget, so it always ends three hours before the next slate; on the cap the
+            # WHOLE process tree goes (the probe's build child and its pool workers, not just the probe)
+            r = (run or _run_tree)([sys.executable, os.path.join(_HERE, "research", "profile_probe.py"),
+                                    "--dg", str(dg), "--out", out], cwd=_HERE, capture_output=True, text=True,
+                                   timeout=min(_PROBE_TIMEOUT_S, budget))
+            if r.returncode == 0 and os.path.exists(out):
+                with open(out) as fh:
+                    rep = json.load(fh)
+            else:
+                err = ((r.stderr or "") + (r.stdout or ""))[-1500:]
+        except subprocess.TimeoutExpired:
+            err = f"timed out after {min(_PROBE_TIMEOUT_S, budget):.0f} s (its budget); the process tree was stopped"
+        except (OSError, ValueError) as e:
+            err = f"{type(e).__name__}: {e}"[:300]
+        finally:
+            _task_note(None)
+    payload = {"kind": "profile_probe", "key": _PROBE_KEY, "commit": _git_commit(), "ts": time.time(),
+               "real_data": rep is not None, "results": [{"dg": dg, "report": rep, "error": err,
+                                                          "budget_s": round(budget), "free_gb": round(free, 1),
+                                                          "estimate_gb": round(need, 1), "ram_gb": ram}]}
+    try:
+        _api(url, tok, "/api/pc/bench", data=json.dumps(payload, default=str).encode(),
+             headers={"Content-Type": "application/json"}, timeout=60)
+    except Exception as e:
+        print(f"[vigil-pc] deep probe report not delivered ({type(e).__name__}); next cycle retries")
+        return "undelivered"
+    state.update(tried_key=_PROBE_KEY, tried_ts=now)
+    if rep is not None:
+        state["done"] = _PROBE_KEY
+    try:
+        with open(spath, "w") as fh:
+            json.dump(state, fh)
+    except OSError as e:
+        print(f"[vigil-pc] deep probe state not written ({type(e).__name__})")
+    return "reported" if rep is not None else "refused"
 
 
 def _cycle(url, tok):
@@ -1630,6 +1875,15 @@ def _cycle(url, tok):
             total += _sync_kind(url, tok, kind)
         except Exception as e:
             print(f"[vigil-pc] sync {kind} failed ({type(e).__name__}: {e})")
+    # Last of all, AFTER the syncs (it can take hours, and the server must not see the night's deep payloads
+    # age into building them itself): the one deep-profile probe the owner approved (_task_profile_probe,
+    # which checks for newer code itself before it starts: the cycle holds exactly its two yield points).
+    try:
+        _task_profile_probe(url, tok)
+    except UpdateWaiting:
+        raise
+    except Exception as e:
+        print(f"[vigil-pc] task deep profile probe failed ({type(e).__name__}: {e}) - moving on")
     print(f"[vigil-pc] cycle done - {total} artifact(s) shipped")
 
 

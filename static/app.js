@@ -2203,6 +2203,7 @@ function setupTabs() {
         loadWeather();
       }
       if (tab === "ledger") loadLedger();
+      if (tab === "research" && typeof initResearch === "function") initResearch();
     });
   });
   setupBaseballSubtabs();

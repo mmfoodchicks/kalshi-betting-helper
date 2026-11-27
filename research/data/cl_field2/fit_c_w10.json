@@ -1,0 +1,396 @@
+{
+ "entries": 146985,
+ "real": {
+  "C": 4.792902962122342e-06,
+  "sum_own_sq": 1.5266,
+  "mean_real_points": 156.07,
+  "owner_side": {
+   "real_top20_in_field_top200": 20,
+   "median_copies_over_real": 1.0,
+   "copies_mass_pct": {
+    "1": 89.257,
+    "2-10": 9.34,
+    "11+": 1.403
+   },
+   "salary_mean": 49867.5,
+   "categories": {
+    "stack_0": 15.5,
+    "stack_1": 53.84,
+    "stack_2": 28.94,
+    "stack_3+": 1.71,
+    "bring_back": 34.49
+   },
+   "score_quantiles": {
+    "P50": 155.86,
+    "P90": 196.92,
+    "P99": 230.02
+   }
+  },
+  "salary_mean": 49867.5,
+  "stack_pct": [
+   15.5,
+   53.84,
+   28.94,
+   1.71
+  ],
+  "at_cap_pct": 47.53
+ },
+ "fields": {
+  "F0": {
+   "measure": {
+    "C": 1.1016252414195516e-08,
+    "P8": 1.0590414085579555e-07,
+    "P7": 3.6295311630534755e-06,
+    "own_top40_mae": 6.366,
+    "joint_mae": 1.891,
+    "salary_mean": 49267.4,
+    "salary_mean_abs_err": 600.1,
+    "stack_pct": [
+     17.38,
+     49.02,
+     28.79,
+     4.81
+    ],
+    "stack_l1": 9.95,
+    "salary_at_cap_pct": 37.15,
+    "bring_back_pct": 34.9,
+    "mean_overlap": 0.867,
+    "score_w1": 28.89,
+    "entries_in_duplicated_lineups_pct": 0.16
+   },
+   "collision_over_real": 0.0023,
+   "owner_side": {
+    "real_top20_in_field_top200": 0,
+    "median_copies_over_real": 0.0,
+    "copies_mass_pct": {
+     "1": 99.84,
+     "2-10": 0.16,
+     "11+": 0.0
+    },
+    "salary_mean": 49267.4,
+    "categories": {
+     "stack_0": 17.38,
+     "stack_1": 49.02,
+     "stack_2": 28.79,
+     "stack_3+": 4.81,
+     "bring_back": 34.9
+    },
+    "score_quantiles": {
+     "P50": 126.12,
+     "P90": 165.78,
+     "P99": 198.88
+    }
+   },
+   "owner_verdict": {
+    "1_recall_10_of_20_in_top_200": false,
+    "2_median_copies_ratio_0.5_to_2": false,
+    "3_collision_within_2x": false,
+    "4_unique_share_within_5pp": false,
+    "4_mass_2_to_10_within_2x": false,
+    "4_mass_11_plus_within_2x": false,
+    "5_top40_ownership_mae": true,
+    "5_salary_mean": true,
+    "5_stack_categories": true,
+    "5_score_quantiles_no_worse": true,
+    "all": false
+   },
+   "owner_detail": {
+    "salary_abs_err": {
+     "model": 600.1,
+     "production": 600.1
+    },
+    "category_abs_err_pp": {
+     "stack_0": {
+      "model": 1.88,
+      "production": 1.88
+     },
+     "stack_1": {
+      "model": 4.82,
+      "production": 4.82
+     },
+     "stack_2": {
+      "model": 0.15,
+      "production": 0.15
+     },
+     "stack_3+": {
+      "model": 3.1,
+      "production": 3.1
+     },
+     "bring_back": {
+      "model": 0.41,
+      "production": 0.41
+     }
+    },
+    "score_quantile_abs_err": {
+     "P50": {
+      "model": 29.74,
+      "production": 29.74
+     },
+     "P90": {
+      "model": 31.14,
+      "production": 31.14
+     },
+     "P99": {
+      "model": 31.14,
+      "production": 31.14
+     }
+    }
+   },
+   "diagnostics": {
+    "mean_real_points": 127.18,
+    "D_real_minus_field": 28.89,
+    "sum_own_sq": 0.8671,
+    "top_owned_pct": 30.3,
+    "top40_mae": 6.366,
+    "at_cap_pct": 37.15,
+    "salary_mean": 49267.4,
+    "naked_qb_pct": 17.38,
+    "bring_back_pct": 34.9
+   },
+   "diagnostic_verdict": {
+    "D1_score_gap_closes_3_points": false,
+    "D2_sum_own_sq_within_1.33x": false,
+    "D3_top40_mae_better_by_0.5pp": false,
+    "all": false
+   }
+  },
+  "F1c": {
+   "measure": {
+    "C": 1.9030344611648506e-06,
+    "P8": 4.853446063625568e-06,
+    "P7": 0.0001300436196753386,
+    "own_top40_mae": 5.047,
+    "joint_mae": 1.312,
+    "salary_mean": 49391.8,
+    "salary_mean_abs_err": 475.7,
+    "stack_pct": [
+     17.38,
+     49.02,
+     28.79,
+     4.81
+    ],
+    "stack_l1": 9.95,
+    "salary_at_cap_pct": 48.86,
+    "bring_back_pct": 34.9,
+    "mean_overlap": 1.5133,
+    "score_w1": 5.99,
+    "entries_in_duplicated_lineups_pct": 10.807
+   },
+   "collision_over_real": 0.39705,
+   "owner_side": {
+    "real_top20_in_field_top200": 0,
+    "median_copies_over_real": 0.0,
+    "copies_mass_pct": {
+     "1": 89.193,
+     "2-10": 10.379,
+     "11+": 0.427
+    },
+    "salary_mean": 49391.8,
+    "categories": {
+     "stack_0": 17.38,
+     "stack_1": 49.02,
+     "stack_2": 28.79,
+     "stack_3+": 4.81,
+     "bring_back": 34.9
+    },
+    "score_quantiles": {
+     "P50": 149.54,
+     "P90": 189.12,
+     "P99": 221.36
+    }
+   },
+   "owner_verdict": {
+    "1_recall_10_of_20_in_top_200": false,
+    "2_median_copies_ratio_0.5_to_2": false,
+    "3_collision_within_2x": false,
+    "4_unique_share_within_5pp": true,
+    "4_mass_2_to_10_within_2x": true,
+    "4_mass_11_plus_within_2x": false,
+    "5_top40_ownership_mae": true,
+    "5_salary_mean": true,
+    "5_stack_categories": true,
+    "5_score_quantiles_no_worse": true,
+    "all": false
+   },
+   "owner_detail": {
+    "salary_abs_err": {
+     "model": 475.7,
+     "production": 600.1
+    },
+    "category_abs_err_pp": {
+     "stack_0": {
+      "model": 1.88,
+      "production": 1.88
+     },
+     "stack_1": {
+      "model": 4.82,
+      "production": 4.82
+     },
+     "stack_2": {
+      "model": 0.15,
+      "production": 0.15
+     },
+     "stack_3+": {
+      "model": 3.1,
+      "production": 3.1
+     },
+     "bring_back": {
+      "model": 0.41,
+      "production": 0.41
+     }
+    },
+    "score_quantile_abs_err": {
+     "P50": {
+      "model": 6.32,
+      "production": 29.74
+     },
+     "P90": {
+      "model": 7.8,
+      "production": 31.14
+     },
+     "P99": {
+      "model": 8.66,
+      "production": 31.14
+     }
+    }
+   },
+   "diagnostics": {
+    "mean_real_points": 150.09,
+    "D_real_minus_field": 5.99,
+    "sum_own_sq": 1.5133,
+    "top_owned_pct": 57.8,
+    "top40_mae": 5.047,
+    "at_cap_pct": 48.86,
+    "salary_mean": 49391.8,
+    "naked_qb_pct": 17.38,
+    "bring_back_pct": 34.9
+   },
+   "diagnostic_verdict": {
+    "D1_score_gap_closes_3_points": true,
+    "D2_sum_own_sq_within_1.33x": true,
+    "D3_top40_mae_better_by_0.5pp": true,
+    "all": true
+   }
+  }
+ },
+ "week": 10,
+ "role": "development",
+ "frozen": {
+  "source": "kalshi",
+  "sigma": 0.25,
+  "tau": 0.0,
+  "alpha": 0.5,
+  "alpha_c": 1.0,
+  "w": 0.0,
+  "n_pool_min": 10000
+ },
+ "steer": {
+  "rows": 146985,
+  "steer_mae_by_pass": [
+   2.9384,
+   1.4202,
+   1.0474,
+   0.8968,
+   0.8282,
+   0.7827,
+   0.7449,
+   0.718,
+   0.7024,
+   0.6872
+  ],
+  "mae_to_targets_pct_points": 0.665
+ },
+ "target_sum_own_sq": 1.6989,
+ "top15_real_owned": [
+  {
+   "name": "Emmett Johnson",
+   "real_pct": 64.8,
+   "target_pct": 65.6,
+   "F1c_pct": 57.8
+  },
+  {
+   "name": "Justin Jefferson",
+   "real_pct": 41.0,
+   "target_pct": 35.6,
+   "F1c_pct": 37.5
+  },
+  {
+   "name": "Christian McCaffrey",
+   "real_pct": 30.9,
+   "target_pct": 26.8,
+   "F1c_pct": 23.5
+  },
+  {
+   "name": "Chuba Hubbard",
+   "real_pct": 25.4,
+   "target_pct": 34.3,
+   "F1c_pct": 30.6
+  },
+  {
+   "name": "Tyler Warren",
+   "real_pct": 25.4,
+   "target_pct": 10.5,
+   "F1c_pct": 9.6
+  },
+  {
+   "name": "Chris Olave",
+   "real_pct": 24.7,
+   "target_pct": 15.1,
+   "F1c_pct": 16.0
+  },
+  {
+   "name": "James Cook III",
+   "real_pct": 23.8,
+   "target_pct": 17.2,
+   "F1c_pct": 14.8
+  },
+  {
+   "name": "Parker Washington",
+   "real_pct": 22.6,
+   "target_pct": 19.1,
+   "F1c_pct": 19.9
+  },
+  {
+   "name": "Tank Dell",
+   "real_pct": 17.3,
+   "target_pct": 11.5,
+   "F1c_pct": 11.6
+  },
+  {
+   "name": "CeeDee Lamb",
+   "real_pct": 17.0,
+   "target_pct": 10.0,
+   "F1c_pct": 10.3
+  },
+  {
+   "name": "Jaxon Smith-Njigba",
+   "real_pct": 15.2,
+   "target_pct": 5.0,
+   "F1c_pct": 5.2
+  },
+  {
+   "name": "Bijan Robinson",
+   "real_pct": 15.2,
+   "target_pct": 36.1,
+   "F1c_pct": 31.5
+  },
+  {
+   "name": "Tyler Shough",
+   "real_pct": 14.7,
+   "target_pct": 13.9,
+   "F1c_pct": 13.9
+  },
+  {
+   "name": "George Kittle",
+   "real_pct": 13.3,
+   "target_pct": 5.8,
+   "F1c_pct": 8.9
+  },
+  {
+   "name": "Colby Parkinson",
+   "real_pct": 13.3,
+   "target_pct": 21.5,
+   "F1c_pct": 19.2
+  }
+ ]
+}

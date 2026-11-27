@@ -27,6 +27,7 @@ import random
 from collections import defaultdict
 
 import clock
+import errlog
 import racing
 
 _SITE = "https://site.api.espn.com/apis/site/v2/sports/football/college-football"
@@ -114,50 +115,95 @@ def teams(season=None, div="fbs"):
                 f"{_WEB}/standings?season={season - 1}&{_DIV_URL[div]}", timeout=25)
         except Exception:
             return None
-        out = {}
-        for conf in d.get("children", []):
-            cname = conf.get("name", "")
-            for sub in (conf.get("children") or [conf]):
-                for e in sub.get("standings", {}).get("entries", []):
-                    tm = e.get("team", {})
-                    # ONE entry carries SEVERAL stat blocks back to back --
-                    # overall, Home, Away, vs Division, vs Conference, vs AP
-                    # Top 25, vs ranked -- each repeating the same stat names.
-                    # A dict comprehension kept the LAST block, so every
-                    # team's "season" was its record against ranked teams:
-                    # Mississippi State read -93 points over ONE win, and the
-                    # week-1 board had UL Monroe over them at 92% against a
-                    # 97c market. Measured 2026-09-05. The overall season is
-                    # the FIRST block; keep first occurrences.
-                    st, disp = {}, {}
-                    for s in e.get("stats", []):
-                        st.setdefault(s["name"], s.get("value"))
-                        disp.setdefault(s["name"], s.get("displayValue"))
-                    # The record is the `overall` display value ("12-2");
-                    # the `wins` value alone has no `losses` beside it.
-                    w = l = None
-                    try:
-                        rec = (disp.get("overall") or "").split("-")
-                        w, l = int(rec[0]), int(rec[1])
-                    except (ValueError, IndexError):
-                        w = int(st.get("wins") or 0)
-                        l = int(st.get("losses") or 0)
-                    gp = st.get("gamesPlayed")
-                    g = int(gp) if gp else (w + l)
-                    if g < 6:
-                        g = 12          # a season's worth, never a game's
-                    diff = st.get("pointDifferential")
-                    if diff is None:
-                        diff = (st.get("pointsFor") or 0) - (st.get("pointsAgainst") or 0)
-                    out[str(tm.get("id"))] = {
-                        "name": tm.get("displayName") or tm.get("name"),
-                        "abbr": tm.get("abbreviation"),
-                        "location": tm.get("location"),
-                        "nick": tm.get("name"),
-                        "conf": cname, "div": div, "w": w, "l": l,
-                        "diff_pg": diff / g if g else 0.0}
+        out = _parse_standings(d, div)
+        if not out:
+            return None
+        # MEMBERSHIP is this season's (2026-11-27). The records above are last season's -- the prior -- and so
+        # were the conferences: realignment put nine 2026 schools in their 2025 leagues (Boise State, San Diego
+        # State, Fresno State, Utah State, Colorado State in the Mountain West instead of the Pac-12; Texas State
+        # in the Sun Belt; UTEP, NIU and Louisiana Tech outside their new leagues) and left the two new FBS
+        # schools (Sacramento State, North Dakota State) out of the table, so the CFP sim played those
+        # conferences' title races -- and their automatic bids -- with the wrong members (research/reports
+        # /c3_season_replay.md). Season S's tree supplies who is in which league; a school new to this division
+        # keeps last season's record from the other division's tree, its prior then put on this division's
+        # scale by _DIV_GAP (ratings); a school that left the division leaves the table. No tree for season S
+        # (unreachable): last season's membership, as before.
+        try:
+            now = _parse_standings(racing._get_json(
+                f"{_WEB}/standings?season={season}&{_DIV_URL[div]}", timeout=25), div)
+        except Exception as e:
+            errlog.note("CFB-membership", e)
+            now = None
+        if now:
+            for tid in [t for t in out if t not in now]:
+                out.pop(tid)
+            new = [t for t in now if t not in out]
+            other = {"fbs": "fcs", "fcs": "fbs"}[div]
+            prev_other = {}
+            if new:
+                try:
+                    prev_other = _parse_standings(racing._get_json(
+                        f"{_WEB}/standings?season={season - 1}&{_DIV_URL[other]}", timeout=25), other) or {}
+                except Exception as e:
+                    errlog.note("CFB-membership", e)
+            for tid in now:
+                if tid in out:
+                    out[tid]["conf"] = now[tid]["conf"]
+                else:
+                    row = dict(prev_other.get(tid) or dict(now[tid], w=0, l=0, diff_pg=0.0))
+                    row.update(conf=now[tid]["conf"], div=div, prior_div=(other if tid in prev_other else None))
+                    out[tid] = row
         return out or None
     return racing._cached(("cfb_teams", season, 3, div), 24 * 3600, build) or {}
+
+
+def _parse_standings(d, div):
+    """{team_id: row} off one ESPN standings tree (teams()' rows)."""
+    if not isinstance(d, dict):
+        return {}
+    out = {}
+    for conf in d.get("children", []):
+        cname = conf.get("name", "")
+        for sub in (conf.get("children") or [conf]):
+            for e in sub.get("standings", {}).get("entries", []):
+                tm = e.get("team", {})
+                # ONE entry carries SEVERAL stat blocks back to back --
+                # overall, Home, Away, vs Division, vs Conference, vs AP
+                # Top 25, vs ranked -- each repeating the same stat names.
+                # A dict comprehension kept the LAST block, so every
+                # team's "season" was its record against ranked teams:
+                # Mississippi State read -93 points over ONE win, and the
+                # week-1 board had UL Monroe over them at 92% against a
+                # 97c market. Measured 2026-09-05. The overall season is
+                # the FIRST block; keep first occurrences.
+                st, disp = {}, {}
+                for s in e.get("stats", []):
+                    st.setdefault(s["name"], s.get("value"))
+                    disp.setdefault(s["name"], s.get("displayValue"))
+                # The record is the `overall` display value ("12-2");
+                # the `wins` value alone has no `losses` beside it.
+                w = l = None
+                try:
+                    rec = (disp.get("overall") or "").split("-")
+                    w, l = int(rec[0]), int(rec[1])
+                except (ValueError, IndexError):
+                    w = int(st.get("wins") or 0)
+                    l = int(st.get("losses") or 0)
+                gp = st.get("gamesPlayed")
+                g = int(gp) if gp else (w + l)
+                if g < 6:
+                    g = 12          # a season's worth, never a game's
+                diff = st.get("pointDifferential")
+                if diff is None:
+                    diff = (st.get("pointsFor") or 0) - (st.get("pointsAgainst") or 0)
+                out[str(tm.get("id"))] = {
+                    "name": tm.get("displayName") or tm.get("name"),
+                    "abbr": tm.get("abbreviation"),
+                    "location": tm.get("location"),
+                    "nick": tm.get("name"),
+                    "conf": cname, "div": div, "w": w, "l": l,
+                    "diff_pg": diff / g if g else 0.0}
+    return out
 
 
 def divisions(season=None):
@@ -180,8 +226,26 @@ def ratings(season=None, div="fbs"):
     tm = teams(season, div)
     if not tm:
         return {}
-    mean = sum(t["diff_pg"] for t in tm.values()) / len(tm)
-    return {tid: (t["diff_pg"] - mean) * (1 - _REG) for tid, t in tm.items()}
+    native = [t for t in tm.values() if not t.get("prior_div")]
+    mean = sum(t["diff_pg"] for t in native) / max(1, len(native))
+    out = {tid: (t["diff_pg"] - mean) * (1 - _REG) for tid, t in tm.items() if not t.get("prior_div")}
+    movers = {tid: t for tid, t in tm.items() if t.get("prior_div")}
+    if movers:
+        # last season's record was earned in the other division: its rating there (centred on that division's
+        # mean, as ratings(div=other) does), moved onto this division's scale by the gap between the two
+        other = next(iter(movers.values()))["prior_div"]
+        o_mean = _div_mean(season, other)
+        shift = -_DIV_GAP if div == "fbs" else _DIV_GAP
+        for tid, t in movers.items():
+            out[tid] = (t["diff_pg"] - o_mean) * (1 - _REG) + shift
+    return out
+
+
+def _div_mean(season, div):
+    """The mean differential a division's own prior is centred on (its native schools this season)."""
+    tm = teams(season, div)
+    native = [t["diff_pg"] for t in tm.values() if not t.get("prior_div")]
+    return sum(native) / len(native) if native else 0.0
 
 
 def inseason_ratings(season=None, div="fbs"):
