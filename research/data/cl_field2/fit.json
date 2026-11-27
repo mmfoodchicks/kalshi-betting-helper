@@ -1,0 +1,18 @@
+{
+ "role": "development",
+ "b6_loss_sum_over_weeks": {
+  "0.0": 35.7102,
+  "0.05": 37.1868,
+  "0.1": 38.437,
+  "0.2": 40.5198
+ },
+ "chosen_w": 0.0,
+ "frozen_target": {
+  "source": "kalshi",
+  "sigma": 0.25,
+  "tau": 0.0,
+  "alpha": 0.5,
+  "w": null,
+  "n_pool_min": 10000
+ }
+}

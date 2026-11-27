@@ -274,6 +274,15 @@ def _loop():
             nfl_props_log.tick()
         except Exception as _e:
             errlog.note("MREC-nflprops", _e)
+        # What the DraftKings public can see before it builds (DraftKings' own
+        # FPPG / opponent rank / status, ESPN's start percentages), frozen at
+        # each kickoff INSIDE the prop log's weekly store -- so it must run
+        # after that pass, in this same thread (dfs_field_capture). Own code.
+        try:
+            import dfs_field_capture
+            dfs_field_capture.tick()
+        except Exception as _e:
+            errlog.note("MREC-fieldcap", _e)
         time.sleep(SAMPLE_INTERVAL)
 
 
