@@ -4,7 +4,7 @@ The build profiles size themselves from a model (pc_profiles.memory_gb) fitted o
 (research/hp_memory.py). The owner: "verify both on your PC". A `Watch` samples, once a second on a daemon
 thread, this process's resident memory and the machine's memory in use, and keeps the peaks; the PC worker
 wraps every tournament build in one and stamps the result on the board beside the estimate
-(pc_worker._stamp_memory). Standard library only (ctypes on Windows, /proc on Linux): no psutil on the PC.
+(pc_worker._mem_report). Standard library only (ctypes on Windows, /proc on Linux): no psutil on the PC.
 
 The machine's figure is what decides whether a build fits: it counts the scoring pool's worker processes
 and the shared-memory copies they map, which a per-process figure would count once per worker or not at

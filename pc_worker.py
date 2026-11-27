@@ -1746,6 +1746,8 @@ def _task_profile_probe(url, tok, run=None, now_left=None, slate=None, free_gb=N
         why = f"the deep profile's estimate ~{need:.0f} GB does not fit this PC ({ram} GB)"
     rep, err = None, why
     if why is None:
+        if run is None:
+            _yield_point("deep profile probe")      # between builds: newer code waiting goes first
         _task_note(f"deep profile probe of slate {dg} (three builds, ~{budget / 3600:.1f} h)")
         out = os.path.join(sdir, "profile_probe.json")
         try:
@@ -1830,8 +1832,8 @@ def _cycle(url, tok):
         except Exception as e:
             print(f"[vigil-pc] sync {kind} failed ({type(e).__name__}: {e})")
     # Last of all, AFTER the syncs (it can take hours, and the server must not see the night's deep payloads
-    # age into building them itself): the one deep-profile probe the owner approved (_task_profile_probe).
-    _yield_point("deep profile probe")
+    # age into building them itself): the one deep-profile probe the owner approved (_task_profile_probe,
+    # which checks for newer code itself before it starts: the cycle holds exactly its two yield points).
     try:
         _task_profile_probe(url, tok)
     except UpdateWaiting:
