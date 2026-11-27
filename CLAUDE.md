@@ -990,9 +990,20 @@ so a self-pulling batch file corrupts itself); all logic lives in Python.
     before lock (x1.25 + 15 min), its estimated memory must fit 80% of the PC's RAM, and the 85-40
     minute pre-lock rebuild is ALWAYS standard. Otherwise the next one down, then standard. Every
     classic board stamps `profile` (ran, requested, why).
-  - **The pool is the memory wall**: worlds travel as Python lists (~32 bytes a score), so maximum
-    needs ~58 GB and research ~120 GB on a 500-player slate. They are research targets -- nothing
-    has measured a gain past 160,000 ranking worlds (`cl_worlds.md`).
+  - **Memory, measured** (2026-11-26, `research/hp_memory.py`: the real classic build on a 546-player
+    synthetic slate, a fresh process per point, resident memory by stage). The pool's Python lists were
+    the wall (37.8 bytes a score; 1.24 of a 1.75 GB peak at 60,000 worlds; the first estimates read deep
+    ~29 GB, maximum ~58). Now: the tournament and the evaluator take a COMPACT pool
+    (`player_pool(compact=True)`: float32 rows, int32 hundredths while built, the disk cache's bytes
+    unchanged; 0.14 GB and a 0.65 GB peak at the same point), a compact pool the PC's disk cache holds is
+    not kept in memory too, `_cached` drops expired pools (it kept every pool a PC cycle built),
+    `pool_cache.encode` goes row by row, the classic build lets the pool go once X holds it, and the
+    make-it matrix is filled in place (no concatenation) and past `VIGIL_MAKEIT_RAM_GB` (a quarter of RAM,
+    pc_worker) is a file in `pc-simcache/scratch`. Every one leaves a board exactly as it was
+    (`tests/guards_auto_memory.py`, MEM1-6). `memory_gb` follows what is held: deep ~14 GB and maximum
+    ~13 GB fit a 32 GB PC; research (~28 GB, three copies of a 3M-lineup field matrix) does not -- that
+    matrix is the next wall. They are research targets -- nothing has measured a gain past 160,000
+    ranking worlds (`cl_worlds.md`).
   - Generation, ranking and final worlds stay disjoint (`world_split`, the evaluator's own pool).
 
 ## Hard-won gotchas

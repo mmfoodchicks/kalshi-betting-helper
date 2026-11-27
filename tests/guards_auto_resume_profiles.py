@@ -682,16 +682,24 @@ def _profile_checks(ck):
        and PP.is_standard_counts(floor) and sat["name"] == "deep" and sat["estimate_s"] == round(e_deep)
        and pre["name"] == "standard" and "inactives" in pre["why"] and pre["requested"] == "deep"
        and PP.PREGAME in inspect.getsource(W._cl_window_key), f"{fits['name']} {down['name']} {floor['why']}")
-    m_std, m_deep, m_max, m_res = (PP.memory_gb(PP.from_cfg({"profile": n})[0]) for n in PP.ORDER)
-    small = PP.choose(mx, None, now, board, ram_gb=32)
+    # re-measured 2026-11-26 (research/hp_memory.py; tests/guards_auto_memory.py): the pool travels compact
+    # (4 bytes a score, not ~38 in a Python list) and the make-it matrix moves to disk past a quarter of the
+    # PC's memory, so deep and maximum fit a 32 GB PC; research's 3-million-lineup field does not
+    m_std, m_deep, m_max, m_res = (PP.memory_gb(PP.from_cfg({"profile": n})[0], ram_gb=32) for n in PP.ORDER)
+    small = PP.choose(mx, None, now, None, ram_gb=16)                 # the default slate shape (500 players)
+    on32 = PP.choose(PP.from_cfg({"profile": "research"})[0], None, now, None, ram_gb=32)
     unknown = PP.choose(deep, None, now, board, ram_gb=None)
-    ck("PF7 memory-aware: a build's peak is estimated (the pool as Python lists is the binding term: ~44 bytes a "
-       "score) and must fit 80% of the PC's memory -- on 32 GB maximum (~50 GB+) falls to deep or standard and "
-       "says what it needed; a PC whose memory cannot be read runs nothing above standard, never a guess",
-       m_std < 16 < m_deep < 32 < m_max < 64 < m_res and small["name"] in ("deep", "standard")
-       and "maximum needs ~" in small["why"] and "this PC has 32" in small["why"]
+    ck("PF7 memory-aware: a build's peak is estimated from what it holds (the compact pool beside X, X and its "
+       "shared copy, three copies of the lineup matrices, the make-it matrix while it fits a quarter of the "
+       "memory) and must fit 80% of the PC's memory -- standard fits 16 GB, deep and maximum 32, research (its "
+       "3,000,000-lineup field) falls to maximum on 32 and says what it needed; on 16 GB maximum falls to deep or "
+       "standard; a PC whose memory cannot be read runs nothing above standard, never a guess",
+       m_std < 0.8 * 16 and m_deep < 0.8 * 32 and m_max < 0.8 * 32 < m_res < 0.8 * 64
+       and PP._SCORE_BYTES == 4.0 and small["name"] in ("deep", "standard")
+       and "maximum needs ~" in small["why"] and "this PC has 16" in small["why"]
+       and on32["name"] == "maximum" and "research needs ~" in on32["why"]
        and unknown["name"] == "standard" and "ram_gb" in unknown["why"]
-       and PP.MEM_FRACTION == 0.8, f"{m_std:.1f} {m_deep:.1f} {m_max:.1f} {m_res:.1f}; {small['why']}")
+       and PP.MEM_FRACTION == 0.8, f"{m_std:.1f} {m_deep:.1f} {m_max:.1f} {m_res:.1f}; {small['why']}; {on32['why']}")
     f_ok = PP.final_worlds(deep, now + 10 * 3600, now, board, ram_gb=64)
     f_late = PP.final_worlds(deep, now + 1200, now, board, ram_gb=64)
     f_unk = PP.final_worlds(deep, None, now, board, ram_gb=64)
@@ -734,7 +742,7 @@ def _profile_checks(ck):
     k_std, s_std = task({}, "2026-11-28 saturday night")
     k_deep, s_deep = task({"profile": "deep", "workers": 12}, "2026-11-28 saturday night")
     k_pre, s_pre = task({"profile": "deep"}, "2026-11-29 pregame")
-    k_ram, s_ram = task({"profile": "research"}, "2026-11-28 saturday night", ram=32.0)
+    k_ram, s_ram = task({"profile": "research"}, "2026-11-28 saturday night", ram=8.0)
     k_late, s_late = task({"profile": "deep"}, "2026-11-28 saturday night", left=3 * 3600)
     src_task = inspect.getsource(W._task_classic_tourney)
     ck("PF9 the worker: with no profile configured the classic task makes production's call exactly (n_sims from "

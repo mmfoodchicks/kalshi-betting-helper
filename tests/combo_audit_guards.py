@@ -13801,8 +13801,9 @@ ck("the constrained simulator's stamp names its model and version, carries every
 _sim_src = open(_os.path.join(_root, "nfl_dfs_sim.py")).read()
 _pool_src = _sim_src[_sim_src.index("def player_pool("):_sim_src.index("# ---- Week board (all games simmed)")]
 ck("player_pool takes model and seed with legacy the default, rejects an unknown model and a preseason constrained pool before any fetch, keys its cache on both, and routes the constrained model's defenses and kickers through a seeded generator while the legacy path keeps the module generator",
-   # repinned 2026-10-16: a third model ("engine") and its `workers`
-   'def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="legacy", seed=None, xside=0.0, discrete=False,\n                workers=1):' in _sim_src
+   # repinned 2026-10-16: a third model ("engine") and its `workers`; 2026-11-26: `compact` (the
+   # tournament's float32 rows, tests/guards_auto_memory.py), default off
+   'def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="legacy", seed=None, xside=0.0, discrete=False,\n                workers=1, compact=False):' in _sim_src
    and _sim2.MODELS == ("legacy", "constrained", "engine")
    and 'tuple(sorted(want)) or None, model, seed, float(xside or 0.0), bool(discrete)),' in _pool_src
    and 'sim = nfl_dfs_csim.simulate_game(g, n=n, rng=_np.random.default_rng(child), xside=xside)' in _pool_src
@@ -13845,7 +13846,9 @@ _build_d = _dts_d[_dts_d.index("def build_nfl_classic("):_dts_d.index("def build
 # none, so a board's model moves only with that constant
 ck("the classic build takes model (None = BOARD_MODEL) and passes it and the seed to the pool, stamps whichever simulator made the worlds and records the model and seed on the board; the PC asks for no model on either board, so the switch alone decides",
    'seed=None, log=print, probes=None, model=None, workers=None, pick=None):' in _build_d
-   and 'pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason, model=model, seed=seed,\n                                   teams=slate_teams, workers=_workers(workers)) or {}' in _build_d
+   # repinned 2026-11-26: the tournament asks for the compact pool (float32 rows; the same board,
+   # tests/guards_auto_memory.py MEM6)
+   and 'pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason, model=model, seed=seed,\n                                   teams=slate_teams, workers=_workers(workers), compact=True) or {}' in _build_d
    and "model = board_model(model, preseason)" in _build_d
    and '"model": model, "seed": (int(seed) if seed is not None else None),' in _build_d
    and _dt14.simulator_stamp("legacy", 5) == _sim2.sim_stamp(n=5)

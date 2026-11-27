@@ -33,11 +33,15 @@ A profile is used only when it can land:
     lock with TIME_MARGIN x and TIME_PAD_S to spare, else the next profile
     down is tried, and standard (pc_worker._cl_sims' own full/quick rule) is
     the floor;
-  * memory -- `memory_gb` must fit MEM_FRACTION of the PC's RAM. The binding
-    term is the pool itself: nfl_dfs_sim hands every player's worlds over as
-    a Python list (~32 bytes a score against 4 in the float32 matrix), so on
-    a 500-player slate maximum needs ~58 GB and research ~120 GB. Until the
-    pool travels as a matrix those two fall back on a 32 GB PC, and say so;
+  * memory -- `memory_gb` must fit MEM_FRACTION of the PC's RAM. Re-measured
+    2026-11-26 (research/hp_memory.py, the real build on a 546-player
+    synthetic slate, a fresh process per point): the pool used to travel as
+    Python lists, 37.8 bytes a score measured, and was the binding term (the
+    first estimate: deep ~29 GB, maximum ~58). It travels compact now (float32
+    rows, 4 bytes), the portfolio pass's make-it matrix is filled in place and
+    moves to disk past its budget, and the estimate below follows what is
+    held: deep and maximum fit a 32 GB PC, research (a 3-million-lineup field,
+    three copies of its 0/1 matrix) does not;
   * the window -- the 85-40-minute pre-lock rebuild is always standard (it
     exists to catch the inactives; pc_worker._CL_PREGAME_MIN).
 """
@@ -66,8 +70,15 @@ TIME_MARGIN = 1.25              # the estimate is an extrapolation from one boar
 TIME_PAD_S = 900.0              # and fifteen minutes (pc_worker._cl_sims keeps ten on a measured build)
 MEM_FRACTION = 0.8              # of the PC's physical memory
 GUESS_S = 2700.0                # a standard build with no timed board (pc_worker._CL_FULL_GUESS_S)
-_POOL_BYTES = 44.0              # a score in memory: a Python float in a list (32) + X, Xe and their shared copy (3 x 4)
+# The memory model (memory_gb), each term what the build holds -- re-measured 2026-11-26, see the docstring.
+_SCORE_BYTES = 4.0              # a score: the compact pool's float32 row, and X's
+_POOL_ALL = 2.0                 # the compact pool holds every listed player, ~2x the board's pool (546 vs 268
+                                # measured), beside X while X is built; X alone after
+_X_COPIES = 2.0                 # X and its shared-memory copy while a pass runs on several processes
 _LINEUP_BYTES = 12.0            # a lineup x player cell: the float32 matrix, its transpose, the shared copy
+_CHUNK_GB = 1.8                 # the scoring pass's chunks: dfs_tourney._CHUNK_ELEMS x 8 bytes x (K+M)/max(K,M)
+_BASE_GB = 0.6                  # measured: imports, the slate, the field's steering draws
+_MAKEIT_DEFAULT_GB = 4.0        # dfs_tourney.MAKEIT_RAM_BYTES: past it the make-it matrix is a file
 _DEF_PLAYERS, _DEF_CONTESTS, _DEF_CANDIDATES, _DEF_PORT = 500, 3, 150_000, 1200
 PREGAME = "pregame"             # pc_worker._cl_window_key's suffix for the post-inactives window
 
@@ -211,16 +222,26 @@ def estimate_s(p, board, picked=False):
     return est, f"scaled from the last board's stages ({int(sims0):,} worlds in {float(t['total_s']):.0f} s)"
 
 
-def memory_gb(p, players=_DEF_PLAYERS, contests=_DEF_CONTESTS, candidates=_DEF_CANDIDATES, port=_DEF_PORT):
-    """Peak memory of a classic build at profile `p`, in GB: the pool as
-    Python lists and its float32 copies, the lineup matrices (three copies),
-    the portfolio pass's make-it matrix and its concatenation, and 2 GB for
-    the scoring chunks (dfs_tourney._CHUNK_ELEMS, divided over the workers)
-    and everything else."""
-    b = (players * n_sims(p) * _POOL_BYTES
-         + players * (p["field"] + candidates) * _LINEUP_BYTES
-         + 2.0 * 4.0 * contests * port * p["ranking"])
-    return b / 1024 ** 3 + 2.0
+def makeit_budget_gb(ram_gb=None):
+    """The make-it matrix's memory budget pc_worker sets (VIGIL_MAKEIT_RAM_GB): a quarter of the PC's memory,
+    else dfs_tourney's own default."""
+    return 0.25 * float(ram_gb) if ram_gb else _MAKEIT_DEFAULT_GB
+
+
+def memory_gb(p, players=_DEF_PLAYERS, contests=_DEF_CONTESTS, candidates=_DEF_CANDIDATES, port=_DEF_PORT,
+              ram_gb=None):
+    """Peak memory of a classic build at profile `p`, in GB: the larger of (the compact pool beside X while
+    X is built) and (X with its shared copy, the field and candidate matrices, and the make-it matrix when it
+    fits its budget -- past it the matrix is a file), plus the scoring chunks and the base. Measured against
+    research/hp_memory.py's points; deliberately the board's pool size for X (the field-only extras are in
+    it) and three copies of every lineup matrix."""
+    n = n_sims(p)
+    gb = 1024.0 ** 3
+    pool_x = players * n * _SCORE_BYTES * (1.0 + _POOL_ALL)
+    mk = 4.0 * contests * port * p["ranking"]
+    mk_ram = mk if mk <= makeit_budget_gb(ram_gb) * gb else 0.0
+    passes = players * n * _SCORE_BYTES * _X_COPIES + players * (p["field"] + candidates) * _LINEUP_BYTES + mk_ram
+    return max(pool_x, passes) / gb + _CHUNK_GB + _BASE_GB
 
 
 def choose(requested, start_ts, now, board, window=None, picked=False, ram_gb=None):
@@ -254,7 +275,7 @@ def choose(requested, start_ts, now, board, window=None, picked=False, ram_gb=No
     players, contests, cands = _board_shape(board)
     why_not = []
     for p in ladder:
-        mem = memory_gb(p, players, contests, cands)
+        mem = memory_gb(p, players, contests, cands, ram_gb=ram_gb)
         if ram_gb is None:
             why_not.append(f"{p['name']}: this PC's memory could not be read (set \"ram_gb\" in vigil-pc.cfg)")
             continue
@@ -283,7 +304,7 @@ def final_worlds(requested, start_ts, now, board, ram_gb=None):
     if n == std:
         return std, "the configured profile"
     players, _c, _k = _board_shape(board)
-    mem = players * n * _POOL_BYTES / 1024 ** 3 + 2.0
+    mem = players * n * _SCORE_BYTES * (1.0 + _POOL_ALL) / 1024 ** 3 + 2.0     # the evaluator's compact pool
     if ram_gb is None or mem > MEM_FRACTION * float(ram_gb):
         return std, (f"{n:,} final worlds need ~{mem:.0f} GB of memory"
                      + (f" and this PC has {float(ram_gb):.0f}" if ram_gb is not None else

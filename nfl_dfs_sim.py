@@ -1077,8 +1077,10 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
                                                        "legacy worlds for this game")
                 else:
                     for p in sim["players"]:
-                        p["arr"] = _np.round(p["arr"], 2)
-                        p["arr"] = _squeeze(p["arr"]) if compact else p["arr"].tolist()
+                        if compact:
+                            p["arr"] = _squeeze(_np.round(p["arr"], 2))
+                        else:
+                            p["arr"] = _np.round(p["arr"], 2).tolist()
                     for t, a in sim["dst"].items():
                         eng_dst[t] = [round(float(x), 2) for x in a]
                     for t, a in sim["k"].items():
@@ -1094,8 +1096,10 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
                 sim = nfl_dfs_csim.simulate_game(g, n=n, rng=_np.random.default_rng(child), xside=xside)
                 side_rng = _rnd.Random(child) if seed is not None else _random
                 for p in sim["players"]:
-                    p["arr"] = _np.round(p["arr"], 2)
-                    p["arr"] = _squeeze(p["arr"]) if compact else p["arr"].tolist()
+                    if compact:
+                        p["arr"] = _squeeze(_np.round(p["arr"], 2))
+                    else:
+                        p["arr"] = _np.round(p["arr"], 2).tolist()
                 sim["team_def"] = {t: {k: v.tolist() for k, v in d.items()} for t, d in sim["team_def"].items()}
             else:
                 sim = simulate_game(g, n=n, with_samples=True, preseason=preseason,
@@ -1253,8 +1257,13 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
         return pool or None
     # A compact pool the disk cache holds (read from it, or filed by this call) is not also kept in this
     # process: the next call at the same key reads the memory-mapped entry, the same worlds.
-    return _cached(("nfl_pool", season, week, n, bool(preseason), tuple(sorted(want)) or None, model, seed, float(xside or 0.0), bool(discrete))
-                   + (("compact",) if compact else ()), 1800, build, keep=lambda: not (compact and on_disk[0]))
+    return _cached(_pool_key(("nfl_pool", season, week, n, bool(preseason), tuple(sorted(want)) or None, model, seed, float(xside or 0.0), bool(discrete)),
+                             compact), 1800, build, keep=lambda: not (compact and on_disk[0]))
+
+
+def _pool_key(key, compact):
+    """player_pool's cache key: a compact pool is its own entry (its rows are float32 arrays, not lists)."""
+    return key + (("compact",) if compact else ())
 
 
 def _squeeze(a):
