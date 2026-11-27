@@ -1,0 +1,1315 @@
+{
+ "board": {
+  "dg": 157066,
+  "lists": {
+   "198107824:top_ev": {
+    "n": 40,
+    "spearman_common": null,
+    "top20_overlap": 0.0
+   },
+   "198107824:top_money": {
+    "n": 40,
+    "spearman_common": 0.5701138560855863,
+    "top20_overlap": 0.3
+   },
+   "198107824:top_top01": {
+    "n": 40,
+    "spearman_common": 0.9999200905638997,
+    "top20_overlap": 0.05
+   },
+   "198107824:top_top1": {
+    "n": 40,
+    "spearman_common": 0.5105836379197358,
+    "top20_overlap": 0.25
+   },
+   "198107824:top_win": {
+    "n": 40,
+    "spearman_common": null,
+    "top20_overlap": 0.0
+   },
+   "198107827:top_ev": {
+    "n": 40,
+    "spearman_common": null,
+    "top20_overlap": 0.0
+   },
+   "198107827:top_money": {
+    "n": 40,
+    "spearman_common": 0.6516142511253771,
+    "top20_overlap": 0.3
+   },
+   "198107827:top_top01": {
+    "n": 40,
+    "spearman_common": 0.4928101113043586,
+    "top20_overlap": 0.0
+   },
+   "198107827:top_top1": {
+    "n": 40,
+    "spearman_common": 0.6331086131005643,
+    "top20_overlap": 0.2
+   },
+   "198107827:top_win": {
+    "n": 40,
+    "spearman_common": null,
+    "top20_overlap": 0.0
+   }
+  },
+  "noise_v1_seed_vs_seed": {
+   "198107824:top_ev": {
+    "n": 40,
+    "spearman_common": null,
+    "top20_overlap": 0.0
+   },
+   "198107824:top_money": {
+    "n": 40,
+    "spearman_common": null,
+    "top20_overlap": 0.1
+   },
+   "198107824:top_top01": {
+    "n": 40,
+    "spearman_common": null,
+    "top20_overlap": 0.05
+   },
+   "198107824:top_top1": {
+    "n": 40,
+    "spearman_common": null,
+    "top20_overlap": 0.05
+   },
+   "198107824:top_win": {
+    "n": 40,
+    "spearman_common": null,
+    "top20_overlap": 0.0
+   },
+   "198107827:top_ev": {
+    "n": 40,
+    "spearman_common": null,
+    "top20_overlap": 0.05
+   },
+   "198107827:top_money": {
+    "n": 40,
+    "spearman_common": null,
+    "top20_overlap": 0.1
+   },
+   "198107827:top_top01": {
+    "n": 40,
+    "spearman_common": null,
+    "top20_overlap": 0.05
+   },
+   "198107827:top_top1": {
+    "n": 40,
+    "spearman_common": null,
+    "top20_overlap": 0.05
+   },
+   "198107827:top_win": {
+    "n": 40,
+    "spearman_common": null,
+    "top20_overlap": 0.05
+   }
+  }
+ },
+ "k_v1": 2.25,
+ "k_v2": 1.86,
+ "season": 2026,
+ "weeks": {
+  "current": {
+   "delta": {
+    "abs_margin_mean": -0.6618958333333325,
+    "blowout_17": -0.024020833333333325,
+    "blowout_24": -0.022020833333333323,
+    "dfs_mean_by_pos": {
+     "DB": -0.10715999999999459,
+     "DST": -0.016415624999997824,
+     "FB": -0.009560000000002677,
+     "K": -0.00851562499999936,
+     "QB": -0.07580699999999752,
+     "RB": -0.012692924528302285,
+     "TE": -0.024381308411212554,
+     "WR": -0.023266508875734893
+    },
+    "dfs_player_mean_abs_delta_max": 0.8420099999999451,
+    "dfs_player_mean_abs_delta_mean": 0.09752272233009444,
+    "game_p_home_abs_delta_max": 0.04899999999999999,
+    "game_p_home_abs_delta_mean": 0.02535416666666666,
+    "margin_sd": -0.764925474442796,
+    "qb_wr_corr": 0.00022517692167611791,
+    "rb1_dst_corr": 0.000622732064341748,
+    "season_division_abs_delta_max": 0.03699999999999998,
+    "season_division_abs_delta_mean": 0.010124999999999997,
+    "season_playoffs_abs_delta_max": 0.04899999999999999,
+    "season_playoffs_abs_delta_mean": 0.011125000000000003,
+    "total_mean": -0.09156249999999488,
+    "total_sd": 0.07471598564425541
+   },
+   "dfs_v1": {
+    "mean_by_pos": {
+     "DB": 3.821329999999991,
+     "DST": 5.784393750000001,
+     "FB": 0.9958475000000035,
+     "K": 8.628321875000001,
+     "QB": 17.7232998125,
+     "RB": 7.175337830188682,
+     "TE": 4.0217179439252355,
+     "WR": 6.035597396449701
+    },
+    "qb_wr_corr": 0.3587266726204736,
+    "qb_wr_pairs": 64,
+    "rb1_dst_corr": 0.05286627747834053
+   },
+   "dfs_v2": {
+    "mean_by_pos": {
+     "DB": 3.714169999999996,
+     "DST": 5.7679781250000035,
+     "FB": 0.9862875000000009,
+     "K": 8.619806250000002,
+     "QB": 17.6474928125,
+     "RB": 7.16264490566038,
+     "TE": 3.997336635514023,
+     "WR": 6.012330887573966
+    },
+    "qb_wr_corr": 0.3589518495421497,
+    "qb_wr_pairs": 64,
+    "rb1_dst_corr": 0.05348900954268228
+   },
+   "games": 12,
+   "ladder": "live",
+   "ladder_teams": 32,
+   "v1": {
+    "anchor_version": 1,
+    "games": {
+     "games": [
+      {
+       "game": "DEN @ PIT",
+       "margin": -9.77075,
+       "p_home": 0.2235,
+       "total": 40.32525
+      },
+      {
+       "game": "ATL @ MIN",
+       "margin": 12.63975,
+       "p_home": 0.83525,
+       "total": 44.28275
+      },
+      {
+       "game": "BAL @ HOU",
+       "margin": 9.86175,
+       "p_home": 0.7775,
+       "total": 48.02975
+      },
+      {
+       "game": "LV @ CLE",
+       "margin": 5.69225,
+       "p_home": 0.6655,
+       "total": 45.73775
+      },
+      {
+       "game": "NO @ CIN",
+       "margin": 15.35475,
+       "p_home": 0.879,
+       "total": 48.37575
+      },
+      {
+       "game": "NYG @ IND",
+       "margin": -6.0895,
+       "p_home": 0.3285,
+       "total": 44.6895
+      },
+      {
+       "game": "NYJ @ MIA",
+       "margin": -9.53525,
+       "p_home": 0.22675,
+       "total": 45.60875
+      },
+      {
+       "game": "TEN @ JAX",
+       "margin": 18.08775,
+       "p_home": 0.92575,
+       "total": 48.60075
+      },
+      {
+       "game": "SEA @ SF",
+       "margin": 4.7175,
+       "p_home": 0.64475,
+       "total": 44.68
+      },
+      {
+       "game": "WSH @ ARI",
+       "margin": -7.029,
+       "p_home": 0.29225,
+       "total": 47.307
+      },
+      {
+       "game": "NE @ LAC",
+       "margin": 0.97225,
+       "p_home": 0.5325,
+       "total": 44.14175
+      },
+      {
+       "game": "CAR @ TB",
+       "margin": 8.68175,
+       "p_home": 0.744,
+       "total": 44.21875
+      }
+     ],
+     "pooled": {
+      "abs_margin_mean": 13.228645833333333,
+      "abs_margin_q50_90": [
+       11,
+       28
+      ],
+      "blowout_17": 0.32429166666666664,
+      "blowout_24": 0.16566666666666666,
+      "margin_sd": 16.26411722666688,
+      "total_mean": 45.4998125,
+      "total_q10_50_90": [
+       29,
+       45,
+       62
+      ],
+      "total_sd": 12.848652651731745
+     }
+    },
+    "pts_per_win": 2.25,
+    "season": {
+     "ARI": {
+      "division": 0.0,
+      "playoffs": 0.0,
+      "wins": 5.0405
+     },
+     "ATL": {
+      "division": 0.042,
+      "playoffs": 0.042,
+      "wins": 5.5495
+     },
+     "BAL": {
+      "division": 0.001,
+      "playoffs": 0.057,
+      "wins": 6.486
+     },
+     "BUF": {
+      "division": 1.0,
+      "playoffs": 1.0,
+      "wins": 14.4025
+     },
+     "CAR": {
+      "division": 0.425,
+      "playoffs": 0.43,
+      "wins": 7.895
+     },
+     "CHI": {
+      "division": 0.391,
+      "playoffs": 0.964,
+      "wins": 12.3325
+     },
+     "CIN": {
+      "division": 0.929,
+      "playoffs": 0.998,
+      "wins": 12.454
+     },
+     "CLE": {
+      "division": 0.062,
+      "playoffs": 0.725,
+      "wins": 9.445
+     },
+     "DAL": {
+      "division": 0.057,
+      "playoffs": 0.061,
+      "wins": 7.006
+     },
+     "DEN": {
+      "division": 0.767,
+      "playoffs": 0.998,
+      "wins": 13.122
+     },
+     "DET": {
+      "division": 0.248,
+      "playoffs": 0.906,
+      "wins": 11.613
+     },
+     "GB": {
+      "division": 0.001,
+      "playoffs": 0.21,
+      "wins": 9.039
+     },
+     "HOU": {
+      "division": 0.034,
+      "playoffs": 0.512,
+      "wins": 8.6255
+     },
+     "IND": {
+      "division": 0.0,
+      "playoffs": 0.0,
+      "wins": 4.736
+     },
+     "JAX": {
+      "division": 0.966,
+      "playoffs": 0.999,
+      "wins": 12.1835
+     },
+     "KC": {
+      "division": 0.233,
+      "playoffs": 0.991,
+      "wins": 11.7465
+     },
+     "LAC": {
+      "division": 0.0,
+      "playoffs": 0.0,
+      "wins": 3.4155
+     },
+     "LAR": {
+      "division": 0.003,
+      "playoffs": 0.319,
+      "wins": 9.443
+     },
+     "LV": {
+      "division": 0.0,
+      "playoffs": 0.094,
+      "wins": 6.947
+     },
+     "MIA": {
+      "division": 0.0,
+      "playoffs": 0.0,
+      "wins": 2.3685
+     },
+     "MIN": {
+      "division": 0.36,
+      "playoffs": 0.965,
+      "wins": 11.8095
+     },
+     "NE": {
+      "division": 0.0,
+      "playoffs": 0.227,
+      "wins": 7.352
+     },
+     "NO": {
+      "division": 0.042,
+      "playoffs": 0.042,
+      "wins": 5.6855
+     },
+     "NYG": {
+      "division": 0.693,
+      "playoffs": 0.709,
+      "wins": 9.399
+     },
+     "NYJ": {
+      "division": 0.0,
+      "playoffs": 0.017,
+      "wins": 5.934
+     },
+     "PHI": {
+      "division": 0.016,
+      "playoffs": 0.017,
+      "wins": 6.2865
+     },
+     "PIT": {
+      "division": 0.008,
+      "playoffs": 0.382,
+      "wins": 8.475
+     },
+     "SEA": {
+      "division": 0.018,
+      "playoffs": 0.605,
+      "wins": 10.244
+     },
+     "SF": {
+      "division": 0.979,
+      "playoffs": 1.0,
+      "wins": 14.2525
+     },
+     "TB": {
+      "division": 0.491,
+      "playoffs": 0.493,
+      "wins": 7.666
+     },
+     "TEN": {
+      "division": 0.0,
+      "playoffs": 0.0,
+      "wins": 3.204
+     },
+     "WSH": {
+      "division": 0.234,
+      "playoffs": 0.237,
+      "wins": 7.8415
+     }
+    }
+   },
+   "v2": {
+    "anchor_version": 2,
+    "games": {
+     "games": [
+      {
+       "game": "DEN @ PIT",
+       "margin": -7.9605,
+       "p_home": 0.25875,
+       "total": 40.215
+      },
+      {
+       "game": "ATL @ MIN",
+       "margin": 11.0325,
+       "p_home": 0.8025,
+       "total": 44.35
+      },
+      {
+       "game": "BAL @ HOU",
+       "margin": 8.31175,
+       "p_home": 0.7425,
+       "total": 47.77275
+      },
+      {
+       "game": "LV @ CLE",
+       "margin": 5.30375,
+       "p_home": 0.6575,
+       "total": 45.63025
+      },
+      {
+       "game": "NO @ CIN",
+       "margin": 13.67675,
+       "p_home": 0.8545,
+       "total": 48.45625
+      },
+      {
+       "game": "NYG @ IND",
+       "margin": -5.43225,
+       "p_home": 0.335,
+       "total": 44.99325
+      },
+      {
+       "game": "NYJ @ MIA",
+       "margin": -7.529,
+       "p_home": 0.27575,
+       "total": 45.124
+      },
+      {
+       "game": "TEN @ JAX",
+       "margin": 15.589,
+       "p_home": 0.88075,
+       "total": 48.36
+      },
+      {
+       "game": "SEA @ SF",
+       "margin": 4.0905,
+       "p_home": 0.6325,
+       "total": 44.262
+      },
+      {
+       "game": "WSH @ ARI",
+       "margin": -6.0425,
+       "p_home": 0.31775,
+       "total": 46.9445
+      },
+      {
+       "game": "NE @ LAC",
+       "margin": 0.86025,
+       "p_home": 0.516,
+       "total": 44.19675
+      },
+      {
+       "game": "CAR @ TB",
+       "margin": 8.21775,
+       "p_home": 0.73,
+       "total": 44.59425
+      }
+     ],
+     "pooled": {
+      "abs_margin_mean": 12.56675,
+      "abs_margin_q50_90": [
+       10,
+       27
+      ],
+      "blowout_17": 0.3002708333333333,
+      "blowout_24": 0.14364583333333333,
+      "margin_sd": 15.499191752224084,
+      "total_mean": 45.40825,
+      "total_q10_50_90": [
+       29,
+       45,
+       62
+      ],
+      "total_sd": 12.923368637376
+     }
+    },
+    "pts_per_win": 1.86,
+    "season": {
+     "ARI": {
+      "division": 0.0,
+      "playoffs": 0.0,
+      "wins": 5.218
+     },
+     "ATL": {
+      "division": 0.05,
+      "playoffs": 0.051,
+      "wins": 5.645
+     },
+     "BAL": {
+      "division": 0.001,
+      "playoffs": 0.047,
+      "wins": 6.5655
+     },
+     "BUF": {
+      "division": 1.0,
+      "playoffs": 1.0,
+      "wins": 14.246
+     },
+     "CAR": {
+      "division": 0.433,
+      "playoffs": 0.44,
+      "wins": 8.006
+     },
+     "CHI": {
+      "division": 0.428,
+      "playoffs": 0.971,
+      "wins": 12.2965
+     },
+     "CIN": {
+      "division": 0.897,
+      "playoffs": 0.997,
+      "wins": 12.215
+     },
+     "CLE": {
+      "division": 0.086,
+      "playoffs": 0.724,
+      "wins": 9.443
+     },
+     "DAL": {
+      "division": 0.062,
+      "playoffs": 0.066,
+      "wins": 7.081
+     },
+     "DEN": {
+      "division": 0.747,
+      "playoffs": 0.998,
+      "wins": 12.9165
+     },
+     "DET": {
+      "division": 0.231,
+      "playoffs": 0.898,
+      "wins": 11.5445
+     },
+     "GB": {
+      "division": 0.006,
+      "playoffs": 0.207,
+      "wins": 8.976
+     },
+     "HOU": {
+      "division": 0.051,
+      "playoffs": 0.471,
+      "wins": 8.5255
+     },
+     "IND": {
+      "division": 0.0,
+      "playoffs": 0.0,
+      "wins": 4.933
+     },
+     "JAX": {
+      "division": 0.949,
+      "playoffs": 0.996,
+      "wins": 11.997
+     },
+     "KC": {
+      "division": 0.253,
+      "playoffs": 0.989,
+      "wins": 11.5905
+     },
+     "LAC": {
+      "division": 0.0,
+      "playoffs": 0.0,
+      "wins": 3.5255
+     },
+     "LAR": {
+      "division": 0.007,
+      "playoffs": 0.368,
+      "wins": 9.5105
+     },
+     "LV": {
+      "division": 0.0,
+      "playoffs": 0.104,
+      "wins": 6.997
+     },
+     "MIA": {
+      "division": 0.0,
+      "playoffs": 0.0,
+      "wins": 2.6215
+     },
+     "MIN": {
+      "division": 0.335,
+      "playoffs": 0.939,
+      "wins": 11.66
+     },
+     "NE": {
+      "division": 0.0,
+      "playoffs": 0.235,
+      "wins": 7.521
+     },
+     "NO": {
+      "division": 0.056,
+      "playoffs": 0.057,
+      "wins": 5.843
+     },
+     "NYG": {
+      "division": 0.683,
+      "playoffs": 0.697,
+      "wins": 9.4025
+     },
+     "NYJ": {
+      "division": 0.0,
+      "playoffs": 0.011,
+      "wins": 5.9695
+     },
+     "PHI": {
+      "division": 0.019,
+      "playoffs": 0.02,
+      "wins": 6.3655
+     },
+     "PIT": {
+      "division": 0.016,
+      "playoffs": 0.428,
+      "wins": 8.6325
+     },
+     "SEA": {
+      "division": 0.025,
+      "playoffs": 0.57,
+      "wins": 10.0465
+     },
+     "SF": {
+      "division": 0.968,
+      "playoffs": 0.999,
+      "wins": 13.9955
+     },
+     "TB": {
+      "division": 0.461,
+      "playoffs": 0.464,
+      "wins": 7.5435
+     },
+     "TEN": {
+      "division": 0.0,
+      "playoffs": 0.0,
+      "wins": 3.3245
+     },
+     "WSH": {
+      "division": 0.236,
+      "playoffs": 0.253,
+      "wins": 7.8425
+     }
+    }
+   },
+   "week": 12
+  },
+  "past": {
+   "delta": {
+    "abs_margin_mean": -0.5449166666666674,
+    "blowout_17": -0.02068333333333333,
+    "blowout_24": -0.019116666666666657,
+    "dfs_mean_by_pos": {
+     "DB": -0.04740999999998019,
+     "DST": 0.028636666666665533,
+     "FB": -0.0013966666666647143,
+     "K": -0.02027999999999963,
+     "QB": -0.1949835333333283,
+     "RB": -0.03828755813953144,
+     "TE": -0.03473010309278468,
+     "WR": -0.05101858156028172
+    },
+    "dfs_player_mean_abs_delta_max": 1.2167499999999407,
+    "dfs_player_mean_abs_delta_mean": 0.12424715178571473,
+    "game_p_home_abs_delta_max": 0.05500000000000002,
+    "game_p_home_abs_delta_mean": 0.02751666666666667,
+    "margin_sd": -0.7070745630706359,
+    "qb_wr_corr": 0.001766699159493068,
+    "rb1_dst_corr": -0.003238252458682478,
+    "season_division_abs_delta_max": 0.04400000000000004,
+    "season_division_abs_delta_mean": 0.013750000000000005,
+    "season_playoffs_abs_delta_max": 0.08000000000000002,
+    "season_playoffs_abs_delta_mean": 0.019375000000000003,
+    "total_mean": -0.19571666666666232,
+    "total_sd": -0.005969791018943127
+   },
+   "dfs_v1": {
+    "mean_by_pos": {
+     "DB": 2.7623499999999876,
+     "DST": 5.657963333333334,
+     "FB": 1.3926233333333347,
+     "K": 8.67791,
+     "QB": 18.479310799999997,
+     "RB": 8.298411627906972,
+     "TE": 4.666581649484538,
+     "WR": 6.700427163120567
+    },
+    "qb_wr_corr": 0.3611310870837904,
+    "qb_wr_pairs": 60,
+    "rb1_dst_corr": 0.042188606969108804
+   },
+   "dfs_v2": {
+    "mean_by_pos": {
+     "DB": 2.7149400000000075,
+     "DST": 5.686599999999999,
+     "FB": 1.39122666666667,
+     "K": 8.657630000000001,
+     "QB": 18.28432726666667,
+     "RB": 8.260124069767441,
+     "TE": 4.631851546391753,
+     "WR": 6.6494085815602855
+    },
+    "qb_wr_corr": 0.36289778624328345,
+    "qb_wr_pairs": 60,
+    "rb1_dst_corr": 0.038950354510426326
+   },
+   "first_kickoff": "2026-11-06T01:15Z",
+   "games": 15,
+   "ladder": "candlesticks at 1793924100 (315/497 priced)",
+   "ladder_teams": 32,
+   "v1": {
+    "anchor_version": 1,
+    "games": {
+     "games": [
+      {
+       "game": "JAX @ BAL",
+       "margin": -11.96975,
+       "p_home": 0.167,
+       "total": 44.33675
+      },
+      {
+       "game": "CIN @ ATL",
+       "margin": -2.36825,
+       "p_home": 0.438,
+       "total": 49.91025
+      },
+      {
+       "game": "CLE @ NO",
+       "margin": 1.582,
+       "p_home": 0.544,
+       "total": 44.959
+      },
+      {
+       "game": "DAL @ IND",
+       "margin": -3.717,
+       "p_home": 0.3845,
+       "total": 50.4975
+      },
+      {
+       "game": "DEN @ CAR",
+       "margin": -4.9625,
+       "p_home": 0.345,
+       "total": 42.9595
+      },
+      {
+       "game": "DET @ MIA",
+       "margin": -9.78325,
+       "p_home": 0.224,
+       "total": 50.83025
+      },
+      {
+       "game": "LAR @ WSH",
+       "margin": -6.04325,
+       "p_home": 0.32075,
+       "total": 48.60175
+      },
+      {
+       "game": "NYG @ PHI",
+       "margin": -3.3835,
+       "p_home": 0.387,
+       "total": 40.288
+      },
+      {
+       "game": "NYJ @ KC",
+       "margin": 13.76375,
+       "p_home": 0.85025,
+       "total": 47.49675
+      },
+      {
+       "game": "HOU @ LAC",
+       "margin": -7.60825,
+       "p_home": 0.276,
+       "total": 43.30875
+      },
+      {
+       "game": "LV @ SF",
+       "margin": 9.3985,
+       "p_home": 0.7565,
+       "total": 52.1305
+      },
+      {
+       "game": "ARI @ SEA",
+       "margin": 12.683,
+       "p_home": 0.83675,
+       "total": 44.3285
+      },
+      {
+       "game": "GB @ NE",
+       "margin": 4.8765,
+       "p_home": 0.654,
+       "total": 47.1605
+      },
+      {
+       "game": "TB @ CHI",
+       "margin": 7.824,
+       "p_home": 0.7235,
+       "total": 45.7845
+      },
+      {
+       "game": "BUF @ MIN",
+       "margin": -6.595,
+       "p_home": 0.29825,
+       "total": 45.459
+      }
+     ],
+     "pooled": {
+      "abs_margin_mean": 12.2284,
+      "abs_margin_q50_90": [
+       10,
+       26
+      ],
+      "blowout_17": 0.2851166666666667,
+      "blowout_24": 0.13741666666666666,
+      "margin_sd": 15.486137843030106,
+      "total_mean": 46.536766666666665,
+      "total_q10_50_90": [
+       30,
+       46,
+       64
+      ],
+      "total_sd": 13.265312468197184
+     }
+    },
+    "pts_per_win": 2.25,
+    "season": {
+     "ARI": {
+      "division": 0.0,
+      "playoffs": 0.012,
+      "wins": 6.4395
+     },
+     "ATL": {
+      "division": 0.179,
+      "playoffs": 0.199,
+      "wins": 7.1215
+     },
+     "BAL": {
+      "division": 0.01,
+      "playoffs": 0.07,
+      "wins": 7.5305
+     },
+     "BUF": {
+      "division": 0.92,
+      "playoffs": 0.998,
+      "wins": 13.2925
+     },
+     "CAR": {
+      "division": 0.302,
+      "playoffs": 0.319,
+      "wins": 7.592
+     },
+     "CHI": {
+      "division": 0.363,
+      "playoffs": 0.919,
+      "wins": 11.6645
+     },
+     "CIN": {
+      "division": 0.517,
+      "playoffs": 0.852,
+      "wins": 11.1855
+     },
+     "CLE": {
+      "division": 0.063,
+      "playoffs": 0.249,
+      "wins": 8.756
+     },
+     "DAL": {
+      "division": 0.331,
+      "playoffs": 0.351,
+      "wins": 8.0255
+     },
+     "DEN": {
+      "division": 0.642,
+      "playoffs": 0.945,
+      "wins": 12.013
+     },
+     "DET": {
+      "division": 0.427,
+      "playoffs": 0.909,
+      "wins": 11.4375
+     },
+     "GB": {
+      "division": 0.03,
+      "playoffs": 0.422,
+      "wins": 9.1785
+     },
+     "HOU": {
+      "division": 0.073,
+      "playoffs": 0.333,
+      "wins": 8.804
+     },
+     "IND": {
+      "division": 0.0,
+      "playoffs": 0.008,
+      "wins": 5.9935
+     },
+     "JAX": {
+      "division": 0.927,
+      "playoffs": 0.987,
+      "wins": 12.271
+     },
+     "KC": {
+      "division": 0.343,
+      "playoffs": 0.904,
+      "wins": 11.141
+     },
+     "LAC": {
+      "division": 0.0,
+      "playoffs": 0.0,
+      "wins": 3.8665
+     },
+     "LAR": {
+      "division": 0.013,
+      "playoffs": 0.354,
+      "wins": 8.9905
+     },
+     "LV": {
+      "division": 0.015,
+      "playoffs": 0.121,
+      "wins": 7.989
+     },
+     "MIA": {
+      "division": 0.0,
+      "playoffs": 0.0,
+      "wins": 3.2355
+     },
+     "MIN": {
+      "division": 0.18,
+      "playoffs": 0.766,
+      "wins": 10.5555
+     },
+     "NE": {
+      "division": 0.08,
+      "playoffs": 0.733,
+      "wins": 9.992
+     },
+     "NO": {
+      "division": 0.072,
+      "playoffs": 0.074,
+      "wins": 5.947
+     },
+     "NYG": {
+      "division": 0.577,
+      "playoffs": 0.594,
+      "wins": 8.7725
+     },
+     "NYJ": {
+      "division": 0.0,
+      "playoffs": 0.001,
+      "wins": 4.6215
+     },
+     "PHI": {
+      "division": 0.011,
+      "playoffs": 0.011,
+      "wins": 4.758
+     },
+     "PIT": {
+      "division": 0.41,
+      "playoffs": 0.799,
+      "wins": 10.825
+     },
+     "SEA": {
+      "division": 0.056,
+      "playoffs": 0.531,
+      "wins": 9.737
+     },
+     "SF": {
+      "division": 0.931,
+      "playoffs": 0.99,
+      "wins": 12.967
+     },
+     "TB": {
+      "division": 0.447,
+      "playoffs": 0.457,
+      "wins": 7.7615
+     },
+     "TEN": {
+      "division": 0.0,
+      "playoffs": 0.0,
+      "wins": 3.163
+     },
+     "WSH": {
+      "division": 0.081,
+      "playoffs": 0.092,
+      "wins": 6.3725
+     }
+    }
+   },
+   "v2": {
+    "anchor_version": 2,
+    "games": {
+     "games": [
+      {
+       "game": "JAX @ BAL",
+       "margin": -10.2015,
+       "p_home": 0.2,
+       "total": 44.272
+      },
+      {
+       "game": "CIN @ ATL",
+       "margin": -2.012,
+       "p_home": 0.431,
+       "total": 49.6585
+      },
+      {
+       "game": "CLE @ NO",
+       "margin": 1.532,
+       "p_home": 0.54425,
+       "total": 44.4985
+      },
+      {
+       "game": "DAL @ IND",
+       "margin": -2.50675,
+       "p_home": 0.42325,
+       "total": 50.00225
+      },
+      {
+       "game": "DEN @ CAR",
+       "margin": -3.93325,
+       "p_home": 0.37375,
+       "total": 42.96075
+      },
+      {
+       "game": "DET @ MIA",
+       "margin": -7.49725,
+       "p_home": 0.279,
+       "total": 50.82025
+      },
+      {
+       "game": "LAR @ WSH",
+       "margin": -4.80125,
+       "p_home": 0.3575,
+       "total": 48.45675
+      },
+      {
+       "game": "NYG @ PHI",
+       "margin": -2.821,
+       "p_home": 0.407,
+       "total": 40.6865
+      },
+      {
+       "game": "NYJ @ KC",
+       "margin": 11.898,
+       "p_home": 0.8195,
+       "total": 46.942
+      },
+      {
+       "game": "HOU @ LAC",
+       "margin": -6.19525,
+       "p_home": 0.30525,
+       "total": 43.10675
+      },
+      {
+       "game": "LV @ SF",
+       "margin": 7.47425,
+       "p_home": 0.72325,
+       "total": 51.61625
+      },
+      {
+       "game": "ARI @ SEA",
+       "margin": 11.28125,
+       "p_home": 0.81325,
+       "total": 44.03925
+      },
+      {
+       "game": "GB @ NE",
+       "margin": 4.843,
+       "p_home": 0.644,
+       "total": 46.922
+      },
+      {
+       "game": "TB @ CHI",
+       "margin": 6.95175,
+       "p_home": 0.69875,
+       "total": 45.73975
+      },
+      {
+       "game": "BUF @ MIN",
+       "margin": -5.31725,
+       "p_home": 0.34,
+       "total": 45.39425
+      }
+     ],
+     "pooled": {
+      "abs_margin_mean": 11.683483333333333,
+      "abs_margin_q50_90": [
+       9,
+       25
+      ],
+      "blowout_17": 0.26443333333333335,
+      "blowout_24": 0.1183,
+      "margin_sd": 14.77906327995947,
+      "total_mean": 46.34105,
+      "total_q10_50_90": [
+       30,
+       46,
+       64
+      ],
+      "total_sd": 13.25934267717824
+     }
+    },
+    "pts_per_win": 1.86,
+    "season": {
+     "ARI": {
+      "division": 0.002,
+      "playoffs": 0.031,
+      "wins": 6.642
+     },
+     "ATL": {
+      "division": 0.173,
+      "playoffs": 0.2,
+      "wins": 7.109
+     },
+     "BAL": {
+      "division": 0.024,
+      "playoffs": 0.112,
+      "wins": 7.75
+     },
+     "BUF": {
+      "division": 0.907,
+      "playoffs": 0.995,
+      "wins": 13.0545
+     },
+     "CAR": {
+      "division": 0.304,
+      "playoffs": 0.32,
+      "wins": 7.6715
+     },
+     "CHI": {
+      "division": 0.359,
+      "playoffs": 0.916,
+      "wins": 11.487
+     },
+     "CIN": {
+      "division": 0.486,
+      "playoffs": 0.827,
+      "wins": 11.0875
+     },
+     "CLE": {
+      "division": 0.074,
+      "playoffs": 0.31,
+      "wins": 8.8515
+     },
+     "DAL": {
+      "division": 0.308,
+      "playoffs": 0.325,
+      "wins": 7.9655
+     },
+     "DEN": {
+      "division": 0.598,
+      "playoffs": 0.936,
+      "wins": 11.7705
+     },
+     "DET": {
+      "division": 0.39,
+      "playoffs": 0.92,
+      "wins": 11.304
+     },
+     "GB": {
+      "division": 0.043,
+      "playoffs": 0.436,
+      "wins": 9.228
+     },
+     "HOU": {
+      "division": 0.083,
+      "playoffs": 0.285,
+      "wins": 8.5255
+     },
+     "IND": {
+      "division": 0.005,
+      "playoffs": 0.019,
+      "wins": 6.0935
+     },
+     "JAX": {
+      "division": 0.912,
+      "playoffs": 0.968,
+      "wins": 11.9745
+     },
+     "KC": {
+      "division": 0.38,
+      "playoffs": 0.88,
+      "wins": 10.9725
+     },
+     "LAC": {
+      "division": 0.0,
+      "playoffs": 0.0,
+      "wins": 3.8945
+     },
+     "LAR": {
+      "division": 0.025,
+      "playoffs": 0.346,
+      "wins": 8.8975
+     },
+     "LV": {
+      "division": 0.022,
+      "playoffs": 0.171,
+      "wins": 8.075
+     },
+     "MIA": {
+      "division": 0.0,
+      "playoffs": 0.0,
+      "wins": 3.59
+     },
+     "MIN": {
+      "division": 0.208,
+      "playoffs": 0.797,
+      "wins": 10.6705
+     },
+     "NE": {
+      "division": 0.093,
+      "playoffs": 0.712,
+      "wins": 9.872
+     },
+     "NO": {
+      "division": 0.099,
+      "playoffs": 0.104,
+      "wins": 6.1415
+     },
+     "NYG": {
+      "division": 0.578,
+      "playoffs": 0.613,
+      "wins": 8.8755
+     },
+     "NYJ": {
+      "division": 0.0,
+      "playoffs": 0.001,
+      "wins": 4.879
+     },
+     "PHI": {
+      "division": 0.014,
+      "playoffs": 0.014,
+      "wins": 5.039
+     },
+     "PIT": {
+      "division": 0.416,
+      "playoffs": 0.784,
+      "wins": 10.716
+     },
+     "SEA": {
+      "division": 0.066,
+      "playoffs": 0.451,
+      "wins": 9.4615
+     },
+     "SF": {
+      "division": 0.907,
+      "playoffs": 0.978,
+      "wins": 12.624
+     },
+     "TB": {
+      "division": 0.424,
+      "playoffs": 0.44,
+      "wins": 7.73
+     },
+     "TEN": {
+      "division": 0.0,
+      "playoffs": 0.0,
+      "wins": 3.455
+     },
+     "WSH": {
+      "division": 0.1,
+      "playoffs": 0.109,
+      "wins": 6.592
+     }
+    }
+   },
+   "week": 9
+  }
+ }
+}

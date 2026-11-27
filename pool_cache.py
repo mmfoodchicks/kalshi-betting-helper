@@ -68,6 +68,7 @@ CACHE_VERSION = 1
 KEEP_ENTRIES = 24
 MAX_BYTES = 12 * 1024 ** 3               # 12 GB of the PC's disk at most
 _CODE_FILES = ("nfl_dfs_sim.py", "nfl_dfs_engine.py", "nfl_deep_sim.py", "nfl_dfs_csim.py", "nfl_usage.py",
+               "nfl_deep_data.py",   # the market anchor and its switch (ANCHOR_V2): a flip is a new key
                "pool_cache.py", os.path.join("research", "data", "nfl_deep_tables.json"),
                os.path.join("research", "data", "csim_params.json"))
 _HERE = os.path.dirname(os.path.abspath(__file__))
