@@ -80,12 +80,16 @@ def run(ck):
        and _same_enc(PC.encode(mixed_off), _old_encode(np, off))
        and isinstance(PC.squeeze(np.asarray(lat[0])), PC.Hundredths)
        and not isinstance(PC.squeeze(np.asarray(off[3])), PC.Hundredths))
-    f32 = [np.asarray(r, dtype=np.float32) for r in lat + off]
-    via = [PC.as_float32(PC.squeeze(np.asarray(r))) for r in lat + off]
+    negz = [x[:] for x in lat]
+    negz[1][3] = -0.0                                   # np.round(-0.001, 2): a negative zero int32 cannot hold
+    f32 = [np.asarray(r, dtype=np.float32) for r in lat + off + negz]
+    via = [PC.as_float32(PC.squeeze(np.asarray(r))) for r in lat + off + negz]
     m, dt, sc = PC.encode(lat)
     ck("MEM2 a compact pool's float32 rows are exactly np.asarray(list, float32) -- the rows X was built from the "
-       "lists -- whether made from Hundredths, a float64 array or read back off the cache's matrix (decode_f32)",
+       "lists, bit for bit, a negative zero included (such a row is never squeezed to int32) -- whether made from "
+       "Hundredths, a float64 array or read back off the cache's matrix (decode_f32)",
        all(a.dtype == np.float32 and a.tobytes() == b.tobytes() for a, b in zip(via, f32))
+       and not isinstance(PC.squeeze(np.asarray(negz[1])), PC.Hundredths)
        and all(PC.decode_f32(m[i], dt, sc).tobytes() == np.asarray(PC.decode_row(m[i], dt, sc), dtype=np.float32).tobytes()
                for i in range(len(lat)))
        and PC.has_array([1.0]) and not PC.has_array([]) and not PC.has_array(None)
@@ -113,6 +117,54 @@ def run(ck):
     _pool_checks(ck, np, PC, S)
     _makeit_checks(ck, np)
     _board_checks(ck, np)
+    _probe_checks(ck)
+
+
+def _probe_checks(ck):
+    """The PC measures what its builds hold (memprobe) and stamps it beside the estimate."""
+    import inspect
+    import json as _json
+    import memprobe
+    import pc_worker as W
+    w = memprobe.Watch(every=0.05)
+    blob = bytearray(64 * 1024 * 1024)
+    import time as _t
+    _t.sleep(0.2)
+    got = w.stop()
+    del blob
+    posts = []
+    saved = W._api
+    art = {"sims": 180000, "players": [{"name": str(i)} for i in range(300)], "contests": [{}, {}], "candidates": 150000}
+    try:
+        W._api = lambda url, tok, path, data=None, headers=None, timeout=90: posts.append((path, _json.loads(data)))
+        prof = {"name": "standard", "generation": 20000, "ranking": 160000, "final": 40000, "field": 300000}
+        W._mem_report("u", "t", art, prof, memprobe.Watch(every=0.05), 4242, "classic")
+
+        def boom(*a, **k):
+            raise OSError("server down")
+        W._api = boom
+        art2 = {}
+        W._mem_report("u", "t", art2, None, memprobe.Watch(every=0.05), 4243, "classic", "RuntimeError: x")
+        survived = True
+    except Exception:
+        survived = False
+    finally:
+        W._api = saved
+    rep = posts[0][1] if posts else {}
+    src = inspect.getsource(W._task_classic_tourney)
+    psrc = inspect.getsource(W._picked_builds)
+    ck("MEM7 every PC tournament build is measured while it runs (memprobe: this process's resident memory and "
+       "the machine's memory in use, sampled each second, standard library only) and the board carries it beside "
+       "pc_profiles' estimate for that build; one build_memory report goes to /api/pc/bench; a failed build is "
+       "reported too, and nothing here can stop a build",
+       got["process_peak_gb"] is not None and got["process_peak_gb"] >= got["process_start_gb"]
+       and got["system_total_gb"] and "memory" in art and art["memory"].get("estimate_gb", 0) > 0
+       and art["memory"]["worlds"] == 180000 and posts and posts[0][0] == "/api/pc/bench"
+       and rep.get("kind") == "build_memory" and rep["results"][0]["dg"] == 4242 and survived
+       and src.index("mem = _mem_watch()") < src.index("build_nfl_classic(")
+       and src.index('_mem_report(url, tok, art, prof, mem, dg, "classic")') < src.index("boardshare.put(name, art)")
+       and psrc.index("mem = _mem_watch()") < psrc.index("build_nfl_classic(")
+       and psrc.count("_mem_report(") == 2, str(got))
 
 
 def _pool_checks(ck, np, PC, S):

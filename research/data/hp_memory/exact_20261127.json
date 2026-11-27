@@ -1,0 +1,31 @@
+{
+ "players": 400,
+ "worlds": 50000,
+ "scores": 20000000,
+ "lineups": 100000,
+ "X": {
+  "compact_bytes_equal": true,
+  "cache_rows_compared": 400,
+  "cache_dtype": "int32",
+  "cache_values_equal": true,
+  "cache_bytes_differ_only_at_signed_zeros": true,
+  "signed_zeros_in_lists": 43820
+ },
+ "downstream": {
+  "scores": true,
+  "buckets": true,
+  "rank_order": true,
+  "tie_groups": true,
+  "best": true,
+  "mass_above": true
+ },
+ "ranked_worlds": 2000,
+ "tied_lineups_seen": 192489274,
+ "cache_downstream": {
+  "lineups": 20000,
+  "worlds": 5000,
+  "buckets_equal": true
+ },
+ "seconds": 129.2,
+ "verdict": "EXACT"
+}
