@@ -924,7 +924,19 @@ data-only `sim-history` branch (which never deploys):
   against `market_margins`' own contract. NOT fixed yet: the registered NFL deep-weight read is grading the
   deep engine as it stands; the owner's call on timing (proposed: its own constant, ~1.84, measured at higher n,
   with a slope-1 guard, right after that read). C3-N (the analytic resolution at 1.842) is registered on fresh
-  games, read not before 2028-01-12.
+  games, read not before 2028-01-12. **The fix is STAGED OFF** (2026-11-27, `research/reports/deep_anchor_fix.md`,
+  guards DA1-DA7): the constant measured on 24 real seasons (2002-2025, real wins shrunk halfway, production's
+  `apply_anchor`) -- K* 1.8635 (95% 1.8385-1.8865), shipped as 1.86, fresh-seed slope 1.0002 +/- 0.0064 (tolerance
+  1 +/- 0.03, stated first). `nfl_deep_data.py` stays byte-frozen for the deep-weight read (four coaching guards pin
+  it), so the fix is `research/data/deep_anchor_flip.patch`: the flip is `git apply` plus moving those four pins to
+  its sha256 in the SAME commit, and DA2 fails the patched file until `research/data/nfl_deep_weight_read.json` is
+  committed. `nfl_deep_data.py` is in `pool_cache._CODE_FILES` (a flip is a new worlds key; frozen inputs then hit
+  `PinMiss` and restart fresh), `nfl_game_sim._deep_profiles` refuses a nightly payload of the other anchor
+  version (unstamped = version 1, served as today), the deep season payload stamps it. Downstream (v1 -> v2, shared
+  seeds, weeks 12 and 9): 17+ blowouts 32.4 -> 30.0% / 28.5 -> 26.4%, totals unchanged, deep home-win figures 2.5-2.8
+  points on average, playoff odds 1-2, DFS projections hundredths, correlations unchanged; the classic board moves
+  less than its own seed-to-seed spread at reduced size. The OWNER'S CALL: flip right after the read or after the
+  12-06 Millionaire locks (cl_field2's second registered contest would otherwise be a v2 board).
 - **Classic field, second pass** (2026-11-27, `research/reports/cl_field2.md`, development weeks 10-11):
   the served field's 15-29 point deficit is per-player ownership (one chalk back carries most of it);
   steering onto a noisy-optimizer share of Sleeper's line moved by Kalshi's prop means (F1c) closed it to
