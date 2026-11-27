@@ -1634,6 +1634,160 @@ def _task_gpu_bench(url, tok, run=None, now_left=None):
     return "reported" if real else "no real data"
 
 
+# The deep-profile probe (research/profile_probe.py; the owner, 2026-11-27: "Run the unattended Deep test
+# build on my PC, provided it does not interfere with scheduled production builds or slate deadlines"). Three
+# deep builds of the week's main slate -- interrupted, resumed, fresh -- measured and reported once.
+_PROBE_KEY = "deep-v1"
+_PROBE_TIMEOUT_S = 8 * 3600
+_PROBE_RETRY_S = 6 * 3600
+_PROBE_CLEAR_S = 10_800            # never closer than three hours to any NFL slate's start, as the GPU bench
+_PROBE_MIN_FREE_GB = 40.0          # the deep pool (~1.2 GB), its checkpoints (make-it ranges up to the 8 GB
+                                   # budget) and three boards, with room to spare
+
+
+def _probe_budget_s(board):
+    """Seconds the probe may take: three deep builds scaled from the last board (pc_profiles.estimate_s), with
+    the profiles' own margin, plus half an hour."""
+    import pc_profiles
+    deep = dict(pc_profiles.PROFILES["deep"], name="deep")
+    est, _how = pc_profiles.estimate_s(deep, board)
+    return 3.0 * pc_profiles.TIME_MARGIN * float(est) + 1800.0
+
+
+def _overlaps_window(t0, t1):
+    """Whether [t0, t1] touches a scheduled main-slate window (_CL_WEEK_WINDOWS, Mountain time)."""
+    import datetime
+    step = 900
+    t = t0
+    while t <= t1:
+        d = datetime.datetime.fromtimestamp(t, _mt_zone())
+        for _name, wd, lo, hi in _CL_WEEK_WINDOWS:
+            if d.weekday() == wd and lo <= (d.hour, d.minute) <= hi:
+                return True
+        t += step
+    return False
+
+
+def _run_tree(cmd, cwd=None, capture_output=True, text=True, timeout=None):
+    """subprocess.run's answer for `cmd`, but a timeout stops the whole process TREE (taskkill /T on Windows,
+    the process group elsewhere) before TimeoutExpired is raised: subprocess.run would kill only the direct
+    child and leave a build's grandchildren running into a slate."""
+    import subprocess
+    kw = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
+    proc = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=text, **kw)
+    try:
+        out, err = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True, timeout=60)
+        else:
+            import signal
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            except OSError:
+                proc.kill()
+        proc.communicate(timeout=120)
+        raise
+    return subprocess.CompletedProcess(cmd, proc.returncode, out, err)
+
+
+def _task_profile_probe(url, tok, run=None, now_left=None, slate=None, free_gb=None, now=None):
+    """Run research/profile_probe.py once (per _PROBE_KEY) when it cannot touch a production build: the
+    week's main slate is listed, the whole probe's budget ends three hours before ANY NFL slate starts and
+    outside the Saturday-night window, the disk has room, and the deep profile's memory estimate fits this
+    PC. Posts the report through the PC's token door. `run` / `now_left` / `slate` / `free_gb` / `now` let a
+    guard stand in for the subprocess, the lobby and the clock."""
+    import shutil
+    import subprocess
+    sdir = os.environ.get("VIGIL_SIM_CACHE_DIR") or os.path.join(_HERE, "pc-simcache")
+    spath = os.path.join(sdir, "profile_probe_state.json")
+    try:
+        with open(spath) as fh:
+            state = json.load(fh)
+    except (OSError, ValueError):
+        state = {}
+    if state.get("done") == _PROBE_KEY:
+        return "done"
+    now = time.time() if now is None else now
+    if state.get("tried_key") == _PROBE_KEY and now - float(state.get("tried_ts") or 0) < _PROBE_RETRY_S:
+        return "waiting"
+    try:
+        if slate is None:
+            import dk
+            slate = dk.main_slate(dk.slates("nfl") or [], now=now)
+        left = now_left() if now_left else _next_nfl_start_s()
+    except Exception as e:
+        print(f"[vigil-pc] deep probe: the DraftKings lobby could not be read ({type(e).__name__}); not risking a deadline")
+        return "no lobby"
+    if not slate or not slate.get("draft_group_id"):
+        return "no main slate"
+    import boardshare
+    dg = int(slate["draft_group_id"])
+    board = boardshare.get(f"cl_tourney_nfl_{dg}", None)[0] if run is None else None
+    budget = _probe_budget_s(board)
+    if left is not None and left < budget + _PROBE_CLEAR_S:
+        print(f"[vigil-pc] deep probe: a slate starts in {left / 3600:.1f} h and the probe needs ~{budget / 3600:.1f} h"
+              " plus three clear; not now")
+        return "deadline"
+    if _overlaps_window(now, now + budget):
+        print("[vigil-pc] deep probe: it would run into the Saturday-night build window; not now")
+        return "window"
+    try:
+        free = free_gb if free_gb is not None else shutil.disk_usage(sdir).free / 1024 ** 3
+    except OSError:
+        free = 0.0
+    import pc_profiles
+    ram = _ram_gb()
+    need = pc_profiles.memory_gb(dict(pc_profiles.PROFILES["deep"], name="deep"), ram_gb=ram)
+    why = None
+    if free < _PROBE_MIN_FREE_GB:
+        why = f"only {free:.0f} GB free on the cache disk ({_PROBE_MIN_FREE_GB:.0f} needed)"
+    elif ram is None or need > pc_profiles.MEM_FRACTION * ram:
+        why = f"the deep profile's estimate ~{need:.0f} GB does not fit this PC ({ram} GB)"
+    rep, err = None, why
+    if why is None:
+        _task_note(f"deep profile probe of slate {dg} (three builds, ~{budget / 3600:.1f} h)")
+        out = os.path.join(sdir, "profile_probe.json")
+        try:
+            if os.path.exists(out):
+                os.remove(out)
+            # capped at its own budget, so it always ends three hours before the next slate; on the cap the
+            # WHOLE process tree goes (the probe's build child and its pool workers, not just the probe)
+            r = (run or _run_tree)([sys.executable, os.path.join(_HERE, "research", "profile_probe.py"),
+                                    "--dg", str(dg), "--out", out], cwd=_HERE, capture_output=True, text=True,
+                                   timeout=min(_PROBE_TIMEOUT_S, budget))
+            if r.returncode == 0 and os.path.exists(out):
+                with open(out) as fh:
+                    rep = json.load(fh)
+            else:
+                err = ((r.stderr or "") + (r.stdout or ""))[-1500:]
+        except subprocess.TimeoutExpired:
+            err = f"timed out after {min(_PROBE_TIMEOUT_S, budget):.0f} s (its budget); the process tree was stopped"
+        except (OSError, ValueError) as e:
+            err = f"{type(e).__name__}: {e}"[:300]
+        finally:
+            _task_note(None)
+    payload = {"kind": "profile_probe", "key": _PROBE_KEY, "commit": _git_commit(), "ts": time.time(),
+               "real_data": rep is not None, "results": [{"dg": dg, "report": rep, "error": err,
+                                                          "budget_s": round(budget), "free_gb": round(free, 1),
+                                                          "estimate_gb": round(need, 1), "ram_gb": ram}]}
+    try:
+        _api(url, tok, "/api/pc/bench", data=json.dumps(payload, default=str).encode(),
+             headers={"Content-Type": "application/json"}, timeout=60)
+    except Exception as e:
+        print(f"[vigil-pc] deep probe report not delivered ({type(e).__name__}); next cycle retries")
+        return "undelivered"
+    state.update(tried_key=_PROBE_KEY, tried_ts=now)
+    if rep is not None:
+        state["done"] = _PROBE_KEY
+    try:
+        with open(spath, "w") as fh:
+            json.dump(state, fh)
+    except OSError as e:
+        print(f"[vigil-pc] deep probe state not written ({type(e).__name__})")
+    return "reported" if rep is not None else "refused"
+
+
 def _cycle(url, tok):
     total = 0
     _fetch_params(url, tok)
@@ -1675,6 +1829,15 @@ def _cycle(url, tok):
             total += _sync_kind(url, tok, kind)
         except Exception as e:
             print(f"[vigil-pc] sync {kind} failed ({type(e).__name__}: {e})")
+    # Last of all, AFTER the syncs (it can take hours, and the server must not see the night's deep payloads
+    # age into building them itself): the one deep-profile probe the owner approved (_task_profile_probe).
+    _yield_point("deep profile probe")
+    try:
+        _task_profile_probe(url, tok)
+    except UpdateWaiting:
+        raise
+    except Exception as e:
+        print(f"[vigil-pc] task deep profile probe failed ({type(e).__name__}: {e}) - moving on")
     print(f"[vigil-pc] cycle done - {total} artifact(s) shipped")
 
 
