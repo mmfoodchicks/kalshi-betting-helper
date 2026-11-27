@@ -110,11 +110,17 @@ These phase cuts were not registered. They describe the read, and they decide no
 and the season figures it sharpens are the ones the as-of ratings know least. For the NFL there is a specific
 reason. `nfl_season._PTS_PER_WIN` is 2.25, and its comment says it was set as 1.66 / 0.74 so that the
 compressed engine would hand the market's wins back. Feeding that same 2.25 into Phi(. / 13.2) therefore
-counts the correction twice: about 1.35x too steep.
+over-corrects.
 
-The registered rule fixed "the numbers the boards already use", so the replay kept 2.25. A fair NFL retry
-would resolve at 1.66 points per win. That would be a new registration on new games, never a re-read of this
-one.
+The registered rule fixed "the numbers the boards already use", so the replay kept 2.25.
+
+*Corrected the same day (addendum below).* The first version of this paragraph said "about 1.35x too steep" and
+"a fair retry would resolve at 1.66". Both were wrong.
+- The measured over-spread is 1.19x.
+- The analytic resolution needs 1.842 points per win to give the market's wins back. At 1.66 it compresses
+  them (slope 0.91).
+
+The new comparison is registered on fresh games.
 
 ## The CFP committee ranking (the secondary test, S6)
 
@@ -175,3 +181,70 @@ Guards for the read are in `tests/guards_auto_c3.py`:
 - **C3f:** the inputs.
 - **C3g:** the committed verdict, recomputed from its own figures. It also checks that production still
   resolves games by the engine exactly where the verdict is not PASS.
+
+## Addendum (2026-11-27): the 2.25 investigation
+
+The owner asked us to "investigate the suspected double margin-compression correction. Distinguish a
+demonstrable implementation error from a proposed modeling improvement. Preserve the original replay result,
+and register any new predictive comparison on fresh data."
+
+**The test.** Each reader of the constant is checked against the constant's own contract. That contract, from
+the comment above `nfl_season._PTS_PER_WIN`, is that "the season sim seeded with the market's wins has to give
+those wins back."
+
+The test seeds 32 teams with a market-like win vector: 2025's real wins shrunk halfway to 8.5, a spread of 1.70
+wins. It plays 2025's 272-game schedule, then regresses the returned expected wins on the seeded wins. A slope of
+1 keeps the contract.
+
+The script is `research/c3_margin_scale.py`. Its output is `research/data/c3_margin_scale.json`. No outcome is
+read: this is a property of each engine.
+
+| reader of 2.25 | production? | slope at 2.25 | other points |
+|---|---|---|---|
+| `nfl_season._matchup_pts` -> drive engine (`run_season`) | **yes**: the NFL season sim | **1.040 +/- 0.025** | 1.66: 0.787 |
+| `nfl_season._wp`: Phi((gap x 2.25 + 2.1) / 13.2) | **no** caller in production | **1.194 +/- 0.029** | 1.66: 0.909; slope 1 at **1.842** |
+| `nfl_deep_data.market_margins` -> `apply_anchor` -> deep engine | **yes**: the deep engine's market level | **1.206 +/- 0.031** | 1.95: 1.080 |
+
+For the deep engine, the realized margin on the anchored margin is 1.007. So the anchor delivers the margin it
+is asked for; the margin it is asked for is the problem.
+
+1. **No production path applies the correction twice.** The NFL season sim applies 2.25 once, through the
+   engine whose compression it corrects. It gives the market's wins back (1.04).
+2. **The C3 analytic arm is a modeling question, not a production bug.** Its construction carries the
+   over-spread: Phi(. / 13.2) at 2.25 returns 1.19x the market's spread. The registered rule used
+   `_wp`'s numbers, so the over-spread lives in C3's arm (and in the research PD arms of game_xref and the deep
+   validation that call `_wp`), not in any production number.
+
+   C3 stays read for its own question. The question it could not answer, whether the analytic resolution
+   scaled to 1.842 beats the drive engine, is registered as **C3-N** on fresh games only:
+   - `research/c3_nfl_rescaled.py`, and `research/data/c3_nfl_rescaled/prereg.json`, which pins it by sha256.
+   - The data are 2026's projections before weeks 13-18 (every simulated game from 2026-12-03) and all of
+     2027.
+   - It passes only at > 2 SE on both scores, pooled, clustered by team-season.
+   - It is not read before 2028-01-12.
+   - It is underpowered: 80% power needs about 0.034 wins and 0.028 nats per team-week. Expect "not
+     established".
+3. **A demonstrable implementation error in production, reported and NOT changed here.** The deep engine's
+   market anchor converts Kalshi's rest-of-season pace to margin at the drive engine's 2.25. The deep engine
+   does not compress margins (realized on anchored 1.007), so a deep season seeded with the ladder returns the
+   market's spread 1.21x (6.6 SE from 1). Its own contract says otherwise: `market_margins` is "points of
+   margin ... from Kalshi's win totals", and the level is "anchored at full weight to Kalshi's win totals".
+
+   **Proposed fix.** Give the deep anchor its own constant, measured by the same criterion. The two points
+   measured here bracket it at 1.81-1.87, and the analytic slope-1 figure is 1.842. Measure it at higher n
+   before shipping.
+
+   **Proposed guard.** The deep season seeded through `market_margins` returns slope 1 +/- 0.05. The drive
+   season sim keeps 2.25 at slope 1.04.
+
+   **Effect on the current board** (week 12 of 2026, the live ladder; `research/data/c3_margin_scale_board.json`):
+   - This measures the level alone, on league-average units.
+   - The deep figure moves 0.3-5.6 points a game toward the market's spread. For example, WSH @ ARI goes from
+     26.7% to 32.3% for the home side, and TEN @ JAX from 88.0% to 84.2%.
+   - The slate headline, which takes the deep figure at 0.30, moves up to 1.7 points.
+   - The deep season's favourites read too strong in division and playoff odds, and the DFS worlds' deep
+     scoring level is over-spread the same way.
+
+   **Why the orchestrator and the owner must decide.** The registered NFL deep-weight read (100 graded
+   `nfl_deep` games, 84 by 2026-11-26) is grading this deep engine as it stands. Changing the anchor
+   mid-read changes the model under test.

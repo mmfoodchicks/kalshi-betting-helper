@@ -1,0 +1,46 @@
+{
+ "analytic_k_for_slope_1": 1.842,
+ "readers": {
+  "analytic_k1.66": {
+   "se": 0.0225,
+   "slope": 0.9092
+  },
+  "analytic_k2.25": {
+   "se": 0.0285,
+   "slope": 1.1937
+  },
+  "deep_k1.95": {
+   "levels": {
+    "KC": 0.9618,
+    "TEN": 0.915
+   },
+   "n_per_game": 500,
+   "realized_margin_on_anchored": 1.011,
+   "se": 0.0272,
+   "slope": 1.0796
+  },
+  "deep_k2.25": {
+   "levels": {
+    "KC": 0.9558,
+    "TEN": 0.9016
+   },
+   "n_per_game": 500,
+   "realized_margin_on_anchored": 1.007,
+   "se": 0.0309,
+   "slope": 1.2057
+  },
+  "drive_k1.66": {
+   "n_per_game": 4000,
+   "se": 0.0195,
+   "slope": 0.7867
+  },
+  "drive_k2.25": {
+   "n_per_game": 4000,
+   "se": 0.0245,
+   "slope": 1.0398
+  }
+ },
+ "schedule": "2025, 272 games",
+ "seed_sd": 1.704,
+ "seed_vector": "2025 real wins shrunk 0.5 toward 8.5"
+}

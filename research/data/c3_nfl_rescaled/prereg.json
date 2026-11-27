@@ -1,0 +1,20 @@
+{
+ "id": "c3_nfl_rescaled",
+ "k_new": 1.842,
+ "k_new_provenance": "research/data/c3_margin_scale.json analytic_k_for_slope_1 (an engine property measured by the constant's own criterion; no outcome read)",
+ "not_before": "2028-01-12T00:00:00Z",
+ "power": "pooled SE ~0.012 wins / ~0.010 nats per team-week; 80% power needs ~0.034 / ~0.028; expect NOT ESTABLISHED unless the gain is well above C3's estimates; a null is never 'no difference'",
+ "question": "does the NFL season sim's analytic resolution, scaled to give the market's wins back (Phi(((Ra - Rb) x 1.842 + 2.2 x host) / 13.2)), beat production's drive engine on fresh games?",
+ "registered_at": "2026-11-27",
+ "rule": "research/c3_nfl_rescaled.py docstring, THE RULE: PASS iff the pooled d (engine - rescaled) exceeds 2 SE on BOTH the win-total MAE and the division + playoffs log loss, SE clustered by team-season",
+ "sha256": {
+  "research/c3_nfl_rescaled.py": "35bb96154082f4723293480cedc907f7b6a49d0e1a52e346708f44b431fea352",
+  "research/c3_season_replay.py": "2f1ae258e190034128c8ba0ab1ab4fc6638e4538ac3c6ada7724f5adbe60eef9",
+  "research/data/c3_margin_scale.json": "f5eb5f43d73792cdbd7473bf14ce71511183d7603312c66c68828c3a376996c1"
+ },
+ "supersedes": "nothing: C3 (research/data/c3_season_replay.json) stays read for its own question, the analytic resolution on the boards' 2.25",
+ "windows": {
+  "2026": "projections before weeks 13-18 (every simulated game on or after 2026-12-03)",
+  "2027": "projections before weeks 1-18"
+ }
+}

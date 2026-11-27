@@ -1,0 +1,104 @@
+{
+ "games": [
+  {
+   "deep_p_home_1.84": 0.287,
+   "deep_p_home_2.25": 0.251,
+   "game": "DEN @ PIT",
+   "headline_shift_at_0.30": 0.0109,
+   "pace_away": 11.735,
+   "pace_home": 6.856
+  },
+  {
+   "deep_p_home_1.84": 0.799,
+   "deep_p_home_2.25": 0.84,
+   "game": "NO @ CIN",
+   "headline_shift_at_0.30": -0.0121,
+   "pace_away": 7.006,
+   "pace_home": 12.25
+  },
+  {
+   "deep_p_home_1.84": 0.471,
+   "deep_p_home_2.25": 0.474,
+   "game": "NYG @ IND",
+   "headline_shift_at_0.30": -0.001,
+   "pace_away": 5.734,
+   "pace_home": 4.955
+  },
+  {
+   "deep_p_home_1.84": 0.277,
+   "deep_p_home_2.25": 0.253,
+   "game": "NYJ @ MIA",
+   "headline_shift_at_0.30": 0.0071,
+   "pace_away": 8.202,
+   "pace_home": 4.056
+  },
+  {
+   "deep_p_home_1.84": 0.767,
+   "deep_p_home_2.25": 0.799,
+   "game": "ATL @ MIN",
+   "headline_shift_at_0.30": -0.0096,
+   "pace_away": 7.055,
+   "pace_home": 11.205
+  },
+  {
+   "deep_p_home_1.84": 0.842,
+   "deep_p_home_2.25": 0.88,
+   "game": "TEN @ JAX",
+   "headline_shift_at_0.30": -0.0115,
+   "pace_away": 5.404,
+   "pace_home": 11.796
+  },
+  {
+   "deep_p_home_1.84": 0.696,
+   "deep_p_home_2.25": 0.73,
+   "game": "BAL @ HOU",
+   "headline_shift_at_0.30": -0.0102,
+   "pace_away": 7.602,
+   "pace_home": 10.725
+  },
+  {
+   "deep_p_home_1.84": 0.552,
+   "deep_p_home_2.25": 0.549,
+   "game": "NE @ LAC",
+   "headline_shift_at_0.30": 0.0009,
+   "pace_away": 6.416,
+   "pace_home": 6.428
+  },
+  {
+   "deep_p_home_1.84": 0.323,
+   "deep_p_home_2.25": 0.267,
+   "game": "WSH @ ARI",
+   "headline_shift_at_0.30": 0.0169,
+   "pace_away": 9.136,
+   "pace_home": 5.259
+  },
+  {
+   "deep_p_home_1.84": 0.594,
+   "deep_p_home_2.25": 0.611,
+   "game": "SEA @ SF",
+   "headline_shift_at_0.30": -0.0051,
+   "pace_away": 10.433,
+   "pace_home": 11.609
+  },
+  {
+   "deep_p_home_1.84": 0.58,
+   "deep_p_home_2.25": 0.604,
+   "game": "LV @ CLE",
+   "headline_shift_at_0.30": -0.0072,
+   "pace_away": 7.352,
+   "pace_home": 8.24
+  },
+  {
+   "deep_p_home_1.84": 0.635,
+   "deep_p_home_2.25": 0.65,
+   "game": "CAR @ TB",
+   "headline_shift_at_0.30": -0.0045,
+   "pace_away": 7.801,
+   "pace_home": 9.549
+  }
+ ],
+ "k_new": 1.84,
+ "n_per_game": 2000,
+ "season": "2026",
+ "week": 12
+}
