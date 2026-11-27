@@ -651,6 +651,29 @@
     }
    ],
    "ts": 1795773954.4146159
+  },
+  {
+   "commit": "e316055eb3a23a8598ab2640bf0be88d208fb3cc",
+   "key": "775b910d62d096ea",
+   "real_data": false,
+   "received_ts": 1795796267.5567527,
+   "results": [
+    {
+     "config": {
+      "batches": "250",
+      "cands": 20000,
+      "field": 300000,
+      "kernel": "score",
+      "name": "score",
+      "require_kind": "classic",
+      "worlds": 160000
+     },
+     "error": "Traceback (most recent call last):\n  File \"D:\\Games\\Kalshi Betting\\kalshi-betting-helper\\research\\gpu_bench.py\", line 537, in <module>\n    sys.exit(main())\n             ~~~~^^\n  File \"D:\\Games\\Kalshi Betting\\kalshi-betting-helper\\research\\gpu_bench.py\", line 410, in main\n    X, idx, w, label = inputs(args, np)\n                       ~~~~~~^^^^^^^^^^\n  File \"D:\\Games\\Kalshi Betting\\kalshi-betting-helper\\research\\gpu_bench.py\", line 173, in inputs\n    raise RuntimeError(f\"no real slate to benchmark: no {want} slate's evaluator artifact yet\")\nRuntimeError: no real slate to benchmark: no classic slate's evaluator artifact yet\n",
+     "report": null,
+     "wall_s": 0.5
+    }
+   ],
+   "ts": 1795796265.8153787
   }
  ]
 }
