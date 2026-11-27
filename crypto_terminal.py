@@ -1222,6 +1222,28 @@ def _ensure_paper():
     _paper_ready = _db_path()
 
 
+def kalshi_fee_c(c, mult=1.0):
+    """Kalshi's quadratic taker fee in cents for ONE contract at c cents (the expected per-contract figure)."""
+    return mult * 7.0 * c * (100.0 - c) / 10000.0 if 0 < c < 100 else 0.0
+
+
+def order_fee_c(c, n, mult=1.0):
+    """The fee on one ORDER of n contracts at c cents: 0.07 x n x P x (1 - P) dollars x the series' multiplier,
+    rounded UP to the cent (Kalshi's fee schedule; every crypto series' multiplier was 1 on 2026-11-27)."""
+    return float(math.ceil(n * kalshi_fee_c(c, mult) - 1e-9)) if n > 0 else 0.0
+
+
+def contracts_for_dollars(dollars_c, ask_c, mult=1.0):
+    """What Kalshi's dollar Quick Order buys: the most contracts whose cost at the ask plus the order's fee
+    fits in dollars_c cents."""
+    if not ask_c or ask_c <= 0 or ask_c >= 100:
+        return 0
+    n = int(dollars_c // ask_c)
+    while n > 0 and n * ask_c + order_fee_c(ask_c, n, mult) > dollars_c:
+        n -= 1
+    return n
+
+
 def order_fee_cents(ticker, price_c, qty):
     """Kalshi's taker fee for one ORDER: the quadratic curve x the series' multiplier x qty, rounded UP to
     the cent (a per-contract figure without the rounding under-states a one-lot by up to 0.99c)."""
