@@ -748,17 +748,19 @@ def _profile_checks(ck):
     ck("PF9 the worker: with no profile configured the classic task makes production's call exactly (n_sims from "
        "_cl_sims, nothing else); under \"deep\" on Saturday night it passes the profile's worlds, split and field "
        "and the configured processes; in the pre-lock window, on a PC without the memory, or too near the lock it "
-       "makes production's call again -- and EVERY board is stamped with the profile it ran, the one asked for "
-       "and why, so research can compare boards by the worlds behind them",
+       "makes production's call again (the pre-lock one with fresh_inputs: always current information) -- and "
+       "EVERY board is stamped with the profile it ran, the one asked for and why, so research can compare boards "
+       "by the worlds behind them",
        k_std == {"min_pool": W._CL_MIN_POOL, "n_sims": 180000, "log": print} and s_std["name"] == "standard"
        and s_std["requested"] == "standard" and (s_std["generation"], s_std["ranking"]) == (20000, 160000)
        and k_deep == {"min_pool": W._CL_MIN_POOL, "log": print, "n_sims": 550000, "opt_worlds": 50000,
                       "field_n": 300000, "workers": 12}
        and s_deep["name"] == "deep" and s_deep["workers"] == 12 and "fits" in s_deep["why"]
-       and k_pre == k_std and s_pre["name"] == "standard" and s_pre["requested"] == "deep" and "inactives" in s_pre["why"]
+       and k_pre == dict(k_std, fresh_inputs=True) and s_pre["name"] == "standard" and s_pre["requested"] == "deep"
+       and "inactives" in s_pre["why"]
        and k_ram == k_std and s_ram["requested"] == "research" and "needs ~" in s_ram["why"]
        and k_late == k_std and "would take" in s_late["why"] and len(landed) == 5
-       and "build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=n_sims, log=print)" in src_task
+       and "build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=n_sims, log=print, **fresh)" in src_task
        and src_task.index("_stamp_profile(art, prof)") < src_task.index("boardshare.put(name, art)"),
        f"{k_deep} {s_deep} {s_late}")
     env = {}
@@ -815,7 +817,8 @@ def _profile_checks(ck):
        "follows the plain board's profile rule so the two can share cached worlds",
        ex.get("profile") == "standard" and "PASTE" in ex.get("sim_token", "")
        and "build_ckpt" in md and "pc_profiles" in md and md.index("## The PC offload") < md.index("build_ckpt")
-       and "prof = _cl_profile(st, plain, _cl_window_key(st), picked=True)" in inspect.getsource(W._picked_builds)
+       and "pk_window = _cl_window_key(st)" in inspect.getsource(W._picked_builds)
+       and "prof = _cl_profile(st, plain, pk_window, picked=True)" in inspect.getsource(W._picked_builds)
        and (not os.path.exists(bat) or "profile" not in open(bat, errors="replace").read().lower()))
 
 
