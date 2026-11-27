@@ -878,6 +878,20 @@ data-only `sim-history` branch (which never deploys):
   2028-01-13 after R1's. R3's trailing-late miss is trailing teams protecting their quarterback (28 of 30 strategic,
   not late-season rest); a new hazard form is an R5 candidate on fresh games. R3's report carries an erratum: its
   R3 arm's deal draws are seeded one game later than R2's (noise, not bias; the registered read stands).
+  **R4 checks** (`research/nfl_coach_r4_checks.py`, R4 report section H; guards N5-T1..T3): at play time R4 reads
+  only each drive's first-snap margin and clock -- injury reports and play descriptions are training LABELS only.
+  Flipping the ambiguous pulls' labels keeps the lead back's sit and the injury completion shift in every variant;
+  the call shifts are fragile; the development gain stays positive. **R3's seed discrepancy** cannot move its read
+  (`research/nfl_coach_r3_seed_check.py`: the registered endpoints take no draw -- 185,600 draws identical, bias 0,
+  power unchanged). **R5** (`nfl_coach_sim_r5.py`, `coach-r5.0`; `research/reports/nfl_coach_r5.md`, `prereg_r5.json`):
+  every richer pull hazard (possessions left, timeouts, the leader's need, coach tendency) was REFUSED by its rule on
+  2025, so R5's hazard is R3's form refitted on 2016-2025; the trailing-late miss is a regime change (2016-21: 30 real
+  vs 31.6; 2022-26: 47 vs 20.3) and stays UNFIXED -- a corner-specific term would be a threshold by another name; it
+  is a registered secondary question. R5 does ship the second unit as per-player sit decisions drawn once per
+  strategic pull (lead back 0.530; each top-two target 0.478 if the back sat, 0.050 if not; fitted jointly): lead
+  back sits the rest of the game 48.8% simulated vs 51.3% real (R4 5.2%), +1.34 / +1.51 nats a pulled team-game
+  over R4 in development; no-pull parity with R4. Registered on the 2028 regular season (the first season R1-R4
+  have not taken), read on/after 2029-01-16, 30+ strategic pulls.
 - **The deep engine's market anchor spreads 1.21x too wide** (2026-11-27, `research/data/c3_margin_scale.json`,
   C3 addendum): `nfl_deep_data.market_margins` converts Kalshi's win totals to points with
   `nfl_season._PTS_PER_WIN` 2.25, the drive engine's constant (set to undo ITS compression; the drive season sim
