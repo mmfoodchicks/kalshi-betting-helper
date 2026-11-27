@@ -1,3 +1,219 @@
 {
- "runs": []
+ "runs": [
+  {
+   "commit": "5696b7ddb4b5988c64c90559d3c9a74bd216fcc4",
+   "key": "be26e299fe0798da",
+   "real_data": true,
+   "received_ts": 1795730282.2321177,
+   "results": [
+    {
+     "config": {
+      "batches": "50,250",
+      "field": 300000,
+      "name": "evaluator",
+      "worlds": 40000
+     },
+     "error": null,
+     "report": {
+      "agreement": {
+       "bucket_cells_first_chunk": 75000000,
+       "bucket_mismatches_first_chunk": 0,
+       "exact": true,
+       "gpu_batched_vs_cpu": 0,
+       "gpu_batched_vs_gpu_loop": 0,
+       "gpu_loop_vs_cpu": 0,
+       "threshold_cells": 320000
+      },
+      "chunk": 250,
+      "cpu": {
+       "bucket_s": 44.249,
+       "d2h_s": 0.0,
+       "h2d_s": 0.063,
+       "hist_s": 85.367,
+       "matmul_s": 9.909,
+       "peak_ram_mb": 1287.8,
+       "total_loop_s": 139.589,
+       "total_s": 139.631
+      },
+      "cpu_threads": 10,
+      "field": 300000,
+      "fractions": [
+       0.0,
+       0.0001,
+       0.001,
+       0.01,
+       0.05,
+       0.1,
+       0.2,
+       0.5
+      ],
+      "gpu": {
+       "bucket_s": 0.964,
+       "d2h_s": 0.074,
+       "h2d_s": 0.066,
+       "hist_batched_s": 2.316,
+       "hist_s": 32.249,
+       "init_s": 2.934,
+       "matmul_s": 0.515,
+       "peak_ram_mb": 1287.8,
+       "peak_vram_mb": 1296.0,
+       "total_batched_s": 3.935,
+       "total_loop_s": 33.868,
+       "total_s": 36.203
+      },
+      "gpu_batches": {
+       "250": {
+        "hist_batched_s": 2.036,
+        "mismatches_vs_cpu": 0,
+        "peak_vram_mb": 2168.5,
+        "total_batched_s": 3.323
+       },
+       "50": {
+        "hist_batched_s": 2.316,
+        "mismatches_vs_cpu": 0,
+        "peak_vram_mb": 1296.0,
+        "total_batched_s": 3.935
+       }
+      },
+      "gpu_name": "NVIDIA GeForce RTX 4070 SUPER",
+      "gpu_stats_after": {
+       "mem_total_mb": 12282.0,
+       "mem_used_mb": 3664.0,
+       "power_w": 129.73,
+       "temp_c": 52.0,
+       "util_pct": 66.0
+      },
+      "gpu_stats_before": {
+       "mem_total_mb": 12282.0,
+       "mem_used_mb": 1322.0,
+       "power_w": 28.28,
+       "temp_c": 51.0,
+       "util_pct": 1.0
+      },
+      "gpu_vram_mb": 12282,
+      "hist": "auto",
+      "hist_batch": 50,
+      "host": "Windows-11-10.0.26300-SP0",
+      "inputs": "cache: 157087-1795729808 (24 players, 60,000 cached worlds, entry 4f50ee3e6c02)",
+      "numpy": "2.3.3",
+      "players": 24,
+      "priority": "below normal",
+      "python": "3.13.7",
+      "speedups": {
+       "cpu_production_vs_gpu_batched": 20.32,
+       "cpu_production_vs_gpu_loop": 3.79,
+       "gpu_hist_batched_vs_loop": 13.92
+      },
+      "when": "2026-11-26 14:50:14",
+      "worlds": 40000
+     },
+     "wall_s": 184.7
+    },
+    {
+     "config": {
+      "batches": "50,250",
+      "field": 300000,
+      "name": "tournament",
+      "worlds": 160000
+     },
+     "error": null,
+     "report": {
+      "agreement": {
+       "bucket_cells_first_chunk": 75000000,
+       "bucket_mismatches_first_chunk": 0,
+       "exact": true,
+       "gpu_batched_vs_cpu": 0,
+       "gpu_batched_vs_gpu_loop": 0,
+       "gpu_loop_vs_cpu": 0,
+       "threshold_cells": 480000
+      },
+      "chunk": 250,
+      "cpu": {
+       "bucket_s": 65.621,
+       "d2h_s": 0.0,
+       "h2d_s": 0.031,
+       "hist_s": 130.81,
+       "matmul_s": 15.011,
+       "peak_ram_mb": 1287.5,
+       "total_loop_s": 211.474,
+       "total_s": 211.49
+      },
+      "cpu_threads": 10,
+      "field": 300000,
+      "fractions": [
+       0.0,
+       0.0001,
+       0.001,
+       0.01,
+       0.05,
+       0.1,
+       0.2,
+       0.5
+      ],
+      "gpu": {
+       "bucket_s": 1.417,
+       "d2h_s": 0.12,
+       "h2d_s": 0.06,
+       "hist_batched_s": 4.013,
+       "hist_s": 56.767,
+       "init_s": 1.326,
+       "matmul_s": 0.357,
+       "peak_ram_mb": 1287.5,
+       "peak_vram_mb": 1299.6,
+       "total_batched_s": 5.968,
+       "total_loop_s": 58.722,
+       "total_s": 62.767
+      },
+      "gpu_batches": {
+       "250": {
+        "hist_batched_s": 3.227,
+        "mismatches_vs_cpu": 0,
+        "peak_vram_mb": 2171.5,
+        "total_batched_s": 5.149
+       },
+       "50": {
+        "hist_batched_s": 4.013,
+        "mismatches_vs_cpu": 0,
+        "peak_vram_mb": 1299.6,
+        "total_batched_s": 5.968
+       }
+      },
+      "gpu_name": "NVIDIA GeForce RTX 4070 SUPER",
+      "gpu_stats_after": {
+       "mem_total_mb": 12282.0,
+       "mem_used_mb": 3666.0,
+       "power_w": 133.75,
+       "temp_c": 65.0,
+       "util_pct": 70.0
+      },
+      "gpu_stats_before": {
+       "mem_total_mb": 12282.0,
+       "mem_used_mb": 1305.0,
+       "power_w": 28.89,
+       "temp_c": 55.0,
+       "util_pct": 1.0
+      },
+      "gpu_vram_mb": 12282,
+      "hist": "auto",
+      "hist_batch": 50,
+      "host": "Windows-11-10.0.26300-SP0",
+      "inputs": "cache: 157087-1795729808 (24 players, 60,000 cached worlds, entry 4f50ee3e6c02)",
+      "numpy": "2.3.3",
+      "players": 24,
+      "priority": "below normal",
+      "python": "3.13.7",
+      "speedups": {
+       "cpu_production_vs_gpu_batched": 28.99,
+       "cpu_production_vs_gpu_loop": 3.52,
+       "gpu_hist_batched_vs_loop": 14.15
+      },
+      "when": "2026-11-26 14:53:19",
+      "worlds": 60000
+     },
+     "wall_s": 283.4
+    }
+   ],
+   "ts": 1795730281.0654292
+  }
+ ]
 }

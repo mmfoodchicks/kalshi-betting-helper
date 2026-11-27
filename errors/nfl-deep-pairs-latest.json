@@ -3817,9 +3817,9 @@
    "close_mkt_ts": 1795715436,
    "close_time": 1795888800,
    "event_ts": 1795716000,
-   "graded": 0,
+   "graded": 1,
    "mkt": 0.5588235294117647,
-   "outcome": null,
+   "outcome": 1,
    "prob": 0.5388,
    "shadow": {
     "nfl_book": {
@@ -3841,9 +3841,9 @@
    "close_mkt_ts": 1795715436,
    "close_time": 1795888800,
    "event_ts": 1795716000,
-   "graded": 0,
+   "graded": 1,
    "mkt": 0.4411764705882353,
-   "outcome": null,
+   "outcome": 0,
    "prob": 0.4612,
    "shadow": {
     "nfl_book": {
@@ -3862,12 +3862,12 @@
   },
   {
    "close_mkt": 0.795,
-   "close_mkt_ts": 1795727622,
+   "close_mkt_ts": 1795728527,
    "close_time": 1795901400,
    "event_ts": 1795728600,
-   "graded": 0,
+   "graded": 1,
    "mkt": 0.79,
-   "outcome": null,
+   "outcome": 0,
    "prob": 0.8029,
    "shadow": {
     "nfl_book": {
@@ -3886,12 +3886,12 @@
   },
   {
    "close_mkt": 0.205,
-   "close_mkt_ts": 1795727622,
+   "close_mkt_ts": 1795728527,
    "close_time": 1795901400,
    "event_ts": 1795728600,
-   "graded": 0,
+   "graded": 1,
    "mkt": 0.21,
-   "outcome": null,
+   "outcome": 1,
    "prob": 0.19710000000000005,
    "shadow": {
     "nfl_book": {
@@ -3910,7 +3910,7 @@
   },
   {
    "close_mkt": 0.605,
-   "close_mkt_ts": 1795727622,
+   "close_mkt_ts": 1795741667,
    "close_time": 1795915200,
    "event_ts": 1795742400,
    "graded": 0,
@@ -3934,7 +3934,7 @@
   },
   {
    "close_mkt": 0.395,
-   "close_mkt_ts": 1795727622,
+   "close_mkt_ts": 1795741667,
    "close_time": 1795915200,
    "event_ts": 1795742400,
    "graded": 0,
