@@ -5482,7 +5482,8 @@ def api_pick6_ledger_pick(pick_id):
     d = request.get_json(force=True, silent=True) or {}
     try:
         e = pick6_ledger.set_pick(pick_id, actual=d.get("actual"), void=bool(d.get("void")),
-                                  reset=bool(d.get("reset")))
+                                  reset=bool(d.get("reset")),
+                                  decision=(str(d["decision"]) if d.get("decision") else None))
     except ValueError as ex:
         return jsonify({"error": str(ex)}), 400
     return (jsonify(e), 200) if e else (jsonify({"error": "no such pick"}), 404)

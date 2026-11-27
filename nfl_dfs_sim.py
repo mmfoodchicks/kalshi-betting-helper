@@ -433,8 +433,62 @@ def _prop_line(mean, step):
     return math.floor(mean) + 0.5          # receptions: X.5
 
 
+# Compact per-player stat distributions for the Pick6 paper ledger's figure at
+# ANY half-point line (pick6_ledger._nfl_prob; the owner, 2026-11-27: "retain
+# compact empirical player-stat distributions or histograms rather than
+# uploading full simulation worlds"). One integer histogram a player and stat
+# on the unit lattice j(x) = the integer nearest x with halves rounded DOWN:
+# x > m + 0.5 exactly when j(x) >= m + 1, so P(stat > L) at every half-point L
+# is the board's own count `sum(x > L)` bit for bit, whatever the float. Built
+# with comparisons only (floor, then x > k + 0.5: both exact for |x| < 2^52);
+# a subtraction (ceil(x - 0.5)) can round on a value within an ulp of a line.
+# Whole-number lines are NOT priced: the week board draws continuous yards and
+# catches (no tie mass), while a real box ties and DraftKings voids a tie.
+# Measured on 2026 week 13 (14 games, 4,000 worlds, the two yardage sums
+# included): 387 players, 1,609 player-stats, 92,008 uint16 bins, a 210 KB
+# pickle (77 KB gzipped), +1.8 s on a 6.7 s week -- on the PC only. The joint
+# worlds never leave the machine that played them.
+DIST_STATS = ("pass_yd", "rush_yd", "rec_yd", "rec")
+DIST_COMBOS = {"rush_rec_yd": ("rush_yd", "rec_yd"), "pass_rush_yd": ("pass_yd", "rush_yd")}
+
+
+def _lattice(x):
+    k = _math.floor(x)
+    return k + 1 if x > k + 0.5 else k
+
+
+def stat_hist(xs):
+    """(lo, typecode, counts bytes) of `xs` on the unit lattice, or None when
+    every value is 0 (a stat the player never touches)."""
+    import array
+    if not xs or not any(xs):
+        return None
+    js = [_lattice(x) for x in xs]
+    lo, hi = min(js), max(js)
+    cnt = [0] * (hi - lo + 1)
+    for j in js:
+        cnt[j - lo] += 1
+    code = "H" if len(xs) < 65536 else "I"
+    return lo, code, array.array(code, cnt).tobytes()
+
+
+def hist_over(h, n, line):
+    """P(stat > line) off a stat_hist, for a half-point `line`; None off the lattice."""
+    import array
+    m = line - 0.5
+    if h is None:                       # every world 0
+        return 0.0 if line >= 0 else 1.0
+    if abs(m - round(m)) > 1e-9:
+        return None
+    lo, code, raw = h
+    cnt = array.array(code)
+    cnt.frombytes(raw)
+    first = max(0, int(round(m)) + 1 - lo)
+    return sum(cnt[first:]) / n
+
+
 def simulate_game(game, n=4000, with_samples=False, preseason=False, discrete=False,
-                  with_components=False):
+                  with_components=False, with_dists=False):
     """Correlated MC of one game. Returns per-player fantasy-point distributions,
     correlation-aware component prop over/unders, and QB->receiver stacks.
     with_samples=True attaches each player's rescaled point array (`arr`) so a DFS
@@ -651,15 +705,31 @@ def simulate_game(game, n=4000, with_samples=False, preseason=False, discrete=Fa
     out.sort(key=lambda x: -x["ceiling"])
     props.sort(key=lambda x: -x["prob"])
     stacks = _stacks(players, fp_raw, teams)
-    return {"label": game["label"], "teams": teams, "players": out,
-            "props": props, "stacks": stacks, "n_sims": n,
-            # Per-iteration offensive output by team, so a defense can be scored
-            # against what it actually faced in that same iteration.
-            "team_fp": team_fp if with_samples else None,
-            # The DK components each offense conceded, same iteration alignment.
-            "team_def": ({t: {"td": team_td[t], "gv": team_gv[t],
-                              "yd": team_yd[t], "pa": team_pa[t]} for t in teams}
-                         if with_samples else None)}
+    dists = None
+    if with_dists:
+        # off the very worlds the props above were counted on; no draw is
+        # consumed, so the rest of the board is unchanged by asking for them
+        dists = {}
+        for i, pl in enumerate(players):
+            c = comp[i]
+            d = {k: stat_hist(c[k]) for k in DIST_STATS}
+            for k, (a, b) in DIST_COMBOS.items():
+                d[k] = stat_hist([x + y for x, y in zip(c[a], c[b])])
+            d = {k: v for k, v in d.items() if v is not None}
+            if d:
+                dists[pl["name"]] = d
+    res = {"label": game["label"], "teams": teams, "players": out,
+           "props": props, "stacks": stacks, "n_sims": n,
+           # Per-iteration offensive output by team, so a defense can be scored
+           # against what it actually faced in that same iteration.
+           "team_fp": team_fp if with_samples else None,
+           # The DK components each offense conceded, same iteration alignment.
+           "team_def": ({t: {"td": team_td[t], "gv": team_gv[t],
+                             "yd": team_yd[t], "pa": team_pa[t]} for t in teams}
+                        if with_samples else None)}
+    if with_dists:                       # only when asked: every other caller's result is as it was
+        res["dists"] = dists
+    return res
 
 
 # League-average rates the DST component model is anchored on, so a simulated
@@ -1306,7 +1376,16 @@ def board(week=1, preseason=False):
 
         def _bg():
             try:
-                val = _build_board(season, week, preseason=preseason)
+                # The stat histograms only where the PC builds (pc_worker sets
+                # VIGIL_PC_WORKER where it runs): never an extra pass in a web
+                # worker. They ride a piece of their own, which the PC's board
+                # sync uploads like any other.
+                import os as _os
+                pc = _os.environ.get("VIGIL_PC_WORKER") == "1"
+                val = _build_board(season, week, preseason=preseason, with_dists=pc)
+                dists = val.pop("_dists", None) if val else None
+                if dists and dists["dists"]:
+                    boardshare.put(dists_name(season, week, preseason), dists)
                 if val is None:
                     val = {"season": season, "week": week,
                            "preseason": bool(preseason), "games": [],
@@ -1335,7 +1414,14 @@ def board(week=1, preseason=False):
     return hit[1] if hit else None
 
 
-def _build_board(season, week, n=4000, preseason=False):
+def dists_name(season, week, preseason=False):
+    """The boardshare piece holding a week board's stat histograms (stat_hist):
+    its own piece, so /api/nfl/sim's JSON never carries bytes and a worker that
+    serves the board never holds them -- the ledger reads it on an entry only."""
+    return f"nfl_sim_dists_{season}_w{week}_{int(bool(preseason))}"
+
+
+def _build_board(season, week, n=4000, preseason=False, with_dists=False):
     games = (preseason_games(str(season), week) if preseason
              else weekly_games(str(season), week))
     if not games:
@@ -1351,8 +1437,11 @@ def _build_board(season, week, n=4000, preseason=False):
         adp = {}
 
     sims, ceilings, props, stacks = [], [], [], []
+    dists = {}
     for gid, g in games.items():
-        s = simulate_game(g, n=n, preseason=preseason)
+        s = simulate_game(g, n=n, preseason=preseason, with_dists=with_dists)
+        if with_dists:
+            dists.update({nm: dict(d, _game=s["label"]) for nm, d in (s.pop("dists") or {}).items()})
         sims.append(s)
         props.extend(s["props"])
         for st in s["stacks"]:
@@ -1398,7 +1487,11 @@ def _build_board(season, week, n=4000, preseason=False):
                 "his own ladder sets his level. Chalk is upside down here: the "
                 "names at the top of a DraftKings salary list are the ones who "
                 "will not play.")
-    return {"season": season, "week": week, "n_games": len(sims), "n_sims": n,
-            "games": sims, "ceilings": ceilings[:80], "props": props[:80],
-            "stacks": stacks[:16], "has_adp": bool(adp),
-            "preseason": bool(preseason), "note": note}
+    val = {"season": season, "week": week, "n_games": len(sims), "n_sims": n,
+           "games": sims, "ceilings": ceilings[:80], "props": props[:80],
+           "stacks": stacks[:16], "has_adp": bool(adp),
+           "preseason": bool(preseason), "note": note}
+    if with_dists:          # popped by board() into its own piece before the board is cached or shared
+        val["_dists"] = {"season": season, "week": week, "preseason": bool(preseason), "n": n,
+                         "built_ts": _time.time(), "dists": dists}
+    return val

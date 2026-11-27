@@ -2,7 +2,7 @@
 // Pick 6 view, for every sport: enter a DraftKings Pick6 entry by hand -- the picks, the entry type and the
 // payout schedule DraftKings states on the entry, a paper stake -- then see each pick graded off the box
 // score, Vigil's figure beside it, and the record. No inline handlers; every string escaped.
-const _p6l = { sports: [], rules: [], entries: [], record: null, draft: null, msg: "", msgBad: false, wired: false };
+const _p6l = { sports: [], rules: [], pardon: {}, entries: [], record: null, draft: null, msg: "", msgBad: false, wired: false };
 
 function _p6lEsc(x) {
   return String(x == null ? "" : x).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -16,7 +16,7 @@ function _p6lWhen(ts) {
   return new Date(ts * 1000).toLocaleString("en-US", { timeZone: "America/Denver", month: "short", day: "numeric",
     hour: "numeric", minute: "2-digit" }) + " MT";
 }
-function _p6lBlank() { return { player: "", stat: "", stat_label: "", line: "", side: "More" }; }
+function _p6lBlank() { return { player: "", stat: "", stat_label: "", kind: "full", line: "", side: "More" }; }
 function _p6lNewDraft(sport) {
   return { sport: sport || "nfl", game_date: _p6lMtToday(), entry_type: "", stake: "", schedule: "", notes: "",
     picks: [_p6lBlank(), _p6lBlank()] };
@@ -41,7 +41,7 @@ async function _p6lLoad() {
   try {
     const d = await (await fetch("/api/pick6/ledger")).json();
     if (d.error) { _p6l.msg = d.error; _p6l.msgBad = true; }
-    else { _p6l.sports = d.sports || []; _p6l.rules = d.rules || []; _p6l.entries = d.entries || []; _p6l.record = d.record; }
+    else { _p6l.sports = d.sports || []; _p6l.rules = d.rules || []; _p6l.pardon = d.pardon || {}; _p6l.kinds = d.kinds || []; _p6l.entries = d.entries || []; _p6l.record = d.record; }
   } catch (e) { _p6l.msg = "The ledger is unavailable."; _p6l.msgBad = true; }
   if (!_p6l.draft) _p6l.draft = _p6lNewDraft();
   _p6lDraw();
@@ -70,7 +70,8 @@ function _p6lForm() {
       <span class="p6l-n">${i + 1}</span>
       <input type="text" maxlength="60" placeholder="player" value="${_p6lEsc(p.player)}" data-p6l-pick="${i}" data-p6l-f="player"/>
       ${statSel}
-      ${custom ? `<input type="text" maxlength="40" placeholder="stat, as DraftKings names it" value="${_p6lEsc(p.stat_label)}" data-p6l-pick="${i}" data-p6l-f="stat_label"/>` : ""}
+      ${custom ? `<input type="text" maxlength="40" placeholder="stat, as DraftKings names it" value="${_p6lEsc(p.stat_label)}" data-p6l-pick="${i}" data-p6l-f="stat_label"/>
+        <select data-p6l-pick="${i}" data-p6l-f="kind" title="only a full-game stat can be pardoned">${(_p6l.kinds || []).map((k) => `<option value="${_p6lEsc(k.key)}"${k.key === (p.kind || "full") ? " selected" : ""}>${_p6lEsc(k.label)}</option>`).join("")}</select>` : ""}
       <input type="number" step="0.5" min="0" inputmode="decimal" placeholder="line" value="${_p6lEsc(p.line)}" data-p6l-pick="${i}" data-p6l-f="line" class="p6l-line"/>
       <select data-p6l-pick="${i}" data-p6l-f="side"><option${p.side === "More" ? " selected" : ""}>More</option><option${p.side === "Less" ? " selected" : ""}>Less</option></select>
       ${dr.picks.length > 2 ? `<button type="button" class="p6l-x" data-p6l-rm="${i}" title="remove this pick">×</button>` : ""}
@@ -92,9 +93,13 @@ function _p6lForm() {
   </div>`;
 }
 
+// The owner's answers to a pick in review (pick6_ledger.DECISIONS).
+const _P6L_DECIDE = { met: "He played: grade it", not_met: "Did not meet: void", loss: "Loss (no pardon)", pardoned: "Pardoned" };
+
 function _p6lResult(p) {
-  const cls = { hit: "p6l-hit", miss: "p6l-miss", tie: "p6l-tie", void: "p6l-void", pending: "p6l-pend" }[p.result] || "p6l-pend";
-  const lbl = p.result === "tie" ? "tie (loss)" : p.result;
+  const cls = { hit: "p6l-hit", miss: "p6l-miss", tie: "p6l-void", void: "p6l-void", pending: "p6l-pend", review: "p6l-tie" }[p.result] || "p6l-pend";
+  // DraftKings voids a tie (its rules pages, confirmed by the owner 2026-11-27)
+  const lbl = p.result === "tie" ? "tie (void)" : p.result === "review" ? `review: ${p.review || "check"}` : p.result;
   return `<span class="p6l-res ${cls}">${_p6lEsc(lbl)}</span>`;
 }
 
@@ -118,6 +123,8 @@ function _p6lEntry(e) {
         <b>${_p6lEsc(p.player)}</b> <span class="p6l-muted">${_p6lEsc(p.stat_label)}</span></div>
       <div class="p6l-pline">${vig} · ${_p6lResult(p)}${p.actual != null ? ` actual <b>${_p6lEsc(p.actual)}</b>` : ""}${by}</div>
       ${p.note ? `<div class="small p6l-muted">${_p6lEsc(p.note)}</div>` : ""}
+      ${p.evidence ? `<div class="small p6l-muted">evidence: ${_p6lEsc(p.evidence)}</div>` : ""}
+      ${(p.decisions || []).length ? `<div class="p6l-own">${p.decisions.map((k) => `<button type="button" class="${k === "met" || k === "loss" ? "" : "primary"}" data-p6l-decide="${p.id}" data-p6l-d="${_p6lEsc(k)}">${_p6lEsc(_P6L_DECIDE[k] || k)}</button>`).join("")}</div>` : ""}
       <div class="p6l-own"><input type="number" step="any" inputmode="decimal" placeholder="final stat" data-p6l-actual="${p.id}"/>
         <button type="button" data-p6l-set="${p.id}">Set</button><button type="button" data-p6l-void="${p.id}">Void</button>
         ${p.result !== "pending" ? `<button type="button" data-p6l-reset="${p.id}">Re-grade</button>` : ""}</div>
@@ -153,21 +160,45 @@ function _p6lRecord() {
     <td class="${x.pnl > 0 ? "ev pos" : x.pnl < 0 ? "ev neg" : ""}">${x.pnl >= 0 ? "+" : "-"}$${Math.abs(x.pnl).toFixed(2)}</td>
     <td>${x.roi_pct == null ? "-" : `${x.roi_pct}%`}</td><td>${x.cashed}${x.credit_paid ? ` (${x.credit_paid} in credits)` : ""}</td></tr>`).join("");
   const st = r.status || {};
+  const rv = r.in_review || {};
+  const rev = Object.keys(rv).map((k) => `${rv[k]} ${k}`).join(", ");
   const waiting = ["open", "awaiting_payout"].filter((k) => st[k]).map((k) => `${st[k].n} ${k === "open" ? "open" : "awaiting DraftKings' payout"}`).join(" · ");
   return `<h3 class="p6l-h">Record</h3>
     ${waiting ? `<div class="small p6l-muted">${_p6lEsc(waiting)} (not in the ROI yet)</div>` : ""}
     ${hits ? `<div class="p6l-scroll"><table class="p6l-table"><tr><th>Pick type</th><th>Hit</th><th>Rate (95%)</th><th>Ties/voids</th></tr>${hits}</table></div>` : `<div class="empty">No graded picks yet.</div>`}
-    <div class="small p6l-muted">A tie counts as a miss (the conservative reading; see the rules); a void counts nowhere.</div>
+    <div class="small p6l-muted">A tie is void (DraftKings' rule) and, like any void, counts nowhere; a pick still in review counts nowhere until you decide it${rev ? ` (${_p6lEsc(rev)} waiting)` : ""}.</div>
     <h3 class="p6l-h">Vigil's calibration (picks it priced)</h3>
     ${calRows ? `<div class="p6l-scroll"><table class="p6l-table"><tr><th>Sport</th><th>Picks</th><th>Vigil vs hit</th><th>Log loss</th><th>Brier</th></tr>${calRows}</table></div>
       ${bins ? `<div class="p6l-scroll"><table class="p6l-table"><tr><th>Vigil said</th><th>Picks</th><th>Mean</th><th>Hit</th></tr>${bins}</table></div>` : ""}` : `<div class="empty">No graded pick Vigil priced yet.</div>`}
+    ${_p6lResearch(r)}
     <h3 class="p6l-h">Paper ROI (settled entries)</h3>
     ${roi ? `<div class="p6l-scroll"><table class="p6l-table"><tr><th>Sport</th><th>Entries</th><th>Staked</th><th>Returned</th><th>P/L</th><th>ROI</th><th>Cashed</th></tr>${roi}</table></div>` : `<div class="empty">No settled entries yet.</div>`}`;
 }
 
+// The owner's research split (pick6_ledger._research_row): outright accuracy counts a void as not a hit;
+// the conditional one leaves voids out; void frequency by cause. Each figure with its n and 95% interval.
+function _p6lCI(x) {
+  if (!x || x.pct == null) return "-";
+  return `${x.pct}% <span class="p6l-muted">${x.lo}-${x.hi} · ${x.k}/${x.n}</span>`;
+}
+function _p6lResearch(r) {
+  const rows = (r.research || []).map((x) => `<tr><td>${_p6lEsc(x.sport === "all" ? "All sports" : _p6lSport(x.sport).label)} ${_p6lEsc(x.side)}${_p6lFlag(x.flag)}</td>
+    <td>${_p6lCI(x.outright)}</td><td>${_p6lCI(x.conditional)}</td><td>${_p6lCI(x.void)}</td>
+    <td>${["dnp", "tie", "pardon", "other"].map((c) => `${_P6L_CAUSE[c]} ${x.void_by_cause[c].k}`).join(" · ")}</td></tr>`).join("");
+  if (!rows) return "";
+  return `<h3 class="p6l-h">Prediction accuracy and voids (research)</h3>
+    <div class="p6l-scroll"><table class="p6l-table"><tr><th>Sport, side</th><th>Outright</th><th>Non-void</th><th>Void rate</th><th>Voids by cause</th></tr>${rows}</table></div>
+    <div class="small p6l-muted">Outright counts every decided pick and a void as NOT a hit; non-void leaves voids (ties included) out. Intervals are 95% Wilson; nothing in review is counted.</div>`;
+}
+const _P6L_CAUSE = { dnp: "did not play", tie: "tie", pardon: "pardon", other: "other" };
+
 function _p6lRules() {
-  const rows = _p6l.rules.map((r) => `<li><span class="p6l-res ${r.verified ? "p6l-hit" : "p6l-tie"}">${r.verified ? "stated" : "unverified"}</span> ${_p6lEsc(r.text)} <span class="p6l-muted">Source: ${_p6lEsc(r.source)}.</span></li>`).join("");
-  return `<details class="p6l-rules"><summary>How picks are graded (DraftKings' rules, and what could not be verified)</summary><ul>${rows}</ul></details>`;
+  const rows = _p6l.rules.map((r) => `<li><span class="p6l-res ${r.verified ? "p6l-hit" : "p6l-tie"}">${_p6lEsc(r.basis || (r.verified ? "stated" : "unverified"))}</span> ${_p6lEsc(r.text)} <span class="p6l-muted">Source: ${_p6lEsc(r.source)}.</span></li>`).join("");
+  const pk = Object.keys(_p6l.pardon || {});
+  const pardon = pk.length
+    ? `The Pardon by sport: ${pk.map((k) => `<b>${_p6lEsc(k.toUpperCase())}</b> ${_p6lEsc(_p6l.pardon[k])}`).join("; ")}.`
+    : "";
+  return `<details class="p6l-rules"><summary>How picks are graded (DraftKings' rules, and what could not be verified)</summary><ul>${rows}</ul><div class="small p6l-muted">${pardon}</div></details>`;
 }
 
 function _p6lDraw() {
@@ -212,7 +243,7 @@ async function _p6lOnClick(ev) {
   if (ds.p6lSave) {
     const sp = _p6lSport(dr.sport);
     const body = { sport: dr.sport, game_date: dr.game_date, entry_type: dr.entry_type, stake: dr.stake, schedule: dr.schedule,
-      picks: dr.picks.map((p) => ({ player: p.player, stat: sp.stats.length ? p.stat : "custom", stat_label: p.stat_label, line: p.line, side: p.side })) };
+      picks: dr.picks.map((p) => ({ player: p.player, stat: sp.stats.length ? p.stat : "custom", stat_label: p.stat_label, kind: p.kind || "full", line: p.line, side: p.side })) };
     d = await _p6lSend("/api/pick6/ledger", "POST", body);
     if (!d.error) { _p6l.draft = _p6lNewDraft(dr.sport); _p6lSay("Saved. Vigil's figures are on the entry below."); }
   } else if (ds.p6lSet) {
@@ -220,6 +251,8 @@ async function _p6lOnClick(ev) {
     d = await _p6lSend(`/api/pick6/ledger/pick/${encodeURIComponent(ds.p6lSet)}`, "POST", { actual: inp ? inp.value : "" });
   } else if (ds.p6lVoid) {
     d = await _p6lSend(`/api/pick6/ledger/pick/${encodeURIComponent(ds.p6lVoid)}`, "POST", { void: true });
+  } else if (ds.p6lDecide) {
+    d = await _p6lSend(`/api/pick6/ledger/pick/${encodeURIComponent(ds.p6lDecide)}`, "POST", { decision: ds.p6lD });
   } else if (ds.p6lReset) {
     d = await _p6lSend(`/api/pick6/ledger/pick/${encodeURIComponent(ds.p6lReset)}`, "POST", { reset: true });
   } else if (ds.p6lAddrows) {
