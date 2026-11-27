@@ -58,6 +58,7 @@ import statistics
 import threading
 import time
 import urllib.request
+from collections import deque
 from datetime import datetime, timedelta, timezone
 
 import errlog
@@ -539,7 +540,221 @@ def price_row(q, level, sigma_s, now):
         row["iv_note"] = ("no volatility reconciles the model with Kalshi's price: the market is reading the index "
                           "at a different level than the proxy (or knows the seconds already averaged)")
     row["edge"] = _edges(q["ticker"], p, q)
+    row["what_if"] = what_if(rule, level, sigma_s, tau)
+    row["p_cross"] = p_cross(level, rule["strike"], sigma_s, tau)
+    row["signal"] = signal(row)
     return row
+
+
+# The "what if" panel (v2, 2026-11-27): the model's fair YES a minute from now if the level moves by
+# these many basis points -- about $25 / $50 / $100 on bitcoin at $61k -- and the chance the level
+# CROSSES the strike before the close. Both are the v1 model read forward, not a forecast of direction:
+# no indicator beat the random walk on held-out history (research/reports/crypto_moves.md).
+WHATIF_BP = (4, 8, 16)
+
+
+def what_if(rule, level, sigma_s, tau):
+    if not rule or not level or not sigma_s or tau <= 60 + WINDOW_S:
+        return []
+    out = []
+    for bp in sorted({-b for b in WHATIF_BP} | set(WHATIF_BP)):
+        lv = level * math.exp(bp / 1e4)
+        out.append({"bp": bp, "move": round(lv - level, 6), "level": lv,
+                    "p": round(p_yes(rule, lv, sigma_s, tau - 60), 4)})
+    return out
+
+
+def p_cross(level, strike, sigma_s, tau):
+    """P(the level touches the strike at least once before the close) under the driftless walk: the
+    reflection principle, 2 x (1 - Phi(|ln(L/K)| / sd)), the proxy's own distance from the index in the
+    sd. The honest version of "when might it flip": a touch, not a settlement on the other side."""
+    if not level or not strike or not sigma_s or tau <= 0:
+        return None
+    sd = math.sqrt(sigma_s ** 2 * tau + PROXY_SD ** 2)
+    return round(min(1.0, 2.0 * (1.0 - _phi(abs(math.log(level / strike)) / sd))), 4)
+
+
+def signal(row):
+    """The paper signal for one market at this moment, by the v1 paper rule (fee-in edge at the ask of
+    PAPER_EDGE_C or more). Every one is unproven while the record says the model loses to Kalshi."""
+    if row.get("in_window"):
+        return {"code": "none", "text": "no opportunity: inside the settlement window"}
+    e = row.get("edge") or {}
+    ys, ns = e.get("yes"), e.get("no")
+    if ys is not None and ys >= PAPER_EDGE_C and (ns is None or ys >= ns):
+        return {"code": "yes_entry", "text": f"YES entry: {ys:+.1f}c fee-in edge at the ask"}
+    if ns is not None and ns >= PAPER_EDGE_C:
+        return {"code": "no_entry", "text": f"NO entry: {ns:+.1f}c fee-in edge at the ask"}
+    return {"code": "none", "text": f"no opportunity: no side clears {PAPER_EDGE_C:g}c after the fee"}
+
+
+_RESEARCH = {}
+
+
+def research():
+    """The committed research verdicts the panels print (read once per process: the files change only
+    with a deploy)."""
+    if not _RESEARCH:
+        base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "research", "data", "crypto")
+        for k, f in (("moves", "moves.json"), ("settlement_v1", "validation.json")):
+            try:
+                with open(os.path.join(base, f), encoding="utf-8") as fh:
+                    _RESEARCH[k] = json.load(fh)
+            except (OSError, ValueError) as e:
+                errlog.note("CRYPTO-research", e, path=f)
+                _RESEARCH[k] = None
+    m = _RESEARCH.get("moves") or {}
+    v = _RESEARCH.get("settlement_v1") or {}
+    return {"direction": {h: {k: d.get(k) for k in ("chosen", "passed", "gain_vs_rw_nats", "se_days",
+                                                      "persistence_gain_vs_rw", "heldout_rows", "reversal_rate_heldout",
+                                                      "reversal_bins", "heldout_up_rate", "weights", "weight_names",
+                                                      "by_coin_diff_vs_rw")}
+                          for h, d in (m.get("direction") or {}).items()},
+            "settlement_drift": m.get("settlement_drift"), "intrawindow": m.get("intrawindow"),
+            "proxy": m.get("proxy"), "untested": m.get("untested"),
+            "settlement_v1": {"decision": v.get("decision"), "heldout_300": (v.get("heldout") or {}).get("300", {})
+                              .get("pooled")},
+            "report": "research/reports/crypto_moves.md"}
+
+
+# ---- the direction model (v2): the research's own features, its passed weights -------------------------
+# research/crypto_moves.py tested momentum, RSI, MACD, EMAs, volatility regime, volume and range position at
+# 1, 3 and 5 minutes (rule committed first, eceaf12). The all-feature logistic PASSED at every horizon by the
+# rule's letter: +0.7 / +1.4 / +2.0 millinats a minute over the random walk (z 2.8 / 3.8 / 3.6, all five coins),
+# almost all of it beyond the fortnight's drift -- short-horizon MEAN REVERSION (the momentum weights are
+# negative at 3 and 5 minutes). It is a 1-3 point tilt (the held-out probabilities sat at 48-53%), it did NOT
+# become a settlement edge (the drift test failed) and trading on it inside the window lost (research report).
+# The two functions below are the research's, copied so production does not import research/ (guard CXM-SAME
+# holds them equal on a fixture with gaps).
+MOVE_WARM = 300
+DIR_MINUTES = 900               # three Coinbase calls: the 240-minute volatility EWMA 92.6% converged
+def move_grid(rows, t0, t1):
+    """Coinbase rows [t, low, high, open, close, vol] -> contiguous (t, o, h, l, c, v) from t0 to t1; a
+    missing minute carries the previous close, volume 0."""
+    by = {int(r[0]): r for r in rows}
+    out, last = [], None
+    for t in range(t0, t1, 60):
+        r = by.get(t)
+        if r:
+            last = float(r[4])
+            out.append((t, float(r[3]), float(r[2]), float(r[1]), last, float(r[5])))
+        elif last is not None:
+            out.append((t, last, last, last, last, 0.0))
+    return out
+
+
+def move_features(g):
+    """One causal pass over a minute grid: the feature dict at each index uses candles 0..i only (None
+    during the warm-up). Every recursion is a running EMA or a bounded window, so this is also how an
+    incremental indicator computes it."""
+    a5, a9, a12, a21, a26 = (2 / 6.0, 2 / 10.0, 2 / 13.0, 2 / 22.0, 2 / 27.0)
+    l60, l15, l240 = (1 - 0.5 ** (1 / 60.0), 1 - 0.5 ** (1 / 15.0), 1 - 0.5 ** (1 / 240.0))
+    out = []
+    e5 = e9 = e12 = e21 = e26 = sig = None
+    v60 = v15 = v240 = 0.0
+    ag = al = 0.0
+    prev_r1 = 0.0
+    closes = deque(maxlen=16)
+    hi, lo = deque(), deque()
+    vols, vsum = deque(), 0.0
+    for i, (t, o, h, low, c, v) in enumerate(g):
+        if e5 is None:
+            e5 = e9 = e12 = e21 = e26 = c
+            sig = 0.0
+        e5 += a5 * (c - e5)
+        e9 += a9 * (c - e9)
+        e12 += a12 * (c - e12)
+        e21 += a21 * (c - e21)
+        e26 += a26 * (c - e26)
+        macd = e12 - e26
+        sig = macd if i == 0 else sig + a9 * (macd - sig)
+        r1 = math.log(c / closes[-1]) if closes else 0.0
+        v60 += l60 * (r1 * r1 - v60)
+        v15 += l15 * (r1 * r1 - v15)
+        v240 += l240 * (r1 * r1 - v240)
+        ag += (max(r1, 0.0) - ag) / 14.0
+        al += (max(-r1, 0.0) - al) / 14.0
+        closes.append(c)
+        while hi and hi[-1][1] <= h:
+            hi.pop()
+        hi.append((i, h))
+        while lo and lo[-1][1] >= low:
+            lo.pop()
+        lo.append((i, low))
+        while hi[0][0] <= i - 60:
+            hi.popleft()
+        while lo[0][0] <= i - 60:
+            lo.popleft()
+        vols.append(v)
+        vsum += v
+        if len(vols) > 60:
+            vsum -= vols.popleft()
+        if i < MOVE_WARM or v60 <= 0:
+            out.append(None)
+            prev_r1 = r1
+            continue
+        s = math.sqrt(v60)
+        k = lambda n: math.log(c / closes[-1 - n]) / (s * math.sqrt(n))      # noqa: E731
+        rng = hi[0][1] - lo[0][1]
+        out.append({"m1": k(1), "m3": k(3), "m5": k(5), "m15": k(15), "acc": (r1 - prev_r1) / s,
+                    "rsi": (ag / (ag + al) - 0.5) * 2 if ag + al > 0 else 0.0,
+                    "macd": (macd - sig) / (c * s), "ema_gap": (e5 - e21) / (c * s), "px_ema9": (c - e9) / (c * s),
+                    "vol_reg": 0.5 * math.log(max(v15, 1e-18) / max(v240, 1e-18)),
+                    "vol_z": math.log((v + 1e-9) / (vsum / len(vols) + 1e-9)),
+                    "range_pos": ((c - lo[0][1]) / rng - 0.5) if rng > 0 else 0.0, "sig": s})
+        prev_r1 = r1
+    return out
+
+
+
+
+def direction_now(coin):
+    """P(up) at each horizon whose test passed, from the last COMPLETE minute (Coinbase's newest candle is
+    the minute in progress and is dropped), P(reversal) against the trailing 5-minute move, and the bars of
+    the last two hours where the 5-minute reversal chance reached 60% (held-out: said 61.8%, hit 58.7%)."""
+    res = research().get("direction") or {}
+    sym = COINS[coin]["coinbase"]
+
+    def fetch():
+        now = int(time.time())
+        end = now - now % 60 - 60                     # the last complete minute's start
+        rows = []
+        for k in range(3):
+            t1 = end - k * 300 * 60
+            t0 = t1 - 299 * 60
+            rows += _get(f"https://api.exchange.coinbase.com/products/{sym}/candles?granularity=60"
+                         f"&start={datetime.fromtimestamp(t0, timezone.utc):%Y-%m-%dT%H:%M:%SZ}"
+                         f"&end={datetime.fromtimestamp(t1, timezone.utc):%Y-%m-%dT%H:%M:%SZ}")
+        g = move_grid([r for r in rows if int(r[0]) <= end], end - (DIR_MINUTES - 1) * 60, end + 60)
+        f = move_features(g)
+        out = {"as_of": end + 60, "horizons": {}, "marks": []}
+        if not f or f[-1] is None:
+            return out
+        trail = (g[-1][4] > g[-6][4]) - (g[-1][4] < g[-6][4])
+        out["trailing_5m"] = trail
+
+        def p_up(x, d):
+            z = d["weights"][0] + sum(w * x[n] for w, n in zip(d["weights"][1:], d["weight_names"][1:]))
+            return 1.0 / (1.0 + math.exp(-z))
+        for hz, d in res.items():
+            if not d.get("passed") or not d.get("weights"):
+                out["horizons"][hz] = {"passed": False}
+                continue
+            p = p_up(f[-1], d)
+            out["horizons"][hz] = {"passed": True, "p_up": round(p, 4),
+                                   "p_reversal": round(1 - p if trail > 0 else p, 4) if trail else None}
+        d5 = res.get("5") or {}
+        if d5.get("passed") and d5.get("weights"):
+            for i in range(max(5, len(g) - 120), len(g)):
+                if f[i] is None:
+                    continue
+                tr = (g[i][4] > g[i - 5][4]) - (g[i][4] < g[i - 5][4])
+                p = p_up(f[i], d5)
+                pr = (1 - p if tr > 0 else p) if tr else None
+                if pr is not None and pr >= 0.6:
+                    out["marks"].append([g[i][0], round(pr, 3), tr])
+        return out
+    return _cached(("direction", coin), 30, fetch)
 
 
 def board(coin):
@@ -561,12 +776,17 @@ def board(coin):
         sigma = None
     rec = record_summary()
     out = {"coin": coin, "coins": list(COINS), "ts": now, "proxy": px, "sigma_s": sigma,
-           "sigma_ann_pct": _ann(sigma), "paper_only": True,
+           "sigma_ann_pct": _ann(sigma), "paper_only": True, "symbol": COINS[coin]["coinbase"],
            "model": {"name": "driftless random walk at realised volatility, settlement-average aware",
                      "vol_halflife_min": VOL_HALFLIFE_MIN, "vol_mult": VOL_MULT, "proxy_sd": PROXY_SD,
                      "window_s": WINDOW_S, "validation": "research/reports/crypto_validation.md"},
            "edges_proven": bool(rec and rec.get("decided") == "model"),
            "record": rec}
+    try:
+        out["direction"] = direction_now(coin)
+    except Exception as e:
+        errlog.note("CRYPTO-direction", e, path=coin)
+        out["direction"] = None
     try:
         q = m15_market(coin)
         out["m15"] = price_row(q, level, sigma, now) if q else None
@@ -903,6 +1123,296 @@ def record_by():
         raise
 
 
+def _fee_sql(x):
+    """Kalshi's quadratic taker fee in cents a contract at price x cents, in SQL (every crypto series:
+    multiplier 1, read 2026-11-27)."""
+    return f"(7.0 * ({x}) * (100.0 - ({x})) / 10000.0)"
+
+
+def record_extra():
+    """The v2 record's other views, all SQL with bounded output:
+
+    - intrawindow: the paper rule entered at the 600 s look (the side whose fee-in edge at the ask clears
+      PAPER_EDGE_C) and SOLD at the 300 s look at that side's logged bid (NO bid = 100 - YES ask), fee on
+      both legs -- trading inside the window, never held to settlement; mean, SE, drawdown, turnover;
+    - by_regime: model and Kalshi log loss at the decision look by the logged volatility (annualized
+      under 40%, 40-80%, over 80%);
+    - signals: each coin's last 100 decision-look rows with the side the paper rule took, for the chart's
+      markers (logged before the close, never moved)."""
+    two = "yes_bid IS NOT NULL AND yes_ask IS NOT NULL AND yes_ask > yes_bid"
+    pm = "MIN(MAX(p_model, 0.001), 0.999)"
+    mm = "MIN(MAX((yes_bid + yes_ask) / 200.0, 0.001), 0.999)"
+    ey = f"(100.0 * a.p_model - a.yes_ask - {_fee_sql('a.yes_ask')})"
+    en = f"(100.0 * (1 - a.p_model) - (100.0 - a.yes_bid) - {_fee_sql('100.0 - a.yes_bid')})"
+    intra = f"""WITH t AS (
+          SELECT a.close_ts AS ts,
+            CASE WHEN {ey} >= {PAPER_EDGE_C} AND {ey} >= {en}
+                   THEN b.yes_bid - {_fee_sql('b.yes_bid')} - a.yes_ask - {_fee_sql('a.yes_ask')}
+                 WHEN {en} >= {PAPER_EDGE_C}
+                   THEN (100.0 - b.yes_ask) - {_fee_sql('100.0 - b.yes_ask')} - (100.0 - a.yes_bid)
+                        - {_fee_sql('100.0 - a.yes_bid')} END AS pnl
+          FROM {TABLE} a JOIN {TABLE} b ON b.ticker = a.ticker AND b.look_s = 300
+          WHERE a.kind = 'm15' AND a.look_s = 600 AND a.p_model IS NOT NULL
+            AND a.yes_bid > 0 AND a.yes_ask > a.yes_bid AND b.yes_bid > 0 AND b.yes_ask > b.yes_bid),
+        u AS (SELECT ts, pnl, SUM(pnl) OVER (ORDER BY ts ROWS UNBOUNDED PRECEDING) AS cum FROM t WHERE pnl IS NOT NULL),
+        v AS (SELECT cum, MAX(cum) OVER (ORDER BY ts ROWS UNBOUNDED PRECEDING) AS peak FROM u)
+        SELECT (SELECT COUNT(*) FROM u), (SELECT SUM(pnl) FROM u), (SELECT SUM(pnl * pnl) FROM u),
+               (SELECT MAX(MAX(peak, 0) - cum) FROM v), (SELECT SUM(ABS(pnl)) FROM u)"""
+    ann = "sigma_s * 5615.69"           # sqrt(365 x 86400): per-second to annual
+    regime = f"""SELECT CASE WHEN {ann} < 0.4 THEN 'under 40%' WHEN {ann} < 0.8 THEN '40-80%' ELSE 'over 80%' END AS g,
+                        COUNT(*), AVG(CASE WHEN {two} THEN -(result * LN({pm}) + (1 - result) * LN(1 - {pm})) END),
+                        AVG(CASE WHEN {two} THEN -(result * LN({mm}) + (1 - result) * LN(1 - {mm})) END)
+                 FROM {TABLE} WHERE result IN (0, 1) AND p_model IS NOT NULL AND sigma_s IS NOT NULL
+                   AND look_s = (CASE kind WHEN 'm15' THEN {DECISION_LOOK['m15']} ELSE {DECISION_LOOK['hourly']} END)
+                 GROUP BY g LIMIT 3"""
+    side = f"""CASE WHEN yes_ask IS NOT NULL AND 100.0 * p_model - yes_ask - COALESCE(fee_yes, 0) >= {PAPER_EDGE_C}
+                      THEN 'yes'
+                    WHEN no_ask IS NOT NULL AND 100.0 * (1 - p_model) - no_ask - COALESCE(fee_no, 0) >= {PAPER_EDGE_C}
+                      THEN 'no' END"""
+    sig = f"""SELECT logged_ts, close_ts, ticker, kind, p_model, yes_bid, yes_ask, {side}, result FROM {TABLE}
+              WHERE coin = ? AND look_s = (CASE kind WHEN 'm15' THEN {DECISION_LOOK['m15']}
+                                                     ELSE {DECISION_LOOK['hourly']} END)
+              ORDER BY close_ts DESC LIMIT 100"""
+    out = {"intrawindow": {"trades": 0}, "by_regime": [], "signals": {}}
+    try:
+        with contextlib.closing(_conn()) as c:
+            n, s, s2, dd, turn = c.execute(intra).fetchone()
+            if n:
+                m = s / n
+                out["intrawindow"] = {
+                    "rule": f"enter the side with a {PAPER_EDGE_C:g}c fee-in edge at the ask 10 min before the "
+                            "close, sell at that side's bid 5 min before, fee on both legs",
+                    "trades": n, "per_trade_c": round(m, 2), "total_c": round(s, 1),
+                    "se_c": round(math.sqrt(max(0.0, s2 / n - m * m) / n), 2) if n > 1 else None,
+                    "max_drawdown_c": round(dd or 0.0, 1), "turnover_c": round(turn or 0.0, 1)}
+            out["by_regime"] = [{"regime": g, "n": k, "model_logloss": round(x, 4) if x is not None else None,
+                                 "kalshi_logloss": round(y, 4) if y is not None else None}
+                                for g, k, x, y in c.execute(regime)]
+            for coin in COINS:
+                out["signals"][coin] = [
+                    {"ts": a, "close_ts": b, "ticker": t, "kind": k, "p": p, "bid": yb, "ask": ya, "side": sd,
+                     "result": rs} for a, b, t, k, p, yb, ya, sd, rs in c.execute(sig, (coin,))]
+    except sqlite3.OperationalError as e:
+        if "no such table" not in str(e):
+            raise
+    return out
+
+
+# ---- paper positions (v2): the owner's own simulated trades, at executable prices only ----------------
+# PAPER: a position is a row in this file. Its entry is the ask Kalshi shows when the server reads the
+# market at that moment (never a price the page sends), its exit the bid at that moment, its fee Kalshi's
+# per-order taker fee rounded up to the cent; a position left open settles at Kalshi's result (no fee).
+PAPER_TABLE = "cx_paper"
+MAX_OPEN = 10
+MAX_PAPER_ROWS = 2000
+_paper_ready = None          # the record file the paper table was made in (tests switch files)
+
+
+def _ensure_paper():
+    global _paper_ready
+    if _paper_ready == _db_path():
+        return
+    init_db()
+    with _db_lock, contextlib.closing(_conn()) as c, c:
+        c.execute(f"""CREATE TABLE IF NOT EXISTS {PAPER_TABLE} (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, ticker TEXT NOT NULL, coin TEXT NOT NULL, side TEXT NOT NULL,
+            qty INTEGER NOT NULL, close_ts REAL NOT NULL, entry_ts REAL NOT NULL, entry_c REAL NOT NULL,
+            entry_fee_c REAL NOT NULL, p_entry REAL, exit_ts REAL, exit_c REAL, exit_fee_c REAL,
+            result INTEGER, status TEXT NOT NULL)""")
+    _paper_ready = _db_path()
+
+
+def order_fee_cents(ticker, price_c, qty):
+    """Kalshi's taker fee for one ORDER: the quadratic curve x the series' multiplier x qty, rounded UP to
+    the cent (a per-contract figure without the rounding under-states a one-lot by up to 0.99c)."""
+    per = _fee(ticker, price_c)
+    return float(math.ceil(per * qty - 1e-9)) if per else 0.0
+
+
+def _series_ok(ticker, coin):
+    c = COINS.get(coin) or {}
+    return bool(ticker) and any(str(ticker).startswith(s + "-") for s in (c.get("m15"), c.get("hourly")) if s)
+
+
+def _market_now(ticker, coin):
+    """One market, read fresh, priced by the model at this moment."""
+    m = (_kalshi(f"/markets/{ticker}") or {}).get("market") or {}
+    if not m or str(m.get("status") or "") not in ("active", "open"):
+        return None, m
+    q = _quote(m, coin)
+    px = proxy(coin)
+    return price_row(q, px.get("price"), realised_vol(coin), time.time()), m
+
+
+def paper_open(ticker, coin, side, qty=1):
+    coin = str(coin or "").upper()
+    if side not in ("yes", "no") or not _series_ok(ticker, coin):
+        raise ValueError("bad ticker or side")
+    qty = int(qty)
+    if not 1 <= qty <= 100:
+        raise ValueError("quantity 1 to 100")
+    _ensure_paper()
+    with contextlib.closing(_conn()) as c:
+        if c.execute(f"SELECT COUNT(*) FROM {PAPER_TABLE} WHERE status = 'open'").fetchone()[0] >= MAX_OPEN:
+            raise ValueError(f"at most {MAX_OPEN} open paper positions")
+    row, _m = _market_now(ticker, coin)
+    if not row:
+        raise ValueError("the market is not open")
+    ask = row.get(f"{side}_ask")
+    if ask is None:
+        raise ValueError(f"no {side.upper()} ask: nothing to buy at")
+    p = row.get("p_model")
+    now = time.time()
+    with _db_lock, contextlib.closing(_conn()) as c, c:
+        cur = c.execute(f"""INSERT INTO {PAPER_TABLE} (ticker, coin, side, qty, close_ts, entry_ts, entry_c, entry_fee_c,
+                            p_entry, status) VALUES (?,?,?,?,?,?,?,?,?, 'open')""",
+                        (ticker, coin, side, qty, row["close_ts"], now, ask, order_fee_cents(ticker, ask, qty),
+                         (p if side == "yes" else 1 - p) if p is not None else None))
+        pid = cur.lastrowid
+    return {"id": pid, "ticker": ticker, "side": side, "qty": qty, "entry_c": ask}
+
+
+def paper_close(pid):
+    _ensure_paper()
+    with contextlib.closing(_conn()) as c:
+        r = c.execute(f"SELECT ticker, coin, side, qty FROM {PAPER_TABLE} WHERE id = ? AND status = 'open'",
+                      (int(pid),)).fetchone()
+    if not r:
+        raise ValueError("no such open position")
+    ticker, coin, side, qty = r
+    row, _m = _market_now(ticker, coin)
+    bid = (row or {}).get(f"{side}_bid")
+    if bid is None:
+        raise ValueError(f"no {side.upper()} bid: nothing to sell into (hold to settlement, or wait)")
+    with _db_lock, contextlib.closing(_conn()) as c, c:
+        c.execute(f"""UPDATE {PAPER_TABLE} SET exit_ts = ?, exit_c = ?, exit_fee_c = ?, status = 'closed'
+                      WHERE id = ? AND status = 'open'""", (time.time(), bid, order_fee_cents(ticker, bid, qty), int(pid)))
+    return {"id": int(pid), "exit_c": bid}
+
+
+def evaluate(row, side, qty, entry_c, entry_fee_c):
+    """Hold, close and the other side, each judged on its own (the owner's spec: never assume closing YES
+    makes buying NO worthwhile). Values in cents for the whole position:
+      close  = the side's BID now, less the exit fee (what selling actually returns);
+      hold   = 100 x the model's chance of the side (settlement pays no fee) -- and, beside it, Kalshi's own
+               mid for the side, since the record has the model LOSING to that price;
+      other  = buying the other side now, its own fee-in edge at ITS ask, a separate decision."""
+    other = "no" if side == "yes" else "yes"
+    bid = row.get(f"{side}_bid")
+    p = row.get("p_model")
+    ps = (p if side == "yes" else 1 - p) if p is not None else None
+    mid = row.get("kalshi_mid")
+    mid_side = (mid if side == "yes" else 100.0 - mid) if mid is not None else None
+    tk = row.get("ticker")
+    close_v = (bid * qty - order_fee_cents(tk, bid, qty)) if bid is not None else None
+    hold_v = 100.0 * ps * qty if ps is not None else None
+    hold_mkt = mid_side * qty if mid_side is not None else None
+    cost = entry_c * qty + entry_fee_c
+    e_other = (row.get("edge") or {}).get(other)
+    if close_v is None:
+        verdict = "hold: no bid to sell into"
+    elif hold_v is None:
+        verdict = "no model figure: compare the bid with Kalshi's mid"
+    else:
+        verdict = "close" if close_v > hold_v else "hold"
+    return {"bid_c": bid, "close_value_c": round(close_v, 1) if close_v is not None else None,
+            "hold_value_model_c": round(hold_v, 1) if hold_v is not None else None,
+            "hold_value_kalshi_mid_c": round(hold_mkt, 1) if hold_mkt is not None else None,
+            "unrealized_c": round(close_v - cost, 1) if close_v is not None else None,
+            "p_side": round(ps, 4) if ps is not None else None, "verdict_by_model": verdict,
+            "other_side": {"side": other, "ask_c": row.get(f"{other}_ask"), "edge_c": e_other,
+                           "worth_it_by_model": bool(e_other is not None and e_other >= PAPER_EDGE_C)},
+            "note": "the model loses to Kalshi's price on the record: by Kalshi's own price holding is worth the "
+                    "mid, and closing gives up half the spread plus the fee"}
+
+
+def paper_positions():
+    """Open positions valued at this moment (one batched market read for at most MAX_OPEN), and the
+    closed and settled record as SQL sums."""
+    _ensure_paper()
+    with contextlib.closing(_conn()) as c:
+        opens = [x for x in c.execute(
+            f"""SELECT id, ticker, coin, side, qty, close_ts, entry_ts, entry_c, entry_fee_c, p_entry FROM {PAPER_TABLE}
+                WHERE status = 'open' ORDER BY entry_ts LIMIT {MAX_OPEN}""")]
+        pnl = """(CASE WHEN status = 'closed' THEN exit_c * qty - exit_fee_c
+                        WHEN status = 'settled' THEN 100.0 * result * qty ELSE 0 END) - entry_c * qty - entry_fee_c"""
+        n, tot, wins, s2, fees = c.execute(
+            f"""SELECT COUNT(*), SUM({pnl}), SUM(CASE WHEN {pnl} > 0 THEN 1 ELSE 0 END), SUM(({pnl}) * ({pnl})),
+                       SUM(entry_fee_c + COALESCE(exit_fee_c, 0)) FROM {PAPER_TABLE} WHERE status IN ('closed', 'settled')""").fetchone()
+        recent = [{"id": a, "ticker": b, "side": s, "qty": q, "entry_ts": et, "entry_c": ec, "exit_ts": xt, "exit_c": xc,
+                   "status": st, "result": rs, "pnl_c": round(pl, 1)}
+                  for a, b, s, q, et, ec, xt, xc, st, rs, pl in c.execute(
+                      f"""SELECT id, ticker, side, qty, entry_ts, entry_c, exit_ts, exit_c, status, result, {pnl}
+                          FROM {PAPER_TABLE} WHERE status IN ('closed', 'settled') ORDER BY id DESC LIMIT 20""")]
+    now = time.time()
+    rows = {}
+    if opens:
+        try:
+            ms = (_kalshi("/markets?tickers=" + ",".join(sorted({o[1] for o in opens}))) or {}).get("markets") or []
+            for m in ms:
+                coin = next((o[2] for o in opens if o[1] == m.get("ticker")), None)
+                px = proxy(coin)
+                rows[m.get("ticker")] = price_row(_quote(m, coin), px.get("price"), realised_vol(coin), now)
+        except Exception as e:
+            errlog.note("CRYPTO-paper-quote", e)
+    out = []
+    for pid, tk, coin, side, qty, close_ts, ets, ec, ef, pe in opens:
+        r = rows.get(tk)
+        out.append({"id": pid, "ticker": tk, "coin": coin, "side": side, "qty": qty, "close_ts": close_ts,
+                    "entry_ts": ets, "entry_c": ec, "entry_fee_c": ef, "p_entry": pe, "held_s": round(now - ets),
+                    "tau_s": round(close_ts - now, 1),
+                    "eval": evaluate(r, side, qty, ec, ef) if r else None})
+    m = (tot or 0.0) / n if n else None
+    return {"open": out, "recent": recent, "paper_only": True,
+            "record": {"positions": n or 0, "pnl_c": round(tot or 0.0, 1), "per_position_c": round(m, 2) if n else None,
+                       "se_c": round(math.sqrt(max(0.0, s2 / n - m * m) / n), 2) if n and n > 1 else None,
+                       "win_rate": round(wins / n, 3) if n else None, "fees_c": round(fees or 0.0, 1)}}
+
+
+def settle_paper(now=None):
+    """Open positions past their close settle at Kalshi's result (no fee); the table is held to
+    MAX_PAPER_ROWS by dropping the oldest closed or settled rows."""
+    if _paper_ready != _db_path():
+        _ensure_paper()
+    now = now or time.time()
+    with contextlib.closing(_conn()) as c:
+        due = [x for x in c.execute(f"""SELECT DISTINCT ticker FROM {PAPER_TABLE} WHERE status = 'open' AND close_ts < ?
+                                        LIMIT 20""", (now - 90,))]
+    if due:
+        ms = (_kalshi("/markets?tickers=" + ",".join(t for (t,) in due)) or {}).get("markets") or []
+        with _db_lock, contextlib.closing(_conn()) as c, c:
+            for m in ms:
+                res = str(m.get("result") or "").lower()
+                if res in ("yes", "no"):
+                    c.execute(f"""UPDATE {PAPER_TABLE} SET status = 'settled', exit_ts = ?,
+                                  result = CASE side WHEN ? THEN 1 ELSE 0 END WHERE ticker = ? AND status = 'open'""",
+                              (now, res, m.get("ticker")))
+    with _db_lock, contextlib.closing(_conn()) as c, c:
+        c.execute(f"""DELETE FROM {PAPER_TABLE} WHERE status != 'open' AND id NOT IN
+                      (SELECT id FROM {PAPER_TABLE} WHERE status != 'open' ORDER BY id DESC LIMIT {MAX_PAPER_ROWS})""")
+
+
+def contract_history(coin, ticker):
+    """Kalshi's own one-minute candlesticks for one open crypto market: [[t, yes_bid, yes_ask, volume]],
+    at most 60 (an hourly market's hour). NO's book is the mirror: NO bid = 100 - YES ask. Cached 20 s on
+    the coin alone (a ticker-keyed cache would gain a key every fifteen minutes, forever)."""
+    if not _series_ok(ticker, coin):
+        raise ValueError("ticker is not this coin's 15-minute or hourly series")
+    series = ticker.split("-")[0]
+
+    def fetch():
+        now = int(time.time())
+        d = _kalshi(f"/series/{series}/markets/{ticker}/candlesticks?start_ts={now - 3600}&end_ts={now}"
+                    "&period_interval=1") or {}
+        out = []
+        for k in (d.get("candlesticks") or [])[-60:]:
+            out.append([k.get("end_period_ts"), _cents((k.get("yes_bid") or {}).get("close_dollars")),
+                        _cents((k.get("yes_ask") or {}).get("close_dollars")), _f(k.get("volume_fp"))])
+        return {"ticker": ticker, "candles": out}
+    val = _cached(("contract", coin), 20, fetch)
+    return val if val.get("ticker") == ticker else _cached(("contract", coin), 20, fetch, fresh=True)
+
+
 # The record a page reads is computed by the BACKGROUND OWNER after each
 # grading pass and kept as a small JSON file beside the record; a web worker
 # only reads that file. Measured: record() + record_by() over 200,000 rows take
@@ -916,7 +1426,7 @@ def _summary_path():
 
 
 def write_summary():
-    data = {"ts": time.time(), "record": record(), "by": record_by()}
+    data = {"ts": time.time(), "record": record(), "by": record_by(), "extra": record_extra()}
     path = _summary_path()
     tmp = f"{path}.{os.getpid()}.tmp"
     with open(tmp, "w", encoding="utf-8") as f:
@@ -936,7 +1446,8 @@ def summary():
                 return json.load(f)
     except (OSError, ValueError) as e:
         errlog.note("CRYPTO-summary-read", e)
-    return _cached(("summary",), SUMMARY_TTL, lambda: {"ts": time.time(), "record": record(), "by": record_by()})
+    return _cached(("summary",), SUMMARY_TTL, lambda: {"ts": time.time(), "record": record(), "by": record_by(),
+                                                        "extra": record_extra()})
 
 
 def record_cached(coin=None, kind=None, look=None):
@@ -994,6 +1505,7 @@ def _loop():
                 sp = _summary_path()
                 if grade_tick(now) or not os.path.exists(sp) or now - os.path.getmtime(sp) > 3600:
                     write_summary()
+                settle_paper(now)
             if now - last_prune > 6 * 3600:
                 last_prune = now
                 prune(now)

@@ -3373,11 +3373,71 @@ def api_crypto_record():
         # read is one cached computation on a bounded key
         s = crypto_terminal.summary()
         rec = crypto_terminal.record_cached(coin, kind, int(look) if look else None) if (coin or kind or look) else s.get("record")
-        return jsonify({"record": rec, "by": s.get("by"), "as_of": s.get("ts"), "paper_only": True,
+        return jsonify({"record": rec, "by": s.get("by"), "extra": s.get("extra"), "as_of": s.get("ts"), "paper_only": True,
                         "decide": {"markets": crypto_terminal.DECIDE_MIN, "days": crypto_terminal.DECIDE_DAYS}})
     except Exception as e:
         errlog.note("CRYPTO-record-api", e)
         return jsonify({"error": f"record failed: {type(e).__name__}"}), 502
+
+
+# v2 (2026-11-27): the research verdicts the panels print, Kalshi's own price history for one open
+# market, and the owner's PAPER positions. The two POST routes write one row to the terminal's own
+# SQLite file; nothing is sent to Kalshi but GET reads (guards CX-PAPER).
+@app.route("/api/crypto/research")
+def api_crypto_research():
+    import crypto_terminal
+    return jsonify(crypto_terminal.research())
+
+
+@app.route("/api/crypto/contract")
+def api_crypto_contract():
+    import crypto_terminal
+    coin = (request.args.get("coin") or "").upper()
+    ticker = request.args.get("ticker") or ""
+    if coin not in crypto_terminal.COINS or not crypto_terminal._series_ok(ticker, coin):
+        return jsonify({"error": "bad params"}), 400
+    try:
+        return jsonify(crypto_terminal.contract_history(coin, ticker))
+    except Exception as e:
+        errlog.note("CRYPTO-contract", e, path=ticker[:40])
+        return jsonify({"error": f"contract history failed: {type(e).__name__}"}), 502
+
+
+@app.route("/api/crypto/paper")
+def api_crypto_paper():
+    import crypto_terminal
+    try:
+        return jsonify(crypto_terminal.paper_positions())
+    except Exception as e:
+        errlog.note("CRYPTO-paper", e)
+        return jsonify({"error": f"paper positions failed: {type(e).__name__}"}), 502
+
+
+@app.route("/api/crypto/paper/open", methods=["POST"])
+def api_crypto_paper_open():
+    import crypto_terminal
+    d = request.get_json(silent=True) or {}
+    try:
+        return jsonify(crypto_terminal.paper_open(str(d.get("ticker") or ""), d.get("coin"), d.get("side"),
+                                                  d.get("qty") or 1))
+    except (ValueError, TypeError) as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        errlog.note("CRYPTO-paper-open", e)
+        return jsonify({"error": f"paper open failed: {type(e).__name__}"}), 502
+
+
+@app.route("/api/crypto/paper/close", methods=["POST"])
+def api_crypto_paper_close():
+    import crypto_terminal
+    d = request.get_json(silent=True) or {}
+    try:
+        return jsonify(crypto_terminal.paper_close(int(d.get("id"))))
+    except (ValueError, TypeError) as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        errlog.note("CRYPTO-paper-close", e)
+        return jsonify({"error": f"paper close failed: {type(e).__name__}"}), 502
 
 
 @app.route("/api/bets", methods=["GET"])
