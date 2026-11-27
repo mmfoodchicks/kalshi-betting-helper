@@ -1,0 +1,1276 @@
+{
+ "contest_id": 197897298,
+ "sha256": "7a06d589079acce2628dad7675cbdd4bfe7e0db965dfe183db2d2a5b99a32f28",
+ "kind": "classic",
+ "entries": 594530,
+ "with_lineup": 593669,
+ "malformed": 0,
+ "points": {
+  "first": 262.53998,
+  "top_0_1pct": 240.34,
+  "top_1pct": 219.54,
+  "top_10pct": 187.84,
+  "median": 146.44,
+  "cash_line": 172.59999
+ },
+ "rank_points": [
+  [
+   1,
+   262.53998
+  ],
+  [
+   2,
+   262.53998
+  ],
+  [
+   5,
+   260.04
+  ],
+  [
+   10,
+   257.84
+  ],
+  [
+   20,
+   255.04
+  ],
+  [
+   50,
+   251.74
+  ],
+  [
+   100,
+   248.04
+  ],
+  [
+   200,
+   245.23999
+  ],
+  [
+   500,
+   241.14
+  ],
+  [
+   1000,
+   237.44
+  ],
+  [
+   2000,
+   230.70001
+  ],
+  [
+   5000,
+   221.6
+  ],
+  [
+   10000,
+   213.9
+  ],
+  [
+   20000,
+   205.23999
+  ],
+  [
+   50000,
+   191.2
+  ],
+  [
+   100000,
+   177.54001
+  ],
+  [
+   200000,
+   159.85999
+  ],
+  [
+   500000,
+   115.49999
+  ],
+  [
+   594530,
+   0.0
+  ]
+ ],
+ "contest": {
+  "name": "NFL $2.5M Thanksgiving Millionaire [$1M to 1st] (Thu)",
+  "entry_fee": 5.0,
+  "prize_pool": 2500000.0,
+  "first_prize": 1000000.0,
+  "places_paid": 123800,
+  "max_entries": 594530,
+  "draft_group_id": 156932,
+  "starts": "2026-11-26T18:00:00.0000000Z"
+ },
+ "ownership": [
+  {
+   "name": "Emmett Johnson",
+   "pct": 53.4,
+   "fpts": 19.6,
+   "dk_pct": {
+    "RB": 46.82,
+    "FLEX": 6.5
+   },
+   "pos": "RB",
+   "team": "KC",
+   "salary": 7200
+  },
+  {
+   "name": "Jahmyr Gibbs",
+   "pct": 47.06,
+   "fpts": 51.2,
+   "dk_pct": {
+    "RB": 45.45,
+    "FLEX": 1.54
+   },
+   "pos": "RB",
+   "team": "DET",
+   "salary": 9500
+  },
+  {
+   "name": "Colston Loveland",
+   "pct": 40.4,
+   "fpts": 0.5,
+   "dk_pct": {
+    "TE": 34.13,
+    "FLEX": 6.22
+   },
+   "pos": "TE",
+   "team": "CHI",
+   "salary": 5000
+  },
+  {
+   "name": "George Pickens",
+   "pct": 39.95,
+   "fpts": 11.7,
+   "dk_pct": {
+    "WR": 34.85,
+    "FLEX": 5.04
+   },
+   "pos": "WR",
+   "team": "DAL",
+   "salary": 6300
+  },
+  {
+   "name": "CeeDee Lamb",
+   "pct": 35.74,
+   "fpts": 23.4,
+   "dk_pct": {
+    "WR": 31.72,
+    "FLEX": 3.97
+   },
+   "pos": "WR",
+   "team": "DAL",
+   "salary": 8300
+  },
+  {
+   "name": "Amon-Ra St. Brown",
+   "pct": 34.56,
+   "fpts": 24.6,
+   "dk_pct": {
+    "WR": 32.91,
+    "FLEX": 1.59
+   },
+   "pos": "WR",
+   "team": "DET",
+   "salary": 7700
+  },
+  {
+   "name": "Saquon Barkley",
+   "pct": 34.28,
+   "fpts": 0.7,
+   "dk_pct": {
+    "RB": 31.57,
+    "FLEX": 2.67
+   },
+   "pos": "RB",
+   "team": "PHI",
+   "salary": 5800
+  },
+  {
+   "name": "Javonte Williams",
+   "pct": 31.66,
+   "fpts": 36.3,
+   "dk_pct": {
+    "RB": 29.22,
+    "FLEX": 2.39
+   },
+   "pos": "RB",
+   "team": "DAL",
+   "salary": 6800
+  },
+  {
+   "name": "Rome Odunze",
+   "pct": 30.54,
+   "fpts": 26.7,
+   "dk_pct": {
+    "WR": 28.29,
+    "FLEX": 2.21
+   },
+   "pos": "WR",
+   "team": "CHI",
+   "salary": 4500
+  },
+  {
+   "name": "Luther Burden III",
+   "pct": 29.95,
+   "fpts": 7.5,
+   "dk_pct": {
+    "WR": 28.28,
+    "FLEX": 1.63
+   },
+   "pos": "WR",
+   "team": "CHI",
+   "salary": 6000
+  },
+  {
+   "name": "Sam LaPorta",
+   "pct": 28.26,
+   "fpts": 14.4,
+   "dk_pct": {
+    "TE": 21.43,
+    "FLEX": 6.79
+   },
+   "pos": "TE",
+   "team": "DET",
+   "salary": 4200
+  },
+  {
+   "name": "Caleb Williams",
+   "pct": 27.98,
+   "fpts": 28.3,
+   "dk_pct": {
+    "QB": 27.94
+   },
+   "pos": "QB",
+   "team": "CHI",
+   "salary": 5800
+  },
+  {
+   "name": "DeVonta Smith",
+   "pct": 27.43,
+   "fpts": 46.0,
+   "dk_pct": {
+    "WR": 24.17,
+    "FLEX": 3.22
+   },
+   "pos": "WR",
+   "team": "PHI",
+   "salary": 5900
+  },
+  {
+   "name": "Chiefs",
+   "pct": 25.88,
+   "fpts": 10.0,
+   "dk_pct": {
+    "DST": 25.85
+   },
+   "pos": "DST",
+   "team": "KC",
+   "salary": 2600
+  },
+  {
+   "name": "Jameson Williams",
+   "pct": 21.94,
+   "fpts": 14.0,
+   "dk_pct": {
+    "WR": 20.15,
+    "FLEX": 1.76
+   },
+   "pos": "WR",
+   "team": "DET",
+   "salary": 5700
+  },
+  {
+   "name": "Travis Kelce",
+   "pct": 21.69,
+   "fpts": 11.1,
+   "dk_pct": {
+    "TE": 14.32,
+    "FLEX": 7.34
+   },
+   "pos": "TE",
+   "team": "KC",
+   "salary": 4900
+  },
+  {
+   "name": "James Cook III",
+   "pct": 20.88,
+   "fpts": 22.5,
+   "dk_pct": {
+    "RB": 17.79,
+    "FLEX": 3.05
+   },
+   "pos": "RB",
+   "team": "BUF",
+   "salary": 7400
+  },
+  {
+   "name": "Cowboys",
+   "pct": 20.48,
+   "fpts": 3.0,
+   "dk_pct": {
+    "DST": 20.45
+   },
+   "pos": "DST",
+   "team": "DAL",
+   "salary": 3300
+  },
+  {
+   "name": "Dak Prescott",
+   "pct": 20.03,
+   "fpts": 26.54,
+   "dk_pct": {
+    "QB": 20.0
+   },
+   "pos": "QB",
+   "team": "DAL",
+   "salary": 6400
+  },
+  {
+   "name": "Jared Goff",
+   "pct": 19.93,
+   "fpts": 19.82,
+   "dk_pct": {
+    "QB": 19.9
+   },
+   "pos": "QB",
+   "team": "DET",
+   "salary": 5600
+  },
+  {
+   "name": "D'Andre Swift",
+   "pct": 18.55,
+   "fpts": 29.2,
+   "dk_pct": {
+    "RB": 17.24,
+    "FLEX": 1.29
+   },
+   "pos": "RB",
+   "team": "CHI",
+   "salary": 6200
+  },
+  {
+   "name": "Lions",
+   "pct": 17.43,
+   "fpts": 4.0,
+   "dk_pct": {
+    "DST": 17.41
+   },
+   "pos": "DST",
+   "team": "DET",
+   "salary": 2400
+  },
+  {
+   "name": "Eagles",
+   "pct": 14.27,
+   "fpts": 9.0,
+   "dk_pct": {
+    "DST": 14.24
+   },
+   "pos": "DST",
+   "team": "PHI",
+   "salary": 2200
+  },
+  {
+   "name": "Kalif Raymond",
+   "pct": 13.8,
+   "fpts": 5.0,
+   "dk_pct": {
+    "WR": 12.14,
+    "FLEX": 1.64
+   },
+   "pos": "WR",
+   "team": "CHI",
+   "salary": 3500
+  },
+  {
+   "name": "Darius Cooper",
+   "pct": 13.74,
+   "fpts": 2.4,
+   "dk_pct": {
+    "WR": 10.41,
+    "FLEX": 3.32
+   },
+   "pos": "WR",
+   "team": "PHI",
+   "salary": 3600
+  },
+  {
+   "name": "Joe Milton III",
+   "pct": 13.46,
+   "fpts": 34.74,
+   "dk_pct": {
+    "QB": 13.44
+   },
+   "pos": "QB",
+   "team": "PHI",
+   "salary": 4600
+  },
+  {
+   "name": "Khalil Shakir",
+   "pct": 13.46,
+   "fpts": 6.3,
+   "dk_pct": {
+    "WR": 9.7,
+    "FLEX": 3.73
+   },
+   "pos": "WR",
+   "team": "BUF",
+   "salary": 4600
+  },
+  {
+   "name": "DJ Moore",
+   "pct": 13.44,
+   "fpts": 3.5,
+   "dk_pct": {
+    "WR": 10.56,
+    "FLEX": 2.87
+   },
+   "pos": "WR",
+   "team": "BUF",
+   "salary": 5600
+  },
+  {
+   "name": "Dallas Goedert",
+   "pct": 13.28,
+   "fpts": 1.9,
+   "dk_pct": {
+    "TE": 9.21,
+    "FLEX": 4.05
+   },
+   "pos": "TE",
+   "team": "PHI",
+   "salary": 4100
+  },
+  {
+   "name": "Rashee Rice",
+   "pct": 13.25,
+   "fpts": 3.9,
+   "dk_pct": {
+    "WR": 9.95,
+    "FLEX": 3.28
+   },
+   "pos": "WR",
+   "team": "KC",
+   "salary": 5400
+  },
+  {
+   "name": "Ryan Flournoy",
+   "pct": 12.73,
+   "fpts": 0.0,
+   "dk_pct": {
+    "WR": 10.1,
+    "FLEX": 2.61
+   },
+   "pos": "WR",
+   "team": "DAL",
+   "salary": 4300
+  },
+  {
+   "name": "Josh Downs",
+   "pct": 12.52,
+   "fpts": 2.3,
+   "dk_pct": {
+    "WR": 9.73,
+    "FLEX": 2.78
+   },
+   "pos": "WR",
+   "team": "KC",
+   "salary": 4700
+  },
+  {
+   "name": "Brevyn Spann-Ford",
+   "pct": 11.41,
+   "fpts": 2.5,
+   "dk_pct": {
+    "TE": 8.94,
+    "FLEX": 2.46
+   },
+   "pos": "TE",
+   "team": "DAL",
+   "salary": 3000
+  },
+  {
+   "name": "Bears",
+   "pct": 11.14,
+   "fpts": 2.0,
+   "dk_pct": {
+    "DST": 11.12
+   },
+   "pos": "DST",
+   "team": "CHI",
+   "salary": 2900
+  },
+  {
+   "name": "Bills",
+   "pct": 10.8,
+   "fpts": 5.0,
+   "dk_pct": {
+    "DST": 10.79
+   },
+   "pos": "DST",
+   "team": "BUF",
+   "salary": 3100
+  },
+  {
+   "name": "Josh Allen",
+   "pct": 10.33,
+   "fpts": 5.54,
+   "dk_pct": {
+    "QB": 10.31
+   },
+   "pos": "QB",
+   "team": "BUF",
+   "salary": 7000
+  },
+  {
+   "name": "Makai Lemon",
+   "pct": 10.31,
+   "fpts": 16.1,
+   "dk_pct": {
+    "WR": 8.33,
+    "FLEX": 1.96
+   },
+   "pos": "WR",
+   "team": "PHI",
+   "salary": 3900
+  },
+  {
+   "name": "Patrick Mahomes",
+   "pct": 8.21,
+   "fpts": 7.16,
+   "dk_pct": {
+    "QB": 8.2
+   },
+   "pos": "QB",
+   "team": "KC",
+   "salary": 6000
+  },
+  {
+   "name": "Kyle Monangai",
+   "pct": 7.95,
+   "fpts": 15.9,
+   "dk_pct": {
+    "RB": 7.14,
+    "FLEX": 0.81
+   },
+   "pos": "RB",
+   "team": "CHI",
+   "salary": 5200
+  },
+  {
+   "name": "Xavier Worthy",
+   "pct": 6.8,
+   "fpts": 0.0,
+   "dk_pct": {
+    "WR": 4.47,
+    "FLEX": 2.32
+   },
+   "pos": "WR",
+   "team": "KC",
+   "salary": 3700
+  }
+ ],
+ "duplicates": {
+  "distinct_lineups": 301983,
+  "max_copies": 899,
+  "entries_in_duplicated_lineups_pct": 62.62,
+  "distinct_pair_collision": 2.6017127668884757e-05,
+  "most_copied": [
+   {
+    "lineup": [
+     "Amon-Ra St. Brown",
+     "Caleb Williams",
+     "Chiefs",
+     "Colston Loveland",
+     "Emmett Johnson",
+     "Jahmyr Gibbs",
+     "Kalif Raymond",
+     "Rome Odunze",
+     "Sam LaPorta"
+    ],
+    "copies": 899
+   },
+   {
+    "lineup": [
+     "Caleb Williams",
+     "Chiefs",
+     "Colston Loveland",
+     "DeVonta Smith",
+     "Emmett Johnson",
+     "George Pickens",
+     "Jahmyr Gibbs",
+     "Kalif Raymond",
+     "Sam LaPorta"
+    ],
+    "copies": 748
+   },
+   {
+    "lineup": [
+     "Amon-Ra St. Brown",
+     "Chiefs",
+     "Colston Loveland",
+     "Emmett Johnson",
+     "George Pickens",
+     "Jared Goff",
+     "Javonte Williams",
+     "Rome Odunze",
+     "Sam LaPorta"
+    ],
+    "copies": 696
+   },
+   {
+    "lineup": [
+     "Amon-Ra St. Brown",
+     "Caleb Williams",
+     "Chiefs",
+     "Colston Loveland",
+     "Darius Cooper",
+     "Emmett Johnson",
+     "George Pickens",
+     "Luther Burden III",
+     "Saquon Barkley"
+    ],
+    "copies": 353
+   },
+   {
+    "lineup": [
+     "Amon-Ra St. Brown",
+     "Colston Loveland",
+     "Cowboys",
+     "Emmett Johnson",
+     "Jameson Williams",
+     "Jared Goff",
+     "Javonte Williams",
+     "Rome Odunze",
+     "Sam LaPorta"
+    ],
+    "copies": 331
+   },
+   {
+    "lineup": [
+     "Amon-Ra St. Brown",
+     "Caleb Williams",
+     "Chiefs",
+     "Colston Loveland",
+     "Emmett Johnson",
+     "Javonte Williams",
+     "Luther Burden III",
+     "Rome Odunze",
+     "Sam LaPorta"
+    ],
+    "copies": 322
+   },
+   {
+    "lineup": [
+     "Cowboys",
+     "Jahmyr Gibbs",
+     "James Cook III",
+     "Jameson Williams",
+     "Jared Goff",
+     "Luther Burden III",
+     "Ryan Flournoy",
+     "Sam LaPorta",
+     "Xavier Worthy"
+    ],
+    "copies": 286
+   },
+   {
+    "lineup": [
+     "Amon-Ra St. Brown",
+     "Chiefs",
+     "Dallas Goedert",
+     "Jahmyr Gibbs",
+     "Jared Goff",
+     "Luther Burden III",
+     "Rome Odunze",
+     "Sam LaPorta",
+     "Saquon Barkley"
+    ],
+    "copies": 285
+   },
+   {
+    "lineup": [
+     "Chiefs",
+     "Colston Loveland",
+     "DeVonta Smith",
+     "Emmett Johnson",
+     "George Pickens",
+     "Jahmyr Gibbs",
+     "Joe Milton III",
+     "Rome Odunze",
+     "Sam LaPorta"
+    ],
+    "copies": 253
+   },
+   {
+    "lineup": [
+     "Amon-Ra St. Brown",
+     "Caleb Williams",
+     "Colston Loveland",
+     "Emmett Johnson",
+     "George Pickens",
+     "Javonte Williams",
+     "Lions",
+     "Rome Odunze",
+     "Sam LaPorta"
+    ],
+    "copies": 253
+   },
+   {
+    "lineup": [
+     "Amon-Ra St. Brown",
+     "Colston Loveland",
+     "Eagles",
+     "Emmett Johnson",
+     "George Pickens",
+     "Jared Goff",
+     "Luther Burden III",
+     "Sam LaPorta",
+     "Saquon Barkley"
+    ],
+    "copies": 245
+   },
+   {
+    "lineup": [
+     "Brevyn Spann-Ford",
+     "CeeDee Lamb",
+     "Chiefs",
+     "Dak Prescott",
+     "DeVonta Smith",
+     "Emmett Johnson",
+     "George Pickens",
+     "Rome Odunze",
+     "Saquon Barkley"
+    ],
+    "copies": 243
+   },
+   {
+    "lineup": [
+     "Amon-Ra St. Brown",
+     "Chiefs",
+     "Colston Loveland",
+     "DeVonta Smith",
+     "Emmett Johnson",
+     "George Pickens",
+     "Javonte Williams",
+     "Joe Milton III",
+     "Makai Lemon"
+    ],
+    "copies": 242
+   },
+   {
+    "lineup": [
+     "Bills",
+     "CeeDee Lamb",
+     "Colston Loveland",
+     "Darius Cooper",
+     "DeVonta Smith",
+     "Jahmyr Gibbs",
+     "Joe Milton III",
+     "Sam LaPorta",
+     "Saquon Barkley"
+    ],
+    "copies": 236
+   },
+   {
+    "lineup": [
+     "CeeDee Lamb",
+     "Chiefs",
+     "Colston Loveland",
+     "DeVonta Smith",
+     "Emmett Johnson",
+     "George Pickens",
+     "Joe Milton III",
+     "Sam LaPorta",
+     "Saquon Barkley"
+    ],
+    "copies": 220
+   },
+   {
+    "lineup": [
+     "Amon-Ra St. Brown",
+     "CeeDee Lamb",
+     "Chiefs",
+     "Colston Loveland",
+     "Darius Cooper",
+     "Emmett Johnson",
+     "Jared Goff",
+     "Sam LaPorta",
+     "Saquon Barkley"
+    ],
+    "copies": 218
+   },
+   {
+    "lineup": [
+     "Amon-Ra St. Brown",
+     "Caleb Williams",
+     "Chiefs",
+     "Colston Loveland",
+     "Emmett Johnson",
+     "George Pickens",
+     "Kalif Raymond",
+     "Luther Burden III",
+     "Saquon Barkley"
+    ],
+    "copies": 215
+   },
+   {
+    "lineup": [
+     "Amon-Ra St. Brown",
+     "Caleb Williams",
+     "Chiefs",
+     "Colston Loveland",
+     "DeVonta Smith",
+     "Emmett Johnson",
+     "Javonte Williams",
+     "Rome Odunze",
+     "Sam LaPorta"
+    ],
+    "copies": 210
+   },
+   {
+    "lineup": [
+     "Amon-Ra St. Brown",
+     "Caleb Williams",
+     "CeeDee Lamb",
+     "Colston Loveland",
+     "Eagles",
+     "Emmett Johnson",
+     "Kalif Raymond",
+     "Rome Odunze",
+     "Saquon Barkley"
+    ],
+    "copies": 208
+   },
+   {
+    "lineup": [
+     "Caleb Williams",
+     "Cowboys",
+     "DeVonta Smith",
+     "Emmett Johnson",
+     "George Pickens",
+     "Javonte Williams",
+     "Luther Burden III",
+     "Rome Odunze",
+     "Sam LaPorta"
+    ],
+    "copies": 206
+   }
+  ],
+  "copies_histogram": {
+   "1": 221937,
+   "2": 39627,
+   "3": 14786,
+   "4": 7640,
+   "5": 4508,
+   "6": 2899,
+   "7": 1937,
+   "8": 1478,
+   "9": 1060,
+   "10": 816,
+   "11": 664,
+   "12": 540,
+   "13": 427,
+   "14": 363,
+   "15": 324,
+   "16": 253,
+   "17": 253,
+   "18": 176,
+   "19": 193,
+   "20": 184,
+   "21": 141,
+   "22": 125,
+   "23": 95,
+   "24": 91,
+   "25": 83,
+   "26": 87,
+   "27": 75,
+   "28": 72,
+   "29": 56,
+   "30": 65,
+   "31": 48,
+   "32": 56,
+   "33": 51,
+   "34": 39,
+   "35": 41,
+   "36": 38,
+   "37": 30,
+   "38": 30,
+   "39": 28,
+   "40": 32,
+   "41": 23,
+   "42": 32,
+   "43": 20,
+   "44": 31,
+   "45": 20,
+   "46": 8,
+   "47": 25,
+   "48": 17,
+   "49": 13,
+   "50": 11,
+   "51": 10,
+   "52": 13,
+   "53": 13,
+   "54": 12,
+   "55": 16,
+   "56": 20,
+   "57": 6,
+   "58": 10,
+   "59": 8,
+   "60": 6,
+   "61": 14,
+   "62": 4,
+   "63": 11,
+   "64": 9,
+   "65": 6,
+   "66": 6,
+   "67": 6,
+   "68": 10,
+   "69": 5,
+   "70": 7,
+   "71": 4,
+   "72": 6,
+   "73": 7,
+   "74": 5,
+   "75": 3,
+   "76": 6,
+   "77": 9,
+   "78": 5,
+   "79": 2,
+   "80": 8,
+   "81": 3,
+   "82": 5,
+   "83": 6,
+   "84": 2,
+   "85": 1,
+   "86": 4,
+   "87": 4,
+   "88": 3,
+   "89": 7,
+   "91": 3,
+   "92": 3,
+   "93": 2,
+   "94": 5,
+   "95": 4,
+   "96": 5,
+   "97": 5,
+   "98": 2,
+   "99": 2,
+   "100": 6,
+   "101": 2,
+   "102": 2,
+   "103": 4,
+   "104": 2,
+   "105": 2,
+   "107": 3,
+   "108": 2,
+   "112": 1,
+   "113": 3,
+   "114": 2,
+   "115": 3,
+   "116": 2,
+   "118": 1,
+   "119": 3,
+   "121": 3,
+   "122": 3,
+   "123": 3,
+   "124": 3,
+   "125": 1,
+   "126": 1,
+   "127": 2,
+   "128": 2,
+   "129": 1,
+   "131": 1,
+   "132": 2,
+   "133": 1,
+   "135": 3,
+   "137": 1,
+   "139": 3,
+   "140": 2,
+   "141": 1,
+   "142": 1,
+   "144": 1,
+   "145": 4,
+   "146": 1,
+   "149": 2,
+   "150": 1,
+   "152": 1,
+   "153": 1,
+   "160": 2,
+   "161": 2,
+   "164": 1,
+   "172": 2,
+   "173": 1,
+   "183": 1,
+   "186": 2,
+   "191": 2,
+   "197": 2,
+   "198": 1,
+   "199": 1,
+   "200": 1,
+   "205": 1,
+   "206": 1,
+   "208": 1,
+   "210": 1,
+   "215": 1,
+   "218": 1,
+   "220": 1,
+   "236": 1,
+   "242": 1,
+   "243": 1,
+   "245": 1,
+   "253": 2,
+   "285": 1,
+   "286": 1,
+   "322": 1,
+   "331": 1,
+   "353": 1,
+   "696": 1,
+   "748": 1,
+   "899": 1
+  }
+ },
+ "max_entry_users_pct": 27.73,
+ "top_lineups": [
+  {
+   "rank": 1,
+   "points": 262.53998,
+   "lineup": [
+    [
+     "DST",
+     "Chiefs"
+    ],
+    [
+     "FLEX",
+     "Javonte Williams"
+    ],
+    [
+     "QB",
+     "Joe Milton III"
+    ],
+    [
+     "RB",
+     "Jahmyr Gibbs"
+    ],
+    [
+     "RB",
+     "D'Andre Swift"
+    ],
+    [
+     "TE",
+     "Sam LaPorta"
+    ],
+    [
+     "WR",
+     "DeVonta Smith"
+    ],
+    [
+     "WR",
+     "Jameson Williams"
+    ],
+    [
+     "WR",
+     "Rome Odunze"
+    ]
+   ]
+  },
+  {
+   "rank": 1,
+   "points": 262.53998,
+   "lineup": [
+    [
+     "DST",
+     "Chiefs"
+    ],
+    [
+     "FLEX",
+     "Javonte Williams"
+    ],
+    [
+     "QB",
+     "Joe Milton III"
+    ],
+    [
+     "RB",
+     "Jahmyr Gibbs"
+    ],
+    [
+     "RB",
+     "D'Andre Swift"
+    ],
+    [
+     "TE",
+     "Sam LaPorta"
+    ],
+    [
+     "WR",
+     "DeVonta Smith"
+    ],
+    [
+     "WR",
+     "Jameson Williams"
+    ],
+    [
+     "WR",
+     "Rome Odunze"
+    ]
+   ]
+  },
+  {
+   "rank": 3,
+   "points": 261.34003,
+   "lineup": [
+    [
+     "DST",
+     "Chiefs"
+    ],
+    [
+     "FLEX",
+     "Javonte Williams"
+    ],
+    [
+     "QB",
+     "Joe Milton III"
+    ],
+    [
+     "RB",
+     "Jahmyr Gibbs"
+    ],
+    [
+     "RB",
+     "D'Andre Swift"
+    ],
+    [
+     "TE",
+     "Travis Kelce"
+    ],
+    [
+     "WR",
+     "DeVonta Smith"
+    ],
+    [
+     "WR",
+     "Rome Odunze"
+    ],
+    [
+     "WR",
+     "Makai Lemon"
+    ]
+   ]
+  },
+  {
+   "rank": 4,
+   "points": 260.04,
+   "lineup": [
+    [
+     "DST",
+     "Chiefs"
+    ],
+    [
+     "FLEX",
+     "Makai Lemon"
+    ],
+    [
+     "QB",
+     "Joe Milton III"
+    ],
+    [
+     "RB",
+     "Jahmyr Gibbs"
+    ],
+    [
+     "RB",
+     "Javonte Williams"
+    ],
+    [
+     "TE",
+     "Sam LaPorta"
+    ],
+    [
+     "WR",
+     "Amon-Ra St. Brown"
+    ],
+    [
+     "WR",
+     "DeVonta Smith"
+    ],
+    [
+     "WR",
+     "Rome Odunze"
+    ]
+   ]
+  },
+  {
+   "rank": 4,
+   "points": 260.04,
+   "lineup": [
+    [
+     "DST",
+     "Chiefs"
+    ],
+    [
+     "FLEX",
+     "Makai Lemon"
+    ],
+    [
+     "QB",
+     "Joe Milton III"
+    ],
+    [
+     "RB",
+     "Jahmyr Gibbs"
+    ],
+    [
+     "RB",
+     "Javonte Williams"
+    ],
+    [
+     "TE",
+     "Sam LaPorta"
+    ],
+    [
+     "WR",
+     "Amon-Ra St. Brown"
+    ],
+    [
+     "WR",
+     "DeVonta Smith"
+    ],
+    [
+     "WR",
+     "Rome Odunze"
+    ]
+   ]
+  }
+ ],
+ "shape": {
+  "resolved": 593669,
+  "unresolved": 0,
+  "stack_pct": [
+   5.95,
+   33.2,
+   48.36,
+   12.48
+  ],
+  "bring_back_pct": 68.62,
+  "dst_vs_own_qb_pct": 4.427,
+  "salary_mean": 49782.6,
+  "salary_median": 49900,
+  "salary_at_cap_pct": 37.0
+ },
+ "model": {
+  "max_own": 0.38,
+  "stack_dist": [
+   0.174,
+   0.49,
+   0.289,
+   0.047
+  ],
+  "bring_back": 0.35,
+  "salary_used": 49400.0,
+  "dst_vs_own_qb": 0.08,
+  "collision": 1.2e-07
+ },
+ "final": true
+}

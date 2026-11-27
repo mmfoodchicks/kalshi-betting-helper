@@ -1,0 +1,1092 @@
+{
+ "contest_id": 198130093,
+ "sha256": "fda911e8754478473463b643d8cc56fbce8090ae8e5c0e7b173258fb3c88ed87",
+ "kind": "showdown",
+ "entries": 37647,
+ "with_lineup": 37488,
+ "malformed": 0,
+ "points": {
+  "first": 90.299995,
+  "top_0_1pct": 86.91,
+  "top_1pct": 83.44,
+  "top_10pct": 75.56,
+  "median": 59.75,
+  "cash_line": 71.340004
+ },
+ "rank_points": [
+  [
+   1,
+   90.299995
+  ],
+  [
+   2,
+   90.299995
+  ],
+  [
+   5,
+   89.0
+  ],
+  [
+   10,
+   87.91
+  ],
+  [
+   20,
+   87.91
+  ],
+  [
+   50,
+   86.91
+  ],
+  [
+   100,
+   86.51
+  ],
+  [
+   200,
+   85.16
+  ],
+  [
+   500,
+   83.19
+  ],
+  [
+   1000,
+   81.5
+  ],
+  [
+   2000,
+   78.54
+  ],
+  [
+   5000,
+   74.200005
+  ],
+  [
+   10000,
+   68.71
+  ],
+  [
+   20000,
+   58.739998
+  ],
+  [
+   37647,
+   0.0
+  ]
+ ],
+ "contest": {
+  "name": "NFL Showdown $800K Thanksgiving Night Showdown [$200K to 1st] (KC @ BUF)",
+  "entry_fee": 25.0,
+  "prize_pool": 800000.0,
+  "first_prize": 200000.0,
+  "places_paid": 7706,
+  "max_entries": 37647,
+  "draft_group_id": 157075,
+  "starts": "2026-11-27T01:20:00.0000000Z"
+ },
+ "ownership": [
+  {
+   "name": "Josh Allen",
+   "pct": 80.83,
+   "fpts": 5.54,
+   "dk_pct": {
+    "FLEX": 60.72,
+    "CPT": 19.76
+   },
+   "pos": "QB",
+   "team": "BUF",
+   "salary": 11000,
+   "cpt_pct": 19.85
+  },
+  {
+   "name": "Emmett Johnson",
+   "pct": 79.16,
+   "fpts": 19.6,
+   "dk_pct": {
+    "FLEX": 46.04,
+    "CPT": 32.79
+   },
+   "pos": "RB",
+   "team": "KC",
+   "salary": 9400,
+   "cpt_pct": 32.93
+  },
+  {
+   "name": "James Cook III",
+   "pct": 60.57,
+   "fpts": 22.5,
+   "dk_pct": {
+    "FLEX": 45.25,
+    "CPT": 15.06
+   },
+   "pos": "RB",
+   "team": "BUF",
+   "salary": 9800,
+   "cpt_pct": 15.12
+  },
+  {
+   "name": "Patrick Mahomes",
+   "pct": 59.22,
+   "fpts": 7.16,
+   "dk_pct": {
+    "FLEX": 52.36,
+    "CPT": 6.61
+   },
+   "pos": "QB",
+   "team": "KC",
+   "salary": 10000,
+   "cpt_pct": 6.64
+  },
+  {
+   "name": "Travis Kelce",
+   "pct": 29.28,
+   "fpts": 11.1,
+   "dk_pct": {
+    "FLEX": 24.97,
+    "CPT": 4.19
+   },
+   "pos": "TE",
+   "team": "KC",
+   "salary": 7800,
+   "cpt_pct": 4.21
+  },
+  {
+   "name": "Tyler Bass",
+   "pct": 25.51,
+   "fpts": 11.0,
+   "dk_pct": {
+    "FLEX": 24.03,
+    "CPT": 1.38
+   },
+   "pos": "K",
+   "team": "BUF",
+   "salary": 5000,
+   "cpt_pct": 1.38
+  },
+  {
+   "name": "Khalil Shakir",
+   "pct": 24.88,
+   "fpts": 6.3,
+   "dk_pct": {
+    "FLEX": 22.6,
+    "CPT": 2.18
+   },
+   "pos": "WR",
+   "team": "BUF",
+   "salary": 6600,
+   "cpt_pct": 2.18
+  },
+  {
+   "name": "Ty Johnson",
+   "pct": 21.8,
+   "fpts": 3.2,
+   "dk_pct": {
+    "FLEX": 20.6,
+    "CPT": 1.11
+   },
+   "pos": "RB",
+   "team": "BUF",
+   "salary": 3400,
+   "cpt_pct": 1.12
+  },
+  {
+   "name": "Bills",
+   "pct": 21.61,
+   "fpts": 5.0,
+   "dk_pct": {
+    "FLEX": 19.78,
+    "CPT": 1.74
+   },
+   "pos": "DST",
+   "team": "BUF",
+   "salary": 4000,
+   "cpt_pct": 1.74
+  },
+  {
+   "name": "DJ Moore",
+   "pct": 20.67,
+   "fpts": 3.5,
+   "dk_pct": {
+    "FLEX": 17.88,
+    "CPT": 2.69
+   },
+   "pos": "WR",
+   "team": "BUF",
+   "salary": 8600,
+   "cpt_pct": 2.7
+  },
+  {
+   "name": "Rashee Rice",
+   "pct": 20.53,
+   "fpts": 3.9,
+   "dk_pct": {
+    "FLEX": 17.13,
+    "CPT": 3.32
+   },
+   "pos": "WR",
+   "team": "KC",
+   "salary": 8400,
+   "cpt_pct": 3.33
+  },
+  {
+   "name": "Chiefs",
+   "pct": 18.73,
+   "fpts": 10.0,
+   "dk_pct": {
+    "FLEX": 17.52,
+    "CPT": 1.13
+   },
+   "pos": "DST",
+   "team": "KC",
+   "salary": 3600,
+   "cpt_pct": 1.14
+  },
+  {
+   "name": "Harrison Butker",
+   "pct": 18.51,
+   "fpts": 4.0,
+   "dk_pct": {
+    "FLEX": 17.85,
+    "CPT": 0.58
+   },
+   "pos": "K",
+   "team": "KC",
+   "salary": 4800,
+   "cpt_pct": 0.58
+  },
+  {
+   "name": "Dalton Kincaid",
+   "pct": 18.1,
+   "fpts": 3.3,
+   "dk_pct": {
+    "FLEX": 16.13,
+    "CPT": 1.89
+   },
+   "pos": "TE",
+   "team": "BUF",
+   "salary": 6200,
+   "cpt_pct": 1.9
+  },
+  {
+   "name": "Xavier Worthy",
+   "pct": 17.96,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 16.64,
+    "CPT": 1.24
+   },
+   "pos": "WR",
+   "team": "KC",
+   "salary": 4400,
+   "cpt_pct": 1.25
+  },
+  {
+   "name": "Keon Coleman",
+   "pct": 16.5,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 15.7,
+    "CPT": 0.72
+   },
+   "pos": "WR",
+   "team": "BUF",
+   "salary": 3800,
+   "cpt_pct": 0.73
+  },
+  {
+   "name": "Josh Downs",
+   "pct": 15.2,
+   "fpts": 2.3,
+   "dk_pct": {
+    "FLEX": 13.22,
+    "CPT": 1.92
+   },
+   "pos": "WR",
+   "team": "KC",
+   "salary": 7400,
+   "cpt_pct": 1.93
+  },
+  {
+   "name": "Dawson Knox",
+   "pct": 11.21,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 10.8,
+    "CPT": 0.37
+   },
+   "pos": "TE",
+   "team": "BUF",
+   "salary": 3200,
+   "cpt_pct": 0.37
+  },
+  {
+   "name": "Cyrus Allen",
+   "pct": 10.15,
+   "fpts": 2.9,
+   "dk_pct": {
+    "FLEX": 9.82,
+    "CPT": 0.28
+   },
+   "pos": "WR",
+   "team": "KC",
+   "salary": 2200,
+   "cpt_pct": 0.28
+  },
+  {
+   "name": "Jaydn Ott",
+   "pct": 8.69,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 8.49,
+    "CPT": 0.16
+   },
+   "pos": "RB",
+   "team": "KC",
+   "salary": 400,
+   "cpt_pct": 0.17
+  },
+  {
+   "name": "Noah Gray",
+   "pct": 6.44,
+   "fpts": 5.3,
+   "dk_pct": {
+    "FLEX": 6.28,
+    "CPT": 0.13
+   },
+   "pos": "TE",
+   "team": "KC",
+   "salary": 2800,
+   "cpt_pct": 0.13
+  },
+  {
+   "name": "Jake Briningstool",
+   "pct": 3.35,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 3.33,
+    "CPT": 0.01
+   },
+   "pos": "TE",
+   "team": "KC",
+   "salary": 200,
+   "cpt_pct": 0.01
+  },
+  {
+   "name": "Tyrell Shavers",
+   "pct": 2.82,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 2.76,
+    "CPT": 0.05
+   },
+   "pos": "WR",
+   "team": "BUF",
+   "salary": 1000,
+   "cpt_pct": 0.05
+  },
+  {
+   "name": "Keleki Latu",
+   "pct": 1.95,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 1.86,
+    "CPT": 0.08
+   },
+   "pos": "TE",
+   "team": "BUF",
+   "salary": 1600,
+   "cpt_pct": 0.08
+  },
+  {
+   "name": "Ray Davis",
+   "pct": 1.72,
+   "fpts": 0.6,
+   "dk_pct": {
+    "FLEX": 1.68,
+    "CPT": 0.03
+   },
+   "pos": "RB",
+   "team": "BUF",
+   "salary": 2400,
+   "cpt_pct": 0.03
+  },
+  {
+   "name": "Jackson Hawes",
+   "pct": 1.59,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 1.55,
+    "CPT": 0.03
+   },
+   "pos": "TE",
+   "team": "BUF",
+   "salary": 600,
+   "cpt_pct": 0.03
+  },
+  {
+   "name": "Andrew Armstrong",
+   "pct": 0.81,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 0.8,
+    "CPT": 0.01
+   },
+   "pos": "WR",
+   "team": "KC",
+   "salary": 1800,
+   "cpt_pct": 0.01
+  },
+  {
+   "name": "Jalen Royals",
+   "pct": 0.66,
+   "fpts": 1.5,
+   "dk_pct": {
+    "FLEX": 0.64,
+    "CPT": 0.01
+   },
+   "pos": "WR",
+   "team": "KC",
+   "salary": 2000,
+   "cpt_pct": 0.01
+  },
+  {
+   "name": "Nate Carter",
+   "pct": 0.56,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 0.55,
+    "CPT": 0.0
+   },
+   "pos": "RB",
+   "team": "KC",
+   "salary": 200,
+   "cpt_pct": 0.0
+  },
+  {
+   "name": "Greg Dortch",
+   "pct": 0.37,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 0.36,
+    "CPT": 0.01
+   },
+   "pos": "WR",
+   "team": "BUF",
+   "salary": 1200,
+   "cpt_pct": 0.01
+  },
+  {
+   "name": "Justin Fields",
+   "pct": 0.13,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 0.08,
+    "CPT": 0.05
+   },
+   "pos": "QB",
+   "team": "KC",
+   "salary": 6000,
+   "cpt_pct": 0.05
+  },
+  {
+   "name": "John FitzPatrick",
+   "pct": 0.1,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 0.1,
+    "CPT": 0.0
+   },
+   "pos": "TE",
+   "team": "KC",
+   "salary": 200,
+   "cpt_pct": 0.0
+  },
+  {
+   "name": "Justin Tucker",
+   "pct": 0.09,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 0.09,
+    "CPT": 0.01
+   },
+   "pos": "K",
+   "team": "KC",
+   "salary": 4800,
+   "cpt_pct": 0.01
+  },
+  {
+   "name": "Kyle Allen",
+   "pct": 0.09,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 0.08,
+    "CPT": 0.01
+   },
+   "pos": "QB",
+   "team": "BUF",
+   "salary": 6000,
+   "cpt_pct": 0.01
+  },
+  {
+   "name": "Kenneth Walker III",
+   "pct": 0.07,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 0.05,
+    "CPT": 0.02
+   },
+   "pos": "RB",
+   "team": "KC",
+   "salary": 10800,
+   "cpt_pct": 0.02
+  },
+  {
+   "name": "Frank Gore Jr.",
+   "pct": 0.03,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 0.03
+   },
+   "pos": "RB",
+   "team": "BUF",
+   "salary": 200,
+   "cpt_pct": 0.0
+  },
+  {
+   "name": "Skyler Bell",
+   "pct": 0.02,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 0.02
+   },
+   "pos": "WR",
+   "team": "BUF",
+   "salary": 800,
+   "cpt_pct": 0.0
+  },
+  {
+   "name": "Justin Watson",
+   "pct": 0.02,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 0.02,
+    "CPT": 0.0
+   },
+   "pos": "WR",
+   "team": "KC",
+   "salary": 200,
+   "cpt_pct": 0.0
+  },
+  {
+   "name": "Trent Sherfield Sr.",
+   "pct": 0.02,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 0.02
+   },
+   "pos": "WR",
+   "team": "BUF",
+   "salary": 200,
+   "cpt_pct": 0.0
+  },
+  {
+   "name": "Garrett Nussmeier",
+   "pct": 0.01,
+   "fpts": 0.0,
+   "dk_pct": {
+    "FLEX": 0.01
+   },
+   "pos": "QB",
+   "team": "KC",
+   "salary": 6000,
+   "cpt_pct": 0.0
+  }
+ ],
+ "duplicates": {
+  "distinct_lineups": 8427,
+  "max_copies": 172,
+  "entries_in_duplicated_lineups_pct": 89.59,
+  "distinct_pair_collision": 0.0006137324646708369,
+  "most_copied": [
+   {
+    "lineup": [
+     "Josh Allen",
+     "Emmett Johnson",
+     "James Cook III",
+     "Jaydn Ott",
+     "Keon Coleman",
+     "Patrick Mahomes"
+    ],
+    "copies": 172
+   },
+   {
+    "lineup": [
+     "Bills",
+     "Chiefs",
+     "Emmett Johnson",
+     "James Cook III",
+     "Josh Allen",
+     "Patrick Mahomes"
+    ],
+    "copies": 162
+   },
+   {
+    "lineup": [
+     "Emmett Johnson",
+     "Harrison Butker",
+     "Jake Briningstool",
+     "James Cook III",
+     "Josh Allen",
+     "Patrick Mahomes"
+    ],
+    "copies": 161
+   },
+   {
+    "lineup": [
+     "Emmett Johnson",
+     "Cyrus Allen",
+     "James Cook III",
+     "Josh Allen",
+     "Noah Gray",
+     "Patrick Mahomes"
+    ],
+    "copies": 159
+   },
+   {
+    "lineup": [
+     "Emmett Johnson",
+     "James Cook III",
+     "Jaydn Ott",
+     "Josh Allen",
+     "Patrick Mahomes",
+     "Xavier Worthy"
+    ],
+    "copies": 146
+   },
+   {
+    "lineup": [
+     "Emmett Johnson",
+     "Chiefs",
+     "Josh Allen",
+     "Patrick Mahomes",
+     "Travis Kelce",
+     "Ty Johnson"
+    ],
+    "copies": 137
+   },
+   {
+    "lineup": [
+     "Emmett Johnson",
+     "Chiefs",
+     "James Cook III",
+     "Josh Allen",
+     "Travis Kelce",
+     "Ty Johnson"
+    ],
+    "copies": 125
+   },
+   {
+    "lineup": [
+     "Josh Allen",
+     "Emmett Johnson",
+     "James Cook III",
+     "Jaydn Ott",
+     "Patrick Mahomes",
+     "Ty Johnson"
+    ],
+    "copies": 119
+   },
+   {
+    "lineup": [
+     "Emmett Johnson",
+     "Josh Allen",
+     "Keon Coleman",
+     "Khalil Shakir",
+     "Patrick Mahomes",
+     "Xavier Worthy"
+    ],
+    "copies": 119
+   },
+   {
+    "lineup": [
+     "Xavier Worthy",
+     "Dawson Knox",
+     "Emmett Johnson",
+     "James Cook III",
+     "Josh Allen",
+     "Patrick Mahomes"
+    ],
+    "copies": 118
+   },
+   {
+    "lineup": [
+     "Emmett Johnson",
+     "Dawson Knox",
+     "Josh Allen",
+     "Keon Coleman",
+     "Patrick Mahomes",
+     "Travis Kelce"
+    ],
+    "copies": 118
+   },
+   {
+    "lineup": [
+     "Chiefs",
+     "Bills",
+     "Emmett Johnson",
+     "James Cook III",
+     "Josh Allen",
+     "Patrick Mahomes"
+    ],
+    "copies": 111
+   },
+   {
+    "lineup": [
+     "Tyler Bass",
+     "Cyrus Allen",
+     "Emmett Johnson",
+     "James Cook III",
+     "Josh Allen",
+     "Patrick Mahomes"
+    ],
+    "copies": 105
+   },
+   {
+    "lineup": [
+     "Josh Allen",
+     "Bills",
+     "Emmett Johnson",
+     "James Cook III",
+     "Khalil Shakir",
+     "Ty Johnson"
+    ],
+    "copies": 102
+   },
+   {
+    "lineup": [
+     "Emmett Johnson",
+     "Bills",
+     "Chiefs",
+     "James Cook III",
+     "Josh Allen",
+     "Josh Downs"
+    ],
+    "copies": 101
+   },
+   {
+    "lineup": [
+     "Emmett Johnson",
+     "James Cook III",
+     "Josh Allen",
+     "Keon Coleman",
+     "Travis Kelce",
+     "Ty Johnson"
+    ],
+    "copies": 101
+   },
+   {
+    "lineup": [
+     "Emmett Johnson",
+     "Cyrus Allen",
+     "James Cook III",
+     "Josh Allen",
+     "Travis Kelce",
+     "Tyler Bass"
+    ],
+    "copies": 100
+   },
+   {
+    "lineup": [
+     "Emmett Johnson",
+     "James Cook III",
+     "Josh Allen",
+     "Keleki Latu",
+     "Patrick Mahomes",
+     "Ty Johnson"
+    ],
+    "copies": 96
+   },
+   {
+    "lineup": [
+     "James Cook III",
+     "Bills",
+     "Chiefs",
+     "Emmett Johnson",
+     "Josh Allen",
+     "Khalil Shakir"
+    ],
+    "copies": 91
+   },
+   {
+    "lineup": [
+     "Emmett Johnson",
+     "James Cook III",
+     "Josh Allen",
+     "Khalil Shakir",
+     "Ty Johnson",
+     "Tyler Bass"
+    ],
+    "copies": 90
+   }
+  ],
+  "copies_histogram": {
+   "1": 3903,
+   "2": 1326,
+   "3": 817,
+   "4": 496,
+   "5": 341,
+   "6": 251,
+   "7": 203,
+   "8": 139,
+   "9": 117,
+   "10": 66,
+   "11": 84,
+   "12": 88,
+   "13": 51,
+   "14": 47,
+   "15": 55,
+   "16": 38,
+   "17": 33,
+   "18": 35,
+   "19": 24,
+   "20": 18,
+   "21": 27,
+   "22": 16,
+   "23": 14,
+   "24": 16,
+   "25": 18,
+   "26": 12,
+   "27": 5,
+   "28": 10,
+   "29": 6,
+   "30": 5,
+   "31": 8,
+   "32": 6,
+   "33": 5,
+   "34": 13,
+   "35": 5,
+   "36": 5,
+   "37": 8,
+   "39": 8,
+   "40": 5,
+   "41": 3,
+   "42": 7,
+   "43": 8,
+   "44": 3,
+   "45": 5,
+   "46": 5,
+   "47": 3,
+   "48": 2,
+   "49": 1,
+   "50": 1,
+   "51": 3,
+   "52": 6,
+   "53": 1,
+   "54": 2,
+   "55": 1,
+   "56": 3,
+   "57": 3,
+   "58": 1,
+   "59": 3,
+   "61": 3,
+   "63": 2,
+   "65": 1,
+   "67": 1,
+   "68": 1,
+   "70": 2,
+   "71": 1,
+   "72": 2,
+   "75": 1,
+   "77": 1,
+   "78": 1,
+   "80": 1,
+   "81": 1,
+   "83": 1,
+   "84": 2,
+   "86": 1,
+   "90": 1,
+   "91": 1,
+   "96": 1,
+   "100": 1,
+   "101": 2,
+   "102": 1,
+   "105": 1,
+   "111": 1,
+   "118": 2,
+   "119": 2,
+   "125": 1,
+   "137": 1,
+   "146": 1,
+   "159": 1,
+   "161": 1,
+   "162": 1,
+   "172": 1
+  }
+ },
+ "max_entry_users_pct": 31.88,
+ "top_lineups": [
+  {
+   "rank": 1,
+   "points": 90.299995,
+   "lineup": [
+    [
+     "CPT",
+     "Emmett Johnson"
+    ],
+    [
+     "FLEX",
+     "James Cook III"
+    ],
+    [
+     "FLEX",
+     "Travis Kelce"
+    ],
+    [
+     "FLEX",
+     "Khalil Shakir"
+    ],
+    [
+     "FLEX",
+     "Tyler Bass"
+    ],
+    [
+     "FLEX",
+     "Chiefs"
+    ]
+   ]
+  },
+  {
+   "rank": 1,
+   "points": 90.299995,
+   "lineup": [
+    [
+     "CPT",
+     "Emmett Johnson"
+    ],
+    [
+     "FLEX",
+     "James Cook III"
+    ],
+    [
+     "FLEX",
+     "Travis Kelce"
+    ],
+    [
+     "FLEX",
+     "Khalil Shakir"
+    ],
+    [
+     "FLEX",
+     "Tyler Bass"
+    ],
+    [
+     "FLEX",
+     "Chiefs"
+    ]
+   ]
+  },
+  {
+   "rank": 1,
+   "points": 90.299995,
+   "lineup": [
+    [
+     "CPT",
+     "Emmett Johnson"
+    ],
+    [
+     "FLEX",
+     "James Cook III"
+    ],
+    [
+     "FLEX",
+     "Travis Kelce"
+    ],
+    [
+     "FLEX",
+     "Khalil Shakir"
+    ],
+    [
+     "FLEX",
+     "Tyler Bass"
+    ],
+    [
+     "FLEX",
+     "Chiefs"
+    ]
+   ]
+  },
+  {
+   "rank": 4,
+   "points": 89.35,
+   "lineup": [
+    [
+     "CPT",
+     "James Cook III"
+    ],
+    [
+     "FLEX",
+     "Emmett Johnson"
+    ],
+    [
+     "FLEX",
+     "Rashee Rice"
+    ],
+    [
+     "FLEX",
+     "Travis Kelce"
+    ],
+    [
+     "FLEX",
+     "Tyler Bass"
+    ],
+    [
+     "FLEX",
+     "Chiefs"
+    ]
+   ]
+  },
+  {
+   "rank": 5,
+   "points": 89.0,
+   "lineup": [
+    [
+     "CPT",
+     "Emmett Johnson"
+    ],
+    [
+     "FLEX",
+     "James Cook III"
+    ],
+    [
+     "FLEX",
+     "Travis Kelce"
+    ],
+    [
+     "FLEX",
+     "Tyler Bass"
+    ],
+    [
+     "FLEX",
+     "Bills"
+    ],
+    [
+     "FLEX",
+     "Chiefs"
+    ]
+   ]
+  }
+ ],
+ "shape": {
+  "resolved": 37488,
+  "unresolved": 0,
+  "team_split_pct": {
+   "4-2": 47.79,
+   "3-3": 37.23,
+   "5-1": 14.97
+  },
+  "salary_mean": 49216.0,
+  "salary_median": 49500.0
+ },
+ "final": true
+}

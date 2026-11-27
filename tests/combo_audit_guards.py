@@ -22711,8 +22711,13 @@ ck("the committed summaries are the final exports the owner sent from away -- th
    "Showdown (87,465) -- final (no time remaining), carrying no entrant field at all, their sha256 the export's, and no "
    "export beside them in git; and the owner's five of 2026-11-26 (\"I can't go further back\") -- the week-10 and "
    "week-11 Millionaires (147,058 each), the week-11 Thursday and Monday showdowns (65,359 and 70,588) and the week-12 "
-   "Wednesday showdown (47,058) -- under the same rules",
-   set(_cs_idx) == {"196653900", "196786588", "196786690", "197645153", "197882014", "197912905", "198005475", "198150093"}
+   "Wednesday showdown (47,058) -- under the same rules; and the two of 2026-11-27, the Thanksgiving Millionaire "
+   "(classic, 594,530) and the Thanksgiving-night KC @ BUF showdown (37,647), both checked final (every "
+   "TimeRemaining 0) and against every handle in their first 2,000 rows",
+   set(_cs_idx) == {"196653900", "196786588", "196786690", "197645153", "197882014", "197912905", "198005475", "198150093",
+                    "197897298", "198130093"}
+   and [(_cs_sums[c]["kind"], _cs_sums[c]["entries"]) for c in ("197897298", "198130093")]
+   == [("classic", 594530), ("showdown", 37647)]
    and [(_cs_sums[c]["kind"], _cs_sums[c]["entries"]) for c in ("197645153", "197882014", "197912905", "198005475", "198150093")]
    == [("classic", 147058), ("classic", 147058), ("showdown", 65359), ("showdown", 70588), ("showdown", 47058)]
    and _cs_sums["196786690"]["kind"] == "showdown" and _cs_sums["196786690"]["entries"] == 87465
