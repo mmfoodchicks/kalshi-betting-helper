@@ -948,6 +948,16 @@ data-only `sim-history` branch (which never deploys):
     points under the real one -- probably the bigger payout/EV error. Next (each the owner's call): a public
     consensus projection captured before lock; classic ownership concentration and field strength first; the
     optimizer cluster re-registered with a stack rule on contests not read; weeks 1, 2, 6 raw exports for classic.
+- **The Pick6 paper ledger** (2026-11-27, `pick6_ledger.py`, `static/pick6log.js`, the NFL tab's Pick 6 view;
+  guards `tests/guards_auto_pick6.py`, P1-P13). The owner TYPES each DraftKings Pick6 entry (2-6 picks, the
+  payout schedule as DK shows it, `k/n=x` with the stake included, a paper stake); nothing is scraped and no money
+  moves. Vigil's figure is read off the boards the Pick 6 views already draw, only at the owner's exact line
+  (never built in a web worker; an entry saved after its game date gets none). Graded hourly from `mlb_recorder`
+  (`MREC-pick6`): NFL off Sleeper's week (regular season only), MLB off statsapi, NBA off ESPN's box; every other
+  sport by hand. A player who does not play is VOID (stated by DraftKings, 2024-08-23); the per-sport minimum and
+  the tie rule are UNVERIFIED (`TIE_RULE` "loss", the conservative reading, until the owner confirms). A player
+  not found, or found twice, waits for the owner. The record is SQL sums: hit rate with its interval, Vigil's
+  calibration on the picks it priced, paper ROI on settled entries (void refunds are Pick6 credits, labelled).
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 
