@@ -3666,7 +3666,7 @@ def games_fields(games):
 
 class _BuildInputs:
     """A checkpointed build's live reads, frozen under its REQUEST key
-    (build_ckpt.inputs_*; the PC only, engine boards on the worlds cache --
+    (build_ckpt.inputs_save / inputs_load; the PC only, engine boards on the worlds cache --
     the one configuration whose worlds a restart can read back). The owner's
     two operations, 2026-11-27, named as he named them:
 
