@@ -966,10 +966,24 @@ data-only `sim-history` branch (which never deploys):
   moves. Vigil's figure is read off the boards the Pick 6 views already draw, only at the owner's exact line
   (never built in a web worker; an entry saved after its game date gets none). Graded hourly from `mlb_recorder`
   (`MREC-pick6`): NFL off Sleeper's week (regular season only), MLB off statsapi, NBA off ESPN's box; every other
-  sport by hand. A player who does not play is VOID (stated by DraftKings, 2024-08-23); the per-sport minimum and
-  the tie rule are UNVERIFIED (`TIE_RULE` "loss", the conservative reading, until the owner confirms). A player
-  not found, or found twice, waits for the owner. The record is SQL sums: hit rate with its interval, Vigil's
-  calibration on the picks it priced, paper ROI on settled entries (void refunds are Pick6 credits, labelled).
+  sport by hand. **DraftKings' own rules, read by the owner on its pages 2026-11-27** (they answer 403 to us): a
+  tie with the line is VOID either side (`TIE_RULE` "void"); minimum participation NFL one snap, NBA one second,
+  MLB one plate appearance (batting) / one pitch (pitching) -- not met is VOID, unknown is manual review (Sleeper
+  carried snaps on 12 of 95 week-12 QB/WR rows, so any recorded stat counts as a snap and `gp` never does; an
+  active NBA line with 0 MIN and no stats, or a 0-PA runner's specialized stat, is review). **The Pardon**
+  (`PARDON`, the policy as a table): a LOSING More pick on a FULL-GAME stat (event-based and part-game markets
+  never) is void when the qualifying exit is established (MLB: a hitter with exactly 1 PA), a loss when ruled out
+  (NBA: ESPN's play-by-play has him on the floor after halftime, `nba_halves`; NFL: a defender or kicker, or
+  second-half yards in Sleeper's split), else review -- Sleeper has no snaps by half and ESPN logs no period
+  starters, so an NFL or NBA pardon is never established automatically. A pick in review carries two answers on
+  the card; an entry settles only when every pick is decided and the record counts nothing in review. The record
+  (SQL sums, 95% Wilson): outright accuracy (voids not a hit, stated), accuracy on non-void picks, void frequency
+  by cause (did not play, tie, pardon, by hand), Vigil's calibration, paper ROI (void refunds are Pick6 credits).
+  **Any line** (NFL): the PC's week board also files one integer histogram a player and stat on the whole-yard
+  lattice (`nfl_dfs_sim.stat_hist`, comparisons only, so P(stat > L) at every half-point L is the board's own
+  world count bit for bit; 387 players / 210 KB on week 13, +1.8 s) as boardshare piece
+  `nfl_sim_dists_<season>_w<NN>_0`, built only where `VIGIL_PC_WORKER` is set; whole-number lines are not priced
+  (continuous yards, no tie mass). The joint worlds stay on the PC.
 - **The crypto terminal** (2026-11-27, `crypto_terminal.py`, `static/crypto.js`, the Crypto tab; the owner asked
   for it back in this sprint's backlog; READ-ONLY and paper: nothing places an order). Kalshi's 15-minute up/down and
   hourly above/below contracts on BTC, ETH, SOL, XRP and DOGE, each priced off ITS OWN rules text (the simple average
