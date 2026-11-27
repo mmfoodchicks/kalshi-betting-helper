@@ -480,3 +480,34 @@ never copied), NR1-NR1b (tables), NR2 (R1's game draw for draw), NR3 (conservati
 mean), SC1-SC7 (scenarios), NR5-NR6 (the buckets by hand; the score before the snap), NR7 (the seal on a synthetic
 file), NR8-NR8b (H2's frozen model and its gap by hand), NR9-NR11b (the registration's hashes, windows and dates;
 the read's refusals; both verdict rules on hand-built summaries).
+
+## H. Addendum, 2026-11-27: the owner's rulings on this report
+
+Recorded after the registration commit (dfc026e). Nothing `prereg_r2.json` pins was edited: the pinned files'
+hashes are unchanged and guard NR9b still checks them.
+
+**1. H1 may read 2026 weeks 13-18 after R1's read.** The owner: "Using the same games for different research
+questions is acceptable if the models, metrics and acceptance criteria are frozen before seeing the outcomes, and
+the dependence between tests is acknowledged. However, if R2 is modified based on R1's evaluation results, R2
+needs fresh games."
+
+- **The dependence.** R1's read and H1 use the same ~96 games, so their errors are not independent. A run of
+  unusual games (many blowouts, an injury-heavy stretch) moves both: R1 through the late-game states and the
+  level, H1 through how often the blowout and two-minute buckets occur.
+- **What it does not do to H1's error rate.** Each read's false-pass rate is set by its own rule on its own
+  statistic, and both rules were frozen before the games were played. Sharing games does not raise either test's
+  rate on its own. What it changes is the JOINT reading: "R1 and H1 both passed" is less independent
+  confirmation than two separate samples would give, and the two results must not be multiplied as if
+  independent. Neither verdict changes the other's rule.
+- **The rule for changes, made explicit.** Any change to R2 after R1's read (an engine edit, a refit table, a
+  different statistic or criterion), whether or not it was prompted by R1's result, moves H1 to fresh games. In
+  practice that is 2027 or later under a new registration. The read already enforces this mechanically: it
+  refuses if any pinned file differs from its registered sha256 (`nfl_coach_r2_read.refusal`). A modified R2
+  therefore cannot be read on these games without writing a new registration, and a new registration is what
+  the rule sends to fresh games.
+
+**2. Offensive coordinators stay out.** Future enhancement, recorded as the owner's direction: Vigil should
+eventually distinguish the head coach, the offensive coordinator, the defensive coordinator, and the ACTUAL
+offensive and defensive play callers. These are not necessarily the same people, and responsibilities can change
+mid-season. It is to be built once reliable historical assignments exist, play-caller by game and not one name a
+team-season. Until then the head coach is the only staff identity any model reads.

@@ -1,0 +1,60 @@
+{
+ "block_sha256": "c8c21e27f95204921178e0a52de27a1980d57d93115872f28ea466f63aee0d7a",
+ "criteria": {
+  "1": "tests/guards_auto_nfl_coach_r3.py exits 0",
+  "2": "stage1 gain > 2 SE (SE over team-games)",
+  "3": "starter dropbacks CRPS: R3 - R2 < -2 SE",
+  "4": "starter passing yards CRPS: R3 - R2 <= +1 SE"
+ },
+ "dependence": "The window's games are R1's registered test games and R2-H1's. R1's statistics are game-level and R2-H1's who-got-the-ball; R3's are the quarterback's pull and his line, a different question, frozen here before any of those games was played. Errors are correlated through the shared games (a blowout-heavy stretch moves all three), so joint passes are not independent confirmations; each test's own false-pass rate is unchanged. R3 is not tuned on R1's or R2's results: none has been read. Any change to R3 or to the R1/R2 files it plays on fails the pinned hashes, and moves R3 to fresh games under a new registration (the owner's ruling, 2026-11-27).",
+ "files": {
+  "nfl_coach_sim.py": "631a398b024f85adf9d275ce7c02ebbe3deb8dd2160bed062b3fb4e136f244e2",
+  "nfl_coach_sim_r2.py": "67ae6c8e54cdd68f57f04719fdb914d489dc4b622560ceb615b71166c39eccca",
+  "nfl_coach_sim_r3.py": "acd00092a91300c4ccd5f244b8d76dc0fa6a75337e4ddf1a857805c4c2cbe06c",
+  "nfl_deep_sim.py": "22a221d7810495db3f8f7bb1bef7c4e16c3bbbf282902a95f133cecdabc29820",
+  "nfl_pbp.py": "660234badefc3e3b5f0e1417a48431e4ad8ff33aab5df8a207834faa4862865d",
+  "research/data/nfl_coach_r2_tables.json": "e589314e654897e81e665e4a25eba9bd845b9fed71790e747a518f54ee4daa1b",
+  "research/data/nfl_coach_r3_tables.json": "6dfdc15cfb89ea660b126f0a7906bc023d817a46e524acb4c7b33f09ca979977",
+  "research/data/nfl_coach_tables.json": "ffe45e30f03c6f5d0879834c7c43f08ca7463525399ded0f9a2a9937df2189d8",
+  "research/nfl_coach_data.py": "3c7a8680e1a9cf5e2efd14ff6fed7ad26d4ce21775f05e97faf21912e3f846ad",
+  "research/nfl_coach_eval.py": "fbd5a9998bebb38f253185e948891be57a73435d2c3774f9254268d76a50b91d",
+  "research/nfl_coach_r2_data.py": "ed17b05c9b2544f782b7befb307b7ae27dcc63d2b581d0b8f877feab7d59ada1",
+  "research/nfl_coach_r2_eval.py": "7c3feeb2c2c11aec524db13566a4399826123a3834ff5edad9b8bf96e02f2a99",
+  "research/nfl_coach_r3_eval.py": "95ff8554f5c905b4b9ef1fb4e1fe1b3c42e69db3a00a07bbe9fddb3fef32928a",
+  "research/nfl_coach_r3_qb.py": "916140d754ec5aec036686ecd39391df2b9f05f7e4e3d94ab6dd4525faa90685",
+  "research/nfl_coach_r3_read.py": "7587b4f9d8f2bb664992a2f0c1ec0cbd12482f8a33d5d4c94740eda742335877",
+  "tests/guards_auto_nfl_coach_r3.py": "2a9a68a0b4b77225ae70897585414d67bd3db3ffb6a4d3552ba38680728adf38"
+ },
+ "min_team_games": 150,
+ "not_before_utc": "2027-01-06T06:00:00Z",
+ "power": "development, 2025 / 2026 weeks 1-12. Stage 1: +0.283 / +0.261 nats a team-game at SE 0.042 / 0.047 (544 / 328 team-games); at ~190 team-games SE ~0.072, z ~3.6, power ~0.95. Starter dropbacks CRPS: -0.363 +/- 0.049 / -0.181 +/- 0.057 (448 / 232 team-games); at ~190, z ~4.8 / ~2.9, power ~1.0 / ~0.82. Passing yards CRPS: -1.45 +/- 0.30 / -0.71 +/- 0.41; 'not worse than +1 SE' holds with probability ~0.99. Jointly ~0.78-0.94; the likeliest failure is criterion 3 if 2026's smaller dropbacks gain is the truth",
+ "requires_r1_read": true,
+ "settings": {
+  "level_curve_n": 1000,
+  "players": "players.csv (nflverse, fresh) in the read's directory",
+  "realism_team_games": "each team's 4th game on (the as-of shares need three)",
+  "seed": "per game: the last 8 bytes of the nflverse game id, little-endian, mod 2^31",
+  "sims": 200,
+  "workers": 4
+ },
+ "statistics": {
+  "realism": "nfl_coach_r3_eval.run / summarize_realism: R3 minus R2 per team-game of the CRPS of the real starter's dropbacks and passing yards, both arms on the same simulated games and the same deal draws (negative = R3 better)",
+  "stage1": "nfl_coach_r3_eval.stage1 / summarize1 on every regular-season team-game in the window: constant-hazard minus engine-hazard log loss of the pull sequence (positive = R3 better)"
+ },
+ "version": "coach-r3.0",
+ "what": "the quarterback's substitution (nfl_coach_sim_r3): a learned pull hazard at each identified drive, the pulled starter staying out, against R2 (the starter plays every snap)",
+ "window": [
+  {
+   "season": 2026,
+   "weeks": [
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+   ]
+  }
+ ],
+ "written_utc": "2026-11-27T09:58:01Z"
+}
