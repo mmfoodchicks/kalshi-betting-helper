@@ -75,7 +75,10 @@ COINS = {
     "BTC": {"coinbase": "BTC-USD", "kraken": "XBTUSD", "bitstamp": "btcusd", "gemini": "btcusd",
             "m15": "KXBTC15M", "hourly": "KXBTCD", "index": "BRTI"},
     "ETH": {"coinbase": "ETH-USD", "kraken": "ETHUSD", "bitstamp": "ethusd", "gemini": "ethusd",
-            "m15": "KXETH15M", "hourly": "KXETHD", "index": "ETHUSD_RTI"},
+            "m15": "KXETH15M", "hourly": "KXETHD", "index": "ETHUSD_RTI",
+            # KXETHD's rules call it "Ethereum Real-Time Index (ERTI)"; the series' own
+            # settlement source is cfbenchmarks.com/data/indices/ETHUSD_RTI (read 2026-11-27)
+            "aliases": ("ERTI",)},
     "SOL": {"coinbase": "SOL-USD", "kraken": "SOLUSD", "bitstamp": "solusd", "gemini": "solusd",
             "m15": "KXSOL15M", "hourly": "KXSOLD", "index": "SOLUSD_RTI"},
     "XRP": {"coinbase": "XRP-USD", "kraken": "XRPUSD", "bitstamp": "xrpusd", "gemini": "xrpusd",
@@ -88,14 +91,19 @@ _KRAKEN_KEYS = {"XBTUSD": ("XXBTZUSD", "XBTUSD"), "ETHUSD": ("XETHZUSD", "ETHUSD
                 "XRPUSD": ("XXRPZUSD", "XRPUSD"), "XDGUSD": ("XDGUSD", "XXDGZUSD"), "SOLUSD": ("SOLUSD",)}
 
 WINDOW_S = 60            # the settlement average's window (Kalshi's rules: "sixty seconds")
-# Chosen on the validation's DEVELOPMENT week (2026-11-13..19, research/crypto_validation.py)
-# by pooled log loss at the 300 s look, then frozen before the held-out week was scored.
+# Chosen on the validation's DEVELOPMENT week (closes 2026-11-13..19, 3,257 markets at the
+# 300 s look, research/crypto_validation.py) by pooled log loss over a 5 x 5 grid, then
+# frozen before the held-out week was scored. 60 min / 0.9 read 0.3830 nats, the runner-up
+# (120 min / 0.9) 0.3834: the surface is flat, so neither figure is a discovery. The 0.9:
+# one-minute closes carry trade-to-trade noise that a sixty-second average does not.
 VOL_HALFLIFE_MIN = 60    # EWMA half-life of one-minute log returns
-VOL_MULT = 1.0           # multiplier on the EWMA volatility
-# The proxy's distance from the index, in log terms: Coinbase's one-minute
-# typical price against Kalshi's official sixty-second average over the same
-# minute, measured on the development week (median over coins).
-PROXY_SD = 0.0002
+VOL_MULT = 0.9           # multiplier on the EWMA volatility
+# The proxy's distance from the index, in log terms: RMS of log(official sixty-second
+# average / Coinbase's (O+H+L+C)/4 of the same minute) on the development week, the median
+# over coins (BTC 1.85, ETH 2.48, SOL 2.90, XRP 2.76, DOGE 3.65 bp). Measured on Coinbase
+# alone; the board's four-exchange median is probably tighter, and the live record's
+# proxy_rms_bps measures that path.
+PROXY_SD = 0.000276
 STALE_S = 30             # a source quote older than this is flagged and left out of the median
 
 _cache = {}
@@ -260,12 +268,22 @@ def realised_vol(coin):
 _RX_WINDOW = re.compile(r"\b(?:sixty|60)[ -]seconds?\b", re.I)
 _RX_INDEX = re.compile(r"CF Benchmarks'\s+(?P<name>[^()]*?)\s*(?:\((?P<code>[A-Z0-9_]+)\))?\s+before\b")
 _RX_UP = re.compile(r"\bis at least the simple average of the (?:sixty|60) seconds of CF Benchmarks'", re.I)
-_RX_CMP = re.compile(r"\bis (?P<op>above|below) \$?(?P<num>[0-9][0-9,]*(?:\.[0-9]+)?)", re.I)
+# "at least <number>": some 15-minute markets state the opening average as a
+# number (111 of 26,061 rows of the validation week, e.g. KXBTC15M-26NOV221730-30)
+_RX_CMP = re.compile(r"\bis (?P<op>above|below|at least) \$?(?P<num>[0-9][0-9,]*(?:\.[0-9]+)?)", re.I)
+_OPS = {"above": (">", "greater", "above"), "at least": (">=", "greater_or_equal", "at least"),
+        "below": ("<", "less", "below")}
 _RX_ROUND = re.compile(r"rounded to the nearest (\d+) decimal places?", re.I)
 
 
 def _norm_index(s):
     return re.sub(r"[^A-Z0-9]", "", str(s or "").upper())
+
+
+def index_names(coin):
+    """Every name Kalshi's rules use for `coin`'s CF Benchmarks index, normalized."""
+    c = COINS[coin]
+    return {_norm_index(x) for x in (c["index"],) + tuple(c.get("aliases", ()))}
 
 
 def parse_rule(m, coin=None):
@@ -287,7 +305,7 @@ def parse_rule(m, coin=None):
     code = (mi.group("code") or mi.group("name") or "").strip()
     if not code or len(code) > 40:
         return None
-    if coin and _norm_index(code) != _norm_index(COINS[coin]["index"]):
+    if coin and _norm_index(code) not in index_names(coin):
         return None
     cs = m.get("custom_strike") if isinstance(m.get("custom_strike"), dict) else {}
     # the precise strike: custom_strike carries it where floor_strike is rounded
@@ -316,9 +334,8 @@ def parse_rule(m, coin=None):
     if not mc:
         return None
     num = _f(mc.group("num").replace(",", ""))
-    op = ">" if mc.group("op").lower() == "above" else "<"
-    field = floor if op == ">" else (cap if cap is not None else floor)
-    want = "greater" if op == ">" else "less"
+    op, want, word = _OPS[mc.group("op").lower()]
+    field = (cap if cap is not None else floor) if op == "<" else floor
     if stype != want or field is None or num is None:
         return None
     # the text and the field must name the same strike (to the rounding the
@@ -328,7 +345,7 @@ def parse_rule(m, coin=None):
         return None
     out.update(op=op, strike=field, reference="fixed")
     out["says"] = (f"YES if the simple average of the 60 seconds of CF Benchmarks' {code} before the close "
-                   f"is {'above' if op == '>' else 'below'} {_fmt(field)}")
+                   f"is {word} {_fmt(field)}")
     return out
 
 
@@ -516,6 +533,11 @@ def price_row(q, level, sigma_s, now):
     row["z"] = round(math.log(level / rule["strike"]) / sd, 2) if sd > 0 else None
     iv = implied_vol(rule, level, tau, mid / 100.0) if mid is not None else None
     row["implied_vol_ann_pct"] = _ann(iv)
+    if mid is not None and iv is None and 2.0 < mid < 98.0:
+        # seen live 2026-11-27: two minutes out, proxy 1.2 bp over the strike,
+        # model 57%, Kalshi 81.5c -- no volatility reaches 81.5% from that level
+        row["iv_note"] = ("no volatility reconciles the model with Kalshi's price: the market is reading the index "
+                          "at a different level than the proxy (or knows the seconds already averaged)")
     row["edge"] = _edges(q["ticker"], p, q)
     return row
 
@@ -584,17 +606,27 @@ CHECKPOINTS = {"m15": (600, 300, 120, 60), "hourly": (1800, 900, 300)}
 DECISION_LOOK = {"m15": 300, "hourly": 900}
 HOURLY_STRIKES = 5               # the strikes nearest the level, per hourly look
 PAPER_EDGE_C = 3.0               # the paper rule buys a side whose fee-in edge clears this, at the decision look
-# Retention (measured 2026-11-27, research/crypto_validation.py --storage): every
-# look kept DETAIL_DAYS, then only the decision look until KEEP_DAYS; a row
-# cap beneath both in case the schedule ever logs more than it should.
-DETAIL_DAYS = 30
-KEEP_DAYS = 365
-MAX_ROWS = 600_000
+# Retention (measured 2026-11-27, tests/guards_auto_crypto.py CX-STORE): the
+# schedule logs 3,720 rows a day (5 coins x 96 fifteen-minute markets x 4 looks
+# + 5 coins x 24 hours x 3 looks x 5 strikes) at 229 bytes a row in the file,
+# 0.85 MB a day. Every look is kept DETAIL_DAYS, then only the decision look
+# (1,080 rows a day) until KEEP_DAYS: 231,360 rows, ~53 MB at steady state. The
+# disk is 1 GB and shared with every other store (render.yaml), and a year of
+# detail was 109 MB, so six months. The row cap sits above the schedule in
+# case it ever logs more than it should.
+DETAIL_DAYS = 14
+KEEP_DAYS = 180
+MAX_ROWS = 300_000
 DEAD_S = 7 * 86400               # a market unsettled a week after its close is void, never scored
 
 
-def _conn():
+def _conn(new=False):
     c = sqlite3.connect(_db_path(), timeout=30)
+    if new:
+        # incremental auto-vacuum must be set on a new file BEFORE WAL mode and
+        # the first table (measured: set after WAL it reads back 0 and a prune
+        # never shrinks the file); on a file that already has tables it is a no-op
+        c.execute("PRAGMA auto_vacuum=INCREMENTAL")
     c.execute("PRAGMA journal_mode=WAL")
     # SQLite's own LN exists only when it was built with its math functions;
     # the record's log loss must not depend on how Debian built it.
@@ -603,11 +635,9 @@ def _conn():
 
 
 def init_db():
-    with _db_lock, contextlib.closing(_conn()) as c:
-        # incremental auto-vacuum must be set before the first table: the
-        # pruned pages are handed back to the disk (prune), the file stays
-        # the size of what is kept
-        c.execute("PRAGMA auto_vacuum=INCREMENTAL")
+    with _db_lock, contextlib.closing(_conn(new=True)) as c:
+        # pruned pages are handed back to the disk (prune): the file stays the
+        # size of what is kept
         with c:
             c.execute(f"""CREATE TABLE IF NOT EXISTS {TABLE} (
                 ticker TEXT NOT NULL, look_s INTEGER NOT NULL, coin TEXT NOT NULL, kind TEXT NOT NULL,
@@ -616,7 +646,9 @@ def init_db():
                 fee_yes REAL, fee_no REAL, n_sources INTEGER,
                 result INTEGER, settle_value REAL, graded_ts REAL,
                 PRIMARY KEY (ticker, look_s)) WITHOUT ROWID""")
-            c.execute(f"CREATE INDEX IF NOT EXISTS cx_open ON {TABLE} (result, close_ts)")
+            # partial: only the ungraded rows (a few hundred at any time) are
+            # indexed; a full (result, close_ts) index cost ~60 bytes on every row
+            c.execute(f"CREATE INDEX IF NOT EXISTS cx_open ON {TABLE} (close_ts) WHERE result IS NULL")
 
 
 def _log_row(c, coin, kind, look, row, level, sigma, n_sources, now):
@@ -725,11 +757,13 @@ def prune(now=None):
             c.execute(f"DELETE FROM {TABLE} WHERE close_ts < ?", (now - KEEP_DAYS * 86400,))
             over = c.execute(f"SELECT COUNT(*) FROM {TABLE}").fetchone()[0] - MAX_ROWS
             if over > 0:
-                cut = c.execute(f"SELECT close_ts FROM {TABLE} ORDER BY close_ts LIMIT 1 OFFSET ?",
-                                (over,)).fetchone()
-                if cut:
-                    c.execute(f"DELETE FROM {TABLE} WHERE close_ts < ?", (cut[0],))
-        c.execute("PRAGMA incremental_vacuum")
+                # exactly `over` rows, oldest closes first (a cut on close_ts alone
+                # kept every row tied at the cut: 1,005 under a 1,000 cap)
+                c.execute(f"""DELETE FROM {TABLE} WHERE (ticker, look_s) IN
+                              (SELECT ticker, look_s FROM {TABLE} ORDER BY close_ts LIMIT ?)""", (over,))
+        # executescript steps the pragma to completion; a plain execute steps it
+        # once and frees ONE page (measured: 1,056 free pages, one returned)
+        c.executescript("PRAGMA incremental_vacuum;")
 
 
 def record(coin=None, kind=None, look=None):
@@ -869,9 +903,51 @@ def record_by():
         raise
 
 
+# The record a page reads is computed by the BACKGROUND OWNER after each
+# grading pass and kept as a small JSON file beside the record; a web worker
+# only reads that file. Measured: record() + record_by() over 200,000 rows take
+# ~2 s of SQLite time, and the tab refreshes every 15 s -- on a one-core quota
+# that scan belongs nowhere near a request.
+SUMMARY_TTL = 240
+
+
+def _summary_path():
+    return _db_path() + ".summary.json"
+
+
+def write_summary():
+    data = {"ts": time.time(), "record": record(), "by": record_by()}
+    path = _summary_path()
+    tmp = f"{path}.{os.getpid()}.tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+    os.replace(tmp, path)
+    return data
+
+
+def summary():
+    """The latest record summary: the background owner's file when it is under
+    two hours old, else one computation cached SUMMARY_TTL in this process
+    (one key, so it cannot grow)."""
+    try:
+        path = _summary_path()
+        if os.path.exists(path) and time.time() - os.path.getmtime(path) < 7200:
+            with open(path, encoding="utf-8") as f:
+                return json.load(f)
+    except (OSError, ValueError) as e:
+        errlog.note("CRYPTO-summary-read", e)
+    return _cached(("summary",), SUMMARY_TTL, lambda: {"ts": time.time(), "record": record(), "by": record_by()})
+
+
+def record_cached(coin=None, kind=None, look=None):
+    """A filtered record (the route's coin / kind / look), cached SUMMARY_TTL
+    on its bounded key (6 coins-or-none x 3 kinds-or-none x 5 looks-or-none)."""
+    return _cached(("record", coin, kind, look), SUMMARY_TTL, lambda: record(coin=coin, kind=kind, look=look))
+
+
 def record_summary():
     try:
-        return record()
+        return summary().get("record")
     except Exception as e:
         errlog.note("CRYPTO-record", e)
         return None
@@ -884,7 +960,8 @@ _started = False
 def next_wake(now):
     """The next second any look falls on (all looks are whole seconds before a
     quarter-hour or an hour, so the loop sleeps between them instead of
-    polling: eight wakes a quarter-hour at most)."""
+    polling: eighteen wakes an hour, where the removed recorder polled every
+    90 s)."""
     best = None
     for period, looks in ((900, CHECKPOINTS["m15"]), (3600, CHECKPOINTS["hourly"])):
         base = math.floor(now / period) * period
@@ -912,7 +989,11 @@ def _loop():
                 log_tick(now)
             if now - last_grade > 240:
                 last_grade = now
-                grade_tick(now)
+                # the summary is ~2 s of SQLite at steady state (231k rows): only
+                # when something was graded, or the file is an hour old
+                sp = _summary_path()
+                if grade_tick(now) or not os.path.exists(sp) or now - os.path.getmtime(sp) > 3600:
+                    write_summary()
             if now - last_prune > 6 * 3600:
                 last_prune = now
                 prune(now)

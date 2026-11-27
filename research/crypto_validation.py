@@ -319,7 +319,7 @@ def score(rows=None):
     test = [r for r in rows if r["close_ts"] >= SPLIT]
     out = {"proxy_sd": round(psd, 6), "proxy_sd_by_coin": {c: round(v, 6) for c, v in psd_by.items()},
            "chosen": {"halflife_min": h, "mult": k}, "dev_rows_300": n_dev,
-           "dev_grid_top": sorted(((round(v, 5), hh, kk) for (hh, kk), v in grid.items()))[:5],
+           "dev_grid_top": sorted([round(v, 5), hh, kk] for (hh, kk), v in grid.items())[:5],
            "unparsed_rules": sum(1 for r in rows if not r["rule"]), "rows": len(rows),
            "markets": len({r["ticker"] for r in rows}), "heldout": {}}
     for look in LOOKS:
