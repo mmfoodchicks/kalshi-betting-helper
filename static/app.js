@@ -2176,6 +2176,7 @@ function setupTabs() {
       $("tab-tennis").classList.toggle("hidden", tab !== "tennis");
       $("tab-lol").classList.toggle("hidden", tab !== "lol");
       $("tab-weather").classList.toggle("hidden", tab !== "weather");
+      $("tab-crypto").classList.toggle("hidden", tab !== "crypto");
       $("tab-sim").classList.toggle("hidden", tab !== "sim");
       $("tab-combine").classList.toggle("hidden", tab !== "combine");
       $("tab-futures").classList.toggle("hidden", tab !== "futures");
@@ -2204,6 +2205,7 @@ function setupTabs() {
       }
       if (tab === "ledger") loadLedger();
       if (tab === "research" && typeof initResearch === "function") initResearch();
+      if (tab === "crypto" && typeof initCrypto === "function") initCrypto();
     });
   });
   setupBaseballSubtabs();

@@ -5,7 +5,9 @@ presets, DFS), NFL (drive engine, parlays, DFS, season futures), NBA/NHL/CFB
 season engines, golf, tennis, UFC, racing, LoL, soccer, climate/weather
 markets, cross-sport Best Bets and futures -- each priced against Kalshi and
 graded into its own ledger. (It started as a Kalshi crypto helper; every
-crypto feature was removed on 2026-10-29.)
+crypto feature was removed on 2026-10-29; a read-only paper terminal,
+crypto_terminal.py, came back on 2026-11-27 under the memory rules that
+removal taught.)
 
 Layout: request plumbing (auth, the error-ledger hooks, tiers), the background
 owner (one gunicorn worker claims the recorders, the warmer and the deep
@@ -1276,6 +1278,14 @@ def _ensure_recorder():
             mlb_recorder.start_background()
         except Exception as _e:
             errlog.note("APP-ensure_recorder-3", _e)
+        # The crypto terminal's paper record (2026-11-27): a few rows per Kalshi
+        # crypto market at fixed looks before the close, graded off Kalshi's
+        # settlement value, read only through SQL sums. VIGIL_CRYPTO=off stops it.
+        try:
+            import crypto_terminal
+            crypto_terminal.start_background()
+        except Exception as _e:
+            errlog.note("APP-ensure_recorder-crypto", _e)
         try:
             _init_deep_sims()
         except Exception as _e:
@@ -3309,6 +3319,65 @@ def api_baseball_today():
         blend = None
     return jsonify({"date": date, "games": games, "combos": combos,
                     "deep_blend": blend})
+
+
+# ---- The crypto terminal (2026-11-27, crypto_terminal.py) ------------------------
+# Read-only and PAPER ONLY: Kalshi's crypto contracts priced off their own
+# settlement rule, the exchange data behind them, and the record. GET routes
+# only; nothing here places an order (guards CX-PAPER). The board is a few
+# cached HTTP reads and closed-form arithmetic; the record is SQL sums.
+@app.route("/api/crypto/board")
+def api_crypto_board():
+    import crypto_terminal
+    coin = (request.args.get("coin") or "BTC").upper()
+    if coin not in crypto_terminal.COINS:
+        return jsonify({"error": "unknown coin"}), 400
+    try:
+        return jsonify(crypto_terminal.board(coin))
+    except Exception as e:
+        errlog.note("CRYPTO-board", e, path=coin)
+        return jsonify({"error": f"crypto board failed: {type(e).__name__}"}), 502
+
+
+@app.route("/api/crypto/candles")
+def api_crypto_candles():
+    import crypto_terminal
+    coin = (request.args.get("coin") or "BTC").upper()
+    try:
+        gran = int(request.args.get("gran") or 60)
+    except ValueError:
+        return jsonify({"error": "bad granularity"}), 400
+    if coin not in crypto_terminal.COINS or gran not in crypto_terminal._GRANS:
+        return jsonify({"error": "bad params"}), 400
+    if not crypto_terminal.ENABLED:
+        return jsonify({"coin": coin, "gran": gran, "off": True, "candles": []})
+    try:
+        return jsonify({"coin": coin, "gran": gran, "source": "Coinbase Exchange public candles",
+                        "candles": crypto_terminal.candles(coin, gran)})
+    except Exception as e:
+        errlog.note("CRYPTO-candles", e, path=f"{coin}:{gran}")
+        return jsonify({"error": f"candles failed: {type(e).__name__}"}), 502
+
+
+@app.route("/api/crypto/record")
+def api_crypto_record():
+    import crypto_terminal
+    coin = (request.args.get("coin") or "").upper() or None
+    kind = request.args.get("kind") or None
+    look = request.args.get("look") or None
+    if (coin and coin not in crypto_terminal.COINS) or (kind and kind not in crypto_terminal.CHECKPOINTS) \
+            or (look and not look.isdigit()):
+        return jsonify({"error": "bad params"}), 400
+    try:
+        # the background owner's summary file (no scan on a request); a filtered
+        # read is one cached computation on a bounded key
+        s = crypto_terminal.summary()
+        rec = crypto_terminal.record_cached(coin, kind, int(look) if look else None) if (coin or kind or look) else s.get("record")
+        return jsonify({"record": rec, "by": s.get("by"), "as_of": s.get("ts"), "paper_only": True,
+                        "decide": {"markets": crypto_terminal.DECIDE_MIN, "days": crypto_terminal.DECIDE_DAYS}})
+    except Exception as e:
+        errlog.note("CRYPTO-record-api", e)
+        return jsonify({"error": f"record failed: {type(e).__name__}"}), 502
 
 
 @app.route("/api/bets", methods=["GET"])

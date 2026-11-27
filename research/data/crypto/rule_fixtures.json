@@ -1,0 +1,160 @@
+{
+ "note": "Kalshi market rules as served by the public API on 2026-11-27, kept for the settlement-rule parser's guards (tests/guards_auto_crypto.py)",
+ "markets": [
+  {
+   "ticker": "KXBTC15M-26NOV270445-45",
+   "rules_primary": "If the simple average of the sixty seconds of CF Benchmarks' BRTI before 4:45 AM EST on Nov 27, 2026 is at least the simple average of the sixty seconds of CF Benchmarks' BRTI before 4:30 AM EST on November 27, 2026, then the market resolves to Yes.",
+   "rules_secondary": "Not all cryptocurrency price data is the same. While checking a source like Google or Coinbase may help guide your decision, the price used to determine this market is based on CF Benchmarks' corresponding Real Time Index (RTI). At the last minute before expiration, 60 RTI prices are collected. The official and final value is the average of these prices, rounded to the nearest 2 decimal places.",
+   "strike_type": "greater_or_equal",
+   "floor_strike": 61659.25,
+   "cap_strike": null,
+   "custom_strike": {
+    "round_digits": "2"
+   },
+   "close_time": "2026-11-27T09:45:00Z",
+   "open_time": "2026-11-27T09:30:00Z",
+   "coin": "BTC",
+   "source": "GET /markets (m15_open), 2026-11-27"
+  },
+  {
+   "ticker": "KXBTC15M-26NOV270430-30",
+   "rules_primary": "If the simple average of the sixty seconds of CF Benchmarks' BRTI before 4:30 AM EST on Nov 27, 2026 is at least the simple average of the sixty seconds of CF Benchmarks' BRTI before 4:15 AM EST on November 27, 2026, then the market resolves to Yes.",
+   "rules_secondary": "Not all cryptocurrency price data is the same. While checking a source like Google or Coinbase may help guide your decision, the price used to determine this market is based on CF Benchmarks' corresponding Real Time Index (RTI). At the last minute before expiration, 60 RTI prices are collected. The official and final value is the average of these prices, rounded to the nearest 2 decimal places.",
+   "strike_type": "greater_or_equal",
+   "floor_strike": 61636.39,
+   "cap_strike": null,
+   "custom_strike": {
+    "round_digits": "2"
+   },
+   "close_time": "2026-11-27T09:30:00Z",
+   "open_time": "2026-11-27T09:15:00Z",
+   "coin": "BTC",
+   "source": "GET /markets (m15_settled), 2026-11-27"
+  },
+  {
+   "ticker": "KXETH15M-26NOV270445-45",
+   "rules_primary": "If the simple average of the sixty seconds of CF Benchmarks' ETHUSDRTI before 4:45 AM EST on Nov 27, 2026 is at least the simple average of the sixty seconds of CF Benchmarks' ETHUSDRTI before 4:30 AM EST on November 27, 2026, then the market resolves to Yes.",
+   "rules_secondary": "Not all cryptocurrency price data is the same. While checking a source like Google or Coinbase may help guide your decision, the price used to determine this market is based on CF Benchmarks' corresponding Real Time Index (RTI). At the last minute before expiration, 60 RTI prices are collected. The official and final value is the average of these prices, rounded to the nearest 2 decimal places.",
+   "strike_type": "greater_or_equal",
+   "floor_strike": 1730.59,
+   "cap_strike": null,
+   "custom_strike": {
+    "round_digits": "2"
+   },
+   "close_time": "2026-11-27T09:45:00Z",
+   "open_time": "2026-11-27T09:30:00Z",
+   "coin": "ETH",
+   "source": "GET /markets (open_KXETH15M), 2026-11-27"
+  },
+  {
+   "ticker": "KXDOGE15M-26NOV270445-45",
+   "rules_primary": "If the simple average of the sixty seconds of CF Benchmarks' DOGEUSDRTI before 4:45 AM EST on Nov 27, 2026 is at least the simple average of the sixty seconds of CF Benchmarks' DOGEUSDRTI before 4:30 AM EST on November 27, 2026, then the market resolves to Yes.",
+   "rules_secondary": "Not all cryptocurrency price data is the same. While checking a source like Google or Coinbase may help guide your decision, the price used to determine this market is based on CF Benchmarks' corresponding Real Time Index (RTI). At the last minute before expiration, 60 RTI prices are collected. The official and final value is the average of these prices, rounded to the nearest 7 decimal places.",
+   "strike_type": "greater_or_equal",
+   "floor_strike": 0.058187,
+   "cap_strike": null,
+   "custom_strike": {
+    "floor_strike": "0.0581877",
+    "round_digits": "7",
+    "strike_type": "greater_or_equal"
+   },
+   "close_time": "2026-11-27T09:45:00Z",
+   "open_time": "2026-11-27T09:30:00Z",
+   "coin": "DOGE",
+   "source": "GET /markets (open_KXDOGE15M), 2026-11-27"
+  },
+  {
+   "ticker": "KXBTCD-26NOV2705-T69799.99",
+   "rules_primary": "If the simple average of the sixty seconds of CF Benchmarks' Bitcoin Real-Time Index (BRTI) before 5 AM EST is above 69799.99 at 5 AM EST on Nov 27, 2026, then the market resolves to Yes.",
+   "rules_secondary": "Not all cryptocurrency price data is the same. While checking a source like Google or Coinbase may help guide your decision, the price used to determine this market is based on CF Benchmarks' corresponding Real Time Index (RTI). At the last minute before expiration, 60 RTI prices are collected. The official and final value is the average of these prices.",
+   "strike_type": "greater",
+   "floor_strike": 69799.99,
+   "cap_strike": null,
+   "custom_strike": {
+    "round_digits": "2"
+   },
+   "close_time": "2026-11-27T10:00:00Z",
+   "open_time": "2026-11-27T09:00:00Z",
+   "coin": "BTC",
+   "source": "GET /markets (open_KXBTCD), 2026-11-27"
+  },
+  {
+   "ticker": "KXXRPD-26NOV2705-T1.6399",
+   "rules_primary": "If the simple average of the sixty seconds of CF Benchmarks' Ripple-Dollar Real Time Index (XRPUSD_RTI) before 5 AM EST is above 1.6399 at 5 AM EST on Nov 27, 2026, then the market resolves to Yes.",
+   "rules_secondary": "The market resolves based on a simple average of the CF Benchmarks index for the 60 seconds prior to the specified time. The price must meet the criterion at exactly the specified time on the target date. If no data is available or incomplete at the expiration time, affected strikes resolve to No. For cryptocurrencies with multiple versions, the Exchange will specify which version or ticker is being tracked. The CF Benchmarks Real-Time Index provides continuous pricing data for major cryptocurrencies.",
+   "strike_type": "greater",
+   "floor_strike": 1.6399,
+   "cap_strike": null,
+   "custom_strike": {
+    "round_digits": "4"
+   },
+   "close_time": "2026-11-27T10:00:00Z",
+   "open_time": "2026-11-27T09:00:00Z",
+   "coin": "XRP",
+   "source": "GET /markets (open_KXXRPD), 2026-11-27"
+  },
+  {
+   "ticker": "KXDOGED-26NOV2705-T0.2349999",
+   "rules_primary": "If there is a 60 second average of CF Benchmarks' Dogecoin Real-Time Index (DOGEUSD_RTI) before 5 AM EST is above 0.2349999 at 5 AM EST on Nov 27, 2026, then the market resolves to Yes.",
+   "rules_secondary": "Not all cryptocurrency price data is the same. While checking a source like Google or Coinbase may help guide your decision, the price used to determine this market is based on CF Benchmarks' corresponding Real Time Index (RTI).",
+   "strike_type": "custom",
+   "floor_strike": null,
+   "cap_strike": null,
+   "custom_strike": {
+    "cap_strike": "",
+    "floor_strike": "0.2349999",
+    "round_digits": "7",
+    "strike_type": "greater"
+   },
+   "close_time": "2026-11-27T10:00:00Z",
+   "open_time": "2026-11-27T09:00:00Z",
+   "coin": "DOGE",
+   "source": "GET /markets (open_KXDOGED), 2026-11-27"
+  },
+  {
+   "ticker": "KXSOLD-26NOV2705-T99.9999",
+   "rules_primary": "If the simple average of the sixty seconds of CF Benchmarks' SOLUSD_RTI before 5 AM EST is above $99.9999 at 5 AM EST on Nov 27, 2026, then the market resolves to Yes.",
+   "rules_secondary": "Not all cryptocurrency price data is the same. While checking a source like Google or Coinbase may help guide your decision, the price used to determine this market is based on CF Benchmarks' corresponding Real Time Index (RTI). At the last minute before expiration, 60 RTI prices are collected. The official and final value is the average of these prices.",
+   "strike_type": "greater",
+   "floor_strike": 99.9999,
+   "cap_strike": null,
+   "custom_strike": {
+    "round_digits": "4"
+   },
+   "close_time": "2026-11-27T10:00:00Z",
+   "open_time": "2026-11-27T09:00:00Z",
+   "coin": "SOL",
+   "source": "GET /markets (open_KXSOLD), 2026-11-27"
+  },
+  {
+   "ticker": "KXBTC-26NOV2705-B69750",
+   "rules_primary": "If the simple average of the sixty seconds of CF Benchmarks' Bitcoin Real-Time Index (BRTI) before 5 AM EST is between 69700-69799.99 at 5 AM EST on Nov 27, 2026, then the market resolves to Yes.",
+   "rules_secondary": "Not all cryptocurrency price data is the same. While checking a source like Google or Coinbase may help guide your decision, the price used to determine this market is based on CF Benchmarks' corresponding Real Time Index (RTI). At the last minute before expiration, 60 RTI prices are collected. The official and final value is the average of these prices.",
+   "strike_type": "between",
+   "floor_strike": 69700,
+   "cap_strike": 69799.99,
+   "custom_strike": {
+    "round_digits": "2"
+   },
+   "close_time": "2026-11-27T10:00:00Z",
+   "open_time": "2026-11-27T09:00:00Z",
+   "coin": "BTC",
+   "source": "GET /markets (open_KXBTC), 2026-11-27"
+  },
+  {
+   "ticker": "KXETHD-26NOV2706-T999.99",
+   "rules_primary": "If the simple average of the sixty seconds of CF Benchmarks' Ethereum Real-Time Index (ERTI) before 6 AM EST is above 999.99 at 6 AM EST on Nov 27, 2026, then the market resolves to Yes.",
+   "rules_secondary": "Not all cryptocurrency price data is the same. While checking a source like Google or Coinbase may help guide your decision, the price used to determine this market is based on CF Benchmarks' corresponding Real Time Index (RTI). At the last minute before expiration, 60 RTI prices are collected. The official and final value is the average of these prices.",
+   "strike_type": "greater",
+   "floor_strike": 999.99,
+   "cap_strike": null,
+   "custom_strike": {
+    "round_digits": "2"
+   },
+   "close_time": "2026-11-27T11:00:00Z",
+   "open_time": "2026-11-27T10:00:00Z",
+   "coin": "ETH",
+   "source": "GET /markets (open_KXETHD), 2026-11-27"
+  }
+ ]
+}

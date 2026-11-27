@@ -1,0 +1,407 @@
+{
+ "proxy_sd": 0.000276,
+ "proxy_sd_by_coin": {
+  "BTC": 0.000185,
+  "ETH": 0.000248,
+  "SOL": 0.00029,
+  "XRP": 0.000276,
+  "DOGE": 0.000365
+ },
+ "chosen": {
+  "halflife_min": 60,
+  "mult": 0.9
+ },
+ "dev_rows_300": 3257,
+ "dev_grid_top": [
+  [
+   0.383,
+   60,
+   0.9
+  ],
+  [
+   0.3834,
+   120,
+   0.9
+  ],
+  [
+   0.38343,
+   60,
+   0.8
+  ],
+  [
+   0.38351,
+   120,
+   0.8
+  ],
+  [
+   0.38381,
+   30,
+   0.9
+  ]
+ ],
+ "unparsed_rules": 0,
+ "rows": 26061,
+ "markets": 6574,
+ "heldout": {
+  "600": {
+   "pooled": {
+    "n": 3262,
+    "yes_rate": 0.492,
+    "model_ll": 0.585,
+    "kalshi_ll": 0.5751,
+    "model_brier": 0.2001,
+    "kalshi_brier": 0.1972,
+    "diff": 0.0098,
+    "se": 0.0024,
+    "z": 4.18
+   },
+   "by_coin": {
+    "BTC": {
+     "n": 664,
+     "yes_rate": 0.467,
+     "model_ll": 0.6036,
+     "kalshi_ll": 0.5934,
+     "model_brier": 0.2078,
+     "kalshi_brier": 0.2051,
+     "diff": 0.0102,
+     "se": 0.0049,
+     "z": 2.07
+    },
+    "ETH": {
+     "n": 664,
+     "yes_rate": 0.502,
+     "model_ll": 0.6028,
+     "kalshi_ll": 0.5852,
+     "model_brier": 0.2066,
+     "kalshi_brier": 0.2014,
+     "diff": 0.0176,
+     "se": 0.0056,
+     "z": 3.16
+    },
+    "SOL": {
+     "n": 664,
+     "yes_rate": 0.492,
+     "model_ll": 0.5617,
+     "kalshi_ll": 0.5558,
+     "model_brier": 0.1906,
+     "kalshi_brier": 0.1886,
+     "diff": 0.0058,
+     "se": 0.0042,
+     "z": 1.4
+    },
+    "XRP": {
+     "n": 664,
+     "yes_rate": 0.494,
+     "model_ll": 0.5709,
+     "kalshi_ll": 0.5671,
+     "model_brier": 0.1952,
+     "kalshi_brier": 0.1944,
+     "diff": 0.0038,
+     "se": 0.0046,
+     "z": 0.83
+    },
+    "DOGE": {
+     "n": 606,
+     "yes_rate": 0.505,
+     "model_ll": 0.586,
+     "kalshi_ll": 0.5742,
+     "model_brier": 0.2006,
+     "kalshi_brier": 0.1964,
+     "diff": 0.0118,
+     "se": 0.0068,
+     "z": 1.73
+    }
+   }
+  },
+  "300": {
+   "pooled": {
+    "n": 3266,
+    "yes_rate": 0.491,
+    "model_ll": 0.3977,
+    "kalshi_ll": 0.392,
+    "model_brier": 0.1289,
+    "kalshi_brier": 0.1272,
+    "diff": 0.0057,
+    "se": 0.0025,
+    "z": 2.32
+   },
+   "by_coin": {
+    "BTC": {
+     "n": 664,
+     "yes_rate": 0.467,
+     "model_ll": 0.3903,
+     "kalshi_ll": 0.3846,
+     "model_brier": 0.1272,
+     "kalshi_brier": 0.1251,
+     "diff": 0.0057,
+     "se": 0.0041,
+     "z": 1.39
+    },
+    "ETH": {
+     "n": 664,
+     "yes_rate": 0.502,
+     "model_ll": 0.4224,
+     "kalshi_ll": 0.4064,
+     "model_brier": 0.137,
+     "kalshi_brier": 0.1328,
+     "diff": 0.0159,
+     "se": 0.0055,
+     "z": 2.89
+    },
+    "SOL": {
+     "n": 664,
+     "yes_rate": 0.492,
+     "model_ll": 0.3726,
+     "kalshi_ll": 0.3754,
+     "model_brier": 0.1195,
+     "kalshi_brier": 0.1205,
+     "diff": -0.0028,
+     "se": 0.004,
+     "z": -0.7
+    },
+    "XRP": {
+     "n": 664,
+     "yes_rate": 0.494,
+     "model_ll": 0.4018,
+     "kalshi_ll": 0.4005,
+     "model_brier": 0.1291,
+     "kalshi_brier": 0.1296,
+     "diff": 0.0013,
+     "se": 0.0054,
+     "z": 0.25
+    },
+    "DOGE": {
+     "n": 610,
+     "yes_rate": 0.5,
+     "model_ll": 0.4016,
+     "kalshi_ll": 0.393,
+     "model_brier": 0.1319,
+     "kalshi_brier": 0.1282,
+     "diff": 0.0086,
+     "se": 0.008,
+     "z": 1.07
+    }
+   }
+  },
+  "120": {
+   "pooled": {
+    "n": 2989,
+    "yes_rate": 0.488,
+    "model_ll": 0.2517,
+    "kalshi_ll": 0.235,
+    "model_brier": 0.0786,
+    "kalshi_brier": 0.0735,
+    "diff": 0.0167,
+    "se": 0.0034,
+    "z": 4.95
+   },
+   "by_coin": {
+    "BTC": {
+     "n": 603,
+     "yes_rate": 0.466,
+     "model_ll": 0.2361,
+     "kalshi_ll": 0.2214,
+     "model_brier": 0.0729,
+     "kalshi_brier": 0.0702,
+     "diff": 0.0146,
+     "se": 0.005,
+     "z": 2.96
+    },
+    "ETH": {
+     "n": 632,
+     "yes_rate": 0.5,
+     "model_ll": 0.2604,
+     "kalshi_ll": 0.2356,
+     "model_brier": 0.0799,
+     "kalshi_brier": 0.0711,
+     "diff": 0.0249,
+     "se": 0.0071,
+     "z": 3.48
+    },
+    "SOL": {
+     "n": 610,
+     "yes_rate": 0.489,
+     "model_ll": 0.2385,
+     "kalshi_ll": 0.2247,
+     "model_brier": 0.0731,
+     "kalshi_brier": 0.0698,
+     "diff": 0.0138,
+     "se": 0.0066,
+     "z": 2.08
+    },
+    "XRP": {
+     "n": 575,
+     "yes_rate": 0.485,
+     "model_ll": 0.2595,
+     "kalshi_ll": 0.2543,
+     "model_brier": 0.0828,
+     "kalshi_brier": 0.0812,
+     "diff": 0.0052,
+     "se": 0.0074,
+     "z": 0.71
+    },
+    "DOGE": {
+     "n": 569,
+     "yes_rate": 0.503,
+     "model_ll": 0.2647,
+     "kalshi_ll": 0.2403,
+     "model_brier": 0.0847,
+     "kalshi_brier": 0.0761,
+     "diff": 0.0244,
+     "se": 0.0108,
+     "z": 2.26
+    }
+   }
+  },
+  "60": {
+   "pooled": {
+    "n": 1810,
+    "yes_rate": 0.49,
+    "model_ll": 0.2423,
+    "kalshi_ll": 0.2094,
+    "model_brier": 0.0724,
+    "kalshi_brier": 0.0627,
+    "diff": 0.0329,
+    "se": 0.0069,
+    "z": 4.8
+   },
+   "by_coin": {
+    "BTC": {
+     "n": 368,
+     "yes_rate": 0.448,
+     "model_ll": 0.2251,
+     "kalshi_ll": 0.1984,
+     "model_brier": 0.0657,
+     "kalshi_brier": 0.0606,
+     "diff": 0.0267,
+     "se": 0.0091,
+     "z": 2.92
+    },
+    "ETH": {
+     "n": 370,
+     "yes_rate": 0.516,
+     "model_ll": 0.2633,
+     "kalshi_ll": 0.2009,
+     "model_brier": 0.0784,
+     "kalshi_brier": 0.0581,
+     "diff": 0.0624,
+     "se": 0.0184,
+     "z": 3.4
+    },
+    "SOL": {
+     "n": 383,
+     "yes_rate": 0.488,
+     "model_ll": 0.2193,
+     "kalshi_ll": 0.2009,
+     "model_brier": 0.0624,
+     "kalshi_brier": 0.0571,
+     "diff": 0.0184,
+     "se": 0.011,
+     "z": 1.68
+    },
+    "XRP": {
+     "n": 350,
+     "yes_rate": 0.494,
+     "model_ll": 0.2547,
+     "kalshi_ll": 0.232,
+     "model_brier": 0.0786,
+     "kalshi_brier": 0.0706,
+     "diff": 0.0227,
+     "se": 0.0173,
+     "z": 1.31
+    },
+    "DOGE": {
+     "n": 339,
+     "yes_rate": 0.501,
+     "model_ll": 0.2513,
+     "kalshi_ll": 0.2168,
+     "model_brier": 0.0778,
+     "kalshi_brier": 0.0685,
+     "diff": 0.0345,
+     "se": 0.0191,
+     "z": 1.8
+    }
+   }
+  }
+ },
+ "heldout_reliability_300": [
+  {
+   "bin": 0,
+   "n": 656,
+   "said": 0.033,
+   "hit": 0.04
+  },
+  {
+   "bin": 1,
+   "n": 307,
+   "said": 0.147,
+   "hit": 0.147
+  },
+  {
+   "bin": 2,
+   "n": 315,
+   "said": 0.25,
+   "hit": 0.222
+  },
+  {
+   "bin": 3,
+   "n": 257,
+   "said": 0.352,
+   "hit": 0.409
+  },
+  {
+   "bin": 4,
+   "n": 227,
+   "said": 0.448,
+   "hit": 0.485
+  },
+  {
+   "bin": 5,
+   "n": 235,
+   "said": 0.553,
+   "hit": 0.609
+  },
+  {
+   "bin": 6,
+   "n": 241,
+   "said": 0.653,
+   "hit": 0.705
+  },
+  {
+   "bin": 7,
+   "n": 266,
+   "said": 0.75,
+   "hit": 0.771
+  },
+  {
+   "bin": 8,
+   "n": 277,
+   "said": 0.854,
+   "hit": 0.892
+  },
+  {
+   "bin": 9,
+   "n": 485,
+   "said": 0.965,
+   "hit": 0.994
+  }
+ ],
+ "heldout_paper_300": {
+  "bets": 1261,
+  "per_bet_c": 0.56,
+  "se_c": 1.09,
+  "total_c": 703.6,
+  "win_rate": 0.324
+ },
+ "dev_paper_300": {
+  "bets": 1034,
+  "per_bet_c": 4.04,
+  "se_c": 1.22,
+  "total_c": 4177.1,
+  "win_rate": 0.338
+ },
+ "decision": {
+  "edges": "unproven (Kalshi the better forecaster)",
+  "paper": "not profitable past 2 SE"
+ }
+}

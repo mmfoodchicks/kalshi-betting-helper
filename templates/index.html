@@ -67,6 +67,7 @@
     <button class="tab" data-tab="lol">🎮 LoL</button>
     <span class="navsep"></span>
     <button class="tab" data-tab="weather">🌤️ Weather</button>
+    <button class="tab" data-tab="crypto">🪙 Crypto</button>
     <span class="navsep"></span>
     <button class="tab" data-tab="combine">🎰 Combos</button>
     <button class="tab" data-tab="futures">🏦 Futures</button>
@@ -529,6 +530,20 @@
     </section>
    </div><!-- /tab-weather -->
 
+   <div id="tab-crypto" class="hidden">
+    <section class="card">
+      <div class="row-between">
+        <h2>🪙 Crypto terminal <span class="chip">paper only</span></h2>
+        <select id="cxCoin" style="width:auto" aria-label="coin"></select>
+      </div>
+      <p class="sub" style="margin:2px 0 8px">Kalshi's 15-minute and hourly crypto contracts, each priced off the rule it settles on: a simple average of the 60 seconds of CF Benchmarks' index before the close, read from the market's own rules. The index is licensed, so the live level is a proxy, the median of four exchanges, shown with each source. The model is a random walk at recent volatility. It is the benchmark to beat, and every edge it prints is unproven until the record below decides. Nothing here places an order.</p>
+      <div id="cxChartBar" class="row-between" style="margin:6px 0"></div>
+      <div id="cxChart" style="width:100%;min-height:200px"></div>
+      <div id="cxBoard"></div>
+      <div id="cxRecord"></div>
+    </section>
+   </div><!-- /tab-crypto -->
+
    <div id="tab-sim" class="hidden">
     <section class="card">
       <h2>🎲 Simulator</h2>
@@ -875,5 +890,6 @@
   <script src="/static/dfseval.js?v={{ v }}"></script>
   <script src="/static/pick6log.js?v={{ v }}"></script>
   <script src="/static/research.js?v={{ v }}"></script>
+  <script src="/static/crypto.js?v={{ v }}"></script>
 </body>
 </html>

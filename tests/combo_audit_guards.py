@@ -24030,10 +24030,15 @@ ck("no route serves them", not (_cr_rules & set(_cr_dead)) and not any(r.startsw
    str(sorted(_cr_rules & set(_cr_dead))))
 _cr_js = open(_os.path.join(_cr_root, "static", "app.js"), encoding="utf-8").read()
 _cr_html = open(_os.path.join(_cr_root, "templates", "index.html"), encoding="utf-8").read()
-ck("the page asks for none of them and has no crypto tab",
-   not any(u in _cr_js for u in ("/api/recorder", "/api/coins", "/api/kalshi/", "/api/markets", "/api/quote",
-                                 "/api/backtest", "/api/stats"))
-   and "tab-crypto" not in _cr_js and "tab-crypto" not in _cr_html and 'data-tab="crypto"' not in _cr_html)
+# 2026-11-27: one crypto tab is back -- the read-only paper terminal (crypto_terminal.py, static/crypto.js),
+# built under the memory rules this removal taught and guarded in tests/guards_auto_crypto.py (CX). The removed
+# tracker's endpoints stay gone, and the only crypto script the page loads reads /api/crypto/* alone.
+_cr_term = open(_os.path.join(_cr_root, "static", "crypto.js"), encoding="utf-8").read()
+_cr_old = ("/api/recorder", "/api/coins", "/api/kalshi/", "/api/markets", "/api/quote", "/api/backtest", "/api/stats")
+ck("the page asks for none of them; its one crypto tab is the paper terminal, which reads /api/crypto/* alone",
+   not any(u in _cr_js or u in _cr_term for u in _cr_old)
+   and _cr_js.count("tab-crypto") == 1 and 'data-tab="crypto"' in _cr_html and "/static/crypto.js" in _cr_html
+   and all(u.startswith("/api/crypto/") for u in _re_cr.findall(r'getJSON\("([^"?]+)', _cr_term)))
 import calibrate as _cal_cr, bestbets as _bb_cr, combine as _cmb_cr, mfutures as _mf_cr, tiers as _ti_cr
 import kalshi as _kal_cr, simulate as _sim_cr
 ck("no model, board or gate still carries a crypto piece",
