@@ -866,6 +866,18 @@ data-only `sim-history` branch (which never deploys):
   Not built (no evidence or out of R3's reach): coach-specific pull habits, a starter already out, a backup's
   play selection (real, 4.7 SE, needs R4's fork of R1's call), a persistent pull for backs (they rotate, R2
   deals it). Known miss: trailing 17-27 late, under-predicted ~2.7x.
+  **R4** (`nfl_coach_sim_r4.py`, `coach-r4.0`; `research/reports/nfl_coach_r4.md`, `prereg_r4.json`, commit c569318):
+  personnel-aware calls after R3's pull. Pulls are labelled injury (the play says "injured" or next week's report
+  lists him) or strategic, the kind drawn from the game state; injured starters return 11.2% (strategic 1%).
+  Shipped by a rule written first (3 SE fit, same sign in development): a strategic backup's dropbacks over expected
+  (+3.9 leading, -3.2 trailing, -4.6 close), completion -3.0 points either kind, an injury backup's interceptions
+  +1.2, and after a STRATEGIC pull the first unit sits (lead back's carry share -14.7 points, top-two targets -6.5);
+  tempo, air yards and sacks refused or no evidence. R4 forks R1's loop and plays R1's snap code unedited: with no
+  pull it is R1 draw for draw and R3 line for line, conservation exact. Development: +0.33 / +0.52 nats a pulled
+  team-game (z 2.8, 3.5). Registered window 2026 weeks 13-18 plus 2027 (80+ pulled team-games), read on/after
+  2028-01-13 after R1's. R3's trailing-late miss is trailing teams protecting their quarterback (28 of 30 strategic,
+  not late-season rest); a new hazard form is an R5 candidate on fresh games. R3's report carries an erratum: its
+  R3 arm's deal draws are seeded one game later than R2's (noise, not bias; the registered read stands).
 - **The deep engine's market anchor spreads 1.21x too wide** (2026-11-27, `research/data/c3_margin_scale.json`,
   C3 addendum): `nfl_deep_data.market_margins` converts Kalshi's win totals to points with
   `nfl_season._PTS_PER_WIN` 2.25, the drive engine's constant (set to undo ITS compression; the drive season sim

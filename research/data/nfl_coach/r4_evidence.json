@@ -1,0 +1,497 @@
+{
+ "classes": {
+  "injury": {
+   "pulls": 160,
+   "rate": 0.138,
+   "starter_came_back": 22
+  },
+  "other": {
+   "pulls": 170,
+   "rate": 0.282,
+   "starter_came_back": 48
+  },
+  "strategic": {
+   "pulls": 540,
+   "rate": 0.011,
+   "starter_came_back": 6
+  }
+ },
+ "credit": "nflverse-data play-by-play, players and injuries (CC BY 4.0)",
+ "effects": {
+  "injury": {
+   "air": {
+    "diff": -0.1913,
+    "games": 160,
+    "se": 0.2486,
+    "snaps": 2314,
+    "z": -0.77
+   },
+   "comp": {
+    "diff": -0.0388,
+    "games": 160,
+    "se": 0.0101,
+    "snaps": 2314,
+    "z": -3.82
+   },
+   "epa": {
+    "diff": -0.1199,
+    "games": 160,
+    "se": 0.0173,
+    "snaps": 4082,
+    "z": -6.92
+   },
+   "int": {
+    "diff": 0.0099,
+    "games": 160,
+    "se": 0.0035,
+    "snaps": 2314,
+    "z": 2.84
+   },
+   "proe": {
+    "diff": -0.0362,
+    "games": 160,
+    "se": 0.01,
+    "snaps": 3934,
+    "z": -3.63
+   },
+   "rb1": {
+    "diff": 0.0186,
+    "games": 160,
+    "se": 0.0294,
+    "snaps": 1253,
+    "z": 0.63
+   },
+   "sack": {
+    "diff": 0.0094,
+    "games": 160,
+    "se": 0.0049,
+    "snaps": 2633,
+    "z": 1.92
+   },
+   "succ": {
+    "diff": -0.0514,
+    "games": 160,
+    "se": 0.0092,
+    "snaps": 4082,
+    "z": -5.61
+   },
+   "tempo": {
+    "diff": 0.6219,
+    "games": 160,
+    "se": 0.3239,
+    "snaps": 1269,
+    "z": 1.92
+   },
+   "top2": {
+    "diff": -0.0168,
+    "games": 160,
+    "se": 0.0157,
+    "snaps": 2149,
+    "z": -1.07
+   }
+  },
+  "other": {
+   "air": {
+    "diff": 0.3343,
+    "games": 170,
+    "se": 0.2104,
+    "snaps": 3301,
+    "z": 1.59
+   },
+   "comp": {
+    "diff": -0.0254,
+    "games": 170,
+    "se": 0.0097,
+    "snaps": 3302,
+    "z": -2.61
+   },
+   "epa": {
+    "diff": -0.0348,
+    "games": 170,
+    "se": 0.0174,
+    "snaps": 5867,
+    "z": -2.0
+   },
+   "int": {
+    "diff": 0.0071,
+    "games": 170,
+    "se": 0.003,
+    "snaps": 3302,
+    "z": 2.4
+   },
+   "proe": {
+    "diff": -0.0303,
+    "games": 170,
+    "se": 0.0073,
+    "snaps": 5693,
+    "z": -4.17
+   },
+   "rb1": {
+    "diff": -0.0891,
+    "games": 170,
+    "se": 0.0309,
+    "snaps": 1858,
+    "z": -2.88
+   },
+   "sack": {
+    "diff": -0.0035,
+    "games": 170,
+    "se": 0.0044,
+    "snaps": 3726,
+    "z": -0.79
+   },
+   "succ": {
+    "diff": -0.022,
+    "games": 170,
+    "se": 0.0072,
+    "snaps": 5867,
+    "z": -3.03
+   },
+   "tempo": {
+    "diff": 0.025,
+    "games": 170,
+    "se": 0.2457,
+    "snaps": 1906,
+    "z": 0.1
+   },
+   "top2": {
+    "diff": -0.0283,
+    "games": 170,
+    "se": 0.0144,
+    "snaps": 3118,
+    "z": -1.97
+   }
+  },
+  "strategic": {
+   "air": {
+    "diff": -0.0183,
+    "games": 540,
+    "se": 0.2732,
+    "snaps": 1870,
+    "z": -0.07
+   },
+   "comp": {
+    "diff": -0.0401,
+    "games": 540,
+    "se": 0.0113,
+    "snaps": 1871,
+    "z": -3.55
+   },
+   "epa": {
+    "diff": -0.0857,
+    "games": 540,
+    "se": 0.0205,
+    "snaps": 3983,
+    "z": -4.19
+   },
+   "int": {
+    "diff": 0.0053,
+    "games": 540,
+    "se": 0.0044,
+    "snaps": 1871,
+    "z": 1.19
+   },
+   "proe": {
+    "diff": -0.0039,
+    "games": 540,
+    "se": 0.0095,
+    "snaps": 3789,
+    "z": -0.41
+   },
+   "rb1": {
+    "diff": -0.1889,
+    "games": 540,
+    "se": 0.0135,
+    "snaps": 1594,
+    "z": -13.97
+   },
+   "sack": {
+    "diff": -0.0,
+    "games": 540,
+    "se": 0.0054,
+    "snaps": 2108,
+    "z": -0.01
+   },
+   "succ": {
+    "diff": -0.038,
+    "games": 540,
+    "se": 0.0087,
+    "snaps": 3983,
+    "z": -4.37
+   },
+   "tempo": {
+    "diff": 0.7853,
+    "games": 540,
+    "se": 0.2854,
+    "snaps": 1524,
+    "z": 2.75
+   },
+   "top2": {
+    "diff": -0.0765,
+    "games": 540,
+    "se": 0.014,
+    "snaps": 1692,
+    "z": -5.47
+   }
+  },
+  "strategic_experienced_backup": {
+   "air": {
+    "diff": -0.4254,
+    "games": 217,
+    "se": 0.4608,
+    "snaps": 761,
+    "z": -0.92
+   },
+   "comp": {
+    "diff": -0.009,
+    "games": 217,
+    "se": 0.0176,
+    "snaps": 761,
+    "z": -0.51
+   },
+   "epa": {
+    "diff": -0.0166,
+    "games": 217,
+    "se": 0.0342,
+    "snaps": 1568,
+    "z": -0.48
+   },
+   "int": {
+    "diff": -0.0032,
+    "games": 217,
+    "se": 0.0058,
+    "snaps": 761,
+    "z": -0.54
+   },
+   "proe": {
+    "diff": 0.0112,
+    "games": 217,
+    "se": 0.0144,
+    "snaps": 1498,
+    "z": 0.78
+   },
+   "rb1": {
+    "diff": -0.2004,
+    "games": 217,
+    "se": 0.0194,
+    "snaps": 640,
+    "z": -10.35
+   },
+   "sack": {
+    "diff": -0.0133,
+    "games": 217,
+    "se": 0.0079,
+    "snaps": 845,
+    "z": -1.7
+   },
+   "succ": {
+    "diff": -0.0262,
+    "games": 217,
+    "se": 0.0139,
+    "snaps": 1568,
+    "z": -1.89
+   },
+   "tempo": {
+    "diff": 1.2485,
+    "games": 217,
+    "se": 0.4644,
+    "snaps": 593,
+    "z": 2.69
+   },
+   "top2": {
+    "diff": -0.0685,
+    "games": 217,
+    "se": 0.0236,
+    "snaps": 699,
+    "z": -2.9
+   }
+  },
+  "strategic_lead": {
+   "air": {
+    "diff": -0.8777,
+    "games": 540,
+    "se": 0.5367,
+    "snaps": 337,
+    "z": -1.64
+   },
+   "comp": {
+    "diff": -0.0695,
+    "games": 540,
+    "se": 0.0288,
+    "snaps": 337,
+    "z": -2.41
+   },
+   "epa": {
+    "diff": -0.0501,
+    "games": 540,
+    "se": 0.0272,
+    "snaps": 1586,
+    "z": -1.84
+   },
+   "proe": {
+    "diff": 0.0619,
+    "games": 540,
+    "se": 0.0106,
+    "snaps": 1549,
+    "z": 5.83
+   },
+   "tempo": {
+    "diff": 0.3757,
+    "games": 540,
+    "se": 0.3626,
+    "snaps": 942,
+    "z": 1.04
+   }
+  },
+  "strategic_new_backup": {
+   "air": {
+    "diff": 0.2611,
+    "games": 323,
+    "se": 0.3587,
+    "snaps": 1109,
+    "z": 0.73
+   },
+   "comp": {
+    "diff": -0.0615,
+    "games": 323,
+    "se": 0.0142,
+    "snaps": 1110,
+    "z": -4.32
+   },
+   "epa": {
+    "diff": -0.1306,
+    "games": 323,
+    "se": 0.0236,
+    "snaps": 2415,
+    "z": -5.53
+   },
+   "int": {
+    "diff": 0.011,
+    "games": 323,
+    "se": 0.0051,
+    "snaps": 1110,
+    "z": 2.17
+   },
+   "proe": {
+    "diff": -0.0138,
+    "games": 323,
+    "se": 0.0121,
+    "snaps": 2291,
+    "z": -1.14
+   },
+   "rb1": {
+    "diff": -0.1812,
+    "games": 323,
+    "se": 0.0192,
+    "snaps": 954,
+    "z": -9.43
+   },
+   "sack": {
+    "diff": 0.0088,
+    "games": 323,
+    "se": 0.0074,
+    "snaps": 1263,
+    "z": 1.19
+   },
+   "succ": {
+    "diff": -0.0456,
+    "games": 323,
+    "se": 0.0117,
+    "snaps": 2415,
+    "z": -3.89
+   },
+   "tempo": {
+    "diff": 0.4902,
+    "games": 323,
+    "se": 0.3725,
+    "snaps": 931,
+    "z": 1.32
+   },
+   "top2": {
+    "diff": -0.0821,
+    "games": 323,
+    "se": 0.0163,
+    "snaps": 993,
+    "z": -5.04
+   }
+  },
+  "strategic_trail": {
+   "air": {
+    "diff": 0.1648,
+    "games": 540,
+    "se": 0.3199,
+    "snaps": 1507,
+    "z": 0.52
+   },
+   "comp": {
+    "diff": -0.0352,
+    "games": 540,
+    "se": 0.0127,
+    "snaps": 1508,
+    "z": -2.78
+   },
+   "epa": {
+    "diff": -0.1117,
+    "games": 540,
+    "se": 0.0277,
+    "snaps": 2361,
+    "z": -4.03
+   },
+   "proe": {
+    "diff": -0.0495,
+    "games": 540,
+    "se": 0.0134,
+    "snaps": 2207,
+    "z": -3.69
+   },
+   "tempo": {
+    "diff": 1.4875,
+    "games": 540,
+    "se": 0.4431,
+    "snaps": 576,
+    "z": 3.36
+   }
+  }
+ },
+ "injury_report_check": {
+  "injury": {
+   "on_next_report": 21,
+   "pulls": 42,
+   "rate": 0.5
+  },
+  "other": {
+   "on_next_report": 9,
+   "pulls": 22,
+   "rate": 0.409
+  },
+  "strategic": {
+   "on_next_report": 6,
+   "pulls": 121,
+   "rate": 0.05
+  }
+ },
+ "r3_miss": {
+  "drives": 137,
+  "drives_late_season": 22,
+  "expected": 12.17,
+  "expected_late_season": 1.94,
+  "pulls": {
+   "injury": 2,
+   "strategic": 28
+  },
+  "pulls_late_season": 4
+ },
+ "seasons": [
+  2016,
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025,
+  2026
+ ]
+}
