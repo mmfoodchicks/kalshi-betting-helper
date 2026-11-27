@@ -38,7 +38,7 @@
   "fees_included": true,
   "graded": 780,
   "losses": 367,
-  "pending": 1386,
+  "pending": 1388,
   "roi_bets": 780,
   "roi_edge_pct": -0.9,
   "roi_pct": -6.3,
@@ -184,7 +184,7 @@
     "fees_included": true,
     "graded": 428,
     "losses": 217,
-    "pending": 682,
+    "pending": 684,
     "roi_bets": 428,
     "roi_edge_pct": -13.7,
     "roi_pct": -7.6,
@@ -389,9 +389,9 @@
  },
  "market": {
   "close": {
-   "avg_capture_c": 0.25,
-   "flat_pct": 3.8,
-   "n": 758,
+   "avg_capture_c": 0.24,
+   "flat_pct": 3.6,
+   "n": 760,
    "ready": true,
    "toward_pct": 47.5
   },

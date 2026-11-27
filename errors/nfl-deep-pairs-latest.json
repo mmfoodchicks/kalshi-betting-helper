@@ -3957,8 +3957,8 @@
    "ts": 1795497552
   },
   {
-   "close_mkt": null,
-   "close_mkt_ts": null,
+   "close_mkt": 0.685,
+   "close_mkt_ts": 1795807288,
    "close_time": 1795982400,
    "event_ts": 1795809600,
    "graded": 0,
@@ -3981,8 +3981,8 @@
    "ts": 1795497552
   },
   {
-   "close_mkt": null,
-   "close_mkt_ts": null,
+   "close_mkt": 0.315,
+   "close_mkt_ts": 1795807288,
    "close_time": 1795982400,
    "event_ts": 1795809600,
    "graded": 0,

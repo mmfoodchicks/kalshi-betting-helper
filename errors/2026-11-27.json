@@ -2,6 +2,94 @@
  "errors": [
   {
    "code": "NFL-DRIFT",
+   "id": 2901,
+   "last_ts": 1795806432.837167,
+   "msg": "Total: the model sits +4.2 points off Kalshi's mid over 107 rungs in 12 games",
+   "n": 1,
+   "path": "Total",
+   "pid": 97,
+   "tb": "",
+   "ts": 1795806432.837167
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2900,
+   "last_ts": 1795804606.0704942,
+   "msg": "Receptions: the model sits -4.9 points off Kalshi's mid over 142 rungs in 11 games",
+   "n": 1,
+   "path": "Receptions",
+   "pid": 97,
+   "tb": "",
+   "ts": 1795804606.0704942
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2899,
+   "last_ts": 1795804242.3162386,
+   "msg": "Receptions: the model sits -4.9 points off Kalshi's mid over 141 rungs in 11 games",
+   "n": 3,
+   "path": "Receptions",
+   "pid": 77,
+   "tb": "",
+   "ts": 1795804242.3162386
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2898,
+   "last_ts": 1795802425.3328063,
+   "msg": "Total: the model sits +4.2 points off Kalshi's mid over 104 rungs in 12 games",
+   "n": 1,
+   "path": "Total",
+   "pid": 77,
+   "tb": "",
+   "ts": 1795802425.3328063
+  },
+  {
+   "code": "MXR-params",
+   "id": 2897,
+   "last_ts": 1795802390.648922,
+   "msg": "TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', \"import os\\ntry:\\n    os.nice(10)\\nexcept (AttributeError, OSError):\\n    pass\\nimport sys, pickle, importlib\\n_out = os.fdopen(os.dup(1), 'wb')\\nos.dup2(2, 1)\\nsys.stdout = sys.stderr\\na, kw = pickle.loads(sys.stdin.buffer.read())\\n_out.write(pickle.dumps(getattr(importlib.import_module('calibrate'), 'write_params')(*a, **kw)))\\n_out.flush()\"]' timed out after 1800 seconds",
+   "n": 1,
+   "path": null,
+   "pid": 77,
+   "tb": "Traceback (most recent call last):\n  File \"/app/mx_record.py\", line 770, in tick\n    deep_cache.run_child(\"calibrate\", \"write_params\", timeout=1800)\n  File \"/app/deep_cache.py\", line 142, in run_child\n    out = subprocess.run(\n          ^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/subprocess.py\", line 550, in run\n    stdout, stderr = process.communicate(input, timeout=timeout)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/subprocess.py\", line 1209, in communicate\n    stdout, stderr = self._communicate(input, endtime, timeout)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/subprocess.py\", line 2116, in _communicate\n    self._check_timeout(endtime, orig_timeout, stdout, stderr)\n  File \"/usr/local/lib/python3.11/subprocess.py\", line 1253, in _check_timeout\n    raise TimeoutExpired(\nsubprocess.TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', \"import os\\ntry:\\n    os.nice(10)\\nexcept (AttributeError, OSError):\\n    pass\\nimport sys, pickle, importlib\\n_out = os.fdopen(os.dup(1), 'wb')\\nos.dup2(2, 1)\\nsys.stdout = sys.stderr\\na, kw = pickle.loads(sys.stdin.buffer.read())\\n_out.write(pickle.dumps(getattr(importlib.import_module('calibrate'), 'write_params')(*a, **kw)))\\n_out.flush()\"]' timed out after 1800 seconds\n",
+   "ts": 1795802390.648922
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2896,
+   "last_ts": 1795800583.6550539,
+   "msg": "Rush Yds: the model sits -4.3 points off Kalshi's mid over 121 rungs in 12 games",
+   "n": 1,
+   "path": "Rush Yds",
+   "pid": 77,
+   "tb": "",
+   "ts": 1795800583.6550539
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2895,
+   "last_ts": 1795799247.8268628,
+   "msg": "Rush Yds: the model sits -4.6 points off Kalshi's mid over 112 rungs in 12 games",
+   "n": 2,
+   "path": "Rush Yds",
+   "pid": 8,
+   "tb": "",
+   "ts": 1795799247.8268628
+  },
+  {
+   "code": "NFL-DRIFT",
+   "id": 2894,
+   "last_ts": 1795797429.4384663,
+   "msg": "Total: the model sits +4.1 points off Kalshi's mid over 103 rungs in 12 games",
+   "n": 2,
+   "path": "Total",
+   "pid": 8,
+   "tb": "",
+   "ts": 1795797429.4384663
+  },
+  {
+   "code": "NFL-DRIFT",
    "id": 2893,
    "last_ts": 1795795608.7886128,
    "msg": "Total: the model sits +4.3 points off Kalshi's mid over 105 rungs in 12 games",
@@ -2364,72 +2452,17 @@
    "pid": 17855,
    "tb": "",
    "ts": 1795203827.9982111
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2678,
-   "last_ts": 1795202009.78819,
-   "msg": "Receptions: the model sits -4.0 points off Kalshi's mid over 121 rungs in 11 games",
-   "n": 1,
-   "path": "Receptions",
-   "pid": 17855,
-   "tb": "",
-   "ts": 1795202009.78819
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2677,
-   "last_ts": 1795200189.9315608,
-   "msg": "Receptions: the model sits -4.4 points off Kalshi's mid over 116 rungs in 11 games",
-   "n": 1,
-   "path": "Receptions",
-   "pid": 17855,
-   "tb": "",
-   "ts": 1795200189.9315608
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2676,
-   "last_ts": 1795196103.964468,
-   "msg": "Receptions: the model sits -4.3 points off Kalshi's mid over 90 rungs in 11 games",
-   "n": 1,
-   "path": "Receptions",
-   "pid": 17813,
-   "tb": "",
-   "ts": 1795196103.964468
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2675,
-   "last_ts": 1795194293.7998219,
-   "msg": "Receptions: the model sits -4.5 points off Kalshi's mid over 86 rungs in 11 games",
-   "n": 1,
-   "path": "Receptions",
-   "pid": 17813,
-   "tb": "",
-   "ts": 1795194293.7998219
-  },
-  {
-   "code": "NFL-DRIFT",
-   "id": 2674,
-   "last_ts": 1795192481.5123246,
-   "msg": "Receptions: the model sits -4.9 points off Kalshi's mid over 81 rungs in 11 games",
-   "n": 2,
-   "path": "Receptions",
-   "pid": 17813,
-   "tb": "",
-   "ts": 1795192481.5123246
   }
  ],
- "generated_at": 1795795990.3465247,
+ "generated_at": 1795807924.0719192,
  "summary": [
   {
    "code": "NFL-DRIFT",
-   "first_ts": 1795192481.5123246,
-   "last_msg": "Total: the model sits +4.3 points off Kalshi's mid over 105 rungs in 12 games",
-   "last_ts": 1795795608.7886128,
-   "n": 313,
-   "variants": 212
+   "first_ts": 1795203827.9982111,
+   "last_msg": "Total: the model sits +4.2 points off Kalshi's mid over 107 rungs in 12 games",
+   "last_ts": 1795806432.837167,
+   "n": 318,
+   "variants": 214
   },
   {
    "code": "KAL-candles",
@@ -2460,6 +2493,14 @@
    "first_ts": 1795785547.1740677,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
    "last_ts": 1795785547.1740677,
+   "n": 1,
+   "variants": 1
+  },
+  {
+   "code": "MXR-params",
+   "first_ts": 1795802390.648922,
+   "last_msg": "TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', \"import os\\ntry:\\n    os.nice(10)\\nexcept (AttributeError, OSError):\\n    pass\\nimport sys, pickle, importlib\\n_out = os.fdopen(os.dup(1), 'wb')\\nos.dup2(2, 1)\\nsys.stdout = sys.stderr\\na, kw = pickle.loads(sys.stdin.buffer.read())\\n_out.write(pickle.dumps(getattr(importlib.import_module('calibrate'), 'write_params')(*a, **kw)))\\n_out.flush()\"]' timed out after 1800 seconds",
+   "last_ts": 1795802390.648922,
    "n": 1,
    "variants": 1
   }
