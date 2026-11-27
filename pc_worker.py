@@ -141,6 +141,20 @@ def _apply_limits(env=None):
         env["VIGIL_TOURNEY_WORKERS"] = str(int(p["workers"]))
     if p.get("gpu_vram_fraction"):
         env["VIGIL_GPU_VRAM_FRAC"] = f"{p['gpu_vram_fraction']:g}"
+    # The portfolio pass's make-it matrix moves to a file past this many GB (dfs_tourney.makeit_file):
+    # "makeit_ram_gb" in vigil-pc.cfg, else a quarter of this PC's memory (8 GB on 32: today's standard
+    # build, ~2.3 GB, stays in memory), the file beside the worlds cache.
+    env.setdefault("VIGIL_SCRATCH_DIR", os.path.join(env.get("VIGIL_SIM_CACHE_DIR") or os.path.join(_HERE, "pc-simcache"),
+                                                     "scratch"))
+    mk = _cfg_value("makeit_ram_gb")
+    ram = _ram_gb()
+    try:
+        mk = float(mk) if mk is not None else (0.25 * ram if ram else None)
+    except (TypeError, ValueError):
+        notes.append(f"makeit_ram_gb {mk!r} is not a size in GB: the default used")
+        mk = None
+    if mk and mk > 0:
+        env["VIGIL_MAKEIT_RAM_GB"] = f"{mk:g}"
     return notes
 
 

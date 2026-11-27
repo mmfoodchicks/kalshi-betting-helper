@@ -39,13 +39,20 @@ def _get(url):
     return _json.loads(data)
 
 
-def _cached(key, ttl, fn):
+def _cached(key, ttl, fn, keep=None):
     hit = _cache.get(key)
     if hit and _time.time() - hit[0] < ttl:
         return hit[1]
     val = fn()
-    if val is not None:
-        _cache[key] = (_time.time(), val)
+    if val is not None and (keep is None or keep()):
+        now = _time.time()
+        # Expired entries go when a new one comes in (2026-11-26). They used to stay for the life of the
+        # process: the PC builds its boards inside the worker, so every pool a cycle simulated -- each
+        # showdown's, the classic's -- stayed in memory until the cycle ended, the classic's alone ~3.8 GB
+        # of Python floats at 180,000 worlds and ~10 GB at the deep profile's 550,000.
+        for k in [k for k, v in _cache.items() if now - v[0] >= v[2]]:
+            _cache.pop(k, None)
+        _cache[key] = (now, val, ttl)
     return val
 
 
@@ -932,7 +939,7 @@ def week_stamp(week, preseason=False, season=None):
 
 
 def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="legacy", seed=None, xside=0.0, discrete=False,
-                workers=1):
+                workers=1, compact=False):
     """Every DFS-relevant player for a week: skill players carry correlated point
     arrays from the game sims; DSTs carry independent Normal-sampled arrays from
     Sleeper's team-defense projection. {name: {pos, team, proj, ceiling, floor, arr}}.
@@ -958,13 +965,27 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
     the SAME simulated games (no Sleeper shift, no league-rate field goals).
     numpy and the deep tables required (the PC); `workers` processes play
     each game's worlds. A game whose teams have no deep profile falls back
-    to the legacy model for that game, ledgered NFLENG-fallback."""
+    to the legacy model for that game, ledgered NFLENG-fallback.
+
+    `compact` (the tournament boards and the evaluator, 2026-11-26): every
+    player's worlds come back as a float32 numpy array -- the row the
+    tournament's score matrix X holds, the same values as before -- never a
+    list of Python floats (~32 bytes a score against 4: a 550-player slate at
+    the deep profile's 550,000 worlds was ~10 GB of lists). While the pool
+    is built, the engine's and the constrained model's players are held as
+    int32 hundredths (pool_cache.squeeze, exact), and the disk cache files
+    the same matrix either way. With the disk cache on (the PC), a compact
+    pool is not also kept in this process's memory: the next call at the
+    same key reads the memory-mapped entry. Read `arr` with
+    pool_cache.has_array, never `if p.get("arr")`."""
     season = season or _season()      # a backtest names a past season
     want = frozenset(str(t).upper() for t in (teams or ()) if t)
     if model not in MODELS:
         raise ValueError(f"unknown simulator model {model!r}")
     if model in ("constrained", "engine") and preseason:
         raise ValueError(f"the {model} model has no preseason projections to reconcile")
+
+    on_disk = [False]                     # this call's pool came from, or went to, the disk cache
 
     def build():
         games = (preseason_games(str(season), week) if preseason
@@ -1024,11 +1045,12 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
                         games=games, profiles=eng_ctx.get("profiles"), drive=eng_ctx.get("drive"),
                         weight=eng_ctx.get("weight"), dst=dst_projections(str(season), week),
                         kickers=kicker_projections(str(season), week)))
-                    hit = pool_cache.load(pc_key)
+                    hit = pool_cache.load(pc_key, compact=compact)
                 except Exception as _e:
                     errlog.note("POOLCACHE-key", _e)
                     pc_key, hit = None, None
                 if hit is not None:
+                    on_disk[0] = True
                     cached_pool, cached_rep, _meta = hit
                     if cached_rep is not None:
                         engine_reports[(season, week, tuple(sorted(want)) or None, seed)] = cached_rep
@@ -1055,7 +1077,8 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
                                                        "legacy worlds for this game")
                 else:
                     for p in sim["players"]:
-                        p["arr"] = _np.round(p["arr"], 2).tolist()
+                        p["arr"] = _np.round(p["arr"], 2)
+                        p["arr"] = _squeeze(p["arr"]) if compact else p["arr"].tolist()
                     for t, a in sim["dst"].items():
                         eng_dst[t] = [round(float(x), 2) for x in a]
                     for t, a in sim["k"].items():
@@ -1071,7 +1094,8 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
                 sim = nfl_dfs_csim.simulate_game(g, n=n, rng=_np.random.default_rng(child), xside=xside)
                 side_rng = _rnd.Random(child) if seed is not None else _random
                 for p in sim["players"]:
-                    p["arr"] = _np.round(p["arr"], 2).tolist()
+                    p["arr"] = _np.round(p["arr"], 2)
+                    p["arr"] = _squeeze(p["arr"]) if compact else p["arr"].tolist()
                 sim["team_def"] = {t: {k: v.tolist() for k, v in d.items()} for t, d in sim["team_def"].items()}
             else:
                 sim = simulate_game(g, n=n, with_samples=True, preseason=preseason,
@@ -1215,14 +1239,28 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
             # reproducible, so its worlds are not filed as if they were
             if pc_key and pool and not eng_fallback:
                 import pool_cache
-                pool_cache.save(pc_key, pool, pc_call,
-                                engine_report=engine_reports[(season, week, tuple(sorted(want)) or None, seed)],
-                                snapshot=pc_snap)
+                on_disk[0] = pool_cache.save(pc_key, pool, pc_call,
+                                             engine_report=engine_reports[(season, week, tuple(sorted(want)) or None, seed)],
+                                             snapshot=pc_snap) is not None
             if pc_key:
                 _ckpt.games_clear(pc_key)       # the pool is filed (or a game fell back): the per-game files go
+        if compact and pool:
+            # filed (above) from the exact hundredths; handed over as the float32 rows of X
+            import pool_cache
+            for rec in pool.values():
+                if pool_cache.has_array(rec.get("arr")):
+                    rec["arr"] = pool_cache.as_float32(rec["arr"])
         return pool or None
-    return _cached(("nfl_pool", season, week, n, bool(preseason), tuple(sorted(want)) or None, model, seed, float(xside or 0.0), bool(discrete)),
-                   1800, build)
+    # A compact pool the disk cache holds (read from it, or filed by this call) is not also kept in this
+    # process: the next call at the same key reads the memory-mapped entry, the same worlds.
+    return _cached(("nfl_pool", season, week, n, bool(preseason), tuple(sorted(want)) or None, model, seed, float(xside or 0.0), bool(discrete))
+                   + (("compact",) if compact else ()), 1800, build, keep=lambda: not (compact and on_disk[0]))
+
+
+def _squeeze(a):
+    """A compact pool's in-build form of one player's worlds (pool_cache.squeeze)."""
+    import pool_cache
+    return pool_cache.squeeze(a)
 
 
 # ---- Week board (all games simmed) -----------------------------------------

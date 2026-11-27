@@ -971,11 +971,13 @@ def _pool_env_restore(old):
             os.environ[k] = v
 
 
-def _par_map(fn, jobs, workers, arrays, extra, progress=None):
+def _par_map(fn, jobs, workers, arrays, extra, progress=None, sink=None):
     """fn over jobs with `arrays` in shared memory and `extra` beside them:
     serial in-process for one worker (the same function, the arrays as they
     are), else a process pool. A pool that will not start is ledgered and the
-    whole map reruns serially."""
+    whole map reruns serially. `sink(i, result)`, when given, takes each
+    job's result as it arrives instead of a list of them all (the make-it
+    pass places its ranges and lets them go); the map then returns []."""
     if workers and workers > 1 and len(jobs) > 1:
         sh = None
         old = _pool_env_one_thread()
@@ -985,10 +987,13 @@ def _par_map(fn, jobs, workers, arrays, extra, progress=None):
             out = []
             with cf.ProcessPoolExecutor(max_workers=min(int(workers), len(jobs)),
                                         initializer=_par_init, initargs=(sh.spec, extra)) as ex:
-                for r in ex.map(fn, jobs):
-                    out.append(r)
+                for i, r in enumerate(ex.map(fn, jobs)):
+                    if sink is None:
+                        out.append(r)
+                    else:
+                        sink(i, r)
                     if progress:
-                        progress(len(out))
+                        progress(i + 1)
             return out
         except Exception as e:
             errlog.note("TOURN-pool", e)
@@ -1001,10 +1006,14 @@ def _par_map(fn, jobs, workers, arrays, extra, progress=None):
     _PAR.update(extra)
     try:
         out = []
-        for j in jobs:
-            out.append(fn(j))
+        for i, j in enumerate(jobs):
+            r = fn(j)
+            if sink is None:
+                out.append(r)
+            else:
+                sink(i, r)
             if progress:
-                progress(len(out))
+                progress(i + 1)
         return out
     finally:
         _PAR.clear()
@@ -1298,11 +1307,76 @@ def portfolio_vs_field(Wc, Wf, wf, X, grids, cand_idx, k, chunk=500, rank="top1"
     spec = _pass_checkpoint("makeit", None, jobs, N, 4 * len(grids) * len(cand_idx) * N, arrays, extra)
     if spec:
         extra["ckpt"] = spec
-    parts = _par_map(_make_it_range, jobs, w, arrays, extra)
-    P = np.concatenate(parts, axis=2) if parts else np.zeros((len(grids), len(cand_idx), 0), dtype=np.float32)
-    # `limits` (the owner's portfolio caps, dfs_portfolio.Limits) binds every contest's cover; each
-    # appends its own report, in contest order
-    return [greedy_cover(P[gi], k, limits=limits) for gi in range(len(grids))]
+    # The matrix is filled IN PLACE, range by range (2026-11-26): the ranges used to be collected and then
+    # concatenated, two copies of contests x candidates x worlds float32 at once -- 14 GB of the deep
+    # profile's peak at 3 contests, 1,200 candidates and 500,000 worlds. Past the memory budget
+    # (makeit_file) it lives in a file on the PC's disk that every range writes its own columns of and the
+    # cover reads in row blocks, so the matrix is never resident. Same floats either way, same cover.
+    shape = (len(grids), len(cand_idx), N)
+    path = makeit_file(4 * shape[0] * shape[1] * shape[2])
+    if path:
+        P = np.lib.format.open_memmap(path, mode="w+", dtype=np.float32, shape=shape)
+        extra = dict(extra, out_path=path)          # after the checkpoint's signature: a temp name is no input
+    else:
+        P = np.empty(shape, dtype=np.float32)
+
+    def sink(i, part):
+        if part is not None:
+            a, b, _c = jobs[i]
+            P[:, :, a:b] = part
+    try:
+        _par_map(_make_it_range, jobs, w, arrays, extra, sink=sink)
+        if path:
+            P.flush()
+        # `limits` (the owner's portfolio caps, dfs_portfolio.Limits) binds every contest's cover; each
+        # appends its own report, in contest order
+        return [greedy_cover(P[gi], k, limits=limits) for gi in range(len(grids))]
+    finally:
+        if path:
+            del P
+            _drop_file(path)
+
+
+# Above this many bytes the portfolio pass's make-it matrix is a file on disk, not memory (makeit_file).
+# 4 GB keeps today's standard build in memory (3 contests x 1,200 candidates x 160,000 worlds is 2.3 GB);
+# vigil-pc.cfg's "makeit_ram_gb" (VIGIL_MAKEIT_RAM_GB, set by pc_worker) moves it.
+MAKEIT_RAM_BYTES = 4 * 1024 ** 3
+
+
+def makeit_file(nbytes):
+    """A fresh path for a make-it matrix of `nbytes` when it is past the memory budget, else None. The
+    file goes in VIGIL_SCRATCH_DIR (the PC's pc-simcache/scratch) or the system's temp directory, and a
+    matrix left there by a build that died is removed after a day."""
+    import os
+    import tempfile
+    try:
+        cap = float(os.environ.get("VIGIL_MAKEIT_RAM_GB") or 0) * 1024 ** 3 or MAKEIT_RAM_BYTES
+    except ValueError:
+        cap = MAKEIT_RAM_BYTES
+    if nbytes <= cap:
+        return None
+    d = os.environ.get("VIGIL_SCRATCH_DIR") or tempfile.gettempdir()
+    try:
+        os.makedirs(d, exist_ok=True)
+        now = time.time()
+        for fn in os.listdir(d):
+            fp = os.path.join(d, fn)
+            if fn.startswith("makeit-") and fn.endswith(".npy") and now - os.path.getmtime(fp) > 86400:
+                _drop_file(fp)
+        return os.path.join(d, f"makeit-{os.getpid()}-{int(now * 1000)}.npy")
+    except OSError as e:
+        errlog.note("TOURN-makeit-file", e)
+        return None
+
+
+def _drop_file(path):
+    import gc
+    import os
+    gc.collect()                                     # Windows will not remove a file a live map still holds
+    try:
+        os.remove(path)
+    except OSError as e:
+        errlog.note("TOURN-makeit-file", e, path=path)
 
 
 def _make_it_range(job):
@@ -1317,7 +1391,7 @@ def _make_it_range(job):
         got = build_ckpt.range_load(ck, a, b, chunk)
         if got is not None and got["next"] >= b and "out" in got and got["out"].shape == out.shape \
                 and got["out"].dtype == out.dtype:
-            return got["out"]            # a finished range of the interrupted build, as it was computed
+            return _make_it_out(got["out"], a, b)   # a finished range of the interrupted build, as computed
     for start in range(a, b, chunk):
         Xc = np.ascontiguousarray(X[:, start:min(b, start + chunk)].T)
         Bf = _buckets(Xc @ WfT)
@@ -1328,7 +1402,20 @@ def _make_it_range(job):
                 out[gi, :, start - a + j] = tab[pos][Bk[j]]
     if ck:
         build_ckpt.range_save(ck, a, b, chunk, b, out=out)
-    return out
+    return _make_it_out(out, a, b)
+
+
+def _make_it_out(out, a, b):
+    """A range's columns: written straight into the pass's matrix file when it has one (a worker never
+    ships them back through the pool's pipe), else returned for the parent to place."""
+    path = _PAR.get("out_path")
+    if not path:
+        return out
+    M = np.lib.format.open_memmap(path, mode="r+")
+    M[:, :, a:b] = out
+    M.flush()
+    del M
+    return None
 
 
 def portfolio(W, X, f, grid, cand_idx, k, chunk=500, workers=1, limits=None):
@@ -1471,14 +1558,15 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     sd_discrete = nfl_dfs_sim.SD_DISCRETE if model == "legacy" else False
     log(f"[tourney] {slate.get('n_players')} players, {contest['name']}, week {week}: "
         f"simulating {n_sims:,} games of {' vs '.join(sorted(teams))} ({model})...")
+    # compact: each player's worlds as the float32 row X holds, never a list of floats (nfl_dfs_sim)
     pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason, teams=teams,
                                    discrete=sd_discrete, model=model, seed=seed,
-                                   workers=_workers(workers)) or {}
+                                   workers=_workers(workers), compact=True) or {}
     nidx, norm = nfl_dfs._norm_index(pool)
     excluded = []
     for e in ents:
         sim = nfl_dfs._pool_match(pool, e["name"], e["pos"], e.get("team"), nidx, norm)
-        if sim and sim.get("arr"):
+        if sim and _has_arr(sim):
             e["proj"], e["ceiling"], e["floor"], e["arr"] = (
                 round(sim["proj"], 1), sim["ceiling"], sim["floor"], sim["arr"])
         else:
@@ -3289,6 +3377,13 @@ def board_model(model=None, preseason=False):
     return model or BOARD_MODEL
 
 
+def _has_arr(sim):
+    """Whether a pool entry carries worlds -- a list, or a compact pool's float32 row (whose truth value
+    `if sim.get("arr")` cannot read)."""
+    a = sim.get("arr")
+    return a is not None and len(a) > 0
+
+
 def _workers(workers=None):
     """Processes to play an engine board's worlds on: every core the PC has."""
     import os
@@ -3394,8 +3489,10 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     # finished game and the London, Sunday- and Monday-night games included --
     # which is 40% more of the build's first stage for nothing on the board.
     slate_teams = {str(c.get("team") or "").upper() for c in csv_players if c.get("team")}
+    # compact: each player's worlds as the float32 row X holds, never a list of floats (nfl_dfs_sim;
+    # ~32 bytes a score against 4 -- ~10 GB of a 550-player slate at the deep profile's 550,000 worlds)
     pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason, model=model, seed=seed,
-                                   teams=slate_teams, workers=_workers(workers)) or {}
+                                   teams=slate_teams, workers=_workers(workers), compact=True) or {}
     if not pool:
         return _refuse(f"no week-{week} projections for this slate's teams yet")
     nidx, norm = nfl_dfs._norm_index(pool)
@@ -3405,7 +3502,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
         if pos not in _CL_POS:
             continue
         sim = nfl_dfs._pool_match(pool, c["name"], pos, c.get("team"), nidx, norm)
-        if not (sim and sim.get("arr")):
+        if not (sim and _has_arr(sim)):
             excluded.append({"name": c["name"], "pos": pos, "team": c.get("team"),
                              "why": "no projection this week"})
             continue
@@ -3469,6 +3566,12 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     if n_worlds:
         N = min(N, int(n_worlds))
     X = np.asarray([e["arr"][:N] for e in ents], dtype=np.float32)
+    # X holds every world from here: the pool's own rows are let go (nothing below reads `arr`), so the
+    # build carries one copy of the worlds, not two -- a compact pool the PC's disk cache holds is kept
+    # nowhere else in this process (nfl_dfs_sim.player_pool)
+    for e in ents:
+        e.pop("arr", None)
+    del pool, sim, nidx, norm
     sal = np.asarray([e["salary"] for e in ents])
     pos = [e["pos"] for e in ents]
     fo = np.asarray([bool(e.get("_field_only")) for e in ents])

@@ -195,7 +195,8 @@ def _match_worlds(meta, pool):
     rows, missing = [], []
     for p in meta["players"]:
         sim = nfl_dfs._pool_match(pool, p["name"], p["pos"], p.get("team"), nidx, norm)
-        if not (sim and sim.get("arr")):
+        a = sim.get("arr") if sim else None
+        if a is None or not len(a):             # a list, or a compact pool's float32 row
             missing.append(p["name"])
             rows.append(None)
         else:
@@ -342,7 +343,7 @@ def prepare(path, meta, n=FINAL_N, workers=None, log=print, pool=None):
         t0 = time.time()
         pool = nfl_dfs_sim.player_pool(meta["week"], n=int(n), preseason=meta["preseason"], model=meta["model"],
                                        seed=final_seed(meta["id"]), teams=set(meta["teams"]),
-                                       workers=workers or dfs_tourney._workers(None)) or {}
+                                       workers=workers or dfs_tourney._workers(None), compact=True) or {}
         log(f"[eval] {meta['id']}: {n:,} final worlds simulated ({time.time() - t0:.0f}s)")
     rows, missing = _match_worlds(meta, pool)
     W = min((len(r) for r in rows if r is not None), default=0)

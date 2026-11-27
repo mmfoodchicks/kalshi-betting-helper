@@ -140,13 +140,81 @@ def _sha_file(path, block=1 << 24):
     return h.hexdigest()
 
 
+class Hundredths:
+    """One player's worlds held as int32 hundredths while a COMPACT pool is being built
+    (nfl_dfs_sim.player_pool(compact=True)): 4 bytes a score against a Python float's ~32 in the list the
+    pool used to carry. Made only by `squeeze`, and only when every value round-trips exactly, so
+    `values()` is the float64 array it was made from, bit for bit."""
+    __slots__ = ("k",)
+
+    def __init__(self, k):
+        self.k = k
+
+    def __len__(self):
+        return len(self.k)
+
+    def values(self):
+        return self.k / 100.0
+
+
+def squeeze(a):
+    """A float64 array of scores rounded to 2 dp -> Hundredths when it round-trips exactly (encode's own
+    test), else the float64 array as it is."""
+    a = np.asarray(a, dtype=np.float64)
+    k = np.rint(a * 100.0)
+    if np.all(np.abs(k) < 2 ** 31 - 1) and np.array_equal(k / 100.0, a):
+        return Hundredths(k.astype(np.int32))
+    return a
+
+
+def as_float32(a):
+    """A pool array of any form (a list of floats, a float64 array, Hundredths) as the float32 row the
+    tournament's score matrix X holds -- the same values np.asarray(list, dtype=float32) gives."""
+    if isinstance(a, Hundredths):
+        return a.values().astype(np.float32)
+    return np.asarray(a, dtype=np.float32)
+
+
+def has_array(a):
+    """Whether a pool entry carries worlds: a non-empty list, array or Hundredths (an array's truth value
+    is ambiguous, so `if p.get("arr")` cannot read a compact pool)."""
+    return a is not None and len(a) > 0
+
+
 def encode(arrs):
-    """(matrix, dtype, scale) for a list of equal-length score lists: int32
-    hundredths when every value round-trips exactly, else float64."""
-    m = np.asarray(arrs, dtype=np.float64)
-    k = np.rint(m * 100.0)
-    if np.all(np.abs(k) < 2 ** 31 - 1) and np.array_equal(k / 100.0, m):
-        return k.astype(np.int32), "int32", 100
+    """(matrix, dtype, scale) for equal-length score rows (lists, float64 arrays or Hundredths): int32
+    hundredths when every value round-trips exactly, else float64.
+
+    Row by row (2026-11-26): the old form built the whole float64 matrix, its rint and its k/100 at once --
+    three full float64 copies of every score beside the pool, ~7 GB of a deep build's peak -- for the
+    same answer. The result is the old function's exactly: a row that does not round-trip sends every
+    row to float64, as the whole-matrix test did."""
+    rows = list(arrs)
+    if not rows:
+        return np.asarray([], dtype=np.float64).astype(np.int32), "int32", 100
+    n = len(rows[0])
+    mat = np.empty((len(rows), n), dtype=np.int32)
+    exact = True
+    for i, r in enumerate(rows):
+        if isinstance(r, Hundredths):
+            if len(r) != n:
+                raise ValueError("score rows of unequal length")
+            mat[i] = r.k
+            continue
+        a = np.asarray(r, dtype=np.float64)
+        if a.shape != (n,):
+            raise ValueError("score rows of unequal length")
+        k = np.rint(a * 100.0)
+        if not (np.all(np.abs(k) < 2 ** 31 - 1) and np.array_equal(k / 100.0, a)):
+            exact = False
+            break
+        mat[i] = k
+    if exact:
+        return mat, "int32", 100
+    del mat
+    m = np.empty((len(rows), n), dtype=np.float64)
+    for i, r in enumerate(rows):
+        m[i] = r.values() if isinstance(r, Hundredths) else np.asarray(r, dtype=np.float64)
     return m, "float64", 1
 
 
@@ -157,6 +225,14 @@ def decode_row(row, dtype, scale):
     return np.asarray(row, dtype=np.float64).tolist()
 
 
+def decode_f32(row, dtype, scale):
+    """One player's array as a compact pool carries it: the float32 row of X, the same values as
+    np.asarray(decode_row(...), dtype=float32)."""
+    if dtype == "int32":
+        return (np.asarray(row, dtype=np.float64) / float(scale)).astype(np.float32)
+    return np.asarray(row, dtype=np.float64).astype(np.float32)
+
+
 def save(k, pool, call, engine_report=None, snapshot=None):
     """Write the pool under key `k`, atomically; prune past the bounds.
     Returns the entry's size in bytes, or None when nothing was written (no
@@ -164,7 +240,7 @@ def save(k, pool, call, engine_report=None, snapshot=None):
     d = cache_dir()
     if not d or np is None or not pool:
         return None
-    names = [nm for nm, p in pool.items() if p.get("arr")]
+    names = [nm for nm, p in pool.items() if has_array(p.get("arr"))]
     lens = {len(pool[nm]["arr"]) for nm in names}
     if len(lens) != 1:
         errlog.note("POOLCACHE-shape", msg=f"unequal array lengths {sorted(lens)[:5]}: not cached")
@@ -183,7 +259,7 @@ def save(k, pool, call, engine_report=None, snapshot=None):
                 "code_sig": code_sig(), "dtype": dtype, "scale": scale, "shape": list(mat.shape),
                 "sha256": _sha_file(apath), "engine_report": engine_report,
                 "players": [{"name": nm, **{f: v for f, v in pool[nm].items() if f != "arr"}} for nm in names],
-                "no_array": {nm: dict(p) for nm, p in pool.items() if not p.get("arr")},   # as it was, arr and all
+                "no_array": {nm: dict(p) for nm, p in pool.items() if not has_array(p.get("arr"))},   # as it was
                 "snapshot": snapshot}
         with open(os.path.join(tmp, "manifest.json"), "w") as f:
             f.write(_canon(meta))
@@ -196,9 +272,11 @@ def save(k, pool, call, engine_report=None, snapshot=None):
     return entry_bytes(final)
 
 
-def load(k):
+def load(k, compact=False):
     """(pool, engine_report, manifest) for key `k`, or None on a miss or a
-    failed integrity check (the entry is then removed)."""
+    failed integrity check (the entry is then removed). `compact`: each
+    player's worlds as the float32 row the tournament reads (decode_f32),
+    straight off the memory-mapped matrix, never a list of floats."""
     d = cache_dir()
     if not d or np is None:
         return None
@@ -219,7 +297,7 @@ def load(k):
         pool = {}
         for i, p in enumerate(meta["players"]):
             rec = {f: v for f, v in p.items() if f != "name"}
-            rec["arr"] = decode_row(mat[i], meta["dtype"], meta["scale"])
+            rec["arr"] = (decode_f32 if compact else decode_row)(mat[i], meta["dtype"], meta["scale"])
             pool[p["name"]] = rec
         for nm, rec in (meta.get("no_array") or {}).items():
             pool[nm] = dict(rec)
