@@ -175,6 +175,45 @@ def run(ck):
        and "nfl_season._PTS_PER_WIN" in va and "market_pts_per_win" not in va,
        "a pinned file or a research harness changed")
 
+    # The flip against the worlds cache and the frozen inputs of a resumable build (build_ckpt, 2026-11-27):
+    # the pool cache's code signature over a tree holding the PATCHED nfl_deep_data.py must differ from
+    # today's. A pinned build recomputes its worlds key from its frozen inputs under the current code and
+    # raises PinMiss (a fresh build) when it differs, so no resumed build carries version-1 profiles past the
+    # flip.
+    import shutil
+    import tempfile
+    import nfl_dfs_sim
+    tmp = tempfile.mkdtemp(prefix="deep_anchor_sig_")
+    sv_here, sv_sig = pool_cache._HERE, dict(pool_cache._code_sig)
+    try:
+        for rel in pool_cache._CODE_FILES:
+            dst = os.path.join(tmp, rel)
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.copy(os.path.join(_ROOT, rel), dst)
+        with open(os.path.join(tmp, "nfl_deep_data.py"), "w") as fh:
+            fh.write(Pt.patched_source())
+        call = {"season": "2026", "week": 13, "n": 1000}
+        pool_cache._HERE = _ROOT
+        pool_cache._code_sig.clear()
+        before, k_before = pool_cache.code_sig(), pool_cache.key(call, "x")
+        pool_cache._HERE = tmp
+        pool_cache._code_sig.clear()
+        after, k_after = pool_cache.code_sig(), pool_cache.key(call, "x")
+    finally:
+        pool_cache._HERE = sv_here
+        pool_cache._code_sig.clear()
+        pool_cache._code_sig.update(sv_sig)
+        shutil.rmtree(tmp, ignore_errors=True)
+    src = inspect.getsource(nfl_dfs_sim.player_pool)
+    ck("DA7 the flip invalidates the worlds cache AND a resumable build's frozen inputs: with the patched "
+       "nfl_deep_data.py in the tree the pool cache's code signature, hence every worlds key, changes; a pinned "
+       "build recomputes its key from its frozen inputs under the current code and raises PinMiss (restarts "
+       "fresh) when it differs",
+       before != after and k_before != k_after
+       and 'if pinned and pc_key != pin["worlds_key"]' in src and "raise PinMiss" in src
+       and "pool_cache.key(pc_call, pool_cache.inputs_hash(" in src,
+       f"{before[:12]} {after[:12]}")
+
     ds_path = os.path.join(_ROOT, "research", "data", "deep_anchor_downstream.json")
     ds = json.load(open(ds_path)) if os.path.exists(ds_path) else {}
     wk = ds.get("weeks") or {}

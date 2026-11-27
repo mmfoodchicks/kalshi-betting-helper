@@ -74,6 +74,12 @@ read. Its sha256 is pinned by NC0, NR0, NQ0 and N4-0 (`tests/guards_auto_nfl_coa
 - **The pool cache.** `nfl_deep_data.py` is in `pool_cache._CODE_FILES`, so the flip changes the code
   signature. The patched anchor block's stamp also changes the inputs hash. Either way no cached version-1 world
   is reused (DA4).
+- **A resumable build's frozen inputs** (build_ckpt, merged the same day). A resumed build recomputes its worlds
+  key from its frozen inputs under the current code. That key carries the pool cache's code signature, so after
+  the flip it differs, and the build raises `PinMiss` and starts fresh rather than playing frozen version-1
+  profiles. DA7 builds the patched tree's signature to check this. The request key's own code files
+  (`build_ckpt._INPUT_CODE_FILES`) do not include `nfl_deep_data.py`, and do not need to: the worlds key catches
+  the flip first.
 - **The futures board.** It shows the last nightly payload until the next run, under 24 hours. The checklist
   queues that rerun.
 
