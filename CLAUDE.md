@@ -1150,7 +1150,7 @@ so a self-pulling batch file corrupts itself); all logic lives in Python.
     best-lineup solves are kept whole; the scoring pass keeps each world range's running sums
     (written by the range's own worker every 60 s, resumed on the same chunk boundaries, so the
     sums are the uninterrupted run's bit for bit); the portfolio pass keeps each finished range of
-    its make-it matrix when the whole matrix fits the budget.
+    its make-it matrix (packed rows since 2026-11-27) when the old dense matrix would fit the budget.
   - **Safety**: every file name carries a sha256 of every input of its pass (matrices byte for
     byte, weights, grids, ranges, chunking, `dfs_tourney.py`'s source), so a changed input is a
     different file; every file is checked against its own sha256 and a damaged one is recomputed
@@ -1192,8 +1192,8 @@ so a self-pulling batch file corrupts itself); all logic lives in Python.
     unchanged; 0.14 GB and a 0.65 GB peak at the same point), a compact pool the PC's disk cache holds is
     not kept in memory too, `_cached` drops expired pools (it kept every pool a PC cycle built),
     `pool_cache.encode` goes row by row, the classic build lets the pool go once X holds it, and the
-    make-it matrix is filled in place (no concatenation) and past `VIGIL_MAKEIT_RAM_GB` (a quarter of RAM,
-    pc_worker) is a file in `pc-simcache/scratch`. Every one leaves a board exactly as it was
+    make-it matrix is packed rows built range by range (below) and past `VIGIL_MAKEIT_RAM_GB` (a quarter of
+    RAM, pc_worker) goes to files in `pc-simcache/scratch` (`memory_gb` still counts it dense: conservative). Every one leaves a board exactly as it was
     (`tests/guards_auto_memory.py`, MEM1-6). `memory_gb` follows what is held: deep ~14 GB and maximum
     ~13 GB fit a 32 GB PC; research (~28 GB, three copies of a 3M-lineup field matrix) does not -- that
     matrix is the next wall. They are research targets -- nothing has measured a gain past 160,000
@@ -1206,6 +1206,38 @@ so a self-pulling batch file corrupts itself); all logic lives in Python.
     when its whole budget ends 3 h before any slate and outside the Saturday window, after the cycle's
     syncs, its process tree stopped at the cap.
   - Generation, ranking and final worlds stay disjoint (`world_split`, the evaluator's own pool).
+- **The portfolio pass, exact and packed** (2026-11-27; `dfs_tourney.portfolio_vs_field`, both formats -- the
+  showdown's `portfolio` is the same pass on its weighted universe; guards `tests/guards_auto_portfolio_speed.py`,
+  PS1-PS6, against the old pass and cover FROZEN verbatim in that file). Every portfolio, its order and its
+  coverage figures are the old pass's bit for bit, at any worker count, with or without the owner's caps,
+  checkpointed or not. Three exact changes:
+  - **The cover** (`greedy_cover`, `_CoverStep`): the old loop summed every candidate over every world at
+    every step. Now each row's gain is screened off its nonzero worlds (`PackedRows.screen`), a row is
+    re-screened only while its bound from an earlier step still reaches the leader (gains only fall: a lazy
+    greedy), and the rows the float64 error bound cannot separate (|numpy's sum - any other order| <=
+    4 (N + 2 parts + 8) u x the sum) are summed exactly as the old loop sums them, its first maximum taken. Measured
+    10.8-32 s -> 0.1-0.3 s (~100x). Packed bit rows with a popcount were considered and NOT used: a tenth to a
+    quarter of a top-1% row's nonzero entries are fractions, and float64 sums of ones and fractions depend
+    on the order, so a popcount cannot reproduce numpy's gain; the stale-gain bound is tighter than a count.
+  - **The matrix is packed rows** (`PackedRows`: per range, each candidate's nonzero worlds and float32
+    values): 3.2% of the synthetic main slate's matrix is nonzero (94% exact 0 on the real 832,342-entry
+    slate, section O), so 824 MB -> 53 MB at 60,000 worlds; the deep profile's 7.2 GB is a few hundred MB.
+    Checkpoint files hold the packed rows (`"format": "packed-rows-v1"` in the pass signature).
+  - **The per-world work** (`_make_it_world`): each contest's float32 value is constant from grid index
+    i_sat on (top-1%: the mass above us past F_cut 1.1-1.3% on 100k-832k-entry contests, 3% on 5,000), so
+    only the field's top matters: lineups at or above a score that a 1,024-lineup sample (weight-
+    proportional on the showdown) puts at 3 x F_cut are bucketed, their buckets' weights and running sums are
+    the old doubles exactly, and every lower candidate's index is >= i_sat once that sum passes F_cut plus a
+    1e-9 margin; a region the sample left short is recounted over the whole field. The candidates' indices
+    are read at their own buckets (the old pass searched 40,001). Measured (hp_memory's synthetic slate, a
+    shared 4-core box under load): make-it 50-56 s -> 28 s (20,000 worlds, 100,000 field), 347 s -> 173 s
+    and 428 s -> 170 s on 4 workers (60,000 worlds, 300,000 field), 163 s -> 86 s on a showdown-shaped
+    weighted universe (15,000 worlds, 400,000 lineups); whole pass 1.6-2.7x. What is left is
+    the field's score product (`Xc @ WfT`, unchanged so every bucket stays the old one) and a compare over
+    the field a world. Not done: a GPU path for the make-it products (the owner: exact CPU first), and the
+    same restricted per-world read in the SCORING pass (`G[iF][bj]` gathers 40,001 x 6 x contests a world
+    there too) -- that edits `score_path_sig`'s functions, so the PC's GPU validation would wait for a
+    new real-slate comparison.
 
 ## Hard-won gotchas
 

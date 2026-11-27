@@ -282,13 +282,19 @@ def _pass_checks(ck, np, BC, tmp):
             stopped_p = True
         finally:
             BC.range_save = real
-        realw, counted, nwp = _count_worlds(T)
-        T._world_tables = counted
+        # the portfolio pass's worlds are _make_it_world's since 2026-11-27 (packed rows; it reads the field's top
+        # alone and never calls _world_tables)
+        realw, nwp = T._make_it_world, [0]
+
+        def counted_p(*a, **kw):
+            nwp[0] += 1
+            return realw(*a, **kw)
+        T._make_it_world = counted_p
         try:
             T._CKPT[0] = BC.open_build("guard", "makeit")
             pres = T.portfolio_vs_field(Wc, Wf, wf, X, grids, cand, 4, chunk=16)
         finally:
-            T._world_tables = realw
+            T._make_it_world = realw
             T._CKPT[0] = None
         os.environ["VIGIL_CKPT_GB"] = "0.000001"       # ~1 KB: the make-it matrix cannot fit
         try:
@@ -392,11 +398,17 @@ def _build_checks(ck, np, BC, tmp):
         opt_first = n_opt[0]
         key = T._CKPT[0].key if T._CKPT[0] is not None else None
         realw, counted, nw = _count_worlds(T)
-        T._world_tables = counted
+        # the scoring pass's worlds are _world_tables', the portfolio pass's _make_it_world's (since 2026-11-27)
+        realm = T._make_it_world
+
+        def counted_m(*a, **k):
+            nw[0] += 1
+            return realm(*a, **k)
+        T._world_tables, T._make_it_world = counted, counted_m
         try:
             resumed = T.build_nfl_classic(999, **kw)
         finally:
-            T._world_tables = realw
+            T._world_tables, T._make_it_world = realw, realm
         opt_resumed = n_opt[0] - opt_first
         stamp = (resumed or {}).get("checkpoint") or {}
         ent = int(json.loads(BC.read_file(os.path.join(BC.root(), "builds", str(key), "rng.json")).decode())["entropy"])

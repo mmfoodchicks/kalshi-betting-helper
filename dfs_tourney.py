@@ -1408,8 +1408,62 @@ def greedy_cover(P, k, limits=None):
     lowest-index tie-break) is taken; with nothing feasible left the cover
     stops short of k and its report says which caps refused the rest
     (limits.reports, one per call). Filtering the uncapped cover afterwards
-    would keep entries chosen for worlds a dropped entry was covering. With
-    limits None this is the loop it always was, line for line."""
+    would keep entries chosen for worlds a dropped entry was covering.
+
+    How it is computed (2026-11-27; the owner: "portfolio acceleration", exact methods only): `P` may be the
+    dense matrix or the pass's PackedRows. Every step's pick is the one the old loop took -- numpy's float64
+    row sum of max(0, P - covered), its first maximum -- bit for bit (tests/guards_auto_portfolio_speed.py
+    holds the old loop verbatim and compares). The old loop summed every candidate over every world at every
+    step; this one (_CoverStep) screens each row's gain off its nonzero worlds alone (94% of a real make-it
+    matrix is exactly 0 -- section O of the audit), proves which rows could still be the maximum with the
+    float64 error bound any summation order of the same terms obeys, re-screens a row only when its bound
+    from an earlier step still reaches the leader (the gains only fall as the cover grows: a lazy greedy), and
+    sums the few rows left exactly as the old loop did to take the first maximum among them. A matrix holding
+    a non-finite value goes through the old loop itself."""
+    R = P if isinstance(P, PackedRows) else None
+    if R is None:
+        P = np.asarray(P)
+        if P.size and not bool(np.isfinite(P).all()):
+            return _greedy_cover_dense(P, k, limits)
+        R = PackedRows.from_dense(P)
+    elif not R.finite:
+        return _greedy_cover_dense(R.dense(np.arange(R.shape[0])), k, limits)
+    K, N = R.shape
+    if limits is not None:
+        limits.reset(k)
+    if not K or not N:
+        if limits is not None:
+            limits.finish(k, [], 1 if k else None)
+        return [], []
+    chosen = []
+    cov = np.zeros(N, dtype=np.float64)
+    p_any = []
+    stop = None
+    live = np.ones(K, dtype=bool)
+    bound = np.full(K, np.inf)                 # each row's latest screened gain: an upper bound from then on
+    for _ in range(min(k, K)):
+        step = _CoverStep(R, cov, bound)
+        if limits is not None:
+            free = step.best(live)
+            j = step.best(live & ~np.asarray(limits.blocked(len(chosen) + 1), dtype=bool))
+            if j is None:                      # every candidate left breaks a cap
+                stop = len(chosen) + 1
+                break
+            limits.take(j, changed=j != free)
+        else:
+            j = step.best(live)
+        chosen.append(j)
+        live[j] = False
+        cov = np.maximum(cov, R.dense([j])[0])
+        p_any.append(float(cov.mean()))
+    if limits is not None:
+        limits.finish(k, chosen, stop)
+    return chosen, p_any
+
+
+def _greedy_cover_dense(P, k, limits=None):
+    """greedy_cover's old loop, line for line: the path for a matrix holding a non-finite value (which no
+    make-it matrix does -- they are probabilities), where the screening's error bound means nothing."""
     P = np.asarray(P)
     K, N = P.shape
     if limits is not None:
@@ -1450,6 +1504,129 @@ def greedy_cover(P, k, limits=None):
     return chosen, p_any
 
 
+class PackedRows:
+    """A (candidates, worlds) make-it matrix held as packed rows: per world range ("part"), each candidate's
+    nonzero worlds in order (int32 world numbers) and their values (the matrix's own dtype, float32 off the
+    portfolio pass), CSR-style (`indptr`, K + 1). A world a row does not list is 0. On a real slate 94% of the
+    matrix is exactly 0 (section O of the audit: the board's top-1% column), so the deep profile's 3 x 1,200 x
+    500,000 float32 matrix (7.2 GB) is a few hundred MB here, and the cover reads only what is there."""
+
+    def __init__(self, K, N, parts):
+        self.shape = (int(K), int(N))
+        self.parts = [(np.asarray(ip, dtype=np.int64), cols, vals) for ip, cols, vals in parts]
+        self.finite = all(bool(np.isfinite(v).all()) for _ip, _c, v in self.parts)
+
+    @classmethod
+    def from_dense(cls, P):
+        K, N = P.shape
+        r, c = np.nonzero(P)
+        return cls(K, N, [(_indptr(r, K), c.astype(np.int32), np.ascontiguousarray(P[r, c]))])
+
+    @property
+    def nbytes(self):
+        return int(sum(ip.nbytes + c.nbytes + v.nbytes for ip, c, v in self.parts))
+
+    def _entries(self, ip, rows):
+        """(positions of `rows`' entries in a part's arrays, row by row; their counts)."""
+        st = ip[rows]
+        ln = ip[rows + 1] - st
+        tot = int(ln.sum())
+        return (np.repeat(st - (np.cumsum(ln) - ln), ln) + np.arange(tot, dtype=np.int64)), ln
+
+    def screen(self, rows, cov):
+        """sum_w max(0, P[r, w] - cov_w) over each row's listed worlds, for `rows` (ascending) -- the same float64
+        terms as the dense sum (a world not listed adds an exact 0), added in another order."""
+        rows = np.asarray(rows, dtype=np.int64)
+        out = np.zeros(len(rows), dtype=np.float64)
+        every = len(rows) == self.shape[0]
+        for ip, cols, vals in self.parts:
+            if every:
+                cs, vs, ln = cols, vals, np.diff(ip)
+            else:
+                pos, ln = self._entries(ip, rows)
+                cs, vs = cols[pos], vals[pos]
+            if not len(cs):
+                continue
+            t = np.maximum(vs.astype(np.float64) - cov[cs], 0.0)
+            has = ln > 0
+            out[has] += np.add.reduceat(t, (np.cumsum(ln) - ln)[has])
+        return out
+
+    def dense(self, rows):
+        """The float64 rows themselves, (len(rows), N): 0 wherever a row lists nothing."""
+        rows = np.asarray(rows, dtype=np.int64)
+        D = np.zeros((len(rows), self.shape[1]), dtype=np.float64)
+        for ip, cols, vals in self.parts:
+            pos, ln = self._entries(ip, rows)
+            if len(pos):
+                D[np.repeat(np.arange(len(rows)), ln), cols[pos]] = vals[pos]
+        return D
+
+    def exact(self, rows, cov):
+        """The old loop's own gains for `rows`: numpy's float64 row sums of max(0, P - cov), in its row blocks."""
+        rows = np.asarray(rows, dtype=np.int64)
+        out = np.empty(len(rows), dtype=np.float64)
+        at_once = max(1, int(4_000_000 // max(self.shape[1], 1)))
+        for a in range(0, len(rows), at_once):
+            blk = self.dense(rows[a:a + at_once])
+            out[a:a + at_once] = np.maximum(blk - cov[None, :], 0.0).sum(axis=1)
+        return out
+
+
+def _indptr(r, K):
+    return np.concatenate([[0], np.cumsum(np.bincount(r, minlength=K))]).astype(np.int64)
+
+
+_COVER_BATCH = 64                    # rows re-screened at a time once the first step has screened them all
+
+
+class _CoverStep:
+    """One greedy step's argmax, the old loop's exactly, without summing every row.
+
+    For a row, let G be the old loop's gain (numpy's float64 sum over all N worlds), S the screened sum (the same
+    float64 terms, only the nonzero ones, in another order) and T the exact real sum of those terms. Any order of
+    adding n nonnegative floats is within gamma_n = n u / (1 - n u) of T (u = 2^-53; Higham, Accuracy and
+    Stability, 4.2), so |G - S| <= TOL x S with TOL = 4 (N + 8) u. The terms only fall as the cover grows
+    (max(0, P - cov) with cov rising), so T does too, and a row screened at an earlier step is still bounded by
+    S_then x (1 + TOL). best(mask) screens rows, strongest bound first, until the best proven floor
+    L = max S (1 - TOL) beats every unscreened row's bound; the rows whose ceiling still reaches L are summed
+    exactly as the old loop sums them and the first maximum among them is taken. Every row that could equal
+    or beat the old loop's choice is in that window, so the choice is the old loop's, ties included."""
+
+    def __init__(self, R, cov, bound):
+        self.R, self.cov, self.bound = R, cov, bound
+        self.fresh = np.zeros(R.shape[0], dtype=bool)
+        self.tol = 4.0 * (R.shape[1] + 2 * len(R.parts) + 8) * 2.0 ** -53
+        self.exact = {}
+
+    def best(self, mask):
+        rows = np.flatnonzero(mask)
+        if not len(rows):
+            return None
+        S, fresh, tol = self.bound, self.fresh, self.tol
+        while True:
+            done = rows[fresh[rows]]
+            floor = float((S[done] * (1.0 - tol)).max()) if len(done) else -np.inf
+            left = rows[~fresh[rows]]
+            need = left[S[left] * (1.0 + tol) >= floor]
+            if not len(need):
+                break
+            unbounded = need[np.isinf(S[need])]
+            if len(unbounded):
+                need = unbounded                # never screened (the first step): all of them at once
+            elif len(need) > _COVER_BATCH:
+                need = np.sort(need[np.argsort(-S[need], kind="stable")[:_COVER_BATCH]])
+            S[need] = self.R.screen(need, self.cov)
+            fresh[need] = True
+        win = done[S[done] * (1.0 + tol) >= floor]
+        # a screened 0 is an exact 0 (no term is positive), so those rows need no dense sum
+        todo = [int(r) for r in win if int(r) not in self.exact and S[r] > 0.0]
+        if todo:
+            self.exact.update(zip(todo, self.R.exact(todo, self.cov).tolist()))
+        g = np.asarray([self.exact.get(int(r), 0.0) for r in win], dtype=np.float64)
+        return int(win[int(np.argmax(g))])
+
+
 def portfolio_vs_field(Wc, Wf, wf, X, grids, cand_idx, k, chunk=500, rank="top1", workers=1, limits=None):
     """Greedy cover over candidate lineups, per contest: each pick adds the
     most `rank` probability (top1 or top01) in the worlds the picks so far
@@ -1476,62 +1653,67 @@ def portfolio_vs_field(Wc, Wf, wf, X, grids, cand_idx, k, chunk=500, rank="top1"
     public-field draws when a handful of them are our own, known, lower
     lineups; at twenty entries in an 832,342-entry contest that is 2.4e-5 of
     the field and below the grid's own resolution, but it is not nothing in a
-    small contest, so `entries` is reported beside the numbers."""
+    small contest, so `entries` is reported beside the numbers.
+
+    Both formats come through here (the showdown's `portfolio` with its weighted universe as the field), and
+    every change of 2026-11-27 holds for both: the per-world work reads the field only where a make-it value
+    can differ from the contest's floor (_make_it_world), the matrix is packed rows, the cover is the exact
+    lazy one -- the portfolio, its every figure and its order the old pass's bit for bit
+    (tests/guards_auto_portfolio_speed.py)."""
     if not len(cand_idx):
         return [([], []) for _ in grids]
     K, M, N = Wc.shape[0], Wf.shape[0], X.shape[1]
     w = max(1, int(workers or 1))
     ch = chunk_for(max(K, M) * w, chunk)
-    # per-world make-it probability for every candidate and contest,
-    # (contests, K', N) float32, built once; the field pass is repeated (a
-    # second matmul and bucket count) rather than kept from the scoring
-    # pass: 60,000 worlds x 4,001 buckets would be a gigabyte of tables.
-    # World ranges fill their own columns (_make_it_range), on `workers`
-    # processes like run_vs_field.
+    # per-world make-it probability for every candidate and contest, built
+    # once as packed rows; the field pass is repeated (a second matmul) rather
+    # than kept from the scoring pass: 60,000 worlds x 4,001 buckets would be
+    # a gigabyte of tables. World ranges build their own rows (_make_it_rows),
+    # on `workers` processes like run_vs_field.
     arrays = {"WfT": np.ascontiguousarray(Wf.T, dtype=np.float32),
               "WkT": np.ascontiguousarray(Wc[cand_idx].T, dtype=np.float32),
               "X": np.ascontiguousarray(X, dtype=np.float32), "wf": np.asarray(wf, dtype=np.float64)}
-    extra = {"F_grid": grids[0]["F"], "tabs": [g[rank] for g in grids]}
+    tabs32 = np.stack([np.asarray(g[rank]).astype(np.float32) for g in grids])
+    extra = {"F_grid": grids[0]["F"], "tabs32": tabs32, "region": _make_it_region(tabs32, grids[0]["F"], arrays["wf"]),
+             "format": "packed-rows-v1"}
     jobs = _range_jobs(N, w, ch)
-    # each finished range's matrix is kept (build_ckpt) when the whole pass's
-    # fits the checkpoint budget: contests x candidates x worlds float32. The
-    # build's checkpoint comes from _CKPT, never an argument: the signature
-    # above is pinned by the S4 guard (the rank default) and stays as it was.
+    # each finished range's rows are kept (build_ckpt) when the old dense matrix (contests x candidates x worlds
+    # float32, the same test as before) fits the checkpoint budget -- the packed rows are far smaller. The
+    # build's checkpoint comes from _CKPT, never an argument: the signature above is pinned by the S4 guard (the
+    # rank default) and stays as it was. "format" in the signature: the files hold packed rows, never the old
+    # matrix ranges.
     spec = _pass_checkpoint("makeit", None, jobs, N, 4 * len(grids) * len(cand_idx) * N, arrays, extra)
     if spec:
         extra["ckpt"] = spec
-    # The matrix is filled IN PLACE, range by range (2026-11-26): the ranges used to be collected and then
-    # concatenated, two copies of contests x candidates x worlds float32 at once -- 14 GB of the deep
-    # profile's peak at 3 contests, 1,200 candidates and 500,000 worlds. Past the memory budget
-    # (makeit_file) it lives in a file on the PC's disk that every range writes its own columns of and the
-    # cover reads in row blocks, so the matrix is never resident. Same floats either way, same cover.
-    shape = (len(grids), len(cand_idx), N)
-    path = makeit_file(4 * shape[0] * shape[1] * shape[2])
-    if path:
-        P = np.lib.format.open_memmap(path, mode="w+", dtype=np.float32, shape=shape)
-        extra = dict(extra, out_path=path)          # after the checkpoint's signature: a temp name is no input
-    else:
-        P = np.empty(shape, dtype=np.float32)
+    # The rows arrive range by range and are kept as they come (no dense matrix is ever built). Past the memory
+    # budget (makeit_file) a range's arrays go to files on the PC's disk and are mapped back read-only.
+    parts, held, files = [None] * len(jobs), [0], []
 
     def sink(i, part):
-        if part is not None:
-            a, b, _c = jobs[i]
-            P[:, :, a:b] = part
-    try:
-        _par_map(_make_it_range, jobs, w, arrays, extra, sink=sink)
+        nb = sum(int(v.nbytes) for v in part.values())
+        path = makeit_file(held[0] + nb)
         if path:
-            P.flush()
+            part = _spill(part, path, i, files)
+        else:
+            held[0] += nb
+        parts[i] = part
+    try:
+        _par_map(_make_it_rows, jobs, w, arrays, extra, sink=sink)
+        P = [PackedRows(len(cand_idx), N, [(p[f"ip{gi}"], p[f"c{gi}"], p[f"v{gi}"]) for p in parts])
+             for gi in range(len(grids))]
+        del parts[:]
         # `limits` (the owner's portfolio caps, dfs_portfolio.Limits) binds every contest's cover; each
         # appends its own report, in contest order
         return [greedy_cover(P[gi], k, limits=limits) for gi in range(len(grids))]
     finally:
-        if path:
-            del P
-            _drop_file(path)
+        P = parts = None
+        for fp in files:
+            _drop_file(fp)
 
 
-# Above this many bytes the portfolio pass's make-it matrix is a file on disk, not memory (makeit_file).
-# 4 GB keeps today's standard build in memory (3 contests x 1,200 candidates x 160,000 worlds is 2.3 GB);
+# Above this many bytes the portfolio pass's make-it rows go to files on disk, not memory (makeit_file).
+# 4 GB held today's standard build's whole dense matrix in memory (3 contests x 1,200 candidates x 160,000
+# worlds is 2.3 GB); the packed rows are a few percent of that, so on a real slate nothing reaches it.
 # vigil-pc.cfg's "makeit_ram_gb" (VIGIL_MAKEIT_RAM_GB, set by pc_worker) moves it.
 MAKEIT_RAM_BYTES = 4 * 1024 ** 3
 
@@ -1572,43 +1754,157 @@ def _drop_file(path):
         errlog.note("TOURN-makeit-file", e, path=path)
 
 
-def _make_it_range(job):
-    """One world range of portfolio_vs_field: (contests, K', worlds) make-it
-    probabilities."""
+def _spill(part, path, i, files):
+    """Range i's packed rows written to files beside `path` (one .npy an array) and mapped back read-only."""
+    out = {}
+    for name, a in part.items():
+        if not a.size:
+            out[name] = a                            # nothing to map (a zero-length map is refused on some systems)
+            continue
+        fp = f"{path[:-4]}-r{i}-{name}.npy"
+        m = np.lib.format.open_memmap(fp, mode="w+", dtype=a.dtype, shape=a.shape)
+        m[...] = a
+        m.flush()
+        del m
+        files.append(fp)
+        out[name] = np.load(fp, mmap_mode="r")
+    return out
+
+
+# The share of the field the per-world shortcut reads: three times the contest floor's mass, located off a
+# 1,024-lineup sample of the field, so the sample's noise almost never leaves the region short -- a short one is
+# recounted over the whole field, never trusted. Measured on hp_memory's synthetic main slate (100,000-lineup
+# field, top-1% floor 1.24%): a 4,096 sample cost 0.25 ms a world in its partition alone; at 1,024 and 3x the
+# region holds 3.7% of the field and no world in 3,000 came up short (at 1,024 and 2x, 4 did).
+_REGION_SAFETY = 3.0
+_REGION_SAMPLE = 1024
+
+
+def _make_it_region(tabs32, F_grid, wf):
+    """What _make_it_world needs to read only the top of the field, or None when every contest's value is the
+    same at every index (no field needed at all).
+
+    Each contest's float32 value is constant from its grid index i_sat on (the top-1% chance of a lineup with
+    1.3% of a 100,000-entry field above it is 0.0 in float32, and stays 0.0 for every larger mass), and a
+    bucket's index is at least i_sat exactly when the field's mass strictly above it exceeds F_grid[i_sat - 1]
+    (`F_cut`). So per world only the lineups whose mass can be under F_cut matter -- a few percent of the field
+    for every top-1% column measured (F_cut 0.011-0.013 on 100,000-832,342-entry contests, 0.03 on 5,000)."""
+    bits = tabs32.view(np.uint32)
+    diff = bits != bits[:, -1:]
+    i_sat = max((int(np.flatnonzero(d)[-1]) + 1 if d.any() else 0) for d in diff)
+    if i_sat == 0:
+        return None
+    M = len(wf)
+    wsum = float(wf.sum())
+    F_cut = float(F_grid[i_sat - 1])
+    frac = _REGION_SAFETY * F_cut / wsum if wsum > 0 else 1.0
+    reg = {"F_cut": F_cut, "margin": 1e-9 * max(1.0, wsum), "target": None, "samp": None}
+    if frac < 0.5 and M >= 256:
+        ns = min(_REGION_SAMPLE, M)
+        rng = np.random.default_rng(20261127)
+        if bool(np.all(wf == wf[0])):
+            samp = np.sort(rng.choice(M, ns, replace=False)) if ns < M else np.arange(M)
+        else:
+            # the showdown's weighted universe: lineups drawn in proportion to their weight, so the sample's
+            # plain quantile is the weighted one (a weighted sort of the sample cost 0.4 ms a world)
+            samp = np.sort(rng.choice(M, ns, replace=True, p=wf / wsum))
+        reg.update(target=float(frac), samp=samp.astype(np.int64))
+    return reg
+
+
+def _region_thresholds(Sf, reg):
+    """Per world of a chunk, a field score above which the sample puts about `target` of the field's weight: a
+    score the field itself holds (a sampled lineup's), so the region is never empty."""
+    Ss = Sf[:, reg["samp"]]
+    ns = Ss.shape[1]
+    kth = ns - max(1, min(ns, int(math.ceil(reg["target"] * ns))))
+    return np.partition(Ss, kth, axis=1)[:, kth]
+
+
+def _make_it_world(s, bc, wf, F_grid, thr, reg):
+    """One world of the portfolio pass: each candidate's payout-grid index, given the field's float32 scores `s`
+    (spent) and the candidates' buckets `bc`. Where the old pass's index is below i_sat this is that index
+    exactly; elsewhere it is len(F_grid) - 1, whose value in every contest is the old one's bit for bit.
+
+    The old pass bucketed the whole field, counted it into 40,001 buckets and read the mass above every bucket
+    (_world_tables). The mass strictly above bucket b is the running sum, from the top bucket down, of each
+    bucket's weight (each the sum of its lineups' weights in field order), less b's own. Only the lineups at
+    or above `thr` are bucketed here; every lineup in a bucket above the lowest of theirs is among them (the
+    bucket is monotone in the score), so the top buckets' weights, their running sum and every mass above
+    them are the old pass's doubles exactly. Below those buckets the mass is at least the running sum at the
+    lowest of them, and once that sum exceeds F_cut (plus a margin far above float64's rounding of it) every
+    lower bucket's index is at least i_sat. When it does not (the sample put `thr` too high) or there is no
+    `thr`, the whole field is counted, the old way."""
+    nF = len(F_grid)
+    hist = None
+    if thr is not None:
+        idx = np.flatnonzero(s >= thr)
+        b = _buckets(s[idx])
+        bmin = int(b.min())
+        keep = b > bmin
+        if keep.any():
+            h = np.bincount(b[keep] - (bmin + 1), weights=wf[idx[keep]])
+            C = np.cumsum(h[::-1])[::-1]
+            if C[0] > reg["F_cut"] + reg["margin"]:
+                base, hist = bmin + 1, h
+    if hist is None:
+        base, hist = 0, np.bincount(_buckets(s), weights=wf)
+        C = np.cumsum(hist[::-1])[::-1]
+    strictly = C - hist
+    iF = np.full(len(bc), nF - 1, dtype=np.int64)
+    on = bc >= base
+    rel = bc[on] - base
+    st = np.zeros(len(rel))
+    inside = rel < len(hist)
+    st[inside] = strictly[rel[inside]]
+    iF[on] = np.minimum(np.searchsorted(F_grid, np.clip(st, 0.0, 1.0)), nF - 1)
+    return iF
+
+
+def _make_it_rows(job):
+    """One world range of portfolio_vs_field: every contest's packed rows over the range's worlds,
+    {"ip<g>": indptr (K + 1), "c<g>": world numbers (int32), "v<g>": float32 values}."""
     a, b, chunk = job
-    WfT, WkT, X, wf, F_grid, tabs = (_PAR["WfT"], _PAR["WkT"], _PAR["X"], _PAR["wf"],
-                                     _PAR["F_grid"], _PAR["tabs"])
-    out = np.zeros((len(tabs), WkT.shape[1], b - a), dtype=np.float32)
+    WfT, WkT, X, wf, F_grid, tabs32, reg = (_PAR["WfT"], _PAR["WkT"], _PAR["X"], _PAR["wf"], _PAR["F_grid"],
+                                            _PAR["tabs32"], _PAR["region"])
+    G, nF = tabs32.shape
+    K = WkT.shape[1]
     ck = _PAR.get("ckpt")
     if ck:
         got = build_ckpt.range_load(ck, a, b, chunk)
-        if got is not None and got["next"] >= b and "out" in got and got["out"].shape == out.shape \
-                and got["out"].dtype == out.dtype:
-            return _make_it_out(got["out"], a, b)   # a finished range of the interrupted build, as computed
+        if got is not None and got["next"] >= b and all(
+                f"{p}{gi}" in got for gi in range(G) for p in ("ip", "c", "v")) \
+                and all(got[f"ip{gi}"].shape == (K + 1,) for gi in range(G)):
+            return {key: got[key] for gi in range(G) for key in (f"ip{gi}", f"c{gi}", f"v{gi}")}
+    acc = [([], [], []) for _ in range(G)]
     for start in range(a, b, chunk):
-        Xc = np.ascontiguousarray(X[:, start:min(b, start + chunk)].T)
-        Bf = _buckets(Xc @ WfT)
-        Bk = _buckets(Xc @ WkT)
-        for j in range(Bf.shape[0]):
-            pos = _world_tables(Bf[j], wf, F_grid)
-            for gi, tab in enumerate(tabs):
-                out[gi, :, start - a + j] = tab[pos][Bk[j]]
+        stop = min(b, start + chunk)
+        iFc = np.full((stop - start, K), nF - 1, dtype=np.int64)
+        if reg is not None:
+            Xc = np.ascontiguousarray(X[:, start:stop].T)
+            Sf = Xc @ WfT
+            Bk = _buckets(Xc @ WkT)
+            thr = _region_thresholds(Sf, reg) if reg["target"] is not None else None
+            for j in range(stop - start):
+                iFc[j] = _make_it_world(Sf[j], Bk[j], wf, F_grid, None if thr is None else thr[j], reg)
+        V = tabs32[:, iFc.T]                                   # (contests, K, worlds of the chunk)
+        for gi in range(G):
+            r, c = np.nonzero(V[gi])
+            acc[gi][0].append(r.astype(np.uint16 if K < 65536 else np.int64))
+            acc[gi][1].append((c + start).astype(np.int32))
+            acc[gi][2].append(V[gi][r, c])
+    out = {}
+    for gi in range(G):
+        r = np.concatenate(acc[gi][0])
+        # chunk by chunk each piece is in (candidate, world) order; a stable sort by candidate keeps the
+        # worlds in order inside each candidate (a radix sort on 16-bit keys)
+        o = np.argsort(r, kind="stable")
+        out[f"ip{gi}"] = _indptr(r.astype(np.int64), K)
+        out[f"c{gi}"] = np.concatenate(acc[gi][1])[o]
+        out[f"v{gi}"] = np.concatenate(acc[gi][2])[o]
     if ck:
-        build_ckpt.range_save(ck, a, b, chunk, b, out=out)
-    return _make_it_out(out, a, b)
-
-
-def _make_it_out(out, a, b):
-    """A range's columns: written straight into the pass's matrix file when it has one (a worker never
-    ships them back through the pool's pipe), else returned for the parent to place."""
-    path = _PAR.get("out_path")
-    if not path:
-        return out
-    M = np.lib.format.open_memmap(path, mode="r+")
-    M[:, :, a:b] = out
-    M.flush()
-    del M
-    return None
+        build_ckpt.range_save(ck, a, b, chunk, b, **out)
+    return out
 
 
 def portfolio(W, X, f, grid, cand_idx, k, chunk=500, workers=1, limits=None):

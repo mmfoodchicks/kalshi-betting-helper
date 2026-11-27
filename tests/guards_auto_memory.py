@@ -255,22 +255,14 @@ def _pool_checks(ck, np, PC, S):
 
 
 def _makeit_checks(ck, np):
-    """The make-it matrix in place and on disk against the old concatenation."""
+    """The make-it matrix in memory and on disk against the old concatenation. Since 2026-11-27 the matrix is
+    packed rows (dfs_tourney.PackedRows) and the old pass itself is the frozen reference
+    (tests/guards_auto_portfolio_speed.py, which also proves the packed pass equal to it on every route)."""
+    import guards_auto_portfolio_speed as PS
     import guards_auto_resume_profiles as RP
     T, Wc, Wf, wf, X, grids = RP._lattice_case(np)          # the checkpoint guards' case: two contests, 0.02 lattice
     cand = np.arange(0, Wc.shape[0], 3)
-
-    def old_way(workers):
-        Nn = X.shape[1]
-        w = max(1, workers)
-        ch = T.chunk_for(max(Wc.shape[0], Wf.shape[0]) * w, 16)
-        arrays = {"WfT": np.ascontiguousarray(Wf.T, dtype=np.float32),
-                  "WkT": np.ascontiguousarray(Wc[cand].T, dtype=np.float32), "X": X, "wf": np.asarray(wf)}
-        extra = {"F_grid": grids[0]["F"], "tabs": [g["top1"] for g in grids]}
-        parts = T._par_map(T._make_it_range, T._range_jobs(Nn, w, ch), w, arrays, extra)
-        Pm = np.concatenate(parts, axis=2)
-        return [T.greedy_cover(Pm[gi], 5) for gi in range(len(grids))]
-    ref = old_way(1)
+    ref = PS.old_portfolio(np, T, Wc, Wf, wf, X, grids, cand, 5, chunk=16)
     scratch = tempfile.mkdtemp()
     with _env(VIGIL_SCRATCH_DIR=None, VIGIL_MAKEIT_RAM_GB=None):
         in_ram = T.portfolio_vs_field(Wc, Wf, wf, X, grids, cand, 5, chunk=16)
@@ -289,9 +281,10 @@ def _makeit_checks(ck, np):
     finally:
         np.lib.format.open_memmap = real_open
     left = os.listdir(scratch)
-    ck("MEM5 the portfolio pass's make-it matrix, filled in place (no concatenation of the ranges) and, past its "
-       "memory budget, a file every range writes its own columns of, picks the same entries with the same cover "
-       "float for float as the old concatenation -- one process and two -- and the file is gone afterwards",
+    ck("MEM5 the portfolio pass's make-it matrix, held as packed rows range by range (no dense matrix, no "
+       "concatenation) and, past its memory budget, files in the scratch directory mapped back, picks the same "
+       "entries with the same cover float for float as the old pass's concatenation -- one process and two -- and "
+       "the files are gone afterwards",
        in_ram == ref and in_ram2 == ref and on_disk == ref and on_disk2 == ref and left == []
        and len(seen) >= 2 and all(os.path.dirname(p) == scratch for p in seen)
        and T.makeit_file(10) is None and T.MAKEIT_RAM_BYTES >= 3 * 1024 ** 3,
