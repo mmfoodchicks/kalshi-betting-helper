@@ -339,5 +339,31 @@
   "waits_for": "R1's and R4's reads committed first; the 2028 regular season (fresh: no registered window or development set holds it); now a REPLICATION after the 2027 amendment (coach_r5_2027)",
   "report": "research/reports/nfl_coach_r5.md",
   "result": "research/data/nfl_coach/read_r5.json"
+ },
+ {
+  "id": "coach_r6_2027",
+  "area": "Coaching engine",
+  "kind": "registered",
+  "title": "Coaching R6 (primary, 2027): the selectively drifting league -- clock, backs' targets and the pull",
+  "decides": "the pooled held-out gain of the three drifting components over full history above 2 SE, none below -1 SE; a member of the 2027 Holm family (R2-H2, R4, R5, R6)",
+  "registration": "research/data/nfl_coach/prereg_r6.json",
+  "script": "research/nfl_coach_r6_read.py",
+  "not_before": "2028-01-13T06:00:00Z",
+  "waits_for": "R1's read committed first; the 2027 regular season (shared with R2-H2, R4, R5, C4 and C3-N)",
+  "report": "research/reports/nfl_coach_r6.md",
+  "result": "research/data/nfl_coach/read_r6_2027.json"
+ },
+ {
+  "id": "coach_r6_2028",
+  "area": "Coaching engine",
+  "kind": "registered",
+  "title": "Coaching R6 (replication, 2028): the same frozen tables on fresh games",
+  "decides": "R6's criteria on the 2028 regular season at the frozen 2027 tables (nothing refitted)",
+  "registration": "research/data/nfl_coach/prereg_r6.json",
+  "script": "research/nfl_coach_r6_read.py",
+  "not_before": "2029-01-16T06:00:00Z",
+  "waits_for": "R6's primary read committed first; the 2028 regular season",
+  "report": "research/reports/nfl_coach_r6.md",
+  "result": "research/data/nfl_coach/read_r6_2028.json"
  }
 ]
