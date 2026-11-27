@@ -487,6 +487,33 @@ def hist_over(h, n, line):
     return sum(cnt[first:]) / n
 
 
+def hist_mtl(h, n, line):
+    """{"more", "tie", "less"} counts and probabilities at a WHOLE-number line L
+    off a stat_hist, or None off the integers. The week board draws yards and
+    catches CONTINUOUSLY (_build_board never passes discrete=True; only the
+    showdown experiment does), so no world ever lands exactly on L: "tie" here
+    is the mass the sim puts in (L - 0.5, L + 0.5] -- a world rounded to the
+    nearest whole yard or catch, halves down, is a tie -- a modeling convention
+    for a box that counts in integers, not a simulated event. More is the mass
+    above L + 0.5 and Less at or below L - 0.5, exactly the half-line counts on
+    either side, so more + tie + less = n in counts. These are modeled
+    probabilities, not calibrated real-world ones."""
+    import array
+    if abs(line - round(line)) > 1e-9:
+        return None
+    L = int(round(line))
+    if h is None:                       # every world 0
+        cm, ct = (n, 0) if L < 0 else (0, n if L == 0 else 0)
+    else:
+        lo, code, raw = h
+        cnt = array.array(code)
+        cnt.frombytes(raw)
+        cm = sum(cnt[max(0, L + 1 - lo):])
+        ct = cnt[L - lo] if 0 <= L - lo < len(cnt) else 0
+    cl = n - cm - ct
+    return {"counts": (cm, ct, cl), "n": n, "more": cm / n, "tie": ct / n, "less": cl / n}
+
+
 def simulate_game(game, n=4000, with_samples=False, preseason=False, discrete=False,
                   with_components=False, with_dists=False):
     """Correlated MC of one game. Returns per-player fantasy-point distributions,
@@ -970,6 +997,15 @@ MODELS = ("legacy", "constrained", "engine")
 # like the pool cache minus `n`; the pool itself stays {name: entry}.
 engine_reports = {}
 
+
+class PinMiss(Exception):
+    """A resumed build's frozen inputs (player_pool(pin=)) cannot reach the
+    worlds they named: the worlds cache no longer holds them (pruned, or
+    failed its sha256) and no game of an interrupted generation is on disk,
+    or the key they make now is not the frozen one (the simulator's code or
+    tables changed). The build then starts fresh -- never a pool drawn again
+    from old inputs (dfs_tourney.build_nfl_classic)."""
+
 # What the weekly lines' own adjustments DID on the last build of each
 # (season, week): the recent-usage update (players moved, or why it did not
 # apply) and the WR/RB matchup hook. sim_stamp() says which RULE a board runs;
@@ -1009,7 +1045,7 @@ def week_stamp(week, preseason=False, season=None):
 
 
 def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="legacy", seed=None, xside=0.0, discrete=False,
-                workers=1, compact=False):
+                workers=1, compact=False, pin=None, on_pin=None):
     """Every DFS-relevant player for a week: skill players carry correlated point
     arrays from the game sims; DSTs carry independent Normal-sampled arrays from
     Sleeper's team-defense projection. {name: {pos, team, proj, ceiling, floor, arr}}.
@@ -1047,8 +1083,21 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
     the same matrix either way. With the disk cache on (the PC), a compact
     pool is not also kept in this process's memory: the next call at the
     same key reads the memory-mapped entry. Read `arr` with
-    pool_cache.has_array, never `if p.get("arr")`."""
-    season = season or _season()      # a backtest names a past season
+    pool_cache.has_array, never `if p.get("arr")`.
+
+    `pin` (the PC's checkpointed tournament builds only, 2026-11-27; None is
+    every other caller and the code below exactly as it was): an EMPTY dict
+    is filled with the engine pool's live inputs as this call reads them --
+    the season, Sleeper's games, the deep profiles, the drive levels and
+    weight, the defenses and kickers, the weekly stamp -- and the worlds
+    cache key they make, and `on_pin(pin)` is called before a game is
+    played, so the caller can freeze them; the defenses' and kickers' arrays
+    then read those same projections. A FILLED one (a resumed build's frozen
+    inputs) is used instead of every live read, and the worlds must come off
+    disk -- the worlds cache, or the games of the interrupted generation --
+    or PinMiss is raised. Either way the in-process cache is bypassed (on the
+    PC it never holds a compact pool the disk cache holds)."""
+    season = season or (pin or {}).get("season") or _season()      # a backtest names a past season
     want = frozenset(str(t).upper() for t in (teams or ()) if t)
     if model not in MODELS:
         raise ValueError(f"unknown simulator model {model!r}")
@@ -1058,8 +1107,15 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
     on_disk = [False]                     # this call's pool came from, or went to, the disk cache
 
     def build():
-        games = (preseason_games(str(season), week) if preseason
-                 else weekly_games(str(season), week))
+        pinned = bool(pin) and bool(pin.get("worlds_key"))
+        if pinned:
+            games = pin["games"]
+            if pin.get("week_stamp") is not None:
+                # the weekly lines' stamp of the build that froze them (week_stamp reads it for `inputs`)
+                weekly_stamps[(str(season), int(week))] = pin["week_stamp"]
+        else:
+            games = (preseason_games(str(season), week) if preseason
+                     else weekly_games(str(season), week))
         if games and want:
             games = {gid: g for gid, g in games.items()
                      if want & ({str(t).upper() for t in (g.get("teams") or [])}
@@ -1088,13 +1144,19 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
             _np = nfl_dfs_engine.np
             if _np is None:
                 raise RuntimeError("numpy is required for the engine model")
-            try:
-                eng_ctx = nfl_dfs_engine.week_context(season, week, workers=workers)
-            except Exception as _e:
-                # no deep profiles this week (the store unreachable, a cold
-                # PC): the board is still built, on legacy worlds, and says so
-                errlog.note("NFLENG-context", _e)
-                eng_ctx = None
+            if pinned:
+                # week_context's own shape, the live parts frozen (the deep tables are code: in the key's code_sig)
+                import nfl_deep_sim as _E
+                eng_ctx = {"T": _E.tables(), "profiles": pin["profiles"], "drive": pin["drive"],
+                           "weight": pin["weight"], "workers": int(workers or 1)}
+            else:
+                try:
+                    eng_ctx = nfl_dfs_engine.week_context(season, week, workers=workers)
+                except Exception as _e:
+                    # no deep profiles this week (the store unreachable, a cold
+                    # PC): the board is still built, on legacy worlds, and says so
+                    errlog.note("NFLENG-context", _e)
+                    eng_ctx = None
         # The PC's disk cache of these worlds (pool_cache; research/reports/
         # dfs_cache_evaluator.md): keyed on the call, the simulator's code and
         # every input the worlds are drawn from, so a picked build, a rebuild
@@ -1111,11 +1173,34 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
                                "teams": sorted(want), "model": model, "seed": seed, "xside": float(xside or 0.0),
                                "discrete": bool(discrete)}
                     pc_snap = games
-                    pc_key = pool_cache.key(pc_call, pool_cache.inputs_hash(
-                        games=games, profiles=eng_ctx.get("profiles"), drive=eng_ctx.get("drive"),
-                        weight=eng_ctx.get("weight"), dst=dst_projections(str(season), week),
-                        kickers=kicker_projections(str(season), week)))
+                    if pin is None:
+                        pc_key = pool_cache.key(pc_call, pool_cache.inputs_hash(
+                            games=games, profiles=eng_ctx.get("profiles"), drive=eng_ctx.get("drive"),
+                            weight=eng_ctx.get("weight"), dst=dst_projections(str(season), week),
+                            kickers=kicker_projections(str(season), week)))
+                    else:
+                        if not pinned:
+                            # the live reads, frozen as this call reads them (the key below and the
+                            # defenses' and kickers' arrays read these same objects)
+                            ws = weekly_stamps.get((str(season), int(week)))
+                            pin.update(season=str(season), games=games, profiles=eng_ctx.get("profiles"),
+                                       drive=eng_ctx.get("drive"), weight=eng_ctx.get("weight"),
+                                       dst=dst_projections(str(season), week),
+                                       kickers=kicker_projections(str(season), week),
+                                       week_stamp=dict(ws) if isinstance(ws, dict) else ws)
+                        pc_key = pool_cache.key(pc_call, pool_cache.inputs_hash(
+                            games=pin["games"], profiles=pin["profiles"], drive=pin["drive"],
+                            weight=pin["weight"], dst=pin["dst"], kickers=pin["kickers"]))
+                        if pinned and pc_key != pin["worlds_key"]:
+                            raise PinMiss("the frozen inputs make another worlds key now (the simulator's code "
+                                          "or tables changed)")
+                        if not pinned:
+                            pin["worlds_key"] = pc_key
+                            if on_pin is not None:
+                                on_pin(pin)
                     hit = pool_cache.load(pc_key, compact=compact)
+                except PinMiss:
+                    raise
                 except Exception as _e:
                     errlog.note("POOLCACHE-key", _e)
                     pc_key, hit = None, None
@@ -1125,6 +1210,11 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
                     if cached_rep is not None:
                         engine_reports[(season, week, tuple(sorted(want)) or None, seed)] = cached_rep
                     return cached_pool or None
+        if pinned:
+            import build_ckpt as _ck
+            if not (pc_key and _ck.games_any(pc_key)):
+                raise PinMiss("the frozen inputs' worlds are no longer on disk (the worlds cache entry is gone or "
+                              "failed its sha256, and no game of the interrupted generation is kept)")
         for gid, g in games.items():
             sim = None
             if model == "engine":
@@ -1210,7 +1300,7 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
                     arr = _dst_from_components(d["td"], d["gv"], d["yd"], d["pa"], side_rng)
                     if arr:
                         sim_dst[me] = arr
-        dst = dst_projections(str(season), week) or {}
+        dst = (pin["dst"] if pin is not None and "dst" in pin else dst_projections(str(season), week)) or {}
         for team, d in dst.items():
             arr = pre_dst.get(team)
             if arr:
@@ -1280,7 +1370,8 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
         # own iterations (_kicker_arr), so a kicker and his quarterback move
         # together.
         if not preseason:
-            for team, k in (kicker_projections(str(season), week) or {}).items():
+            for team, k in ((pin["kickers"] if pin is not None and "kickers" in pin
+                             else kicker_projections(str(season), week)) or {}).items():
                 off = team_off.get(team)
                 k_rng = team_rng.get(team, _random)
                 if (not off and team not in eng_k) or k["name"] in pool:
@@ -1325,10 +1416,34 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
                 if pool_cache.has_array(rec.get("arr")):
                     rec["arr"] = pool_cache.as_float32(rec["arr"])
         return pool or None
+    if pin is not None:
+        return build()                    # frozen or freezing inputs: never another build's pool from memory
     # A compact pool the disk cache holds (read from it, or filed by this call) is not also kept in this
     # process: the next call at the same key reads the memory-mapped entry, the same worlds.
     return _cached(_pool_key(("nfl_pool", season, week, n, bool(preseason), tuple(sorted(want)) or None, model, seed, float(xside or 0.0), bool(discrete)),
                              compact), 1800, build, keep=lambda: not (compact and on_disk[0]))
+
+
+def engine_inputs(week, season=None, teams=None, workers=1):
+    """The live inputs an engine pool's worlds are drawn from, read the way
+    player_pool reads them before freezing them (pin=): the season, Sleeper's
+    games of `teams`, the deep profiles, the drive levels and weight, the
+    defenses and kickers, the weekly stamp. For research/profile_probe.py's
+    drift report (which input moved, by how much, over what time); no build
+    reads it."""
+    import nfl_dfs_engine
+    season = season or _season()
+    want = frozenset(str(t).upper() for t in (teams or ()) if t)
+    games = weekly_games(str(season), week)
+    if games and want:
+        games = {gid: g for gid, g in games.items()
+                 if want & ({str(t).upper() for t in (g.get("teams") or [])}
+                            | {str(pl.get("team")).upper() for pl in (g.get("players") or [])})}
+    ctx = nfl_dfs_engine.week_context(season, week, workers=workers) or {}
+    ws = weekly_stamps.get((str(season), int(week)))
+    return {"season": str(season), "games": games, "profiles": ctx.get("profiles"), "drive": ctx.get("drive"),
+            "weight": ctx.get("weight"), "dst": dst_projections(str(season), week),
+            "kickers": kicker_projections(str(season), week), "week_stamp": dict(ws) if isinstance(ws, dict) else ws}
 
 
 def _pool_key(key, compact):

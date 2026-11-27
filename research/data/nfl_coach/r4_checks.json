@@ -1,0 +1,224 @@
+{
+ "second_unit_real_2016_2024": {
+  "games": 293,
+  "lead_back_sat": 147,
+  "lead_back_sat_rate": 0.5017,
+  "lead_share_after_quartiles": [
+   0.0,
+   0.0,
+   0.6
+  ],
+  "lead_share_after_zero_or_one": 0.5631,
+  "top2_games": 255,
+  "top2_none": 50,
+  "top2_none_rate": 0.1961
+ },
+ "second_unit_sim_r4": {
+  "games": 192,
+  "lead_back_sat": 8,
+  "lead_back_sat_rate": 0.0417,
+  "lead_share_after_quartiles": [
+   0.375,
+   0.5,
+   0.611
+  ],
+  "lead_share_after_zero_or_one": 0.0885,
+  "top2_games": 203,
+  "top2_none": 4,
+  "top2_none_rate": 0.0197
+ },
+ "sensitivity": {
+  "A1_as_strategic": {
+   "counts": {
+    "dev": {
+     "injury": 36,
+     "strategic": 114
+    },
+    "fit": {
+     "injury": 124,
+     "strategic": 596
+    }
+   },
+   "dev_joint_gain": {
+    "2025": {
+     "gain_per_pulled_team_game": 0.2149,
+     "se": 0.1169,
+     "snaps": 3144,
+     "z": 1.84
+    },
+    "2026": {
+     "gain_per_pulled_team_game": 0.4934,
+     "se": 0.1357,
+     "snaps": 1524,
+     "z": 3.63
+    }
+   },
+   "effects": {
+    "injury": {
+     "call_close": 0.0,
+     "call_lead": 0.0,
+     "call_trail": 0.0,
+     "comp": -0.1508,
+     "int": 0.0,
+     "rb1": 1.0,
+     "tempo": 1.0,
+     "top2": 1.0
+    },
+    "strategic": {
+     "call_close": -0.1481,
+     "call_lead": 0.0,
+     "call_trail": -0.1253,
+     "comp": -0.1182,
+     "int": 0.0,
+     "rb1": 0.5372,
+     "tempo": 1.0,
+     "top2": 0.8298
+    }
+   }
+  },
+  "A2_as_injury": {
+   "counts": {
+    "dev": {
+     "injury": 55,
+     "strategic": 95
+    },
+    "fit": {
+     "injury": 308,
+     "strategic": 412
+    }
+   },
+   "dev_joint_gain": {
+    "2025": {
+     "gain_per_pulled_team_game": 0.3049,
+     "se": 0.0814,
+     "snaps": 3144,
+     "z": 3.74
+    },
+    "2026": {
+     "gain_per_pulled_team_game": 0.3734,
+     "se": 0.1443,
+     "snaps": 1524,
+     "z": 2.59
+    }
+   },
+   "effects": {
+    "injury": {
+     "call_close": -0.1744,
+     "call_lead": 0.0,
+     "call_trail": 0.0,
+     "comp": -0.1163,
+     "int": 0.3175,
+     "rb1": 1.0,
+     "tempo": 1.0,
+     "top2": 1.0
+    },
+    "strategic": {
+     "call_close": 0.0,
+     "call_lead": 0.2328,
+     "call_trail": 0.0,
+     "comp": 0.0,
+     "int": 0.0,
+     "rb1": 0.2835,
+     "tempo": 1.0,
+     "top2": 0.6263
+    }
+   }
+  },
+  "as_registered": {
+   "counts": {
+    "dev": {
+     "injury": 44,
+     "strategic": 106
+    },
+    "fit": {
+     "injury": 197,
+     "strategic": 523
+    }
+   },
+   "dev_joint_gain": {
+    "2025": {
+     "gain_per_pulled_team_game": 0.3295,
+     "se": 0.1189,
+     "snaps": 3144,
+     "z": 2.77
+    },
+    "2026": {
+     "gain_per_pulled_team_game": 0.524,
+     "se": 0.1492,
+     "snaps": 1524,
+     "z": 3.51
+    }
+   },
+   "effects": {
+    "injury": {
+     "call_close": 0.0,
+     "call_lead": 0.0,
+     "call_trail": 0.0,
+     "comp": -0.1266,
+     "int": 0.371,
+     "rb1": 1.0,
+     "tempo": 1.0,
+     "top2": 1.0
+    },
+    "strategic": {
+     "call_close": -0.1847,
+     "call_lead": 0.1581,
+     "call_trail": -0.1309,
+     "comp": -0.1279,
+     "int": 0.0,
+     "rb1": 0.4848,
+     "tempo": 1.0,
+     "top2": 0.7413
+    }
+   }
+  },
+  "both_flipped": {
+   "counts": {
+    "dev": {
+     "injury": 47,
+     "strategic": 103
+    },
+    "fit": {
+     "injury": 235,
+     "strategic": 485
+    }
+   },
+   "dev_joint_gain": {
+    "2025": {
+     "gain_per_pulled_team_game": 0.1192,
+     "se": 0.1048,
+     "snaps": 3144,
+     "z": 1.14
+    },
+    "2026": {
+     "gain_per_pulled_team_game": 0.2776,
+     "se": 0.0966,
+     "snaps": 1524,
+     "z": 2.87
+    }
+   },
+   "effects": {
+    "injury": {
+     "call_close": -0.2024,
+     "call_lead": 0.0,
+     "call_trail": 0.0,
+     "comp": -0.1247,
+     "int": 0.0,
+     "rb1": 1.0,
+     "tempo": 1.0,
+     "top2": 1.0
+    },
+    "strategic": {
+     "call_close": 0.0,
+     "call_lead": 0.0,
+     "call_trail": 0.0,
+     "comp": -0.1316,
+     "int": 0.0,
+     "rb1": 0.4375,
+     "tempo": 1.0,
+     "top2": 1.0
+    }
+   }
+  }
+ }
+}

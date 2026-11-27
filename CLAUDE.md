@@ -878,6 +878,44 @@ data-only `sim-history` branch (which never deploys):
   2028-01-13 after R1's. R3's trailing-late miss is trailing teams protecting their quarterback (28 of 30 strategic,
   not late-season rest); a new hazard form is an R5 candidate on fresh games. R3's report carries an erratum: its
   R3 arm's deal draws are seeded one game later than R2's (noise, not bias; the registered read stands).
+  **R4 checks** (`research/nfl_coach_r4_checks.py`, R4 report section H; guards N5-T1..T3): at play time R4 reads
+  only each drive's first-snap margin and clock -- injury reports and play descriptions are training LABELS only.
+  Flipping the ambiguous pulls' labels keeps the lead back's sit and the injury completion shift in every variant;
+  the call shifts are fragile; the development gain stays positive. **R3's seed discrepancy** cannot move its read
+  (`research/nfl_coach_r3_seed_check.py`: the registered endpoints take no draw -- 185,600 draws identical, bias 0,
+  power unchanged). **R5** (`nfl_coach_sim_r5.py`, `coach-r5.0`; `research/reports/nfl_coach_r5.md`, `prereg_r5.json`):
+  every richer pull hazard (possessions left, timeouts, the leader's need, coach tendency) was REFUSED by its rule on
+  2025, so R5's hazard is R3's form refitted on 2016-2025; the trailing-late miss is a regime change (2016-21: 30 real
+  vs 31.6; 2022-26: 47 vs 20.3) and stays UNFIXED -- a corner-specific term would be a threshold by another name; it
+  is a registered secondary question. R5 does ship the second unit as per-player sit decisions drawn once per
+  strategic pull (lead back 0.530; each top-two target 0.478 if the back sat, 0.050 if not; fitted jointly): lead
+  back sits the rest of the game 48.8% simulated vs 51.3% real (R4 5.2%), +1.34 / +1.51 nats a pulled team-game
+  over R4 in development; no-pull parity with R4. Registered on the 2028 regular season (the first season R1-R4
+  have not taken), read on/after 2029-01-16, 30+ strategic pulls. **Amended by the owner (2026-11-27)**: R5's
+  primary read is the 2027 regular season (`prereg_r5_2027.json`, block 02d486e9; its files pinned now; criteria
+  copied verbatim; read on/after 2028-01-13 after R1, R2-H2 and R4), `prereg_r5.json` byte-identical and its 2028
+  read a REPLICATION. The 2027 coaching family (R2-H2, R4, R5 primaries) is reported under Holm at a family-wise
+  one-sided 5% beside each test's own z > 2 verdict (`research/reports/nfl_coach_family_2027.md`: statistics
+  correlate at most +0.22, R4 x R5; a shared-games pass is weaker evidence than an independent one).
+  **Coaching evolution** (`research/nfl_coach_evo.py`, `research/reports/nfl_coach_evo.md`, rule committed first in
+  ae6e018): walk-forward 2019-2026 wk 12 over five tables -- the clock runoff drifts (a season-level random walk
+  +0.169 nats a game, z 9.8, half-life ~1 season: more clock between snaps since 2016), backs' target share
+  (+0.022, z 3.9) and the pull hazard (+0.0056, z 2.5; league odds ~1.7x since 2022) drift, the call and
+  no-huddle do not; pooled the random walk gains +0.147 (z 4.4) but its no-huddle loss trips the rule's 1-SE veto,
+  so full history stays and nothing enters R1-R5. League drift explains a tenth to a sixth of the trailing-pull
+  gap. A per-table scheme (random walk for clock, targets, pull) would be R6, a new engine version, tested
+  prospectively -- the owner's call, and on which games. **R6** (approved by the owner 2026-11-27;
+  `nfl_coach_sim_r6.py`, `coach-r6.0`; `research/reports/nfl_coach_r6.md`, `prereg_r6.json` block 7ef4defe, commit
+  35809d1): R5 with the three drifting tables moved by the evo study's league random walk projected to 2027 --
+  pace x1.014 through R1's own pace setting, backs' target odds x0.896 in the deal (league-level; may partly
+  double-count usage a roster already carries), the pull +0.0095 log-odds (R5's hazard already up-weighted recent
+  seasons, so it barely moves); the call and no-huddle R1's. Drift off = R5 draw for draw; R1-R5 and R5's amendment
+  byte-identical. Walk-forward +0.082 nats a game (z 7.7; clock +0.055, targets +0.022, pull +0.006), negative in
+  the 2019-20 folds, positive from 2021. Primary 2027 (read on/after 2028-01-13, after R1), replication 2028 with
+  the same frozen tables; joint power ~0.65 at the development mean, ~0.79 at the 2025-26 level. The 2027 family is
+  now four (R2-H2, R4, R5-2027, R6; Holm z 2.241 / 2.128 / 1.960 / 1.645; `family_2027_r6.py` -- the three-test file
+  R5's amendment pins stands as registered). R6's report section F holds the evidence-first DEFENSIVE plan (FTN
+  from 2022 under CC BY-SA, persistence before any decision model, no lawful coordinator source); nothing built.
 - **The deep engine's market anchor spreads 1.21x too wide** (2026-11-27, `research/data/c3_margin_scale.json`,
   C3 addendum): `nfl_deep_data.market_margins` converts Kalshi's win totals to points with
   `nfl_season._PTS_PER_WIN` 2.25, the drive engine's constant (set to undo ITS compression; the drive season sim
@@ -984,6 +1022,17 @@ data-only `sim-history` branch (which never deploys):
   world count bit for bit; 387 players / 210 KB on week 13, +1.8 s) as boardshare piece
   `nfl_sim_dists_<season>_w<NN>_0`, built only where `VIGIL_PC_WORKER` is set; whole-number lines are not priced
   (continuous yards, no tie mass). The joint worlds stay on the PC.
+  **v3 (the owner's confirmations, 2026-11-27):** a pardoned pick is a void; the Pardon covers only NFL, NBA,
+  WNBA, MLB and NHL; an entry left with 0 or 1 non-void pick is REFUNDED (stake back, P/L 0, a push in ROI; cash
+  or credits not stated by the owner). DraftKings' specialized participation rules are market kinds (`KINDS`),
+  checked from each grader's own box: NBA first-quarter stats need Q1 participation (starter flag or a logged Q1
+  entry), game-first markets need a start (ESPN's `starter` flag, trusted only when a team flags five), the
+  second-half first scorer needs to start the second half (his first Q3 record is not an entry); MLB first-event
+  markets need the starting lineup (`battingOrder` N00) and 1+ PA; a strikeout race needs both pitchers to start
+  and one to reach 3 Ks. Not met is void, not established is review. **Whole-number lines** (`hist_mtl`): the week
+  board's yards AND receptions are continuous, so More / tie / Less there is a MODELED convention (tie = the mass
+  in (L-0.5, L+0.5]); the ledger keeps P(side | not a tie) as Vigil's figure with the outright and tie
+  probabilities beside it, every one labelled "modeled (not a calibrated real-world rate)".
 - **The crypto terminal** (2026-11-27, `crypto_terminal.py`, `static/crypto.js`, the Crypto tab; the owner asked
   for it back in this sprint's backlog; READ-ONLY and paper: nothing places an order). Kalshi's 15-minute up/down and
   hourly above/below contracts on BTC, ETH, SOL, XRP and DOGE, each priced off ITS OWN rules text (the simple average
@@ -1109,6 +1158,23 @@ so a self-pulling batch file corrupts itself); all logic lives in Python.
     (`pc_worker._ckpt_landed`). A board stamps what it resumed (`checkpoint`).
   - Not resumable: the field and candidate draws and the greedy portfolio pick (redone, minutes).
     A scheduled window that closed while the PC was off is not re-opened by a checkpoint.
+  - **Frozen inputs** (2026-11-27; the deep probe deep-v1 resumed NOTHING: every restart re-fetched
+    Sleeper, the deep profiles, the drive levels and DraftKings live, they had moved, and keys of the
+    inputs named another build). A classic engine build on the worlds cache freezes every live read --
+    the slate and contest details, the week, the worlds' inputs and their cache key (`player_pool(pin=)`,
+    frozen before a game is played), the depth gate's answer, the roster state, every pool player's status
+    class -- under a key of the REQUEST (counts, seed, model, pick, the code; `build_ckpt.request_key`).
+    The owner's two operations, named so on every stamp (`checkpoint.inputs.operation`) and log: **Resume
+    existing build** (frozen inputs younger than `INPUTS_MAX_AGE_S` 6 h -- the Saturday window is 6 h, the
+    deep build ~2 h -- the slate not locked, not frozen before the inactives at lock - 90 min) and **Start
+    fresh build** (anything else; the 85-40-minute pre-lock rebuild always, `fresh_inputs` from
+    pc_worker). Frozen worlds no longer on disk (`nfl_dfs_sim.PinMiss`) restart the WHOLE build fresh
+    (`CKPT-inputs`), never half old. Removed with the checkpoint when the board lands. X's -0.0 is made
+    +0.0 where checkpoints are on (`_ckpt_zero`: the cache's int32 has no -0.0, and the keys hash bytes).
+    Showdown is not frozen (20-minute builds; its pre-lock refreshes must be fresh). Guards
+    `tests/guards_auto_resume_inputs.py` (RI, MP, PV); the probe is v2 (`deep-v2`: one build killed in
+    the solves, scoring and the portfolio pass and resumed, then C on A1's frozen inputs and entropy;
+    refused across code versions).
 - **Build profiles** (2026-11-26, `pc_profiles.py`): vigil-pc.cfg `"profile"`: `standard` (the
   default: production's 20,000 generation + 160,000 ranking worlds, 40,000 final, a 300,000 field --
   with no key the worker's calls are unchanged), `deep` (50k / 500k / 160k), `maximum` (100k / 1M /

@@ -970,6 +970,14 @@ def _cl_window_key(starts_ts, now=None):
     return None
 
 
+def _fresh_kw(window):
+    """build_nfl_classic's `fresh_inputs` for a build in the 85-40-minute pre-lock window (_cl_window_key's
+    "<date> pregame"), else nothing -- the call is then production's, unchanged. The owner, 2026-11-27: "The
+    pre-lock refresh must always fetch current information": a build after the inactives never resumes on
+    inputs a restart froze earlier (build_ckpt.inputs_usable holds every other build to the inactives too)."""
+    return {"fresh_inputs": True} if (window or "").endswith(" pregame") else {}
+
+
 def _mt_zone():
     """Mountain time; the PC's own clock (it is in Mountain) when the tz
     database is missing."""
@@ -1190,15 +1198,16 @@ def _picked_builds(url, tok, kind, picked, listed):
                 # count reads the plain board's cached worlds; no scheduled
                 # window here (a press is the owner's, whenever it comes) but
                 # the pre-lock minutes still run standard
-                prof = _cl_profile(st, plain, _cl_window_key(st), picked=True)
+                pk_window = _cl_window_key(st)
+                prof = _cl_profile(st, plain, pk_window, picked=True)
                 if prof["name"] != "standard":
                     import pc_profiles
                     print(f"[vigil-pc] tourney {dg}: profile {prof['name']} - {prof['why']}")
                     art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, log=print, pick=pick,
-                                                        **pc_profiles.build_kwargs(prof))
+                                                        **pc_profiles.build_kwargs(prof), **_fresh_kw(pk_window))
                 else:
                     art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=_cl_sims(st, plain, picked=True),
-                                                        log=print, pick=pick)
+                                                        log=print, pick=pick, **_fresh_kw(pk_window))
             else:
                 art = dfs_tourney.build_nfl_showdown(dg, n_sims=60000, log=print, pick=pick)
         except Exception as e:
@@ -1290,17 +1299,18 @@ def _task_classic_tourney(url, tok):
             # the build profile (vigil-pc.cfg "profile"; pc_profiles): standard
             # -- every PC with no such key -- is the call below, unchanged
             prof = _cl_profile(_dt_ts(sl.get("starts")), board, window)
+            fresh = _fresh_kw(window)       # the pre-lock rebuild: always current information
             if prof["name"] != "standard":
                 import pc_profiles
                 print(f"[vigil-pc] classic tourney {dg}: profile {prof['name']} "
                       f"({pc_profiles.n_sims(prof):,} worlds, a {prof['field']:,} field) - {prof['why']}")
                 art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, log=print,
-                                                    **pc_profiles.build_kwargs(prof))
+                                                    **pc_profiles.build_kwargs(prof), **fresh)
             else:
                 if prof["requested"] != "standard":
                     print(f"[vigil-pc] classic tourney {dg}: profile standard, not {prof['requested']} - {prof['why']}")
                 print(f"[vigil-pc] classic tourney {dg}: {n_sims:,} worlds")
-                art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=n_sims, log=print)
+                art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=n_sims, log=print, **fresh)
         except Exception as e:
             # the window is NOT consumed: a failed build is retried next cycle
             _mem_report(url, tok, None, prof, mem, dg, "classic", f"{type(e).__name__}: {e}")
@@ -1680,9 +1690,17 @@ def _task_gpu_bench(url, tok, run=None, now_left=None):
 
 # The deep-profile probe (research/profile_probe.py; the owner, 2026-11-27: "Run the unattended Deep test
 # build on my PC, provided it does not interfere with scheduled production builds or slate deadlines"). Three
-# deep builds of the week's main slate -- interrupted, resumed, fresh -- measured and reported once.
-_PROBE_KEY = "deep-v1"
-_PROBE_TIMEOUT_S = 8 * 3600
+# deep builds of the week's main slate -- interrupted, resumed, fresh -- measured and reported once. v2
+# (2026-11-27): v1 resumed nothing (every input re-fetched live); with frozen inputs (build_ckpt) one build
+# interrupted at three stages and resumed each time, then the uninterrupted build on the same frozen inputs.
+_PROBE_KEY = "deep-v2"
+# The budget in deep builds: v2 is one build in four runs (three of them killed) plus a fresh one. Resuming
+# as designed that is ~2.3 builds; if NOTHING resumed each run would repeat everything before its kill point
+# -- at most ~4.2 builds of v1's measured times (A1 and A2 under v1's kill at 40% of scoring, 4,280 s; A3 and B
+# under a whole build, 7,129-7,163 s) -- so the budget is four builds at the profiles' 1.25 margin and the cap
+# ten hours: the report still arrives.
+_PROBE_BUILDS = 4.0
+_PROBE_TIMEOUT_S = 10 * 3600
 _PROBE_RETRY_S = 6 * 3600
 _PROBE_CLEAR_S = 10_800            # never closer than three hours to any NFL slate's start, as the GPU bench
 _PROBE_MIN_FREE_GB = 40.0          # the deep pool (~1.2 GB), its checkpoints (make-it ranges up to the 8 GB
@@ -1690,12 +1708,12 @@ _PROBE_MIN_FREE_GB = 40.0          # the deep pool (~1.2 GB), its checkpoints (m
 
 
 def _probe_budget_s(board):
-    """Seconds the probe may take: three deep builds scaled from the last board (pc_profiles.estimate_s), with
-    the profiles' own margin, plus half an hour."""
+    """Seconds the probe may take: _PROBE_BUILDS deep builds scaled from the last board (pc_profiles
+    .estimate_s), with the profiles' own margin, plus half an hour."""
     import pc_profiles
     deep = dict(pc_profiles.PROFILES["deep"], name="deep")
     est, _how = pc_profiles.estimate_s(deep, board)
-    return 3.0 * pc_profiles.TIME_MARGIN * float(est) + 1800.0
+    return _PROBE_BUILDS * pc_profiles.TIME_MARGIN * float(est) + 1800.0
 
 
 def _overlaps_window(t0, t1):
@@ -1792,7 +1810,7 @@ def _task_profile_probe(url, tok, run=None, now_left=None, slate=None, free_gb=N
     if why is None:
         if run is None:
             _yield_point("deep profile probe")      # between builds: newer code waiting goes first
-        _task_note(f"deep profile probe of slate {dg} (three builds, ~{budget / 3600:.1f} h)")
+        _task_note(f"deep profile probe of slate {dg} (interrupted, resumed, fresh; ~{budget / 3600:.1f} h)")
         out = os.path.join(sdir, "profile_probe.json")
         try:
             if os.path.exists(out):

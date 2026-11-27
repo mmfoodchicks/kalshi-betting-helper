@@ -1,0 +1,91 @@
+{
+ "draws_compared": 185600,
+ "draws_endpoints_identical": 185600,
+ "endpoints": {
+  "dropbacks_registered_c3": {
+   "bias": {
+    "mean_as_registered_minus_aligned": 0.0,
+    "se": 0.0,
+    "z": null
+   },
+   "one_read": {
+    "aligned": {
+     "mean": -0.1814,
+     "sd": 0.863
+    },
+    "as_registered": {
+     "mean": -0.1814,
+     "sd": 0.863
+    },
+    "sd_ratio": 1.0
+   },
+   "power_at_190_team_games": {
+    "0.181": {
+     "aligned": {
+      "power": 0.8135,
+      "se": 0.0626
+     },
+     "as_registered": {
+      "power": 0.8135,
+      "se": 0.0626
+     }
+    },
+    "0.363": {
+     "aligned": {
+      "power": 0.9999,
+      "se": 0.0626
+     },
+     "as_registered": {
+      "power": 0.9999,
+      "se": 0.0626
+     }
+    }
+   },
+   "team_games": 232
+  },
+  "passing_yards_registered_c4": {
+   "bias": {
+    "mean_as_registered_minus_aligned": 0.0,
+    "se": 0.0,
+    "z": null
+   },
+   "one_read": {
+    "aligned": {
+     "mean": -0.7058,
+     "sd": 6.1704
+    },
+    "as_registered": {
+     "mean": -0.7058,
+     "sd": 6.1704
+    },
+    "sd_ratio": 1.0
+   },
+   "team_games": 232
+  },
+  "starter_carries_unregistered": {
+   "bias": {
+    "mean_as_registered_minus_aligned": 0.003112,
+    "se": 0.003536,
+    "z": 0.88
+   },
+   "one_read": {
+    "aligned": {
+     "mean": -0.0849,
+     "sd": 0.1528
+    },
+    "as_registered": {
+     "mean": -0.083,
+     "sd": 0.1796
+    },
+    "sd_ratio": 1.175
+   },
+   "team_games": 232
+  }
+ },
+ "seasons": [
+  2026
+ ],
+ "seed_sets": 4,
+ "sims": 200,
+ "weeks": "1-12"
+}

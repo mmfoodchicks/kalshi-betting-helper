@@ -19,7 +19,11 @@ What each group proves:
     (outright / non-void accuracy, voids by cause, Wilson intervals) against hand computations; SQL sums only;
   * D1-D5 the histograms: exact against the samples on adversarial floats and on a simulated game (combos
     included), the board unchanged by asking for them, built only where the PC builds, read by the pricer;
-  * P11 the routes stay behind the app's basic auth; P12 the screen; P13 the rules and the background owner.
+  * P11 the routes stay behind the app's basic auth; P12 the screen; P13 the rules and the background owner;
+  * K1-K3 the specialized participation tables the owner read (NBA first quarter, game-first, second-half first
+    scorer; MLB first-event, strikeout race) from ESPN's starters and play-by-play and statsapi's lineup and starts;
+    W1-W2 whole-number lines as modeled More / tie / Less, exact in counts, the half-line path unchanged; R1-R4
+    refunds under two non-void picks, a checked hand-typed pick, the whole-line figure in the ledger, the card.
 
 Hermetic: every box is a fixture, every board a stub, the store a scratch file; nothing is fetched.
 
@@ -198,18 +202,26 @@ def run(ck):
     r_pend = st(6, ["hit"] * 5 + ["pending"], six)
     r_rev = st(6, ["hit"] * 5 + ["review"], six)
     r_none = st(2, ["void", "void"], [[2, 2, 3]])
+    r_one_hit = st(3, ["hit", "void", "tie"], [[3, 3, 6]])
+    r_one_miss = st(3, ["miss", "void", "void"], [[3, 3, 6]])
+    r_two_left = st(3, ["hit", "hit", "void"], [[3, 3, 6]])
     ck("P5 the entry's paper result off the owner's schedule: 6/6 pays 25x, 5/6 2x, 4/6 nothing; a TIE leaves the "
        "entry like a void (5 live, waiting for DraftKings' 5/5 figure, then paying it as credits); a void with no "
        "5/5 row waits, pays the typed row once given; an all-or-nothing schedule with a live miss pays 0 even "
        "reduced; a count the rows describe pays only what they list; a pick pending or IN REVIEW leaves it open "
-       "(saying how many wait for the owner); every pick void waits",
+       "(saying how many wait for the owner); an entry left with ZERO or ONE non-void pick (voids, ties, pardons) "
+       "is REFUNDED at the stake whatever that pick did, saying cash or credits is not stated; two left pay at the "
+       "reduced level from the typed schedule as before, waiting when that row is missing",
        r_all[0] == "settled" and r_all[3] == 25 and r_miss[3] == 2 and r_two[3] == 0.0
        and r_tie[0] == "awaiting_payout" and "5/5" in r_tie[5] and r_tie_typed[3] == 10 and r_tie_typed[4] == 1
        and r_void[0] == "awaiting_payout" and r_void_typed == ("settled", 5, 5, 10.0, 1, None)
        and r_void_miss_aon == ("settled", 5, 4, 0.0, 0, None) and r_void_desc[3] == 0.0
        and r_pend[0] == "open" and r_rev[0] == "open" and "1 pick waiting for your review" in r_rev[5]
-       and r_none[0] == "awaiting_payout" and r_all[4] == 0,
-       str([r_tie, r_void_typed, r_void_miss_aon, r_rev, r_none]))
+       and r_none[:5] == ("settled", 0, 0, 1.0, 0) and r_none[5].startswith("refunded")
+       and r_one_hit[:4] == ("settled", 1, 1, 1.0) and r_one_miss[:4] == ("settled", 1, 0, 1.0)
+       and "cash or Pick6 credits" in r_one_miss[5] and r_two_left[0] == "awaiting_payout" and "2/2" in r_two_left[5]
+       and r_all[4] == 0,
+       str([r_tie, r_void_typed, r_void_miss_aon, r_rev, r_none, r_one_hit, r_two_left]))
 
     # ---- P6 participation, P7 readiness -------------------------------------------------------------------
     def gp(box, sport, pl, stat, line, side, kind="full"):
@@ -392,6 +404,7 @@ def run(ck):
         d_less = L.model_prob("nfl", "2026-11-29", pk(line=74.5, side="Less"))
         d_combo = L.model_prob("nfl", "2026-11-29", pk(stat="rush_rec_yd", line=77.5))
         d_whole = L.model_prob("nfl", "2026-11-29", pk(line=75))
+        d_whole_less = L.model_prob("nfl", "2026-11-29", pk(line=75, side="Less"))
         d_none = L.model_prob("nfl", "2026-11-29", pk(stat="rec", stat_label="Receptions", line=4.5))
     finally:
         boardshare.get, nfl_game_sim.current_week = saved
@@ -403,11 +416,17 @@ def run(ck):
        and m_stat[0] is None and m_nba[0] is None and "no NBA Pick 6 model" in m_nba[1],
        str([m_same, m_other, m_line, m_stat, m_nba]))
     ck("P8a with the week sim's histograms ANY half-point line is priced exactly (79.5: 2 of 8 worlds over; the Less "
-       "side at 74.5: 4 of 8 at or under), the yardage sums too (rush + rec at 77.5), never a whole-number line (the "
-       "sim's yards are continuous and a real tie is void), and a stat the sim gives him none of says so",
-       d_any[0] == 0.25 and "any line" in d_any[1] and d_less[0] == 0.5 and d_combo[0] == 0.5
-       and d_whole[0] is None and "half-point lines only" in d_whole[1] and d_none[0] is None
-       and "gives him no receptions" in d_none[1], str([d_any, d_less, d_combo, d_whole, d_none]))
+       "side at 74.5: 4 of 8 at or under), the yardage sums too (rush + rec at 77.5) -- each the same two-item "
+       "answer as before -- and a stat the sim gives him none of says so",
+       d_any == (0.25, d_any[1]) and "any line" in d_any[1] and d_less[0] == 0.5 and len(d_less) == 2
+       and d_combo[0] == 0.5 and d_none[0] is None and "gives him no receptions" in d_none[1],
+       str([d_any, d_less, d_combo, d_none]))
+    ck("P8c a WHOLE-number line is priced as MODELED More / tie / Less off the same histogram (75: 2 of 8 worlds above "
+       "75.5, 2 within (74.5, 75.5], 4 at or under 74.5); the figure the ledger keeps is P(More | not a tie) = 2/6, "
+       "the record's (a tie is void), with the outright P(More) and P(tie) beside it and the source saying modeled",
+       d_whole[0] == 0.3333 and d_whole[2] == {"p_outright": 0.25, "p_tie": 0.25}
+       and "MODELED" in d_whole[1] and "not a calibrated real-world rate" in d_whole[1] and "if not a tie" in d_whole[1]
+       and d_whole_less[0] == 0.6667 and d_whole_less[2]["p_outright"] == 0.5, str([d_whole, d_whole_less]))
     src = inspect.getsource(L._nfl_prob) + inspect.getsource(L._mlb_prob) + inspect.getsource(L._lol_prob)
     ck("P8b the figure is READ off the shared pieces (boardshare.get, the cached slate), never built: no board(), "
        "analyze_slate only cached_only, no _game_sim",
@@ -535,10 +554,11 @@ def run(ck):
         again = L.grade_due(now=1_800_000_370, today=datetime.date(2026, 12, 1), boxes=stub)
         lost = L.set_pick(allen_c, decision="loss", now=1_800_000_380)
         ck("PD5 the owner's review: an answer that does not fit the review is refused; 'pardoned' voids the pick "
-           "(cause pardon) and C waits for DraftKings' 1/1 figure; re-graded it is back in review; 'loss' settles C at "
-           "0 (1 of 2)",
+           "(cause pardon) and C, left with one non-void pick, is REFUNDED ($2 back, flagged refunded); re-graded it is "
+           "back in review and open again; 'loss' settles C at 0 (1 of 2)",
            wrong and "does not answer this pick" in wrong and pard["picks"][0]["result"] == "void"
-           and pard["picks"][0]["void_cause"] == "pardon" and pard["status"] == "awaiting_payout" and again == 0
+           and pard["picks"][0]["void_cause"] == "pardon" and pard["status"] == "settled" and pard["refunded"] == 1
+           and pard["payout"] == 2.0 and pard["pnl"] == 0.0 and again == 0 and lost["refunded"] == 0
            and lost["picks"][0]["result"] == "miss" and lost["status"] == "settled" and lost["n_hit"] == 1
            and lost["payout"] == 0.0, f"{wrong} {pard['status']} {again} {lost['status']}")
         allen_a = ea["picks"][1]["id"]
@@ -690,7 +710,7 @@ def run(ck):
        "background owner grades an hour at a time, ledgered on failure",
        set(rules) == {"played", "special", "tie", "pardon", "missing", "payout", "picks", "timing", "model"}
        and all(rules[k]["basis"].startswith("stated by DraftKings, confirmed by the owner 2026-11-27") for k in stated)
-       and all("pick6-rules-and-scoring-nfl" in rules[k]["source"] for k in stated)
+       and all("pick6-rules-and-scoring-n" in rules[k]["source"] for k in stated)
        and rules["pardon"]["basis"] == "stated by DraftKings, read by the owner 2026-11-27"
        and "pardon-policy" in rules["pardon"]["source"] and "VOID" in rules["tie"]["text"]
        and all(r.get("basis") and r["verified"] for r in L.RULES) and "UNVERIFIED" not in str(L.RULES)
@@ -698,10 +718,215 @@ def run(ck):
        and "pick6_ledger.tick()" in rec_src and 'errlog.note("MREC-pick6", _e)' in rec_src
        and L._GRADE_EVERY_S == 3600)
     ck("P13b the Pardon's rules are data beside the code that reads them: the five sports the policy names, the "
-       "NFL's offensive positions, MLB's batting block only, and the three market kinds (only 'full' pardonable)",
+       "NFL's offensive positions, MLB's batting block only, and the market kinds with their requirements (only "
+       "'full' pardonable; the five specialized ones checked, each to its sport; 'event'/'part' carry none)",
        set(L.PARDON) == {"nfl", "nba", "wnba", "mlb", "nhl"} and L.PARDON["nfl"]["eligible"] == ("QB", "RB", "WR", "TE", "FB")
-       and L.PARDON["mlb"]["blocks"] == ("bat",) and set(L.KINDS) == {"full", "event", "part"}
+       and L.PARDON["mlb"]["blocks"] == ("bat",)
+       and set(L.KINDS) == {"full", "nba_q1", "nba_first", "nba_first_2h", "mlb_first", "mlb_k_race", "event", "part"}
+       and set(L._CHECKED_KINDS) == {k for k, v in L.KINDS.items() if v["sports"]}
+       and L.KINDS["event"]["req"] is None and L.KINDS["part"]["req"] is None
+       and "starts the second half" in L.KINDS["nba_first_2h"]["req"] and "three strikeouts" in L.KINDS["mlb_k_race"]["req"]
        and "exactly one plate appearance" in L.PARDON["mlb"]["exit"] and "goalies" in L.PARDON["nhl"]["excluded"])
+    _run_v3(ck)
+
+
+def _mlb_pl(name, order=None, bat=None, pit=None):
+    d = {"person": {"fullName": name}, "stats": {"batting": bat or {}, "pitching": pit or {}}}
+    if order is not None:
+        d["battingOrder"] = order
+    return d
+
+
+def _run_v3(ck):
+    """The owner's 2026-11-27 additions: refunds under two non-void picks, the specialized participation
+    tables (NBA and MLB), and whole-number lines as modeled More / tie / Less."""
+    import pick6_ledger as L
+    import nfl_dfs_sim
+    import store
+
+    # ---- K the specialized market kinds ------------------------------------------------------------------
+    def refused(d, needle):
+        try:
+            L.validate(d, today=_TODAY)
+        except ValueError as e:
+            return needle in str(e)
+        return False
+    base = {"sport": "mlb", "game_date": "2026-11-29", "stake": 5, "schedule": "2/2=3"}
+    ok = L.validate(dict(base, picks=[
+        {"player": "Gerrit Cole vs Tarik Skubal", "stat": "custom", "stat_label": "Strikeout race", "line": 0.5,
+         "side": "More", "kind": "mlb_k_race"},
+        {"player": "Aaron Judge", "stat": "custom", "stat_label": "First home run", "line": 0.5, "side": "More",
+         "kind": "mlb_first"}]), today=_TODAY)
+    ck("K1 a hand-typed stat takes a specialized market kind for its own sport only (NBA kinds on an MLB entry are "
+       "refused, naming the sport), and a strikeout race must name both pitchers 'A vs B'",
+       [p["kind"] for p in ok["picks"]] == ["mlb_k_race", "mlb_first"]
+       and refused(dict(base, picks=[{"player": "A", "stat": "custom", "stat_label": "Q1 points", "line": 4.5,
+                                      "side": "More", "kind": "nba_q1"},
+                                     {"player": "B", "stat": "hit", "line": 0.5, "side": "More"}]), "is NBA only")
+       and refused(dict(base, picks=[{"player": "Gerrit Cole", "stat": "custom", "stat_label": "K race", "line": 0.5,
+                                      "side": "More", "kind": "mlb_k_race"},
+                                     {"player": "B", "stat": "hit", "line": 0.5, "side": "More"}]), "'A vs B'"))
+    pbp = _nba_summary([(1, 301, "Starter One", False, True, 30, 10, 2, 2, 0),
+                        (1, 302, "Bench Early", False, False, 8, 2, 1, 0, 0),
+                        (1, 303, "Bench Late", False, False, 6, 2, 0, 0, 0),
+                        (1, 304, "Swap Only", False, False, 0, 0, 0, 0, 0),
+                        (1, 306, "Starter Three", False, True, 30, 8, 3, 1, 0),
+                        (1, 307, "Starter Four", False, True, 30, 8, 3, 1, 0),
+                        (1, 308, "Starter Five", False, True, 30, 8, 3, 1, 0),
+                        (1, 309, "Starter Six", False, True, 30, 8, 3, 1, 0),
+                        (2, 305, "Away Guy", False, False, 20, 6, 2, 2, 0)],
+                       plays=[(1, "9:00", "Substitution", [302, 306], False),
+                              (1, "6:00", "Substitution", [304, 307], False),
+                              (1, "6:00", "Substitution", [307, 304], False),
+                              (2, "10:00", "Substitution", [303, 308], False),
+                              (3, "11:00", "Jump Shot", [301], True),
+                              (3, "8:00", "Substitution", [303, 301], False)])
+    nb = L.parse_nba_summary(pbp)
+
+    def kind_of(box, sport, player, kind):
+        return L.check_kind(box, {"sport": sport, "player": player, "kind": kind})
+    q = {n: kind_of(nb, "nba", n, "nba_q1")[0] for n in ("Starter One", "Bench Early", "Bench Late", "Swap Only")}
+    f = {n: kind_of(nb, "nba", n, "nba_first")[0] for n in ("Starter One", "Bench Early", "Away Guy")}
+    h2 = {n: kind_of(nb, "nba", n, "nba_first_2h")[0] for n in ("Starter One", "Bench Late", "Bench Early")}
+    ck("K2 NBA, off ESPN's starter flags (trusted only where a team lists five) and play-by-play: first-quarter "
+       "markets -- a starter or a first-quarter entry with time is met, a bench player with no first-quarter record "
+       "is not met (void), an in-and-out at one dead ball is review; game-first markets -- the starter flag decides, "
+       "a team without five flagged starters is review; second-half first scorer -- on the floor before any "
+       "third-quarter entry started it, a third-quarter entry did not, no third-quarter record is review",
+       q == {"Starter One": "met", "Bench Early": "met", "Bench Late": "not_met", "Swap Only": "unknown"}
+       and f == {"Starter One": "met", "Bench Early": "not_met", "Away Guy": "unknown"}
+       and h2 == {"Starter One": "met", "Bench Late": "not_met", "Bench Early": "unknown"}, f"{q} {f} {h2}")
+    mb = L.parse_mlb_box({"teams": {
+        "home": {"players": {
+            "a": _mlb_pl("Aaron Judge", "200", {"plateAppearances": 4, "homeRuns": 1}),
+            "b": _mlb_pl("Pinch Hitter", "201", {"plateAppearances": 1}),
+            "c": _mlb_pl("Lineup Scratch", "300", {"plateAppearances": 0}),
+            "d": _mlb_pl("Bench Guy"),
+            "e": _mlb_pl("Gerrit Cole", None, None, {"gamesStarted": 1, "strikeOuts": 2, "numberOfPitches": 80}),
+            "f": _mlb_pl("Reliever", None, None, {"gamesStarted": 0, "strikeOuts": 4, "numberOfPitches": 30})}},
+        "away": {"players": {
+            "g": _mlb_pl("Tarik Skubal", None, None, {"gamesStarted": 1, "strikeOuts": 7, "numberOfPitches": 95}),
+            "h": _mlb_pl("Soft Tosser", None, None, {"gamesStarted": 1, "strikeOuts": 1, "numberOfPitches": 70}),
+            "i": _mlb_pl("Old Feed Arm", None, None, {"strikeOuts": 5, "numberOfPitches": 60})}}}})
+    mf = {n: kind_of(mb, "mlb", n, "mlb_first")[0] for n in ("Aaron Judge", "Pinch Hitter", "Lineup Scratch",
+                                                             "Bench Guy")}
+    nolist = L.parse_mlb_box({"teams": {"home": {"players": {"a": _mlb_pl("No Order", None, {"plateAppearances": 3})}}}})
+    kr = {pair: kind_of(mb, "mlb", pair, "mlb_k_race")[0] for pair in (
+        "Gerrit Cole vs Tarik Skubal", "Gerrit Cole vs Reliever", "Gerrit Cole vs Soft Tosser",
+        "Gerrit Cole vs Old Feed Arm", "Gerrit Cole vs Nobody")}
+    ck("K3 MLB, off statsapi: first-event markets need the starting lineup (battingOrder N00) AND a plate appearance "
+       "-- a starter with 4 PA is met, a substitute (201) or a starter with 0 PA is not, a player with no batting "
+       "order is not where the feed carries it and review where it carries none; the strikeout race needs both "
+       "pitchers to start (gamesStarted) and one to reach three strikeouts -- a reliever or neither reaching three "
+       "voids it, a start the feed does not record or a pitcher not found is review",
+       mf == {"Aaron Judge": "met", "Pinch Hitter": "not_met", "Lineup Scratch": "not_met", "Bench Guy": "not_met"}
+       and kind_of(nolist, "mlb", "No Order", "mlb_first")[0] == "unknown"
+       and kr == {"Gerrit Cole vs Tarik Skubal": "met", "Gerrit Cole vs Reliever": "not_met",
+                  "Gerrit Cole vs Soft Tosser": "not_met", "Gerrit Cole vs Old Feed Arm": "unknown",
+                  "Gerrit Cole vs Nobody": "unknown"}, f"{mf} {kr}")
+
+    # ---- W whole-number lines ------------------------------------------------------------------------------
+    up = lambda x: math.nextafter(x, math.inf)     # noqa: E731
+    dn = lambda x: math.nextafter(x, -math.inf)    # noqa: E731
+    xs = [74.5, up(74.5), dn(74.5), 75.0, 75.5, up(75.5), 0.0, 1e-300, -0.5, up(-0.5), 3.0, 2.5, 120.25, -7.75]
+    h = nfl_dfs_sim.stat_hist(xs)
+    bad = []
+    for L_ in range(-10, 130):
+        got = nfl_dfs_sim.hist_mtl(h, len(xs), L_)
+        want = (sum(1 for x in xs if x > L_ + 0.5), sum(1 for x in xs if L_ - 0.5 < x <= L_ + 0.5),
+                sum(1 for x in xs if x <= L_ - 0.5))
+        if got["counts"] != want or sum(got["counts"]) != len(xs) or got["more"] + got["tie"] + got["less"] != 1.0 \
+                and abs(got["more"] + got["tie"] + got["less"] - 1.0) > 1e-12:
+            bad.append((L_, got["counts"], want))
+    half_same = all(nfl_dfs_sim.hist_mtl(h, len(xs), L_ + 0.5) is None
+                    and nfl_dfs_sim.hist_over(h, len(xs), L_ + 0.5) == sum(1 for x in xs if x > L_ + 0.5) / len(xs)
+                    for L_ in range(-10, 130))
+    zero = [nfl_dfs_sim.hist_mtl(None, 4, L_)["counts"] for L_ in (-1, 0, 2)]
+    ck("W1 a whole-number line's MODELED More / tie / Less: counts above L + 0.5, in (L - 0.5, L + 0.5], at or under "
+       "L - 0.5, equal to the worlds' own counts at every L on adversarial floats, summing to n exactly; the "
+       "half-point path is unchanged (no tie, the exact count); an all-zero stat ties 0 and sits under every line above",
+       not bad and half_same and zero == [(4, 0, 0), (0, 4, 0), (0, 0, 4)], str(bad[:4]))
+    random.seed(5)
+    sim = nfl_dfs_sim.simulate_game(_game(("C", "D")), n=500, with_dists=True, with_components=True)
+    wbad = []
+    for row in sim["players"]:
+        for k in nfl_dfs_sim.DIST_STATS:
+            vals = row["comps"][k]
+            if not any(vals) or k not in sim["dists"].get(row["name"], {}):
+                continue
+            ints = sum(1 for v in vals if float(v).is_integer())
+            for L_ in range(int(min(vals)) - 1, int(max(vals)) + 2):
+                c = nfl_dfs_sim.hist_mtl(sim["dists"][row["name"]][k], 500, L_)["counts"]
+                if c != (sum(1 for v in vals if v > L_ + 0.5), sum(1 for v in vals if L_ - 0.5 < v <= L_ + 0.5),
+                         sum(1 for v in vals if v <= L_ - 0.5)):
+                    wbad.append((row["name"], k, L_))
+                    break
+            if ints > len(vals) // 10:
+                wbad.append((row["name"], k, "integer-valued draws"))
+    ck("W2 on a simulated game every player's More / tie / Less at every whole line equals the full worlds' counts, "
+       "and the week board's yards and receptions are CONTINUOUS draws (almost none integer-valued), so a modeled tie "
+       "is the mass within half a unit of the line -- a convention, not a simulated event",
+       not wbad and "_build_board(season, week, preseason=preseason, with_dists=pc)" in inspect.getsource(nfl_dfs_sim.board)
+       and "discrete" not in inspect.getsource(nfl_dfs_sim._build_board), str(wbad[:4]))
+
+    # ---- R refunds, and the whole-line figure through the ledger ------------------------------------------
+    tmp = tempfile.mkdtemp(prefix="p6l3-")
+    saved_db, saved_ens = store.DB_PATH, L._ensured[0]
+    store.DB_PATH, L._ensured[0] = os.path.join(tmp, "ledger.db"), False
+    try:
+        whole = lambda sport, gd, p, historical=False, now=None: (  # noqa: E731
+            (None, "custom") if p["stat"] == "custom" else
+            (0.4, "stub whole line", {"p_outright": 0.36, "p_tie": 0.1}) if p["line"] == 75 else (0.7, "stub"))
+        e1 = L.add_entry({"sport": "nfl", "game_date": "2026-11-29", "stake": 4, "schedule": "2/2=3", "picks": [
+            {"player": "Ja'Marr Chase", "stat": "rec_yd", "line": 75, "side": "More"},
+            {"player": "Josh Allen", "stat": "pass_yd", "line": 244.5, "side": "More"}]},
+            now=1_800_000_000, today=_TODAY, pricer=whole)
+        box = L.parse_sleeper([_sl("Ja'Marr", "Chase", "WR", gp=1, rec_yd=75, rec=6),
+                               _sl("Josh", "Allen", "QB", gp=1, pass_yd=260, pass_att=30)])
+        L.grade_due(now=1_800_000_100, today=datetime.date(2026, 12, 1), boxes=lambda s, g, b: box)
+        g1 = L.entry(e1["id"])
+        calls = []
+        mbox = L.parse_mlb_box({"teams": {"home": {"players": {
+            "a": _mlb_pl("Aaron Judge", "200", {"plateAppearances": 4, "homeRuns": 1, "hits": 2}),
+            "b": _mlb_pl("Pinch Hitter", "201", {"plateAppearances": 1, "hits": 0})}}}})
+        e2 = L.add_entry({"sport": "mlb", "game_date": "2026-09-20", "stake": 3, "schedule": "2/2=3", "picks": [
+            {"player": "Aaron Judge", "stat": "custom", "stat_label": "First home run", "line": 0.5, "side": "More",
+             "kind": "mlb_first"},
+            {"player": "Pinch Hitter", "stat": "custom", "stat_label": "First hit", "line": 0.5, "side": "More",
+             "kind": "mlb_first"}]}, now=1_800_000_000, today=datetime.date(2026, 9, 19), pricer=whole)
+        mstub = lambda s, g, b: (calls.append(g), mbox)[1]  # noqa: E731
+        L.grade_due(now=1_800_000_200, today=datetime.date(2026, 9, 25), boxes=mstub)
+        L.grade_due(now=1_800_000_300, today=datetime.date(2026, 9, 25), boxes=mstub)
+        g2 = L.entry(e2["id"])
+        typed = L.set_pick(g2["picks"][0]["id"], actual=1, now=1_800_000_400)
+        rec = L.record()
+        ck("R1 an entry left with one non-void pick is REFUNDED: Chase's whole-line 75 is a tie (void) and the entry, "
+           "Allen's hit beside it, settles at the stake ($4 back, P/L 0, flagged refunded with the reason) and counts "
+           "in the paper ROI as a push",
+           g1["picks"][0]["result"] == "tie" and g1["status"] == "settled" and g1["refunded"] == 1
+           and g1["payout"] == 4.0 and g1["pnl"] == 0.0 and "refunded" in g1["why"]
+           and rec["roi_all"]["n"] == 2 and rec["roi_all"]["pnl"] == 0.0, f"{g1['status']} {g1['why']} {rec['roi_all']}")
+        ck("R2 a hand-typed specialized pick is checked from the box once: Judge (starting lineup, 4 PA) is 'requirement "
+           "met: type the outcome' with the evidence kept, the substitute's first-hit pick is VOID (cause dnp); the box "
+           "is read once (a met pick is not re-read); the owner's typed 1 grades Judge's pick, and the entry -- one "
+           "non-void pick -- is refunded",
+           g2["picks"][0]["result"] == "pending" and "requirement met" in g2["picks"][0]["note"]
+           and "batting_order 200" in (g2["picks"][0]["evidence"] or "")
+           and g2["picks"][1]["result"] == "void" and g2["picks"][1]["void_cause"] == "dnp"
+           and calls == ["2026-09-20"] and typed["picks"][0]["result"] == "hit" and typed["refunded"] == 1,
+           f"{[(p['result'], p['note']) for p in g2['picks']]} {calls} {typed['status']}")
+        ck("R3 the whole-line figure reaches the ledger: the pick keeps P(More | not a tie) as its figure (the record "
+           "scores it only off a non-void outcome) and the modeled outright P(More) and P(tie) beside it",
+           e1["picks"][0]["p_model"] == 0.4 and e1["picks"][0]["p_outright"] == 0.36 and e1["picks"][0]["p_tie"] == 0.1
+           and e1["picks"][1]["p_tie"] is None and rec["calibration_all"]["n"] == 1, str(e1["picks"][0]))
+    finally:
+        store.DB_PATH, L._ensured[0] = saved_db, saved_ens
+    js = open(os.path.join(_ROOT, "static", "pick6log.js"), encoding="utf-8").read()
+    ck("R4 the card says it: a refunded entry reads 'refunded · stake back (cash or credits not stated)', a whole-line "
+       "figure reads 'if not a tie' with the outright and tie and 'modeled', and the market kinds offered are the "
+       "entry's sport's",
+       "refunded · stake back (cash or credits not stated)" in js and "if not a tie" in js and "; modeled)" in js
+       and "k.sports.includes(dr.sport)" in js)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,57 @@
+{
+ "anchor_season": 2025,
+ "built": "2026-11-27T14:45:58Z",
+ "coef": [
+  -5.169882439496408,
+  -4.523601171028862,
+  3.7113179667215275,
+  -0.3635312927161187,
+  1.0769724707543116,
+  -0.005895389192258126,
+  -0.8074937318083687,
+  0.009538461124359012,
+  0.6447221652411752,
+  0.09274053559779878
+ ],
+ "credit": "nflverse-data play-by-play, players and injuries (CC BY 4.0)",
+ "ct_k": 5.0,
+ "era_from": null,
+ "fit_seasons": [
+  2016,
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "half_life": 2.0,
+ "hazard_basis": "the rule (section 1) refused every state candidate (s6 kept); the shipped hazard is section 3's regime candidate, chosen on 2016-2024 by BIC after the diagnosis read 2022-2026 -- tested only by prereg_r5.json's window",
+ "poss_s": 327.0,
+ "rule_coef": [
+  -5.169882439496408,
+  -4.523601171028862,
+  3.7113179667215275,
+  -0.3635312927161187,
+  1.0769724707543116,
+  -0.005895389192258126,
+  -0.8074937318083687,
+  0.009538461124359012,
+  0.6447221652411752,
+  0.09274053559779878
+ ],
+ "rule_spec": "s6",
+ "seal": "2026 week 13 on and every later season: never read by this fit",
+ "second_unit": {
+  "d_b": 0.0039,
+  "d_w": 0.0312,
+  "q_b": 0.5302,
+  "q_w0": 0.0501,
+  "q_w1": 0.4776
+ },
+ "spec": "s6",
+ "version": "coach-r5.0"
+}

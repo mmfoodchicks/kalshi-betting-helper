@@ -1,0 +1,136 @@
+{
+ "block_sha256": "7ef4defec4f0b850dee30677fe024c8fb5e5120f4f955adbab558012830b1262",
+ "components_frozen": {
+  "drifting": [
+   "clock",
+   "rb_target",
+   "pull"
+  ],
+  "full_history": [
+   "call",
+   "no_huddle"
+  ],
+  "source": "research/reports/nfl_coach_evo.md (the per-table drift result); the all-table scheme the evo rule tested was REJECTED there (scheme 'full'), and that verdict stands: evo_rule.json and evo.json are pinned here unchanged"
+ },
+ "criteria": {
+  "1": "tests/guards_auto_nfl_coach_r6.py exits 0",
+  "2": "the pooled gain > 2 SE",
+  "3": "each drifting component's gain > -1 SE"
+ },
+ "dependence": "2027 is shared with R2-H2, R4, R5's amendment, C4 (weeks 1-9) and C3-N; R6's games are every regular-season game, so every other 2027 read's units sit inside its games (the correlations measured on development games are in family_2027_r6.json). R6 is built on R5's hazard and second unit and R1's engine: a defect there is shared. The evo study read 2019-2026 week 12, so no development figure is a test. The 2028 replication shares no game with any 2027 read.",
+ "family": {
+  "definition": "the primary criterion of every coaching read whose primary window is the 2027 regular season (R4's window adds 2026 weeks 13-18); C4 stays in R1's owner-approved family; C3-N is not coaching; the replications (R5 2028, R6 2028) are not members",
+  "method": "Holm, family-wise one-sided 0.05; every original verdict stands under its own rule and the family statement is reported beside it",
+  "r5_amendment": "R5's own three-test analysis (family_2027.json, pinned by prereg_r5_2027.json) stands as registered; this four-test family is the one reported once R6 exists",
+  "tests": [
+   "R2-H2 criterion 2",
+   "R4 criterion 2",
+   "R5 criterion 2 (2027 amendment)",
+   "R6 criterion 2 (2027 primary)"
+  ],
+  "z_thresholds": [
+   2.2414,
+   2.128,
+   1.96,
+   1.6449
+  ]
+ },
+ "files": {
+  "nfl_coach_sim.py": "631a398b024f85adf9d275ce7c02ebbe3deb8dd2160bed062b3fb4e136f244e2",
+  "nfl_coach_sim_r2.py": "67ae6c8e54cdd68f57f04719fdb914d489dc4b622560ceb615b71166c39eccca",
+  "nfl_coach_sim_r3.py": "acd00092a91300c4ccd5f244b8d76dc0fa6a75337e4ddf1a857805c4c2cbe06c",
+  "nfl_coach_sim_r4.py": "f9249362d216be1160bc9bb3a8bb70d52586266d5e1697d6bae2c80da38523f3",
+  "nfl_coach_sim_r5.py": "b23b0cdddfb46829e043c8d9a1e756192617fe44eccecef295caa28adee473e5",
+  "nfl_coach_sim_r6.py": "10a89ddfc9a3bc1d0acd552b1d93af0fe850d053e5081b3105cd1770caadc918",
+  "nfl_deep_sim.py": "22a221d7810495db3f8f7bb1bef7c4e16c3bbbf282902a95f133cecdabc29820",
+  "nfl_pbp.py": "660234badefc3e3b5f0e1417a48431e4ad8ff33aab5df8a207834faa4862865d",
+  "research/data/nfl_coach/evo.json": "2fdab687d0f86ab39e826818d15913dff75c3ed82c22dafa6af772f6c2a76957",
+  "research/data/nfl_coach/evo_rule.json": "7f139636e0ec3f3ff4b071d98df3af53d12a463113a172270e71cef00be5c8d2",
+  "research/data/nfl_coach/family_2027_r6.json": "12578e51a44b9585a27fb005ed22bd70eed931a936a5cea984e052a0b1f7d1e0",
+  "research/data/nfl_coach/r6_fit.json": "6d8b49124c0d142418dec5ccd00ec1c2d1e2c505611e02108a7b59c78987d2e0",
+  "research/data/nfl_coach_r2_tables.json": "e589314e654897e81e665e4a25eba9bd845b9fed71790e747a518f54ee4daa1b",
+  "research/data/nfl_coach_r3_tables.json": "6dfdc15cfb89ea660b126f0a7906bc023d817a46e524acb4c7b33f09ca979977",
+  "research/data/nfl_coach_r4_tables.json": "8ce1bce2c8c9e5b9387a75f647f75b4ba612d90c952c9c4b26a62b4eb5984291",
+  "research/data/nfl_coach_r5_tables.json": "fcf3521e7c7b5323e5147b71f6d60708543bcfeb6fd5fe654e7e9ff588c7da43",
+  "research/data/nfl_coach_r6_tables.json": "8126dda1bdb3e19bfea1e9fa5a21eb3da87f8834410dd6dca086e9eb5d489462",
+  "research/data/nfl_coach_tables.json": "ffe45e30f03c6f5d0879834c7c43f08ca7463525399ded0f9a2a9937df2189d8",
+  "research/nfl_coach_data.py": "3c7a8680e1a9cf5e2efd14ff6fed7ad26d4ce21775f05e97faf21912e3f846ad",
+  "research/nfl_coach_evo.py": "cd71d53b774f6e87320cacae192c102020c95eb6b5ea53203d6d59a753b94e79",
+  "research/nfl_coach_family_2027_r6.py": "57d7cdd07cbff1be149c0035c28c7b049f87bff8ae5e3de21dbba7826dcb5140",
+  "research/nfl_coach_r2_data.py": "ed17b05c9b2544f782b7befb307b7ae27dcc63d2b581d0b8f877feab7d59ada1",
+  "research/nfl_coach_r3_qb.py": "916140d754ec5aec036686ecd39391df2b9f05f7e4e3d94ab6dd4525faa90685",
+  "research/nfl_coach_r6_fit.py": "0d530b77c7201fe129851df8c742a7b8b92b76d41c41cd67ad84b90c68ca6b74",
+  "research/nfl_coach_r6_read.py": "c71069948d605c986629b17141d190f389c8eff1556c0b49303eb0ffff772329",
+  "tests/guards_auto_nfl_coach_r6.py": "a24331e2bd43c5bbf6882645b659caadaef5ea9fbc481012a09d80054ba545dc"
+ },
+ "min_games": 200,
+ "owner_approval": {
+  "date": "2026-11-27",
+  "words": "Approved: build R6 using the selectively drifting training architecture. Clock management, running back target share and quarterback substitutions use the supported drifting-league methods. Play calling and no-huddle retain full-history training. Preserve the rejected all-table drift experiment and its original verdict. Use the 2027 regular season for primary prospective validation and 2028 for independent replication. Include R6 in the shared 2027 Holm correction framework, with updated power calculations and a clearly defined hypothesis family. Freeze the implementation, component selection and acceptance criteria before examining prospective outcomes. Keep R1-R5 and their registrations untouched."
+ },
+ "power": "~272 games. Criterion 2: 0.74 at the development mean (walk-forward 2019-2026, the pull's share dropped since its 2027 shift against R5 is ~0), 0.95 at the 2025-26 level; at Holm's strictest step (z 2.2414) 0.65 and 0.92. Criterion 3: the clock and the backs hold > -1 SE with ~1.00 and ~0.99; the pull's forecast shift against R5 is +0.0095 logit, so its gain is ~0 and its guardrail holds ~0.84 by chance alone. Jointly ~0.65 at the development mean, ~0.79 at the 2025-26 level. Power is the chance the test passes IF R6 is better by the stated amount, never the probability that it is.",
+ "statistics": {
+  "call_and_no_huddle": "R6 plays R1's call and no-huddle tables unchanged, so their difference from R5 is identically 0 (guard N6-1): no table of the five can be worse there",
+  "per_game": "nfl_coach_r6_fit.window_gains at the FROZEN tables (nothing refitted, the replication included): per game, each component's held-out log score with its 2027 forecast offset minus without it (clock: a Gaussian on the log seconds between a run and the next snap in R1's unhurried phases against the full-history cell means; backs' targets: the evo T4 cell rates; pull: R5's hazard), and the pooled sum; positive = R6 better",
+  "se": "over games (clustered by game)"
+ },
+ "version": "coach-r6.0",
+ "what": "R5 with three components moved by a league tendency following a season-level random walk, forecast for 2027 from 2016 to 2026 week 12: the clock (R1's pace hook), the backs' target odds (R2's deal) and the pull (R5's hazard's intercept); the call and no-huddle tables R1's, full history",
+ "windows": {
+  "primary": {
+   "not_before_utc": "2028-01-13T06:00:00Z",
+   "requires_reads": [
+    "R1"
+   ],
+   "season": 2027,
+   "weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+   ]
+  },
+  "replication": {
+   "not_before_utc": "2029-01-16T06:00:00Z",
+   "requires_reads": [
+    "R6-primary"
+   ],
+   "season": 2028,
+   "weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+   ]
+  }
+ },
+ "written_utc": "2026-11-27T16:09:49Z"
+}

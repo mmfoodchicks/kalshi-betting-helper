@@ -71,7 +71,7 @@ function _p6lForm() {
       <input type="text" maxlength="60" placeholder="player" value="${_p6lEsc(p.player)}" data-p6l-pick="${i}" data-p6l-f="player"/>
       ${statSel}
       ${custom ? `<input type="text" maxlength="40" placeholder="stat, as DraftKings names it" value="${_p6lEsc(p.stat_label)}" data-p6l-pick="${i}" data-p6l-f="stat_label"/>
-        <select data-p6l-pick="${i}" data-p6l-f="kind" title="only a full-game stat can be pardoned">${(_p6l.kinds || []).map((k) => `<option value="${_p6lEsc(k.key)}"${k.key === (p.kind || "full") ? " selected" : ""}>${_p6lEsc(k.label)}</option>`).join("")}</select>` : ""}
+        <select data-p6l-pick="${i}" data-p6l-f="kind" title="only a full-game stat can be pardoned">${(_p6l.kinds || []).filter((k) => !(k.sports || []).length || k.sports.includes(dr.sport)).map((k) => `<option value="${_p6lEsc(k.key)}"${k.key === (p.kind || "full") ? " selected" : ""}>${_p6lEsc(k.label)}</option>`).join("")}</select>` : ""}
       <input type="number" step="0.5" min="0" inputmode="decimal" placeholder="line" value="${_p6lEsc(p.line)}" data-p6l-pick="${i}" data-p6l-f="line" class="p6l-line"/>
       <select data-p6l-pick="${i}" data-p6l-f="side"><option${p.side === "More" ? " selected" : ""}>More</option><option${p.side === "Less" ? " selected" : ""}>Less</option></select>
       ${dr.picks.length > 2 ? `<button type="button" class="p6l-x" data-p6l-rm="${i}" title="remove this pick">×</button>` : ""}
@@ -109,12 +109,18 @@ function _p6lEntry(e) {
   let status;
   if (e.status === "settled") {
     const pl = e.pnl || 0;
-    status = `<span class="p6l-res ${pl > 0 ? "p6l-hit" : pl < 0 ? "p6l-miss" : "p6l-void"}">${e.n_hit}/${e.n_live} · ${e.payout_x}x · ${pl >= 0 ? "+" : "-"}$${Math.abs(pl).toFixed(2)}${e.credits ? " (credits)" : ""}</span>`;
+    status = e.refunded
+      // DraftKings refunds an entry left with under two non-void picks; cash or credits is not stated
+      ? `<span class="p6l-res p6l-void" title="${_p6lEsc(e.why)}">refunded · stake back (cash or credits not stated)</span>`
+      : `<span class="p6l-res ${pl > 0 ? "p6l-hit" : pl < 0 ? "p6l-miss" : "p6l-void"}">${e.n_hit}/${e.n_live} · ${e.payout_x}x · ${pl >= 0 ? "+" : "-"}$${Math.abs(pl).toFixed(2)}${e.credits ? " (credits)" : ""}</span>`;
   } else if (e.status === "awaiting_payout") {
     status = `<span class="p6l-res p6l-tie">needs DraftKings' payout</span>`;
   } else status = `<span class="p6l-res p6l-pend">open</span>`;
   const picks = (e.picks || []).map((p) => {
-    const vig = p.p_model != null
+    // a whole-number line: the figure is P(side | not a tie), the modeled outright and tie beside it
+    const vig = p.p_model != null && p.p_tie != null
+      ? `<span title="${_p6lEsc(p.model_src)}">Vigil <b>${_p6lPct(p.p_model)}%</b> if not a tie <span class="p6l-muted">(outright ${_p6lPct(p.p_outright)}%, tie ${_p6lPct(p.p_tie)}%; modeled)</span></span>`
+      : p.p_model != null
       ? `<span title="${_p6lEsc(p.model_src)}">Vigil <b>${_p6lPct(p.p_model)}%</b></span>`
       : `<span class="p6l-muted" title="${_p6lEsc(p.model_src)}">no model figure</span>`;
     const by = p.graded_by ? ` <span class="p6l-muted">(${_p6lEsc(p.graded_by === "owner" ? "by hand" : p.graded_by)})</span>` : "";
@@ -228,7 +234,7 @@ function _p6lOnChange(ev) {
   if (!t || !t.dataset || !t.dataset.p6lF || !_p6l.draft) return;
   _p6lOnInput(ev);
   if (t.dataset.p6lF === "sport") {
-    _p6l.draft.picks.forEach((p) => { p.stat = ""; p.stat_label = ""; });
+    _p6l.draft.picks.forEach((p) => { p.stat = ""; p.stat_label = ""; p.kind = "full"; });
     _p6lDraw();
   } else if (t.dataset.p6lF === "stat") _p6lDraw();
 }
