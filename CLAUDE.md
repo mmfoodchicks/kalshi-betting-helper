@@ -780,6 +780,23 @@ data-only `sim-history` branch (which never deploys):
     against the brute force) and its multi-entry the caps (`SheetCaps`). Every portfolio, capped or not, carries
     `concentration` (display only; `static/dfspick.js` dfsConcentration is the same definition for the prefix on
     screen). Guards: `tests/guards_auto_portfolio.py`.
+- **Player eligibility** (2026-11-27, `dfs_eligibility.py`, `research/reports/dfs_eligibility.md`; the owner:
+  "let the simulator determine whether a player belongs in a lineup rather than ... an occasionally inaccurate depth
+  chart"). Three modes; production stays `conservative` (today's depth gate; guard EL1). `adaptive` admits a
+  depth-gated man when his projection and recent (or pre-absence) target+carry share give at least the chance of a
+  starter-level game the weakest 5% of kept players have (rule committed first in 3dae0ec; fitted 2022-24, tested
+  2025); `unrestricted` takes every active projected man. Hard exclusions (inactive, Out/IR/suspended, no roster, no
+  projection) never lift, no projection moves, PFR/NGS are not read; the new modes add players only from the field's
+  own extras, so the field and every field figure stay byte-identical. DEN @ PIT: every mode chose conservative's
+  exact best lineup and 20 entries (paired differences 0); best-lineup coverage 44.5 / 56.9 / 59.0%; Pittman
+  admitted by adaptive (flagged returning: missed 6 games) but in no mode's lineups. History (could-have-built only:
+  past boards are unseeded): the real best lineup buildable on 6 / 8 / 10 of 20 showdowns and 6 / 9 / 12 of 12
+  classics. The house rules audited: the $11,000+ captain rule blocks the best lineup in 28% of DEN @ PIT worlds and
+  lifting it raised the 20 entries' top-1% by 1.1 points (4.7 SE); no DST beside the other team's captain 12.6%, no
+  K/DST captain 7.8%. Any rule change gets its own registered test. A default change needs
+  `research/data/dfs_eligibility/prereg.json` (12 future showdowns recorded before lock, adaptive > conservative on
+  the entries' top-1% by 2 SE, not worse on cash, the owner's sign-off; due at the 12th slate or 2027-02-16); the
+  recorder (`research/dfs_eligibility_record.py`) is manual today.
 - **The 2026-11-26 sprint** (`research/reports/sprint_2026_11_26.md`): the owner's Phase 0-10 backlog
   reconciled item by item (done / partial / missing / rejected / blocked), four audits with their scripts
   (`research/sprint_2026_11_26/`), and the readability pass (`tests/guards_ui.py`, section UI: the page's
