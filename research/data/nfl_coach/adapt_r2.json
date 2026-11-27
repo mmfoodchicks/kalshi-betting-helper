@@ -1,0 +1,66 @@
+{
+ "coef_baseline": [
+  -0.043267961343867144,
+  6.10540397401199
+ ],
+ "coef_candidate": [
+  -0.05800925047784066,
+  6.062296021493873,
+  -1.376667294923591
+ ],
+ "credit": "nflverse-data play-by-play (CC BY 4.0)",
+ "dev": {
+  "2024": {
+   "gain_per_team_game": 0.06926,
+   "ll_baseline": 0.558472,
+   "ll_candidate": 0.555718,
+   "se": 0.01636,
+   "snaps": 10939,
+   "team_games": 435,
+   "z": 4.23
+  },
+  "2025": {
+   "gain_per_team_game": 0.02622,
+   "ll_baseline": 0.56278,
+   "ll_candidate": 0.561686,
+   "se": 0.01472,
+   "snaps": 10336,
+   "team_games": 431,
+   "z": 1.78
+  },
+  "2026": {
+   "gain_per_team_game": 0.0219,
+   "ll_baseline": 0.547298,
+   "ll_candidate": 0.546397,
+   "se": 0.02251,
+   "snaps": 5569,
+   "team_games": 229,
+   "z": 0.97
+  }
+ },
+ "fit": {
+  "gain_per_team_game": 0.05171,
+  "ll_baseline": 0.556649,
+  "ll_candidate": 0.554569,
+  "se": 0.00648,
+  "snaps": 82281,
+  "team_games": 3310,
+  "z": 7.98
+ },
+ "fit_seasons": [
+  2016,
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023
+ ],
+ "gap_k": 10.0,
+ "lean_k": 150.0,
+ "sr": [
+  0.42,
+  0.46
+ ]
+}

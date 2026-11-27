@@ -85,3 +85,8 @@ mx_record.db*
 research/data/nfl_coach/nflverse/
 play_by_play_*.csv.gz
 nfl_coach_rows_*.pkl
+# R2's player-level row caches and nflverse's players.csv (CC BY 4.0), the same rule
+nfl_coach_r2_plays_*.pkl
+players.csv
+ftn_charting_*.csv
+nfl_coach_r2_curves_*.json

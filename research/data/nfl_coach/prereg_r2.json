@@ -1,0 +1,110 @@
+{
+ "block_sha256": "84144a48c39aeefbc61564eb4a25e865f37c04fbc7413d84679424baacd81222",
+ "files": {
+  "nfl_coach_sim.py": "631a398b024f85adf9d275ce7c02ebbe3deb8dd2160bed062b3fb4e136f244e2",
+  "nfl_coach_sim_r2.py": "67ae6c8e54cdd68f57f04719fdb914d489dc4b622560ceb615b71166c39eccca",
+  "nfl_deep_sim.py": "22a221d7810495db3f8f7bb1bef7c4e16c3bbbf282902a95f133cecdabc29820",
+  "nfl_pbp.py": "660234badefc3e3b5f0e1417a48431e4ad8ff33aab5df8a207834faa4862865d",
+  "research/data/nfl_coach/adapt_r2.json": "d2adec145f48cb482c14863859e17ee35e5053cc5094efb24622a7c85128a18f",
+  "research/data/nfl_coach_r2_tables.json": "e589314e654897e81e665e4a25eba9bd845b9fed71790e747a518f54ee4daa1b",
+  "research/data/nfl_coach_tables.json": "ffe45e30f03c6f5d0879834c7c43f08ca7463525399ded0f9a2a9937df2189d8",
+  "research/nfl_coach_data.py": "3c7a8680e1a9cf5e2efd14ff6fed7ad26d4ce21775f05e97faf21912e3f846ad",
+  "research/nfl_coach_eval.py": "fbd5a9998bebb38f253185e948891be57a73435d2c3774f9254268d76a50b91d",
+  "research/nfl_coach_r2_adapt.py": "e99672b431d75aff306e93f28951f2612a3f6c05044d295a681f7ee1208000d4",
+  "research/nfl_coach_r2_data.py": "ed17b05c9b2544f782b7befb307b7ae27dcc63d2b581d0b8f877feab7d59ada1",
+  "research/nfl_coach_r2_eval.py": "7c3feeb2c2c11aec524db13566a4399826123a3834ff5edad9b8bf96e02f2a99",
+  "research/nfl_coach_r2_read.py": "b1618b3e86159a89dd28879dd63bb91c1b0f9c2e2d52b5739c871f063207bdcf",
+  "tests/guards_auto_nfl_coach_r2.py": "eb4a5632f56d6540cef966cec1249c68c19be8d5dfe2a999aab5e1c34bb11494"
+ },
+ "hypotheses": {
+  "H1": {
+   "criteria": {
+    "1": "tests/guards_auto_nfl_coach_r2.py exits 0",
+    "2": "stage1 both (carries + targets): gain > 2 SE (SE over team-games)",
+    "3": "stage1 carries gain > 0, and targets gain > -1 SE",
+    "4": "realism: carries CRPS, targets CRPS and TD log score each R2 - static <= +1 SE"
+   },
+   "min_team_games": 150,
+   "not_before_utc": "2027-01-06T06:00:00Z",
+   "power": "development (2024 / 2025 / 2026 wk 1-12): joint gain 1.08 / 0.81 / 0.90 a team-game at SE 0.089 / 0.077 / 0.117 -> at ~190 team-games z ~ 6-8, criteria 2-3 pass with probability > 0.99; criterion 4's three 1-SE bounds: ~0.8 jointly if the development differences hold (a 1-SE bound fails about one time in six with no true difference)",
+   "settings": {
+    "level_curve_n": 1000,
+    "min_prior_games": 3,
+    "players": "players.csv (nflverse, fresh) in the read's directory",
+    "seed": "per game: the last 8 bytes of the nflverse game id, little-endian, mod 2^31",
+    "sims": 200,
+    "workers": 4
+   },
+   "statistics": {
+    "realism": "nfl_coach_r2_eval.run_realism / summarize_realism: R2 minus static per team-game (negative = R2 better) of the CRPS of RB1/RB2/QB carries and WR1-3/TE1/RB1 targets and the log score of their touchdowns, both arms on the same simulated games",
+    "stage1": "nfl_coach_r2_eval.stage1 / summarize1: per team-game, static minus R2 log loss of who got each real carry and target, summed (positive = R2 better)"
+   },
+   "what": "who gets the ball by situation (nfl_coach_sim_r2): role x bucket multipliers on the player's share, mean-preserving, against the static share on the same base",
+   "window": [
+    {
+     "season": 2026,
+     "weeks": [
+      13,
+      14,
+      15,
+      16,
+      17,
+      18
+     ]
+    }
+   ]
+  },
+  "H2": {
+   "criteria": {
+    "1": "tests/guards_auto_nfl_coach_r2.py exits 0",
+    "2": "gain > 2 SE (SE over team-games)"
+   },
+   "min_team_games": 500,
+   "not_before_utc": "2028-01-13T06:00:00Z",
+   "power": "development gains 0.069 / 0.026 / 0.022 a team-game (2024 / 2025 / 2026 wk 1-12; fit seasons 0.052): at ~640 team-games SE ~0.013, so power ~0.89 at 0.042 (the development mean) and ~0.47 at 0.025 (the last two seasons)",
+   "statistics": {
+    "gain": "nfl_coach_r2_adapt.score / summarize: per team-game, baseline minus candidate log loss of the neutral pass calls after the offence's 10th snap"
+   },
+   "what": "in-game adaptation of the pass call at the decision level (research/nfl_coach_r2_adapt.py, frozen coefficients in research/data/nfl_coach/adapt_r2.json); not in any engine",
+   "window": [
+    {
+     "season": 2026,
+     "weeks": [
+      13,
+      14,
+      15,
+      16,
+      17,
+      18
+     ]
+    },
+    {
+     "season": 2027,
+     "weeks": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18
+     ]
+    }
+   ]
+  }
+ },
+ "requires_r1_read": true,
+ "version": "coach-r2.0",
+ "written_utc": "2026-11-27T04:52:34Z"
+}

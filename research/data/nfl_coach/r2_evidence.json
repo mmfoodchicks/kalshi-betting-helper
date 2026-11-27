@@ -1,0 +1,1467 @@
+{
+ "buckets": [
+  "neutral",
+  "goal_line",
+  "inside5",
+  "inside10",
+  "two_min",
+  "lead_big",
+  "lead_late",
+  "trail_big",
+  "pass_down",
+  "short_yd"
+ ],
+ "coach_pull": {
+  "mean_drop": -0.132,
+  "sampling_sd": 0.0882,
+  "sd_obs": 0.2046,
+  "team_seasons": 241,
+  "yoy_new_coach": {
+   "n": 18,
+   "r": 0.158,
+   "se": 0.244,
+   "slope": 0.134
+  },
+  "yoy_same_coach": {
+   "n": 149,
+   "r": 0.033,
+   "se": 0.082,
+   "slope": 0.031
+  }
+ },
+ "credit": "nflverse-data play-by-play and players (CC BY 4.0); FTN Data via nflverse (CC BY-SA 4.0)",
+ "dev_2026_weeks": [
+  1,
+  12
+ ],
+ "fatigue": {
+  "1-6": {
+   "carries": 9190,
+   "player_games": 1653,
+   "succ_resid": 0.0379,
+   "succ_se": 0.0054,
+   "ypc_resid": 0.328,
+   "ypc_se": 0.071
+  },
+  "13-18": {
+   "carries": 3136,
+   "player_games": 922,
+   "succ_resid": -0.0001,
+   "succ_se": 0.0102,
+   "ypc_resid": 0.182,
+   "ypc_se": 0.125
+  },
+  "19-99": {
+   "carries": 398,
+   "player_games": 169,
+   "succ_resid": -0.0303,
+   "succ_se": 0.0294,
+   "ypc_resid": -0.383,
+   "ypc_se": 0.384
+  },
+  "7-12": {
+   "carries": 6852,
+   "player_games": 1439,
+   "succ_resid": 0.029,
+   "succ_se": 0.0066,
+   "ypc_resid": 0.332,
+   "ypc_se": 0.101
+  }
+ },
+ "ftn_blitz": {
+  "league_rate": {
+   "2022": 0.2393,
+   "2023": 0.2718,
+   "2024": 0.2879,
+   "2025": 0.2938
+  },
+  "reliability_full": 0.849,
+  "sd_obs": 0.0662,
+  "split_half": {
+   "n": 128,
+   "r": 0.737,
+   "se": 0.041,
+   "slope": 0.758
+  },
+  "team_seasons": 128,
+  "yoy_new_coach": {
+   "n": 20,
+   "r": 0.126,
+   "se": 0.232,
+   "slope": 0.104
+  },
+  "yoy_same_coach": {
+   "n": 76,
+   "r": 0.637,
+   "se": 0.069,
+   "slope": 0.648
+  }
+ },
+ "gl_specialist": {
+  "backs": 727,
+  "inside5_carries_per_team_season": 22.8,
+  "reliability_full": 0.462,
+  "sd_obs_half": 0.1611,
+  "sd_true": 0.0883,
+  "split_half": {
+   "n": 727,
+   "r": 0.3,
+   "se": 0.034,
+   "slope": 0.291
+  }
+ },
+ "halftime_adapt": {
+  "coef": -0.0367,
+  "proe_points_per_sd": -0.93,
+  "se": 0.0104,
+  "team_games": 2791,
+  "z": -3.54
+ },
+ "halftime_quarters": {
+  "epa": {
+   "Q1-Q2": {
+    "n": 4829,
+    "r": 0.0098,
+    "se": 0.0138
+   },
+   "Q1-Q3": {
+    "n": 4190,
+    "r": 0.0087,
+    "se": 0.0143
+   },
+   "Q2-Q3": {
+    "n": 4059,
+    "r": 0.0118,
+    "se": 0.0172
+   },
+   "Q3-Q4": {
+    "n": 3633,
+    "r": -0.0052,
+    "se": 0.0171
+   }
+  },
+  "proe": {
+   "Q1-Q2": {
+    "n": 4829,
+    "r": 0.1044,
+    "se": 0.0162
+   },
+   "Q1-Q3": {
+    "n": 4190,
+    "r": 0.1257,
+    "se": 0.0171
+   },
+   "Q2-Q3": {
+    "n": 4059,
+    "r": 0.1295,
+    "se": 0.0166
+   },
+   "Q3-Q4": {
+    "n": 3633,
+    "r": 0.2044,
+    "se": 0.0151
+   }
+  }
+ },
+ "in_game_adapt": {
+  "coef_run_minus_pass_success": -0.2314,
+  "coef_season_proe": 0.998,
+  "plays": 126350,
+  "proe_points_per_sd": -2.45,
+  "sd_x": 0.106,
+  "se": 0.0127,
+  "z": -18.28
+ },
+ "in_game_adapt_plan": {
+  "coef_plan_so_far": 0.147,
+  "coef_run_minus_pass_success": -0.2208,
+  "plays": 126290,
+  "proe_points_per_sd": -2.34,
+  "se": 0.0121,
+  "se_plan": 0.027,
+  "z": -18.18
+ },
+ "in_game_placebo": {
+  "coef_future": -0.0091,
+  "coef_past": -0.2267,
+  "plays": 117695,
+  "se_future": 0.0126,
+  "se_past": 0.0126
+ },
+ "interaction": {
+  "epa": {
+   "control_other_opponent": {
+    "n": 786,
+    "r": -0.044,
+    "se": 0.036,
+    "slope": -0.046
+   },
+   "rematch": {
+    "n": 791,
+    "r": -0.103,
+    "se": 0.035,
+    "slope": -0.107
+   }
+  },
+  "proe": {
+   "control_other_opponent": {
+    "n": 786,
+    "r": -0.077,
+    "se": 0.036,
+    "slope": -0.079
+   },
+   "rematch": {
+    "n": 791,
+    "r": -0.123,
+    "se": 0.035,
+    "slope": -0.123
+   }
+  }
+ },
+ "league_means": {
+  "d_proe": {
+   "2016": -0.0,
+   "2017": -0.0168,
+   "2018": -0.0015,
+   "2019": -0.0003,
+   "2020": 0.0043,
+   "2021": -0.0038,
+   "2022": -0.0192,
+   "2023": -0.0045,
+   "2024": -0.0133,
+   "2025": -0.0119
+  },
+  "go": {
+   "2016": 0.0,
+   "2017": -0.0,
+   "2018": 0.0,
+   "2019": 0.0,
+   "2020": 0.0,
+   "2021": 0.0,
+   "2022": 0.0,
+   "2023": 0.0,
+   "2024": 0.0,
+   "2025": -0.0
+  },
+  "nh": {
+   "2016": 0.0975,
+   "2017": 0.0722,
+   "2018": 0.0578,
+   "2019": 0.0611,
+   "2020": 0.0733,
+   "2021": 0.0859,
+   "2022": 0.0812,
+   "2023": 0.0673,
+   "2024": 0.0944,
+   "2025": 0.0781
+  },
+  "pace": {
+   "2016": 37.4748,
+   "2017": 37.3604,
+   "2018": 37.7129,
+   "2019": 37.4275,
+   "2020": 37.3212,
+   "2021": 37.6648,
+   "2022": 37.542,
+   "2023": 37.5959,
+   "2024": 37.6928,
+   "2025": 38.3841
+  },
+  "proe": {
+   "2016": -0.0,
+   "2017": -0.0168,
+   "2018": -0.0015,
+   "2019": -0.0003,
+   "2020": 0.0043,
+   "2021": -0.0038,
+   "2022": -0.0192,
+   "2023": -0.0045,
+   "2024": -0.0133,
+   "2025": -0.0119
+  },
+  "two": {
+   "2016": 0.0854,
+   "2017": 0.0767,
+   "2018": 0.1011,
+   "2019": 0.0908,
+   "2020": 0.0934,
+   "2021": 0.1145,
+   "2022": 0.0962,
+   "2023": 0.1038,
+   "2024": 0.1023,
+   "2025": 0.0969
+  }
+ },
+ "opponent_adapt": {
+  "coef_def_allowed_lean": 0.335,
+  "coef_def_rush_minus_pass_epa": -0.0276,
+  "coef_own_lean": 0.801,
+  "proe_points_per_sd_weak": -0.28,
+  "se_def": 0.043,
+  "se_own": 0.025,
+  "se_weak": 0.0128,
+  "team_games": 4788,
+  "z_weak": -2.16
+ },
+ "qb_share": {
+  "Q1-Q3 lead 17+": {
+   "dropbacks": 2936,
+   "share": 0.9755
+  },
+  "Q1-Q3 lead 9-16": {
+   "dropbacks": 7871,
+   "share": 0.9817
+  },
+  "Q1-Q3 trail 17+": {
+   "dropbacks": 4801,
+   "share": 0.9294
+  },
+  "Q1-Q3 trail 9-16": {
+   "dropbacks": 10989,
+   "share": 0.972
+  },
+  "Q1-Q3 within 8": {
+   "dropbacks": 65642,
+   "share": 0.9845
+  },
+  "Q4 lead 17+": {
+   "dropbacks": 1545,
+   "share": 0.7851
+  },
+  "Q4 lead 9-16": {
+   "dropbacks": 2527,
+   "share": 0.9683
+  },
+  "Q4 trail 17+": {
+   "dropbacks": 5918,
+   "share": 0.8116
+  },
+  "Q4 trail 9-16": {
+   "dropbacks": 7990,
+   "share": 0.9125
+  },
+  "Q4 within 8": {
+   "dropbacks": 17424,
+   "share": 0.9624
+  }
+ },
+ "regime_prior": {
+  "go": {
+   "gain_new_coach_only": {
+    "mean": -2.6043332987688368e-05,
+    "n": 61,
+    "se": 0.00012845704196614476
+   },
+   "gain_regime_vs_pooled": {
+    "mean": 1.4972988494001553e-08,
+    "se": 2.92222497202972e-05
+   },
+   "mse_league": 0.002416703910991341,
+   "mse_pooled": 0.002248929521847602,
+   "mse_regime": 0.002252730740227496,
+   "mse_regime_same0": 0.0022226023568181798,
+   "new_coach_pairs": 61,
+   "pairs": 288,
+   "persist_new": 0.077,
+   "persist_pooled": 0.424,
+   "persist_same": 0.48
+  },
+  "nh": {
+   "gain_new_coach_only": {
+    "mean": 0.004118898105320156,
+    "n": 61,
+    "se": 0.0020609537765918094
+   },
+   "gain_regime_vs_pooled": {
+    "mean": 0.0012156031716201645,
+    "se": 0.0005659609599586072
+   },
+   "mse_league": 0.008441844124222227,
+   "mse_pooled": 0.00613775318881552,
+   "mse_regime": 0.004918656738556257,
+   "mse_regime_same0": 0.004887864176120981,
+   "new_coach_pairs": 61,
+   "pairs": 288,
+   "persist_new": 0.019,
+   "persist_pooled": 0.573,
+   "persist_same": 0.806
+  },
+  "pace": {
+   "gain_new_coach_only": {
+    "mean": -0.0031737206958212987,
+    "n": 61,
+    "se": 0.08120958208620188
+   },
+   "gain_regime_vs_pooled": {
+    "mean": 0.0009660329001499046,
+    "se": 0.018524698302994764
+   },
+   "mse_league": 2.8961278480784247,
+   "mse_pooled": 2.3456125745562004,
+   "mse_regime": 2.346548854930692,
+   "mse_regime_same0": 2.392428360952899,
+   "new_coach_pairs": 61,
+   "pairs": 288,
+   "persist_new": 0.401,
+   "persist_pooled": 0.54,
+   "persist_same": 0.571
+  },
+  "proe": {
+   "gain_new_coach_only": {
+    "mean": 0.00023418928262422423,
+    "n": 61,
+    "se": 0.00021192484027280674
+   },
+   "gain_regime_vs_pooled": {
+    "mean": 5.370753607619829e-05,
+    "se": 4.988774222229367e-05
+   },
+   "mse_league": 0.0029912061490684387,
+   "mse_pooled": 0.0023624826740822297,
+   "mse_regime": 0.0023101958584080683,
+   "mse_regime_same0": 0.0023043491901679775,
+   "new_coach_pairs": 61,
+   "pairs": 288,
+   "persist_new": 0.15,
+   "persist_pooled": 0.518,
+   "persist_same": 0.592
+  }
+ },
+ "rotation": {
+  "after 0 in a row": {
+   "carries": 19821,
+   "excess_share": -0.0423
+  },
+  "after 1 in a row": {
+   "carries": 11098,
+   "excess_share": 0.1031
+  },
+  "after 2 in a row": {
+   "carries": 8036,
+   "excess_share": 0.0644
+  },
+  "after 3 in a row": {
+   "carries": 5712,
+   "excess_share": 0.0197
+  },
+  "after 4+ in a row": {
+   "carries": 13190,
+   "excess_share": -0.0234
+  }
+ },
+ "seasons": [
+  2016,
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "tendencies": {
+  "d_proe": {
+   "coach_moved": {
+    "n": 12,
+    "r": -0.252,
+    "se": 0.296,
+    "slope": -0.301
+   },
+   "k_games": 34.3,
+   "reliability_full": 0.325,
+   "sd_obs": 0.0298,
+   "sd_true": 0.0169,
+   "split_half": {
+    "n": 320,
+    "r": 0.194,
+    "se": 0.054,
+    "slope": 0.2
+   },
+   "units": 320,
+   "yoy_new_coach": {
+    "n": 61,
+    "r": 0.032,
+    "se": 0.13,
+    "slope": 0.03
+   },
+   "yoy_same_coach": {
+    "n": 220,
+    "r": 0.221,
+    "se": 0.064,
+    "slope": 0.228
+   }
+  },
+  "go": {
+   "coach_moved": {
+    "n": 12,
+    "r": 0.088,
+    "se": 0.314,
+    "slope": 0.098
+   },
+   "k_games": 30.2,
+   "reliability_full": 0.504,
+   "sd_obs": 0.0328,
+   "sd_true": 0.0194,
+   "split_half": {
+    "n": 320,
+    "r": 0.337,
+    "se": 0.05,
+    "slope": 0.321
+   },
+   "units": 320,
+   "yoy_new_coach": {
+    "n": 61,
+    "r": 0.032,
+    "se": 0.13,
+    "slope": 0.044
+   },
+   "yoy_same_coach": {
+    "n": 220,
+    "r": 0.473,
+    "se": 0.053,
+    "slope": 0.469
+   }
+  },
+  "nh": {
+   "coach_moved": {
+    "n": 12,
+    "r": -0.015,
+    "se": 0.316,
+    "slope": -0.043
+   },
+   "k_games": 1.0,
+   "reliability_full": 0.953,
+   "sd_obs": 0.0921,
+   "sd_true": 0.0893,
+   "split_half": {
+    "n": 320,
+    "r": 0.909,
+    "se": 0.01,
+    "slope": 0.905
+   },
+   "units": 320,
+   "yoy_new_coach": {
+    "n": 61,
+    "r": -0.028,
+    "se": 0.13,
+    "slope": -0.027
+   },
+   "yoy_same_coach": {
+    "n": 220,
+    "r": 0.724,
+    "se": 0.032,
+    "slope": 0.676
+   }
+  },
+  "pace": {
+   "coach_moved": {
+    "n": 12,
+    "r": 0.077,
+    "se": 0.314,
+    "slope": 0.083
+   },
+   "k_games": 5.1,
+   "reliability_full": 0.793,
+   "sd_obs": 1.3436,
+   "sd_true": 1.1714,
+   "split_half": {
+    "n": 320,
+    "r": 0.657,
+    "se": 0.032,
+    "slope": 0.633
+   },
+   "units": 320,
+   "yoy_new_coach": {
+    "n": 61,
+    "r": 0.197,
+    "se": 0.125,
+    "slope": 0.225
+   },
+   "yoy_same_coach": {
+    "n": 220,
+    "r": 0.522,
+    "se": 0.049,
+    "slope": 0.481
+   }
+  },
+  "proe": {
+   "coach_moved": {
+    "n": 12,
+    "r": 0.061,
+    "se": 0.315,
+    "slope": 0.068
+   },
+   "k_games": 4.4,
+   "reliability_full": 0.824,
+   "sd_obs": 0.0486,
+   "sd_true": 0.0431,
+   "split_half": {
+    "n": 320,
+    "r": 0.7,
+    "se": 0.029,
+    "slope": 0.697
+   },
+   "units": 320,
+   "yoy_new_coach": {
+    "n": 61,
+    "r": 0.112,
+    "se": 0.129,
+    "slope": 0.101
+   },
+   "yoy_same_coach": {
+    "n": 220,
+    "r": 0.506,
+    "se": 0.05,
+    "slope": 0.506
+   }
+  },
+  "two": {
+   "coach_moved": {
+    "n": 12,
+    "r": -0.02,
+    "se": 0.316,
+    "slope": -0.01
+   },
+   "k_games": 181.4,
+   "reliability_full": 0.375,
+   "sd_obs": 0.0667,
+   "sd_true": 0.0182,
+   "split_half": {
+    "n": 320,
+    "r": 0.231,
+    "se": 0.053,
+    "slope": 0.241
+   },
+   "units": 320,
+   "yoy_new_coach": {
+    "n": 61,
+    "r": 0.334,
+    "se": 0.116,
+    "slope": 0.267
+   },
+   "yoy_same_coach": {
+    "n": 220,
+    "r": 0.215,
+    "se": 0.065,
+    "slope": 0.234
+   }
+  }
+ },
+ "usage": {
+  "car": {
+   "2024": {
+    "gain_per_team_game": 1.2948,
+    "label": "car role x bucket vs static",
+    "ll_model_per_play": 1.13058,
+    "ll_static_per_play": 1.18141,
+    "plays": 11414,
+    "se": 0.1173,
+    "team_games": 448,
+    "z": 11.04
+   },
+   "2025": {
+    "gain_per_team_game": 1.1511,
+    "label": "car role x bucket vs static",
+    "ll_model_per_play": 1.12825,
+    "ll_static_per_play": 1.17334,
+    "plays": 11436,
+    "se": 0.1202,
+    "team_games": 448,
+    "z": 9.57
+   },
+   "2026": {
+    "gain_per_team_game": 1.4908,
+    "label": "car role x bucket vs static",
+    "ll_model_per_play": 1.03732,
+    "ll_static_per_play": 1.09717,
+    "plays": 5778,
+    "se": 0.155,
+    "team_games": 232,
+    "z": 9.62
+   },
+   "dev_2025": {
+    "gain_per_team_game": 0.0182,
+    "label": "car +dev K=20.0 vs bucket",
+    "ll_model_per_play": 1.12754,
+    "ll_static_per_play": 1.12825,
+    "plays": 11436,
+    "se": 0.0051,
+    "team_games": 448,
+    "z": 3.56
+   },
+   "dev_2026": {
+    "gain_per_team_game": 0.0026,
+    "label": "car +dev K=20.0 vs bucket",
+    "ll_model_per_play": 1.03721,
+    "ll_static_per_play": 1.03732,
+    "plays": 5778,
+    "se": 0.0068,
+    "team_games": 232,
+    "z": 0.37
+   },
+   "dev_K": 20.0,
+   "dev_select_2024": {
+    "10.0": {
+     "gain_per_team_game": 0.0047,
+     "label": "car +dev K=10.0 vs bucket",
+     "ll_model_per_play": 1.1304,
+     "ll_static_per_play": 1.13058,
+     "plays": 11414,
+     "se": 0.0081,
+     "team_games": 448,
+     "z": 0.57
+    },
+    "2.0": {
+     "gain_per_team_game": -0.0387,
+     "label": "car +dev K=2.0 vs bucket",
+     "ll_model_per_play": 1.1321,
+     "ll_static_per_play": 1.13058,
+     "plays": 11414,
+     "se": 0.0223,
+     "team_games": 448,
+     "z": -1.74
+    },
+    "20.0": {
+     "gain_per_team_game": 0.0054,
+     "label": "car +dev K=20.0 vs bucket",
+     "ll_model_per_play": 1.13037,
+     "ll_static_per_play": 1.13058,
+     "plays": 11414,
+     "se": 0.0048,
+     "team_games": 448,
+     "z": 1.13
+    },
+    "40.0": {
+     "gain_per_team_game": 0.0039,
+     "label": "car +dev K=40.0 vs bucket",
+     "ll_model_per_play": 1.13043,
+     "ll_static_per_play": 1.13058,
+     "plays": 11414,
+     "se": 0.0027,
+     "team_games": 448,
+     "z": 1.47
+    },
+    "5.0": {
+     "gain_per_team_game": -0.0033,
+     "label": "car +dev K=5.0 vs bucket",
+     "ll_model_per_play": 1.13071,
+     "ll_static_per_play": 1.13058,
+     "plays": 11414,
+     "se": 0.013,
+     "team_games": 448,
+     "z": -0.25
+    }
+   },
+   "dfs_2024": {
+    "QB blowout": {
+     "mean_abs_shift_carries": 0.1477,
+     "mse_bucket": 0.1635,
+     "mse_role_only": 0.405,
+     "player_games": 430
+    },
+    "QB inside5": {
+     "mean_abs_shift_carries": 0.059,
+     "mse_bucket": 0.2348,
+     "mse_role_only": 0.2456,
+     "player_games": 430
+    },
+    "RB1 blowout": {
+     "mean_abs_shift_carries": 0.1447,
+     "mse_bucket": 1.0766,
+     "mse_role_only": 1.3088,
+     "player_games": 448
+    },
+    "RB1 inside5": {
+     "mean_abs_shift_carries": 0.0399,
+     "mse_bucket": 0.4924,
+     "mse_role_only": 0.5093,
+     "player_games": 448
+    },
+    "RB2 blowout": {
+     "mean_abs_shift_carries": 0.1438,
+     "mse_bucket": 1.075,
+     "mse_role_only": 1.0484,
+     "player_games": 430
+    },
+    "RB2 inside5": {
+     "mean_abs_shift_carries": 0.0495,
+     "mse_bucket": 0.3428,
+     "mse_role_only": 0.3523,
+     "player_games": 430
+    }
+   },
+   "dfs_2025": {
+    "QB blowout": {
+     "mean_abs_shift_carries": 0.1196,
+     "mse_bucket": 0.1534,
+     "mse_role_only": 0.3167,
+     "player_games": 435
+    },
+    "QB inside5": {
+     "mean_abs_shift_carries": 0.05,
+     "mse_bucket": 0.2131,
+     "mse_role_only": 0.205,
+     "player_games": 435
+    },
+    "RB1 blowout": {
+     "mean_abs_shift_carries": 0.1406,
+     "mse_bucket": 1.1821,
+     "mse_role_only": 1.4426,
+     "player_games": 448
+    },
+    "RB1 inside5": {
+     "mean_abs_shift_carries": 0.0373,
+     "mse_bucket": 0.454,
+     "mse_role_only": 0.4483,
+     "player_games": 448
+    },
+    "RB2 blowout": {
+     "mean_abs_shift_carries": 0.1572,
+     "mse_bucket": 1.0605,
+     "mse_role_only": 0.9974,
+     "player_games": 438
+    },
+    "RB2 inside5": {
+     "mean_abs_shift_carries": 0.0482,
+     "mse_bucket": 0.3266,
+     "mse_role_only": 0.3178,
+     "player_games": 438
+    }
+   },
+   "dfs_2026": {
+    "QB blowout": {
+     "mean_abs_shift_carries": 0.0969,
+     "mse_bucket": 0.1251,
+     "mse_role_only": 0.2113,
+     "player_games": 220
+    },
+    "QB inside5": {
+     "mean_abs_shift_carries": 0.0588,
+     "mse_bucket": 0.1819,
+     "mse_role_only": 0.1909,
+     "player_games": 220
+    },
+    "RB1 blowout": {
+     "mean_abs_shift_carries": 0.1371,
+     "mse_bucket": 1.4657,
+     "mse_role_only": 2.0619,
+     "player_games": 232
+    },
+    "RB1 inside5": {
+     "mean_abs_shift_carries": 0.0345,
+     "mse_bucket": 0.508,
+     "mse_role_only": 0.4898,
+     "player_games": 232
+    },
+    "RB2 blowout": {
+     "mean_abs_shift_carries": 0.158,
+     "mse_bucket": 1.8425,
+     "mse_role_only": 2.0257,
+     "player_games": 211
+    },
+    "RB2 inside5": {
+     "mean_abs_shift_carries": 0.0516,
+     "mse_bucket": 0.4323,
+     "mse_role_only": 0.4199,
+     "player_games": 211
+    }
+   },
+   "fit_plays": 85651,
+   "mult": {
+    "OT": [
+     1.873,
+     0.248,
+     0.162,
+     0.101,
+     0.081,
+     0.254,
+     4.24,
+     0.087,
+     24.69,
+     14.876
+    ],
+    "QB": [
+     0.567,
+     1.45,
+     1.129,
+     1.153,
+     2.304,
+     0.522,
+     0.525,
+     1.627,
+     2.628,
+     2.885
+    ],
+    "RB1": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "RB2": [
+     1.17,
+     1.052,
+     1.072,
+     1.175,
+     1.953,
+     2.166,
+     1.422,
+     1.6,
+     1.359,
+     1.326
+    ],
+    "RB3": [
+     1.345,
+     1.504,
+     1.344,
+     1.705,
+     4.347,
+     4.824,
+     1.959,
+     3.463,
+     1.865,
+     2.702
+    ],
+    "TE": [
+     0.641,
+     1.969,
+     0.702,
+     2.118,
+     1.114,
+     0.695,
+     0.956,
+     0.466,
+     0.78,
+     3.245
+    ],
+    "WR": [
+     0.836,
+     0.197,
+     0.509,
+     0.553,
+     0.608,
+     0.734,
+     0.45,
+     0.763,
+     0.764,
+     1.021
+    ]
+   },
+   "mult_role_only": {
+    "OT": 3.76,
+    "QB": 0.964,
+    "RB1": 1.0,
+    "RB2": 1.295,
+    "RB3": 1.859,
+    "TE": 0.851,
+    "WR": 0.772
+   },
+   "role_only_2024": {
+    "gain_per_team_game": 0.2422,
+    "label": "car role only vs static",
+    "ll_model_per_play": 1.1719,
+    "ll_static_per_play": 1.18141,
+    "plays": 11414,
+    "se": 0.0805,
+    "team_games": 448,
+    "z": 3.01
+   },
+   "role_only_2025": {
+    "gain_per_team_game": 0.322,
+    "label": "car role only vs static",
+    "ll_model_per_play": 1.16073,
+    "ll_static_per_play": 1.17334,
+    "plays": 11436,
+    "se": 0.0822,
+    "team_games": 448,
+    "z": 3.92
+   },
+   "role_only_2026": {
+    "gain_per_team_game": 0.6526,
+    "label": "car role only vs static",
+    "ll_model_per_play": 1.07097,
+    "ll_static_per_play": 1.09717,
+    "plays": 5778,
+    "se": 0.0993,
+    "team_games": 232,
+    "z": 6.57
+   },
+   "share_fit": {
+    "plays": [
+     51128,
+     2450,
+     2026,
+     3237,
+     5119,
+     5809,
+     2219,
+     4545,
+     8085,
+     4142
+    ],
+    "share": {
+     "OT": [
+      0.0288,
+      0.0355,
+      0.0301,
+      0.0297,
+      0.0453,
+      0.0651,
+      0.0266,
+      0.0647,
+      0.0327,
+      0.0439
+     ],
+     "QB": [
+      0.0708,
+      0.1535,
+      0.1372,
+      0.1307,
+      0.184,
+      0.0489,
+      0.0694,
+      0.1351,
+      0.2277,
+      0.231
+     ],
+     "RB1": [
+      0.5888,
+      0.5478,
+      0.5587,
+      0.5422,
+      0.4097,
+      0.4311,
+      0.5615,
+      0.4667,
+      0.46,
+      0.43
+     ],
+     "RB2": [
+      0.2311,
+      0.1922,
+      0.2048,
+      0.2132,
+      0.2483,
+      0.2994,
+      0.2587,
+      0.233,
+      0.2063,
+      0.1907
+     ],
+     "RB3": [
+      0.0488,
+      0.0555,
+      0.0484,
+      0.0556,
+      0.0949,
+      0.1286,
+      0.0604,
+      0.0779,
+      0.0511,
+      0.0671
+     ],
+     "TE": [
+      0.004,
+      0.009,
+      0.0044,
+      0.0117,
+      0.0043,
+      0.0059,
+      0.0068,
+      0.0018,
+      0.0032,
+      0.0123
+     ],
+     "WR": [
+      0.0276,
+      0.0065,
+      0.0163,
+      0.017,
+      0.0135,
+      0.0212,
+      0.0167,
+      0.0209,
+      0.019,
+      0.0249
+     ]
+    }
+   },
+   "situational_2024": {
+    "gain_per_team_game": 1.0526,
+    "label": "car role x bucket vs role only",
+    "ll_model_per_play": 1.13058,
+    "ll_static_per_play": 1.1719,
+    "plays": 11414,
+    "se": 0.0834,
+    "team_games": 448,
+    "z": 12.61
+   },
+   "situational_2025": {
+    "gain_per_team_game": 0.8291,
+    "label": "car role x bucket vs role only",
+    "ll_model_per_play": 1.12825,
+    "ll_static_per_play": 1.16073,
+    "plays": 11436,
+    "se": 0.0724,
+    "team_games": 448,
+    "z": 11.45
+   },
+   "situational_2026": {
+    "gain_per_team_game": 0.8382,
+    "label": "car role x bucket vs role only",
+    "ll_model_per_play": 1.03732,
+    "ll_static_per_play": 1.07097,
+    "plays": 5778,
+    "se": 0.108,
+    "team_games": 232,
+    "z": 7.76
+   }
+  },
+  "tgt": {
+   "2024": {
+    "gain_per_team_game": 0.3725,
+    "label": "tgt role x bucket vs static",
+    "ll_model_per_play": 1.97859,
+    "ll_static_per_play": 1.99065,
+    "plays": 13838,
+    "se": 0.0745,
+    "team_games": 448,
+    "z": 5.0
+   },
+   "2025": {
+    "gain_per_team_game": 0.6982,
+    "label": "tgt role x bucket vs static",
+    "ll_model_per_play": 2.00553,
+    "ll_static_per_play": 2.02922,
+    "plays": 13205,
+    "se": 0.0751,
+    "team_games": 448,
+    "z": 9.3
+   },
+   "2026": {
+    "gain_per_team_game": 0.76,
+    "label": "tgt role x bucket vs static",
+    "ll_model_per_play": 1.99667,
+    "ll_static_per_play": 2.02144,
+    "plays": 7119,
+    "se": 0.1079,
+    "team_games": 232,
+    "z": 7.04
+   },
+   "fit_plays": 110558,
+   "mult": {
+    "OT": [
+     0.436,
+     1.593,
+     1.244,
+     1.695,
+     0.134,
+     0.325,
+     0.99,
+     0.982,
+     0.287,
+     2.806
+    ],
+    "RB1": [
+     1.191,
+     0.633,
+     0.744,
+     1.145,
+     1.07,
+     0.746,
+     0.693,
+     1.208,
+     1.001,
+     0.775
+    ],
+    "RB2": [
+     1.07,
+     0.979,
+     0.65,
+     1.202,
+     1.816,
+     1.188,
+     1.163,
+     1.689,
+     1.381,
+     0.956
+    ],
+    "RB3": [
+     1.28,
+     2.357,
+     0.881,
+     1.588,
+     1.899,
+     1.767,
+     1.583,
+     1.96,
+     1.453,
+     1.473
+    ],
+    "TE1": [
+     1.097,
+     2.349,
+     1.434,
+     1.41,
+     1.333,
+     0.992,
+     0.88,
+     1.258,
+     1.132,
+     1.09
+    ],
+    "TE2": [
+     1.948,
+     4.931,
+     2.278,
+     2.39,
+     1.363,
+     1.818,
+     1.448,
+     2.004,
+     1.326,
+     2.07
+    ],
+    "WR1": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "WR2": [
+     1.086,
+     1.208,
+     1.085,
+     1.168,
+     1.194,
+     1.145,
+     1.109,
+     1.256,
+     1.157,
+     1.11
+    ],
+    "WR3": [
+     1.463,
+     1.537,
+     1.696,
+     1.61,
+     1.96,
+     1.912,
+     1.612,
+     2.096,
+     1.818,
+     1.38
+    ]
+   },
+   "mult_role_only": {
+    "OT": 0.522,
+    "RB1": 1.088,
+    "RB2": 1.288,
+    "RB3": 1.488,
+    "TE1": 1.169,
+    "TE2": 1.759,
+    "WR1": 1.0,
+    "WR2": 1.137,
+    "WR3": 1.687
+   },
+   "role_only_2024": {
+    "gain_per_team_game": 0.2492,
+    "label": "tgt role only vs static",
+    "ll_model_per_play": 1.98258,
+    "ll_static_per_play": 1.99065,
+    "plays": 13838,
+    "se": 0.0672,
+    "team_games": 448,
+    "z": 3.71
+   },
+   "role_only_2025": {
+    "gain_per_team_game": 0.6139,
+    "label": "tgt role only vs static",
+    "ll_model_per_play": 2.00839,
+    "ll_static_per_play": 2.02922,
+    "plays": 13205,
+    "se": 0.0664,
+    "team_games": 448,
+    "z": 9.25
+   },
+   "role_only_2026": {
+    "gain_per_team_game": 0.5998,
+    "label": "tgt role only vs static",
+    "ll_model_per_play": 2.00189,
+    "ll_static_per_play": 2.02144,
+    "plays": 7119,
+    "se": 0.0986,
+    "team_games": 232,
+    "z": 6.08
+   },
+   "share_fit": {
+    "plays": [
+     46376,
+     1157,
+     2043,
+     3359,
+     15354,
+     3194,
+     1283,
+     11187,
+     26975,
+     2403
+    ],
+    "share": {
+     "OT": [
+      0.0238,
+      0.0493,
+      0.0201,
+      0.0223,
+      0.0209,
+      0.0404,
+      0.0226,
+      0.035,
+      0.0225,
+      0.0221
+     ],
+     "RB1": [
+      0.1106,
+      0.0475,
+      0.071,
+      0.0979,
+      0.0905,
+      0.067,
+      0.0756,
+      0.0981,
+      0.0907,
+      0.0749
+     ],
+     "RB2": [
+      0.0584,
+      0.0398,
+      0.0348,
+      0.0592,
+      0.0857,
+      0.0679,
+      0.0655,
+      0.0764,
+      0.074,
+      0.0549
+     ],
+     "RB3": [
+      0.0237,
+      0.0328,
+      0.0171,
+      0.0268,
+      0.0315,
+      0.0341,
+      0.0249,
+      0.0273,
+      0.0264,
+      0.027
+     ],
+     "TE1": [
+      0.1443,
+      0.2325,
+      0.1821,
+      0.1679,
+      0.1561,
+      0.129,
+      0.127,
+      0.1355,
+      0.1439,
+      0.1486
+     ],
+     "TE2": [
+      0.0705,
+      0.1296,
+      0.0817,
+      0.078,
+      0.0458,
+      0.0595,
+      0.0546,
+      0.0606,
+      0.0477,
+      0.0795
+     ],
+     "WR1": [
+      0.2391,
+      0.1893,
+      0.2394,
+      0.2194,
+      0.2128,
+      0.2345,
+      0.2595,
+      0.2008,
+      0.2322,
+      0.2493
+     ],
+     "WR2": [
+      0.1653,
+      0.1452,
+      0.1635,
+      0.1614,
+      0.1613,
+      0.1641,
+      0.1824,
+      0.1602,
+      0.1696,
+      0.1773
+     ],
+     "WR3": [
+      0.1642,
+      0.134,
+      0.1904,
+      0.167,
+      0.1955,
+      0.2035,
+      0.1878,
+      0.2061,
+      0.193,
+      0.1665
+     ]
+    }
+   },
+   "situational_2024": {
+    "gain_per_team_game": 0.1233,
+    "label": "tgt role x bucket vs role only",
+    "ll_model_per_play": 1.97859,
+    "ll_static_per_play": 1.98258,
+    "plays": 13838,
+    "se": 0.0289,
+    "team_games": 448,
+    "z": 4.27
+   },
+   "situational_2025": {
+    "gain_per_team_game": 0.0843,
+    "label": "tgt role x bucket vs role only",
+    "ll_model_per_play": 2.00553,
+    "ll_static_per_play": 2.00839,
+    "plays": 13205,
+    "se": 0.0305,
+    "team_games": 448,
+    "z": 2.76
+   },
+   "situational_2026": {
+    "gain_per_team_game": 0.1602,
+    "label": "tgt role x bucket vs role only",
+    "ll_model_per_play": 1.99667,
+    "ll_static_per_play": 2.00189,
+    "plays": 7119,
+    "se": 0.0378,
+    "team_games": 232,
+    "z": 4.24
+   }
+  }
+ }
+}

@@ -1,0 +1,364 @@
+{
+ "level_curve_games": 1000,
+ "seasons": {
+  "2024": {
+   "realism": {
+    "carries_crps": {
+     "r2_minus_static_per_team_game": -0.0114,
+     "se": 0.0147,
+     "static_mean": 7.6169,
+     "z": -0.78
+    },
+    "rb1_share_by_margin": {
+     "-16..-8": {
+      "r2": 0.5611,
+      "real": 0.543,
+      "real_team_games": 48,
+      "static": 0.5628
+     },
+     "-7..7": {
+      "r2": 0.5694,
+      "real": 0.5584,
+      "real_team_games": 224,
+      "static": 0.5618
+     },
+     "-99..-17": {
+      "r2": 0.544,
+      "real": 0.4974,
+      "real_team_games": 64,
+      "static": 0.5601
+     },
+     "17..99": {
+      "r2": 0.5476,
+      "real": 0.5172,
+      "real_team_games": 64,
+      "static": 0.5613
+     },
+     "8..16": {
+      "r2": 0.5688,
+      "real": 0.5378,
+      "real_team_games": 48,
+      "static": 0.564
+     }
+    },
+    "targets_crps": {
+     "r2_minus_static_per_team_game": 0.013,
+     "se": 0.0149,
+     "static_mean": 9.1991,
+     "z": 0.87
+    },
+    "td_logscore": {
+     "r2_minus_static_per_team_game": -0.0067,
+     "se": 0.0146,
+     "static_mean": 2.0843,
+     "z": -0.46
+    },
+    "team_games": 448
+   },
+   "stage1": {
+    "both": {
+     "gain_per_team_game": 1.0815,
+     "se": 0.0887,
+     "z": 12.19
+    },
+    "car": {
+     "gain_per_team_game": 0.9653,
+     "ll_r2": 1.12516,
+     "ll_static": 1.16305,
+     "se": 0.0828,
+     "snaps": 11414,
+     "z": 11.66
+    },
+    "td": {
+     "gain_per_team_game": 0.0345,
+     "ll_r2": 1.61721,
+     "ll_static": 1.6303,
+     "se": 0.0166,
+     "snaps": 1081,
+     "z": 2.07
+    },
+    "team_games": 448,
+    "tgt": {
+     "gain_per_team_game": 0.1162,
+     "ll_r2": 1.9788,
+     "ll_static": 1.98256,
+     "se": 0.0289,
+     "snaps": 13838,
+     "z": 4.03
+    }
+   },
+   "stage1_core": {
+    "both": {
+     "gain_per_team_game": 0.7765,
+     "se": 0.0713,
+     "z": 10.88
+    },
+    "car": {
+     "gain_per_team_game": 0.7022,
+     "ll_r2": 0.89547,
+     "ll_static": 0.92558,
+     "se": 0.0688,
+     "snaps": 10447,
+     "z": 10.21
+    },
+    "td": {
+     "gain_per_team_game": 0.0211,
+     "ll_r2": 1.36853,
+     "ll_static": 1.37722,
+     "se": 0.0137,
+     "snaps": 965,
+     "z": 1.53
+    },
+    "team_games": 448,
+    "tgt": {
+     "gain_per_team_game": 0.0742,
+     "ll_r2": 1.69834,
+     "ll_static": 1.70111,
+     "se": 0.0199,
+     "snaps": 12013,
+     "z": 3.74
+    }
+   }
+  },
+  "2025": {
+   "realism": {
+    "carries_crps": {
+     "r2_minus_static_per_team_game": 0.0002,
+     "se": 0.0142,
+     "static_mean": 7.2808,
+     "z": 0.01
+    },
+    "rb1_share_by_margin": {
+     "-16..-8": {
+      "r2": 0.5827,
+      "real": 0.5563,
+      "real_team_games": 48,
+      "static": 0.5839
+     },
+     "-7..7": {
+      "r2": 0.5788,
+      "real": 0.5716,
+      "real_team_games": 218,
+      "static": 0.5729
+     },
+     "-99..-17": {
+      "r2": 0.58,
+      "real": 0.5104,
+      "real_team_games": 67,
+      "static": 0.5932
+     },
+     "17..99": {
+      "r2": 0.5507,
+      "real": 0.4943,
+      "real_team_games": 67,
+      "static": 0.5643
+     },
+     "8..16": {
+      "r2": 0.5693,
+      "real": 0.5555,
+      "real_team_games": 48,
+      "static": 0.5659
+     }
+    },
+    "targets_crps": {
+     "r2_minus_static_per_team_game": 0.0046,
+     "se": 0.0149,
+     "static_mean": 9.2378,
+     "z": 0.31
+    },
+    "td_logscore": {
+     "r2_minus_static_per_team_game": -0.0459,
+     "se": 0.0162,
+     "static_mean": 2.2226,
+     "z": -2.84
+    },
+    "team_games": 448
+   },
+   "stage1": {
+    "both": {
+     "gain_per_team_game": 0.8119,
+     "se": 0.077,
+     "z": 10.54
+    },
+    "car": {
+     "gain_per_team_game": 0.734,
+     "ll_r2": 1.12255,
+     "ll_static": 1.15131,
+     "se": 0.072,
+     "snaps": 11436,
+     "z": 10.19
+    },
+    "td": {
+     "gain_per_team_game": 0.0475,
+     "ll_r2": 1.63105,
+     "ll_static": 1.6493,
+     "se": 0.0164,
+     "snaps": 1067,
+     "z": 2.89
+    },
+    "team_games": 448,
+    "tgt": {
+     "gain_per_team_game": 0.0779,
+     "ll_r2": 2.00566,
+     "ll_static": 2.0083,
+     "se": 0.0305,
+     "snaps": 13205,
+     "z": 2.56
+    }
+   },
+   "stage1_core": {
+    "both": {
+     "gain_per_team_game": 0.571,
+     "se": 0.0605,
+     "z": 9.44
+    },
+    "car": {
+     "gain_per_team_game": 0.5186,
+     "ll_r2": 0.90006,
+     "ll_static": 0.92195,
+     "se": 0.0576,
+     "snaps": 10612,
+     "z": 9.0
+    },
+    "td": {
+     "gain_per_team_game": 0.0505,
+     "ll_r2": 1.35337,
+     "ll_static": 1.37451,
+     "se": 0.0138,
+     "snaps": 951,
+     "z": 3.66
+    },
+    "team_games": 448,
+    "tgt": {
+     "gain_per_team_game": 0.0523,
+     "ll_r2": 1.70599,
+     "ll_static": 1.70808,
+     "se": 0.0207,
+     "snaps": 11208,
+     "z": 2.53
+    }
+   }
+  },
+  "2026": {
+   "realism": {
+    "carries_crps": {
+     "r2_minus_static_per_team_game": -0.0383,
+     "se": 0.0196,
+     "static_mean": 7.1904,
+     "z": -1.95
+    },
+    "rb1_share_by_margin": {
+     "-16..-8": {
+      "r2": 0.6226,
+      "real": 0.5405,
+      "real_team_games": 24,
+      "static": 0.6245
+     },
+     "-7..7": {
+      "r2": 0.636,
+      "real": 0.576,
+      "real_team_games": 116,
+      "static": 0.6289
+     },
+     "-99..-17": {
+      "r2": 0.6091,
+      "real": 0.4794,
+      "real_team_games": 34,
+      "static": 0.626
+     },
+     "17..99": {
+      "r2": 0.6251,
+      "real": 0.5655,
+      "real_team_games": 34,
+      "static": 0.6358
+     },
+     "8..16": {
+      "r2": 0.6333,
+      "real": 0.4934,
+      "real_team_games": 24,
+      "static": 0.631
+     }
+    },
+    "targets_crps": {
+     "r2_minus_static_per_team_game": -0.0277,
+     "se": 0.0224,
+     "static_mean": 9.4421,
+     "z": -1.24
+    },
+    "td_logscore": {
+     "r2_minus_static_per_team_game": -0.0637,
+     "se": 0.0181,
+     "static_mean": 2.006,
+     "z": -3.52
+    },
+    "team_games": 232
+   },
+   "stage1": {
+    "both": {
+     "gain_per_team_game": 0.8995,
+     "se": 0.1169,
+     "z": 7.7
+    },
+    "car": {
+     "gain_per_team_game": 0.7494,
+     "ll_r2": 1.03173,
+     "ll_static": 1.06182,
+     "se": 0.1059,
+     "snaps": 5778,
+     "z": 7.08
+    },
+    "td": {
+     "gain_per_team_game": 0.073,
+     "ll_r2": 1.59068,
+     "ll_static": 1.61884,
+     "se": 0.0214,
+     "snaps": 555,
+     "z": 3.42
+    },
+    "team_games": 232,
+    "tgt": {
+     "gain_per_team_game": 0.1501,
+     "ll_r2": 1.99698,
+     "ll_static": 2.00188,
+     "se": 0.0379,
+     "snaps": 7119,
+     "z": 3.96
+    }
+   },
+   "stage1_core": {
+    "both": {
+     "gain_per_team_game": 0.6581,
+     "se": 0.0927,
+     "z": 7.1
+    },
+    "car": {
+     "gain_per_team_game": 0.6081,
+     "ll_r2": 0.84259,
+     "ll_static": 0.86887,
+     "se": 0.089,
+     "snaps": 5369,
+     "z": 6.83
+    },
+    "td": {
+     "gain_per_team_game": 0.0203,
+     "ll_r2": 1.35436,
+     "ll_static": 1.36284,
+     "se": 0.0172,
+     "snaps": 493,
+     "z": 1.18
+    },
+    "team_games": 232,
+    "tgt": {
+     "gain_per_team_game": 0.05,
+     "ll_r2": 1.7039,
+     "ll_static": 1.70582,
+     "se": 0.0265,
+     "snaps": 6053,
+     "z": 1.89
+    }
+   }
+  }
+ },
+ "sims": 200,
+ "version": "coach-r2.0"
+}
