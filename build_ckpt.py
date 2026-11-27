@@ -30,7 +30,10 @@ every path below is the old code exactly when it is unset):
           the same chunking, so the additions happen in the same order and the
           result is the uninterrupted run's bit for bit.
       makeit-<sig>-<a>-<b>.ck  one finished world range of the portfolio
-          pass's make-it matrix (float32, as computed).
+          pass's make-it matrix, as computed: since 2026-11-27 packed rows
+          (each candidate's nonzero worlds and float32 values per contest;
+          the pass's signature names the format, so an older dense range is
+          never read as rows).
   inputs/<request key>/inputs.ck   the build's FROZEN INPUTS (2026-11-27):
       everything it read live -- DraftKings' slate and contest details, the
       week, the worlds' inputs (Sleeper's lines, the deep profiles, the drive

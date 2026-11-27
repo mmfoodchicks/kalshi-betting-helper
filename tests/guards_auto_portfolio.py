@@ -181,7 +181,11 @@ def _cover_checks(ck, np, T, D):
     ck("the caps are a constraint INSIDE the greedy step (the blocked candidates set below every feasible gain before "
        "the argmax), not a filter on the uncapped answer; portfolio_vs_field and portfolio pass `limits` through, "
        "None by default",
-       "gain[limits.blocked(len(chosen) + 1)] = -2.0" in src
+       # repinned 2026-11-27: the screened cover takes its argmax over the unblocked rows only
+       # (tests/guards_auto_portfolio_speed.py PS1 holds it equal to the old loop under caps); the dense path keeps
+       # the old line
+       "step.best(live & ~np.asarray(limits.blocked(len(chosen) + 1), dtype=bool))" in src
+       and "gain[limits.blocked(len(chosen) + 1)] = -2.0" in inspect.getsource(T._greedy_cover_dense)
        and inspect.signature(T.portfolio_vs_field).parameters["limits"].default is None
        and inspect.signature(T.portfolio).parameters["limits"].default is None
        and "greedy_cover(P[gi], k, limits=limits)" in inspect.getsource(T.portfolio_vs_field))
@@ -661,7 +665,9 @@ def _board_checks(ck, np, T, N, D):
     def spy(P, k, limits=None):
         got = real_cover(P, k, limits=limits)
         if limits is None:
-            spied.append(got == _old_greedy(np, P, k))
+            # the pass hands the cover its packed rows since 2026-11-27: the old loop reads them made dense again
+            dense = P.dense(np.arange(P.shape[0])) if isinstance(P, T.PackedRows) else P
+            spied.append(got == _old_greedy(np, dense, k))
         return got
     rules = {"stack": 2, "bring": "required", "team_max": 3, "min_salary": 47000}
     port = {"player_pct": 50, "team_pct": 50, "max_overlap": 6,
