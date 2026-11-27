@@ -214,6 +214,443 @@
     }
    ],
    "ts": 1795730281.0654292
+  },
+  {
+   "commit": "86e3df5beb2be350fe2bfcdc9b39d71145154d6c",
+   "key": "deep-v1",
+   "kind": "profile_probe",
+   "real_data": true,
+   "received_ts": 1795773440.5333245,
+   "results": [
+    {
+     "budget_s": 27066,
+     "dg": 157066,
+     "error": null,
+     "estimate_gb": 13.7,
+     "free_gb": 459.7,
+     "ram_gb": 31.777355194091797,
+     "report": {
+      "agreement": {
+       "both_built": true,
+       "entropy_copied": true,
+       "equal": false,
+       "first_differences": [
+        ".candidates",
+        ".candidates_allowed",
+        ".contests[0].entered",
+        ".contests[1].entered",
+        ".engine_report.games.202611201.att_deep[0]",
+        ".engine_report.games.202611201.att_deep[1]",
+        ".engine_report.games.202611201.att_landed[0]",
+        ".engine_report.games.202611201.att_landed[1]",
+        ".engine_report.games.202611201.box.ARI.comp",
+        ".engine_report.games.202611201.box.ARI.fg_made",
+        ".engine_report.games.202611201.box.ARI.int",
+        ".engine_report.games.202611201.box.ARI.pass_att"
+       ]
+      },
+      "board_memory": {
+       "B": {
+        "build_added_gb": 6.78,
+        "process_peak_gb": null,
+        "process_start_gb": null,
+        "sample_s": 1.0,
+        "seconds": 7130.4,
+        "system_peak_used_gb": 20.72,
+        "system_start_used_gb": 13.94,
+        "system_total_gb": 31.78
+       },
+       "C": {
+        "build_added_gb": 0.0,
+        "process_peak_gb": null,
+        "process_start_gb": null,
+        "sample_s": 1.0,
+        "seconds": 7165.2,
+        "system_peak_used_gb": 0.0,
+        "system_start_used_gb": 0.0,
+        "system_total_gb": 347.73
+       }
+      },
+      "checkpoint_after_kill": {
+       "builds": 1,
+       "bytes": 956653129
+      },
+      "counts": {
+       "field_n": 300000,
+       "n_sims": 550000,
+       "opt_worlds": 50000
+      },
+      "dg": 157066,
+      "estimate_gb": 8.8,
+      "finished_ts": 1795773437.5259593,
+      "kill_frac": 0.4,
+      "profile": "deep",
+      "resumed": {
+       "key": "711c04c0afa3ec64187af34fb023183aff5de71a",
+       "resumed": {}
+      },
+      "runs": [
+       {
+        "build_added_gb": 5.99,
+        "cpu_temp": "not readable without administrator rights",
+        "disk_peak_gb": {
+         "checkpoints": 1.418,
+         "scratch": 0.0,
+         "worlds_cache": 0.656
+        },
+        "gpu_peak_load_pct": 9.0,
+        "gpu_peak_power_w": 34.85,
+        "gpu_peak_temp_c": 60.0,
+        "killed_at_s": 4280.2,
+        "log_tail": [
+         "[tourney]   108,342/500,000 worlds, 1642s",
+         "[tourney]   116,676/500,000 worlds, 1642s",
+         "[tourney]   125,010/500,000 worlds, 1642s",
+         "[tourney]   133,344/500,000 worlds, 1642s",
+         "[tourney]   141,678/500,000 worlds, 1642s",
+         "[tourney]   150,012/500,000 worlds, 1642s",
+         "[tourney]   158,346/500,000 worlds, 1642s",
+         "[tourney]   166,680/500,000 worlds, 1645s",
+         "[tourney]   175,014/500,000 worlds, 3191s",
+         "[tourney]   183,348/500,000 worlds, 3211s",
+         "[tourney]   191,682/500,000 worlds, 3215s",
+         "[tourney]   200,016/500,000 worlds, 3215s"
+        ],
+        "returncode": 1,
+        "scoring_frac_seen": 0.4,
+        "seconds": 4282.8,
+        "system_peak_used_gb": 19.99,
+        "system_start_used_gb": 14.0,
+        "system_total_gb": 31.78,
+        "tag": "A interrupted",
+        "vram_peak_mb": 2665.0
+       },
+       {
+        "build_added_gb": 6.77,
+        "cpu_temp": "not readable without administrator rights",
+        "disk_peak_gb": {
+         "checkpoints": 6.698,
+         "scratch": 0.0,
+         "worlds_cache": 1.312
+        },
+        "gpu_peak_load_pct": 8.0,
+        "gpu_peak_power_w": 35.13,
+        "gpu_peak_temp_c": 60.0,
+        "killed_at_s": null,
+        "log_tail": [
+         "[tourney]   416,700/500,000 worlds, 4835s",
+         "[tourney]   425,034/500,000 worlds, 4836s",
+         "[tourney]   433,368/500,000 worlds, 4839s",
+         "[tourney]   441,702/500,000 worlds, 4839s",
+         "[tourney]   450,036/500,000 worlds, 4839s",
+         "[tourney]   458,370/500,000 worlds, 4839s",
+         "[tourney]   466,704/500,000 worlds, 4843s",
+         "[tourney]   475,038/500,000 worlds, 4844s",
+         "[tourney]   483,372/500,000 worlds, 4844s",
+         "[tourney]   491,706/500,000 worlds, 4844s",
+         "[tourney]   500,000/500,000 worlds, 4844s",
+         "[tourney] classic 157066: scored (4848s); portfolios of 20 per contest from the 1,200 strongest..."
+        ],
+        "returncode": 0,
+        "scoring_frac_seen": 1.0,
+        "seconds": 7131.1,
+        "system_peak_used_gb": 20.7,
+        "system_start_used_gb": 13.93,
+        "system_total_gb": 31.78,
+        "tag": "B resumed",
+        "vram_peak_mb": 2675.0
+       },
+       {
+        "build_added_gb": null,
+        "cpu_temp": "not readable without administrator rights",
+        "disk_peak_gb": {
+         "checkpoints": 5.808,
+         "scratch": 0.0,
+         "worlds_cache": 1.973
+        },
+        "gpu_peak_load_pct": 9.0,
+        "gpu_peak_power_w": 35.41,
+        "gpu_peak_temp_c": 60.0,
+        "killed_at_s": null,
+        "log_tail": [
+         "[tourney]   416,700/500,000 worlds, 4826s",
+         "[tourney]   425,034/500,000 worlds, 4826s",
+         "[tourney]   433,368/500,000 worlds, 4826s",
+         "[tourney]   441,702/500,000 worlds, 4826s",
+         "[tourney]   450,036/500,000 worlds, 4826s",
+         "[tourney]   458,370/500,000 worlds, 4828s",
+         "[tourney]   466,704/500,000 worlds, 4830s",
+         "[tourney]   475,038/500,000 worlds, 4830s",
+         "[tourney]   483,372/500,000 worlds, 4832s",
+         "[tourney]   491,706/500,000 worlds, 4835s",
+         "[tourney]   500,000/500,000 worlds, 4839s",
+         "[tourney] classic 157066: scored (4843s); portfolios of 20 per contest from the 1,200 strongest..."
+        ],
+        "returncode": 0,
+        "scoring_frac_seen": 1.0,
+        "seconds": 7165.7,
+        "system_peak_used_gb": null,
+        "system_start_used_gb": null,
+        "system_total_gb": 347.76,
+        "tag": "C fresh",
+        "vram_peak_mb": 2668.0
+       }
+      ],
+      "started_ts": 1795754857.781776,
+      "timings": {
+       "B": {
+        "candidates_s": 12.0,
+        "field_s": 22.4,
+        "optimal_s": 110.5,
+        "portfolio_s": 1262.5,
+        "score_s": 4847.7,
+        "sims_s": 873.7,
+        "total_s": 7128.8
+       },
+       "C": {
+        "candidates_s": 11.3,
+        "field_s": 29.3,
+        "optimal_s": 110.6,
+        "portfolio_s": 1283.2,
+        "score_s": 4842.6,
+        "sims_s": 886.3,
+        "total_s": 7163.4
+       }
+      },
+      "version": 1
+     }
+    }
+   ],
+   "ts": 1795773439.0622568
+  },
+  {
+   "commit": "9cc6fabde70132243afff23642089b9bebde31de",
+   "key": "775b910d62d096ea",
+   "real_data": false,
+   "received_ts": 1795773955.996834,
+   "results": [
+    {
+     "config": {
+      "batches": "50,250",
+      "field": 300000,
+      "name": "evaluator",
+      "worlds": 40000
+     },
+     "error": null,
+     "report": {
+      "agreement": {
+       "bucket_cells_first_chunk": 75000000,
+       "bucket_mismatches_first_chunk": 0,
+       "exact": true,
+       "gpu_batched_vs_cpu": 0,
+       "gpu_batched_vs_gpu_loop": 0,
+       "gpu_loop_vs_cpu": 0,
+       "threshold_cells": 320000
+      },
+      "chunk": 250,
+      "cpu": {
+       "bucket_s": 40.763,
+       "d2h_s": 0.0,
+       "h2d_s": 0.035,
+       "hist_s": 71.176,
+       "matmul_s": 10.13,
+       "peak_ram_mb": 1276.4,
+       "total_loop_s": 122.105,
+       "total_s": 122.13
+      },
+      "cpu_threads": 10,
+      "field": 300000,
+      "fractions": [
+       0.0,
+       0.0001,
+       0.001,
+       0.01,
+       0.05,
+       0.1,
+       0.2,
+       0.5
+      ],
+      "gpu": {
+       "bucket_s": 1.033,
+       "d2h_s": 0.08,
+       "h2d_s": 0.065,
+       "hist_batched_s": 2.332,
+       "hist_s": 31.921,
+       "init_s": 4.211,
+       "matmul_s": 0.733,
+       "peak_ram_mb": 1276.4,
+       "peak_vram_mb": 1294.7,
+       "total_batched_s": 4.242,
+       "total_loop_s": 33.831,
+       "total_s": 36.18
+      },
+      "gpu_batches": {
+       "250": {
+        "hist_batched_s": 2.113,
+        "mismatches_vs_cpu": 0,
+        "peak_vram_mb": 2167.2,
+        "total_batched_s": 3.439
+       },
+       "50": {
+        "hist_batched_s": 2.332,
+        "mismatches_vs_cpu": 0,
+        "peak_vram_mb": 1294.7,
+        "total_batched_s": 4.242
+       }
+      },
+      "gpu_name": "NVIDIA GeForce RTX 4070 SUPER",
+      "gpu_stats_after": {
+       "mem_total_mb": 12282.0,
+       "mem_used_mb": 5002.0,
+       "power_w": 139.99,
+       "temp_c": 65.0,
+       "util_pct": 93.0
+      },
+      "gpu_stats_before": {
+       "mem_total_mb": 12282.0,
+       "mem_used_mb": 2643.0,
+       "power_w": 32.18,
+       "temp_c": 58.0,
+       "util_pct": 4.0
+      },
+      "gpu_vram_mb": 12282,
+      "hist": "auto",
+      "hist_batch": 50,
+      "host": "Windows-11-10.0.26300-SP0",
+      "inputs": "cache: 157075-1795739009 (23 players, 60,000 cached worlds, entry 56a07ee4b350)",
+      "numpy": "2.3.3",
+      "players": 23,
+      "priority": "below normal",
+      "python": "3.13.7",
+      "speedups": {
+       "cpu_production_vs_gpu_batched": 14.45,
+       "cpu_production_vs_gpu_loop": 3.21,
+       "gpu_hist_batched_vs_loop": 13.69
+      },
+      "when": "2026-11-27 02:59:03",
+      "worlds": 40000
+     },
+     "wall_s": 168.6
+    },
+    {
+     "config": {
+      "batches": "50,250",
+      "field": 300000,
+      "name": "tournament",
+      "worlds": 160000
+     },
+     "error": null,
+     "report": {
+      "agreement": {
+       "bucket_cells_first_chunk": 75000000,
+       "bucket_mismatches_first_chunk": 0,
+       "exact": true,
+       "gpu_batched_vs_cpu": 0,
+       "gpu_batched_vs_gpu_loop": 0,
+       "gpu_loop_vs_cpu": 0,
+       "threshold_cells": 480000
+      },
+      "chunk": 250,
+      "cpu": {
+       "bucket_s": 60.912,
+       "d2h_s": 0.0,
+       "h2d_s": 0.033,
+       "hist_s": 108.479,
+       "matmul_s": 15.034,
+       "peak_ram_mb": 1276.7,
+       "total_loop_s": 184.459,
+       "total_s": 184.476
+      },
+      "cpu_threads": 10,
+      "field": 300000,
+      "fractions": [
+       0.0,
+       0.0001,
+       0.001,
+       0.01,
+       0.05,
+       0.1,
+       0.2,
+       0.5
+      ],
+      "gpu": {
+       "bucket_s": 1.468,
+       "d2h_s": 0.085,
+       "h2d_s": 0.056,
+       "hist_batched_s": 3.338,
+       "hist_s": 44.909,
+       "init_s": 0.758,
+       "matmul_s": 0.338,
+       "peak_ram_mb": 1276.7,
+       "peak_vram_mb": 1298.2,
+       "total_batched_s": 5.285,
+       "total_loop_s": 46.857,
+       "total_s": 50.213
+      },
+      "gpu_batches": {
+       "250": {
+        "hist_batched_s": 3.157,
+        "mismatches_vs_cpu": 0,
+        "peak_vram_mb": 2170.1,
+        "total_batched_s": 5.051
+       },
+       "50": {
+        "hist_batched_s": 3.338,
+        "mismatches_vs_cpu": 0,
+        "peak_vram_mb": 1298.2,
+        "total_batched_s": 5.285
+       }
+      },
+      "gpu_name": "NVIDIA GeForce RTX 4070 SUPER",
+      "gpu_stats_after": {
+       "mem_total_mb": 12282.0,
+       "mem_used_mb": 5004.0,
+       "power_w": 126.17,
+       "temp_c": 59.0,
+       "util_pct": 19.0
+      },
+      "gpu_stats_before": {
+       "mem_total_mb": 12282.0,
+       "mem_used_mb": 2643.0,
+       "power_w": 31.47,
+       "temp_c": 51.0,
+       "util_pct": 3.0
+      },
+      "gpu_vram_mb": 12282,
+      "hist": "auto",
+      "hist_batch": 50,
+      "host": "Windows-11-10.0.26300-SP0",
+      "inputs": "cache: 157075-1795739009 (23 players, 60,000 cached worlds, entry edae874a6aba)",
+      "numpy": "2.3.3",
+      "players": 23,
+      "priority": "below normal",
+      "python": "3.13.7",
+      "speedups": {
+       "cpu_production_vs_gpu_batched": 30.52,
+       "cpu_production_vs_gpu_loop": 3.87,
+       "gpu_hist_batched_vs_loop": 13.45
+      },
+      "when": "2026-11-27 03:01:51",
+      "worlds": 60000
+     },
+     "wall_s": 242.7
+    },
+    {
+     "config": {
+      "batches": "250",
+      "cands": 20000,
+      "field": 300000,
+      "kernel": "score",
+      "name": "score",
+      "require_kind": "classic",
+      "worlds": 160000
+     },
+     "error": "Traceback (most recent call last):\n  File \"D:\\Games\\Kalshi Betting\\kalshi-betting-helper\\research\\gpu_bench.py\", line 537, in <module>\n    sys.exit(main())\n             ~~~~^^\n  File \"D:\\Games\\Kalshi Betting\\kalshi-betting-helper\\research\\gpu_bench.py\", line 410, in main\n    X, idx, w, label = inputs(args, np)\n                       ~~~~~~^^^^^^^^^^\n  File \"D:\\Games\\Kalshi Betting\\kalshi-betting-helper\\research\\gpu_bench.py\", line 173, in inputs\n    raise RuntimeError(f\"no real slate to benchmark: no {want} slate's evaluator artifact yet\")\nRuntimeError: no real slate to benchmark: no classic slate's evaluator artifact yet\n",
+     "report": null,
+     "wall_s": 0.5
+    }
+   ],
+   "ts": 1795773954.4146159
   }
  ]
 }
