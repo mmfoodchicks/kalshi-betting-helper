@@ -219,3 +219,19 @@ python3 tests/guards_auto_nfl_coach_r5.py
 | `research/nfl_coach_r4_checks.py` | R4 report section H.2-H.3; `r4_checks.json` |
 | `research/nfl_coach_r3_seed_check.py` | R3 report section G addendum; `r3_seed_check.json` |
 | `tests/guards_auto_nfl_coach_r5.py` | 26 guards, section N5 (AUTO) |
+
+## G. The 2027 amendment (owner-approved, 2026-11-27)
+
+The owner allowed R5 to read the 2027 regular season. He froze its implementation and criteria and preserved
+every original registration.
+
+- **The amendment:** `research/data/nfl_coach/prereg_r5_2027.json`, block 02d486e9. It sets the 2027
+  regular-season window and the read date, on or after 2028-01-13 after R1's and R4's reads.
+- **Unchanged:** the criteria, statistics, corner secondary and floor are section D's, verbatim, and every R5
+  file is pinned.
+- **Section D's registration (`prereg_r5.json`) is byte-identical.** Its 2028 read is now a REPLICATION on games
+  no 2027 read sees.
+- **Power at 2027:** about 0.91, and about 0.77 at the 30-game floor.
+- **Shared games:** 2027 is shared with R2-H2, R4, C4 and C3-N. The dependence, the Holm correction proposed
+  for the 2027 family and the measured correlations between the tests' statistics are in
+  `research/reports/nfl_coach_family_2027.md`.
