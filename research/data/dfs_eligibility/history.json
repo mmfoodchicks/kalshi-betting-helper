@@ -1,0 +1,5927 @@
+{
+ "classic": {
+  "151307": {
+   "admitted": [
+    "Charlie Kolar",
+    "Chris Bell",
+    "Drew Sample",
+    "Isaiah Davis",
+    "Jackson Hawes",
+    "John Metchie III",
+    "Josh Whyle",
+    "Kaleb Johnson",
+    "LeQuint Allen Jr.",
+    "Marlin Klein",
+    "Ted Hurst III",
+    "Xavier Hutchinson"
+   ],
+   "best": {
+    "adaptive": {
+     "gated_in": [],
+     "names": [
+      "Jahmyr Gibbs",
+      "Chris Olave",
+      "Derrick Henry",
+      "Jalen Coker",
+      "D'Andre Swift",
+      "Christian Watson",
+      "Bryce Young",
+      "Dallas Goedert",
+      "Bengals"
+     ],
+     "points": 292.14
+    },
+    "conservative": {
+     "gated_in": [],
+     "names": [
+      "Jahmyr Gibbs",
+      "Chris Olave",
+      "Derrick Henry",
+      "Jalen Coker",
+      "D'Andre Swift",
+      "Christian Watson",
+      "Bryce Young",
+      "Dallas Goedert",
+      "Bengals"
+     ],
+     "points": 292.14
+    },
+    "dk_all": {
+     "gated_in": [],
+     "names": [
+      "Jahmyr Gibbs",
+      "Chris Olave",
+      "Derrick Henry",
+      "Jalen Coker",
+      "D'Andre Swift",
+      "Christian Watson",
+      "Bryce Young",
+      "Dallas Goedert",
+      "Bengals"
+     ],
+     "points": 292.14
+    },
+    "unrestricted": {
+     "gated_in": [],
+     "names": [
+      "Jahmyr Gibbs",
+      "Chris Olave",
+      "Derrick Henry",
+      "Jalen Coker",
+      "D'Andre Swift",
+      "Christian Watson",
+      "Bryce Young",
+      "Dallas Goedert",
+      "Bengals"
+     ],
+     "points": 292.14
+    }
+   },
+   "extras": 24,
+   "flags": {
+    "Charlie Kolar": [
+     "no game for this team this season"
+    ],
+    "Chris Bell": [
+     "no game for this team this season"
+    ],
+    "Drew Sample": [
+     "no game for this team this season"
+    ],
+    "Isaiah Davis": [
+     "no game for this team this season"
+    ],
+    "Jackson Hawes": [
+     "no game for this team this season"
+    ],
+    "John Metchie III": [
+     "no game for this team this season"
+    ],
+    "Josh Whyle": [
+     "no game for this team this season"
+    ],
+    "Kaleb Johnson": [
+     "no game for this team this season"
+    ],
+    "LeQuint Allen Jr.": [
+     "no game for this team this season"
+    ],
+    "Marlin Klein": [
+     "no game for this team this season"
+    ],
+    "Ted Hurst III": [
+     "no game for this team this season"
+    ],
+    "Xavier Hutchinson": [
+     "no game for this team this season"
+    ]
+   },
+   "players": 746,
+   "rules_on_unrestricted_optimum": {
+    "dst_not_vs_qb_or_backs": true,
+    "punts": true,
+    "qb_stack": true,
+    "team_cap_3": true
+   },
+   "teams": null,
+   "unknown": 199,
+   "week": 1
+  },
+  "153428": {
+   "admitted": [
+    "Charlie Kolar",
+    "Demond Claiborne",
+    "Elic Ayomanor",
+    "Jonah Coleman",
+    "KaVontae Turpin",
+    "Kaytron Allen",
+    "Kendre Miller",
+    "Marlin Klein",
+    "Matt Hibner",
+    "Oscar Delp",
+    "Ted Hurst III"
+   ],
+   "best": {
+    "adaptive": {
+     "gated_in": [
+      "Jonah Coleman"
+     ],
+     "names": [
+      "CeeDee Lamb",
+      "Jaxon Smith-Njigba",
+      "Dalton Schultz",
+      "DeVonta Smith",
+      "Dak Prescott",
+      "Panthers",
+      "Omarion Hampton",
+      "Tre Tucker",
+      "Jonah Coleman"
+     ],
+     "points": 257.46
+    },
+    "conservative": {
+     "gated_in": [],
+     "names": [
+      "CeeDee Lamb",
+      "Jaxon Smith-Njigba",
+      "Dalton Schultz",
+      "DeVonta Smith",
+      "Dak Prescott",
+      "Panthers",
+      "Chuba Hubbard",
+      "Tre Tucker",
+      "Rachaad White"
+     ],
+     "points": 252.86
+    },
+    "dk_all": {
+     "gated_in": [
+      "Jonah Coleman"
+     ],
+     "names": [
+      "CeeDee Lamb",
+      "Jaxon Smith-Njigba",
+      "Dalton Schultz",
+      "DeVonta Smith",
+      "Dak Prescott",
+      "Panthers",
+      "Omarion Hampton",
+      "Tre Tucker",
+      "Jonah Coleman"
+     ],
+     "points": 257.46
+    },
+    "unrestricted": {
+     "gated_in": [
+      "Jonah Coleman"
+     ],
+     "names": [
+      "CeeDee Lamb",
+      "Jaxon Smith-Njigba",
+      "Dalton Schultz",
+      "DeVonta Smith",
+      "Dak Prescott",
+      "Panthers",
+      "Omarion Hampton",
+      "Tre Tucker",
+      "Jonah Coleman"
+     ],
+     "points": 257.46
+    }
+   },
+   "extras": 25,
+   "flags": {
+    "Charlie Kolar": [
+     "one game for this team this season"
+    ],
+    "Demond Claiborne": [
+     "no game for this team this season"
+    ],
+    "Elic Ayomanor": [
+     "one game for this team this season"
+    ],
+    "Jonah Coleman": [
+     "one game for this team this season"
+    ],
+    "KaVontae Turpin": [
+     "one game for this team this season"
+    ],
+    "Kaytron Allen": [
+     "one game for this team this season"
+    ],
+    "Kendre Miller": [
+     "one game for this team this season"
+    ],
+    "Marlin Klein": [
+     "one game for this team this season"
+    ],
+    "Matt Hibner": [
+     "one game for this team this season"
+    ],
+    "Oscar Delp": [
+     "no game for this team this season"
+    ],
+    "Ted Hurst III": [
+     "one game for this team this season"
+    ]
+   },
+   "players": 670,
+   "rules_on_unrestricted_optimum": {
+    "dst_not_vs_qb_or_backs": true,
+    "punts": true,
+    "qb_stack": true,
+    "team_cap_3": true
+   },
+   "teams": null,
+   "unknown": 70,
+   "week": 2
+  },
+  "153728": {
+   "admitted": [
+    "Charlie Woerner",
+    "Chimere Dike",
+    "Davis Allen",
+    "Jeremy Ruckert",
+    "Josh Cameron",
+    "Josh Cuevas",
+    "KeAndre Lambert-Smith",
+    "Keaton Mitchell",
+    "Luke Schoonmaker",
+    "Nate Adkins",
+    "Tanner Koziol",
+    "Troy Franklin",
+    "Will Mallory"
+   ],
+   "best": {
+    "adaptive": {
+     "gated_in": [],
+     "names": [
+      "Bhayshul Tuten",
+      "Ja'Marr Chase",
+      "Tee Higgins",
+      "Joe Burrow",
+      "Tony Pollard",
+      "Harold Fannin Jr.",
+      "Tyler Allgeier",
+      "Jaguars",
+      "Adonai Mitchell"
+     ],
+     "points": 301.38
+    },
+    "conservative": {
+     "gated_in": [],
+     "names": [
+      "Bhayshul Tuten",
+      "Ja'Marr Chase",
+      "Tee Higgins",
+      "Joe Burrow",
+      "Tony Pollard",
+      "Harold Fannin Jr.",
+      "Tyler Allgeier",
+      "Jaguars",
+      "Adonai Mitchell"
+     ],
+     "points": 301.38
+    },
+    "dk_all": {
+     "gated_in": [],
+     "names": [
+      "Bhayshul Tuten",
+      "Ja'Marr Chase",
+      "Tee Higgins",
+      "Joe Burrow",
+      "Tony Pollard",
+      "Harold Fannin Jr.",
+      "Tyler Allgeier",
+      "Jaguars",
+      "Adonai Mitchell"
+     ],
+     "points": 301.38
+    },
+    "unrestricted": {
+     "gated_in": [],
+     "names": [
+      "Bhayshul Tuten",
+      "Ja'Marr Chase",
+      "Tee Higgins",
+      "Joe Burrow",
+      "Tony Pollard",
+      "Harold Fannin Jr.",
+      "Tyler Allgeier",
+      "Jaguars",
+      "Adonai Mitchell"
+     ],
+     "points": 301.38
+    }
+   },
+   "extras": 46,
+   "flags": {},
+   "players": 562,
+   "rules_on_unrestricted_optimum": {
+    "dst_not_vs_qb_or_backs": true,
+    "punts": true,
+    "qb_stack": true,
+    "team_cap_3": true
+   },
+   "teams": null,
+   "unknown": 65,
+   "week": 8
+  },
+  "153769": {
+   "admitted": [
+    "Ameer Abdullah",
+    "Colson Yankoff",
+    "Devontez Walker",
+    "Elic Ayomanor",
+    "Erick All Jr.",
+    "George Holani",
+    "Germie Bernard",
+    "Jared Wayne",
+    "Matt Hibner",
+    "Najee Harris",
+    "Ted Hurst III"
+   ],
+   "best": {
+    "adaptive": {
+     "gated_in": [],
+     "names": [
+      "Jaxon Smith-Njigba",
+      "Jaylen Warren",
+      "Jahmyr Gibbs",
+      "Garrett Wilson",
+      "Michael Wilson",
+      "Sam Darnold",
+      "Vikings",
+      "Kenyon Sadiq",
+      "Roman Wilson"
+     ],
+     "points": 250.12
+    },
+    "conservative": {
+     "gated_in": [],
+     "names": [
+      "Jaxon Smith-Njigba",
+      "Jaylen Warren",
+      "Jahmyr Gibbs",
+      "Garrett Wilson",
+      "Michael Wilson",
+      "Sam Darnold",
+      "Vikings",
+      "Kenyon Sadiq",
+      "Roman Wilson"
+     ],
+     "points": 250.12
+    },
+    "dk_all": {
+     "gated_in": [],
+     "names": [
+      "Jaxon Smith-Njigba",
+      "Jaylen Warren",
+      "Jahmyr Gibbs",
+      "Garrett Wilson",
+      "Michael Wilson",
+      "Sam Darnold",
+      "Vikings",
+      "Kenyon Sadiq",
+      "Roman Wilson"
+     ],
+     "points": 250.12
+    },
+    "unrestricted": {
+     "gated_in": [],
+     "names": [
+      "Jaxon Smith-Njigba",
+      "Jaylen Warren",
+      "Jahmyr Gibbs",
+      "Garrett Wilson",
+      "Michael Wilson",
+      "Sam Darnold",
+      "Vikings",
+      "Kenyon Sadiq",
+      "Roman Wilson"
+     ],
+     "points": 250.12
+    }
+   },
+   "extras": 26,
+   "flags": {
+    "Devontez Walker": [
+     "one game for this team this season"
+    ],
+    "Najee Harris": [
+     "one game for this team this season"
+    ]
+   },
+   "players": 671,
+   "rules_on_unrestricted_optimum": {
+    "dst_not_vs_qb_or_backs": true,
+    "punts": true,
+    "qb_stack": true,
+    "team_cap_3": true
+   },
+   "teams": null,
+   "unknown": 72,
+   "week": 3
+  },
+  "154078": {
+   "admitted": [
+    "Ameer Abdullah",
+    "Chris Brooks",
+    "Demond Claiborne",
+    "Erick All Jr.",
+    "Josh Cameron",
+    "Marlin Klein",
+    "Sam Roush",
+    "Tory Horton",
+    "Tyler Badie"
+   ],
+   "best": {
+    "adaptive": {
+     "gated_in": [],
+     "names": [
+      "Nico Collins",
+      "Kenneth Walker III",
+      "CeeDee Lamb",
+      "Kyren Williams",
+      "T.J. Hockenson",
+      "Drake Maye",
+      "Giants",
+      "Kyle Monangai",
+      "Tyquan Thornton"
+     ],
+     "points": 280.86
+    },
+    "conservative": {
+     "gated_in": [],
+     "names": [
+      "Nico Collins",
+      "Kenneth Walker III",
+      "CeeDee Lamb",
+      "Kyren Williams",
+      "T.J. Hockenson",
+      "Drake Maye",
+      "Giants",
+      "Kyle Monangai",
+      "Tyquan Thornton"
+     ],
+     "points": 280.86
+    },
+    "dk_all": {
+     "gated_in": [],
+     "names": [
+      "Nico Collins",
+      "Kenneth Walker III",
+      "CeeDee Lamb",
+      "Kyren Williams",
+      "T.J. Hockenson",
+      "Drake Maye",
+      "Giants",
+      "Kyle Monangai",
+      "Tyquan Thornton"
+     ],
+     "points": 280.86
+    },
+    "unrestricted": {
+     "gated_in": [],
+     "names": [
+      "Nico Collins",
+      "Kenneth Walker III",
+      "CeeDee Lamb",
+      "Kyren Williams",
+      "T.J. Hockenson",
+      "Drake Maye",
+      "Giants",
+      "Kyle Monangai",
+      "Tyquan Thornton"
+     ],
+     "points": 280.86
+    }
+   },
+   "extras": 22,
+   "flags": {},
+   "players": 629,
+   "rules_on_unrestricted_optimum": {
+    "dst_not_vs_qb_or_backs": true,
+    "punts": true,
+    "qb_stack": false,
+    "team_cap_3": true
+   },
+   "teams": null,
+   "unknown": 68,
+   "week": 4
+  },
+  "154468": {
+   "admitted": [
+    "Austin Ekeler",
+    "CJ Donaldson",
+    "Jeremy Ruckert",
+    "Kayshon Boutte",
+    "Kimani Vidal",
+    "Marvin Mims Jr.",
+    "Pierre Strong Jr.",
+    "Sam Roush",
+    "Tory Horton",
+    "Tyler Badie"
+   ],
+   "best": {
+    "adaptive": {
+     "gated_in": [],
+     "names": [
+      "Jaylen Warren",
+      "Jahmyr Gibbs",
+      "Christian Watson",
+      "Malik Nabers",
+      "Isaiah Likely",
+      "Drake Maye",
+      "49ers",
+      "Jaylin Noel",
+      "DeMario Douglas"
+     ],
+     "points": 278.46
+    },
+    "conservative": {
+     "gated_in": [],
+     "names": [
+      "Jaylen Warren",
+      "Jahmyr Gibbs",
+      "Christian Watson",
+      "Malik Nabers",
+      "Isaiah Likely",
+      "Drake Maye",
+      "49ers",
+      "Jaylin Noel",
+      "DeMario Douglas"
+     ],
+     "points": 278.46
+    },
+    "dk_all": {
+     "gated_in": [
+      "Kyle Williams"
+     ],
+     "names": [
+      "Jaylen Warren",
+      "Jahmyr Gibbs",
+      "Christian Watson",
+      "Malik Nabers",
+      "Isaiah Likely",
+      "Drake Maye",
+      "49ers",
+      "DeMario Douglas",
+      "Kyle Williams"
+     ],
+     "points": 281.36
+    },
+    "unrestricted": {
+     "gated_in": [
+      "Kyle Williams"
+     ],
+     "names": [
+      "Jaylen Warren",
+      "Jahmyr Gibbs",
+      "Christian Watson",
+      "Malik Nabers",
+      "Isaiah Likely",
+      "Drake Maye",
+      "49ers",
+      "DeMario Douglas",
+      "Kyle Williams"
+     ],
+     "points": 281.36
+    }
+   },
+   "extras": 17,
+   "flags": {
+    "Austin Ekeler": [
+     "one game for this team this season"
+    ],
+    "Pierre Strong Jr.": [
+     "no game for this team this season"
+    ]
+   },
+   "players": 587,
+   "rules_on_unrestricted_optimum": {
+    "dst_not_vs_qb_or_backs": true,
+    "punts": true,
+    "qb_stack": true,
+    "team_cap_3": true
+   },
+   "teams": null,
+   "unknown": 71,
+   "week": 5
+  },
+  "154941": {
+   "admitted": [
+    "CJ Donaldson",
+    "Efton Chism III",
+    "Isaiah Bond",
+    "Jaydon Blue",
+    "Jeremy Ruckert",
+    "Kimani Vidal",
+    "Makai Lemon",
+    "Omar Cooper Jr.",
+    "Sam Roush",
+    "Tyrone Tracy Jr.",
+    "Will Mallory",
+    "Zachariah Branch"
+   ],
+   "best": {
+    "adaptive": {
+     "gated_in": [
+      "Omar Cooper Jr."
+     ],
+     "names": [
+      "Kenneth Walker III",
+      "Malik Nabers",
+      "Isaiah Likely",
+      "James Cook III",
+      "Tyler Shough",
+      "Germie Bernard",
+      "Tre Tucker",
+      "Titans",
+      "Omar Cooper Jr."
+     ],
+     "points": 236.26
+    },
+    "conservative": {
+     "gated_in": [],
+     "names": [
+      "Kenneth Walker III",
+      "Malik Nabers",
+      "D'Andre Swift",
+      "James Cook III",
+      "Tyler Shough",
+      "Germie Bernard",
+      "Tre Tucker",
+      "Titans",
+      "Kyle Pitts Sr."
+     ],
+     "points": 233.06
+    },
+    "dk_all": {
+     "gated_in": [
+      "Omar Cooper Jr."
+     ],
+     "names": [
+      "Kenneth Walker III",
+      "Malik Nabers",
+      "Isaiah Likely",
+      "James Cook III",
+      "Tyler Shough",
+      "Germie Bernard",
+      "Tre Tucker",
+      "Titans",
+      "Omar Cooper Jr."
+     ],
+     "points": 236.26
+    },
+    "unrestricted": {
+     "gated_in": [
+      "Omar Cooper Jr."
+     ],
+     "names": [
+      "Kenneth Walker III",
+      "Malik Nabers",
+      "Isaiah Likely",
+      "James Cook III",
+      "Tyler Shough",
+      "Germie Bernard",
+      "Tre Tucker",
+      "Titans",
+      "Omar Cooper Jr."
+     ],
+     "points": 236.26
+    }
+   },
+   "extras": 17,
+   "flags": {
+    "Jaydon Blue": [
+     "no game for this team this season"
+    ],
+    "Omar Cooper Jr.": [
+     "returning: missed the team's last 4 games; pre-absence share 2%",
+     "one game for this team this season"
+    ],
+    "Will Mallory": [
+     "no game for this team this season"
+    ]
+   },
+   "players": 526,
+   "rules_on_unrestricted_optimum": {
+    "dst_not_vs_qb_or_backs": true,
+    "punts": true,
+    "qb_stack": false,
+    "team_cap_3": true
+   },
+   "teams": null,
+   "unknown": 64,
+   "week": 6
+  },
+  "155198": {
+   "admitted": [
+    "Adonai Mitchell",
+    "Breece Hall",
+    "Cade Stover",
+    "Caleb Douglas",
+    "Davis Allen",
+    "Devin Singletary",
+    "Devontez Walker",
+    "Erick All Jr.",
+    "Jaylin Noel",
+    "Jeremy Ruckert",
+    "Jordan Addison",
+    "Josh Jacobs",
+    "Kayshon Boutte",
+    "Marlin Klein",
+    "Marvin Mims Jr.",
+    "Matt Hibner",
+    "Mitchell Evans",
+    "Nate Adkins",
+    "Omar Cooper Jr.",
+    "Quinshon Judkins",
+    "Tez Johnson",
+    "Theo Johnson",
+    "Tyler Badie",
+    "Tyler Warren"
+   ],
+   "best": {
+    "adaptive": {
+     "gated_in": [
+      "Omar Cooper Jr."
+     ],
+     "names": [
+      "Zay Flowers",
+      "Bucky Irving",
+      "Tee Higgins",
+      "Tony Pollard",
+      "Buccaneers",
+      "Omar Cooper Jr.",
+      "Trey McBride",
+      "KC Concepcion Jr.",
+      "Joe Burrow"
+     ],
+     "points": 262.68
+    },
+    "conservative": {
+     "gated_in": [],
+     "names": [
+      "Zay Flowers",
+      "Bucky Irving",
+      "Tee Higgins",
+      "Tony Pollard",
+      "Bo Nix",
+      "Jameson Williams",
+      "Buccaneers",
+      "Trey McBride",
+      "KC Concepcion Jr."
+     ],
+     "points": 260.58
+    },
+    "dk_all": {
+     "gated_in": [
+      "Omar Cooper Jr."
+     ],
+     "names": [
+      "Zay Flowers",
+      "Bucky Irving",
+      "Tee Higgins",
+      "Tony Pollard",
+      "Buccaneers",
+      "Omar Cooper Jr.",
+      "Trey McBride",
+      "KC Concepcion Jr.",
+      "Joe Burrow"
+     ],
+     "points": 262.68
+    },
+    "unrestricted": {
+     "gated_in": [
+      "Omar Cooper Jr."
+     ],
+     "names": [
+      "Zay Flowers",
+      "Bucky Irving",
+      "Tee Higgins",
+      "Tony Pollard",
+      "Buccaneers",
+      "Omar Cooper Jr.",
+      "Trey McBride",
+      "KC Concepcion Jr.",
+      "Joe Burrow"
+     ],
+     "points": 262.68
+    }
+   },
+   "extras": 43,
+   "flags": {
+    "Adonai Mitchell": [
+     "returning: missed the team's last 4 games; pre-absence share 12%"
+    ],
+    "Breece Hall": [
+     "returning: missed the team's last 3 games; pre-absence share 34%"
+    ],
+    "Caleb Douglas": [
+     "returning: missed the team's last 3 games; pre-absence share 10%"
+    ],
+    "Jordan Addison": [
+     "returning: missed the team's last 1 game; pre-absence share 13%"
+    ],
+    "Josh Jacobs": [
+     "no game for this team this season"
+    ],
+    "Marlin Klein": [
+     "returning: missed the team's last 3 games; pre-absence share 1%"
+    ],
+    "Matt Hibner": [
+     "returning: missed the team's last 1 game; pre-absence share 2%"
+    ],
+    "Quinshon Judkins": [
+     "returning: missed the team's last 1 game; pre-absence share 35%"
+    ],
+    "Theo Johnson": [
+     "returning: missed the team's last 1 game; pre-absence share 2%"
+    ],
+    "Tyler Warren": [
+     "returning: missed the team's last 1 game; pre-absence share 14%"
+    ]
+   },
+   "players": 518,
+   "rules_on_unrestricted_optimum": {
+    "dst_not_vs_qb_or_backs": true,
+    "punts": true,
+    "qb_stack": true,
+    "team_cap_3": true
+   },
+   "teams": null,
+   "unknown": 55,
+   "week": 7
+  },
+  "155994": {
+   "admitted": [
+    "Adam Trautman",
+    "Cameron Latu",
+    "Davis Allen",
+    "Emanuel Wilson",
+    "George Holani",
+    "Jacob Cowing",
+    "Jeremy Ruckert",
+    "Kayshon Boutte",
+    "Keaton Mitchell",
+    "Kevin Coleman Jr.",
+    "Kyle Williams",
+    "Marvin Mims Jr.",
+    "Mitchell Evans",
+    "Oscar Delp",
+    "Will Mallory"
+   ],
+   "best": {
+    "adaptive": {
+     "gated_in": [
+      "Kayshon Boutte"
+     ],
+     "names": [
+      "CeeDee Lamb",
+      "Kenneth Walker III",
+      "Javonte Williams",
+      "Matthew Golden",
+      "Packers",
+      "Jordan Watkins",
+      "C.J. Stroud",
+      "Kayshon Boutte",
+      "Darren Waller"
+     ],
+     "points": 262.06
+    },
+    "conservative": {
+     "gated_in": [],
+     "names": [
+      "Puka Nacua",
+      "Kenneth Walker III",
+      "Jonah Coleman",
+      "Matthew Golden",
+      "Jordan Watkins",
+      "C.J. Stroud",
+      "Efton Chism III",
+      "49ers",
+      "Darren Waller"
+     ],
+     "points": 246.36
+    },
+    "dk_all": {
+     "gated_in": [
+      "Kayshon Boutte",
+      "Tank Dell"
+     ],
+     "names": [
+      "Puka Nacua",
+      "Kenneth Walker III",
+      "Jonah Coleman",
+      "Matthew Golden",
+      "C.J. Stroud",
+      "49ers",
+      "Kayshon Boutte",
+      "Darren Waller",
+      "Tank Dell"
+     ],
+     "points": 266.86
+    },
+    "unrestricted": {
+     "gated_in": [
+      "Kayshon Boutte",
+      "Tank Dell"
+     ],
+     "names": [
+      "Puka Nacua",
+      "Kenneth Walker III",
+      "Jonah Coleman",
+      "Matthew Golden",
+      "C.J. Stroud",
+      "49ers",
+      "Kayshon Boutte",
+      "Darren Waller",
+      "Tank Dell"
+     ],
+     "points": 266.86
+    }
+   },
+   "extras": 43,
+   "flags": {},
+   "players": 586,
+   "rules_on_unrestricted_optimum": {
+    "dst_not_vs_qb_or_backs": true,
+    "punts": true,
+    "qb_stack": true,
+    "team_cap_3": true
+   },
+   "teams": null,
+   "unknown": 73,
+   "week": 9
+  },
+  "156416": {
+   "admitted": [
+    "Calvin Ridley",
+    "Charlie Woerner",
+    "Chris Brooks",
+    "Davis Allen",
+    "Emanuel Wilson",
+    "Jackson Hawes",
+    "Jordan Watkins",
+    "Josh Cameron",
+    "Kayshon Boutte",
+    "Mitchell Evans",
+    "Nate Carter",
+    "Oscar Delp",
+    "Tanner Koziol",
+    "Teagan Quitoriano",
+    "Tory Horton",
+    "Travis Etienne Jr.",
+    "Xavier Legette"
+   ],
+   "best": {
+    "adaptive": {
+     "gated_in": [],
+     "names": [
+      "Chuba Hubbard",
+      "Emmett Johnson",
+      "Parker Washington",
+      "Christian McCaffrey",
+      "George Pickens",
+      "Patrick Mahomes",
+      "Vikings",
+      "Deebo Samuel Sr.",
+      "Gavin Bartholomew"
+     ],
+     "points": 294.22
+    },
+    "conservative": {
+     "gated_in": [],
+     "names": [
+      "Chuba Hubbard",
+      "Emmett Johnson",
+      "Parker Washington",
+      "Christian McCaffrey",
+      "George Pickens",
+      "Patrick Mahomes",
+      "Vikings",
+      "Deebo Samuel Sr.",
+      "Gavin Bartholomew"
+     ],
+     "points": 294.22
+    },
+    "dk_all": {
+     "gated_in": [],
+     "names": [
+      "Chuba Hubbard",
+      "Emmett Johnson",
+      "Parker Washington",
+      "Christian McCaffrey",
+      "George Pickens",
+      "Patrick Mahomes",
+      "Vikings",
+      "Deebo Samuel Sr.",
+      "Gavin Bartholomew"
+     ],
+     "points": 294.22
+    },
+    "unrestricted": {
+     "gated_in": [],
+     "names": [
+      "Chuba Hubbard",
+      "Emmett Johnson",
+      "Parker Washington",
+      "Christian McCaffrey",
+      "George Pickens",
+      "Patrick Mahomes",
+      "Vikings",
+      "Deebo Samuel Sr.",
+      "Gavin Bartholomew"
+     ],
+     "points": 294.22
+    }
+   },
+   "extras": 43,
+   "flags": {
+    "Chris Brooks": [
+     "returning: missed the team's last 5 games; pre-absence share 7%"
+    ],
+    "Emanuel Wilson": [
+     "returning: missed the team's last 1 game; pre-absence share 21%"
+    ],
+    "Nate Carter": [
+     "no game for this team this season"
+    ],
+    "Travis Etienne Jr.": [
+     "returning: missed the team's last 5 games; pre-absence share 21%"
+    ],
+    "Xavier Legette": [
+     "returning: missed the team's last 6 games; pre-absence share 5%"
+    ]
+   },
+   "players": 514,
+   "rules_on_unrestricted_optimum": {
+    "dst_not_vs_qb_or_backs": true,
+    "punts": true,
+    "qb_stack": false,
+    "team_cap_3": true
+   },
+   "teams": null,
+   "unknown": 59,
+   "week": 10
+  },
+  "156561": {
+   "admitted": [
+    "Adam Trautman",
+    "Audric Estime",
+    "Charlie Kolar",
+    "Elijah Mitchell",
+    "Hunter Long",
+    "Israel Abanikanda",
+    "Jake Briningstool",
+    "Josh Cameron",
+    "Keaton Mitchell",
+    "Marvin Mims Jr.",
+    "Matt Hibner",
+    "Mitchell Evans",
+    "Oscar Delp",
+    "Tanner Koziol",
+    "Teagan Quitoriano",
+    "Xavier Restrepo",
+    "Zach Ertz"
+   ],
+   "best": {
+    "adaptive": {
+     "gated_in": [],
+     "names": [
+      "Emmett Johnson",
+      "CeeDee Lamb",
+      "Jonah Coleman",
+      "Dak Prescott",
+      "Travis Kelce",
+      "Ladd McConkey",
+      "Bears",
+      "Ashton Jeanty",
+      "Jack Bech"
+     ],
+     "points": 250.1
+    },
+    "conservative": {
+     "gated_in": [],
+     "names": [
+      "Emmett Johnson",
+      "CeeDee Lamb",
+      "Jonah Coleman",
+      "Dak Prescott",
+      "Travis Kelce",
+      "Ladd McConkey",
+      "Bears",
+      "Ashton Jeanty",
+      "Jack Bech"
+     ],
+     "points": 250.1
+    },
+    "dk_all": {
+     "gated_in": [
+      "Ted Hurst III"
+     ],
+     "names": [
+      "CeeDee Lamb",
+      "Jonah Coleman",
+      "Dak Prescott",
+      "Chuba Hubbard",
+      "Travis Kelce",
+      "Bears",
+      "Ashton Jeanty",
+      "Jack Bech",
+      "Ted Hurst III"
+     ],
+     "points": 253.7
+    },
+    "unrestricted": {
+     "gated_in": [
+      "Ted Hurst III"
+     ],
+     "names": [
+      "CeeDee Lamb",
+      "Jonah Coleman",
+      "Dak Prescott",
+      "Chuba Hubbard",
+      "Travis Kelce",
+      "Bears",
+      "Ashton Jeanty",
+      "Jack Bech",
+      "Ted Hurst III"
+     ],
+     "points": 253.7
+    }
+   },
+   "extras": 44,
+   "flags": {
+    "Zach Ertz": [
+     "returning: missed the team's last 4 games; pre-absence share 5%"
+    ]
+   },
+   "players": 519,
+   "rules_on_unrestricted_optimum": {
+    "dst_not_vs_qb_or_backs": true,
+    "punts": true,
+    "qb_stack": true,
+    "team_cap_3": true
+   },
+   "teams": null,
+   "unknown": 55,
+   "week": 11
+  },
+  "156932": {
+   "admitted": [
+    "Eli Stowers",
+    "Grant Calcaterra",
+    "Jashaun Corbin",
+    "Zavion Thomas"
+   ],
+   "best": {
+    "adaptive": {
+     "gated_in": [],
+     "names": [
+      "Javonte Williams",
+      "Amon-Ra St. Brown",
+      "Jahmyr Gibbs",
+      "Rome Odunze",
+      "D'Andre Swift",
+      "DeVonta Smith",
+      "Eagles",
+      "Joe Milton III",
+      "Sam Roush"
+     ],
+     "points": 265.84
+    },
+    "conservative": {
+     "gated_in": [],
+     "names": [
+      "Javonte Williams",
+      "Amon-Ra St. Brown",
+      "Jahmyr Gibbs",
+      "Rome Odunze",
+      "D'Andre Swift",
+      "DeVonta Smith",
+      "Eagles",
+      "Joe Milton III",
+      "Sam Roush"
+     ],
+     "points": 265.84
+    },
+    "dk_all": {
+     "gated_in": [],
+     "names": [
+      "Javonte Williams",
+      "Amon-Ra St. Brown",
+      "Jahmyr Gibbs",
+      "Rome Odunze",
+      "D'Andre Swift",
+      "DeVonta Smith",
+      "Eagles",
+      "Joe Milton III",
+      "Sam Roush"
+     ],
+     "points": 265.84
+    },
+    "unrestricted": {
+     "gated_in": [],
+     "names": [
+      "Javonte Williams",
+      "Amon-Ra St. Brown",
+      "Jahmyr Gibbs",
+      "Rome Odunze",
+      "D'Andre Swift",
+      "DeVonta Smith",
+      "Eagles",
+      "Joe Milton III",
+      "Sam Roush"
+     ],
+     "points": 265.84
+    }
+   },
+   "extras": 10,
+   "flags": {
+    "Jashaun Corbin": [
+     "one game for this team this season"
+    ]
+   },
+   "players": 154,
+   "rules_on_unrestricted_optimum": {
+    "dst_not_vs_qb_or_backs": false,
+    "punts": true,
+    "qb_stack": true,
+    "team_cap_3": true
+   },
+   "teams": null,
+   "unknown": 14,
+   "week": 12
+  }
+ },
+ "generated": "2026-11-27T21:08:13Z",
+ "showdown": {
+  "154959": {
+   "admitted": [
+    "Kaleb Johnson",
+    "Luke Schoonmaker"
+   ],
+   "best": {
+    "adaptive": {
+     "captain": "Matthew Golden",
+     "flex": [
+      "Jordan Love",
+      "Ryan Flournoy",
+      "CeeDee Lamb",
+      "George Pickens",
+      "Pierre Strong Jr."
+     ],
+     "points": 117.34
+    },
+    "adaptive_all": {
+     "captain": "Matthew Golden",
+     "flex": [
+      "Jordan Love",
+      "Ryan Flournoy",
+      "CeeDee Lamb",
+      "George Pickens",
+      "Pierre Strong Jr."
+     ],
+     "points": 117.34
+    },
+    "conservative": {
+     "captain": "Matthew Golden",
+     "flex": [
+      "Jordan Love",
+      "Ryan Flournoy",
+      "CeeDee Lamb",
+      "George Pickens",
+      "Pierre Strong Jr."
+     ],
+     "points": 117.34
+    },
+    "dk_all": {
+     "captain": "Matthew Golden",
+     "flex": [
+      "Jordan Love",
+      "Ryan Flournoy",
+      "CeeDee Lamb",
+      "George Pickens",
+      "Pierre Strong Jr."
+     ],
+     "points": 117.34
+    },
+    "lift:all": {
+     "captain": "Matthew Golden",
+     "flex": [
+      "Jordan Love",
+      "Ryan Flournoy",
+      "CeeDee Lamb",
+      "George Pickens",
+      "Pierre Strong Jr."
+     ],
+     "points": 117.34
+    },
+    "lift:cpt_salary": {
+     "captain": "Matthew Golden",
+     "flex": [
+      "Jordan Love",
+      "Ryan Flournoy",
+      "CeeDee Lamb",
+      "George Pickens",
+      "Pierre Strong Jr."
+     ],
+     "points": 117.34
+    },
+    "lift:dst_vs_cpt": {
+     "captain": "Matthew Golden",
+     "flex": [
+      "Jordan Love",
+      "Ryan Flournoy",
+      "CeeDee Lamb",
+      "George Pickens",
+      "Pierre Strong Jr."
+     ],
+     "points": 117.34
+    },
+    "lift:kdst_cpt": {
+     "captain": "Matthew Golden",
+     "flex": [
+      "Jordan Love",
+      "Ryan Flournoy",
+      "CeeDee Lamb",
+      "George Pickens",
+      "Pierre Strong Jr."
+     ],
+     "points": 117.34
+    },
+    "lift:kdst_max": {
+     "captain": "Matthew Golden",
+     "flex": [
+      "Jordan Love",
+      "Ryan Flournoy",
+      "CeeDee Lamb",
+      "George Pickens",
+      "Pierre Strong Jr."
+     ],
+     "points": 117.34
+    },
+    "lift:punt_max": {
+     "captain": "Matthew Golden",
+     "flex": [
+      "Jordan Love",
+      "Ryan Flournoy",
+      "CeeDee Lamb",
+      "George Pickens",
+      "Pierre Strong Jr."
+     ],
+     "points": 117.34
+    },
+    "lift:punt_role": {
+     "captain": "Matthew Golden",
+     "flex": [
+      "Jordan Love",
+      "Ryan Flournoy",
+      "CeeDee Lamb",
+      "George Pickens",
+      "Pierre Strong Jr."
+     ],
+     "points": 117.34
+    },
+    "lift:te_team": {
+     "captain": "Matthew Golden",
+     "flex": [
+      "Jordan Love",
+      "Ryan Flournoy",
+      "CeeDee Lamb",
+      "George Pickens",
+      "Pierre Strong Jr."
+     ],
+     "points": 117.34
+    },
+    "unrestricted": {
+     "captain": "Matthew Golden",
+     "flex": [
+      "Jordan Love",
+      "Ryan Flournoy",
+      "CeeDee Lamb",
+      "George Pickens",
+      "Pierre Strong Jr."
+     ],
+     "points": 117.34
+    },
+    "unrestricted_all": {
+     "captain": "Matthew Golden",
+     "flex": [
+      "Jordan Love",
+      "Ryan Flournoy",
+      "CeeDee Lamb",
+      "George Pickens",
+      "Pierre Strong Jr."
+     ],
+     "points": 117.34
+    }
+   },
+   "enumeration_check": {
+    "enumeration": 117.34,
+    "search": 117.34
+   },
+   "extras": [
+    "J. Michael Sturdivant",
+    "KaVontae Turpin",
+    "Kaleb Johnson",
+    "Savion Williams"
+   ],
+   "flags": {
+    "Pierre Strong Jr.": [
+     "one game for this team this season"
+    ],
+    "Savion Williams": [
+     "no game for this team this season"
+    ]
+   },
+   "info": {
+    "J. Michael Sturdivant": {
+     "games": 4,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.2157,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0233,
+     "tau": 0.322434
+    },
+    "KaVontae Turpin": {
+     "games": 5,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.2423,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0363,
+     "tau": 0.322434
+    },
+    "Kaleb Johnson": {
+     "games": 5,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.428,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.1279,
+     "tau": 0.225886
+    },
+    "Luke Schoonmaker": {
+     "games": 5,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.3608,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0104,
+     "tau": 0.272042
+    },
+    "Savion Williams": {
+     "games": 0,
+     "has_hist": false,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.1897,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0,
+     "tau": 0.322434
+    }
+   },
+   "n_unknown": 3,
+   "players": 55,
+   "teams": [
+    "DAL",
+    "GB"
+   ],
+   "unknown": [
+    "Joe Milton III",
+    "Emari Demercado",
+    "Camden Brown"
+   ],
+   "week": 6
+  },
+  "154960": {
+   "admitted": [
+    "Ben Sinnott"
+   ],
+   "best": {
+    "adaptive": {
+     "captain": "George Kittle",
+     "flex": [
+      "Christian McCaffrey",
+      "Jayden Daniels",
+      "Rachaad White",
+      "Chig Okonkwo",
+      "Antonio Williams"
+     ],
+     "points": 120.15
+    },
+    "adaptive_all": {
+     "captain": "George Kittle",
+     "flex": [
+      "Christian McCaffrey",
+      "Jayden Daniels",
+      "Rachaad White",
+      "Chig Okonkwo",
+      "Antonio Williams"
+     ],
+     "points": 120.15
+    },
+    "conservative": {
+     "captain": "George Kittle",
+     "flex": [
+      "Christian McCaffrey",
+      "Jayden Daniels",
+      "Rachaad White",
+      "Chig Okonkwo",
+      "Antonio Williams"
+     ],
+     "points": 120.15
+    },
+    "dk_all": {
+     "captain": "Jayden Daniels",
+     "flex": [
+      "Christian McCaffrey",
+      "George Kittle",
+      "Rachaad White",
+      "Chig Okonkwo",
+      "Treylon Burks"
+     ],
+     "points": 125.8
+    },
+    "lift:all": {
+     "captain": "Christian McCaffrey",
+     "flex": [
+      "Jayden Daniels",
+      "George Kittle",
+      "Rachaad White",
+      "Chig Okonkwo",
+      "John Bates"
+     ],
+     "points": 120.45
+    },
+    "lift:cpt_salary": {
+     "captain": "George Kittle",
+     "flex": [
+      "Christian McCaffrey",
+      "Jayden Daniels",
+      "Rachaad White",
+      "Chig Okonkwo",
+      "Antonio Williams"
+     ],
+     "points": 120.15
+    },
+    "lift:dst_vs_cpt": {
+     "captain": "George Kittle",
+     "flex": [
+      "Christian McCaffrey",
+      "Jayden Daniels",
+      "Rachaad White",
+      "Chig Okonkwo",
+      "Antonio Williams"
+     ],
+     "points": 120.15
+    },
+    "lift:kdst_cpt": {
+     "captain": "George Kittle",
+     "flex": [
+      "Christian McCaffrey",
+      "Jayden Daniels",
+      "Rachaad White",
+      "Chig Okonkwo",
+      "Antonio Williams"
+     ],
+     "points": 120.15
+    },
+    "lift:kdst_max": {
+     "captain": "George Kittle",
+     "flex": [
+      "Christian McCaffrey",
+      "Jayden Daniels",
+      "Rachaad White",
+      "Chig Okonkwo",
+      "Antonio Williams"
+     ],
+     "points": 120.15
+    },
+    "lift:punt_max": {
+     "captain": "George Kittle",
+     "flex": [
+      "Christian McCaffrey",
+      "Jayden Daniels",
+      "Rachaad White",
+      "Chig Okonkwo",
+      "Antonio Williams"
+     ],
+     "points": 120.15
+    },
+    "lift:punt_role": {
+     "captain": "George Kittle",
+     "flex": [
+      "Christian McCaffrey",
+      "Jayden Daniels",
+      "Rachaad White",
+      "Chig Okonkwo",
+      "Antonio Williams"
+     ],
+     "points": 120.15
+    },
+    "lift:te_team": {
+     "captain": "George Kittle",
+     "flex": [
+      "Christian McCaffrey",
+      "Jayden Daniels",
+      "Rachaad White",
+      "Chig Okonkwo",
+      "Antonio Williams"
+     ],
+     "points": 120.15
+    },
+    "unrestricted": {
+     "captain": "George Kittle",
+     "flex": [
+      "Christian McCaffrey",
+      "Jayden Daniels",
+      "Rachaad White",
+      "Chig Okonkwo",
+      "Antonio Williams"
+     ],
+     "points": 120.15
+    },
+    "unrestricted_all": {
+     "captain": "Jayden Daniels",
+     "flex": [
+      "Christian McCaffrey",
+      "George Kittle",
+      "Rachaad White",
+      "Chig Okonkwo",
+      "Treylon Burks"
+     ],
+     "points": 125.8
+    }
+   },
+   "enumeration_check": {
+    "enumeration": 120.15,
+    "search": 120.15
+   },
+   "extras": [],
+   "flags": {
+    "Jeremy McNichols": [
+     "no game for this team this season"
+    ],
+    "Stefon Diggs": [
+     "returning: missed the team's last 1 game; pre-absence share 12%"
+    ]
+   },
+   "info": {
+    "Ben Sinnott": {
+     "games": 5,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.29,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0058,
+     "tau": 0.272042
+    }
+   },
+   "n_unknown": 5,
+   "players": 60,
+   "teams": [
+    "SF",
+    "WAS"
+   ],
+   "unknown": [
+    "Deebo Samuel Sr.",
+    "Marcus Mariota",
+    "Kurtis Rourke",
+    "River Cracraft",
+    "Tyler Ott"
+   ],
+   "week": 6
+  },
+  "155204": {
+   "admitted": [
+    "Corey Kiner",
+    "Kyle Williams",
+    "Sam Roush"
+   ],
+   "best": {
+    "adaptive": {
+     "captain": "Luther Burden III",
+     "flex": [
+      "Drake Maye",
+      "Caleb Williams",
+      "Rhamondre Stevenson",
+      "Colston Loveland",
+      "Eli Raridon"
+     ],
+     "points": 153.61
+    },
+    "adaptive_all": {
+     "captain": "Luther Burden III",
+     "flex": [
+      "Drake Maye",
+      "Caleb Williams",
+      "Rhamondre Stevenson",
+      "Colston Loveland",
+      "Eli Raridon"
+     ],
+     "points": 153.61
+    },
+    "conservative": {
+     "captain": "Luther Burden III",
+     "flex": [
+      "Drake Maye",
+      "Caleb Williams",
+      "Rhamondre Stevenson",
+      "Colston Loveland",
+      "Eli Raridon"
+     ],
+     "points": 153.61
+    },
+    "dk_all": {
+     "captain": "Luther Burden III",
+     "flex": [
+      "Drake Maye",
+      "Caleb Williams",
+      "Rhamondre Stevenson",
+      "Colston Loveland",
+      "Eli Raridon"
+     ],
+     "points": 153.61
+    },
+    "lift:all": {
+     "captain": "Luther Burden III",
+     "flex": [
+      "Drake Maye",
+      "Caleb Williams",
+      "Rhamondre Stevenson",
+      "Colston Loveland",
+      "Eli Raridon"
+     ],
+     "points": 153.61
+    },
+    "lift:cpt_salary": {
+     "captain": "Luther Burden III",
+     "flex": [
+      "Drake Maye",
+      "Caleb Williams",
+      "Rhamondre Stevenson",
+      "Colston Loveland",
+      "Eli Raridon"
+     ],
+     "points": 153.61
+    },
+    "lift:dst_vs_cpt": {
+     "captain": "Luther Burden III",
+     "flex": [
+      "Drake Maye",
+      "Caleb Williams",
+      "Rhamondre Stevenson",
+      "Colston Loveland",
+      "Eli Raridon"
+     ],
+     "points": 153.61
+    },
+    "lift:kdst_cpt": {
+     "captain": "Luther Burden III",
+     "flex": [
+      "Drake Maye",
+      "Caleb Williams",
+      "Rhamondre Stevenson",
+      "Colston Loveland",
+      "Eli Raridon"
+     ],
+     "points": 153.61
+    },
+    "lift:kdst_max": {
+     "captain": "Luther Burden III",
+     "flex": [
+      "Drake Maye",
+      "Caleb Williams",
+      "Rhamondre Stevenson",
+      "Colston Loveland",
+      "Eli Raridon"
+     ],
+     "points": 153.61
+    },
+    "lift:punt_max": {
+     "captain": "Luther Burden III",
+     "flex": [
+      "Drake Maye",
+      "Caleb Williams",
+      "Rhamondre Stevenson",
+      "Colston Loveland",
+      "Eli Raridon"
+     ],
+     "points": 153.61
+    },
+    "lift:punt_role": {
+     "captain": "Luther Burden III",
+     "flex": [
+      "Drake Maye",
+      "Caleb Williams",
+      "Rhamondre Stevenson",
+      "Colston Loveland",
+      "Eli Raridon"
+     ],
+     "points": 153.61
+    },
+    "lift:te_team": {
+     "captain": "Luther Burden III",
+     "flex": [
+      "Drake Maye",
+      "Caleb Williams",
+      "Rhamondre Stevenson",
+      "Colston Loveland",
+      "Eli Raridon"
+     ],
+     "points": 153.61
+    },
+    "unrestricted": {
+     "captain": "Luther Burden III",
+     "flex": [
+      "Drake Maye",
+      "Caleb Williams",
+      "Rhamondre Stevenson",
+      "Colston Loveland",
+      "Eli Raridon"
+     ],
+     "points": 153.61
+    },
+    "unrestricted_all": {
+     "captain": "Luther Burden III",
+     "flex": [
+      "Drake Maye",
+      "Caleb Williams",
+      "Rhamondre Stevenson",
+      "Colston Loveland",
+      "Eli Raridon"
+     ],
+     "points": 153.61
+    }
+   },
+   "enumeration_check": {
+    "enumeration": 153.61,
+    "search": 153.61
+   },
+   "extras": [
+    "Corey Kiner",
+    "Kyle Williams",
+    "Sam Roush",
+    "Zavion Thomas"
+   ],
+   "flags": {},
+   "info": {
+    "Corey Kiner": {
+     "games": 6,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.4215,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.0905,
+     "tau": 0.225886
+    },
+    "Kyle Williams": {
+     "games": 6,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.4001,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0302,
+     "tau": 0.322434
+    },
+    "Sam Roush": {
+     "games": 6,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.4298,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0047,
+     "tau": 0.272042
+    },
+    "Zavion Thomas": {
+     "games": 6,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.1643,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0233,
+     "tau": 0.322434
+    }
+   },
+   "n_unknown": 4,
+   "players": 55,
+   "teams": [
+    "CHI",
+    "NE"
+   ],
+   "unknown": [
+    "Kyle Monangai",
+    "Case Keenum",
+    "Behren Morton",
+    "Jeremiah Webb"
+   ],
+   "week": 7
+  },
+  "155216": {
+   "admitted": [],
+   "best": {
+    "adaptive": {
+     "captain": "Jaxon Smith-Njigba",
+     "flex": [
+      "Emanuel Wilson",
+      "Sam Darnold",
+      "Seahawks",
+      "AJ Barner",
+      "Travis Kelce"
+     ],
+     "points": 114.93
+    },
+    "adaptive_all": {
+     "captain": "Jaxon Smith-Njigba",
+     "flex": [
+      "Emanuel Wilson",
+      "Sam Darnold",
+      "Seahawks",
+      "AJ Barner",
+      "Travis Kelce"
+     ],
+     "points": 114.93
+    },
+    "conservative": {
+     "captain": "Jaxon Smith-Njigba",
+     "flex": [
+      "Emanuel Wilson",
+      "Sam Darnold",
+      "Seahawks",
+      "AJ Barner",
+      "Travis Kelce"
+     ],
+     "points": 114.93
+    },
+    "dk_all": {
+     "captain": "Jaxon Smith-Njigba",
+     "flex": [
+      "Emanuel Wilson",
+      "Sam Darnold",
+      "Seahawks",
+      "AJ Barner",
+      "Travis Kelce"
+     ],
+     "points": 114.93
+    },
+    "lift:all": {
+     "captain": "Jaxon Smith-Njigba",
+     "flex": [
+      "Emanuel Wilson",
+      "Sam Darnold",
+      "Seahawks",
+      "AJ Barner",
+      "Travis Kelce"
+     ],
+     "points": 114.93
+    },
+    "lift:cpt_salary": {
+     "captain": "Jaxon Smith-Njigba",
+     "flex": [
+      "Emanuel Wilson",
+      "Sam Darnold",
+      "Seahawks",
+      "AJ Barner",
+      "Travis Kelce"
+     ],
+     "points": 114.93
+    },
+    "lift:dst_vs_cpt": {
+     "captain": "Jaxon Smith-Njigba",
+     "flex": [
+      "Emanuel Wilson",
+      "Sam Darnold",
+      "Seahawks",
+      "AJ Barner",
+      "Travis Kelce"
+     ],
+     "points": 114.93
+    },
+    "lift:kdst_cpt": {
+     "captain": "Jaxon Smith-Njigba",
+     "flex": [
+      "Emanuel Wilson",
+      "Sam Darnold",
+      "Seahawks",
+      "AJ Barner",
+      "Travis Kelce"
+     ],
+     "points": 114.93
+    },
+    "lift:kdst_max": {
+     "captain": "Jaxon Smith-Njigba",
+     "flex": [
+      "Emanuel Wilson",
+      "Sam Darnold",
+      "Seahawks",
+      "AJ Barner",
+      "Travis Kelce"
+     ],
+     "points": 114.93
+    },
+    "lift:punt_max": {
+     "captain": "Jaxon Smith-Njigba",
+     "flex": [
+      "Emanuel Wilson",
+      "Sam Darnold",
+      "Seahawks",
+      "AJ Barner",
+      "Travis Kelce"
+     ],
+     "points": 114.93
+    },
+    "lift:punt_role": {
+     "captain": "Jaxon Smith-Njigba",
+     "flex": [
+      "Emanuel Wilson",
+      "Sam Darnold",
+      "Seahawks",
+      "AJ Barner",
+      "Travis Kelce"
+     ],
+     "points": 114.93
+    },
+    "lift:te_team": {
+     "captain": "Jaxon Smith-Njigba",
+     "flex": [
+      "Emanuel Wilson",
+      "Sam Darnold",
+      "Seahawks",
+      "AJ Barner",
+      "Travis Kelce"
+     ],
+     "points": 114.93
+    },
+    "unrestricted": {
+     "captain": "Jaxon Smith-Njigba",
+     "flex": [
+      "Emanuel Wilson",
+      "Sam Darnold",
+      "Seahawks",
+      "AJ Barner",
+      "Travis Kelce"
+     ],
+     "points": 114.93
+    },
+    "unrestricted_all": {
+     "captain": "Jaxon Smith-Njigba",
+     "flex": [
+      "Emanuel Wilson",
+      "Sam Darnold",
+      "Seahawks",
+      "AJ Barner",
+      "Travis Kelce"
+     ],
+     "points": 114.93
+    }
+   },
+   "enumeration_check": {
+    "enumeration": 114.93,
+    "search": 114.93
+   },
+   "extras": [
+    "Cyrus Allen",
+    "Tory Horton",
+    "Velus Jones Jr."
+   ],
+   "flags": {
+    "Andrew Armstrong": [
+     "one game for this team this season"
+    ],
+    "Jaydn Ott": [
+     "no game for this team this season"
+    ],
+    "Justin Watson": [
+     "one game for this team this season"
+    ]
+   },
+   "info": {
+    "Cyrus Allen": {
+     "games": 5,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.1685,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0194,
+     "tau": 0.322434
+    },
+    "Tory Horton": {
+     "games": 5,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.3179,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0337,
+     "tau": 0.322434
+    },
+    "Velus Jones Jr.": {
+     "games": 5,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.1099,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.0281,
+     "tau": 0.225886
+    }
+   },
+   "n_unknown": 8,
+   "players": 56,
+   "teams": [
+    "KC",
+    "SEA"
+   ],
+   "unknown": [
+    "Rashee Rice",
+    "Zach Charbonnet",
+    "Garrett Nussmeier",
+    "Drew Lock",
+    "Ben VanSumeren",
+    "Robert Henry Jr.",
+    "Montorie Foster Jr.",
+    "James Winchester"
+   ],
+   "week": 7
+  },
+  "155217": {
+   "admitted": [
+    "Grant Calcaterra",
+    "Luke Schoonmaker"
+   ],
+   "best": {
+    "adaptive": {
+     "captain": "Javonte Williams",
+     "flex": [
+      "CeeDee Lamb",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Brandon Aubrey",
+      "Tyler Goodson"
+     ],
+     "points": 121.93
+    },
+    "adaptive_all": {
+     "captain": "Javonte Williams",
+     "flex": [
+      "CeeDee Lamb",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Brandon Aubrey",
+      "Tyler Goodson"
+     ],
+     "points": 121.93
+    },
+    "conservative": {
+     "captain": "Javonte Williams",
+     "flex": [
+      "CeeDee Lamb",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Brandon Aubrey",
+      "Tyler Goodson"
+     ],
+     "points": 121.93
+    },
+    "dk_all": {
+     "captain": "Makai Lemon",
+     "flex": [
+      "Javonte Williams",
+      "CeeDee Lamb",
+      "Dak Prescott",
+      "Brandon Aubrey",
+      "Ryan Flournoy"
+     ],
+     "points": 126.73
+    },
+    "lift:all": {
+     "captain": "Makai Lemon",
+     "flex": [
+      "Javonte Williams",
+      "CeeDee Lamb",
+      "Dak Prescott",
+      "Brandon Aubrey",
+      "Ryan Flournoy"
+     ],
+     "points": 126.73
+    },
+    "lift:cpt_salary": {
+     "captain": "Makai Lemon",
+     "flex": [
+      "Javonte Williams",
+      "CeeDee Lamb",
+      "Dak Prescott",
+      "Brandon Aubrey",
+      "Ryan Flournoy"
+     ],
+     "points": 126.73
+    },
+    "lift:dst_vs_cpt": {
+     "captain": "Javonte Williams",
+     "flex": [
+      "CeeDee Lamb",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Brandon Aubrey",
+      "Tyler Goodson"
+     ],
+     "points": 121.93
+    },
+    "lift:kdst_cpt": {
+     "captain": "Javonte Williams",
+     "flex": [
+      "CeeDee Lamb",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Brandon Aubrey",
+      "Tyler Goodson"
+     ],
+     "points": 121.93
+    },
+    "lift:kdst_max": {
+     "captain": "Javonte Williams",
+     "flex": [
+      "CeeDee Lamb",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Brandon Aubrey",
+      "Tyler Goodson"
+     ],
+     "points": 121.93
+    },
+    "lift:punt_max": {
+     "captain": "Javonte Williams",
+     "flex": [
+      "CeeDee Lamb",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Brandon Aubrey",
+      "Tyler Goodson"
+     ],
+     "points": 121.93
+    },
+    "lift:punt_role": {
+     "captain": "Javonte Williams",
+     "flex": [
+      "CeeDee Lamb",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Brandon Aubrey",
+      "Tyler Goodson"
+     ],
+     "points": 121.93
+    },
+    "lift:te_team": {
+     "captain": "Javonte Williams",
+     "flex": [
+      "CeeDee Lamb",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Brandon Aubrey",
+      "Tyler Goodson"
+     ],
+     "points": 121.93
+    },
+    "unrestricted": {
+     "captain": "Javonte Williams",
+     "flex": [
+      "CeeDee Lamb",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Brandon Aubrey",
+      "Tyler Goodson"
+     ],
+     "points": 121.93
+    },
+    "unrestricted_all": {
+     "captain": "Javonte Williams",
+     "flex": [
+      "CeeDee Lamb",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Brandon Aubrey",
+      "Tyler Goodson"
+     ],
+     "points": 121.93
+    }
+   },
+   "enumeration_check": {
+    "enumeration": 121.93,
+    "search": 121.93
+   },
+   "extras": [
+    "Eli Stowers",
+    "Grant Calcaterra",
+    "Jonathan Mingo"
+   ],
+   "flags": {
+    "Eli Stowers": [
+     "no game for this team this season"
+    ],
+    "Grant Calcaterra": [
+     "no game for this team this season"
+    ],
+    "Saquon Barkley": [
+     "returning: missed the team's last 2 games; pre-absence share 16%"
+    ],
+    "Tanner McKee": [
+     "one game for this team this season"
+    ]
+   },
+   "info": {
+    "Eli Stowers": {
+     "games": 0,
+     "has_hist": false,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.2662,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0,
+     "tau": 0.272042
+    },
+    "Grant Calcaterra": {
+     "games": 0,
+     "has_hist": false,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.2812,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0,
+     "tau": 0.272042
+    },
+    "Jonathan Mingo": {
+     "games": 6,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.1046,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0312,
+     "tau": 0.322434
+    },
+    "Luke Schoonmaker": {
+     "games": 6,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.2821,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0052,
+     "tau": 0.272042
+    }
+   },
+   "n_unknown": 8,
+   "players": 55,
+   "teams": [
+    "DAL",
+    "PHI"
+   ],
+   "unknown": [
+    "DeVonta Smith",
+    "Cole Payton",
+    "Dontayvion Wicks",
+    "Hollywood Brown",
+    "Emari Demercado",
+    "KaVontae Turpin",
+    "E.J. Jenkins",
+    "Rocco Underwood"
+   ],
+   "week": 7
+  },
+  "155596": {
+   "admitted": [
+    "Mitchell Evans",
+    "Pierre Strong Jr."
+   ],
+   "best": {
+    "adaptive": {
+     "captain": "Chuba Hubbard",
+     "flex": [
+      "Josh Jacobs",
+      "Jordan Love",
+      "Matthew Golden",
+      "Tucker Kraft",
+      "Mitchell Evans"
+     ],
+     "points": 125.47
+    },
+    "adaptive_all": {
+     "captain": "Chuba Hubbard",
+     "flex": [
+      "Josh Jacobs",
+      "Jordan Love",
+      "Matthew Golden",
+      "Tucker Kraft",
+      "Mitchell Evans"
+     ],
+     "points": 125.47
+    },
+    "conservative": {
+     "captain": "Josh Jacobs",
+     "flex": [
+      "Chuba Hubbard",
+      "Jordan Love",
+      "Matthew Golden",
+      "Packers",
+      "Ryan Fitzgerald"
+     ],
+     "points": 123.12
+    },
+    "dk_all": {
+     "captain": "Chuba Hubbard",
+     "flex": [
+      "Josh Jacobs",
+      "Jordan Love",
+      "Matthew Golden",
+      "Tucker Kraft",
+      "Mitchell Evans"
+     ],
+     "points": 125.47
+    },
+    "lift:all": {
+     "captain": "Packers",
+     "flex": [
+      "Chuba Hubbard",
+      "Josh Jacobs",
+      "Jordan Love",
+      "Matthew Golden",
+      "Tucker Kraft"
+     ],
+     "points": 125.32
+    },
+    "lift:cpt_salary": {
+     "captain": "Josh Jacobs",
+     "flex": [
+      "Chuba Hubbard",
+      "Jordan Love",
+      "Matthew Golden",
+      "Packers",
+      "Ryan Fitzgerald"
+     ],
+     "points": 123.12
+    },
+    "lift:dst_vs_cpt": {
+     "captain": "Chuba Hubbard",
+     "flex": [
+      "Josh Jacobs",
+      "Jordan Love",
+      "Matthew Golden",
+      "Packers",
+      "Ryan Fitzgerald"
+     ],
+     "points": 123.97
+    },
+    "lift:kdst_cpt": {
+     "captain": "Josh Jacobs",
+     "flex": [
+      "Chuba Hubbard",
+      "Jordan Love",
+      "Matthew Golden",
+      "Packers",
+      "Ryan Fitzgerald"
+     ],
+     "points": 123.12
+    },
+    "lift:kdst_max": {
+     "captain": "Josh Jacobs",
+     "flex": [
+      "Chuba Hubbard",
+      "Jordan Love",
+      "Matthew Golden",
+      "Packers",
+      "Ryan Fitzgerald"
+     ],
+     "points": 123.12
+    },
+    "lift:punt_max": {
+     "captain": "Josh Jacobs",
+     "flex": [
+      "Chuba Hubbard",
+      "Jordan Love",
+      "Matthew Golden",
+      "Packers",
+      "Ryan Fitzgerald"
+     ],
+     "points": 123.12
+    },
+    "lift:punt_role": {
+     "captain": "Josh Jacobs",
+     "flex": [
+      "Chuba Hubbard",
+      "Jordan Love",
+      "Matthew Golden",
+      "Packers",
+      "Ryan Fitzgerald"
+     ],
+     "points": 123.12
+    },
+    "lift:te_team": {
+     "captain": "Josh Jacobs",
+     "flex": [
+      "Chuba Hubbard",
+      "Jordan Love",
+      "Matthew Golden",
+      "Packers",
+      "Ryan Fitzgerald"
+     ],
+     "points": 123.12
+    },
+    "unrestricted": {
+     "captain": "Chuba Hubbard",
+     "flex": [
+      "Josh Jacobs",
+      "Jordan Love",
+      "Matthew Golden",
+      "Tucker Kraft",
+      "Mitchell Evans"
+     ],
+     "points": 125.47
+    },
+    "unrestricted_all": {
+     "captain": "Chuba Hubbard",
+     "flex": [
+      "Josh Jacobs",
+      "Jordan Love",
+      "Matthew Golden",
+      "Tucker Kraft",
+      "Mitchell Evans"
+     ],
+     "points": 125.47
+    }
+   },
+   "enumeration_check": {
+    "enumeration": 123.12,
+    "search": 123.12
+   },
+   "extras": [
+    "Bo Melton",
+    "Brycen Tremayne",
+    "Mitchell Evans",
+    "Pierre Strong Jr."
+   ],
+   "flags": {
+    "Josh Jacobs": [
+     "one game for this team this season"
+    ]
+   },
+   "info": {
+    "Bo Melton": {
+     "games": 7,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.1655,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0326,
+     "tau": 0.322434
+    },
+    "Brycen Tremayne": {
+     "games": 6,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.1379,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.022,
+     "tau": 0.322434
+    },
+    "Mitchell Evans": {
+     "games": 6,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.4979,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0275,
+     "tau": 0.272042
+    },
+    "Pierre Strong Jr.": {
+     "games": 3,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.2652,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.1413,
+     "tau": 0.225886
+    }
+   },
+   "n_unknown": 5,
+   "players": 53,
+   "teams": [
+    "CAR",
+    "GB"
+   ],
+   "unknown": [
+    "Haynes King",
+    "AJ Dillon",
+    "Kaleb Johnson",
+    "Jonnu Smith",
+    "Ja'Tavion Sanders"
+   ],
+   "week": 8
+  },
+  "155609": {
+   "admitted": [
+    "George Holani",
+    "Jadarian Price",
+    "Nick Kallerup"
+   ],
+   "best": {
+    "adaptive": {
+     "captain": "D'Andre Swift",
+     "flex": [
+      "Jaxon Smith-Njigba",
+      "Luther Burden III",
+      "Rome Odunze",
+      "Bears",
+      "Tory Horton"
+     ],
+     "points": 115.55
+    },
+    "adaptive_all": {
+     "captain": "D'Andre Swift",
+     "flex": [
+      "Jaxon Smith-Njigba",
+      "Luther Burden III",
+      "Rome Odunze",
+      "Bears",
+      "Tory Horton"
+     ],
+     "points": 115.55
+    },
+    "conservative": {
+     "captain": "D'Andre Swift",
+     "flex": [
+      "Jaxon Smith-Njigba",
+      "Luther Burden III",
+      "Rome Odunze",
+      "Bears",
+      "Tory Horton"
+     ],
+     "points": 115.55
+    },
+    "dk_all": {
+     "captain": "D'Andre Swift",
+     "flex": [
+      "Jaxon Smith-Njigba",
+      "Luther Burden III",
+      "Rome Odunze",
+      "Bears",
+      "Tory Horton"
+     ],
+     "points": 115.55
+    },
+    "lift:all": {
+     "captain": "D'Andre Swift",
+     "flex": [
+      "Jaxon Smith-Njigba",
+      "Luther Burden III",
+      "Rome Odunze",
+      "Bears",
+      "Tory Horton"
+     ],
+     "points": 115.55
+    },
+    "lift:cpt_salary": {
+     "captain": "D'Andre Swift",
+     "flex": [
+      "Jaxon Smith-Njigba",
+      "Luther Burden III",
+      "Rome Odunze",
+      "Bears",
+      "Tory Horton"
+     ],
+     "points": 115.55
+    },
+    "lift:dst_vs_cpt": {
+     "captain": "D'Andre Swift",
+     "flex": [
+      "Jaxon Smith-Njigba",
+      "Luther Burden III",
+      "Rome Odunze",
+      "Bears",
+      "Tory Horton"
+     ],
+     "points": 115.55
+    },
+    "lift:kdst_cpt": {
+     "captain": "D'Andre Swift",
+     "flex": [
+      "Jaxon Smith-Njigba",
+      "Luther Burden III",
+      "Rome Odunze",
+      "Bears",
+      "Tory Horton"
+     ],
+     "points": 115.55
+    },
+    "lift:kdst_max": {
+     "captain": "D'Andre Swift",
+     "flex": [
+      "Jaxon Smith-Njigba",
+      "Luther Burden III",
+      "Rome Odunze",
+      "Bears",
+      "Tory Horton"
+     ],
+     "points": 115.55
+    },
+    "lift:punt_max": {
+     "captain": "D'Andre Swift",
+     "flex": [
+      "Jaxon Smith-Njigba",
+      "Luther Burden III",
+      "Rome Odunze",
+      "Bears",
+      "Tory Horton"
+     ],
+     "points": 115.55
+    },
+    "lift:punt_role": {
+     "captain": "D'Andre Swift",
+     "flex": [
+      "Jaxon Smith-Njigba",
+      "Luther Burden III",
+      "Rome Odunze",
+      "Bears",
+      "Tory Horton"
+     ],
+     "points": 115.55
+    },
+    "lift:te_team": {
+     "captain": "D'Andre Swift",
+     "flex": [
+      "Jaxon Smith-Njigba",
+      "Luther Burden III",
+      "Rome Odunze",
+      "Bears",
+      "Tory Horton"
+     ],
+     "points": 115.55
+    },
+    "unrestricted": {
+     "captain": "D'Andre Swift",
+     "flex": [
+      "Jaxon Smith-Njigba",
+      "Luther Burden III",
+      "Rome Odunze",
+      "Bears",
+      "Tory Horton"
+     ],
+     "points": 115.55
+    },
+    "unrestricted_all": {
+     "captain": "D'Andre Swift",
+     "flex": [
+      "Jaxon Smith-Njigba",
+      "Luther Burden III",
+      "Rome Odunze",
+      "Bears",
+      "Tory Horton"
+     ],
+     "points": 115.55
+    }
+   },
+   "enumeration_check": {
+    "enumeration": 115.55,
+    "search": 115.55
+   },
+   "extras": [
+    "George Holani",
+    "Jadarian Price",
+    "Zavion Thomas"
+   ],
+   "flags": {
+    "Jadarian Price": [
+     "returning: missed the team's last 4 games; pre-absence share 20%"
+    ],
+    "Zach Charbonnet": [
+     "no game for this team this season"
+    ]
+   },
+   "info": {
+    "George Holani": {
+     "games": 7,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.4585,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.1036,
+     "tau": 0.225886
+    },
+    "Jadarian Price": {
+     "games": 3,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 4,
+     "p": 0.5496,
+     "pos": "RB",
+     "returning": true,
+     "share": 0.2,
+     "tau": 0.225886
+    },
+    "Nick Kallerup": {
+     "games": 4,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.2896,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0,
+     "tau": 0.272042
+    },
+    "Zavion Thomas": {
+     "games": 7,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.2197,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0263,
+     "tau": 0.322434
+    }
+   },
+   "n_unknown": 5,
+   "players": 55,
+   "teams": [
+    "CHI",
+    "SEA"
+   ],
+   "unknown": [
+    "Kyle Monangai",
+    "Drew Lock",
+    "Case Keenum",
+    "Rashid Shaheed",
+    "Velus Jones Jr."
+   ],
+   "week": 8
+  },
+  "155951": {
+   "admitted": [
+    "Ben Sinnott",
+    "Grant Calcaterra",
+    "Jeremy McNichols",
+    "Johnny Mundt"
+   ],
+   "best": {
+    "adaptive": {
+     "captain": "Rachaad White",
+     "flex": [
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Commanders",
+      "Stefon Diggs",
+      "Saquon Barkley"
+     ],
+     "points": 90.18
+    },
+    "adaptive_all": {
+     "captain": "Rachaad White",
+     "flex": [
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Commanders",
+      "Stefon Diggs",
+      "Saquon Barkley"
+     ],
+     "points": 90.18
+    },
+    "conservative": {
+     "captain": "Rachaad White",
+     "flex": [
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Commanders",
+      "Stefon Diggs",
+      "Saquon Barkley"
+     ],
+     "points": 90.18
+    },
+    "dk_all": {
+     "captain": "Drew Stevens",
+     "flex": [
+      "Jayden Daniels",
+      "Rachaad White",
+      "Commanders",
+      "Stefon Diggs",
+      "Saquon Barkley"
+     ],
+     "points": 91.18
+    },
+    "lift:all": {
+     "captain": "Drew Stevens",
+     "flex": [
+      "Jayden Daniels",
+      "Rachaad White",
+      "Commanders",
+      "Stefon Diggs",
+      "Saquon Barkley"
+     ],
+     "points": 91.18
+    },
+    "lift:cpt_salary": {
+     "captain": "Rachaad White",
+     "flex": [
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Commanders",
+      "Stefon Diggs",
+      "Saquon Barkley"
+     ],
+     "points": 90.18
+    },
+    "lift:dst_vs_cpt": {
+     "captain": "Rachaad White",
+     "flex": [
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Commanders",
+      "Stefon Diggs",
+      "Saquon Barkley"
+     ],
+     "points": 90.18
+    },
+    "lift:kdst_cpt": {
+     "captain": "Rachaad White",
+     "flex": [
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Commanders",
+      "Stefon Diggs",
+      "Saquon Barkley"
+     ],
+     "points": 90.18
+    },
+    "lift:kdst_max": {
+     "captain": "Rachaad White",
+     "flex": [
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Commanders",
+      "Stefon Diggs",
+      "Saquon Barkley"
+     ],
+     "points": 90.18
+    },
+    "lift:punt_max": {
+     "captain": "Rachaad White",
+     "flex": [
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Commanders",
+      "Stefon Diggs",
+      "Saquon Barkley"
+     ],
+     "points": 90.18
+    },
+    "lift:punt_role": {
+     "captain": "Rachaad White",
+     "flex": [
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Commanders",
+      "Stefon Diggs",
+      "Saquon Barkley"
+     ],
+     "points": 90.18
+    },
+    "lift:te_team": {
+     "captain": "Rachaad White",
+     "flex": [
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Commanders",
+      "Stefon Diggs",
+      "Saquon Barkley"
+     ],
+     "points": 90.18
+    },
+    "unrestricted": {
+     "captain": "Rachaad White",
+     "flex": [
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Commanders",
+      "Stefon Diggs",
+      "Saquon Barkley"
+     ],
+     "points": 90.18
+    },
+    "unrestricted_all": {
+     "captain": "Rachaad White",
+     "flex": [
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Commanders",
+      "Stefon Diggs",
+      "Saquon Barkley"
+     ],
+     "points": 90.18
+    }
+   },
+   "enumeration_check": {
+    "enumeration": 90.18,
+    "search": 90.18
+   },
+   "extras": [
+    "Dyami Brown",
+    "Jaydon Blue",
+    "Jeremy McNichols",
+    "Johnny Mundt"
+   ],
+   "flags": {
+    "Eli Stowers": [
+     "one game for this team this season"
+    ],
+    "Elijah Mitchell": [
+     "one game for this team this season"
+    ],
+    "Grant Calcaterra": [
+     "one game for this team this season"
+    ],
+    "Jaydon Blue": [
+     "no game for this team this season"
+    ],
+    "Jeremy McNichols": [
+     "one game for this team this season"
+    ]
+   },
+   "info": {
+    "Ben Sinnott": {
+     "games": 6,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.2789,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0,
+     "tau": 0.272042
+    },
+    "Dyami Brown": {
+     "games": 6,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.2616,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0432,
+     "tau": 0.322434
+    },
+    "Grant Calcaterra": {
+     "games": 1,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.2865,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0,
+     "tau": 0.272042
+    },
+    "Jaydon Blue": {
+     "games": 0,
+     "has_hist": false,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.1455,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.0,
+     "tau": 0.225886
+    },
+    "Jeremy McNichols": {
+     "games": 1,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.2729,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.0962,
+     "tau": 0.225886
+    },
+    "Johnny Mundt": {
+     "games": 7,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.337,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0118,
+     "tau": 0.272042
+    }
+   },
+   "n_unknown": 7,
+   "players": 58,
+   "teams": [
+    "PHI",
+    "WAS"
+   ],
+   "unknown": [
+    "DeVonta Smith",
+    "Dontayvion Wicks",
+    "Athan Kaliakmanis",
+    "Hollywood Brown",
+    "Britain Covey",
+    "Tyler Ott",
+    "Rocco Underwood"
+   ],
+   "week": 8
+  },
+  "156000": {
+   "admitted": [
+    "Josh Cameron",
+    "Josh Cuevas",
+    "Tanner Koziol"
+   ],
+   "best": {
+    "adaptive": {
+     "captain": "Parker Washington",
+     "flex": [
+      "Justice Hill",
+      "Cam Little",
+      "Trevor Lawrence",
+      "Chris Rodriguez Jr.",
+      "Jakobi Meyers"
+     ],
+     "points": 91.63
+    },
+    "adaptive_all": {
+     "captain": "Parker Washington",
+     "flex": [
+      "Justice Hill",
+      "Cam Little",
+      "Trevor Lawrence",
+      "Chris Rodriguez Jr.",
+      "Jakobi Meyers"
+     ],
+     "points": 91.63
+    },
+    "conservative": {
+     "captain": "Parker Washington",
+     "flex": [
+      "Justice Hill",
+      "Cam Little",
+      "Trevor Lawrence",
+      "Chris Rodriguez Jr.",
+      "Jakobi Meyers"
+     ],
+     "points": 91.63
+    },
+    "dk_all": {
+     "captain": "Justice Hill",
+     "flex": [
+      "Cam Little",
+      "Parker Washington",
+      "Trevor Lawrence",
+      "Chris Rodriguez Jr.",
+      "Jakobi Meyers"
+     ],
+     "points": 93.68
+    },
+    "lift:all": {
+     "captain": "Justice Hill",
+     "flex": [
+      "Cam Little",
+      "Parker Washington",
+      "Trevor Lawrence",
+      "Chris Rodriguez Jr.",
+      "Jakobi Meyers"
+     ],
+     "points": 93.68
+    },
+    "lift:cpt_salary": {
+     "captain": "Justice Hill",
+     "flex": [
+      "Cam Little",
+      "Parker Washington",
+      "Trevor Lawrence",
+      "Chris Rodriguez Jr.",
+      "Jakobi Meyers"
+     ],
+     "points": 93.68
+    },
+    "lift:dst_vs_cpt": {
+     "captain": "Parker Washington",
+     "flex": [
+      "Justice Hill",
+      "Cam Little",
+      "Trevor Lawrence",
+      "Chris Rodriguez Jr.",
+      "Jakobi Meyers"
+     ],
+     "points": 91.63
+    },
+    "lift:kdst_cpt": {
+     "captain": "Parker Washington",
+     "flex": [
+      "Justice Hill",
+      "Cam Little",
+      "Trevor Lawrence",
+      "Chris Rodriguez Jr.",
+      "Jakobi Meyers"
+     ],
+     "points": 91.63
+    },
+    "lift:kdst_max": {
+     "captain": "Parker Washington",
+     "flex": [
+      "Justice Hill",
+      "Cam Little",
+      "Trevor Lawrence",
+      "Chris Rodriguez Jr.",
+      "Jakobi Meyers"
+     ],
+     "points": 91.63
+    },
+    "lift:punt_max": {
+     "captain": "Parker Washington",
+     "flex": [
+      "Justice Hill",
+      "Cam Little",
+      "Trevor Lawrence",
+      "Chris Rodriguez Jr.",
+      "Jakobi Meyers"
+     ],
+     "points": 91.63
+    },
+    "lift:punt_role": {
+     "captain": "Parker Washington",
+     "flex": [
+      "Justice Hill",
+      "Cam Little",
+      "Trevor Lawrence",
+      "Chris Rodriguez Jr.",
+      "Jakobi Meyers"
+     ],
+     "points": 91.63
+    },
+    "lift:te_team": {
+     "captain": "Parker Washington",
+     "flex": [
+      "Justice Hill",
+      "Cam Little",
+      "Trevor Lawrence",
+      "Chris Rodriguez Jr.",
+      "Jakobi Meyers"
+     ],
+     "points": 91.63
+    },
+    "unrestricted": {
+     "captain": "Parker Washington",
+     "flex": [
+      "Justice Hill",
+      "Cam Little",
+      "Trevor Lawrence",
+      "Chris Rodriguez Jr.",
+      "Jakobi Meyers"
+     ],
+     "points": 91.63
+    },
+    "unrestricted_all": {
+     "captain": "Parker Washington",
+     "flex": [
+      "Justice Hill",
+      "Cam Little",
+      "Trevor Lawrence",
+      "Chris Rodriguez Jr.",
+      "Jakobi Meyers"
+     ],
+     "points": 91.63
+    }
+   },
+   "enumeration_check": {
+    "enumeration": 91.63,
+    "search": 91.63
+   },
+   "extras": [
+    "Devontez Walker",
+    "Josh Cameron",
+    "Josh Cuevas",
+    "Travis Hunter"
+   ],
+   "flags": {
+    "Joe Fagnano": [
+     "one game for this team this season"
+    ]
+   },
+   "info": {
+    "Devontez Walker": {
+     "games": 7,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.1774,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0125,
+     "tau": 0.322434
+    },
+    "Josh Cameron": {
+     "games": 7,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.3511,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0383,
+     "tau": 0.322434
+    },
+    "Josh Cuevas": {
+     "games": 8,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.6139,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0625,
+     "tau": 0.272042
+    },
+    "Tanner Koziol": {
+     "games": 5,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.3188,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0055,
+     "tau": 0.272042
+    }
+   },
+   "n_unknown": 4,
+   "players": 54,
+   "teams": [
+    "BAL",
+    "JAX"
+   ],
+   "unknown": [
+    "Kedon Slovis",
+    "Lucas Scott",
+    "CJ Williams",
+    "Elijah Sarratt"
+   ],
+   "week": 9
+  },
+  "156013": {
+   "admitted": [
+    "Tez Johnson"
+   ],
+   "best": {
+    "adaptive": {
+     "captain": "Bucky Irving",
+     "flex": [
+      "Luther Burden III",
+      "Caleb Williams",
+      "Rome Odunze",
+      "Buccaneers",
+      "Kenny Gainwell"
+     ],
+     "points": 118.81
+    },
+    "adaptive_all": {
+     "captain": "Bucky Irving",
+     "flex": [
+      "Luther Burden III",
+      "Caleb Williams",
+      "Rome Odunze",
+      "Buccaneers",
+      "Kenny Gainwell"
+     ],
+     "points": 118.81
+    },
+    "conservative": {
+     "captain": "Bucky Irving",
+     "flex": [
+      "Luther Burden III",
+      "Caleb Williams",
+      "Rome Odunze",
+      "Buccaneers",
+      "Kenny Gainwell"
+     ],
+     "points": 118.81
+    },
+    "dk_all": {
+     "captain": "Bucky Irving",
+     "flex": [
+      "Luther Burden III",
+      "Caleb Williams",
+      "Rome Odunze",
+      "Bears",
+      "Tez Johnson"
+     ],
+     "points": 120.81
+    },
+    "lift:all": {
+     "captain": "Bucky Irving",
+     "flex": [
+      "Luther Burden III",
+      "Caleb Williams",
+      "Rome Odunze",
+      "Buccaneers",
+      "Kenny Gainwell"
+     ],
+     "points": 118.81
+    },
+    "lift:cpt_salary": {
+     "captain": "Bucky Irving",
+     "flex": [
+      "Luther Burden III",
+      "Caleb Williams",
+      "Rome Odunze",
+      "Buccaneers",
+      "Kenny Gainwell"
+     ],
+     "points": 118.81
+    },
+    "lift:dst_vs_cpt": {
+     "captain": "Bucky Irving",
+     "flex": [
+      "Luther Burden III",
+      "Caleb Williams",
+      "Rome Odunze",
+      "Buccaneers",
+      "Kenny Gainwell"
+     ],
+     "points": 118.81
+    },
+    "lift:kdst_cpt": {
+     "captain": "Bucky Irving",
+     "flex": [
+      "Luther Burden III",
+      "Caleb Williams",
+      "Rome Odunze",
+      "Buccaneers",
+      "Kenny Gainwell"
+     ],
+     "points": 118.81
+    },
+    "lift:kdst_max": {
+     "captain": "Bucky Irving",
+     "flex": [
+      "Luther Burden III",
+      "Caleb Williams",
+      "Rome Odunze",
+      "Buccaneers",
+      "Kenny Gainwell"
+     ],
+     "points": 118.81
+    },
+    "lift:punt_max": {
+     "captain": "Bucky Irving",
+     "flex": [
+      "Luther Burden III",
+      "Caleb Williams",
+      "Rome Odunze",
+      "Buccaneers",
+      "Kenny Gainwell"
+     ],
+     "points": 118.81
+    },
+    "lift:punt_role": {
+     "captain": "Bucky Irving",
+     "flex": [
+      "Luther Burden III",
+      "Caleb Williams",
+      "Rome Odunze",
+      "Buccaneers",
+      "Kenny Gainwell"
+     ],
+     "points": 118.81
+    },
+    "lift:te_team": {
+     "captain": "Bucky Irving",
+     "flex": [
+      "Luther Burden III",
+      "Caleb Williams",
+      "Rome Odunze",
+      "Buccaneers",
+      "Kenny Gainwell"
+     ],
+     "points": 118.81
+    },
+    "unrestricted": {
+     "captain": "Bucky Irving",
+     "flex": [
+      "Luther Burden III",
+      "Caleb Williams",
+      "Rome Odunze",
+      "Buccaneers",
+      "Kenny Gainwell"
+     ],
+     "points": 118.81
+    },
+    "unrestricted_all": {
+     "captain": "Bucky Irving",
+     "flex": [
+      "Luther Burden III",
+      "Caleb Williams",
+      "Rome Odunze",
+      "Buccaneers",
+      "Kenny Gainwell"
+     ],
+     "points": 118.81
+    }
+   },
+   "enumeration_check": {
+    "enumeration": 118.81,
+    "search": 118.81
+   },
+   "extras": [
+    "Sean Tucker",
+    "Tez Johnson",
+    "Zavion Thomas"
+   ],
+   "flags": {
+    "Emeka Egbuka": [
+     "returning: missed the team's last 2 games; pre-absence share 16%"
+    ]
+   },
+   "info": {
+    "Sean Tucker": {
+     "games": 6,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.1121,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.0656,
+     "tau": 0.225886
+    },
+    "Tez Johnson": {
+     "games": 8,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.3573,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0324,
+     "tau": 0.322434
+    },
+    "Zavion Thomas": {
+     "games": 8,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.2699,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0308,
+     "tau": 0.322434
+    }
+   },
+   "n_unknown": 3,
+   "players": 53,
+   "teams": [
+    "CHI",
+    "TB"
+   ],
+   "unknown": [
+    "Kyle Monangai",
+    "Case Keenum",
+    "Evan Deckers"
+   ],
+   "week": 9
+  },
+  "156014": {
+   "admitted": [],
+   "best": {
+    "adaptive": {
+     "captain": "James Cook III",
+     "flex": [
+      "Bills",
+      "Josh Allen",
+      "Tyler Bass",
+      "Khalil Shakir",
+      "T.J. Hockenson"
+     ],
+     "points": 88.51
+    },
+    "adaptive_all": {
+     "captain": "James Cook III",
+     "flex": [
+      "Bills",
+      "Josh Allen",
+      "Tyler Bass",
+      "Khalil Shakir",
+      "T.J. Hockenson"
+     ],
+     "points": 88.51
+    },
+    "conservative": {
+     "captain": "James Cook III",
+     "flex": [
+      "Bills",
+      "Josh Allen",
+      "Tyler Bass",
+      "Khalil Shakir",
+      "T.J. Hockenson"
+     ],
+     "points": 88.51
+    },
+    "dk_all": {
+     "captain": "James Cook III",
+     "flex": [
+      "Bills",
+      "Josh Allen",
+      "Tyler Bass",
+      "Khalil Shakir",
+      "Will Reichard"
+     ],
+     "points": 90.21
+    },
+    "lift:all": {
+     "captain": "James Cook III",
+     "flex": [
+      "Bills",
+      "Josh Allen",
+      "Tyler Bass",
+      "Khalil Shakir",
+      "Will Reichard"
+     ],
+     "points": 90.21
+    },
+    "lift:cpt_salary": {
+     "captain": "James Cook III",
+     "flex": [
+      "Bills",
+      "Josh Allen",
+      "Tyler Bass",
+      "Khalil Shakir",
+      "T.J. Hockenson"
+     ],
+     "points": 88.51
+    },
+    "lift:dst_vs_cpt": {
+     "captain": "James Cook III",
+     "flex": [
+      "Bills",
+      "Josh Allen",
+      "Tyler Bass",
+      "Khalil Shakir",
+      "T.J. Hockenson"
+     ],
+     "points": 88.51
+    },
+    "lift:kdst_cpt": {
+     "captain": "James Cook III",
+     "flex": [
+      "Bills",
+      "Josh Allen",
+      "Tyler Bass",
+      "Khalil Shakir",
+      "T.J. Hockenson"
+     ],
+     "points": 88.51
+    },
+    "lift:kdst_max": {
+     "captain": "James Cook III",
+     "flex": [
+      "Bills",
+      "Josh Allen",
+      "Tyler Bass",
+      "Khalil Shakir",
+      "Will Reichard"
+     ],
+     "points": 90.21
+    },
+    "lift:punt_max": {
+     "captain": "James Cook III",
+     "flex": [
+      "Bills",
+      "Josh Allen",
+      "Tyler Bass",
+      "Khalil Shakir",
+      "T.J. Hockenson"
+     ],
+     "points": 88.51
+    },
+    "lift:punt_role": {
+     "captain": "James Cook III",
+     "flex": [
+      "Bills",
+      "Josh Allen",
+      "Tyler Bass",
+      "Khalil Shakir",
+      "T.J. Hockenson"
+     ],
+     "points": 88.51
+    },
+    "lift:te_team": {
+     "captain": "James Cook III",
+     "flex": [
+      "Bills",
+      "Josh Allen",
+      "Tyler Bass",
+      "Khalil Shakir",
+      "T.J. Hockenson"
+     ],
+     "points": 88.51
+    },
+    "unrestricted": {
+     "captain": "James Cook III",
+     "flex": [
+      "Bills",
+      "Josh Allen",
+      "Tyler Bass",
+      "Khalil Shakir",
+      "T.J. Hockenson"
+     ],
+     "points": 88.51
+    },
+    "unrestricted_all": {
+     "captain": "James Cook III",
+     "flex": [
+      "Bills",
+      "Josh Allen",
+      "Tyler Bass",
+      "Khalil Shakir",
+      "T.J. Hockenson"
+     ],
+     "points": 88.51
+    }
+   },
+   "enumeration_check": {
+    "enumeration": 88.51,
+    "search": 88.51
+   },
+   "extras": [
+    "Odell Beckham Jr.",
+    "Ray Davis",
+    "Trent Sherfield Sr."
+   ],
+   "flags": {
+    "Carson Wentz": [
+     "returning: missed the team's last 5 games"
+    ],
+    "Odell Beckham Jr.": [
+     "no game for this team this season"
+    ]
+   },
+   "info": {
+    "Odell Beckham Jr.": {
+     "games": 0,
+     "has_hist": false,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.104,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0,
+     "tau": 0.322434
+    },
+    "Ray Davis": {
+     "games": 7,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.0939,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.0585,
+     "tau": 0.225886
+    }
+   },
+   "n_unknown": 4,
+   "players": 48,
+   "teams": [
+    "BUF",
+    "MIN"
+   ],
+   "unknown": [
+    "Kyler Murray",
+    "Jauan Jennings",
+    "Skyler Bell",
+    "Andrew DePaola"
+   ],
+   "week": 9
+  },
+  "156421": {
+   "admitted": [
+    "Van Jefferson"
+   ],
+   "best": {
+    "adaptive": {
+     "captain": "Isaiah Likely",
+     "flex": [
+      "Cam Skattebo",
+      "Jayden Daniels",
+      "J.J. McCarthy",
+      "Austin Ekeler",
+      "Malachi Fields"
+     ],
+     "points": 132.53
+    },
+    "adaptive_all": {
+     "captain": "Isaiah Likely",
+     "flex": [
+      "Cam Skattebo",
+      "Jayden Daniels",
+      "J.J. McCarthy",
+      "Austin Ekeler",
+      "Malachi Fields"
+     ],
+     "points": 132.53
+    },
+    "conservative": {
+     "captain": "Isaiah Likely",
+     "flex": [
+      "Cam Skattebo",
+      "Jayden Daniels",
+      "J.J. McCarthy",
+      "Austin Ekeler",
+      "Malachi Fields"
+     ],
+     "points": 132.53
+    },
+    "dk_all": {
+     "captain": "Isaiah Likely",
+     "flex": [
+      "Cam Skattebo",
+      "Jayden Daniels",
+      "Stefon Diggs",
+      "Ben Sinnott",
+      "Antonio Williams"
+     ],
+     "points": 142.71
+    },
+    "lift:all": {
+     "captain": "Isaiah Likely",
+     "flex": [
+      "Cam Skattebo",
+      "Jayden Daniels",
+      "J.J. McCarthy",
+      "Austin Ekeler",
+      "Malachi Fields"
+     ],
+     "points": 132.53
+    },
+    "lift:cpt_salary": {
+     "captain": "Isaiah Likely",
+     "flex": [
+      "Cam Skattebo",
+      "Jayden Daniels",
+      "J.J. McCarthy",
+      "Austin Ekeler",
+      "Malachi Fields"
+     ],
+     "points": 132.53
+    },
+    "lift:dst_vs_cpt": {
+     "captain": "Isaiah Likely",
+     "flex": [
+      "Cam Skattebo",
+      "Jayden Daniels",
+      "J.J. McCarthy",
+      "Austin Ekeler",
+      "Malachi Fields"
+     ],
+     "points": 132.53
+    },
+    "lift:kdst_cpt": {
+     "captain": "Isaiah Likely",
+     "flex": [
+      "Cam Skattebo",
+      "Jayden Daniels",
+      "J.J. McCarthy",
+      "Austin Ekeler",
+      "Malachi Fields"
+     ],
+     "points": 132.53
+    },
+    "lift:kdst_max": {
+     "captain": "Isaiah Likely",
+     "flex": [
+      "Cam Skattebo",
+      "Jayden Daniels",
+      "J.J. McCarthy",
+      "Austin Ekeler",
+      "Malachi Fields"
+     ],
+     "points": 132.53
+    },
+    "lift:punt_max": {
+     "captain": "Isaiah Likely",
+     "flex": [
+      "Cam Skattebo",
+      "Jayden Daniels",
+      "J.J. McCarthy",
+      "Austin Ekeler",
+      "Malachi Fields"
+     ],
+     "points": 132.53
+    },
+    "lift:punt_role": {
+     "captain": "Isaiah Likely",
+     "flex": [
+      "Cam Skattebo",
+      "Jayden Daniels",
+      "J.J. McCarthy",
+      "Austin Ekeler",
+      "Malachi Fields"
+     ],
+     "points": 132.53
+    },
+    "lift:te_team": {
+     "captain": "Isaiah Likely",
+     "flex": [
+      "Cam Skattebo",
+      "Jayden Daniels",
+      "J.J. McCarthy",
+      "Austin Ekeler",
+      "Malachi Fields"
+     ],
+     "points": 132.53
+    },
+    "unrestricted": {
+     "captain": "Isaiah Likely",
+     "flex": [
+      "Cam Skattebo",
+      "Jayden Daniels",
+      "J.J. McCarthy",
+      "Austin Ekeler",
+      "Malachi Fields"
+     ],
+     "points": 132.53
+    },
+    "unrestricted_all": {
+     "captain": "Isaiah Likely",
+     "flex": [
+      "Cam Skattebo",
+      "Jayden Daniels",
+      "Stefon Diggs",
+      "Ben Sinnott",
+      "Antonio Williams"
+     ],
+     "points": 142.71
+    }
+   },
+   "enumeration_check": {
+    "enumeration": 132.53,
+    "search": 132.53
+   },
+   "extras": [
+    "Van Jefferson"
+   ],
+   "flags": {
+    "Cam Skattebo": [
+     "returning: missed the team's last 1 game; pre-absence share 17%"
+    ],
+    "Gregory Desrosiers": [
+     "one game for this team this season"
+    ],
+    "Robert Henry Jr.": [
+     "no game for this team this season"
+    ],
+    "Treylon Burks": [
+     "returning: missed the team's last 1 game; pre-absence share 10%"
+    ]
+   },
+   "info": {
+    "Van Jefferson": {
+     "games": 3,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.3463,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0503,
+     "tau": 0.322434
+    }
+   },
+   "n_unknown": 5,
+   "players": 59,
+   "teams": [
+    "NYG",
+    "WAS"
+   ],
+   "unknown": [
+    "Athan Kaliakmanis",
+    "Tyler Ott",
+    "Thomas Fidone II",
+    "Ben Mann",
+    "Colson Yankoff"
+   ],
+   "week": 10
+  },
+  "156433": {
+   "admitted": [],
+   "best": {
+    "adaptive": {
+     "captain": "Ja'Marr Chase",
+     "flex": [
+      "Joe Burrow",
+      "Chase Brown",
+      "Samaje Perine",
+      "Pat Freiermuth",
+      "Dohnte Meyers"
+     ],
+     "points": 155.51
+    },
+    "adaptive_all": {
+     "captain": "Ja'Marr Chase",
+     "flex": [
+      "Joe Burrow",
+      "Chase Brown",
+      "Samaje Perine",
+      "Pat Freiermuth",
+      "Dohnte Meyers"
+     ],
+     "points": 155.51
+    },
+    "conservative": {
+     "captain": "Ja'Marr Chase",
+     "flex": [
+      "Joe Burrow",
+      "Chase Brown",
+      "Samaje Perine",
+      "Pat Freiermuth",
+      "Dohnte Meyers"
+     ],
+     "points": 155.51
+    },
+    "dk_all": {
+     "captain": "Ja'Marr Chase",
+     "flex": [
+      "Joe Burrow",
+      "Chase Brown",
+      "DK Metcalf",
+      "Samaje Perine",
+      "Drew Sample"
+     ],
+     "points": 159.91
+    },
+    "lift:all": {
+     "captain": "Ja'Marr Chase",
+     "flex": [
+      "Joe Burrow",
+      "Chase Brown",
+      "DK Metcalf",
+      "Samaje Perine",
+      "Drew Sample"
+     ],
+     "points": 159.91
+    },
+    "lift:cpt_salary": {
+     "captain": "Ja'Marr Chase",
+     "flex": [
+      "Joe Burrow",
+      "Chase Brown",
+      "Samaje Perine",
+      "Pat Freiermuth",
+      "Dohnte Meyers"
+     ],
+     "points": 155.51
+    },
+    "lift:dst_vs_cpt": {
+     "captain": "Ja'Marr Chase",
+     "flex": [
+      "Joe Burrow",
+      "Chase Brown",
+      "Samaje Perine",
+      "Pat Freiermuth",
+      "Dohnte Meyers"
+     ],
+     "points": 155.51
+    },
+    "lift:kdst_cpt": {
+     "captain": "Ja'Marr Chase",
+     "flex": [
+      "Joe Burrow",
+      "Chase Brown",
+      "Samaje Perine",
+      "Pat Freiermuth",
+      "Dohnte Meyers"
+     ],
+     "points": 155.51
+    },
+    "lift:kdst_max": {
+     "captain": "Ja'Marr Chase",
+     "flex": [
+      "Joe Burrow",
+      "Chase Brown",
+      "Samaje Perine",
+      "Pat Freiermuth",
+      "Dohnte Meyers"
+     ],
+     "points": 155.51
+    },
+    "lift:punt_max": {
+     "captain": "Ja'Marr Chase",
+     "flex": [
+      "Joe Burrow",
+      "Chase Brown",
+      "Samaje Perine",
+      "Pat Freiermuth",
+      "Dohnte Meyers"
+     ],
+     "points": 155.51
+    },
+    "lift:punt_role": {
+     "captain": "Ja'Marr Chase",
+     "flex": [
+      "Joe Burrow",
+      "Chase Brown",
+      "DK Metcalf",
+      "Samaje Perine",
+      "Drew Sample"
+     ],
+     "points": 159.91
+    },
+    "lift:te_team": {
+     "captain": "Ja'Marr Chase",
+     "flex": [
+      "Joe Burrow",
+      "Chase Brown",
+      "Samaje Perine",
+      "Pat Freiermuth",
+      "Dohnte Meyers"
+     ],
+     "points": 155.51
+    },
+    "unrestricted": {
+     "captain": "Ja'Marr Chase",
+     "flex": [
+      "Joe Burrow",
+      "Chase Brown",
+      "DK Metcalf",
+      "Samaje Perine",
+      "Drew Sample"
+     ],
+     "points": 159.91
+    },
+    "unrestricted_all": {
+     "captain": "Ja'Marr Chase",
+     "flex": [
+      "Joe Burrow",
+      "Chase Brown",
+      "DK Metcalf",
+      "Samaje Perine",
+      "Drew Sample"
+     ],
+     "points": 159.91
+    }
+   },
+   "enumeration_check": {
+    "enumeration": 155.51,
+    "search": 155.51
+   },
+   "extras": [
+    "Brandon Smith",
+    "Mitch Tinsley"
+   ],
+   "flags": {
+    "Ben Skowronek": [
+     "returning: missed the team's last 3 games; pre-absence share 2%"
+    ]
+   },
+   "info": {
+    "Brandon Smith": {
+     "games": 4,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.136,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0112,
+     "tau": 0.322434
+    },
+    "Mitch Tinsley": {
+     "games": 4,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.1371,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0123,
+     "tau": 0.322434
+    }
+   },
+   "n_unknown": 5,
+   "players": 54,
+   "teams": [
+    "CIN",
+    "PIT"
+   ],
+   "unknown": [
+    "Will Howard",
+    "Drew Allar",
+    "Eli Heidenreich",
+    "Cole Burgess",
+    "William Wagner"
+   ],
+   "week": 10
+  },
+  "156434": {
+   "admitted": [
+    "Keaton Mitchell",
+    "Matt Hibner"
+   ],
+   "best": {
+    "adaptive": {
+     "captain": "Omarion Hampton",
+     "flex": [
+      "Derrick Henry",
+      "Justin Herbert",
+      "Mark Andrews",
+      "Tre' Harris",
+      "Cameron Dicker"
+     ],
+     "points": 106.81
+    },
+    "adaptive_all": {
+     "captain": "Omarion Hampton",
+     "flex": [
+      "Derrick Henry",
+      "Justin Herbert",
+      "Mark Andrews",
+      "Tre' Harris",
+      "Cameron Dicker"
+     ],
+     "points": 106.81
+    },
+    "conservative": {
+     "captain": "Omarion Hampton",
+     "flex": [
+      "Derrick Henry",
+      "Justin Herbert",
+      "Mark Andrews",
+      "Tre' Harris",
+      "Cameron Dicker"
+     ],
+     "points": 106.81
+    },
+    "dk_all": {
+     "captain": "Omarion Hampton",
+     "flex": [
+      "Derrick Henry",
+      "Justin Herbert",
+      "Mark Andrews",
+      "Tre' Harris",
+      "Cameron Dicker"
+     ],
+     "points": 106.81
+    },
+    "lift:all": {
+     "captain": "Omarion Hampton",
+     "flex": [
+      "Derrick Henry",
+      "Justin Herbert",
+      "Mark Andrews",
+      "Tre' Harris",
+      "Cameron Dicker"
+     ],
+     "points": 106.81
+    },
+    "lift:cpt_salary": {
+     "captain": "Omarion Hampton",
+     "flex": [
+      "Derrick Henry",
+      "Justin Herbert",
+      "Mark Andrews",
+      "Tre' Harris",
+      "Cameron Dicker"
+     ],
+     "points": 106.81
+    },
+    "lift:dst_vs_cpt": {
+     "captain": "Omarion Hampton",
+     "flex": [
+      "Derrick Henry",
+      "Justin Herbert",
+      "Mark Andrews",
+      "Tre' Harris",
+      "Cameron Dicker"
+     ],
+     "points": 106.81
+    },
+    "lift:kdst_cpt": {
+     "captain": "Omarion Hampton",
+     "flex": [
+      "Derrick Henry",
+      "Justin Herbert",
+      "Mark Andrews",
+      "Tre' Harris",
+      "Cameron Dicker"
+     ],
+     "points": 106.81
+    },
+    "lift:kdst_max": {
+     "captain": "Omarion Hampton",
+     "flex": [
+      "Derrick Henry",
+      "Justin Herbert",
+      "Mark Andrews",
+      "Tre' Harris",
+      "Cameron Dicker"
+     ],
+     "points": 106.81
+    },
+    "lift:punt_max": {
+     "captain": "Omarion Hampton",
+     "flex": [
+      "Derrick Henry",
+      "Justin Herbert",
+      "Mark Andrews",
+      "Tre' Harris",
+      "Cameron Dicker"
+     ],
+     "points": 106.81
+    },
+    "lift:punt_role": {
+     "captain": "Omarion Hampton",
+     "flex": [
+      "Derrick Henry",
+      "Justin Herbert",
+      "Mark Andrews",
+      "Tre' Harris",
+      "Cameron Dicker"
+     ],
+     "points": 106.81
+    },
+    "lift:te_team": {
+     "captain": "Omarion Hampton",
+     "flex": [
+      "Derrick Henry",
+      "Justin Herbert",
+      "Mark Andrews",
+      "Tre' Harris",
+      "Cameron Dicker"
+     ],
+     "points": 106.81
+    },
+    "unrestricted": {
+     "captain": "Omarion Hampton",
+     "flex": [
+      "Derrick Henry",
+      "Justin Herbert",
+      "Mark Andrews",
+      "Tre' Harris",
+      "Cameron Dicker"
+     ],
+     "points": 106.81
+    },
+    "unrestricted_all": {
+     "captain": "Omarion Hampton",
+     "flex": [
+      "Derrick Henry",
+      "Justin Herbert",
+      "Mark Andrews",
+      "Tre' Harris",
+      "Cameron Dicker"
+     ],
+     "points": 106.81
+    }
+   },
+   "enumeration_check": {
+    "enumeration": 106.81,
+    "search": 106.81
+   },
+   "extras": [
+    "David Njoku",
+    "Devontez Walker",
+    "Keaton Mitchell",
+    "Matt Hibner"
+   ],
+   "flags": {
+    "Elijah Sarratt": [
+     "returning: missed the team's last 5 games; pre-absence share 3%",
+     "one game for this team this season"
+    ],
+    "Jacoby Brissett": [
+     "no game for this team this season"
+    ],
+    "Theo Wease Jr.": [
+     "returning: missed the team's last 2 games; pre-absence share 4%"
+    ]
+   },
+   "info": {
+    "Devontez Walker": {
+     "games": 8,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.1791,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0,
+     "tau": 0.322434
+    },
+    "Keaton Mitchell": {
+     "games": 8,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.6065,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.1214,
+     "tau": 0.225886
+    },
+    "Matt Hibner": {
+     "games": 8,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.554,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0192,
+     "tau": 0.272042
+    }
+   },
+   "n_unknown": 5,
+   "players": 54,
+   "teams": [
+    "BAL",
+    "LAC"
+   ],
+   "unknown": [
+    "Elijah Sarratt",
+    "Ladd McConkey",
+    "Kedon Slovis",
+    "Brenen Thompson",
+    "Scott Matlock"
+   ],
+   "week": 10
+  },
+  "156781": {
+   "admitted": [
+    "Anthony Gould",
+    "Kayshon Boutte"
+   ],
+   "best": {
+    "adaptive": {
+     "captain": "C.J. Stroud",
+     "flex": [
+      "David Montgomery",
+      "Texans",
+      "Nico Collins",
+      "Kayshon Boutte",
+      "Anthony Gould"
+     ],
+     "points": 99.19
+    },
+    "adaptive_all": {
+     "captain": "C.J. Stroud",
+     "flex": [
+      "David Montgomery",
+      "Texans",
+      "Nico Collins",
+      "Kayshon Boutte",
+      "Anthony Gould"
+     ],
+     "points": 99.19
+    },
+    "conservative": {
+     "captain": "C.J. Stroud",
+     "flex": [
+      "David Montgomery",
+      "Texans",
+      "Nico Collins",
+      "Ka'imi Fairbairn",
+      "Ashton Dulin"
+     ],
+     "points": 91.39
+    },
+    "dk_all": {
+     "captain": "C.J. Stroud",
+     "flex": [
+      "David Montgomery",
+      "Texans",
+      "Nico Collins",
+      "Marlin Klein",
+      "Anthony Gould"
+     ],
+     "points": 99.59
+    },
+    "lift:all": {
+     "captain": "C.J. Stroud",
+     "flex": [
+      "David Montgomery",
+      "Texans",
+      "Nico Collins",
+      "Ka'imi Fairbairn",
+      "Ashton Dulin"
+     ],
+     "points": 91.39
+    },
+    "lift:cpt_salary": {
+     "captain": "C.J. Stroud",
+     "flex": [
+      "David Montgomery",
+      "Texans",
+      "Nico Collins",
+      "Ka'imi Fairbairn",
+      "Ashton Dulin"
+     ],
+     "points": 91.39
+    },
+    "lift:dst_vs_cpt": {
+     "captain": "C.J. Stroud",
+     "flex": [
+      "David Montgomery",
+      "Texans",
+      "Nico Collins",
+      "Ka'imi Fairbairn",
+      "Ashton Dulin"
+     ],
+     "points": 91.39
+    },
+    "lift:kdst_cpt": {
+     "captain": "C.J. Stroud",
+     "flex": [
+      "David Montgomery",
+      "Texans",
+      "Nico Collins",
+      "Ka'imi Fairbairn",
+      "Ashton Dulin"
+     ],
+     "points": 91.39
+    },
+    "lift:kdst_max": {
+     "captain": "C.J. Stroud",
+     "flex": [
+      "David Montgomery",
+      "Texans",
+      "Nico Collins",
+      "Ka'imi Fairbairn",
+      "Ashton Dulin"
+     ],
+     "points": 91.39
+    },
+    "lift:punt_max": {
+     "captain": "C.J. Stroud",
+     "flex": [
+      "David Montgomery",
+      "Texans",
+      "Nico Collins",
+      "Ka'imi Fairbairn",
+      "Ashton Dulin"
+     ],
+     "points": 91.39
+    },
+    "lift:punt_role": {
+     "captain": "C.J. Stroud",
+     "flex": [
+      "David Montgomery",
+      "Texans",
+      "Nico Collins",
+      "Ka'imi Fairbairn",
+      "Ashton Dulin"
+     ],
+     "points": 91.39
+    },
+    "lift:te_team": {
+     "captain": "C.J. Stroud",
+     "flex": [
+      "David Montgomery",
+      "Texans",
+      "Nico Collins",
+      "Ka'imi Fairbairn",
+      "Ashton Dulin"
+     ],
+     "points": 91.39
+    },
+    "unrestricted": {
+     "captain": "C.J. Stroud",
+     "flex": [
+      "David Montgomery",
+      "Texans",
+      "Nico Collins",
+      "Kayshon Boutte",
+      "Anthony Gould"
+     ],
+     "points": 99.19
+    },
+    "unrestricted_all": {
+     "captain": "C.J. Stroud",
+     "flex": [
+      "David Montgomery",
+      "Texans",
+      "Nico Collins",
+      "Marlin Klein",
+      "Anthony Gould"
+     ],
+     "points": 99.59
+    }
+   },
+   "enumeration_check": {
+    "enumeration": 91.39,
+    "search": 91.39
+   },
+   "extras": [
+    "Anthony Gould",
+    "Dare Ogunbowale",
+    "Kayshon Boutte"
+   ],
+   "flags": {
+    "David Montgomery": [
+     "returning: missed the team's last 4 games; pre-absence share 19%"
+    ],
+    "Nikko Remigio": [
+     "one game for this team this season"
+    ],
+    "Quez Watkins": [
+     "no game for this team this season"
+    ]
+   },
+   "info": {
+    "Anthony Gould": {
+     "games": 7,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.3496,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0281,
+     "tau": 0.322434
+    },
+    "Kayshon Boutte": {
+     "games": 9,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.5725,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0449,
+     "tau": 0.322434
+    }
+   },
+   "n_unknown": 5,
+   "players": 53,
+   "teams": [
+    "HOU",
+    "IND"
+   ],
+   "unknown": [
+    "Woody Marks",
+    "Marvin Harrison Jr.",
+    "Riley Leonard",
+    "Will Mallory",
+    "Brevin Jordan"
+   ],
+   "week": 11
+  },
+  "156792": {
+   "admitted": [
+    "Ben Yurosek",
+    "Tai Felton"
+   ],
+   "best": {
+    "adaptive": {
+     "captain": "Mike Evans",
+     "flex": [
+      "Brock Purdy",
+      "George Kittle",
+      "49ers",
+      "Justin Jefferson",
+      "Tai Felton"
+     ],
+     "points": 119.35
+    },
+    "adaptive_all": {
+     "captain": "Mike Evans",
+     "flex": [
+      "Brock Purdy",
+      "George Kittle",
+      "49ers",
+      "Justin Jefferson",
+      "Tai Felton"
+     ],
+     "points": 119.35
+    },
+    "conservative": {
+     "captain": "Mike Evans",
+     "flex": [
+      "Brock Purdy",
+      "George Kittle",
+      "49ers",
+      "T.J. Hockenson",
+      "Aaron Jones Sr."
+     ],
+     "points": 117.25
+    },
+    "dk_all": {
+     "captain": "Mike Evans",
+     "flex": [
+      "Brock Purdy",
+      "George Kittle",
+      "49ers",
+      "Justin Jefferson",
+      "Tai Felton"
+     ],
+     "points": 119.35
+    },
+    "lift:all": {
+     "captain": "Mike Evans",
+     "flex": [
+      "Brock Purdy",
+      "George Kittle",
+      "49ers",
+      "T.J. Hockenson",
+      "Aaron Jones Sr."
+     ],
+     "points": 117.25
+    },
+    "lift:cpt_salary": {
+     "captain": "Mike Evans",
+     "flex": [
+      "Brock Purdy",
+      "George Kittle",
+      "49ers",
+      "T.J. Hockenson",
+      "Aaron Jones Sr."
+     ],
+     "points": 117.25
+    },
+    "lift:dst_vs_cpt": {
+     "captain": "Mike Evans",
+     "flex": [
+      "Brock Purdy",
+      "George Kittle",
+      "49ers",
+      "T.J. Hockenson",
+      "Aaron Jones Sr."
+     ],
+     "points": 117.25
+    },
+    "lift:kdst_cpt": {
+     "captain": "Mike Evans",
+     "flex": [
+      "Brock Purdy",
+      "George Kittle",
+      "49ers",
+      "T.J. Hockenson",
+      "Aaron Jones Sr."
+     ],
+     "points": 117.25
+    },
+    "lift:kdst_max": {
+     "captain": "Mike Evans",
+     "flex": [
+      "Brock Purdy",
+      "George Kittle",
+      "49ers",
+      "T.J. Hockenson",
+      "Aaron Jones Sr."
+     ],
+     "points": 117.25
+    },
+    "lift:punt_max": {
+     "captain": "Mike Evans",
+     "flex": [
+      "Brock Purdy",
+      "George Kittle",
+      "49ers",
+      "T.J. Hockenson",
+      "Aaron Jones Sr."
+     ],
+     "points": 117.25
+    },
+    "lift:punt_role": {
+     "captain": "Mike Evans",
+     "flex": [
+      "Brock Purdy",
+      "George Kittle",
+      "49ers",
+      "T.J. Hockenson",
+      "Aaron Jones Sr."
+     ],
+     "points": 117.25
+    },
+    "lift:te_team": {
+     "captain": "Mike Evans",
+     "flex": [
+      "Brock Purdy",
+      "George Kittle",
+      "49ers",
+      "T.J. Hockenson",
+      "Aaron Jones Sr."
+     ],
+     "points": 117.25
+    },
+    "unrestricted": {
+     "captain": "Mike Evans",
+     "flex": [
+      "Brock Purdy",
+      "George Kittle",
+      "49ers",
+      "Justin Jefferson",
+      "Tai Felton"
+     ],
+     "points": 119.35
+    },
+    "unrestricted_all": {
+     "captain": "Mike Evans",
+     "flex": [
+      "Brock Purdy",
+      "George Kittle",
+      "49ers",
+      "Justin Jefferson",
+      "Tai Felton"
+     ],
+     "points": 119.35
+    }
+   },
+   "enumeration_check": {
+    "enumeration": 117.25,
+    "search": 117.25
+   },
+   "extras": [
+    "DeeJay Dallas",
+    "Jordan Watkins",
+    "Kyle Juszczyk",
+    "Tai Felton"
+   ],
+   "flags": {
+    "Jauan Jennings": [
+     "returning: missed the team's last 2 games; pre-absence share 4%"
+    ],
+    "Keenan Allen": [
+     "one game for this team this season"
+    ],
+    "Kirk Cousins": [
+     "one game for this team this season"
+    ],
+    "Mike Evans": [
+     "returning: missed the team's last 3 games; pre-absence share 13%"
+    ],
+    "T.J. Hockenson": [
+     "returning: missed the team's last 1 game; pre-absence share 12%"
+    ]
+   },
+   "info": {
+    "Ben Yurosek": {
+     "games": 5,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.3418,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0201,
+     "tau": 0.272042
+    },
+    "DeeJay Dallas": {
+     "games": 9,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.0836,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.0134,
+     "tau": 0.225886
+    },
+    "Jordan Watkins": {
+     "games": 7,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.231,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0703,
+     "tau": 0.322434
+    },
+    "Tai Felton": {
+     "games": 9,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.3911,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0336,
+     "tau": 0.322434
+    }
+   },
+   "n_unknown": 8,
+   "players": 58,
+   "teams": [
+    "MIN",
+    "SF"
+   ],
+   "unknown": [
+    "Jordan Addison",
+    "Kyler Murray",
+    "Max Brosmer",
+    "Kurtis Rourke",
+    "Demarcus Robinson",
+    "Brandin Cooks",
+    "D'Wayne Eskridge",
+    "Andrew DePaola"
+   ],
+   "week": 11
+  },
+  "156793": {
+   "admitted": [
+    "Jack Endries",
+    "Jacory Croskey-Merritt",
+    "John Bates"
+   ],
+   "best": {
+    "adaptive": {
+     "captain": "Joe Burrow",
+     "flex": [
+      "Antonio Williams",
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Jacory Croskey-Merritt",
+      "Samaje Perine"
+     ],
+     "points": 123.01
+    },
+    "adaptive_all": {
+     "captain": "Joe Burrow",
+     "flex": [
+      "Antonio Williams",
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Jacory Croskey-Merritt",
+      "Samaje Perine"
+     ],
+     "points": 123.01
+    },
+    "conservative": {
+     "captain": "Joe Burrow",
+     "flex": [
+      "Antonio Williams",
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Samaje Perine",
+      "Mike Gesicki"
+     ],
+     "points": 120.01
+    },
+    "dk_all": {
+     "captain": "Antonio Williams",
+     "flex": [
+      "Joe Burrow",
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Jacory Croskey-Merritt",
+      "Samaje Perine"
+     ],
+     "points": 123.66
+    },
+    "lift:all": {
+     "captain": "Antonio Williams",
+     "flex": [
+      "Joe Burrow",
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Samaje Perine",
+      "Mike Gesicki"
+     ],
+     "points": 120.66
+    },
+    "lift:cpt_salary": {
+     "captain": "Antonio Williams",
+     "flex": [
+      "Joe Burrow",
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Samaje Perine",
+      "Mike Gesicki"
+     ],
+     "points": 120.66
+    },
+    "lift:dst_vs_cpt": {
+     "captain": "Joe Burrow",
+     "flex": [
+      "Antonio Williams",
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Samaje Perine",
+      "Mike Gesicki"
+     ],
+     "points": 120.01
+    },
+    "lift:kdst_cpt": {
+     "captain": "Joe Burrow",
+     "flex": [
+      "Antonio Williams",
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Samaje Perine",
+      "Mike Gesicki"
+     ],
+     "points": 120.01
+    },
+    "lift:kdst_max": {
+     "captain": "Joe Burrow",
+     "flex": [
+      "Antonio Williams",
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Samaje Perine",
+      "Mike Gesicki"
+     ],
+     "points": 120.01
+    },
+    "lift:punt_max": {
+     "captain": "Joe Burrow",
+     "flex": [
+      "Antonio Williams",
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Samaje Perine",
+      "Mike Gesicki"
+     ],
+     "points": 120.01
+    },
+    "lift:punt_role": {
+     "captain": "Joe Burrow",
+     "flex": [
+      "Antonio Williams",
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Samaje Perine",
+      "Mike Gesicki"
+     ],
+     "points": 120.01
+    },
+    "lift:te_team": {
+     "captain": "Joe Burrow",
+     "flex": [
+      "Antonio Williams",
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Samaje Perine",
+      "Mike Gesicki"
+     ],
+     "points": 120.01
+    },
+    "unrestricted": {
+     "captain": "Joe Burrow",
+     "flex": [
+      "Antonio Williams",
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Jacory Croskey-Merritt",
+      "Samaje Perine"
+     ],
+     "points": 123.01
+    },
+    "unrestricted_all": {
+     "captain": "Joe Burrow",
+     "flex": [
+      "Antonio Williams",
+      "Drew Stevens",
+      "Jayden Daniels",
+      "Jacory Croskey-Merritt",
+      "Samaje Perine"
+     ],
+     "points": 123.01
+    }
+   },
+   "enumeration_check": {
+    "enumeration": 120.01,
+    "search": 120.01
+   },
+   "extras": [
+    "Jack Endries",
+    "Jacory Croskey-Merritt",
+    "John Bates",
+    "Van Jefferson"
+   ],
+   "flags": {
+    "Colson Yankoff": [
+     "returning: missed the team's last 1 game; pre-absence share 1%"
+    ],
+    "Jacory Croskey-Merritt": [
+     "returning: missed the team's last 4 games; pre-absence share 26%"
+    ]
+   },
+   "info": {
+    "Jack Endries": {
+     "games": 6,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.4273,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0222,
+     "tau": 0.272042
+    },
+    "Jacory Croskey-Merritt": {
+     "games": 5,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 4,
+     "p": 0.6923,
+     "pos": "RB",
+     "returning": true,
+     "share": 0.2558,
+     "tau": 0.225886
+    },
+    "John Bates": {
+     "games": 9,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.3636,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0,
+     "tau": 0.272042
+    },
+    "Van Jefferson": {
+     "games": 4,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.2853,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0465,
+     "tau": 0.322434
+    }
+   },
+   "n_unknown": 5,
+   "players": 58,
+   "teams": [
+    "CIN",
+    "WAS"
+   ],
+   "unknown": [
+    "Athan Kaliakmanis",
+    "Robert Henry Jr.",
+    "Tyler Ott",
+    "Cam Grandy",
+    "William Wagner"
+   ],
+   "week": 11
+  },
+  "157072": {
+   "admitted": [
+    "Chris Brooks",
+    "Davis Allen"
+   ],
+   "best": {
+    "adaptive": {
+     "captain": "Blake Corum",
+     "flex": [
+      "Brandon McManus",
+      "Kyren Williams",
+      "Christian Watson",
+      "Rams",
+      "Konata Mumpfield"
+     ],
+     "points": 119.15
+    },
+    "adaptive_all": {
+     "captain": "Blake Corum",
+     "flex": [
+      "Brandon McManus",
+      "Kyren Williams",
+      "Christian Watson",
+      "Rams",
+      "Konata Mumpfield"
+     ],
+     "points": 119.15
+    },
+    "conservative": {
+     "captain": "Blake Corum",
+     "flex": [
+      "Brandon McManus",
+      "Kyren Williams",
+      "Christian Watson",
+      "Rams",
+      "Konata Mumpfield"
+     ],
+     "points": 119.15
+    },
+    "dk_all": {
+     "captain": "Blake Corum",
+     "flex": [
+      "Brandon McManus",
+      "Kyren Williams",
+      "Christian Watson",
+      "Rams",
+      "Konata Mumpfield"
+     ],
+     "points": 119.15
+    },
+    "lift:all": {
+     "captain": "Blake Corum",
+     "flex": [
+      "Brandon McManus",
+      "Kyren Williams",
+      "Christian Watson",
+      "Rams",
+      "Konata Mumpfield"
+     ],
+     "points": 119.15
+    },
+    "lift:cpt_salary": {
+     "captain": "Blake Corum",
+     "flex": [
+      "Brandon McManus",
+      "Kyren Williams",
+      "Christian Watson",
+      "Rams",
+      "Konata Mumpfield"
+     ],
+     "points": 119.15
+    },
+    "lift:dst_vs_cpt": {
+     "captain": "Blake Corum",
+     "flex": [
+      "Brandon McManus",
+      "Kyren Williams",
+      "Christian Watson",
+      "Rams",
+      "Konata Mumpfield"
+     ],
+     "points": 119.15
+    },
+    "lift:kdst_cpt": {
+     "captain": "Blake Corum",
+     "flex": [
+      "Brandon McManus",
+      "Kyren Williams",
+      "Christian Watson",
+      "Rams",
+      "Konata Mumpfield"
+     ],
+     "points": 119.15
+    },
+    "lift:kdst_max": {
+     "captain": "Blake Corum",
+     "flex": [
+      "Brandon McManus",
+      "Kyren Williams",
+      "Christian Watson",
+      "Rams",
+      "Konata Mumpfield"
+     ],
+     "points": 119.15
+    },
+    "lift:punt_max": {
+     "captain": "Blake Corum",
+     "flex": [
+      "Brandon McManus",
+      "Kyren Williams",
+      "Christian Watson",
+      "Rams",
+      "Konata Mumpfield"
+     ],
+     "points": 119.15
+    },
+    "lift:punt_role": {
+     "captain": "Blake Corum",
+     "flex": [
+      "Brandon McManus",
+      "Kyren Williams",
+      "Christian Watson",
+      "Rams",
+      "Konata Mumpfield"
+     ],
+     "points": 119.15
+    },
+    "lift:te_team": {
+     "captain": "Blake Corum",
+     "flex": [
+      "Brandon McManus",
+      "Kyren Williams",
+      "Christian Watson",
+      "Rams",
+      "Konata Mumpfield"
+     ],
+     "points": 119.15
+    },
+    "unrestricted": {
+     "captain": "Blake Corum",
+     "flex": [
+      "Brandon McManus",
+      "Kyren Williams",
+      "Christian Watson",
+      "Rams",
+      "Konata Mumpfield"
+     ],
+     "points": 119.15
+    },
+    "unrestricted_all": {
+     "captain": "Blake Corum",
+     "flex": [
+      "Brandon McManus",
+      "Kyren Williams",
+      "Christian Watson",
+      "Rams",
+      "Konata Mumpfield"
+     ],
+     "points": 119.15
+    }
+   },
+   "enumeration_check": {
+    "enumeration": 119.15,
+    "search": 119.15
+   },
+   "extras": [
+    "Chris Brooks",
+    "Davis Allen",
+    "Skyy Moore",
+    "Xavier Smith"
+   ],
+   "flags": {},
+   "info": {
+    "Chris Brooks": {
+     "games": 5,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.3696,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.0559,
+     "tau": 0.225886
+    },
+    "Davis Allen": {
+     "games": 10,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.6243,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0155,
+     "tau": 0.272042
+    },
+    "Skyy Moore": {
+     "games": 6,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.1352,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.019,
+     "tau": 0.322434
+    },
+    "Xavier Smith": {
+     "games": 4,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.279,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0149,
+     "tau": 0.322434
+    }
+   },
+   "n_unknown": 2,
+   "players": 57,
+   "teams": [
+    "GB",
+    "LAR"
+   ],
+   "unknown": [
+    "Josh Jacobs",
+    "Ty Simpson"
+   ],
+   "week": 12
+  },
+  "157074": {
+   "admitted": [
+    "Eli Stowers",
+    "Johnny Mundt"
+   ],
+   "best": {
+    "adaptive": {
+     "captain": "DeVonta Smith",
+     "flex": [
+      "Javonte Williams",
+      "Joe Milton III",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Eagles"
+     ],
+     "points": 191.68
+    },
+    "adaptive_all": {
+     "captain": "DeVonta Smith",
+     "flex": [
+      "Javonte Williams",
+      "Joe Milton III",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Eagles"
+     ],
+     "points": 191.68
+    },
+    "conservative": {
+     "captain": "DeVonta Smith",
+     "flex": [
+      "Javonte Williams",
+      "Joe Milton III",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Eagles"
+     ],
+     "points": 191.68
+    },
+    "dk_all": {
+     "captain": "DeVonta Smith",
+     "flex": [
+      "Javonte Williams",
+      "Joe Milton III",
+      "Dak Prescott",
+      "Makai Lemon",
+      "KaVontae Turpin"
+     ],
+     "points": 193.78
+    },
+    "lift:all": {
+     "captain": "DeVonta Smith",
+     "flex": [
+      "Javonte Williams",
+      "Joe Milton III",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Eagles"
+     ],
+     "points": 191.68
+    },
+    "lift:cpt_salary": {
+     "captain": "DeVonta Smith",
+     "flex": [
+      "Javonte Williams",
+      "Joe Milton III",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Eagles"
+     ],
+     "points": 191.68
+    },
+    "lift:dst_vs_cpt": {
+     "captain": "DeVonta Smith",
+     "flex": [
+      "Javonte Williams",
+      "Joe Milton III",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Eagles"
+     ],
+     "points": 191.68
+    },
+    "lift:kdst_cpt": {
+     "captain": "DeVonta Smith",
+     "flex": [
+      "Javonte Williams",
+      "Joe Milton III",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Eagles"
+     ],
+     "points": 191.68
+    },
+    "lift:kdst_max": {
+     "captain": "DeVonta Smith",
+     "flex": [
+      "Javonte Williams",
+      "Joe Milton III",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Eagles"
+     ],
+     "points": 191.68
+    },
+    "lift:punt_max": {
+     "captain": "DeVonta Smith",
+     "flex": [
+      "Javonte Williams",
+      "Joe Milton III",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Eagles"
+     ],
+     "points": 191.68
+    },
+    "lift:punt_role": {
+     "captain": "DeVonta Smith",
+     "flex": [
+      "Javonte Williams",
+      "Joe Milton III",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Eagles"
+     ],
+     "points": 191.68
+    },
+    "lift:te_team": {
+     "captain": "DeVonta Smith",
+     "flex": [
+      "Javonte Williams",
+      "Joe Milton III",
+      "Dak Prescott",
+      "Makai Lemon",
+      "Eagles"
+     ],
+     "points": 191.68
+    },
+    "unrestricted": {
+     "captain": "DeVonta Smith",
+     "flex": [
+      "Javonte Williams",
+      "Joe Milton III",
+      "Dak Prescott",
+      "Makai Lemon",
+      "KaVontae Turpin"
+     ],
+     "points": 193.78
+    },
+    "unrestricted_all": {
+     "captain": "DeVonta Smith",
+     "flex": [
+      "Javonte Williams",
+      "Joe Milton III",
+      "Dak Prescott",
+      "Makai Lemon",
+      "KaVontae Turpin"
+     ],
+     "points": 193.78
+    }
+   },
+   "enumeration_check": {
+    "enumeration": 191.68,
+    "search": 191.68
+   },
+   "extras": [
+    "Eli Stowers",
+    "Elijah Moore",
+    "Hunter Luepke",
+    "KaVontae Turpin"
+   ],
+   "flags": {
+    "Jashaun Corbin": [
+     "one game for this team this season"
+    ]
+   },
+   "info": {
+    "Eli Stowers": {
+     "games": 4,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.558,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0241,
+     "tau": 0.272042
+    },
+    "Elijah Moore": {
+     "games": 8,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.1213,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.012,
+     "tau": 0.322434
+    },
+    "Johnny Mundt": {
+     "games": 10,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.2758,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0,
+     "tau": 0.272042
+    },
+    "KaVontae Turpin": {
+     "games": 8,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.2483,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0341,
+     "tau": 0.322434
+    }
+   },
+   "n_unknown": 5,
+   "players": 53,
+   "teams": [
+    "DAL",
+    "PHI"
+   ],
+   "unknown": [
+    "Grant Calcaterra",
+    "Cole Payton",
+    "Jake Ferguson",
+    "Jonathan Mingo",
+    "Rocco Underwood"
+   ],
+   "week": 12
+  },
+  "157075": {
+   "admitted": [],
+   "best": {
+    "adaptive": {
+     "captain": "Emmett Johnson",
+     "flex": [
+      "James Cook III",
+      "Travis Kelce",
+      "Tyler Bass",
+      "Chiefs",
+      "Khalil Shakir"
+     ],
+     "points": 90.3
+    },
+    "adaptive_all": {
+     "captain": "Emmett Johnson",
+     "flex": [
+      "James Cook III",
+      "Travis Kelce",
+      "Tyler Bass",
+      "Chiefs",
+      "Khalil Shakir"
+     ],
+     "points": 90.3
+    },
+    "conservative": {
+     "captain": "Emmett Johnson",
+     "flex": [
+      "James Cook III",
+      "Travis Kelce",
+      "Tyler Bass",
+      "Chiefs",
+      "Khalil Shakir"
+     ],
+     "points": 90.3
+    },
+    "dk_all": {
+     "captain": "James Cook III",
+     "flex": [
+      "Emmett Johnson",
+      "Travis Kelce",
+      "Tyler Bass",
+      "Chiefs",
+      "Khalil Shakir"
+     ],
+     "points": 91.75
+    },
+    "lift:all": {
+     "captain": "James Cook III",
+     "flex": [
+      "Emmett Johnson",
+      "Travis Kelce",
+      "Tyler Bass",
+      "Chiefs",
+      "Khalil Shakir"
+     ],
+     "points": 91.75
+    },
+    "lift:cpt_salary": {
+     "captain": "Emmett Johnson",
+     "flex": [
+      "James Cook III",
+      "Travis Kelce",
+      "Tyler Bass",
+      "Chiefs",
+      "Khalil Shakir"
+     ],
+     "points": 90.3
+    },
+    "lift:dst_vs_cpt": {
+     "captain": "James Cook III",
+     "flex": [
+      "Emmett Johnson",
+      "Travis Kelce",
+      "Tyler Bass",
+      "Chiefs",
+      "Khalil Shakir"
+     ],
+     "points": 91.75
+    },
+    "lift:kdst_cpt": {
+     "captain": "Emmett Johnson",
+     "flex": [
+      "James Cook III",
+      "Travis Kelce",
+      "Tyler Bass",
+      "Chiefs",
+      "Khalil Shakir"
+     ],
+     "points": 90.3
+    },
+    "lift:kdst_max": {
+     "captain": "Emmett Johnson",
+     "flex": [
+      "James Cook III",
+      "Travis Kelce",
+      "Tyler Bass",
+      "Chiefs",
+      "Khalil Shakir"
+     ],
+     "points": 90.3
+    },
+    "lift:punt_max": {
+     "captain": "Emmett Johnson",
+     "flex": [
+      "James Cook III",
+      "Travis Kelce",
+      "Tyler Bass",
+      "Chiefs",
+      "Khalil Shakir"
+     ],
+     "points": 90.3
+    },
+    "lift:punt_role": {
+     "captain": "Emmett Johnson",
+     "flex": [
+      "James Cook III",
+      "Travis Kelce",
+      "Tyler Bass",
+      "Chiefs",
+      "Khalil Shakir"
+     ],
+     "points": 90.3
+    },
+    "lift:te_team": {
+     "captain": "Emmett Johnson",
+     "flex": [
+      "James Cook III",
+      "Travis Kelce",
+      "Tyler Bass",
+      "Chiefs",
+      "Khalil Shakir"
+     ],
+     "points": 90.3
+    },
+    "unrestricted": {
+     "captain": "Emmett Johnson",
+     "flex": [
+      "James Cook III",
+      "Travis Kelce",
+      "Tyler Bass",
+      "Chiefs",
+      "Khalil Shakir"
+     ],
+     "points": 90.3
+    },
+    "unrestricted_all": {
+     "captain": "Emmett Johnson",
+     "flex": [
+      "James Cook III",
+      "Travis Kelce",
+      "Tyler Bass",
+      "Chiefs",
+      "Khalil Shakir"
+     ],
+     "points": 90.3
+    }
+   },
+   "enumeration_check": {
+    "enumeration": 90.3,
+    "search": 90.3
+   },
+   "extras": [
+    "Cyrus Allen",
+    "Ray Davis",
+    "Tyrell Shavers"
+   ],
+   "flags": {
+    "Dalton Kincaid": [
+     "returning: missed the team's last 1 game; pre-absence share 6%"
+    ],
+    "Tyrell Shavers": [
+     "one game for this team this season"
+    ]
+   },
+   "info": {
+    "Cyrus Allen": {
+     "games": 10,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.2398,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0476,
+     "tau": 0.322434
+    },
+    "Ray Davis": {
+     "games": 10,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.0908,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.0457,
+     "tau": 0.225886
+    },
+    "Tyrell Shavers": {
+     "games": 1,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.1437,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0282,
+     "tau": 0.322434
+    }
+   },
+   "n_unknown": 6,
+   "players": 56,
+   "teams": [
+    "BUF",
+    "KC"
+   ],
+   "unknown": [
+    "Kenneth Walker III",
+    "Garrett Nussmeier",
+    "Shane Buechele",
+    "Skyler Bell",
+    "EJ Smith",
+    "James Winchester"
+   ],
+   "week": 12
+  }
+ }
+}

@@ -8629,6 +8629,25 @@ function _dfsTourneyTried(d) {
   const who = a.scheduled ? "the PC's scheduled build" : "the PC's try at an earlier Build";
   return `<div class="small" style="margin-top:4px"><b style="color:#e0a656">⚠ ${who} at ${t} did not build it: ${escapeHtml(a.why || "no reason given")}</b>${d.status === "ok" ? " - this is the board built before it" : ""}</div>`;
 }
+// The eligibility modes (dfs_eligibility, research/reports/dfs_eligibility.md): only an experimental-mode board
+// carries `elig` / `elig_flags` on a player and `eligibility` on the board; a conservative board shows nothing new.
+// Flags are information -- returning from an absence, a workload the history cannot vouch for -- never a number.
+function dfsEligTag(p) {
+  const fl = Array.isArray(p.elig_flags) ? p.elig_flags : [];
+  let s = p.elig === "admitted" ? " · admitted by workload" : "";
+  if (fl.length) {
+    const uncertain = fl.some((f) => /^(returning|no game|one game|promoted)/.test(String(f)));
+    s += ` · <span title="${escapeHtml(fl.join("; "))}">${uncertain ? "⚠ uncertain workload: " : ""}${escapeHtml(fl.join("; "))}</span>`;
+  }
+  return s;
+}
+function dfsEligNote(d) {
+  const e = d && d.eligibility;
+  if (!e || !e.mode) return "";
+  const adm = (e.admitted || []).map(escapeHtml).join(", ") || "nobody";
+  const out = (e.outside_field || []).length ? ` The model also passed ${(e.outside_field || []).map(escapeHtml).join(", ")}, whom the field does not play: left out, so the field stays the conservative board's.` : "";
+  return `<div class="small" style="margin-top:4px">🧪 eligibility mode <b>${escapeHtml(e.mode)}</b> (experimental): beyond the depth chart, ${adm} may be in our lineups. Projections are unchanged; the field is the conservative board's.${out}${e.note ? " " + escapeHtml(e.note) : ""}</div>`;
+}
 function renderDfsTourney(d) {
   const bx = _dfsTourneyBoxes();
   if (!bx) return;
@@ -8718,13 +8737,14 @@ function renderDfsTourney(d) {
   const playersHtml = classic
     ? `<div style="overflow-x:auto"><table class="small" style="border-collapse:collapse;width:100%;margin-top:4px">
     <tr style="color:var(--muted);text-align:right"><th style="text-align:left">player</th><th>$</th><th>proj</th><th title="share of the field model's lineups that hold him">field</th><th title="share of simulated Sundays in which the best possible lineup had him">optimal</th></tr>
-    ${shown.map((p) => `<tr style="text-align:right;border-top:1px solid var(--line,#333)${p.field_only ? ";color:var(--muted)" : ""}"><td style="text-align:left">${escapeHtml(p.name)} <span class="small" style="color:var(--muted)">${escapeHtml(p.depth || p.pos || "")}${p.team ? " · " + escapeHtml(p.team) : ""}${p.opp ? " v " + escapeHtml(p.opp) : ""}${p.field_only ? " · field only" : ""}</span></td><td>${nf(p.salary)}</td><td>${p.proj}</td><td>${pct(p.field_pct)}</td><td><b>${pct(p.opt_pct)}</b></td></tr>`).join("")}
+    ${shown.map((p) => `<tr style="text-align:right;border-top:1px solid var(--line,#333)${p.field_only ? ";color:var(--muted)" : ""}"><td style="text-align:left">${escapeHtml(p.name)} <span class="small" style="color:var(--muted)">${escapeHtml(p.depth || p.pos || "")}${p.team ? " · " + escapeHtml(p.team) : ""}${p.opp ? " v " + escapeHtml(p.opp) : ""}${p.field_only ? " · field only" : ""}${dfsEligTag(p)}</span></td><td>${nf(p.salary)}</td><td>${p.proj}</td><td>${pct(p.field_pct)}</td><td><b>${pct(p.opt_pct)}</b></td></tr>`).join("")}
   </table></div>`
     : `<div style="overflow-x:auto"><table class="small" style="border-collapse:collapse;width:100%;margin-top:4px">
     <tr style="color:var(--muted);text-align:right"><th style="text-align:left">player</th><th>$</th><th>proj</th><th title="the field model's captain share">field CPT</th><th title="the field model's flex share">field FLEX</th><th title="share of simulated games in which the best possible lineup had him at captain">optimal CPT</th><th title="share of simulated games in which the best possible lineup had him at flex">optimal FLEX</th></tr>
-    ${shown.map((p) => `<tr style="text-align:right;border-top:1px solid var(--line,#333)${p.field_only ? ";color:var(--muted)" : ""}"><td style="text-align:left">${escapeHtml(p.name)} <span class="small" style="color:var(--muted)">${escapeHtml(p.depth || p.pos || "")}${p.team ? " · " + escapeHtml(p.team) : ""}${p.field_only ? " · field only" : ""}</span></td><td>${nf(p.salary)}</td><td>${p.proj}</td><td>${pct(p.field_cpt_pct)}</td><td>${pct(p.field_flex_pct)}</td><td><b>${pct(p.opt_cpt_pct)}</b></td><td><b>${pct(p.opt_flex_pct)}</b></td></tr>`).join("")}
+    ${shown.map((p) => `<tr style="text-align:right;border-top:1px solid var(--line,#333)${p.field_only ? ";color:var(--muted)" : ""}"><td style="text-align:left">${escapeHtml(p.name)} <span class="small" style="color:var(--muted)">${escapeHtml(p.depth || p.pos || "")}${p.team ? " · " + escapeHtml(p.team) : ""}${p.field_only ? " · field only" : ""}${dfsEligTag(p)}</span></td><td>${nf(p.salary)}</td><td>${p.proj}</td><td>${pct(p.field_cpt_pct)}</td><td>${pct(p.field_flex_pct)}</td><td><b>${pct(p.opt_cpt_pct)}</b></td><td><b>${pct(p.opt_flex_pct)}</b></td></tr>`).join("")}
   </table></div>`;
   const moreHtml = players.length > 14 ? `<a href="#" class="small" onclick="dfsTourneyAll();return false">${_dfsTourneyAll ? "fewer" : `all ${players.length} players`}</a>` : "";
+  const eligHtml = dfsEligNote(d);
   const fieldOnly = ((d.slate || {}).field_only || []);
   const listNames = classic
     ? [["top_top1", "Best single entries by top 1%"], ["top_top01", "Best by top 0.1%"], ["top_ev", exp ? "Best by experimental EV" : "Best by EV after duplicates"], ["top_win", exp ? "Best by experimental first place" : "Best by first place"], ["top_money", "💵 Best chance to win money"]]
@@ -8762,7 +8782,7 @@ function renderDfsTourney(d) {
     ${(rr.probes || []).map((p) => p.available === false ? `<div class="small" style="color:var(--muted)">${escapeHtml((p.names || []).join(", "))} · not on this pool (${escapeHtml((p.missing || []).join(", "))})</div>`
       : `<div class="small">${lineupCell(p)} · $${nf(p.salary)} · ${p.legal ? "legal" : "<b>not legal</b>"}${p.legal && !p.legal_under_cap4 ? " (fails a cap of four)" : ""} · top 1% <b>${pct(p.top1_pct, 1)}</b> #${(p.rank || {}).top1 || "-"} · top 0.1% <b>${pct(p.top01_pct, 2)}</b> #${(p.rank || {}).top01 || "-"} of ${nf((p.rank || {}).of)} · p10/p50/p90/p99 ${p.p10}/${p.median}/${p.p90}/${p.p99}${exp ? ` · experimental win ${pct(p.win_pct, 3)} outright (${pct(winAnyOf(p), 3)} incl. a share) · experimental EV ${money(evOf(p))} (${money(evNoTieOf(p))} ignoring ties)` : ` · win ${pct(p.win_pct, 3)} · EV ${money(evOf(p))}`}</div>`).join("")}` : ""}
     <div style="margin-top:8px"><b>Players</b> <span class="small" style="color:var(--muted)">- what the field does with them vs where the winning lineups actually had them</span></div>
-    ${playersHtml}${moreHtml}
+    ${playersHtml}${moreHtml}${eligHtml}
     <div class="small" style="color:var(--muted);margin-top:6px">⏱ sims ${Math.round(tm.sims_s || 0)}s${classic ? ` · best lineups ${Math.round(tm.optimal_s || 0)}s · field ${Math.round(tm.field_s || 0)}s` : ` · enumerate ${Math.round(tm.enumerate_s || 0)}s`} · score ${Math.round(tm.score_s || 0)}s · portfolio ${Math.round(tm.portfolio_s || 0)}s${d.rules ? ` · 📐 ${d.rules.map(escapeHtml).join(" · ")}` : ""}</div>
   </div>`;
   // the lineup evaluator under the board (static/dfseval.js)

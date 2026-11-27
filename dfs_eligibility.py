@@ -215,9 +215,11 @@ def assess(players, excluded, mode, ctx, model):
     if mode == "adaptive" and model is None:
         out["note"] = "the eligibility model is missing (research/data/dfs_eligibility/model.json): adaptive " \
                       "admits nobody beyond the depth chart"
+    # a teammate is "out" for the promoted flag only on an injury tag or an inactive roster status: "not on any roster
+    # Sleeper knows" is a lookup miss (DEN @ PIT's fullback), not an absence
     hard_out = {}
     for d in excluded or []:
-        if RANK_GATE not in (d.get("why") or ""):
+        if (d.get("why") or "").startswith(("listed ", "roster status")):
             hard_out.setdefault((d.get("team"), (d.get("pos") or "").upper()), []).append(d["name"])
 
     def info_for(name, pos, team, proj):
@@ -228,7 +230,7 @@ def assess(players, excluded, mode, ctx, model):
         row = usage_row(hit[0], team, hist)
         p = p_relevant(model, pos, proj, row) if model else None
         spec = (model or {}).get("positions", {}).get(pos) or {}
-        return {"share": round(row["share"], 4), "games": row["games"], "missed": row["missed"],
+        return {"pos": pos, "share": round(row["share"], 4), "games": row["games"], "missed": row["missed"],
                 "returning": row["returning"], "has_hist": row["has_hist"],
                 "p": None if p is None else round(p, 4), "tau": spec.get("tau"), "level": spec.get("L")}
 
@@ -255,8 +257,9 @@ def assess(players, excluded, mode, ctx, model):
     for name, inf in out["info"].items():
         fl = []
         if inf.get("returning"):
-            fl.append(f"returning: missed the team's last {inf['missed']} game{'s' if inf['missed'] != 1 else ''}; "
-                      f"pre-absence share {100 * inf['share']:.0f}%")
+            # a quarterback's targets + carries share says nothing about his role, so it is not printed for one
+            fl.append(f"returning: missed the team's last {inf['missed']} game{'s' if inf['missed'] != 1 else ''}"
+                      + ("" if inf.get("pos") == "QB" else f"; pre-absence share {100 * inf['share']:.0f}%"))
         if not inf.get("has_hist"):
             fl.append("no game for this team this season")
         elif inf.get("games", 0) < 2:
