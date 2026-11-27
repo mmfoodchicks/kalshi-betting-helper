@@ -1019,6 +1019,44 @@ def _cl_sims(start_ts, board, now=None, picked=False):
     return _CL_SIMS_FULL if start_ts - now > est + 600 else _CL_SIMS_QUICK
 
 
+def _mem_watch():
+    """A memprobe.Watch for one build, or None when it cannot start (it never stops a build)."""
+    try:
+        import memprobe
+        return memprobe.Watch()
+    except Exception as e:
+        import errlog
+        errlog.note("PCMEM-watch", e)
+        return None
+
+
+def _mem_report(url, tok, art, prof, mem, dg, kind, error=None):
+    """The build's measured memory (memprobe) beside pc_profiles' estimate for it: stamped on the board as
+    `memory` and posted once to /api/pc/bench as a "build_memory" report, so the owner's real builds test the
+    memory model the profiles choose by (research/hp_memory.py fitted it on a synthetic slate here). Never
+    raises: a build stands whatever this does."""
+    if mem is None:
+        return
+    try:
+        got = mem.stop()
+        if prof is not None:
+            import pc_profiles
+            pl, co, ca = pc_profiles._board_shape(art)
+            got["estimate_gb"] = round(pc_profiles.memory_gb(prof, pl, co, ca, ram_gb=_ram_gb()), 1)
+            got["profile"] = prof.get("name")
+        if isinstance(art, dict):
+            art["memory"] = got
+            got["worlds"] = art.get("sims")
+            got["players"] = len(art.get("players") or ())
+        rep = {"kind": "build_memory", "real_data": True, "results": [dict(got, dg=int(dg), build=kind,
+                                                                        error=error, ts=int(time.time()))]}
+        _api(url, tok, "/api/pc/bench", data=json.dumps(rep).encode(), headers={"Content-Type": "application/json"},
+             timeout=30)
+    except Exception as e:
+        import errlog
+        errlog.note("PCMEM-report", e)
+
+
 def _stamp_profile(art, prof):
     """The profile a classic board ran, the one asked for and why they differ
     (pc_profiles.stamp), on the board -- so research can compare boards by the
@@ -1128,6 +1166,7 @@ def _picked_builds(url, tok, kind, picked, listed):
         _yield_point(f"{kind} board {dg} (your picks) - requested by PC request: {why}")
         print(f"[vigil-pc] tourney {dg}: building the picked {kind} board - {why}...")
         t0 = time.time()
+        mem = _mem_watch()
         try:
             prof = None
             if kind == "classic":
@@ -1148,6 +1187,7 @@ def _picked_builds(url, tok, kind, picked, listed):
             else:
                 art = dfs_tourney.build_nfl_showdown(dg, n_sims=60000, log=print, pick=pick)
         except Exception as e:
+            _mem_report(url, tok, None, None, mem, dg, f"{kind} picked", f"{type(e).__name__}: {e}")
             print(f"[vigil-pc] tourney {dg}: picked build failed ({type(e).__name__}: {e})")
             _report_attempt(url, tok, dg, req, f"the picked build failed ({type(e).__name__}: {e})", kind=kind)
             continue
@@ -1160,6 +1200,7 @@ def _picked_builds(url, tok, kind, picked, listed):
             continue
         art["requested_by"] = {"by": "PC request (picked)", "why": why}
         _stamp_profile(art, prof)
+        _mem_report(url, tok, art, prof, mem, dg, f"{kind} picked")
         boardshare.put(name, art)
         _ckpt_landed(art)
         print(f"[vigil-pc] tourney {dg}: picked {kind} board done in {time.time() - t0:.0f}s")
@@ -1227,6 +1268,8 @@ def _task_classic_tourney(url, tok):
         _yield_point(f"classic board {dg} ({sl.get('games')} games) - requested by {_requested_by(why)}: {why}")
         print(f"[vigil-pc] classic tourney {dg} ({sl.get('games')} games): building - {why}...")
         t0 = time.time()
+        mem = _mem_watch()              # what the build really holds, stamped beside the estimate
+        prof = None
         try:
             n_sims = _cl_sims(_dt_ts(sl.get("starts")), board)
             # the build profile (vigil-pc.cfg "profile"; pc_profiles): standard
@@ -1245,6 +1288,7 @@ def _task_classic_tourney(url, tok):
                 art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=n_sims, log=print)
         except Exception as e:
             # the window is NOT consumed: a failed build is retried next cycle
+            _mem_report(url, tok, None, prof, mem, dg, "classic", f"{type(e).__name__}: {e}")
             print(f"[vigil-pc] classic tourney {dg}: failed ({type(e).__name__}: {e})")
             _report_attempt(url, tok, dg, wanted.get(dg), f"the build failed ({type(e).__name__}: {e})")
             continue
@@ -1255,6 +1299,7 @@ def _task_classic_tourney(url, tok):
             continue
         art["requested_by"] = {"by": _requested_by(why), "why": why}
         _stamp_profile(art, prof)
+        _mem_report(url, tok, art, prof, mem, dg, "classic")
         boardshare.put(name, art)
         _ckpt_landed(art)
         # consumed only now the build stands, whatever started it: a Build
