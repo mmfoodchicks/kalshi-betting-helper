@@ -80,3 +80,8 @@ research/data/nfl_rush_model/prospective_dataset/
 # fetched by the PC beside its predlog.db; never source
 calib_params.json
 mx_record.db*
+
+# nflverse play-by-play fetched for the coaching engine (CC BY 4.0): raw files and row caches never enter git
+research/data/nfl_coach/nflverse/
+play_by_play_*.csv.gz
+nfl_coach_rows_*.pkl

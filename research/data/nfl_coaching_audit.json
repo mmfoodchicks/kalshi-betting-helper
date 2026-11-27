@@ -1,0 +1,1074 @@
+{
+ "coach_signal": {
+  "fourth_down_go_over_league_cell": {
+   "coach_changed_teams": [
+    -0.053,
+    13
+   ],
+   "full_season_reliability": 0.462,
+   "sd_between_team_seasons": 0.0407,
+   "split_half_r": 0.3,
+   "team_seasons": 128,
+   "yoy_new_coach": [
+    0.247,
+    24
+   ],
+   "yoy_same_coach": [
+    0.531,
+    72
+   ]
+  },
+  "neutral_pass_over_expected": {
+   "coach_changed_teams": [
+    0.139,
+    13
+   ],
+   "full_season_reliability": 0.773,
+   "sd_between_team_seasons": 0.0455,
+   "split_half_r": 0.63,
+   "team_seasons": 128,
+   "yoy_new_coach": [
+    0.24,
+    24
+   ],
+   "yoy_same_coach": [
+    0.397,
+    72
+   ]
+  },
+  "no_huddle_rate_neutral": {
+   "coach_changed_teams": [
+    0.076,
+    13
+   ],
+   "full_season_reliability": 0.975,
+   "sd_between_team_seasons": 0.0931,
+   "split_half_r": 0.951,
+   "team_seasons": 128,
+   "yoy_new_coach": [
+    -0.242,
+    24
+   ],
+   "yoy_same_coach": [
+    0.669,
+    72
+   ]
+  },
+  "sec_to_snap_neutral": {
+   "coach_changed_teams": [
+    -0.744,
+    13
+   ],
+   "full_season_reliability": 0.895,
+   "sd_between_team_seasons": 1.2786,
+   "split_half_r": 0.81,
+   "team_seasons": 128,
+   "yoy_new_coach": [
+    0.045,
+    24
+   ],
+   "yoy_same_coach": [
+    0.38,
+    72
+   ]
+  }
+ },
+ "defence_timeout_after_inbounds": {
+  "1:00-0:00|0|1-8": [
+   0.0,
+   23
+  ],
+  "1:00-0:00|0|17+": [
+   0.0,
+   3
+  ],
+  "1:00-0:00|0|9-16": [
+   0.0,
+   6
+  ],
+  "1:00-0:00|1|1-8": [
+   0.971,
+   34
+  ],
+  "1:00-0:00|1|17+": [
+   0.0,
+   7
+  ],
+  "1:00-0:00|1|9-16": [
+   0.222,
+   9
+  ],
+  "2:00-1:00|0|1-8": [
+   0.007,
+   144
+  ],
+  "2:00-1:00|0|17+": [
+   0.038,
+   26
+  ],
+  "2:00-1:00|0|9-16": [
+   0.014,
+   74
+  ],
+  "2:00-1:00|1|1-8": [
+   0.97,
+   302
+  ],
+  "2:00-1:00|1|17+": [
+   0.08,
+   125
+  ],
+  "2:00-1:00|1|9-16": [
+   0.797,
+   64
+  ],
+  "3:00-2:00|0|1-8": [
+   0.0,
+   91
+  ],
+  "3:00-2:00|0|17+": [
+   0.0,
+   21
+  ],
+  "3:00-2:00|0|9-16": [
+   0.0,
+   89
+  ],
+  "3:00-2:00|1|1-8": [
+   0.656,
+   363
+  ],
+  "3:00-2:00|1|17+": [
+   0.104,
+   154
+  ],
+  "3:00-2:00|1|9-16": [
+   0.681,
+   116
+  ],
+  "5:00-3:00|0|1-8": [
+   0.0,
+   29
+  ],
+  "5:00-3:00|0|17+": [
+   0.0,
+   22
+  ],
+  "5:00-3:00|0|9-16": [
+   0.0,
+   102
+  ],
+  "5:00-3:00|1|1-8": [
+   0.301,
+   668
+  ],
+  "5:00-3:00|1|17+": [
+   0.135,
+   333
+  ],
+  "5:00-3:00|1|9-16": [
+   0.685,
+   368
+  ]
+ },
+ "fourth_down": {
+  "go_rate": 0.1512,
+  "rows": 9927
+ },
+ "head_coach_stints": 56,
+ "inside_two_minutes_per_game": {
+  "games": 980,
+  "q2_pts": 4.697,
+  "q2_snaps": 8.949,
+  "q4_pts": 2.536,
+  "q4_snaps": 5.413
+ },
+ "kneel_rule": {
+  "no_rule|0": [
+   0.012,
+   761
+  ],
+  "no_rule|1": [
+   0.004,
+   810
+  ],
+  "no_rule|2": [
+   0.002,
+   2462
+  ],
+  "no_rule|3": [
+   0.002,
+   7719
+  ],
+  "rule|0": [
+   0.973,
+   659
+  ],
+  "rule|1": [
+   0.719,
+   281
+  ],
+  "rule|2": [
+   0.522,
+   209
+  ],
+  "rule|3": [
+   0.597,
+   233
+  ]
+ },
+ "kneels_by_quarter": {
+  "2": 307,
+  "4": 1209,
+  "5": 2
+ },
+ "lead_back_share_of_backs_passing_situation_touches": {
+  "split_half_r": 0.67,
+  "team_seasons": 122
+ },
+ "onside": {
+  "deep|no_rule": 9762,
+  "deep|rule": 55,
+  "onside|no_rule": 63,
+  "onside|rule": 108,
+  "recovered": 11
+ },
+ "q2_pass_rate": {
+  "15:00-5:00|0": [
+   0.549,
+   2911
+  ],
+  "15:00-5:00|1": [
+   0.556,
+   6088
+  ],
+  "15:00-5:00|2": [
+   0.558,
+   2943
+  ],
+  "15:00-5:00|3": [
+   0.547,
+   4873
+  ],
+  "15:00-5:00|4": [
+   0.539,
+   1604
+  ],
+  "1:00-0:00|0": [
+   0.862,
+   1006
+  ],
+  "1:00-0:00|1": [
+   0.825,
+   1256
+  ],
+  "1:00-0:00|2": [
+   0.836,
+   422
+  ],
+  "1:00-0:00|3": [
+   0.836,
+   1247
+  ],
+  "1:00-0:00|4": [
+   0.776,
+   728
+  ],
+  "2:00-1:00|0": [
+   0.746,
+   873
+  ],
+  "2:00-1:00|1": [
+   0.693,
+   1223
+  ],
+  "2:00-1:00|2": [
+   0.694,
+   350
+  ],
+  "2:00-1:00|3": [
+   0.679,
+   1039
+  ],
+  "2:00-1:00|4": [
+   0.658,
+   626
+  ],
+  "5:00-2:00|0": [
+   0.597,
+   1075
+  ],
+  "5:00-2:00|1": [
+   0.563,
+   1621
+  ],
+  "5:00-2:00|2": [
+   0.573,
+   567
+  ],
+  "5:00-2:00|3": [
+   0.537,
+   1378
+  ],
+  "5:00-2:00|4": [
+   0.543,
+   657
+  ]
+ },
+ "q2_sec_to_snap": {
+  "15:00-5:00|0": [
+   38.1,
+   1593
+  ],
+  "15:00-5:00|1": [
+   38.4,
+   3287
+  ],
+  "15:00-5:00|2": [
+   38.9,
+   1568
+  ],
+  "15:00-5:00|3": [
+   38.7,
+   2627
+  ],
+  "15:00-5:00|4": [
+   39.0,
+   901
+  ],
+  "1:00-0:00|0": [
+   18.2,
+   104
+  ],
+  "1:00-0:00|1": [
+   19.1,
+   128
+  ],
+  "1:00-0:00|2": [
+   18.0,
+   35
+  ],
+  "1:00-0:00|3": [
+   18.7,
+   125
+  ],
+  "1:00-0:00|4": [
+   20.3,
+   89
+  ],
+  "2:00-1:00|0": [
+   27.1,
+   287
+  ],
+  "2:00-1:00|1": [
+   28.6,
+   407
+  ],
+  "2:00-1:00|2": [
+   29.8,
+   127
+  ],
+  "2:00-1:00|3": [
+   28.8,
+   342
+  ],
+  "2:00-1:00|4": [
+   29.6,
+   195
+  ],
+  "5:00-2:00|0": [
+   37.5,
+   455
+  ],
+  "5:00-2:00|1": [
+   38.0,
+   676
+  ],
+  "5:00-2:00|2": [
+   39.1,
+   229
+  ],
+  "5:00-2:00|3": [
+   38.8,
+   569
+  ],
+  "5:00-2:00|4": [
+   38.4,
+   264
+  ]
+ },
+ "q4_pass_rate": {
+  "10:00-5:00|0": [
+   0.772,
+   3182
+  ],
+  "10:00-5:00|1": [
+   0.586,
+   1973
+  ],
+  "10:00-5:00|2": [
+   0.562,
+   495
+  ],
+  "10:00-5:00|3": [
+   0.499,
+   1836
+  ],
+  "10:00-5:00|4": [
+   0.332,
+   2128
+  ],
+  "15:00-10:00|0": [
+   0.714,
+   3039
+  ],
+  "15:00-10:00|1": [
+   0.573,
+   2239
+  ],
+  "15:00-10:00|2": [
+   0.525,
+   451
+  ],
+  "15:00-10:00|3": [
+   0.511,
+   2060
+  ],
+  "15:00-10:00|4": [
+   0.438,
+   2132
+  ],
+  "1:00-0:00|0": [
+   0.753,
+   551
+  ],
+  "1:00-0:00|1": [
+   0.864,
+   1126
+  ],
+  "1:00-0:00|2": [
+   0.695,
+   236
+  ],
+  "1:00-0:00|3": [
+   0.136,
+   66
+  ],
+  "1:00-0:00|4": [
+   0.143,
+   28
+  ],
+  "2:00-1:00|0": [
+   0.796,
+   941
+  ],
+  "2:00-1:00|1": [
+   0.795,
+   1295
+  ],
+  "2:00-1:00|2": [
+   0.629,
+   224
+  ],
+  "2:00-1:00|3": [
+   0.188,
+   516
+  ],
+  "2:00-1:00|4": [
+   0.102,
+   322
+  ],
+  "3:00-2:00|0": [
+   0.819,
+   888
+  ],
+  "3:00-2:00|1": [
+   0.754,
+   719
+  ],
+  "3:00-2:00|2": [
+   0.655,
+   148
+  ],
+  "3:00-2:00|3": [
+   0.301,
+   564
+  ],
+  "3:00-2:00|4": [
+   0.131,
+   434
+  ],
+  "5:00-3:00|0": [
+   0.817,
+   1702
+  ],
+  "5:00-3:00|1": [
+   0.657,
+   1004
+  ],
+  "5:00-3:00|2": [
+   0.536,
+   224
+  ],
+  "5:00-3:00|3": [
+   0.383,
+   935
+  ],
+  "5:00-3:00|4": [
+   0.212,
+   992
+  ]
+ },
+ "q4_sec_to_snap": {
+  "10:00-5:00|0": [
+   31.6,
+   1504
+  ],
+  "10:00-5:00|1": [
+   38.1,
+   1082
+  ],
+  "10:00-5:00|2": [
+   39.6,
+   262
+  ],
+  "10:00-5:00|3": [
+   40.1,
+   977
+  ],
+  "10:00-5:00|4": [
+   42.2,
+   1227
+  ],
+  "15:00-10:00|0": [
+   34.9,
+   1521
+  ],
+  "15:00-10:00|1": [
+   38.3,
+   1220
+  ],
+  "15:00-10:00|2": [
+   38.7,
+   254
+  ],
+  "15:00-10:00|3": [
+   39.1,
+   1171
+  ],
+  "15:00-10:00|4": [
+   40.5,
+   1221
+  ],
+  "1:00-0:00|0": [
+   21.9,
+   109
+  ],
+  "1:00-0:00|1": [
+   17.0,
+   150
+  ],
+  "1:00-0:00|2": [
+   18.3,
+   23
+  ],
+  "1:00-0:00|3": [
+   44.0,
+   1
+  ],
+  "2:00-1:00|0": [
+   26.9,
+   403
+  ],
+  "2:00-1:00|1": [
+   25.3,
+   399
+  ],
+  "2:00-1:00|2": [
+   34.0,
+   53
+  ],
+  "2:00-1:00|3": [
+   36.8,
+   25
+  ],
+  "2:00-1:00|4": [
+   43.0,
+   78
+  ],
+  "3:00-2:00|0": [
+   24.8,
+   217
+  ],
+  "3:00-2:00|1": [
+   29.2,
+   150
+  ],
+  "3:00-2:00|2": [
+   36.4,
+   16
+  ],
+  "3:00-2:00|3": [
+   41.2,
+   42
+  ],
+  "3:00-2:00|4": [
+   41.5,
+   42
+  ],
+  "5:00-3:00|0": [
+   29.2,
+   812
+  ],
+  "5:00-3:00|1": [
+   36.0,
+   509
+  ],
+  "5:00-3:00|2": [
+   39.9,
+   107
+  ],
+  "5:00-3:00|3": [
+   42.3,
+   398
+  ],
+  "5:00-3:00|4": [
+   43.4,
+   410
+  ]
+ },
+ "seasons": {
+  "2023": {
+   "columns": 372,
+   "counts": {
+    "delay_of_game": 157,
+    "kickoffs": 2698,
+    "kneels": 429,
+    "ot_post": 1,
+    "ot_reg": 13,
+    "reg_games": 272,
+    "spikes": 68,
+    "timeouts": 2040,
+    "two_point": 127,
+    "xp": 1169
+   },
+   "fields": {
+    "air_yards": 0.5373,
+    "away_coach": 1.0,
+    "away_timeouts_remaining": 1.0,
+    "defenders_in_box": null,
+    "defensive_coordinator": null,
+    "defteam_timeouts_remaining": 1.0,
+    "div_game": 1.0,
+    "drive_play_count": 0.9998,
+    "end_clock_time": 0.9716,
+    "game_seconds_remaining": 1.0,
+    "goal_to_go": 1.0,
+    "half_seconds_remaining": 1.0,
+    "home_coach": 1.0,
+    "home_timeouts_remaining": 1.0,
+    "kickoff_attempt": 1.0,
+    "no_huddle": 1.0,
+    "offense_formation": null,
+    "offense_personnel": null,
+    "offensive_coordinator": null,
+    "onside_kick": null,
+    "out_of_bounds": 1.0,
+    "own_kickoff_recovery": 1.0,
+    "pass_length": 0.5373,
+    "pass_location": 0.5373,
+    "pass_oe": 0.9963,
+    "penalty_type": 0.0144,
+    "play_clock": 1.0,
+    "posteam_timeouts_remaining": 1.0,
+    "qb_dropback": 1.0,
+    "qb_kneel": 1.0,
+    "qb_scramble": 1.0,
+    "qb_spike": 1.0,
+    "roof": 1.0,
+    "run_gap": 0.3048,
+    "run_location": 0.4144,
+    "score_differential": 1.0,
+    "series_result": 1.0,
+    "shotgun": 1.0,
+    "spread_line": 1.0,
+    "temp": 0.5463,
+    "time_of_day": 1.0,
+    "timeout": 1.0,
+    "timeout_team": 0.0022,
+    "total_line": 1.0,
+    "two_point_attempt": 1.0,
+    "two_point_conv_result": 0.0037,
+    "wind": 0.5463,
+    "wp": 1.0,
+    "xpass": 0.9963
+   },
+   "games": 285,
+   "head_coaches": 35,
+   "mid_season_changes": [
+    "CAR",
+    "LAC",
+    "LV"
+   ]
+  },
+  "2024": {
+   "columns": 372,
+   "counts": {
+    "delay_of_game": 168,
+    "kickoffs": 2803,
+    "kneels": 405,
+    "ot_reg": 16,
+    "reg_games": 272,
+    "spikes": 75,
+    "timeouts": 2111,
+    "two_point": 135,
+    "xp": 1241
+   },
+   "fields": {
+    "air_yards": 0.53,
+    "away_coach": 1.0,
+    "away_timeouts_remaining": 1.0,
+    "defenders_in_box": null,
+    "defensive_coordinator": null,
+    "defteam_timeouts_remaining": 1.0,
+    "div_game": 1.0,
+    "drive_play_count": 0.9998,
+    "end_clock_time": 0.9737,
+    "game_seconds_remaining": 1.0,
+    "goal_to_go": 1.0,
+    "half_seconds_remaining": 1.0,
+    "home_coach": 1.0,
+    "home_timeouts_remaining": 1.0,
+    "kickoff_attempt": 1.0,
+    "no_huddle": 1.0,
+    "offense_formation": null,
+    "offense_personnel": null,
+    "offensive_coordinator": null,
+    "onside_kick": null,
+    "out_of_bounds": 1.0,
+    "own_kickoff_recovery": 1.0,
+    "pass_length": 0.53,
+    "pass_location": 0.53,
+    "pass_oe": 0.996,
+    "penalty_type": 0.0152,
+    "play_clock": 1.0,
+    "posteam_timeouts_remaining": 1.0,
+    "qb_dropback": 1.0,
+    "qb_kneel": 1.0,
+    "qb_scramble": 1.0,
+    "qb_spike": 1.0,
+    "roof": 1.0,
+    "run_gap": 0.3166,
+    "run_location": 0.4231,
+    "score_differential": 1.0,
+    "series_result": 1.0,
+    "shotgun": 1.0,
+    "spread_line": 1.0,
+    "temp": 0.6335,
+    "time_of_day": 1.0,
+    "timeout": 1.0,
+    "timeout_team": 0.0024,
+    "total_line": 1.0,
+    "two_point_attempt": 1.0,
+    "two_point_conv_result": 0.004,
+    "wind": 0.6335,
+    "wp": 1.0,
+    "xpass": 0.996
+   },
+   "games": 285,
+   "head_coaches": 32,
+   "mid_season_changes": []
+  },
+  "2025": {
+   "columns": 372,
+   "counts": {
+    "delay_of_game": 175,
+    "kickoffs": 2785,
+    "kneels": 434,
+    "ot_post": 2,
+    "ot_reg": 14,
+    "reg_games": 272,
+    "spikes": 81,
+    "timeouts": 2095,
+    "two_point": 128,
+    "xp": 1262
+   },
+   "fields": {
+    "air_yards": 0.5269,
+    "away_coach": 1.0,
+    "away_timeouts_remaining": 1.0,
+    "defenders_in_box": null,
+    "defensive_coordinator": null,
+    "defteam_timeouts_remaining": 1.0,
+    "div_game": 1.0,
+    "drive_play_count": 0.9999,
+    "end_clock_time": 0.9565,
+    "game_seconds_remaining": 1.0,
+    "goal_to_go": 1.0,
+    "half_seconds_remaining": 1.0,
+    "home_coach": 1.0,
+    "home_timeouts_remaining": 1.0,
+    "kickoff_attempt": 1.0,
+    "no_huddle": 1.0,
+    "offense_formation": null,
+    "offense_personnel": null,
+    "offensive_coordinator": null,
+    "onside_kick": null,
+    "out_of_bounds": 1.0,
+    "own_kickoff_recovery": 1.0,
+    "pass_length": 0.5269,
+    "pass_location": 0.5269,
+    "pass_oe": 0.9961,
+    "penalty_type": 0.0155,
+    "play_clock": 1.0,
+    "posteam_timeouts_remaining": 1.0,
+    "qb_dropback": 1.0,
+    "qb_kneel": 1.0,
+    "qb_scramble": 1.0,
+    "qb_spike": 1.0,
+    "roof": 1.0,
+    "run_gap": 0.3126,
+    "run_location": 0.4272,
+    "score_differential": 1.0,
+    "series_result": 1.0,
+    "shotgun": 1.0,
+    "spread_line": 1.0,
+    "temp": 0.6459,
+    "time_of_day": 1.0,
+    "timeout": 1.0,
+    "timeout_team": 0.0021,
+    "total_line": 1.0,
+    "two_point_attempt": 1.0,
+    "two_point_conv_result": 0.0039,
+    "wind": 0.6459,
+    "wp": 1.0,
+    "xpass": 0.9961
+   },
+   "games": 285,
+   "head_coaches": 32,
+   "mid_season_changes": []
+  },
+  "2026": {
+   "columns": 372,
+   "counts": {
+    "delay_of_game": 146,
+    "kickoffs": 1702,
+    "kneels": 250,
+    "ot_reg": 12,
+    "reg_games": 164,
+    "spikes": 62,
+    "timeouts": 1259,
+    "two_point": 74,
+    "xp": 758
+   },
+   "fields": {
+    "air_yards": 0.5331,
+    "away_coach": 1.0,
+    "away_timeouts_remaining": 1.0,
+    "defenders_in_box": null,
+    "defensive_coordinator": null,
+    "defteam_timeouts_remaining": 1.0,
+    "div_game": 1.0,
+    "drive_play_count": 1.0,
+    "end_clock_time": 0.9702,
+    "game_seconds_remaining": 1.0,
+    "goal_to_go": 1.0,
+    "half_seconds_remaining": 1.0,
+    "home_coach": 1.0,
+    "home_timeouts_remaining": 1.0,
+    "kickoff_attempt": 1.0,
+    "no_huddle": 1.0,
+    "offense_formation": null,
+    "offense_personnel": null,
+    "offensive_coordinator": null,
+    "onside_kick": null,
+    "out_of_bounds": 1.0,
+    "own_kickoff_recovery": 1.0,
+    "pass_length": 0.533,
+    "pass_location": 0.533,
+    "pass_oe": 0.9963,
+    "penalty_type": 0.0152,
+    "play_clock": 1.0,
+    "posteam_timeouts_remaining": 1.0,
+    "qb_dropback": 1.0,
+    "qb_kneel": 1.0,
+    "qb_scramble": 1.0,
+    "qb_spike": 1.0,
+    "roof": 1.0,
+    "run_gap": 0.2964,
+    "run_location": 0.4216,
+    "score_differential": 1.0,
+    "series_result": 1.0,
+    "shotgun": 1.0,
+    "spread_line": 1.0,
+    "temp": 0.2711,
+    "time_of_day": 1.0,
+    "timeout": 1.0,
+    "timeout_team": 0.0021,
+    "total_line": 1.0,
+    "two_point_attempt": 1.0,
+    "two_point_conv_result": 0.0037,
+    "wind": 0.2711,
+    "wp": 1.0,
+    "xpass": 0.9963
+   },
+   "games": 164,
+   "head_coaches": 32,
+   "mid_season_changes": []
+  }
+ },
+ "source": "nflverse-data play_by_play (CC BY 4.0)",
+ "spikes_by_quarter": {
+  "2": 138,
+  "4": 148
+ },
+ "timeouts_role": {
+  "defence|leading|<=2:00": 1062,
+  "defence|leading|>2:00": 359,
+  "defence|tied|<=2:00": 247,
+  "defence|tied|>2:00": 141,
+  "defence|trailing|<=2:00": 1013,
+  "defence|trailing|>2:00": 1159,
+  "offence|leading|<=2:00": 813,
+  "offence|leading|>2:00": 678,
+  "offence|tied|<=2:00": 220,
+  "offence|tied|>2:00": 287,
+  "offence|trailing|<=2:00": 1015,
+  "offence|trailing|>2:00": 511
+ },
+ "timeouts_used_per_team_half": {
+  "Half1|0": 215,
+  "Half1|1": 471,
+  "Half1|2": 554,
+  "Half1|3": 720,
+  "Half2|0": 352,
+  "Half2|1": 391,
+  "Half2|2": 395,
+  "Half2|3": 822
+ },
+ "timeouts_when": {
+  "Half1|2:00-5:00": 175,
+  "Half1|<=2:00": 2770,
+  "Half1|>5:00": 805,
+  "Half2|2:00-5:00": 1159,
+  "Half2|<=2:00": 1581,
+  "Half2|>5:00": 924,
+  "Overtime|2:00-5:00": 41,
+  "Overtime|<=2:00": 19,
+  "Overtime|>5:00": 31
+ },
+ "usage_by_script": {
+  "backs' share of targets|3rd and 5+": [
+   0.134,
+   11709
+  ],
+  "backs' share of targets|all": [
+   0.169,
+   61413
+  ],
+  "backs' share of targets|inside 2:00": [
+   0.147,
+   8988
+  ],
+  "backs' share of targets|inside the 5": [
+   0.101,
+   1675
+  ],
+  "backs' share of targets|leading 9+, Q4": [
+   0.145,
+   1747
+  ],
+  "backs' share of targets|neutral": [
+   0.173,
+   32931
+  ],
+  "backs' share of targets|trailing 9+, 2nd half": [
+   0.178,
+   10847
+  ],
+  "lead back share of backs' carries|3rd and 5+": [
+   0.505,
+   1022
+  ],
+  "lead back share of backs' carries|all": [
+   0.607,
+   42643
+  ],
+  "lead back share of backs' carries|inside 2:00": [
+   0.539,
+   2820
+  ],
+  "lead back share of backs' carries|inside the 5": [
+   0.641,
+   2217
+  ],
+  "lead back share of backs' carries|leading 9+, Q4": [
+   0.442,
+   3728
+  ],
+  "lead back share of backs' carries|neutral": [
+   0.633,
+   25329
+  ],
+  "lead back share of backs' carries|trailing 9+, 2nd half": [
+   0.556,
+   4221
+  ],
+  "lead back share of targets|3rd and 5+": [
+   0.06,
+   11709
+  ],
+  "lead back share of targets|all": [
+   0.095,
+   61413
+  ],
+  "lead back share of targets|inside 2:00": [
+   0.078,
+   8988
+  ],
+  "lead back share of targets|inside the 5": [
+   0.062,
+   1675
+  ],
+  "lead back share of targets|leading 9+, Q4": [
+   0.068,
+   1747
+  ],
+  "lead back share of targets|neutral": [
+   0.1,
+   32931
+  ],
+  "lead back share of targets|trailing 9+, 2nd half": [
+   0.09,
+   10847
+  ],
+  "top target's share of targets|3rd and 5+": [
+   0.24,
+   11709
+  ],
+  "top target's share of targets|all": [
+   0.237,
+   61413
+  ],
+  "top target's share of targets|inside 2:00": [
+   0.225,
+   8988
+  ],
+  "top target's share of targets|inside the 5": [
+   0.236,
+   1675
+  ],
+  "top target's share of targets|leading 9+, Q4": [
+   0.23,
+   1747
+  ],
+  "top target's share of targets|neutral": [
+   0.244,
+   32931
+  ],
+  "top target's share of targets|trailing 9+, 2nd half": [
+   0.214,
+   10847
+  ]
+ }
+}
