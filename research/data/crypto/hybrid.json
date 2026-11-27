@@ -1,0 +1,490 @@
+{
+ "r1_final_reversal": {
+  "final_high": {
+   "base_rate_heldout": 0.5749,
+   "by_coin_diff": {
+    "BTC": -0.009299,
+    "DOGE": -0.109206,
+    "ETH": -0.003074,
+    "SOL": -0.007352,
+    "XRP": -0.019044
+   },
+   "challenger_gain_vs_null": 0.029595,
+   "heldout_rows": 80640,
+   "null_calibration_heldout": [
+    {
+     "bin": 0,
+     "hit": 0.1289,
+     "n": 10196,
+     "said": 0.0367
+    },
+    {
+     "bin": 1,
+     "hit": 0.2429,
+     "n": 7979,
+     "said": 0.1502
+    },
+    {
+     "bin": 2,
+     "hit": 0.3613,
+     "n": 7984,
+     "said": 0.2497
+    },
+    {
+     "bin": 3,
+     "hit": 0.4508,
+     "n": 7717,
+     "said": 0.35
+    },
+    {
+     "bin": 4,
+     "hit": 0.5365,
+     "n": 7281,
+     "said": 0.4498
+    },
+    {
+     "bin": 5,
+     "hit": 0.637,
+     "n": 6832,
+     "said": 0.5495
+    },
+    {
+     "bin": 6,
+     "hit": 0.7058,
+     "n": 6316,
+     "said": 0.6502
+    },
+    {
+     "bin": 7,
+     "hit": 0.8048,
+     "n": 6122,
+     "said": 0.7499
+    },
+    {
+     "bin": 8,
+     "hit": 0.8844,
+     "n": 6210,
+     "said": 0.8506
+    },
+    {
+     "bin": 9,
+     "hit": 0.9718,
+     "n": 14003,
+     "said": 0.9707
+    }
+   ],
+   "null_logloss_dev": 0.55797,
+   "null_logloss_heldout": 0.53377,
+   "passed": true,
+   "se_days": 0.00419,
+   "weight_names": [
+    "intercept",
+    "logit_null",
+    "m1",
+    "m5",
+    "m15",
+    "rsi",
+    "macd",
+    "ema_gap",
+    "vol_reg",
+    "range_pos"
+   ],
+   "weights": [
+    0.43951,
+    0.59317,
+    -0.01502,
+    -0.11062,
+    0.0742,
+    -0.22152,
+    -0.35745,
+    0.12802,
+    -0.2284,
+    0.05477
+   ]
+  },
+  "final_low": {
+   "base_rate_heldout": 0.5508,
+   "by_coin_diff": {
+    "BTC": -0.007188,
+    "DOGE": -0.08942,
+    "ETH": -0.008331,
+    "SOL": -0.015321,
+    "XRP": 0.000796
+   },
+   "challenger_gain_vs_null": 0.023893,
+   "heldout_rows": 80640,
+   "null_calibration_heldout": [
+    {
+     "bin": 0,
+     "hit": 0.1305,
+     "n": 10335,
+     "said": 0.0385
+    },
+    {
+     "bin": 1,
+     "hit": 0.2276,
+     "n": 8528,
+     "said": 0.1495
+    },
+    {
+     "bin": 2,
+     "hit": 0.3334,
+     "n": 8419,
+     "said": 0.2492
+    },
+    {
+     "bin": 3,
+     "hit": 0.4228,
+     "n": 7829,
+     "said": 0.3494
+    },
+    {
+     "bin": 4,
+     "hit": 0.5176,
+     "n": 7276,
+     "said": 0.4496
+    },
+    {
+     "bin": 5,
+     "hit": 0.6188,
+     "n": 6480,
+     "said": 0.5488
+    },
+    {
+     "bin": 6,
+     "hit": 0.701,
+     "n": 6114,
+     "said": 0.6487
+    },
+    {
+     "bin": 7,
+     "hit": 0.7711,
+     "n": 5837,
+     "said": 0.7496
+    },
+    {
+     "bin": 8,
+     "hit": 0.8578,
+     "n": 6152,
+     "said": 0.8511
+    },
+    {
+     "bin": 9,
+     "hit": 0.9634,
+     "n": 13670,
+     "said": 0.9703
+    }
+   ],
+   "null_logloss_dev": 0.55356,
+   "null_logloss_heldout": 0.53516,
+   "passed": true,
+   "se_days": 0.006895,
+   "weight_names": [
+    "intercept",
+    "logit_null",
+    "m1",
+    "m5",
+    "m15",
+    "rsi",
+    "macd",
+    "ema_gap",
+    "vol_reg",
+    "range_pos"
+   ],
+   "weights": [
+    0.37472,
+    0.59004,
+    0.02995,
+    0.13243,
+    -0.0963,
+    -0.13189,
+    0.19052,
+    0.03757,
+    -0.17673,
+    0.06473
+   ]
+  },
+  "swings": {
+   "delta": "2 one-minute SDs",
+   "predicted_mean": 1.519,
+   "realized_mean": 0.201,
+   "rows": 80640
+  },
+  "touch": {
+   "base_rate_heldout": 0.4702,
+   "by_coin_diff": {
+    "BTC": -0.008475,
+    "DOGE": -0.025022,
+    "ETH": -0.005303,
+    "SOL": 0.002292,
+    "XRP": -0.000221
+   },
+   "challenger_gain_vs_null": 0.007346,
+   "heldout_rows": 80640,
+   "null_calibration_heldout": [
+    {
+     "bin": 0,
+     "hit": 0.0391,
+     "n": 13512,
+     "said": 0.0288
+    },
+    {
+     "bin": 1,
+     "hit": 0.1569,
+     "n": 6003,
+     "said": 0.149
+    },
+    {
+     "bin": 2,
+     "hit": 0.2436,
+     "n": 5772,
+     "said": 0.25
+    },
+    {
+     "bin": 3,
+     "hit": 0.3292,
+     "n": 6255,
+     "said": 0.351
+    },
+    {
+     "bin": 4,
+     "hit": 0.4114,
+     "n": 6828,
+     "said": 0.4509
+    },
+    {
+     "bin": 5,
+     "hit": 0.5145,
+     "n": 7355,
+     "said": 0.5508
+    },
+    {
+     "bin": 6,
+     "hit": 0.6016,
+     "n": 8330,
+     "said": 0.6508
+    },
+    {
+     "bin": 7,
+     "hit": 0.7075,
+     "n": 8751,
+     "said": 0.7504
+    },
+    {
+     "bin": 8,
+     "hit": 0.8072,
+     "n": 8914,
+     "said": 0.8502
+    },
+    {
+     "bin": 9,
+     "hit": 0.8957,
+     "n": 8920,
+     "said": 0.9514
+    }
+   ],
+   "null_logloss_dev": 0.51331,
+   "null_logloss_heldout": 0.50835,
+   "passed": true,
+   "se_days": 0.001925,
+   "weight_names": [
+    "intercept",
+    "logit_null",
+    "m1",
+    "m5",
+    "m15",
+    "rsi",
+    "macd",
+    "ema_gap",
+    "vol_reg",
+    "range_pos"
+   ],
+   "weights": [
+    -0.19369,
+    0.80196,
+    0.0114,
+    0.00412,
+    -0.06222,
+    0.15449,
+    0.07891,
+    0.01048,
+    0.35164,
+    -0.05426
+   ]
+  }
+ },
+ "r2_hybrid": {
+  "chosen_on_dev": {
+   "p_hat_names": [
+    "intercept",
+    "logit_model",
+    "logit_kalshi_mid",
+    "tau_x_logit_model",
+    "tau_x_logit_mid"
+   ],
+   "p_hat_weights": [
+    -0.02325,
+    0.41923,
+    0.60122,
+    -0.12738,
+    0.02673
+   ],
+   "take_profit_c": 15,
+   "theta_c": 4
+  },
+  "dev": {
+   "S0": {
+    "entries": 0,
+    "fees_dollars": 0.0,
+    "max_drawdown_dollars": 0.0,
+    "net_dollars": 0.0,
+    "per_window_c": 0.0,
+    "profitable": false,
+    "se_c": 0.0,
+    "windows": 3320
+   },
+   "S1": {
+    "entries": 901,
+    "fees_dollars": 306.86,
+    "max_drawdown_dollars": 335.68,
+    "net_dollars": 246.81,
+    "per_window_c": 7.434,
+    "profitable": false,
+    "se_c": 14.525,
+    "windows": 3320
+   },
+   "S2": {
+    "entries": 901,
+    "fees_dollars": 478.92,
+    "max_drawdown_dollars": 1333.45,
+    "net_dollars": -1231.54,
+    "per_window_c": -37.095,
+    "profitable": false,
+    "se_c": 7.158,
+    "windows": 3320
+   },
+   "S3": {
+    "entries": 901,
+    "fees_dollars": 462.43,
+    "max_drawdown_dollars": 462.67,
+    "net_dollars": -382.45,
+    "per_window_c": -11.52,
+    "profitable": false,
+    "se_c": 8.873,
+    "windows": 3320
+   },
+   "S4": {
+    "entries": 366,
+    "entries_by_time_left": {
+     "10-14 min": 42,
+     "5-10 min": 120,
+     "under 5 min": 204
+    },
+    "fees_dollars": 198.45,
+    "max_drawdown_dollars": 261.57,
+    "net_dollars": 1875.14,
+    "per_window_c": 56.48,
+    "profitable": false,
+    "se_c": 57.201,
+    "windows": 3320
+   },
+   "S4_minus_S0": {
+    "beats": false,
+    "per_window_c": 56.48,
+    "se_c": 57.201
+   },
+   "S4_minus_S1": {
+    "beats": false,
+    "per_window_c": 49.046,
+    "se_c": 58.594
+   },
+   "S4_minus_S2": {
+    "beats": false,
+    "per_window_c": 93.575,
+    "se_c": 57.81
+   },
+   "S4_minus_S3": {
+    "beats": false,
+    "per_window_c": 68.0,
+    "se_c": 57.41
+   }
+  },
+  "heldout": {
+   "S0": {
+    "entries": 0,
+    "fees_dollars": 0.0,
+    "max_drawdown_dollars": 0.0,
+    "net_dollars": 0.0,
+    "per_window_c": 0.0,
+    "profitable": false,
+    "se_c": 0.0,
+    "windows": 3320
+   },
+   "S1": {
+    "entries": 1093,
+    "fees_dollars": 375.1,
+    "max_drawdown_dollars": 761.53,
+    "net_dollars": -638.03,
+    "per_window_c": -19.218,
+    "profitable": false,
+    "se_c": 14.215,
+    "windows": 3320
+   },
+   "S2": {
+    "entries": 1093,
+    "fees_dollars": 623.31,
+    "max_drawdown_dollars": 918.06,
+    "net_dollars": -814.15,
+    "per_window_c": -24.523,
+    "profitable": false,
+    "se_c": 9.118,
+    "windows": 3320
+   },
+   "S3": {
+    "entries": 1093,
+    "fees_dollars": 564.81,
+    "max_drawdown_dollars": 784.17,
+    "net_dollars": -712.2,
+    "per_window_c": -21.452,
+    "profitable": false,
+    "se_c": 9.577,
+    "windows": 3320
+   },
+   "S4": {
+    "entries": 633,
+    "entries_by_time_left": {
+     "10-14 min": 95,
+     "5-10 min": 165,
+     "under 5 min": 373
+    },
+    "fees_dollars": 332.11,
+    "max_drawdown_dollars": 459.65,
+    "net_dollars": 140.72,
+    "per_window_c": 4.239,
+    "profitable": false,
+    "se_c": 17.75,
+    "windows": 3320
+   },
+   "S4_minus_S0": {
+    "beats": false,
+    "per_window_c": 4.239,
+    "se_c": 17.75
+   },
+   "S4_minus_S1": {
+    "beats": false,
+    "per_window_c": 23.456,
+    "se_c": 21.729
+   },
+   "S4_minus_S2": {
+    "beats": false,
+    "per_window_c": 28.761,
+    "se_c": 19.523
+   },
+   "S4_minus_S3": {
+    "beats": false,
+    "per_window_c": 25.69,
+    "se_c": 19.454
+   }
+  }
+ }
+}

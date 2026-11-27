@@ -712,6 +712,93 @@ def run_v2(ck, CT):
        "progress dropped), its features the research's own",
        dn.get("as_of") == end + 60 and abs(dn["horizons"]["5"]["p_up"] - round(1 / (1 + math.exp(-z)), 4)) < 1e-12,
        str(dn)[:200])
+    run_v3(ck, CT)
+
+
+def run_v3(ck, CT):
+    """v2 stage 2 (2026-11-27): Kalshi's dollar Quick Order, the final-reversal panel, and the hybrid harness
+    (research/crypto_hybrid.py, rule df45623)."""
+    n = CT.contracts_for_dollars(1000, 45)
+    ck("CXH-FEE a $10 Quick Order at 45c buys 21 contracts: 21 x 45c + the order's fee (0.07 x 21 x .45 x .55 dollars "
+       "rounded UP to the cent, 37c) = $9.82, and a 22nd would cost $10.28; the fee is per ORDER, never per contract rounded",
+       n == 21 and CT.order_fee_c(45, 21) == 37.0 and 22 * 45 + CT.order_fee_c(45, 22) > 1000
+       and CT.order_fee_c(50, 1) == 2.0 and CT.order_fee_c(50, 100) == 175.0 and CT.contracts_for_dollars(1000, 0) == 0)
+    # the final-reversal panel on a fixed window
+    T = 1795800600
+    bars = [[T - 900 + 60 * i, 100.0 + 0.05 * i + 0.02, 100.0 + 0.05 * i - 0.04 - (0.2 if i == 3 else 0), 100.0 + 0.05 * i]
+            for i in range(9)]
+    feat = {k: 0.1 for k in ("m1", "m3", "m5", "m15", "acc", "rsi", "macd", "ema_gap", "px_ema9", "vol_reg", "vol_z",
+                             "range_pos")}
+    feat["sig"] = 0.0008
+    direc = {"as_of": T - 900 + 60 * 9, "bars": bars, "feat": feat}
+    m15 = {"close_ts": T, "rule": {"op": ">=", "strike": 100.2}, "yes_ask": 45.0, "yes_bid": 44.0, "no_ask": 56.0, "no_bid": 55.0}
+    F = CT.final_reversal(m15, direc)
+    x, lo, tau = bars[-1][3], min(b[2] for b in bars), T - direc["as_of"]
+    sig = CT.VOL_MULT * 0.0008 / math.sqrt(60.0)
+    sd = sig * math.sqrt(tau)
+    want_low = 2 * CT._phi(math.log(x / lo) / sd) - 1
+    R = (CT._RESEARCH.get("hybrid") or {}).get("r1_final_reversal") or {}
+    w = R["final_low"]["weights"]
+    z = w[0] + w[1] * CT._logit(want_low) + sum(wi * feat[k] for wi, k in zip(w[2:], R["final_low"]["weight_names"][2:]))
+    ck("CXH-NULL the final-reversal panel's null is the walk's first passage (P no new low = 2 Phi(ln(x/L)/sd) - 1, the "
+       "research's own sigma), the challenger is the committed logistic on its logit and the features, and the round "
+       "trip names the bid a $10 buy needs after both fees",
+       F and abs(F["null"]["final_low"] - round(want_low, 4)) < 1e-12 and abs(F["model"]["final_low"] - round(1 / (1 + math.exp(-z)), 4)) < 1e-12
+       and F["leg"] == "down" and F["round_trip"]["yes"]["contracts"] == 21
+       and 21 * F["round_trip"]["yes"]["breakeven_bid_c"] - CT.order_fee_c(F["round_trip"]["yes"]["breakeven_bid_c"], 21)
+       >= F["round_trip"]["yes"]["cost_c"], str(F)[:300])
+    sv = [CT._survive(d, 0.002, 1e-4, t) for d, t in ((0.0, 1e-9), (0.0, 60), (0.0, 600), (0.001, 600), (0.0021, 60))]
+    ck("CXH-SURVIVE the chance a move persists (a reflected walk's drawdown staying under delta) is 1 at once, falls with "
+       "time and with the drawdown already taken, and is 0 past delta", abs(sv[0] - 1) < 1e-6 and sv[0] > sv[1] > sv[2] > sv[3]
+       and sv[4] == 0.0, str(sv))
+    # the R1 harness on a synthetic tape: later bars rewritten, earlier looks unchanged
+    sys.path.insert(0, os.path.join(_ROOT, "research"))
+    import crypto_moves as M
+    import crypto_hybrid as HY
+    d0 = tempfile.mkdtemp(prefix="cxh-")
+    t0 = M.START - 6 * 3600
+    rows = [[t0 + 60 * i, 0, 0, 0, 0, 1.0] for i in range(6 * 60 + 2 * 1440 + 60)]
+    for r in rows:
+        c = 100.0 * math.exp(0.002 * math.sin(r[0] / 700.0) + 0.001 * math.sin(r[0] / 170.0))
+        r[1], r[2], r[3], r[4] = c * 0.9995, c * 1.0005, c, c
+    cut = M.START + 86400 + 900 * 3 + 60 * 6
+    rows2 = [r if r[0] < cut else [r[0], r[1] * 0.97, r[2] * 1.03, r[3], r[4] * 1.01, r[5]] for r in rows]
+    try:
+        out = []
+        for rr in (rows, rows2):
+            with open(os.path.join(d0, "cbx_TST.json"), "w") as fh:
+                json.dump(rr, fh)
+            with _patched((M, "RAW", d0), (M, "END", M.START + 2 * 86400)):
+                out.append(HY.r1_rows("TST"))
+    finally:
+        import shutil
+        shutil.rmtree(d0, ignore_errors=True)
+    a = [(r["t"], r["p"], r["f"]) for r in out[0] if r["t"] <= cut]
+    b = [(r["t"], r["p"], r["f"]) for r in out[1] if r["t"] <= cut]
+    ck("CXH-LEAK the final-reversal harness reads only bars that END by the look: rewriting every later bar leaves every "
+       "earlier look's null and features identical while the labels may move", a == b and len(a) > 100
+       and any(x["y"] != y["y"] for x, y in zip(out[0], out[1]) if x["t"] <= cut), str(len(a)))
+    hs = inspect.getsource(HY.r2_markets) + inspect.getsource(HY.run_strategy)
+    ck("CXH-R2 the hybrid harness decides on the book at or before t and fills at the NEXT minute's candle (t, t+60], "
+       "sizes $10 with production's Quick-Order function and Kalshi's per-order fee",
+       "b[0] <= t" in hs and "t < b[0] <= t + 60" in hs and "CT.contracts_for_dollars(1000, px)" in hs
+       and "CT.order_fee_c(px, n)" in hs)
+    hj = json.loads(_read("research", "data", "crypto", "hybrid.json"))
+    r1, r2 = hj["r1_final_reversal"], hj["r2_hybrid"]
+    ck("CXH-VERDICT by the rule written first: the walk's null was mis-calibrated and the challenger beat it for the "
+       "final low, the final high and the touch; NO strategy was profitable on held-out windows -- the hybrid "
+       "+4.2c a window +/- 17.8 (not past 2 SE), settlement-only, trading-only and take-profit all lost",
+       all(r1[k]["passed"] for k in ("final_low", "final_high", "touch"))
+       and abs(r2["heldout"]["S4"]["per_window_c"] - 4.239) < 1e-9 and not any(r2["heldout"][s]["profitable"] for s in
+                                                                                ("S1", "S2", "S3", "S4"))
+       and all(r2["heldout"][s]["per_window_c"] < 0 for s in ("S1", "S2", "S3")) and r2["chosen_on_dev"]["theta_c"] == 4)
+    js = _read("static", "crypto.js")
+    ck("CXH-UI Beginner Mode is the default: dollars (a $10 Quick Order posted as dollars, the server sizing it), the "
+       "cash-out value at the bid after the fee, P/L in $ and %, plain-English movement and final-reversal lines, and the "
+       "technical panels one tap away",
+       'mode: "beginner"' in js and "setMode(st.mode)" in js and "dollars: dol" in js and 'TECH = ["cxChartBar", "cxMomentum", "cxBoard", "cxRecord"]' in js
+       and "cash out now (bid" in js and "The low may have been the final one" in js and "Paper only." in js
+       and "dollars" in inspect.signature(CT.paper_open).parameters)
 
 
 def datetime_ts(s):

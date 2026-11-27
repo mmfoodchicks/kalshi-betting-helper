@@ -16,7 +16,8 @@
   var st = {coin: null, gran: 60, timer: null, busy: false, wired: false, board: null, research: null, rec: null,
             bars: {}, hist: [], ws: null, wsSym: null, lastTick: 0, lastPx: null, polls: 0, fair: {ticker: null, pts: []},
             paper: null, show: {ema: true, vwap: true, bb: false, sr: true, band: true}, raf: false, lib: false,
-            charts: null, contract: null};
+            charts: null, contract: null, mode: "beginner"};
+  var TECH = ["cxChartBar", "cxMomentum", "cxBoard", "cxRecord"];   // the technical view's containers
 
   function h(x) {
     return String(x == null ? "" : x).replace(/[&<>"']/g, function (c) {
@@ -456,6 +457,75 @@
       "realised vol <b>" + num(d.sigma_ann_pct, 0) + "%</b> a year</div><div>" + src + "</div>";
   }
 
+  // ---- Beginner Mode (the default): dollars, plain English, the owner's Quick-Order workflow ----
+  function usd(c) { return c == null || !isFinite(c) ? "–" : (c < 0 ? "-$" : "$") + Math.abs(c / 100).toFixed(2); }
+  function beginnerHtml() {
+    var d = st.board || {}, m = d.m15, F = d.final, D = (d.direction || {}).horizons || {}, R = st.research || {};
+    if (!m || !m.rule) return '<p class="sub">No open 15-minute market for this coin right now.</p>';
+    var lv = (d.proxy || {}).price, k = m.rule.strike, diff = lv != null ? lv - k : null;
+    var rt = (F || {}).round_trip || {};
+    var buyLine = function (side) {
+      var x = rt[side];
+      if (!x) return h(side.toUpperCase()) + ": no price to buy at.";
+      return "<b>$10 of " + h(side.toUpperCase()) + "</b> buys " + h(x.contracts) + " contracts for " + usd(x.cost_c) +
+        " (fee included); they pay " + usd(100 * x.contracts) + " if " + h(side.toUpperCase()) + " wins. To cash out at a " +
+        "profit the " + h(side.toUpperCase()) + " bid must climb to " + num(x.breakeven_bid_c, 1) + "¢ (+" + num(x.move_c, 1) + "¢ from now).";
+    };
+    var lines = [];
+    var d5 = D["5"] || {}, x5 = (R.direction || {})["5"] || {};
+    if (d5.p_reversal != null) {
+      lines.push("Next few minutes: a slight lean, " + pct(d5.p_reversal) + ", toward the last five minutes' move " +
+        "turning back. It is a small tilt that passed its test but has not made money on its own after fees.");
+    } else if (d5.p_up != null) {
+      lines.push("Next five minutes: up " + pct(d5.p_up) + " (a small tilt).");
+    }
+    if (F) {
+      var mo = F.model || {}, nu = F.null || {};
+      var fl = mo.final_low != null ? mo.final_low : nu.final_low, fh = mo.final_high != null ? mo.final_high : nu.final_high;
+      lines.push((F.leg === "up" ? "It has been rising from this window's low of " + h(px(F.window_low)) + ". " :
+        "It has been falling from this window's high of " + h(px(F.window_high)) + ". ") +
+        "The low may have been the final one: " + pct(fl) + " (another dip below it " + pct(fl == null ? null : 1 - fl) +
+        "). The high may have been the final one: " + pct(fh) + ".");
+      lines.push("Crossing back over the target before the close: " + pct(mo.touch != null ? mo.touch : nu.touch) +
+        ". Meaningful swings left: about " + num(F.swings_expected, 1) + ". Next swing against this move in about " +
+        h(left(F.next_reversal_s)) + " on average; this move lasting to the close: " + pct(F.persist_to_close) + " (random walk).");
+    }
+    var r = (st.rec || {}).record || {}, hy = ((R.hybrid || {}).heldout || {}).S4 || {};
+    var losing = r.same_rows_model_logloss != null && r.same_rows_model_logloss > r.same_rows_kalshi_logloss;
+    return '<div class="card" style="margin:8px 0;padding:10px 12px">' +
+      '<div style="font-size:1.05rem"><b>' + h(st.coin) + " " + h(px(lv)) + "</b> is <b>" + (diff == null ? "–" :
+        h(Math.abs(diff).toFixed(lv >= 100 ? 2 : 6)) + (diff >= 0 ? " above" : " below")) + "</b> the target (" + h(px(k)) + ") with <b>" +
+        h(left(m.tau_s)) + "</b> left.</div>" +
+      '<div class="stats" style="margin:4px 0">YES costs <b>' + num(m.yes_ask, 0) + "¢</b> (pays $1 if the 60-second average " +
+        "ends at or above the target) · NO costs <b>" + num(m.no_ask, 0) + "¢</b> · Kalshi's price says YES " +
+        num(m.kalshi_mid, 0) + "%, Vigil's model " + pct(m.p_model) + "</div>" +
+      '<div class="row-between" style="gap:6px;margin:6px 0"><span><label class="sub">Amount $ <input id="cxDollars" ' +
+        'type="number" min="1" max="100" step="1" value="10" style="width:64px"></label></span><span>' +
+        '<button type="button" class="subtab" data-cx-buy="yes">Paper-buy YES</button> ' +
+        '<button type="button" class="subtab" data-cx-buy="no">Paper-buy NO</button></span></div>' +
+      '<p class="sub" id="cxBuyMsg" style="margin:2px 0"></p>' +
+      '<div class="stats">' + buyLine("yes") + "</div><div class=\"stats\">" + buyLine("no") + "</div>" +
+      "<ul style=\"margin:6px 0 6px 18px;padding:0\">" + lines.map(function (x) { return "<li>" + x + "</li>"; }).join("") + "</ul>" +
+      '<p class="sub" style="margin:4px 0;color:var(--hold)">' + (losing ? "Vigil's settlement model is losing to Kalshi's " +
+        "own price on the live record. " : "") + "No strategy tested has made money after fees and spreads: on held-out " +
+        "windows the best (a time-aware hold / cash-out / switch rule) made " + (hy.per_window_c == null ? "–" :
+        usd(hy.per_window_c) + " a window ± " + usd(hy.se_c)) + ", indistinguishable from not trading. Paper only.</p></div>";
+  }
+
+  function setMode(mode) {
+    st.mode = mode;
+    TECH.forEach(function (id) { var x = el(id); if (x) x.classList.toggle("hidden", mode === "beginner"); });
+    var b = el("cxBeginner");
+    if (b) b.classList.toggle("hidden", mode !== "beginner");
+    var mb = el("cxMode");
+    if (mb) {
+      mb.innerHTML = [["beginner", "Beginner"], ["technical", "Technical"]].map(function (x) {
+        return '<button type="button" class="subtab" data-cx-mode="' + x[0] + '"' + (x[0] === mode ?
+          ' aria-pressed="true" style="font-weight:600;border-color:var(--accent)"' : "") + ">" + h(x[1]) + "</button>";
+      }).join(" ");
+    }
+  }
+
   // ---- Kalshi's own price for the open 15-minute market, and the model's fair price this session ----
   function drawContract() {
     if (!st.charts) return;
@@ -509,8 +579,9 @@
         h(p.side.toUpperCase()) + "</b> x" + h(p.qty) + " " + h(p.ticker) + " @ " + num(p.entry_c, 0) + "c (+" +
         num(p.entry_fee_c, 0) + "c fee)</span>" + '<button type="button" class="subtab" data-cx-close="' + h(p.id) +
         '">Paper-sell at the bid</button></div>' +
-        '<div class="stats">Exit now (bid) <b>' + num(e.bid_c, 0) + "c</b> · if sold: " + num(e.close_value_c, 0) +
-        "c after the fee, unrealized <b>" + (e.unrealized_c > 0 ? "+" : "") + num(e.unrealized_c, 0) + "c</b> · held " +
+        '<div class="stats">Cost ' + usd(p.entry_c * p.qty + p.entry_fee_c) + " · cash out now (bid " + num(e.bid_c, 0) +
+        "¢, after the fee) <b>" + usd(e.close_value_c) + "</b> · P/L <b>" + usd(e.unrealized_c) + " (" +
+        (e.unrealized_c == null ? "–" : num(100 * e.unrealized_c / (p.entry_c * p.qty + p.entry_fee_c), 1)) + "%)</b> · held " +
         h(left(p.held_s)) + " · " + h(left(p.tau_s)) + " left · the side's chance now " + pct(e.p_side) +
         " (at entry " + pct(p.p_entry) + ")</div>" +
         '<div class="stats">By the model: hold worth ' + num(e.hold_value_model_c, 0) + "c, sell " + num(e.close_value_c, 0) +
@@ -523,7 +594,7 @@
     var r = P.record || {};
     return head + (open || '<p class="sub">No open paper positions.</p>') +
       '<div class="stats" style="margin-top:6px">Closed and settled: ' + h(r.positions) + " positions, " +
-      (r.pnl_c > 0 ? "+" : "") + num(r.pnl_c, 0) + "c after " + num(r.fees_c, 0) + "c of fees" +
+      usd(r.pnl_c) + " after " + usd(r.fees_c) + " of fees" +
       (r.positions ? " (" + num(r.per_position_c, 1) + "c a position ± " + num(r.se_c, 1) + ", win rate " + pct(r.win_rate) + ")" : "") +
       "</div></div>";
   }
@@ -585,6 +656,7 @@
       if (pts.length > 120) pts.splice(0, pts.length - 120);
     }
     el("cxHonest").innerHTML = honesty();
+    el("cxBeginner").innerHTML = beginnerHtml();
     el("cxBoard").innerHTML = proxyLine(d) + m15Card(m, proven) + whatIf(m) + hourlyTable(d.hourly, proven);
     el("cxPaper").innerHTML = paperHtml();
   }
@@ -682,6 +754,23 @@
           .catch(function (err) { paperMsg(String(err && err.message)); });
       }
     });
+    el("cxBeginner").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-cx-buy]"), m = (st.board || {}).m15, msg = el("cxBuyMsg");
+      if (!b || !m || !m.ticker) return;
+      var dol = Math.max(1, Math.min(100, Number((el("cxDollars") || {}).value) || 10));
+      if (msg) msg.textContent = "Reading Kalshi's ask…";
+      postJSON("/api/crypto/paper/open", {ticker: m.ticker, coin: st.coin, side: b.getAttribute("data-cx-buy"), dollars: dol})
+        .then(function (r) {
+          if (msg) msg.textContent = r.error ? r.error : "Paper-bought " + r.qty + " contracts at " + num(r.entry_c, 0) +
+            "¢ for " + usd(r.cost_c) + ".";
+          load();
+        })
+        .catch(function (err) { if (msg) msg.textContent = String(err && err.message); });
+    });
+    el("cxMode").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-cx-mode]");
+      if (b) { setMode(b.getAttribute("data-cx-mode")); drawPrice(); drawContract(); }
+    });
     document.addEventListener("visibilitychange", function () {
       if (onScreen() && !st.timer) load();
       else if (!onScreen()) closeWS();
@@ -690,6 +779,7 @@
 
   window.initCrypto = function () {
     wire();
+    setMode(st.mode);
     loadLib(function () { buildCharts(); if (!st.timer) load(); });
   };
 })();
