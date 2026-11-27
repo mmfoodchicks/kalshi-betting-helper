@@ -1033,6 +1033,19 @@ data-only `sim-history` branch (which never deploys):
   board's yards AND receptions are continuous, so More / tie / Less there is a MODELED convention (tie = the mass
   in (L-0.5, L+0.5]); the ledger keeps P(side | not a tie) as Vigil's figure with the outright and tie
   probabilities beside it, every one labelled "modeled (not a calibrated real-world rate)".
+  **Where fractional realized stats reach the owner** (2026-11-27, `research/reports/nfl_discrete_alloc.md`): the
+  tournament boards (engine model, classic and showdown) deal REAL integer events -- whole plays, team totals dealt
+  by multinomial; the engine-fallback games, preseason boards and the showdown sheet (`SD_DISCRETE`) round
+  continuous draws; the classic sheet and the NFL tab's WEEK BOARD (Pick 6 view, the ledger's figures, Sim and Best
+  ball cards) are CONTINUOUS -- Sleeper's means times shared multipliers, TDs Poisson apart from the yards, no
+  target, catch or carry drawn. Against 257 real games (2025 wk 1-12, 2026 wk 1-5) the week board's player spreads
+  are 3-4x too NARROW (receptions 3.40, rec yards 4.39, rush yards 3.38; real DK points under its 10th percentile
+  38.7% of the time, inside 10-90 41.9%) -- its prop and Pick6 probabilities are overconfident. The experimental
+  discrete allocation (`nfl_discrete_alloc.py`, `ENABLED_IN_PRODUCTION = False`, nothing imports it) fixes those
+  spreads (0.89-0.96, half-line log loss 0.486/0.480/0.458 vs 0.668/0.702/0.602, DK points KS 0.018 vs 0.302) but
+  plays QB passing yards ~2x too wide and +2.7% / +4.4% high: NOT shipped; a registered test first (the constrained
+  model, which already draws counts, is the nearer candidate). The 99.6-vs-100 bonus question is immaterial
+  (0.13-0.19% of mass): the week board's bonuses run low because its spread is narrow. Guards DA1-DA5.
 - **The crypto terminal** (2026-11-27, `crypto_terminal.py`, `static/crypto.js`, the Crypto tab; the owner asked
   for it back in this sprint's backlog; READ-ONLY and paper: nothing places an order). Kalshi's 15-minute up/down and
   hourly above/below contracts on BTC, ETH, SOL, XRP and DOGE, each priced off ITS OWN rules text (the simple average
