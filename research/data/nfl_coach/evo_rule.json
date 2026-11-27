@@ -1,0 +1,30 @@
+{
+ "what": "Does NFL coaching behaviour drift over time, and does a recency-aware training scheme predict the next season better than full history? (the owner, 2026-11-27, after R5: 'Investigate whether the trailing-quarterback-pull discrepancy represents broader changes in NFL coaching behavior over time ... Do not hand-tune the problematic substitution situation.')",
+ "written_utc": "2026-11-27T21:30:00Z",
+ "written_before": "any walk-forward score of any candidate on any table was computed",
+ "data": "nflverse play-by-play 2016 to 2026 week 12 through R2's compact loader (R1's seal: 2026 week 13 on is never read); players.csv for positions; regular season only",
+ "folds": "S = 2019, 2020, 2021, 2022, 2023, 2024, 2025 (full regular seasons) and 2026 weeks 1-12 (the last development fold); each fold trains on seasons 2016..S-1 and scores season S",
+ "tables": {
+  "T1_call": "pass (dropback: pass, sack, scramble) vs run on scrimmage plays downs 1-3, cell = quarter (1-4, OT as 4) x offence margin bucket (<=-17, -16..-9, -8..-4, -3..3, 4..8, 9..16, >=17) x down x distance bucket (1-2, 3-6, 7-10, 11+) x field zone (own 1-20, 21-50, opp 49-21, opp 20-1) -- R1's call table's dimensions",
+  "T2_nohuddle": "no-huddle on scrimmage plays, cell = quarter x margin bucket x (last 2:00 of the half or not) -- R1's tempo table",
+  "T3_clock": "clock runoff between consecutive scrimmage snaps of the same drive and half: 1 when the game clock ran 35 s or more, cell = quarter x margin bucket x (last 2:00 of the half or not) -- R1's clock-by-phase table (35 s is a measurement split near the running-clock median, not a model threshold)",
+  "T4_rb_target": "a targeted pass goes to a running back (RB/FB) rather than a WR/TE, cell = down x field zone x margin bucket -- R2's who-gets-the-ball table",
+  "T5_pull": "the starting quarterback's pull at each identified drive, R3's s6 logistic form (nfl_coach_sim_r3.features), every candidate refitting its coefficients"
+ },
+ "not_studied": "R4's shifts: ~70 pulls a season, every shift estimated on 400+ pooled pulls; a one-season fold cannot score a training window",
+ "cell_model": "a table cell's rate is (successes + 20 x the pooled rate) / (trials + 20), the pooled rate the same candidate's weighted overall rate",
+ "candidates": {
+  "full": "every training season, equal weight",
+  "last3": "the three seasons before S",
+  "last5": "the five seasons before S",
+  "exp": "season weight 0.5^((S-1-s)/h), h chosen per fold from {0.5, 1, 2, 4, 8, 16} by the summed log loss of predicting each training season from 2018 on from the seasons before it (a nested walk-forward; never S)",
+  "rw": "hierarchical: the full-history cell rates (or the logistic's coefficients) as the shape, plus a league tendency -- a logit offset common to every cell -- that follows a season-level random walk: each training season's offset estimated by maximum likelihood with its sampling variance, the walk's innovation variance tau^2 fitted by maximum marginal likelihood (Kalman filter, grid), and the forecast for S the filtered level after S-1"
+ },
+ "score": "held-out log loss summed over a game's rows (both teams); a candidate's gain = full's loss minus the candidate's, per game; SE over games (clustered by game), every fold pooled",
+ "decision": {
+  "table_drifts": "a non-full candidate's pooled gain on the table > 2 SE and positive in at least 5 of the 8 folds",
+  "scheme": "the candidate with the largest gain summed over the five tables per game, if that sum > 2 SE and no table's gain is below -1 SE; else full history stays",
+  "half_life": "descriptive: per table the fixed h on the grid with the lowest pooled walk-forward loss, and the rw's fitted tau beside the offsets' sampling SD",
+  "consequence": "nothing is built into R1-R5 (pinned). A winning scheme becomes R6's training scheme under its own registration on fresh games (2028+, or 2027 with the dependence stated: the owner's call)"
+ }
+}
