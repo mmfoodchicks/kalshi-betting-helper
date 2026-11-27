@@ -71,9 +71,9 @@
   "registration": "research/data/nfl_coach/prereg_r2.json",
   "script": "research/nfl_coach_r2_read.py",
   "not_before": "2027-01-06T06:00:00Z",
-  "waits_for": "R1's read committed first; the owner's ruling on sharing weeks 13-18 with R1 (else 2027 weeks 1-9)",
+  "waits_for": "R1's read committed first (the owner ruled 2026-11-27 that H1 may share weeks 13-18, dependence stated)",
   "report": "research/reports/nfl_coach_r2_evidence.md",
-  "result": "research/data/nfl_coach/read_r2_h1.json"
+  "result": "research/data/nfl_coach/read_r2_H1.json"
  },
  {
   "id": "coach_r2_h2",
@@ -86,7 +86,7 @@
   "not_before": "2028-01-13T06:00:00Z",
   "waits_for": "the 2027 regular season",
   "report": "research/reports/nfl_coach_r2_evidence.md",
-  "result": "research/data/nfl_coach/read_r2_h2.json"
+  "result": "research/data/nfl_coach/read_r2_H2.json"
  },
  {
   "id": "cl_field2",
@@ -274,5 +274,31 @@
   "waits_for": null,
   "report": "research/reports/nfl_matchup_model.md",
   "result": "research/data/nfl_matchup_model/rush_cv/prereg.json"
+ },
+ {
+  "id": "coach_r3",
+  "area": "Coaching engine",
+  "kind": "registered",
+  "title": "Coaching R3: the quarterback's substitution",
+  "decides": "the learned pull hazard beats a constant by 2 SE, the real starter's dropbacks CRPS better than R2's by 2 SE, his passing yards not worse by 1 SE",
+  "registration": "research/data/nfl_coach/prereg_r3.json",
+  "script": "research/nfl_coach_r3_read.py",
+  "not_before": "2027-01-06T06:00:00Z",
+  "waits_for": "R1's read committed first; 2026 weeks 13-18",
+  "report": "research/reports/nfl_coach_r3.md",
+  "result": "research/data/nfl_coach/read_r3.json"
+ },
+ {
+  "id": "coach_r4",
+  "area": "Coaching engine",
+  "kind": "registered",
+  "title": "Coaching R4: personnel-aware decisions after a quarterback substitution",
+  "decides": "the backup's calls and completion and the second unit's carries and targets: joint log-score gain over 2 SE, no component worse by 1 SE, the lead back's and top targets' CRPS not worse than R3 by 1 SE",
+  "registration": "research/data/nfl_coach/prereg_r4.json",
+  "script": "research/nfl_coach_r4_read.py",
+  "not_before": "2028-01-13T06:00:00Z",
+  "waits_for": "R1's read committed first; 2026 weeks 13-18 and the 2027 regular season",
+  "report": "research/reports/nfl_coach_r4.md",
+  "result": "research/data/nfl_coach/read_r4.json"
  }
 ]
