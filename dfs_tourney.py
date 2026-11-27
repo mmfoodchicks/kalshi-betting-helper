@@ -1920,6 +1920,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     # Resumable on the PC (build_ckpt; None wherever VIGIL_CKPT_DIR is unset):
     # nothing here is drawn, so the worlds, the universe and the field's
     # weights are the whole key, and a restart finds the passes' ranges.
+    X = _ckpt_zero(X)                     # the cached and the generated worlds key alike (_ckpt_zero)
     ck_b = build_ckpt.open_build("showdown", int(dg), contest.get("id"), int(n_sims), int(C), seed, model,
                                  [e["name"] for e in ents], idx, np.asarray(f, dtype=np.float64), rows, X)
     _CKPT[0] = ck_b
@@ -3124,10 +3125,12 @@ def status_classes(names):
     return out
 
 
-def status_sig(names):
-    """A stable digest of status_classes over `names` (sorted)."""
+def status_sig(names, classes=None):
+    """A stable digest of status_classes over `names` (sorted). `classes`: the
+    classes a resumed build froze with its inputs (_BuildInputs), read instead
+    of Sleeper's roster now."""
     import hashlib
-    cls = status_classes(names)
+    cls = status_classes(names) if classes is None else {nm: classes.get(nm, "in") for nm in names}
     body = "\n".join(f"{nm}:{cls[nm]}" for nm in sorted(cls))
     return hashlib.sha1(body.encode()).hexdigest()[:16], cls
 
@@ -3616,10 +3619,212 @@ def _ck_memo(name, parts, fn):
     return b.memo(name, memo_sig, fn)
 
 
+def _digest(x):
+    """sha256 prefix of plain data, the same for equal data in any dict order (pool_cache's canonical form)."""
+    import hashlib
+    import pool_cache
+    return hashlib.sha256(pool_cache._canon(x).encode()).hexdigest()[:16]
+
+
+def input_digests(snap):
+    """{component: sha256 prefix} of a build's inputs (the frozen form, _BuildInputs.snap, or
+    research/profile_probe.py's live read in the same shape): which of them moved between two builds.
+    The slate's CSV and the rest of the slate apart (the lobby's `entries` move all day)."""
+    out = {}
+    if not isinstance(snap, dict):
+        return out
+    sl = snap.get("slate")
+    if isinstance(sl, dict):
+        out["slate_csv"] = _digest(sl.get("csv"))
+        out["slate_rest"] = _digest({k: v for k, v in sl.items() if k != "csv"})
+    for k in ("details", "week"):
+        if k in snap:
+            out[k] = _digest(snap[k])
+    # a clock inside a stamp is not an input: the weekly stamp's build time, the roster's age at reading
+    unclock = lambda d, ks: {k: v for k, v in d.items() if k not in ks} if isinstance(d, dict) else d
+    for k in ("games", "profiles", "drive", "weight", "dst", "kickers", "week_stamp", "worlds_key"):
+        if k in (snap.get("pool") or {}):
+            out[k] = _digest(unclock(snap["pool"][k], ("built_ts",)) if k == "week_stamp" else snap["pool"][k])
+    dep = snap.get("depth") or {}
+    for k in ("kept", "dx", "status", "roster"):
+        if k in dep:
+            out[f"depth_{k}"] = _digest(unclock(dep[k], ("age_s", "seconds_to_lock")) if k == "roster" else dep[k])
+    return out
+
+
+def games_fields(games):
+    """{player field: {team|pos|name: sha prefix}} over Sleeper's games, for the probe's report of WHICH
+    player fields moved (proj_pts, means, recon, ...) and for how many players."""
+    out = {}
+    for g in (games or {}).values():
+        for pl in g.get("players") or []:
+            who = f"{pl.get('team')}|{pl.get('pos')}|{pl.get('name')}"
+            for k, v in pl.items():
+                out.setdefault(str(k), {})[who] = _digest(v)[:10]
+    return out
+
+
+class _BuildInputs:
+    """A checkpointed build's live reads, frozen under its REQUEST key
+    (build_ckpt.inputs_*; the PC only, engine boards on the worlds cache --
+    the one configuration whose worlds a restart can read back). The owner's
+    two operations, 2026-11-27, named as he named them:
+
+      Resume existing build (build_ckpt.RESUME): frozen inputs exist for this
+        request and build_ckpt.inputs_usable passes them -- every live read
+        below returns the frozen value, so the worlds key, the pool, the
+        depth gate and the build key are the interrupted build's and every
+        stage it finished is read back;
+      Start fresh build (build_ckpt.FRESH): anything else -- no frozen
+        inputs, past the cap, the slate locked, frozen before the inactives,
+        unreadable, or the pre-lock rebuild (fresh_inputs) -- and the reads
+        are live and frozen as they happen.
+
+    A resume is all of them or none: if the frozen worlds cannot be read back
+    (nfl_dfs_sim.PinMiss) the build starts again, fresh (CKPT-inputs)."""
+
+    def __init__(self, rkey, snap, pinned, why, t0):
+        self.key, self.snap, self.pinned, self.why, self.t0 = rkey, snap, pinned, why, t0
+        self.active = True               # False once the build turns out not to be resumable at all
+        self.frozen = pinned             # this build's inputs are on disk (a restart can resume them)
+        self.pool = snap.get("pool") if pinned else {}
+
+    @classmethod
+    def open(cls, kind, parts, fresh=False, note=None):
+        """The request's frozen inputs to resume on, or a fresh set to freeze; None where checkpoints are off."""
+        if not build_ckpt.enabled():
+            return None
+        try:
+            rkey = build_ckpt.request_key(kind, *parts)
+            now = time.time()
+            snap, why = (None, None) if fresh else build_ckpt.inputs_load(rkey)
+            ok, why2 = build_ckpt.inputs_usable(snap, now, fresh=fresh)
+            if ok:
+                return cls(rkey, snap, True, None, now)
+            # stale or refused frozen inputs go: a fresh build freezes its own under the same key
+            build_ckpt.inputs_drop(rkey)
+            return cls(rkey, {"v": build_ckpt.INPUTS_VERSION, "key": rkey, "kind": kind, "as_of": now},
+                       False, note or why or why2, now)
+        except Exception as e:
+            errlog.note("CKPT-inputs", e)
+            return None
+
+    @property
+    def operation(self):
+        return build_ckpt.RESUME if self.pinned else build_ckpt.FRESH
+
+    def read(self, name, fn):
+        """The frozen `name` on a resumed build, else fn() (frozen as read)."""
+        if self.pinned and self.active:
+            return self.snap[name]
+        v = fn()
+        if self.active:
+            self.snap[name] = v
+        return v
+
+    def pool_kwargs(self):
+        if not self.active:
+            return {}
+        if self.pinned:
+            return {"pin": self.snap["pool"]}
+        return {"pin": self.pool, "on_pin": self._pool_frozen}
+
+    def _pool_frozen(self, pool):
+        # called by player_pool before a game is played: the first save, so a
+        # generation interrupted mid-slate resumes on these inputs too
+        try:
+            self.snap["pool"] = pool
+            sl = self.snap.get("slate")
+            self.snap["lock_ts"] = _iso_ts(sl.get("starts")) if isinstance(sl, dict) else None
+            self.save()
+        except Exception as e:
+            errlog.note("CKPT-inputs", e)
+
+    def after_pool(self):
+        """Called once the pool is in hand: a fresh build whose worlds were not filed under a key (another
+        model, the context failed) cannot be resumed, and the build goes on exactly as without checkpoints."""
+        if self.active and not self.pinned and not (self.pool or {}).get("worlds_key"):
+            self.active, self.frozen = False, False
+            self.why = (self.why or "") + ("; " if self.why else "") + \
+                "nothing frozen: these worlds are not filed under a worlds cache key, so a restart could not read them"
+
+    def abandon(self, why):
+        self.active, self.frozen = False, False
+        self.why = why
+
+    def save(self):
+        if self.active:
+            self.frozen = bool(build_ckpt.inputs_save(self.key, self.snap)) or self.frozen
+
+    # the depth gate: its answer as indices into the pre-gate players, so a resume rebuilds the same dicts
+    def depth(self, ents_pre):
+        d = self.snap.get("depth") if (self.pinned and self.active) else None
+        if not d:
+            return None
+        kept = []
+        for i, has, tag in d["kept"]:
+            e = ents_pre[int(i)]
+            if has:
+                e["depth"] = tag
+            kept.append(e)
+        return kept, [dict(x) for x in d["dx"]]
+
+    def freeze_depth(self, ents_pre, kept, dx, stl, roster, status):
+        if not self.active:
+            return
+        at = {id(e): i for i, e in enumerate(ents_pre)}
+        if any(id(e) not in at for e in kept):
+            return                        # the gate copied its players: nothing to index, the gate runs again
+        self.snap["depth"] = {"kept": [(at[id(e)], "depth" in e, e.get("depth")) for e in kept],
+                              "dx": [dict(x) for x in dx], "seconds_to_lock": stl, "roster": roster,
+                              "status": status}
+        self.save()
+
+    def frozen_value(self, key):
+        return (self.snap.get("depth") or {}).get(key) if self.active else None
+
+    def stamp(self):
+        as_of = self.snap.get("as_of")
+        return {"operation": self.operation, "pinned": bool(self.pinned and self.active), "key": self.key,
+                "as_of": as_of, "age_s": round(self.t0 - float(as_of), 1) if (self.pinned and as_of) else 0.0,
+                "why": self.why, "frozen": bool(self.frozen and self.active),
+                "digests": input_digests(self.snap) if self.active else {}}
+
+
+def _live(inp, name, fn):
+    """fn() -- a live read -- or, on a resumed build, the value it froze (_BuildInputs)."""
+    if inp is None:
+        return fn()
+    return inp.read(name, fn)
+
+
+def _ckpt_zero(X):
+    """X with every -0.0 made +0.0, where checkpoints are on (the PC); X untouched elsewhere. The worlds
+    cache files int32 hundredths, which have no -0.0 (pool_cache.encode: -0.0 round-trips as equal), so a
+    pool read back from the cache differs from the pool just generated in memory in the SIGN BITS of its
+    zeros -- the engine's arrays hold them (43,820 of 20M scores, research/hp_memory_exact.py) -- and every
+    checkpoint key hashes X byte for byte: a build started on generated worlds and resumed on cached ones
+    named two builds and resumed nothing past the worlds (found 2026-11-27 by RI2). No sum, bucket,
+    comparison or sort can tell the two zeros apart, so no board figure moves."""
+    if build_ckpt.enabled():
+        np.add(X, np.float32(0.0), out=X)
+    return X
+
+
+def _inputs_on(model, preseason):
+    """Whether this build's inputs can be frozen: checkpoints on (the PC) and an engine board on the worlds
+    cache -- the only worlds a restart can read back."""
+    if not build_ckpt.enabled() or board_model(model, preseason) != "engine":
+        return False
+    import pool_cache
+    return pool_cache.enabled()
+
+
 def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_worlds=None,
                       opt_worlds=20000, field_n=300000, cand_n=150000, cal_n=20000, chunk=500,
                       week=None, preseason=False, top=40, k_port=20, candidates=1200,
-                      seed=None, log=print, probes=None, model=None, workers=None, pick=None):
+                      seed=None, log=print, probes=None, model=None, workers=None, pick=None,
+                      fresh_inputs=False, _inputs_note=None):
     """The tournament for a DraftKings classic slate, against every contest
     on it whose pool clears `min_pool` (or `contest_ids`). Returns the
     artifact the tab serves, or None when the slate, the contests or the
@@ -3635,7 +3840,14 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     from a SECOND solve over the picked pool, the safe columns with the forced
     men in, and the draws with the excluded masked out and the forced grafted
     in (graft). Every listed and portfolio lineup holds every forced man and
-    no excluded one."""
+    no excluded one.
+
+    On the PC (build_ckpt on) every live read is frozen under the request
+    (_BuildInputs): a restart of the same request "Resume existing build"s on
+    the inputs the interrupted build read; `fresh_inputs` (the 85-40-minute
+    pre-lock rebuild, pc_worker) always "Start fresh build"s on current
+    information. With checkpoints off nothing here differs from before."""
+    _args = dict(locals())
     if np is None:
         raise RuntimeError("numpy is required for the tournament")
     import dfs_portfolio
@@ -3647,7 +3859,16 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     t0 = time.time()
     _REFUSAL[0] = ""
     _CKPT[0] = None
-    slate = dk.slate_for("nfl", draft_group_id=int(dg))
+    inp = _BuildInputs.open("classic", (
+        int(dg), float(min_pool), [int(c) for c in contest_ids] if contest_ids else None, int(n_sims),
+        n_worlds, int(opt_worlds), int(field_n), int(cand_n), int(cal_n), int(chunk), week, bool(preseason), int(top),
+        int(k_port), int(candidates), seed, model, pick), fresh=fresh_inputs, note=_inputs_note) \
+        if _inputs_on(model, preseason) else None
+    if inp is not None:
+        log(f"[tourney] classic {dg}: {inp.operation} -- "
+            + (f"inputs frozen {inp.t0 - float(inp.snap['as_of']):.0f}s ago" if inp.pinned else (inp.why or ""))
+            + f" (request {inp.key})")
+    slate = _live(inp, "slate", lambda: dk.slate_for("nfl", draft_group_id=int(dg)))
     if not slate:
         return _refuse("DraftKings has no player pool posted for this slate")
     rows = slate.get("contests") or []
@@ -3655,7 +3876,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
         want = [int(c) for c in contest_ids]
     else:
         want = [int(c["id"]) for c in rows if float(c.get("prize_pool") or 0) >= float(min_pool)]
-    contests = _contests_with_capacity([dk.contest_detail(cid) for cid in want[:6]])
+    contests = _contests_with_capacity(_live(inp, "details", lambda: [dk.contest_detail(cid) for cid in want[:6]]))
     if not contests:
         return _refuse(f"no contest of ${float(min_pool):,.0f}+ with a payout table and a field size")
     contests.sort(key=lambda c: -float(c.get("prize_pool") or 0))
@@ -3665,6 +3886,8 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
         if why:
             return _refuse(f"player picker: {why}")
     csv_players = [c for c in simulate.parse_dk_csv(slate["csv"]) if nfl_dfs._playable(c)]
+    if week is None and inp is not None and inp.pinned:
+        week, preseason = inp.snap["week"]
     if week is None:
         try:
             import nfl_game_sim
@@ -3675,6 +3898,10 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
             errlog.note("TOURN-week", e)
             week = 1
     model = board_model(model, preseason)
+    if inp is not None:
+        inp.snap["week"] = (week, preseason)
+        if model != "engine":
+            inp.abandon("nothing frozen: a preseason board is on the legacy worlds, which are never filed")
     log(f"[tourney] classic {dg}: {len(csv_players)} players, {len(contests)} contest(s) "
         f"{', '.join(c['name'][:40] for c in contests)}; simulating week {week} x {n_sims:,} ({model})...")
     # Only the slate's own games. The whole week used to be simulated -- 14
@@ -3684,8 +3911,18 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     slate_teams = {str(c.get("team") or "").upper() for c in csv_players if c.get("team")}
     # compact: each player's worlds as the float32 row X holds, never a list of floats (nfl_dfs_sim;
     # ~32 bytes a score against 4 -- ~10 GB of a 550-player slate at the deep profile's 550,000 worlds)
-    pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason, model=model, seed=seed,
-                                   teams=slate_teams, workers=_workers(workers), compact=True) or {}
+    try:
+        pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason, model=model, seed=seed,
+                                       teams=slate_teams, workers=_workers(workers), compact=True,
+                                       **(inp.pool_kwargs() if inp is not None else {})) or {}
+    except nfl_dfs_sim.PinMiss as e:
+        # never half-old, half-new: the frozen worlds are gone, so the whole build starts again on current inputs
+        errlog.note("CKPT-inputs", e)
+        log(f"[tourney] classic {dg}: the frozen inputs cannot be resumed ({e}); starting fresh")
+        return build_nfl_classic(**dict(_args, fresh_inputs=True, _inputs_note=f"{build_ckpt.RESUME} refused: {e}"))
+    if inp is not None:
+        inp.after_pool()
+    pinmode = inp is not None and inp.active
     if not pool:
         return _refuse(f"no week-{week} projections for this slate's teams yet")
     nidx, norm = nfl_dfs._norm_index(pool)
@@ -3706,12 +3943,26 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                      "ceiling": sim.get("ceiling"), "floor": sim.get("floor"), "arr": sim["arr"],
                      "rec_tgt": float(sim.get("rec_tgt") or 0.0)})
     by_name = {e["name"]: e for e in ents}
-    try:
-        ents, dx = nfl_dfs._apply_depth(ents, preseason,
-                                        nfl_dfs.seconds_to_lock(slate.get("starts") if isinstance(slate, dict) else None))
-    except nfl_dfs.RosterUnavailable:
-        # ledgered as NFLD-roster; no board with the gate off
-        return _refuse("the depth-chart gate's roster lookup is unavailable (NFLD-roster)")
+    got = inp.depth(ents) if pinmode else None
+    if got is not None:
+        ents, dx = got                    # the interrupted build's gate, on the roster it read
+    else:
+        ents_pre = list(ents)
+        try:
+            stl = nfl_dfs.seconds_to_lock(slate.get("starts") if isinstance(slate, dict) else None)
+            ents, dx = nfl_dfs._apply_depth(ents, preseason, stl)
+        except nfl_dfs.RosterUnavailable:
+            # ledgered as NFLD-roster; no board with the gate off
+            return _refuse("the depth-chart gate's roster lookup is unavailable (NFLD-roster)")
+        if pinmode:
+            # the gate's answer, the roster state it used and every pool player's status class, frozen
+            # together: the board's status stamp is what the build was made on, not a later read
+            try:
+                st_all = status_classes(sorted({e["name"] for e in ents_pre}))
+            except Exception as e:
+                errlog.note("TOURN-status", e)
+                st_all = None
+            inp.freeze_depth(ents_pre, ents, dx, stl, nfl_dfs.roster_state(), st_all)
     extra = []
     for d in dx:
         e = by_name.get(d["name"])
@@ -3758,7 +4009,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     N = min(len(e["arr"]) for e in ents)
     if n_worlds:
         N = min(N, int(n_worlds))
-    X = np.asarray([e["arr"][:N] for e in ents], dtype=np.float32)
+    X = _ckpt_zero(np.asarray([e["arr"][:N] for e in ents], dtype=np.float32))
     # X holds every world from here: the pool's own rows are let go (nothing below reads `arr`), so the
     # build carries one copy of the worlds, not two -- a compact pool the PC's disk cache holds is kept
     # nowhere else in this process (nfl_dfs_sim.player_pool)
@@ -3784,6 +4035,8 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     if ck_b is not None and seed is None:
         rng = np.random.default_rng(ck_b.rng_entropy())
     _CKPT[0] = ck_b
+    if ck_b is not None:
+        log(f"[tourney] classic {dg}: checkpoint {ck_b.key} ({'new' if ck_b.fresh else 'found'})")
     t1 = time.time()
     log(f"[tourney] classic {dg}: pool {P} players ({len(extra)} field-only) x {N:,} worlds "
         f"({t1 - t0:.0f}s); the best lineup of each of {min(N, opt_worlds):,} worlds...")
@@ -4055,10 +4308,13 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
         for rw in rs["portfolio"]["entries"]:
             pivotal.update(rw["names"])
     try:
-        st_sig, st_cls = status_sig(sorted(pivotal))
+        st_frozen = inp.frozen_value("status") if pinmode else None
+        st_sig, st_cls = (status_sig(sorted(pivotal), classes=st_frozen) if st_frozen is not None
+                          else status_sig(sorted(pivotal)))
     except Exception as e:
         errlog.note("TOURN-status", e)
         st_sig, st_cls = None, {}
+    roster_src = inp.frozen_value("roster") if pinmode else None
     _built = int(time.time())
     # The lineup evaluator's artifact (dfs_evaluate; PC only, never raises):
     # the board's players in its order, every contest's full payout table (the
@@ -4068,6 +4324,8 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     _eval_art = dfs_evaluate.save_artifact("classic", dg, bool(pk), ents, idx_f, None, contests, week, preseason,
                                            model, n_sims, slate_teams, _built)
     _CKPT[0] = None
+    if ck_b is not None and inp is not None:
+        ck_b.inputs = inp.stamp()
     return plain({"version": VERSION, "engine": ENGINE, "kind": "classic", "sport": "nfl", "draft_group_id": int(dg),
             "built_ts": _built, "status_sig": st_sig, "status": st_cls, "eval_artifact": _eval_art,
             # what a restarted build took from disk (PC only; pc_worker removes the checkpoint once the board stands)
@@ -4133,7 +4391,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
             "results": results,
             "players": players_out,
             "excluded": excluded[:60],
-            "roster_source": nfl_dfs.roster_state(),
+            "roster_source": roster_src if roster_src is not None else nfl_dfs.roster_state(),
             **({"pick": dict(nfl_dfs.pick_stamp(pk, pk_waived, port_notes), second_solve=int(len(idx_o2)),
                              second_solve_held=held_o2, steady=int(len(idx_s2)), steady_held=held_s2,
                              grafted=int(len(idx_c)), allowed=int(allowed.sum()))}

@@ -31,6 +31,18 @@ every path below is the old code exactly when it is unset):
           result is the uninterrupted run's bit for bit.
       makeit-<sig>-<a>-<b>.ck  one finished world range of the portfolio
           pass's make-it matrix (float32, as computed).
+  inputs/<request key>/inputs.ck   the build's FROZEN INPUTS (2026-11-27):
+      everything it read live -- DraftKings' slate and contest details, the
+      week, the worlds' inputs (Sleeper's lines, the deep profiles, the drive
+      levels, the defenses and kickers) and the worlds cache key they make,
+      the depth gate's answer, the roster state and the status classes --
+      under a key of the REQUEST alone (the counts, the seed, the model, the
+      pick, the code), never of a live input. The keys above are of the
+      inputs, correctly, so before this a restart re-fetched inputs that had
+      moved (Sleeper's lines move by the minute on a Saturday) and resumed
+      nothing: the PC's deep probe of 2026-11-27 read `resumed: {}` after a
+      kill at 40% of scoring and redid the 7,129-second build. See
+      `inputs_usable` for when frozen inputs are used.
 
 <sig> hashes every input of the pass -- the candidate, field and world
 matrices byte for byte, the field's weights, the payout grids, the world
@@ -62,6 +74,7 @@ except ImportError:                      # the server: checkpoints are the PC's 
     np = None
 
 CKPT_VERSION = 1
+INPUTS_VERSION = 1
 KEEP_BUILDS = 6
 MAX_BYTES = 8 * 1024 ** 3                # 8 GB unless vigil-pc.cfg says otherwise
 MAX_AGE_S = 8 * 86400                    # a slate is built inside its last eight days
@@ -70,6 +83,30 @@ _MAGIC = b"VCK1"
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _CODE_FILES = ("dfs_tourney.py", "build_ckpt.py")
 _code_sig = {}
+# The owner's two operations (2026-11-27), named as he named them, on every
+# checkpointed board's stamp (`checkpoint.inputs.operation`) and in its log.
+RESUME = "Resume existing build"         # reuse frozen inputs, cached worlds and completed scoring chunks
+FRESH = "Start fresh build"              # fetch current projections, injury information, salaries and market data
+# Frozen inputs are used for at most six hours after the build first read
+# them. Why six: the scheduled main-slate build's window is Saturday 18:00 to
+# 23:59 MT (pc_worker._CL_WEEK_WINDOWS), so a build that window started can be
+# resumed anywhere inside it; the longest build measured (the deep profile,
+# 7,129-7,163 s on the PC, 2026-11-27) leaves four hours of interruption; and
+# the board a resumed build lands is at most this much older than the inputs
+# a fresh build would have read, against ~45 min-2 h for any build anyway.
+# The 85-40-minute pre-lock rebuild never reads them (pc_worker passes
+# fresh_inputs), and INACTIVES_S below holds every other build to the same.
+INPUTS_MAX_AGE_S = 6 * 3600
+# NFL inactives post 90 minutes before kickoff: inputs frozen before that are
+# never used after it, whichever build asks (the pre-lock flag is the
+# explicit form of the same rule for the build after the inactives).
+INACTIVES_S = 90 * 60
+KEEP_INPUTS = KEEP_BUILDS
+# The files that turn those live reads into a build's inputs: a changed line
+# in any is a new request key, so frozen inputs are never read by other code.
+_INPUT_CODE_FILES = ("dk.py", "nfl_dfs.py", "nfl_dfs_sim.py", "simulate.py", "nfl_adp.py", "dfs_portfolio.py")
+_POOL_KEYS = ("worlds_key", "games", "profiles", "drive", "weight", "dst", "kickers")
+_SNAP_KEYS = ("as_of", "lock_ts", "slate", "details", "week", "pool")
 
 
 def root():
@@ -104,6 +141,21 @@ def code_sig():
                 h.update(b"<missing>")
         _code_sig["sig"] = h.hexdigest()
     return _code_sig["sig"]
+
+
+def inputs_code_sig():
+    """sha256 over the code that reads a build's inputs (_INPUT_CODE_FILES), once per process."""
+    if "inputs" not in _code_sig:
+        h = hashlib.sha256()
+        for rel in _INPUT_CODE_FILES:
+            h.update(rel.encode())
+            try:
+                with open(os.path.join(_HERE, rel), "rb") as f:
+                    h.update(f.read())
+            except OSError:
+                h.update(b"<missing>")
+        _code_sig["inputs"] = h.hexdigest()
+    return _code_sig["inputs"]
 
 
 def sig(*parts):
@@ -261,6 +313,7 @@ class Build:
     def __init__(self, key, path, fresh):
         self.key, self.path, self.fresh = key, path, fresh
         self.resumed = {}                # what this run took from disk, for the board's stamp
+        self.inputs = None               # the frozen inputs' stamp (dfs_tourney._BuildInputs.stamp)
 
     def note(self, name, what):
         self.resumed[name] = what
@@ -303,7 +356,7 @@ class Build:
         return out
 
     def stamp(self):
-        return {"key": self.key, "resumed": dict(self.resumed)}
+        return {"key": self.key, "resumed": dict(self.resumed), **({"inputs": self.inputs} if self.inputs else {})}
 
 
 def open_build(*key_parts):
@@ -327,17 +380,24 @@ def open_build(*key_parts):
 def landed(board_or_key):
     """The build's board stands: its checkpoint is no longer needed. Takes the
     board (its `checkpoint` stamp) or the key."""
-    key = board_or_key
+    key, rkey = board_or_key, None
     if isinstance(board_or_key, dict):
-        key = ((board_or_key.get("checkpoint") or {}).get("key"))
+        stamp = board_or_key.get("checkpoint") or {}
+        key, rkey = stamp.get("key"), (stamp.get("inputs") or {}).get("key")
     r = root()
-    if not (r and key and isinstance(key, str) and key.isalnum()):
+    if r and _safe_key(rkey):
+        inputs_drop(rkey)                # its frozen inputs go with it
+    if not (r and _safe_key(key)):
         return False
     path = os.path.join(r, "builds", key)
     if os.path.isdir(path):
         shutil.rmtree(path, ignore_errors=True)
         return True
     return False
+
+
+def _safe_key(key):
+    return bool(key) and isinstance(key, str) and key.isalnum()
 
 
 def dir_bytes(path):
@@ -352,32 +412,42 @@ def dir_bytes(path):
 
 
 def _entries():
-    """[(path, mtime, bytes)] of every build and every slate's games, newest first."""
+    """[(path, mtime, bytes, sub)] of every build, every slate's games and every
+    build's frozen inputs, newest first."""
     out = []
     r = root()
-    for sub in ("builds", "games"):
+    for sub in ("builds", "games", "inputs"):
         d = os.path.join(r, sub) if r else None
         if d and os.path.isdir(d):
             for name in os.listdir(d):
                 p = os.path.join(d, name)
                 if os.path.isdir(p):
-                    out.append((p, os.path.getmtime(p), dir_bytes(p)))
+                    out.append((p, os.path.getmtime(p), dir_bytes(p), sub))
     out.sort(key=lambda t: -t[1])
     return out
 
 
 def prune(keep=None, limit=None, max_age=None, keep_key=None):
     """Oldest first past KEEP_BUILDS entries, the byte budget or MAX_AGE_S;
-    the entry named `keep_key` (the build that is running) is never removed."""
+    the entry named `keep_key` (the build that is running) is never removed.
+    Frozen inputs (a few MB a build) count toward the bytes, are held to
+    KEEP_INPUTS on their own count -- so they never push a build or a slate's
+    games out of the six -- and go once older than INPUTS_MAX_AGE_S, past
+    which nothing may read them."""
     keep = KEEP_BUILDS if keep is None else keep
     limit = max_bytes() if limit is None else limit
     max_age = MAX_AGE_S if max_age is None else max_age
     gone, total, now = 0, 0, time.time()
-    for i, (p, mt, b) in enumerate(_entries()):
+    n_main = n_inp = 0
+    for p, mt, b, sub in _entries():
         total += b
+        if sub == "inputs":
+            i, n_inp, age_cap, cap_n = n_inp, n_inp + 1, min(max_age, INPUTS_MAX_AGE_S), KEEP_INPUTS
+        else:
+            i, n_main, age_cap, cap_n = n_main, n_main + 1, max_age, keep
         if os.path.basename(p) == keep_key:
             continue
-        if i >= keep or total > limit or now - mt > max_age:
+        if i >= cap_n or total > limit or now - mt > age_cap:
             shutil.rmtree(p, ignore_errors=True)
             total -= b
             gone += 1
@@ -385,7 +455,102 @@ def prune(keep=None, limit=None, max_age=None, keep_key=None):
 
 
 def total_bytes():
-    return sum(b for _p, _m, b in _entries())
+    return sum(b for _p, _m, b, _s in _entries())
+
+
+# ---- a started build's frozen inputs (2026-11-27) ----------------------------------
+def request_key(*parts):
+    """The key of a build REQUEST: what was asked for (kind, draft group,
+    contests, every count, the seed, the model, the pick) and the code -- this
+    file's and the scoring code's (sig) and the code that reads the inputs
+    (inputs_code_sig) -- and nothing read live. Two presses of the same Build
+    are one request; a picked build and a plain one, or a deep profile and a
+    standard one, are two."""
+    return sig("request", inputs_code_sig(), *parts)[:40]
+
+
+def _inputs_path(rkey):
+    return os.path.join(root(), "inputs", str(rkey), "inputs.ck")
+
+
+def inputs_save(rkey, snap):
+    """Freeze `snap` (plain Python data) under the request key. Never raises."""
+    if not (enabled() and _safe_key(rkey)):
+        return False
+    try:
+        ok = write_file(_inputs_path(rkey), pickle.dumps(snap, protocol=4))
+        prune(keep_key=str(rkey))
+        return ok
+    except Exception as e:
+        errlog.note("CKPT-write", e, path="inputs.ck")
+        return False
+
+
+def inputs_load(rkey):
+    """(the frozen inputs, None) or (None, why not). A file that fails its
+    digest is ledgered CKPT-integrity and removed (read_file); one that does
+    not unpickle, or is another request's or another version's, is ledgered
+    CKPT-inputs and removed."""
+    if not (enabled() and _safe_key(rkey)):
+        return None, "checkpoints are off"
+    path = _inputs_path(rkey)
+    if not os.path.isfile(path):
+        return None, "no frozen inputs for this request"
+    payload = read_file(path)
+    if payload is None:
+        return None, "the frozen inputs failed their sha256 (removed)"
+    try:
+        snap = pickle.loads(payload)
+        if not isinstance(snap, dict) or snap.get("v") != INPUTS_VERSION or snap.get("key") != rkey:
+            raise ValueError("not this request's frozen inputs")
+        return snap, None
+    except Exception as e:
+        errlog.note("CKPT-inputs", e, path="inputs.ck")
+        inputs_drop(rkey)
+        return None, f"the frozen inputs could not be read ({type(e).__name__}; removed)"
+
+
+def inputs_drop(rkey):
+    r = root()
+    if r and _safe_key(rkey):
+        shutil.rmtree(os.path.join(r, "inputs", str(rkey)), ignore_errors=True)
+
+
+def inputs_usable(snap, now=None, fresh=False):
+    """(True, None) when a build may RESUME on these frozen inputs, else
+    (False, why). Never when the caller asked for fresh inputs (the pre-lock
+    rebuild), when they are older than INPUTS_MAX_AGE_S, when the slate's lock
+    is unreadable or has passed, when they were frozen before the inactives
+    posted (INACTIVES_S before lock) and the inactives are now out, or when
+    any part is missing -- a resume is all of them or none."""
+    now = time.time() if now is None else float(now)
+    if fresh:
+        return False, ("fresh inputs asked for: the pre-lock rebuild after the inactives always fetches "
+                       "current information")
+    if not isinstance(snap, dict):
+        return False, "no frozen inputs for this request"
+    missing = [k for k in _SNAP_KEYS if k not in snap] + \
+              [f"pool.{k}" for k in _POOL_KEYS if k not in (snap.get("pool") or {})]
+    if missing or not (snap.get("pool") or {}).get("worlds_key"):
+        return False, f"the frozen inputs are incomplete ({', '.join(missing) or 'no worlds key'})"
+    try:
+        as_of = float(snap["as_of"])
+        lock = float(snap["lock_ts"]) if snap.get("lock_ts") is not None else None
+    except (TypeError, ValueError):
+        return False, "the frozen inputs carry no readable time"
+    age = now - as_of
+    if age > INPUTS_MAX_AGE_S:
+        return False, (f"the frozen inputs are {age / 3600:.1f} h old (frozen inputs are used for "
+                       f"{INPUTS_MAX_AGE_S / 3600:.0f} h)")
+    if age < -300:
+        return False, "the frozen inputs are dated in the future (a clock moved)"
+    if lock is None:
+        return False, "the frozen slate has no readable lock"
+    if now >= lock:
+        return False, "the slate has locked"
+    if as_of < lock - INACTIVES_S <= now:
+        return False, "the frozen inputs predate the inactives (posted 90 minutes before lock)"
+    return True, None
 
 
 # ---- a slate's games while its worlds are still being simulated -------------------
@@ -442,6 +607,17 @@ def game_save(worlds_key, gid, sim):
         return ok
     except Exception as e:
         errlog.note("CKPT-write", e, path=f"game {gid}")
+        return False
+
+
+def games_any(worlds_key):
+    """Whether an interrupted generation of the pool `worlds_key` left any game on disk."""
+    if not (enabled() and worlds_key):
+        return False
+    d = os.path.dirname(_game_path(worlds_key, "x"))
+    try:
+        return any(n.endswith(".ck") for n in os.listdir(d))
+    except OSError:
         return False
 
 

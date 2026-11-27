@@ -22478,7 +22478,7 @@ _cw_task = _insp.getsource(_pcw_cw._task_classic_tourney)
 ck("wired: the classic task picks its worlds from the slate's kickoff and the board on disk and logs the count; the "
    "showdown boards stay at 60,000 (the test did not cover them)",
    'n_sims = _cl_sims(_dt_ts(sl.get("starts")), board)' in _cw_task
-   and "build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=n_sims, log=print)" in _cw_task
+   and "build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=n_sims, log=print, **fresh)" in _cw_task
    and "n_sims=60000" not in _cw_task
    and "build_nfl_showdown(dg, n_sims=60000, log=print)" in _insp.getsource(_pcw_cw._task_showdown_tourney))
 

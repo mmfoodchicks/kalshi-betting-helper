@@ -1083,6 +1083,23 @@ so a self-pulling batch file corrupts itself); all logic lives in Python.
     (`pc_worker._ckpt_landed`). A board stamps what it resumed (`checkpoint`).
   - Not resumable: the field and candidate draws and the greedy portfolio pick (redone, minutes).
     A scheduled window that closed while the PC was off is not re-opened by a checkpoint.
+  - **Frozen inputs** (2026-11-27; the deep probe deep-v1 resumed NOTHING: every restart re-fetched
+    Sleeper, the deep profiles, the drive levels and DraftKings live, they had moved, and keys of the
+    inputs named another build). A classic engine build on the worlds cache freezes every live read --
+    the slate and contest details, the week, the worlds' inputs and their cache key (`player_pool(pin=)`,
+    frozen before a game is played), the depth gate's answer, the roster state, every pool player's status
+    class -- under a key of the REQUEST (counts, seed, model, pick, the code; `build_ckpt.request_key`).
+    The owner's two operations, named so on every stamp (`checkpoint.inputs.operation`) and log: **Resume
+    existing build** (frozen inputs younger than `INPUTS_MAX_AGE_S` 6 h -- the Saturday window is 6 h, the
+    deep build ~2 h -- the slate not locked, not frozen before the inactives at lock - 90 min) and **Start
+    fresh build** (anything else; the 85-40-minute pre-lock rebuild always, `fresh_inputs` from
+    pc_worker). Frozen worlds no longer on disk (`nfl_dfs_sim.PinMiss`) restart the WHOLE build fresh
+    (`CKPT-inputs`), never half old. Removed with the checkpoint when the board lands. X's -0.0 is made
+    +0.0 where checkpoints are on (`_ckpt_zero`: the cache's int32 has no -0.0, and the keys hash bytes).
+    Showdown is not frozen (20-minute builds; its pre-lock refreshes must be fresh). Guards
+    `tests/guards_auto_resume_inputs.py` (RI, MP, PV); the probe is v2 (`deep-v2`: one build killed in
+    the solves, scoring and the portfolio pass and resumed, then C on A1's frozen inputs and entropy;
+    refused across code versions).
 - **Build profiles** (2026-11-26, `pc_profiles.py`): vigil-pc.cfg `"profile"`: `standard` (the
   default: production's 20,000 generation + 160,000 ranking worlds, 40,000 final, a 300,000 field --
   with no key the worker's calls are unchanged), `deep` (50k / 500k / 160k), `maximum` (100k / 1M /
