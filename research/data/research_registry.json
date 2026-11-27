@@ -189,6 +189,19 @@
   "result": "research/data/c3_season_replay.json"
  },
  {
+  "id": "c3_nfl_rescaled",
+  "area": "Accuracy batch (13.2)",
+  "kind": "registered",
+  "title": "C3-N: the NFL season sim's analytic resolution at its own points per win (1.842), on fresh games",
+  "decides": "the rescaled analytic resolution replaces the NFL season sim's drive engine only if it beats production by > 2 SE on BOTH win-total MAE and division + playoff log loss, pooled over 2026 weeks 13-18 and 2027, clustered by team-season; C3 stays read for its own question",
+  "registration": "research/data/c3_nfl_rescaled/prereg.json",
+  "script": "research/c3_nfl_rescaled.py",
+  "not_before": "2028-01-12T00:00:00Z",
+  "waits_for": "2027's regular season (week 18) and its playoff seeds",
+  "report": "research/reports/c3_season_replay.md",
+  "result": "research/data/c3_nfl_rescaled/read.json"
+ },
+ {
   "id": "acc_g2",
   "area": "Accuracy batch (13.2)",
   "kind": "dated",

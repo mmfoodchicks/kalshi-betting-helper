@@ -200,6 +200,48 @@ def run(ck):
        and all(len(C.cfb_prior(inp["cfb"][s])) == len(inp["cfb"][s]["order"]) for s in ("2024", "2025")),
        f"slots {slots}")
 
+    # ---- C3h: the 2.25 investigation's numbers, recomputed from their definition ------------------------------
+    import research.c3_margin_scale as M
+    ms = json.load(open(M.OUT))
+    seed, games = M.setup()
+    b225, _ = M.slope(seed, M.analytic(seed, games, 2.25))
+    b_k, _ = M.slope(seed, M.analytic(seed, games, ms["analytic_k_for_slope_1"]))
+    r = ms["readers"]
+    ck("C3h the 2.25 investigation (research/c3_margin_scale.py): the analytic resolution's returned-wins slope "
+       "at 2.25 and the points-per-win that returns slope 1 recompute exactly from their definition (exact "
+       "expectations over 2025's schedule, the seed vector 2025's wins shrunk halfway); the committed figures "
+       "say what the report says -- production's drive sim keeps the contract at 2.25, the analytic arm and the "
+       "deep anchor over-spread it",
+       abs(b225 - r["analytic_k2.25"]["slope"]) < 1e-4 and abs(b_k - 1.0) < 1e-3
+       and abs(r["drive_k2.25"]["slope"] - 1.0) < 2.5 * r["drive_k2.25"]["se"]
+       and r["analytic_k2.25"]["slope"] > 1.1 and r["deep_k2.25"]["slope"] - 1.0 > 4 * r["deep_k2.25"]["se"]
+       and 0.97 < r["deep_k2.25"]["realized_margin_on_anchored"] < 1.03,
+       f"analytic {b225} vs {r['analytic_k2.25']['slope']}; k {ms['analytic_k_for_slope_1']} -> {b_k}")
+
+    # ---- C3i: C3-N, the registered follow-up on fresh games -------------------------------------------------------
+    import hashlib
+    import research.c3_nfl_rescaled as N
+    import research_registry as RR
+    reg = json.load(open(N.PREREG))
+    shas = {p: hashlib.sha256(open(os.path.join(_ROOT, p), "rb").read()).hexdigest() for p in reg["sha256"]}
+    ent = next((e for e in RR.REGISTRY if e["id"] == "c3_nfl_rescaled"), {})
+    An = C.nfl_asof(inp["nfl"]["2025"], 10)
+    pre = C.nfl_prep
+    e1, e2 = N.sim(An, "engine", 6, 4), C.sim_nfl(An, "engine", 6, 4)
+    rs = N.sim(An, "rescaled", 6, 4)
+    want = 0.5 * (1 + math.erf(((10.0 - 8.0) * 1.842 + 2.2) / 13.2 / math.sqrt(2)))
+    ck("C3i C3-N is registered before its data: prereg.json pins the read script, C3's machinery and the "
+       "measurement its 1.842 came from by sha256 (never edit them), the Research tab lists it sealed until "
+       "2028-01-12, the rescaled arm is Phi(((Ra - Rb) x 1.842 + 2.2 x host) / 13.2) and leaves the engine arm "
+       "and C3's own analytic prep untouched, and C3's result is not superseded",
+       all(shas[p] == v for p, v in reg["sha256"].items()) and N.K_NEW == reg["k_new"] == ms["analytic_k_for_slope_1"]
+       and ent.get("registration") == "research/data/c3_nfl_rescaled/prereg.json"
+       and RR.status(ent)["status"] == "sealed" and RR.status(ent)["not_before"] == N.NOT_BEFORE
+       and abs(N.rescaled_prep(10.0, 8.0, 1) - want) < 1e-15 and C.nfl_prep is pre
+       and e1["counts"] == e2["counts"] and rs["counts"] != e1["counts"] and rs["inputs"] == e1["inputs"]
+       and min(N.WINDOWS[2026]) == 13 and os.path.exists(C.RESULT) and not os.path.exists(N.RESULT),
+       f"{ {p: shas[p] == v for p, v in reg['sha256'].items()} } {ent.get('registration')}")
+
     # ---- C3g: the read and what production does with it ------------------------------------------------------------
     if os.path.exists(C.RESULT):
         r = json.load(open(C.RESULT))
