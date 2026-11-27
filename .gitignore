@@ -90,3 +90,6 @@ nfl_coach_r2_plays_*.pkl
 players.csv
 ftn_charting_*.csv
 nfl_coach_r2_curves_*.json
+# R4 extra-field caches (air yards, injury mentions; nflverse CC BY 4.0)
+nfl_coach_r4_extra_*.pkl
+injuries_*.csv

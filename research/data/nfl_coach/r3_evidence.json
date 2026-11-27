@@ -1,0 +1,862 @@
+{
+ "by_season": {
+  "2016": {
+   "expected": 80.1,
+   "pulls": 68
+  },
+  "2017": {
+   "expected": 95.6,
+   "pulls": 68
+  },
+  "2018": {
+   "expected": 98.7,
+   "pulls": 67
+  },
+  "2019": {
+   "expected": 100.0,
+   "pulls": 71
+  },
+  "2020": {
+   "expected": 85.0,
+   "pulls": 83
+  },
+  "2021": {
+   "expected": 101.1,
+   "pulls": 86
+  },
+  "2022": {
+   "expected": 73.6,
+   "pulls": 78
+  },
+  "2023": {
+   "expected": 93.4,
+   "pulls": 97
+  },
+  "2024": {
+   "expected": 88.7,
+   "pulls": 102
+  },
+  "2025": {
+   "expected": 91.4,
+   "pulls": 102
+  },
+  "2026": {
+   "expected": 49.0,
+   "pulls": 48
+  }
+ },
+ "cells_dev": {
+  "-16..-9 | 0..120s": {
+   "drives": 53,
+   "expected": 2.28,
+   "pulls": 4
+  },
+  "-16..-9 | 121..480s": {
+   "drives": 215,
+   "expected": 6.43,
+   "pulls": 2
+  },
+  "-16..-9 | 1801..3600s": {
+   "drives": 691,
+   "expected": 7.34,
+   "pulls": 5
+  },
+  "-16..-9 | 481..900s": {
+   "drives": 242,
+   "expected": 4.45,
+   "pulls": 3
+  },
+  "-16..-9 | 901..1800s": {
+   "drives": 562,
+   "expected": 7.59,
+   "pulls": 7
+  },
+  "-27..-17 | 0..120s": {
+   "drives": 24,
+   "expected": 2.94,
+   "pulls": 5
+  },
+  "-27..-17 | 121..480s": {
+   "drives": 137,
+   "expected": 10.46,
+   "pulls": 30
+  },
+  "-27..-17 | 1801..3600s": {
+   "drives": 149,
+   "expected": 3.07,
+   "pulls": 1
+  },
+  "-27..-17 | 481..900s": {
+   "drives": 141,
+   "expected": 6.78,
+   "pulls": 9
+  },
+  "-27..-17 | 901..1800s": {
+   "drives": 291,
+   "expected": 8.42,
+   "pulls": 9
+  },
+  "-8..8 | 0..120s": {
+   "drives": 446,
+   "expected": 4.65,
+   "pulls": 3
+  },
+  "-8..8 | 121..480s": {
+   "drives": 691,
+   "expected": 4.78,
+   "pulls": 2
+  },
+  "-8..8 | 1801..3600s": {
+   "drives": 5842,
+   "expected": 25.39,
+   "pulls": 25
+  },
+  "-8..8 | 481..900s": {
+   "drives": 714,
+   "expected": 3.52,
+   "pulls": 4
+  },
+  "-8..8 | 901..1800s": {
+   "drives": 1837,
+   "expected": 7.98,
+   "pulls": 17
+  },
+  "-99..-28 | 121..480s": {
+   "drives": 34,
+   "expected": 6.31,
+   "pulls": 13
+  },
+  "-99..-28 | 1801..3600s": {
+   "drives": 16,
+   "expected": 0.75,
+   "pulls": 0
+  },
+  "-99..-28 | 481..900s": {
+   "drives": 51,
+   "expected": 5.92,
+   "pulls": 8
+  },
+  "-99..-28 | 901..1800s": {
+   "drives": 52,
+   "expected": 3.96,
+   "pulls": 0
+  },
+  "17..27 | 0..120s": {
+   "drives": 48,
+   "expected": 21.42,
+   "pulls": 24
+  },
+  "17..27 | 121..480s": {
+   "drives": 82,
+   "expected": 18.2,
+   "pulls": 27
+  },
+  "17..27 | 1801..3600s": {
+   "drives": 74,
+   "expected": 0.55,
+   "pulls": 0
+  },
+  "17..27 | 481..900s": {
+   "drives": 111,
+   "expected": 6.8,
+   "pulls": 5
+  },
+  "17..27 | 901..1800s": {
+   "drives": 217,
+   "expected": 4.19,
+   "pulls": 2
+  },
+  "28..99 | 0..120s": {
+   "drives": 8,
+   "expected": 7.09,
+   "pulls": 7
+  },
+  "28..99 | 121..480s": {
+   "drives": 8,
+   "expected": 5.82,
+   "pulls": 6
+  },
+  "28..99 | 1801..3600s": {
+   "drives": 7,
+   "expected": 0.25,
+   "pulls": 0
+  },
+  "28..99 | 481..900s": {
+   "drives": 26,
+   "expected": 10.13,
+   "pulls": 18
+  },
+  "28..99 | 901..1800s": {
+   "drives": 27,
+   "expected": 3.46,
+   "pulls": 1
+  },
+  "9..16 | 0..120s": {
+   "drives": 66,
+   "expected": 6.16,
+   "pulls": 7
+  },
+  "9..16 | 121..480s": {
+   "drives": 121,
+   "expected": 2.94,
+   "pulls": 2
+  },
+  "9..16 | 1801..3600s": {
+   "drives": 424,
+   "expected": 0.98,
+   "pulls": 3
+  },
+  "9..16 | 481..900s": {
+   "drives": 191,
+   "expected": 1.62,
+   "pulls": 0
+  },
+  "9..16 | 901..1800s": {
+   "drives": 456,
+   "expected": 1.68,
+   "pulls": 3
+  }
+ },
+ "cells_dev_final": {
+  "-16..-9 | 0..120s": {
+   "drives": 34,
+   "expected": 1.71,
+   "pulls": 3
+  },
+  "-16..-9 | 121..480s": {
+   "drives": 139,
+   "expected": 4.46,
+   "pulls": 0
+  },
+  "-16..-9 | 1801..3600s": {
+   "drives": 438,
+   "expected": 4.37,
+   "pulls": 3
+  },
+  "-16..-9 | 481..900s": {
+   "drives": 145,
+   "expected": 2.66,
+   "pulls": 2
+  },
+  "-16..-9 | 901..1800s": {
+   "drives": 357,
+   "expected": 4.62,
+   "pulls": 4
+  },
+  "-27..-17 | 0..120s": {
+   "drives": 15,
+   "expected": 2.21,
+   "pulls": 3
+  },
+  "-27..-17 | 121..480s": {
+   "drives": 78,
+   "expected": 6.69,
+   "pulls": 18
+  },
+  "-27..-17 | 1801..3600s": {
+   "drives": 86,
+   "expected": 1.65,
+   "pulls": 1
+  },
+  "-27..-17 | 481..900s": {
+   "drives": 81,
+   "expected": 4.15,
+   "pulls": 6
+  },
+  "-27..-17 | 901..1800s": {
+   "drives": 164,
+   "expected": 4.72,
+   "pulls": 5
+  },
+  "-8..8 | 0..120s": {
+   "drives": 277,
+   "expected": 3.04,
+   "pulls": 2
+  },
+  "-8..8 | 121..480s": {
+   "drives": 429,
+   "expected": 3.16,
+   "pulls": 1
+  },
+  "-8..8 | 1801..3600s": {
+   "drives": 3561,
+   "expected": 16.18,
+   "pulls": 15
+  },
+  "-8..8 | 481..900s": {
+   "drives": 449,
+   "expected": 2.35,
+   "pulls": 2
+  },
+  "-8..8 | 901..1800s": {
+   "drives": 1125,
+   "expected": 4.99,
+   "pulls": 11
+  },
+  "-99..-28 | 121..480s": {
+   "drives": 22,
+   "expected": 4.46,
+   "pulls": 8
+  },
+  "-99..-28 | 1801..3600s": {
+   "drives": 9,
+   "expected": 0.47,
+   "pulls": 0
+  },
+  "-99..-28 | 481..900s": {
+   "drives": 35,
+   "expected": 4.4,
+   "pulls": 4
+  },
+  "-99..-28 | 901..1800s": {
+   "drives": 31,
+   "expected": 2.65,
+   "pulls": 0
+  },
+  "17..27 | 0..120s": {
+   "drives": 29,
+   "expected": 14.15,
+   "pulls": 14
+  },
+  "17..27 | 121..480s": {
+   "drives": 49,
+   "expected": 11.86,
+   "pulls": 17
+  },
+  "17..27 | 1801..3600s": {
+   "drives": 40,
+   "expected": 0.29,
+   "pulls": 0
+  },
+  "17..27 | 481..900s": {
+   "drives": 66,
+   "expected": 4.79,
+   "pulls": 2
+  },
+  "17..27 | 901..1800s": {
+   "drives": 123,
+   "expected": 2.36,
+   "pulls": 1
+  },
+  "28..99 | 0..120s": {
+   "drives": 7,
+   "expected": 6.38,
+   "pulls": 6
+  },
+  "28..99 | 121..480s": {
+   "drives": 5,
+   "expected": 3.51,
+   "pulls": 3
+  },
+  "28..99 | 1801..3600s": {
+   "drives": 5,
+   "expected": 0.21,
+   "pulls": 0
+  },
+  "28..99 | 481..900s": {
+   "drives": 17,
+   "expected": 6.58,
+   "pulls": 11
+  },
+  "28..99 | 901..1800s": {
+   "drives": 18,
+   "expected": 2.4,
+   "pulls": 1
+  },
+  "9..16 | 0..120s": {
+   "drives": 40,
+   "expected": 4.15,
+   "pulls": 3
+  },
+  "9..16 | 121..480s": {
+   "drives": 83,
+   "expected": 2.14,
+   "pulls": 1
+  },
+  "9..16 | 1801..3600s": {
+   "drives": 276,
+   "expected": 0.63,
+   "pulls": 0
+  },
+  "9..16 | 481..900s": {
+   "drives": 108,
+   "expected": 0.96,
+   "pulls": 0
+  },
+  "9..16 | 901..1800s": {
+   "drives": 287,
+   "expected": 1.09,
+   "pulls": 3
+  }
+ },
+ "cells_fit": {
+  "-16..-9 | 0..120s": {
+   "drives": 211,
+   "expected": 10.66,
+   "pulls": 3
+  },
+  "-16..-9 | 121..480s": {
+   "drives": 707,
+   "expected": 21.51,
+   "pulls": 12
+  },
+  "-16..-9 | 1801..3600s": {
+   "drives": 2219,
+   "expected": 23.58,
+   "pulls": 25
+  },
+  "-16..-9 | 481..900s": {
+   "drives": 733,
+   "expected": 13.87,
+   "pulls": 12
+  },
+  "-16..-9 | 901..1800s": {
+   "drives": 1674,
+   "expected": 22.77,
+   "pulls": 17
+  },
+  "-27..-17 | 0..120s": {
+   "drives": 67,
+   "expected": 7.62,
+   "pulls": 6
+  },
+  "-27..-17 | 121..480s": {
+   "drives": 436,
+   "expected": 34.0,
+   "pulls": 47
+  },
+  "-27..-17 | 1801..3600s": {
+   "drives": 626,
+   "expected": 12.94,
+   "pulls": 8
+  },
+  "-27..-17 | 481..900s": {
+   "drives": 430,
+   "expected": 19.47,
+   "pulls": 19
+  },
+  "-27..-17 | 901..1800s": {
+   "drives": 941,
+   "expected": 27.63,
+   "pulls": 21
+  },
+  "-8..8 | 0..120s": {
+   "drives": 1275,
+   "expected": 13.5,
+   "pulls": 7
+  },
+  "-8..8 | 121..480s": {
+   "drives": 1996,
+   "expected": 13.98,
+   "pulls": 9
+  },
+  "-8..8 | 1801..3600s": {
+   "drives": 17549,
+   "expected": 75.99,
+   "pulls": 73
+  },
+  "-8..8 | 481..900s": {
+   "drives": 2212,
+   "expected": 11.06,
+   "pulls": 16
+  },
+  "-8..8 | 901..1800s": {
+   "drives": 5519,
+   "expected": 24.03,
+   "pulls": 35
+  },
+  "-99..-28 | 0..120s": {
+   "drives": 15,
+   "expected": 4.35,
+   "pulls": 3
+  },
+  "-99..-28 | 121..480s": {
+   "drives": 102,
+   "expected": 20.85,
+   "pulls": 15
+  },
+  "-99..-28 | 1801..3600s": {
+   "drives": 39,
+   "expected": 1.81,
+   "pulls": 1
+  },
+  "-99..-28 | 481..900s": {
+   "drives": 142,
+   "expected": 18.12,
+   "pulls": 17
+  },
+  "-99..-28 | 901..1800s": {
+   "drives": 176,
+   "expected": 13.32,
+   "pulls": 14
+  },
+  "17..27 | 0..120s": {
+   "drives": 109,
+   "expected": 51.64,
+   "pulls": 40
+  },
+  "17..27 | 121..480s": {
+   "drives": 216,
+   "expected": 44.81,
+   "pulls": 62
+  },
+  "17..27 | 1801..3600s": {
+   "drives": 348,
+   "expected": 2.64,
+   "pulls": 2
+  },
+  "17..27 | 481..900s": {
+   "drives": 319,
+   "expected": 18.7,
+   "pulls": 17
+  },
+  "17..27 | 901..1800s": {
+   "drives": 718,
+   "expected": 13.4,
+   "pulls": 6
+  },
+  "28..99 | 0..120s": {
+   "drives": 25,
+   "expected": 23.13,
+   "pulls": 19
+  },
+  "28..99 | 121..480s": {
+   "drives": 45,
+   "expected": 33.18,
+   "pulls": 36
+  },
+  "28..99 | 1801..3600s": {
+   "drives": 20,
+   "expected": 0.89,
+   "pulls": 0
+  },
+  "28..99 | 481..900s": {
+   "drives": 92,
+   "expected": 36.52,
+   "pulls": 37
+  },
+  "28..99 | 901..1800s": {
+   "drives": 115,
+   "expected": 19.13,
+   "pulls": 11
+  },
+  "9..16 | 0..120s": {
+   "drives": 220,
+   "expected": 20.86,
+   "pulls": 16
+  },
+  "9..16 | 121..480s": {
+   "drives": 385,
+   "expected": 10.15,
+   "pulls": 3
+  },
+  "9..16 | 1801..3600s": {
+   "drives": 1441,
+   "expected": 3.35,
+   "pulls": 2
+  },
+  "9..16 | 481..900s": {
+   "drives": 616,
+   "expected": 4.94,
+   "pulls": 2
+  },
+  "9..16 | 901..1800s": {
+   "drives": 1406,
+   "expected": 5.25,
+   "pulls": 5
+  }
+ },
+ "coach": {
+  "coaches": 59,
+  "df": 59,
+  "dispersion_chi2": 94.9,
+  "k10": {
+   "gain_per_team_game": -0.00061,
+   "se": 0.00239,
+   "team_games": 1088,
+   "z": -0.26
+  },
+  "k2": {
+   "gain_per_team_game": -0.01441,
+   "se": 0.00797,
+   "team_games": 1088,
+   "z": -1.81
+  },
+  "k20": {
+   "gain_per_team_game": 0.0006,
+   "se": 0.00158,
+   "team_games": 1088,
+   "z": 0.38
+  },
+  "k5": {
+   "gain_per_team_game": -0.00351,
+   "se": 0.00348,
+   "team_games": 1088,
+   "z": -1.01
+  },
+  "ratio": 1.608
+ },
+ "coef": [
+  -5.288169083919371,
+  -4.231750250330322,
+  3.56034681567721,
+  -0.17972324076369317,
+  1.0446689173995194,
+  -0.05955078170958671,
+  -0.564083420666231,
+  -0.011968710571801848,
+  0.5379775855663207,
+  0.13422334021352403
+ ],
+ "coef_constant": [
+  -4.089139621832892
+ ],
+ "coef_fit_2016_2023": [
+  -5.400407125183815,
+  -3.93916705749769,
+  3.4040992344990464,
+  0.23129499656179886,
+  0.8286380225880366,
+  -0.01616456487944818,
+  -0.5678821191103486,
+  -0.0002612812223811844,
+  0.5243348392841396,
+  0.11484887426490203
+ ],
+ "counts": {
+  "2016": {
+   "identified_drives": 5452,
+   "pulls": 68,
+   "team_games": 512
+  },
+  "2017": {
+   "identified_drives": 5451,
+   "pulls": 68,
+   "team_games": 512
+  },
+  "2018": {
+   "identified_drives": 5358,
+   "pulls": 67,
+   "team_games": 512
+  },
+  "2019": {
+   "identified_drives": 5327,
+   "pulls": 71,
+   "team_games": 512
+  },
+  "2020": {
+   "identified_drives": 5119,
+   "pulls": 83,
+   "team_games": 507
+  },
+  "2021": {
+   "identified_drives": 5407,
+   "pulls": 86,
+   "team_games": 540
+  },
+  "2022": {
+   "identified_drives": 5463,
+   "pulls": 78,
+   "team_games": 542
+  },
+  "2023": {
+   "identified_drives": 5567,
+   "pulls": 97,
+   "team_games": 544
+  },
+  "2024": {
+   "identified_drives": 5426,
+   "pulls": 102,
+   "team_games": 544
+  },
+  "2025": {
+   "identified_drives": 5291,
+   "pulls": 102,
+   "team_games": 544
+  },
+  "2026": {
+   "identified_drives": 3337,
+   "pulls": 48,
+   "team_games": 328
+  }
+ },
+ "credit": "nflverse-data play-by-play and players (CC BY 4.0)",
+ "final_gain_vs_constant_2025": {
+  "gain_per_team_game": 0.28303,
+  "se": 0.04245,
+  "team_games": 544,
+  "z": 6.67
+ },
+ "final_gain_vs_constant_2026": {
+  "gain_per_team_game": 0.26127,
+  "se": 0.04725,
+  "team_games": 328,
+  "z": 5.53
+ },
+ "fit_seasons": [
+  2016,
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023
+ ],
+ "gain_s4_vs_s3_2024": {
+  "gain_per_team_game": -0.00047,
+  "se": 0.00043,
+  "team_games": 544,
+  "z": -1.09
+ },
+ "gain_s4_vs_s3_2025": {
+  "gain_per_team_game": -0.00052,
+  "se": 0.0004,
+  "team_games": 544,
+  "z": -1.28
+ },
+ "gain_s4_vs_s3_2026": {
+  "gain_per_team_game": -0.00011,
+  "se": 0.00043,
+  "team_games": 328,
+  "z": -0.25
+ },
+ "gain_vs_constant_2024": {
+  "gain_per_team_game": 0.29611,
+  "se": 0.04044,
+  "team_games": 544,
+  "z": 7.32
+ },
+ "gain_vs_constant_2025": {
+  "gain_per_team_game": 0.27948,
+  "se": 0.0417,
+  "team_games": 544,
+  "z": 6.7
+ },
+ "gain_vs_constant_2026": {
+  "gain_per_team_game": 0.2568,
+  "se": 0.0464,
+  "team_games": 328,
+  "z": 5.53
+ },
+ "half_life": 2.0,
+ "owner_examples_hazard_per_drive": {
+  "lead 21, start of Q4": 0.0354,
+  "lead 24, 2:00 left": 0.6655,
+  "lead 28, start of Q4": 0.146,
+  "lead 35, 8:00 left": 0.7641,
+  "lead 7, 2:00 left": 0.0097,
+  "lead 7, 8:00 left": 0.0034,
+  "tied, first quarter": 0.005,
+  "trail 35, 5:00 left": 0.2906
+ },
+ "play_selection": {
+  "backup_experienced lead": {
+   "pass_over_expected": 0.0424,
+   "snaps": 730
+  },
+  "backup_experienced trail": {
+   "pass_over_expected": -0.0367,
+   "snaps": 1639
+  },
+  "backup_new lead": {
+   "pass_over_expected": 0.0123,
+   "snaps": 1082
+  },
+  "backup_new trail": {
+   "pass_over_expected": -0.0567,
+   "snaps": 1989
+  },
+  "starter lead": {
+   "pass_over_expected": -0.0113,
+   "snaps": 11288
+  },
+  "starter trail": {
+   "pass_over_expected": -0.0016,
+   "snaps": 17726
+  }
+ },
+ "rb_persistence": {
+  "close": {
+   "carries_after": 29874,
+   "carries_before": 10562,
+   "lead_share_after": 0.646,
+   "lead_share_before_first_other": 1.0
+  },
+  "lead17": {
+   "carries_after": 3700,
+   "carries_before": 1036,
+   "lead_share_after": 0.4076,
+   "lead_share_before_first_other": 1.0
+  }
+ },
+ "returns_dev": {
+  "other": {
+   "pulls": 73,
+   "rate": 0.2055,
+   "starter_came_back": 15
+  },
+  "rest": {
+   "pulls": 179,
+   "rate": 0.0056,
+   "starter_came_back": 1
+  }
+ },
+ "returns_fit": {
+  "other": {
+   "pulls": 208,
+   "rate": 0.2596,
+   "starter_came_back": 54
+  },
+  "rest": {
+   "pulls": 410,
+   "rate": 0.0146,
+   "starter_came_back": 6
+  }
+ },
+ "select": 2024,
+ "select_ll_per_team_game": {
+  "s0 hl=2.0": 0.93428,
+  "s0 hl=4.0": 0.93553,
+  "s0 hl=None": 0.93729,
+  "s1 hl=2.0": 0.68985,
+  "s1 hl=4.0": 0.6923,
+  "s1 hl=None": 0.69556,
+  "s2 hl=2.0": 0.66822,
+  "s2 hl=4.0": 0.67165,
+  "s2 hl=None": 0.67659,
+  "s3 hl=2.0": 0.65842,
+  "s3 hl=4.0": 0.66195,
+  "s3 hl=None": 0.66702,
+  "s4 hl=2.0": 0.65889,
+  "s4 hl=4.0": 0.66256,
+  "s4 hl=None": 0.66768,
+  "s5 hl=2.0": 0.6442,
+  "s5 hl=4.0": 0.64796,
+  "s5 hl=None": 0.65319,
+  "s6 hl=2.0": 0.63818,
+  "s6 hl=4.0": 0.64094,
+  "s6 hl=None": 0.64477,
+  "s7 hl=2.0": 0.64016,
+  "s7 hl=4.0": 0.64432,
+  "s7 hl=None": 0.65003
+ },
+ "spec": "s6",
+ "starter_share_by_margin": {
+  "2024": {
+   "lost 17+": 0.9187,
+   "within 16": 0.9623,
+   "won 17+": 0.9641
+  },
+  "2025": {
+   "lost 17+": 0.885,
+   "within 16": 0.9769,
+   "won 17+": 0.9695
+  },
+  "2026": {
+   "lost 17+": 0.8556,
+   "within 16": 0.9861,
+   "won 17+": 0.9795
+  }
+ }
+}

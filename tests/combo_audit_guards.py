@@ -22711,8 +22711,13 @@ ck("the committed summaries are the final exports the owner sent from away -- th
    "Showdown (87,465) -- final (no time remaining), carrying no entrant field at all, their sha256 the export's, and no "
    "export beside them in git; and the owner's five of 2026-11-26 (\"I can't go further back\") -- the week-10 and "
    "week-11 Millionaires (147,058 each), the week-11 Thursday and Monday showdowns (65,359 and 70,588) and the week-12 "
-   "Wednesday showdown (47,058) -- under the same rules",
-   set(_cs_idx) == {"196653900", "196786588", "196786690", "197645153", "197882014", "197912905", "198005475", "198150093"}
+   "Wednesday showdown (47,058) -- under the same rules; and the two of 2026-11-27, the Thanksgiving Millionaire "
+   "(classic, 594,530) and the Thanksgiving-night KC @ BUF showdown (37,647), both checked final (every "
+   "TimeRemaining 0) and against every handle in their first 2,000 rows",
+   set(_cs_idx) == {"196653900", "196786588", "196786690", "197645153", "197882014", "197912905", "198005475", "198150093",
+                    "197897298", "198130093"}
+   and [(_cs_sums[c]["kind"], _cs_sums[c]["entries"]) for c in ("197897298", "198130093")]
+   == [("classic", 594530), ("showdown", 37647)]
    and [(_cs_sums[c]["kind"], _cs_sums[c]["entries"]) for c in ("197645153", "197882014", "197912905", "198005475", "198150093")]
    == [("classic", 147058), ("classic", 147058), ("showdown", 65359), ("showdown", 70588), ("showdown", 47058)]
    and _cs_sums["196786690"]["kind"] == "showdown" and _cs_sums["196786690"]["entries"] == 87465
@@ -22738,7 +22743,7 @@ ck("listing merges the deep store's index with the committed one, one row a cont
    "committed summary wins over the deep store's for the same contest (it was made from the FINAL export on purpose), "
    "and a contest only in the deep store still reads from it",
    sorted(r["contest_id"] for r in _cs_list) == [555, 196653900, 196786588, 196786690, 197645153, 197882014,
-                                                  197912905, 198005475, 198150093]
+                                                  197897298, 197912905, 198005475, 198130093, 198150093]
    and next(r for r in _cs_list if r["contest_id"] == 196653900)["name"].startswith("NFL $2.75M")
    and (_cs_s1 or {}).get("entries") == 158904 and (_cs_s2 or {}).get("from") == "deep",
    str([(r["contest_id"], r.get("name")) for r in _cs_list]))
@@ -24025,10 +24030,15 @@ ck("no route serves them", not (_cr_rules & set(_cr_dead)) and not any(r.startsw
    str(sorted(_cr_rules & set(_cr_dead))))
 _cr_js = open(_os.path.join(_cr_root, "static", "app.js"), encoding="utf-8").read()
 _cr_html = open(_os.path.join(_cr_root, "templates", "index.html"), encoding="utf-8").read()
-ck("the page asks for none of them and has no crypto tab",
-   not any(u in _cr_js for u in ("/api/recorder", "/api/coins", "/api/kalshi/", "/api/markets", "/api/quote",
-                                 "/api/backtest", "/api/stats"))
-   and "tab-crypto" not in _cr_js and "tab-crypto" not in _cr_html and 'data-tab="crypto"' not in _cr_html)
+# 2026-11-27: one crypto tab is back -- the read-only paper terminal (crypto_terminal.py, static/crypto.js),
+# built under the memory rules this removal taught and guarded in tests/guards_auto_crypto.py (CX). The removed
+# tracker's endpoints stay gone, and the only crypto script the page loads reads /api/crypto/* alone.
+_cr_term = open(_os.path.join(_cr_root, "static", "crypto.js"), encoding="utf-8").read()
+_cr_old = ("/api/recorder", "/api/coins", "/api/kalshi/", "/api/markets", "/api/quote", "/api/backtest", "/api/stats")
+ck("the page asks for none of them; its one crypto tab is the paper terminal, which reads /api/crypto/* alone",
+   not any(u in _cr_js or u in _cr_term for u in _cr_old)
+   and _cr_js.count("tab-crypto") == 1 and 'data-tab="crypto"' in _cr_html and "/static/crypto.js" in _cr_html
+   and all(u.startswith("/api/crypto/") for u in _re_cr.findall(r'getJSON\("([^"?]+)', _cr_term)))
 import calibrate as _cal_cr, bestbets as _bb_cr, combine as _cmb_cr, mfutures as _mf_cr, tiers as _ti_cr
 import kalshi as _kal_cr, simulate as _sim_cr
 ck("no model, board or gate still carries a crypto piece",

@@ -1,0 +1,49 @@
+{
+ "anchor_season": 2024,
+ "built": "2026-11-27T09:51:48Z",
+ "coef": [
+  -5.288169083919371,
+  -4.231750250330322,
+  3.56034681567721,
+  -0.17972324076369317,
+  1.0446689173995194,
+  -0.05955078170958671,
+  -0.564083420666231,
+  -0.011968710571801848,
+  0.5379775855663207,
+  0.13422334021352403
+ ],
+ "coef_constant": [
+  -4.089139621832892
+ ],
+ "credit": "nflverse-data play-by-play and players (CC BY 4.0)",
+ "fit_seasons": [
+  2016,
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024
+ ],
+ "half_life": 2.0,
+ "pull_rule": "a pulled starter stays out (returns_fit gives the measured rate)",
+ "returns_fit": {
+  "other": {
+   "pulls": 208,
+   "rate": 0.2596,
+   "starter_came_back": 54
+  },
+  "rest": {
+   "pulls": 410,
+   "rate": 0.0146,
+   "starter_came_back": 6
+  }
+ },
+ "seal": "2026 week 13 on and every later season: never read by this fit",
+ "select_season": 2024,
+ "spec": "s6",
+ "version": "coach-r3.0"
+}

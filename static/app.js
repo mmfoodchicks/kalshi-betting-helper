@@ -2176,6 +2176,7 @@ function setupTabs() {
       $("tab-tennis").classList.toggle("hidden", tab !== "tennis");
       $("tab-lol").classList.toggle("hidden", tab !== "lol");
       $("tab-weather").classList.toggle("hidden", tab !== "weather");
+      $("tab-crypto").classList.toggle("hidden", tab !== "crypto");
       $("tab-sim").classList.toggle("hidden", tab !== "sim");
       $("tab-combine").classList.toggle("hidden", tab !== "combine");
       $("tab-futures").classList.toggle("hidden", tab !== "futures");
@@ -2204,6 +2205,7 @@ function setupTabs() {
       }
       if (tab === "ledger") loadLedger();
       if (tab === "research" && typeof initResearch === "function") initResearch();
+      if (tab === "crypto" && typeof initCrypto === "function") initCrypto();
     });
   });
   setupBaseballSubtabs();
@@ -3150,6 +3152,9 @@ function initNFL() {
       // The combo maker belongs to the week board -- it builds slips out of the
       // markets on THAT slate, so it has no meaning under futures or win totals.
       $("nflComboBox").classList.toggle("hidden", s !== "week");
+      // The Pick6 paper ledger (static/pick6log.js) sits under the Pick 6 view, for every sport.
+      $("p6LedgerBox").classList.toggle("hidden", s !== "pick6");
+      if (s === "pick6" && typeof p6LedgerShow === "function") p6LedgerShow();
       if (s === "week") { initNFLWeek(); return; }
       if (simViews.includes(s)) { _nflSimView = s; initNFLSim(); return; }
       _nflSub = s;                         // "futures" | "wins" share the projection load

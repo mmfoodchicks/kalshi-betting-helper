@@ -1,0 +1,107 @@
+{
+ "design": {
+  "bonferroni": 0.05,
+  "family_alpha": 0.05,
+  "n1": 136,
+  "n2": 272,
+  "r1_min_games": 90,
+  "r1_threshold_t": 2.0,
+  "z1": 2.7798,
+  "z2": 1.9656
+ },
+ "gate_assumption": "worst case: criteria 1, 2, 3 and 5 always pass, so the confirmatory test runs whenever R1 fails criterion 4; any lower pass rate lowers the family rate",
+ "heavy_tailed_t3_r1_at_min_games": {
+  "confirmatory_alone": [
+   0.02498,
+   0.00025
+  ],
+  "confirmatory_alone_with_futility": [
+   0.02471,
+   0.00025
+  ],
+  "family_worst_case_gate": [
+   0.047,
+   0.00033
+  ],
+  "family_worst_case_gate_with_futility": [
+   0.04674,
+   0.00033
+  ],
+  "gate_opens": [
+   0.97735,
+   0.00024
+  ],
+  "r1_criterion_4": [
+   0.02266,
+   0.00024
+  ],
+  "t_boundaries": [
+   2.8254,
+   1.9745
+  ],
+  "worlds": 400000
+ },
+ "independence": "the confirmatory games (2027) are disjoint from R1's (2026 weeks 13-18)",
+ "normal_r1_at_96_games": {
+  "confirmatory_alone": [
+   0.02571,
+   8e-05
+  ],
+  "confirmatory_alone_with_futility": [
+   0.02542,
+   8e-05
+  ],
+  "family_worst_case_gate": [
+   0.04942,
+   0.00011
+  ],
+  "family_worst_case_gate_with_futility": [
+   0.04913,
+   0.00011
+  ],
+  "gate_opens": [
+   0.97569,
+   8e-05
+  ],
+  "r1_criterion_4": [
+   0.02431,
+   8e-05
+  ],
+  "t_boundaries": [
+   2.8254,
+   1.9745
+  ],
+  "worlds": 4000000
+ },
+ "normal_r1_at_min_games": {
+  "confirmatory_alone": [
+   0.02588,
+   8e-05
+  ],
+  "confirmatory_alone_with_futility": [
+   0.02558,
+   8e-05
+  ],
+  "family_worst_case_gate": [
+   0.04954,
+   0.00011
+  ],
+  "family_worst_case_gate_with_futility": [
+   0.04925,
+   0.00011
+  ],
+  "gate_opens": [
+   0.97571,
+   8e-05
+  ],
+  "r1_criterion_4": [
+   0.02429,
+   8e-05
+  ],
+  "t_boundaries": [
+   2.8254,
+   1.9745
+  ],
+  "worlds": 4000000
+ }
+}

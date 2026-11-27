@@ -5,7 +5,9 @@ presets, DFS), NFL (drive engine, parlays, DFS, season futures), NBA/NHL/CFB
 season engines, golf, tennis, UFC, racing, LoL, soccer, climate/weather
 markets, cross-sport Best Bets and futures -- each priced against Kalshi and
 graded into its own ledger. (It started as a Kalshi crypto helper; every
-crypto feature was removed on 2026-10-29.)
+crypto feature was removed on 2026-10-29; a read-only paper terminal,
+crypto_terminal.py, came back on 2026-11-27 under the memory rules that
+removal taught.)
 
 Layout: request plumbing (auth, the error-ledger hooks, tiers), the background
 owner (one gunicorn worker claims the recorders, the warmer and the deep
@@ -55,7 +57,8 @@ def _asset_version():
     page reload fetches the new UI without needing a server restart."""
     try:
         latest = max(os.path.getmtime(os.path.join(_STATIC_DIR, f))
-                     for f in ("app.js", "matchups.js", "nflview.js", "dfspick.js", "style.css", "sw.js"))
+                     for f in ("app.js", "matchups.js", "nflview.js", "dfspick.js", "pick6log.js", "style.css",
+                               "sw.js"))
         return str(int(latest))
     except OSError:
         return _ASSET_VERSION
@@ -1275,6 +1278,14 @@ def _ensure_recorder():
             mlb_recorder.start_background()
         except Exception as _e:
             errlog.note("APP-ensure_recorder-3", _e)
+        # The crypto terminal's paper record (2026-11-27): a few rows per Kalshi
+        # crypto market at fixed looks before the close, graded off Kalshi's
+        # settlement value, read only through SQL sums. VIGIL_CRYPTO=off stops it.
+        try:
+            import crypto_terminal
+            crypto_terminal.start_background()
+        except Exception as _e:
+            errlog.note("APP-ensure_recorder-crypto", _e)
         try:
             _init_deep_sims()
         except Exception as _e:
@@ -3308,6 +3319,65 @@ def api_baseball_today():
         blend = None
     return jsonify({"date": date, "games": games, "combos": combos,
                     "deep_blend": blend})
+
+
+# ---- The crypto terminal (2026-11-27, crypto_terminal.py) ------------------------
+# Read-only and PAPER ONLY: Kalshi's crypto contracts priced off their own
+# settlement rule, the exchange data behind them, and the record. GET routes
+# only; nothing here places an order (guards CX-PAPER). The board is a few
+# cached HTTP reads and closed-form arithmetic; the record is SQL sums.
+@app.route("/api/crypto/board")
+def api_crypto_board():
+    import crypto_terminal
+    coin = (request.args.get("coin") or "BTC").upper()
+    if coin not in crypto_terminal.COINS:
+        return jsonify({"error": "unknown coin"}), 400
+    try:
+        return jsonify(crypto_terminal.board(coin))
+    except Exception as e:
+        errlog.note("CRYPTO-board", e, path=coin)
+        return jsonify({"error": f"crypto board failed: {type(e).__name__}"}), 502
+
+
+@app.route("/api/crypto/candles")
+def api_crypto_candles():
+    import crypto_terminal
+    coin = (request.args.get("coin") or "BTC").upper()
+    try:
+        gran = int(request.args.get("gran") or 60)
+    except ValueError:
+        return jsonify({"error": "bad granularity"}), 400
+    if coin not in crypto_terminal.COINS or gran not in crypto_terminal._GRANS:
+        return jsonify({"error": "bad params"}), 400
+    if not crypto_terminal.ENABLED:
+        return jsonify({"coin": coin, "gran": gran, "off": True, "candles": []})
+    try:
+        return jsonify({"coin": coin, "gran": gran, "source": "Coinbase Exchange public candles",
+                        "candles": crypto_terminal.candles(coin, gran)})
+    except Exception as e:
+        errlog.note("CRYPTO-candles", e, path=f"{coin}:{gran}")
+        return jsonify({"error": f"candles failed: {type(e).__name__}"}), 502
+
+
+@app.route("/api/crypto/record")
+def api_crypto_record():
+    import crypto_terminal
+    coin = (request.args.get("coin") or "").upper() or None
+    kind = request.args.get("kind") or None
+    look = request.args.get("look") or None
+    if (coin and coin not in crypto_terminal.COINS) or (kind and kind not in crypto_terminal.CHECKPOINTS) \
+            or (look and not look.isdigit()):
+        return jsonify({"error": "bad params"}), 400
+    try:
+        # the background owner's summary file (no scan on a request); a filtered
+        # read is one cached computation on a bounded key
+        s = crypto_terminal.summary()
+        rec = crypto_terminal.record_cached(coin, kind, int(look) if look else None) if (coin or kind or look) else s.get("record")
+        return jsonify({"record": rec, "by": s.get("by"), "as_of": s.get("ts"), "paper_only": True,
+                        "decide": {"markets": crypto_terminal.DECIDE_MIN, "days": crypto_terminal.DECIDE_DAYS}})
+    except Exception as e:
+        errlog.note("CRYPTO-record-api", e)
+        return jsonify({"error": f"record failed: {type(e).__name__}"}), 502
 
 
 @app.route("/api/bets", methods=["GET"])
@@ -5363,6 +5433,80 @@ def api_baseball_pick6_eval():
     except Exception as e:
         return jsonify({"error": f"baseball data failed: {e}"}), 502
     return jsonify(baseball.pick6_eval(games, pk, legs))
+
+
+# The Pick6 PAPER ledger (pick6_ledger.py; the owner's backlog item 7). Every
+# route sits behind the app's basic auth like the rest; the writes are the
+# owner's typed entries, so a malformed one is a 400 naming the field, and the
+# reads are a page of entries plus SQL sums (never the whole table).
+@app.route("/api/pick6/ledger", methods=["GET"])
+def api_pick6_ledger():
+    import pick6_ledger
+    try:
+        limit = int(request.args.get("limit", 30))
+        offset = int(request.args.get("offset", 0))
+    except ValueError:
+        return jsonify({"error": "bad limit/offset"}), 400
+    try:
+        return jsonify({"entries": pick6_ledger.listing(limit=limit, offset=offset),
+                        "record": pick6_ledger.record(), **pick6_ledger.meta()})
+    except Exception as e:
+        errlog.note("P6L-read", e)
+        return jsonify({"error": f"ledger read failed: {e}"}), 502
+
+
+@app.route("/api/pick6/ledger", methods=["POST"])
+def api_pick6_ledger_add():
+    import pick6_ledger
+    d = request.get_json(force=True, silent=True)
+    try:
+        return jsonify(pick6_ledger.add_entry(d)), 201
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/pick6/ledger/<int:entry_id>/schedule", methods=["POST"])
+def api_pick6_ledger_schedule(entry_id):
+    import pick6_ledger
+    d = request.get_json(force=True, silent=True) or {}
+    try:
+        e = pick6_ledger.add_schedule_rows(entry_id, d.get("text"))
+    except ValueError as ex:
+        return jsonify({"error": str(ex)}), 400
+    return (jsonify(e), 200) if e else (jsonify({"error": "no such entry"}), 404)
+
+
+@app.route("/api/pick6/ledger/pick/<int:pick_id>", methods=["POST"])
+def api_pick6_ledger_pick(pick_id):
+    import pick6_ledger
+    d = request.get_json(force=True, silent=True) or {}
+    try:
+        e = pick6_ledger.set_pick(pick_id, actual=d.get("actual"), void=bool(d.get("void")),
+                                  reset=bool(d.get("reset")),
+                                  decision=(str(d["decision"]) if d.get("decision") else None))
+    except ValueError as ex:
+        return jsonify({"error": str(ex)}), 400
+    return (jsonify(e), 200) if e else (jsonify({"error": "no such pick"}), 404)
+
+
+@app.route("/api/pick6/ledger/grade", methods=["POST"])
+def api_pick6_ledger_grade():
+    """One grading pass now (the background owner runs one an hour). The box
+    reads are network calls, capped per pass (pick6_ledger._MAX_FETCH); a pass
+    already running answers busy instead of starting a second."""
+    import pick6_ledger
+    try:
+        n = pick6_ledger.grade_now()
+    except Exception as e:
+        errlog.note("P6L-grade", e)
+        return jsonify({"error": f"grading failed: {e}"}), 502
+    return jsonify({"graded": n, "busy": n is None})
+
+
+@app.route("/api/pick6/ledger/<int:entry_id>", methods=["DELETE"])
+def api_pick6_ledger_delete(entry_id):
+    import pick6_ledger
+    return jsonify({"ok": pick6_ledger.delete_entry(entry_id)})
 
 
 @app.route("/api/baseball/sgp")

@@ -59,6 +59,18 @@
   "source": "the owner's final export, summarized off the PC and committed (2026-11-26); the export itself stays out of git",
   "starts": "2026-11-22T18:00:00.0000000Z"
  },
+ "197897298": {
+  "cash_line": 172.59999,
+  "draft_group_id": 156932,
+  "entries": 594530,
+  "final": true,
+  "first": 262.53998,
+  "kind": "classic",
+  "name": "NFL $2.5M Thanksgiving Millionaire [$1M to 1st] (Thu)",
+  "sha256": "7a06d589079acce2628dad7675cbdd4bfe7e0db965dfe183db2d2a5b99a32f28",
+  "source": "the owner's final export, sent from away 2026-11-27, summarized off the PC as dk_standings.intake does and committed; the export itself stays out of git",
+  "starts": "2026-11-26T18:00:00.0000000Z"
+ },
  "197912905": {
   "cash_line": 76.26,
   "draft_group_id": 156781,
@@ -82,6 +94,18 @@
   "sha256": "6a9df3306b00068bd3b6026b011573972bc3b1fc1ce3118ab9405a86c51d560b",
   "source": "the owner's final export, summarized off the PC and committed (2026-11-26); the export itself stays out of git",
   "starts": "2026-11-24T01:15:00.0000000Z"
+ },
+ "198130093": {
+  "cash_line": 71.340004,
+  "draft_group_id": 157075,
+  "entries": 37647,
+  "final": true,
+  "first": 90.299995,
+  "kind": "showdown",
+  "name": "NFL Showdown $800K Thanksgiving Night Showdown [$200K to 1st] (KC @ BUF)",
+  "sha256": "fda911e8754478473463b643d8cc56fbce8090ae8e5c0e7b173258fb3c88ed87",
+  "source": "the owner's final export, sent from away 2026-11-27, summarized off the PC as dk_standings.intake does and committed; the export itself stays out of git",
+  "starts": "2026-11-27T01:20:00.0000000Z"
  },
  "198150093": {
   "cash_line": 86.57,

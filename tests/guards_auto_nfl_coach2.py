@@ -193,6 +193,28 @@ def run(ck):
     ck("NF15 the variant plays on the caller's base tables (the ones the anchor measured on), not the coaching fit's own",
        ct.base is T and CD.coach_tables(T) is ct and ct.gap is __import__("nfl_coach_sim").tables().gap)
 
+    # ---- the owner's condition on the 5% family rate: both tests simulated end to end
+    from research import nfl_coach_family_check as FC
+    d = FC._design()
+    fam = json.load(open(os.path.join(RG.REG_DIR, "family_check.json")))
+    keys = ("normal_r1_at_min_games", "normal_r1_at_96_games", "heavy_tailed_t3_r1_at_min_games")
+    ck("NF16 the committed end-to-end simulation (R1's t test, the gate at its worst case, both looks with their "
+       "t boundaries and shared games) puts the family rate at or under 5%, three SE included, in every variant",
+       fam["design"] == d and abs(d["bonferroni"] - 0.05) < 1e-9
+       and all(fam[k][f][0] + 3 * fam[k][f][1] <= 0.05 for k in keys
+               for f in ("family_worst_case_gate", "family_worst_case_gate_with_futility"))
+       and "always pass" in fam["gate_assumption"] and fam[keys[0]]["worlds"] >= 1000000,
+       [fam[k]["family_worst_case_gate"] for k in keys])
+    live = FC.simulate(300000, d["r1_min_games"], d, seed=5)
+    p, se_ = live["family_worst_case_gate"]
+    ck("NF17 a fresh run of it agrees: under 5% + 3 SE, R1's share near 2.43%, the gate open whenever criterion 4 "
+       "fails, and the looks' boundaries the read's own",
+       p <= 0.05 + 3 * se_ and abs(live["r1_criterion_4"][0] - 0.0243) < 0.0015
+       and abs(live["gate_opens"][0] + live["r1_criterion_4"][0] - 1.0) < 1e-9
+       and abs(live["t_boundaries"][0] - CF.decide(1, -1e-9, 1.0, 136, reg)["t_critical"]) < 1e-3
+       and abs(live["t_boundaries"][1] - CF.decide(2, -1e-9, 1.0, 272, reg)["t_critical"]) < 1e-3
+       and live["family_worst_case_gate_with_futility"][0] <= p, f"{p} +/- {se_}")
+
 
 if __name__ == "__main__":
     PASS, FAIL = [], []

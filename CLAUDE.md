@@ -859,6 +859,34 @@ data-only `sim-history` branch (which never deploys):
   passive log, conservation exact), +0.8 to +1.1 nats a team-game on who carried or was targeted in
   development. H1 reads 2026 weeks 13-18 after R1's read (the owner's call on sharing those games is open), H2
   (adaptation) after 2027. Nothing reaches a DFS world until H1 passes and a separate DFS-link test does.
+  **R3** (`nfl_coach_sim_r3.py`, `coach-r3.0`; `research/reports/nfl_coach_r3.md`, `prereg_r3.json`, commit 59b15fc):
+  the starting quarterback's substitution, a per-drive logistic hazard in margin against time left (lead and
+  deficit apart), learned on 2016-2023 with recent seasons up-weighted; +0.28 / +0.26 nats a team-game over a
+  constant (z 6.7, 5.5); a pulled starter stays out (6 returns in 410 decided-game pulls); conservation exact.
+  Not built (no evidence or out of R3's reach): coach-specific pull habits, a starter already out, a backup's
+  play selection (real, 4.7 SE, needs R4's fork of R1's call), a persistent pull for backs (they rotate, R2
+  deals it). Known miss: trailing 17-27 late, under-predicted ~2.7x.
+  **R4** (`nfl_coach_sim_r4.py`, `coach-r4.0`; `research/reports/nfl_coach_r4.md`, `prereg_r4.json`, commit c569318):
+  personnel-aware calls after R3's pull. Pulls are labelled injury (the play says "injured" or next week's report
+  lists him) or strategic, the kind drawn from the game state; injured starters return 11.2% (strategic 1%).
+  Shipped by a rule written first (3 SE fit, same sign in development): a strategic backup's dropbacks over expected
+  (+3.9 leading, -3.2 trailing, -4.6 close), completion -3.0 points either kind, an injury backup's interceptions
+  +1.2, and after a STRATEGIC pull the first unit sits (lead back's carry share -14.7 points, top-two targets -6.5);
+  tempo, air yards and sacks refused or no evidence. R4 forks R1's loop and plays R1's snap code unedited: with no
+  pull it is R1 draw for draw and R3 line for line, conservation exact. Development: +0.33 / +0.52 nats a pulled
+  team-game (z 2.8, 3.5). Registered window 2026 weeks 13-18 plus 2027 (80+ pulled team-games), read on/after
+  2028-01-13 after R1's. R3's trailing-late miss is trailing teams protecting their quarterback (28 of 30 strategic,
+  not late-season rest); a new hazard form is an R5 candidate on fresh games. R3's report carries an erratum: its
+  R3 arm's deal draws are seeded one game later than R2's (noise, not bias; the registered read stands).
+- **The deep engine's market anchor spreads 1.21x too wide** (2026-11-27, `research/data/c3_margin_scale.json`,
+  C3 addendum): `nfl_deep_data.market_margins` converts Kalshi's win totals to points with
+  `nfl_season._PTS_PER_WIN` 2.25, the drive engine's constant (set to undo ITS compression; the drive season sim
+  returns the market's wins at slope 1.04), but the deep engine does not compress (realized vs anchored 1.007),
+  so a deep season seeded from the market returns its wins at slope 1.206 +/- 0.031. An implementation error
+  against `market_margins`' own contract. NOT fixed yet: the registered NFL deep-weight read is grading the
+  deep engine as it stands; the owner's call on timing (proposed: its own constant, ~1.84, measured at higher n,
+  with a slope-1 guard, right after that read). C3-N (the analytic resolution at 1.842) is registered on fresh
+  games, read not before 2028-01-12.
 - **Classic field, second pass** (2026-11-27, `research/reports/cl_field2.md`, development weeks 10-11):
   the served field's 15-29 point deficit is per-player ownership (one chalk back carries most of it);
   steering onto a noisy-optimizer share of Sleeper's line moved by Kalshi's prop means (F1c) closed it to
@@ -867,6 +895,24 @@ data-only `sim-history` branch (which never deploys):
   locking after it (2026-11-29, 12-06), each read once, need the owner's standings exports.
   `dfs_field_capture.py` (from `mlb_recorder`, every 30 min) freezes DraftKings' FPPG / opponent rank /
   status and ESPN's start and roster percentages at each kickoff, inside the props log's weekly store.
+- **Owner decisions, 2026-11-27** (coaching and C3).
+  - The 5% family-wise one-sided false-positive rate for R1's criterion 4 and its confirmatory test is
+    APPROVED, on the condition that the calculation covers every scheduled look and the conditional
+    eligibility (the confirmatory runs only when R1 fails criterion 4 alone); R1's own verdict stands
+    permanently. Power is the chance a test passes IF the engine is better by a given amount, never the
+    probability that it is better: a failed test can be insufficient evidence.
+  - The coaching DFS read and R2's H1 MAY use 2026 weeks 13-18 (frozen implementation, endpoints and
+    criteria; the dependence between tests acknowledged). If R2 is modified using R1's held-out results,
+    R2 moves to fresh games.
+  - Offensive coordinators stay OUT. A future enhancement, once reliable historical assignments exist: head
+    coach, offensive and defensive coordinators, and the ACTUAL offensive and defensive play callers, which
+    can differ and change mid-season.
+  - R3 = quarterback blowout substitutions first (learned from score, time, possession, quarterback
+    availability and team tendencies, never hand-set thresholds; conservation exact), later running backs
+    and receivers; the coaching-change prior after it or in parallel.
+  - C3: the suspected double compression correction (`nfl_season._PTS_PER_WIN` fed into Phi(./13.2)) is to
+    be classified as an implementation error or a modeling proposal; the original replay stands; any new
+    comparison is registered on fresh data.
 - **Owner decisions, 2026-11-26.**
   - DraftKings D/ST points allowed include kickoff, punt and blocked-kick return TDs. They exclude the
     opponent defense's pick-six and fumble-return TDs (their conversions count). Verified on the official
@@ -914,6 +960,46 @@ data-only `sim-history` branch (which never deploys):
     points under the real one -- probably the bigger payout/EV error. Next (each the owner's call): a public
     consensus projection captured before lock; classic ownership concentration and field strength first; the
     optimizer cluster re-registered with a stack rule on contests not read; weeks 1, 2, 6 raw exports for classic.
+- **The Pick6 paper ledger** (2026-11-27, `pick6_ledger.py`, `static/pick6log.js`, the NFL tab's Pick 6 view;
+  guards `tests/guards_auto_pick6.py`, P1-P13). The owner TYPES each DraftKings Pick6 entry (2-6 picks, the
+  payout schedule as DK shows it, `k/n=x` with the stake included, a paper stake); nothing is scraped and no money
+  moves. Vigil's figure is read off the boards the Pick 6 views already draw, only at the owner's exact line
+  (never built in a web worker; an entry saved after its game date gets none). Graded hourly from `mlb_recorder`
+  (`MREC-pick6`): NFL off Sleeper's week (regular season only), MLB off statsapi, NBA off ESPN's box; every other
+  sport by hand. **DraftKings' own rules, read by the owner on its pages 2026-11-27** (they answer 403 to us): a
+  tie with the line is VOID either side (`TIE_RULE` "void"); minimum participation NFL one snap, NBA one second,
+  MLB one plate appearance (batting) / one pitch (pitching) -- not met is VOID, unknown is manual review (Sleeper
+  carried snaps on 12 of 95 week-12 QB/WR rows, so any recorded stat counts as a snap and `gp` never does; an
+  active NBA line with 0 MIN and no stats, or a 0-PA runner's specialized stat, is review). **The Pardon**
+  (`PARDON`, the policy as a table): a LOSING More pick on a FULL-GAME stat (event-based and part-game markets
+  never) is void when the qualifying exit is established (MLB: a hitter with exactly 1 PA), a loss when ruled out
+  (NBA: ESPN's play-by-play has him on the floor after halftime, `nba_halves`; NFL: a defender or kicker, or
+  second-half yards in Sleeper's split), else review -- Sleeper has no snaps by half and ESPN logs no period
+  starters, so an NFL or NBA pardon is never established automatically. A pick in review carries two answers on
+  the card; an entry settles only when every pick is decided and the record counts nothing in review. The record
+  (SQL sums, 95% Wilson): outright accuracy (voids not a hit, stated), accuracy on non-void picks, void frequency
+  by cause (did not play, tie, pardon, by hand), Vigil's calibration, paper ROI (void refunds are Pick6 credits).
+  **Any line** (NFL): the PC's week board also files one integer histogram a player and stat on the whole-yard
+  lattice (`nfl_dfs_sim.stat_hist`, comparisons only, so P(stat > L) at every half-point L is the board's own
+  world count bit for bit; 387 players / 210 KB on week 13, +1.8 s) as boardshare piece
+  `nfl_sim_dists_<season>_w<NN>_0`, built only where `VIGIL_PC_WORKER` is set; whole-number lines are not priced
+  (continuous yards, no tie mass). The joint worlds stay on the PC.
+- **The crypto terminal** (2026-11-27, `crypto_terminal.py`, `static/crypto.js`, the Crypto tab; the owner asked
+  for it back in this sprint's backlog; READ-ONLY and paper: nothing places an order). Kalshi's 15-minute up/down and
+  hourly above/below contracts on BTC, ETH, SOL, XRP and DOGE, each priced off ITS OWN rules text (the simple average
+  of CF Benchmarks' 60 seconds before the close; ETH's index is "ERTI"; DOGE's strike from `custom_strike`, since
+  `floor_strike` is rounded; range, one-touch, a wrong index or a text/field disagreement refused, shown unpriced).
+  The level is the median of four exchanges, labelled a proxy (CF Benchmarks is licensed). The model is a driftless
+  walk at recent one-minute volatility with the settlement average's variance exact; where no volatility reconciles
+  it with Kalshi's price the card says the market is reading a different level. **Kalshi's price beat it on the
+  held-out week at every look** (`research/reports/crypto_validation.md`: +0.0057 to +0.0329 nats, z 2.3-4.8;
+  the paper strategy's +4.04c in sample was +0.56 +/- 1.09c held out), so every edge reads "unproven" until the
+  live record decides (500 markets over 10 days, 2 SE). The record is its own file (`crypto_record.db` beside
+  predlog.db, `cx_forecasts`): rows at fixed looks 60 s+ before the close (nothing logged has seen the settlement
+  window), graded off Kalshi's result, read by SQL sums into a summary file the background owner writes -- web
+  requests read only that file. 14 days of every look, then the decision look to 180 days, capped at 300,000 rows
+  (~53 MB). Measured in the guards (`tests/guards_auto_crypto.py`): 400 recorder passes 0.0 MB RSS growth, a
+  200,000-row read +0.4 MB. `VIGIL_CRYPTO=off` stops it without a code change.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 
@@ -1076,7 +1162,8 @@ so a self-pulling batch file corrupts itself); all logic lives in Python.
   dropped once (`store.drop_crypto_tables`, secure_delete OFF: Debian's SQLite
   zeroes freed pages through the WAL, 181 MB for a 1M-row copy; then a VACUUM,
   193 -> 13 MB on a copy, 0.29 s). A read that
-  grows with a table belongs in SQL, never a fetchall. Every worker now ledgers
+  grows with a table belongs in SQL, never a fetchall. (The paper crypto terminal that came back on 2026-11-27 was
+  built against exactly this: its own file, SQL sums, a summary file for pages, a row cap -- above.) Every worker now ledgers
   `MEM-worker` past 600 MB with its requests in flight and every thread's
   frames (in the row's `tb`): read the error-log snapshot first.
 - The slate builds in a **fresh subprocess** every few minutes; anything cached

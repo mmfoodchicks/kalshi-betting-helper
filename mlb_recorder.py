@@ -283,6 +283,13 @@ def _loop():
             dfs_field_capture.tick()
         except Exception as _e:
             errlog.note("MREC-fieldcap", _e)
+        # The Pick6 paper ledger: the owner's hand-entered entries graded off
+        # the final box scores, one pass an hour (pick6_ledger.tick). Own code.
+        try:
+            import pick6_ledger
+            pick6_ledger.tick()
+        except Exception as _e:
+            errlog.note("MREC-pick6", _e)
         time.sleep(SAMPLE_INTERVAL)
 
 

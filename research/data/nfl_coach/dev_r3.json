@@ -1,0 +1,102 @@
+{
+ "seasons": {
+  "2025": {
+   "realism": {
+    "pull_rate": {
+     "real": 0.192,
+     "sim_r3": 0.1721
+    },
+    "starter_dropbacks_crps": {
+     "r2_mean": 5.7876,
+     "r3_minus_r2_per_team_game": -0.363,
+     "se": 0.0488,
+     "z": -7.44
+    },
+    "starter_pass_yards_crps": {
+     "r2_mean": 43.0576,
+     "r3_minus_r2_per_team_game": -1.4464,
+     "se": 0.2969,
+     "z": -4.87
+    },
+    "starter_share_by_margin": {
+     "lost 17+": {
+      "r2": 1.0,
+      "r3": 0.8883,
+      "real": 0.8839,
+      "real_team_games": 67
+     },
+     "within 16": {
+      "r2": 1.0,
+      "r3": 0.9634,
+      "real": 0.9743,
+      "real_team_games": 314
+     },
+     "won 17+": {
+      "r2": 1.0,
+      "r3": 0.9583,
+      "real": 0.9699,
+      "real_team_games": 67
+     }
+    },
+    "team_games": 448
+   },
+   "stage1": {
+    "gain_per_team_game": 0.28303,
+    "pulls": 102,
+    "se": 0.04245,
+    "team_games": 544,
+    "z": 6.67
+   }
+  },
+  "2026": {
+   "realism": {
+    "pull_rate": {
+     "real": 0.1466,
+     "sim_r3": 0.1677
+    },
+    "starter_dropbacks_crps": {
+     "r2_mean": 5.3366,
+     "r3_minus_r2_per_team_game": -0.1814,
+     "se": 0.0567,
+     "z": -3.2
+    },
+    "starter_pass_yards_crps": {
+     "r2_mean": 42.5354,
+     "r3_minus_r2_per_team_game": -0.7058,
+     "se": 0.4051,
+     "z": -1.74
+    },
+    "starter_share_by_margin": {
+     "lost 17+": {
+      "r2": 1.0,
+      "r3": 0.8873,
+      "real": 0.8556,
+      "real_team_games": 34
+     },
+     "within 16": {
+      "r2": 1.0,
+      "r3": 0.9639,
+      "real": 0.9872,
+      "real_team_games": 164
+     },
+     "won 17+": {
+      "r2": 1.0,
+      "r3": 0.9591,
+      "real": 0.9916,
+      "real_team_games": 34
+     }
+    },
+    "team_games": 232
+   },
+   "stage1": {
+    "gain_per_team_game": 0.26127,
+    "pulls": 48,
+    "se": 0.04725,
+    "team_games": 328,
+    "z": 5.53
+   }
+  }
+ },
+ "sims": 200,
+ "version": "coach-r3.0"
+}
