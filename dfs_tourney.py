@@ -1953,6 +1953,53 @@ def _field_extras(by_name, dx):
     return extra[:_FIELD_EXTRA_MAX]
 
 
+def _apply_eligibility(mode, kept, extra, dx, week, preseason):
+    """The eligibility mode (dfs_eligibility; research/reports/dfs_eligibility.md) on a gated pool: None for
+    "conservative" (the default: nothing is read or touched, the board is today's byte for byte). Otherwise the
+    field extras the mode admits become ENTERABLE -- still field extras (`_elig_extra`), so the field, the lineup
+    universe and every field figure stay the conservative board's -- and count as holding a punt role
+    (`_elig_role`; unrestricted lifts the punt-role rule for everyone, since it is a depth rule too). A gated
+    player the field does not play (projected under _FIELD_EXTRA_MIN_PROJ, or past the extras' cap) stays out:
+    adding him would move the field. Every row gets its display flags; nothing changes a projection."""
+    import dfs_eligibility
+    mode = dfs_eligibility.mode_of(mode)
+    if mode == "conservative":
+        return None
+    stamp = {"mode": mode, "experimental": True, "admitted": [], "outside_field": [], "flags": {}, "note": None,
+             "rule": "research/dfs_eligibility_fit.py (model research/data/dfs_eligibility/model.json)",
+             "field": "the conservative board's: only which of its lineups we may enter changes"}
+    if preseason:
+        stamp["note"] = "preseason: the depth gate is off, so there is nothing to widen"
+        return stamp
+    import nfl_dfs_sim
+    ctx = dfs_eligibility.week_context(nfl_dfs_sim._season(), week)
+    proj = {e["name"]: e.get("proj") for e in extra}
+    verdict = dfs_eligibility.assess(kept, [dict(d, proj=proj.get(d["name"], d.get("proj"))) for d in dx],
+                                     mode, ctx, dfs_eligibility.load_model())
+    in_field = {e["name"] for e in extra}
+    for e in extra:
+        if e["name"] in verdict["admitted"]:
+            e["_field_only"] = False
+            e["_elig_extra"] = True
+            e["_elig_role"] = True
+            e["elig"] = "admitted"
+    if mode == "unrestricted":
+        for e in list(kept) + list(extra):
+            e["_elig_role"] = True
+    for e in list(kept) + list(extra):
+        if verdict["flags"].get(e["name"]):
+            e["elig_flags"] = list(verdict["flags"][e["name"]])
+    stamp.update(admitted=sorted(n for n in verdict["admitted"] if n in in_field),
+                 outside_field=sorted(n for n in verdict["admitted"] if n not in in_field),
+                 flags=verdict["flags"], info=verdict["info"], note=verdict["note"])
+    return stamp
+
+
+def _elig_row(e):
+    """A board row's eligibility keys: only on an experimental-mode board (conservative rows carry none)."""
+    return {k: e[k] for k in ("elig", "elig_flags") if e.get(k)}
+
+
 # Why the last build returned None. The PC reports it beside a queued or
 # scheduled build that did not land; its "nothing to build" named two of
 # eleven causes (the Fable review of the Millionaire queue, 2026-10-28). One
@@ -1993,7 +2040,8 @@ def _sd_free_captain_waivers(ents, idx, rows, forced):
 
 def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=500,
                        week=None, preseason=False, top=60, portfolio_sizes=(5, 10, 20),
-                       candidates=1200, log=print, model=None, seed=None, workers=None, pick=None):
+                       candidates=1200, log=print, model=None, seed=None, workers=None, pick=None,
+                       eligibility=None):
     """The tournament for one DraftKings NFL showdown draft group, against the
     biggest GPP on it (or `contest_id`). Returns the artifact the tab serves,
     or None when the pool or the contest cannot be read. `model` None is
@@ -2081,6 +2129,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     for d in dx:
         d["field"] = d["name"] in field_only
     excluded += dx
+    elig_stamp = _apply_eligibility(eligibility, ents, extra, dx, week, preseason)
     if len(ents) < 6:
         return _refuse(f"only {len(ents)} players with a week-{week} projection (six needed)")
     ents = ents + extra
@@ -2160,8 +2209,10 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
                                          entry_ok=entry_ok, cpt_ok=cpt_ok)
     # the universe held to _FIELD_MAX_LINEUPS: the least-projected field-only
     # player goes first (our own players never do)
-    while idx is not None and len(idx) > _FIELD_MAX_LINEUPS and any(e.get("_field_only") for e in ents):
-        drop = min((e for e in ents if e.get("_field_only")), key=lambda e: e["proj"])
+    # (an extra the eligibility mode made enterable is still an extra here, so every mode holds the same universe)
+    while idx is not None and len(idx) > _FIELD_MAX_LINEUPS \
+            and any(e.get("_field_only") or e.get("_elig_extra") for e in ents):
+        drop = min((e for e in ents if e.get("_field_only") or e.get("_elig_extra")), key=lambda e: e["proj"])
         if drop["name"] in forced:
             # D3, as the classic board: the unpicked board drops him, so a man the field would not hold is refused.
             # Dropping the next extra instead built a different universe, and so a different field and chalk
@@ -2343,7 +2394,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     for i, e in enumerate(ents):
         players_out.append({"name": e["name"], "pos": e["pos"], "team": e["team"],
                             "salary": e["salary"], "cpt_salary": e["cpt_salary"],
-                            "depth": e.get("depth"), "field_only": bool(e.get("_field_only")),
+                            "depth": e.get("depth"), "field_only": bool(e.get("_field_only")), **_elig_row(e),
                             "proj": e["proj"], "floor": e["floor"], "ceiling": e["ceiling"],
                             "field_cpt_pct": round(float(own_c[i]), 1),
                             "field_flex_pct": round(float(own_f[i]), 1),
@@ -2395,7 +2446,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
                                      "won DraftKings' 2021 GB-DET showdown Millionaire). "
                                      "Dollar figures assume the sim is the truth; read the ranks.")},
             "experimental": sd_money_gate(len(idx), C, model=model),
-            "rules": list(nfl_dfs._SD_RULES),
+            "rules": list(nfl_dfs._SD_RULES), **({"eligibility": elig_stamp} if elig_stamp else {}),
             "top_win": [row(int(i), "win") for i in by_win],
             "top_ev": [row(int(i), "ev") for i in by_ev],
             "top_top1": [row(int(i), "top1") for i in by_top1],
@@ -2992,7 +3043,8 @@ def classic_allowed(idx, players, max_per_game=_KNOB, max_per_team=_KNOB, rb_sta
     game = np.minimum(team, opp) * len(teams) + np.maximum(team, opp)
     sal = np.asarray([int(p["salary"]) for p in players])
     pc = np.asarray([_CL_CODE.get(p["pos"], -1) for p in players])
-    role = np.asarray([str(p.get("depth") or "").split("·")[0] in _CL_PUNT_ROLES for p in players])
+    role = np.asarray([str(p.get("depth") or "").split("·")[0] in _CL_PUNT_ROLES or bool(p.get("_elig_role"))
+                       for p in players])   # _elig_role: an eligibility mode's admitted player (_apply_eligibility)
     field_only = np.asarray([bool(p.get("_field_only")) for p in players])
     T = team[idx]                                              # (rows, 9)
     qb_team = T[:, 0]
@@ -4120,7 +4172,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                       opt_worlds=20000, field_n=300000, cand_n=150000, cal_n=20000, chunk=500,
                       week=None, preseason=False, top=40, k_port=20, candidates=1200,
                       seed=None, log=print, probes=None, model=None, workers=None, pick=None,
-                      fresh_inputs=False, _inputs_note=None):
+                      fresh_inputs=False, _inputs_note=None, eligibility=None):
     """The tournament for a DraftKings classic slate, against every contest
     on it whose pool clears `min_pool` (or `contest_ids`). Returns the
     artifact the tab serves, or None when the slate, the contests or the
@@ -4273,6 +4325,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     for d in dx:
         d["field"] = d["name"] in field_only
     excluded += dx
+    elig_stamp = _apply_eligibility(eligibility, ents, extra, dx, week, preseason)
     ents = ents + extra
     pk_waived = []
     if pk:
@@ -4589,6 +4642,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                             "game": e.get("game"),
                             "salary": e["salary"], "depth": e.get("depth"),
                             "field_only": bool(e.get("_field_only")),
+                            **_elig_row(e),
                             "proj": e["proj"], "floor": e.get("floor"), "ceiling": e.get("ceiling"),
                             "field_pct": round(float(field_pct[i]), 1),
                             # the calibrated field's own share, beside the steered one, so
@@ -4684,6 +4738,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                             "model": FIELD_MODEL if steer is not None else "softmax",
                             "steer": steer},
             "rules": list(CL_RULES),
+            **({"eligibility": elig_stamp} if elig_stamp else {}),
             "results": results,
             "players": players_out,
             "excluded": excluded[:60],

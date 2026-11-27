@@ -1,0 +1,5175 @@
+{
+ "check": {
+  "board_allowed": 47644,
+  "board_beta": 0.3298,
+  "board_legal": 790222,
+  "conservative_allowed": 47644,
+  "field_beta": 0.3298,
+  "field_rows": 790222
+ },
+ "convention": "per-world field thresholds (dfs_evaluate._cpu_chunks), ties not split; the greedy cover (dfs_tourney.greedy_cover) on per-world top-1% indicators; EV and net are per entry, experimental (the evaluator's)",
+ "coverage": {
+  "adaptive": {
+   "lost_beyond_top400": 101,
+   "mean_points_lost": 1.202,
+   "share": 0.5692
+  },
+  "adaptive_all": {
+   "lost_beyond_top400": 97,
+   "mean_points_lost": 1.148,
+   "share": 0.5839
+  },
+  "conservative": {
+   "lost_beyond_top400": 231,
+   "mean_points_lost": 1.783,
+   "share": 0.4448
+  },
+  "everything_off": {
+   "lost_beyond_top400": 0,
+   "mean_points_lost": 0.0,
+   "share": 1.0
+  },
+  "lift:all": {
+   "lost_beyond_top400": 66,
+   "mean_points_lost": 0.759,
+   "share": 0.7621
+  },
+  "lift:cpt_salary": {
+   "lost_beyond_top400": 132,
+   "mean_points_lost": 1.266,
+   "share": 0.5775
+  },
+  "lift:dst_vs_cpt": {
+   "lost_beyond_top400": 150,
+   "mean_points_lost": 1.511,
+   "share": 0.505
+  },
+  "lift:kdst_cpt": {
+   "lost_beyond_top400": 231,
+   "mean_points_lost": 1.783,
+   "share": 0.4448
+  },
+  "lift:kdst_max": {
+   "lost_beyond_top400": 217,
+   "mean_points_lost": 1.741,
+   "share": 0.4592
+  },
+  "lift:punt_max": {
+   "lost_beyond_top400": 231,
+   "mean_points_lost": 1.783,
+   "share": 0.4448
+  },
+  "lift:punt_role": {
+   "lost_beyond_top400": 231,
+   "mean_points_lost": 1.783,
+   "share": 0.4448
+  },
+  "lift:te_team": {
+   "lost_beyond_top400": 228,
+   "mean_points_lost": 1.757,
+   "share": 0.4508
+  },
+  "unrestricted": {
+   "lost_beyond_top400": 96,
+   "mean_points_lost": 1.11,
+   "share": 0.5902
+  },
+  "unrestricted_all": {
+   "lost_beyond_top400": 91,
+   "mean_points_lost": 1.051,
+   "share": 0.6073
+  }
+ },
+ "eligibility": {
+  "adaptive": {
+   "admitted": [
+    "Marvin Mims Jr.",
+    "Max Hurleman",
+    "Michael Pittman Jr.",
+    "Nate Adkins"
+   ],
+   "flags": {
+    "Mason Rudolph": [
+     "returning: missed the team's last 1 game"
+    ],
+    "Max Hurleman": [
+     "one game for this team this season"
+    ],
+    "Michael Pittman Jr.": [
+     "returning: missed the team's last 6 games; pre-absence share 7%"
+    ],
+    "Tyler Badie": [
+     "returning: missed the team's last 4 games; pre-absence share 4%"
+    ]
+   },
+   "info": {
+    "Adam Trautman": {
+     "games": 10,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.5641,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0335,
+     "tau": 0.272042
+    },
+    "Bo Nix": {
+     "games": 10,
+     "has_hist": true,
+     "level": 16.46,
+     "missed": 0,
+     "p": 0.411,
+     "pos": "QB",
+     "returning": false,
+     "share": 0.0782,
+     "tau": 0.262721
+    },
+    "Cody Schrader": {
+     "games": 3,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.0395,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.0056,
+     "tau": 0.225886
+    },
+    "Courtland Sutton": {
+     "games": 10,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.6491,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0838,
+     "tau": 0.322434
+    },
+    "DK Metcalf": {
+     "games": 10,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.662,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0941,
+     "tau": 0.322434
+    },
+    "Darnell Washington": {
+     "games": 10,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.8072,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0647,
+     "tau": 0.272042
+    },
+    "Evan Engram": {
+     "games": 10,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.876,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0894,
+     "tau": 0.272042
+    },
+    "Germie Bernard": {
+     "games": 10,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.6442,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.1118,
+     "tau": 0.322434
+    },
+    "Jaylen Waddle": {
+     "games": 10,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.7457,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0726,
+     "tau": 0.322434
+    },
+    "Jaylen Warren": {
+     "games": 10,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.89,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.2588,
+     "tau": 0.225886
+    },
+    "Jonah Coleman": {
+     "games": 6,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.957,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.3687,
+     "tau": 0.225886
+    },
+    "Lew Nichols": {
+     "games": 8,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.0331,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.0412,
+     "tau": 0.225886
+    },
+    "Marvin Mims Jr.": {
+     "games": 8,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.4188,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0615,
+     "tau": 0.322434
+    },
+    "Mason Rudolph": {
+     "games": 4,
+     "has_hist": true,
+     "level": 16.46,
+     "missed": 1,
+     "p": 0.1737,
+     "pos": "QB",
+     "returning": true,
+     "share": 0.0189,
+     "tau": 0.262721
+    },
+    "Max Hurleman": {
+     "games": 1,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.3401,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.1111,
+     "tau": 0.322434
+    },
+    "Michael Pittman Jr.": {
+     "games": 3,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 6,
+     "p": 0.4525,
+     "pos": "WR",
+     "returning": true,
+     "share": 0.0706,
+     "tau": 0.322434
+    },
+    "Nate Adkins": {
+     "games": 10,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.3821,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0223,
+     "tau": 0.272042
+    },
+    "Pat Bryant": {
+     "games": 6,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.6291,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0642,
+     "tau": 0.322434
+    },
+    "Pat Freiermuth": {
+     "games": 10,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.8773,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0706,
+     "tau": 0.272042
+    },
+    "Rico Dowdle": {
+     "games": 7,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.7236,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.1882,
+     "tau": 0.225886
+    },
+    "Riley Nowakowski": {
+     "games": 10,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.0182,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.0059,
+     "tau": 0.225886
+    },
+    "Robert Tonyan": {
+     "games": 10,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.1396,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0059,
+     "tau": 0.272042
+    },
+    "Roman Wilson": {
+     "games": 6,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.4616,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0751,
+     "tau": 0.322434
+    },
+    "Travis Homer": {
+     "games": 9,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.0182,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.0059,
+     "tau": 0.225886
+    },
+    "Troy Franklin": {
+     "games": 10,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.2545,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0447,
+     "tau": 0.322434
+    },
+    "Tyler Badie": {
+     "games": 5,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 4,
+     "p": 0.3906,
+     "pos": "RB",
+     "returning": true,
+     "share": 0.0429,
+     "tau": 0.225886
+    }
+   },
+   "note": null
+  },
+  "conservative": {
+   "admitted": [],
+   "flags": {},
+   "info": {},
+   "note": null
+  },
+  "unrestricted": {
+   "admitted": [
+    "Cody Schrader",
+    "Lew Nichols",
+    "Marvin Mims Jr.",
+    "Max Hurleman",
+    "Michael Pittman Jr.",
+    "Nate Adkins",
+    "Riley Nowakowski",
+    "Robert Tonyan",
+    "Travis Homer",
+    "Troy Franklin"
+   ],
+   "flags": {
+    "Mason Rudolph": [
+     "returning: missed the team's last 1 game"
+    ],
+    "Max Hurleman": [
+     "one game for this team this season"
+    ],
+    "Michael Pittman Jr.": [
+     "returning: missed the team's last 6 games; pre-absence share 7%"
+    ],
+    "Tyler Badie": [
+     "returning: missed the team's last 4 games; pre-absence share 4%"
+    ]
+   },
+   "info": {
+    "Adam Trautman": {
+     "games": 10,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.5641,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0335,
+     "tau": 0.272042
+    },
+    "Bo Nix": {
+     "games": 10,
+     "has_hist": true,
+     "level": 16.46,
+     "missed": 0,
+     "p": 0.411,
+     "pos": "QB",
+     "returning": false,
+     "share": 0.0782,
+     "tau": 0.262721
+    },
+    "Cody Schrader": {
+     "games": 3,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.0395,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.0056,
+     "tau": 0.225886
+    },
+    "Courtland Sutton": {
+     "games": 10,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.6491,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0838,
+     "tau": 0.322434
+    },
+    "DK Metcalf": {
+     "games": 10,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.662,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0941,
+     "tau": 0.322434
+    },
+    "Darnell Washington": {
+     "games": 10,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.8072,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0647,
+     "tau": 0.272042
+    },
+    "Evan Engram": {
+     "games": 10,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.876,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0894,
+     "tau": 0.272042
+    },
+    "Germie Bernard": {
+     "games": 10,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.6442,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.1118,
+     "tau": 0.322434
+    },
+    "Jaylen Waddle": {
+     "games": 10,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.7457,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0726,
+     "tau": 0.322434
+    },
+    "Jaylen Warren": {
+     "games": 10,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.89,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.2588,
+     "tau": 0.225886
+    },
+    "Jonah Coleman": {
+     "games": 6,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.957,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.3687,
+     "tau": 0.225886
+    },
+    "Lew Nichols": {
+     "games": 8,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.0331,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.0412,
+     "tau": 0.225886
+    },
+    "Marvin Mims Jr.": {
+     "games": 8,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.4188,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0615,
+     "tau": 0.322434
+    },
+    "Mason Rudolph": {
+     "games": 4,
+     "has_hist": true,
+     "level": 16.46,
+     "missed": 1,
+     "p": 0.1737,
+     "pos": "QB",
+     "returning": true,
+     "share": 0.0189,
+     "tau": 0.262721
+    },
+    "Max Hurleman": {
+     "games": 1,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.3401,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.1111,
+     "tau": 0.322434
+    },
+    "Michael Pittman Jr.": {
+     "games": 3,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 6,
+     "p": 0.4525,
+     "pos": "WR",
+     "returning": true,
+     "share": 0.0706,
+     "tau": 0.322434
+    },
+    "Nate Adkins": {
+     "games": 10,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.3821,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0223,
+     "tau": 0.272042
+    },
+    "Pat Bryant": {
+     "games": 6,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.6291,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0642,
+     "tau": 0.322434
+    },
+    "Pat Freiermuth": {
+     "games": 10,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.8773,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0706,
+     "tau": 0.272042
+    },
+    "Rico Dowdle": {
+     "games": 7,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.7236,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.1882,
+     "tau": 0.225886
+    },
+    "Riley Nowakowski": {
+     "games": 10,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.0182,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.0059,
+     "tau": 0.225886
+    },
+    "Robert Tonyan": {
+     "games": 10,
+     "has_hist": true,
+     "level": 1.5,
+     "missed": 0,
+     "p": 0.1396,
+     "pos": "TE",
+     "returning": false,
+     "share": 0.0059,
+     "tau": 0.272042
+    },
+    "Roman Wilson": {
+     "games": 6,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.4616,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0751,
+     "tau": 0.322434
+    },
+    "Travis Homer": {
+     "games": 9,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 0,
+     "p": 0.0182,
+     "pos": "RB",
+     "returning": false,
+     "share": 0.0059,
+     "tau": 0.225886
+    },
+    "Troy Franklin": {
+     "games": 10,
+     "has_hist": true,
+     "level": 4.0,
+     "missed": 0,
+     "p": 0.2545,
+     "pos": "WR",
+     "returning": false,
+     "share": 0.0447,
+     "tau": 0.322434
+    },
+    "Tyler Badie": {
+     "games": 5,
+     "has_hist": true,
+     "level": 4.4,
+     "missed": 4,
+     "p": 0.3906,
+     "pos": "RB",
+     "returning": true,
+     "share": 0.0429,
+     "tau": 0.225886
+    }
+   },
+   "note": null
+  }
+ },
+ "inputs_sha256_16": {
+  "contest_198174394.json": "aeeb3cc21c454587",
+  "dk_players_157076.json": "99350f623c83bf5f",
+  "pool_engine.pkl": "3e508624aeb78360",
+  "roster.pkl": "1159f98611464e26",
+  "sleeper_proj_2026_w12.json.gz": "2e18504f51bbfd9b",
+  "tourney-157076.json": "6a724abd462156d8",
+  "usage_hist_2026_w12.json.gz": "58e89a2f7c3d7ed3"
+ },
+ "log": [
+  "universe 3,490,136 legal lineups over 30 players (4s)",
+  "check {'field_rows': 790222, 'board_legal': 790222, 'conservative_allowed': 47644, 'board_allowed': 47644, 'field_beta': 0.3298, 'board_beta': 0.3298}",
+  "field thresholds on 30,000 choosing and 30,000 independent worlds (534s)",
+  "scored 702,622 candidate rows on the choosing worlds (735s)",
+  "  conservative: 47,644 allowed; best top1 0.0702; cover 6s",
+  "  adaptive: 121,160 allowed; best top1 0.0702; cover 7s",
+  "  adaptive_all: 145,964 allowed; best top1 0.0702; cover 6s",
+  "  unrestricted: 159,595 allowed; best top1 0.0702; cover 6s",
+  "  unrestricted_all: 524,218 allowed; best top1 0.0702; cover 6s",
+  "  lift:dst_vs_cpt: 64,825 allowed; best top1 0.0702; cover 6s",
+  "  lift:kdst_cpt: 47,644 allowed; best top1 0.0702; cover 6s",
+  "  lift:cpt_salary: 106,024 allowed; best top1 0.0702; cover 6s",
+  "  lift:kdst_max: 48,365 allowed; best top1 0.0702; cover 6s",
+  "  lift:punt_max: 47,644 allowed; best top1 0.0702; cover 7s",
+  "  lift:te_team: 55,082 allowed; best top1 0.0702; cover 7s",
+  "  lift:punt_role: 47,644 allowed; best top1 0.0702; cover 7s",
+  "  lift:all: 226,048 allowed; best top1 0.0702; cover 6s",
+  "coverage over 10,000 worlds (527s)",
+  "  timing conservative: {'seconds': 15.3, 'maxrss_mb_self': 5440.8, 'maxrss_mb_children': 824.0, 'rows': 47644, 'worlds': 3000}",
+  "  timing adaptive: {'seconds': 18.9, 'maxrss_mb_self': 5440.8, 'maxrss_mb_children': 907.0, 'rows': 121160, 'worlds': 3000}",
+  "  timing unrestricted: {'seconds': 26.7, 'maxrss_mb_self': 5440.8, 'maxrss_mb_children': 950.4, 'rows': 159595, 'worlds': 3000}",
+  "  timing unrestricted_all: {'seconds': 48.4, 'maxrss_mb_self': 5440.8, 'maxrss_mb_children': 1294.4, 'rows': 524218, 'worlds': 3000}"
+ ],
+ "meta": {
+  "contest": 198174394,
+  "dg": 157076,
+  "lock_ts": 1795809600,
+  "model": "engine",
+  "note": "recorded by this session 19:43-19:52 UTC (the board: its 19:14 build, read from sim-history at 19:41), before the 20:00 UTC lock",
+  "recorded_before_lock": true,
+  "recorded_ts": 1795809114,
+  "seed": 20261127
+ },
+ "optimum_holds_player_share": {
+  "Adam Trautman": 0.0328,
+  "Bo Nix": 0.7324,
+  "Broncos": 0.2948,
+  "Chris Boswell": 0.269,
+  "Cody Schrader": 0.0026,
+  "Courtland Sutton": 0.1967,
+  "DK Metcalf": 0.1726,
+  "Darnell Washington": 0.0996,
+  "Evan Engram": 0.1598,
+  "Germie Bernard": 0.1176,
+  "Jaylen Waddle": 0.3543,
+  "Jaylen Warren": 0.5675,
+  "Jonah Coleman": 0.7259,
+  "Lew Nichols": 0.0004,
+  "Marvin Mims Jr.": 0.0822,
+  "Mason Rudolph": 0.5371,
+  "Max Hurleman": 0.0261,
+  "Michael Pittman Jr.": 0.0946,
+  "Nate Adkins": 0.0195,
+  "Pat Bryant": 0.2363,
+  "Pat Freiermuth": 0.1874,
+  "Rico Dowdle": 0.3402,
+  "Roman Wilson": 0.0835,
+  "Steelers": 0.1704,
+  "Troy Franklin": 0.0291,
+  "Tyler Badie": 0.1274,
+  "Wil Lutz": 0.3402
+ },
+ "optimum_needs_gated_player_share": 0.2398,
+ "optimum_violates_rule_share": {
+  "cpt_salary": 0.2797,
+  "dst_vs_cpt": 0.1257,
+  "kdst_cpt": 0.0778,
+  "kdst_max": 0.0509,
+  "punt_max": 0.0,
+  "punt_role": 0.0455,
+  "te_team": 0.0126
+ },
+ "players": [
+  {
+   "cpt_salary": 14400,
+   "depth": "QB1",
+   "field": true,
+   "gated": false,
+   "name": "Bo Nix",
+   "pos": "QB",
+   "proj": 14.3,
+   "salary": 9600,
+   "team": "DEN"
+  },
+  {
+   "cpt_salary": 15000,
+   "depth": "RB1",
+   "field": true,
+   "gated": false,
+   "name": "Jonah Coleman",
+   "pos": "RB",
+   "proj": 17.9,
+   "salary": 10000,
+   "team": "DEN"
+  },
+  {
+   "cpt_salary": 14100,
+   "depth": "RB1",
+   "field": true,
+   "gated": false,
+   "name": "Jaylen Warren",
+   "pos": "RB",
+   "proj": 12.6,
+   "salary": 9400,
+   "team": "PIT"
+  },
+  {
+   "cpt_salary": 9000,
+   "depth": "QB1",
+   "field": true,
+   "gated": false,
+   "name": "Mason Rudolph",
+   "pos": "QB",
+   "proj": 11.7,
+   "salary": 6000,
+   "team": "PIT"
+  },
+  {
+   "cpt_salary": 12600,
+   "depth": "WR1",
+   "field": true,
+   "gated": false,
+   "name": "Jaylen Waddle",
+   "pos": "WR",
+   "proj": 9.7,
+   "salary": 8400,
+   "team": "DEN"
+  },
+  {
+   "cpt_salary": 8100,
+   "depth": "K",
+   "field": true,
+   "gated": false,
+   "name": "Wil Lutz",
+   "pos": "K",
+   "proj": 7.2,
+   "salary": 5400,
+   "team": "DEN"
+  },
+  {
+   "cpt_salary": 9600,
+   "depth": "RB2",
+   "field": true,
+   "gated": false,
+   "name": "Rico Dowdle",
+   "pos": "RB",
+   "proj": 7.8,
+   "salary": 6400,
+   "team": "PIT"
+  },
+  {
+   "cpt_salary": 6900,
+   "depth": "DST",
+   "field": true,
+   "gated": false,
+   "name": "Broncos",
+   "pos": "DST",
+   "proj": 8.4,
+   "salary": 4600,
+   "team": "DEN"
+  },
+  {
+   "cpt_salary": 7800,
+   "depth": "K",
+   "field": true,
+   "gated": false,
+   "name": "Chris Boswell",
+   "pos": "K",
+   "proj": 7.1,
+   "salary": 5200,
+   "team": "PIT"
+  },
+  {
+   "cpt_salary": 7500,
+   "depth": "WR3",
+   "field": true,
+   "gated": false,
+   "name": "Pat Bryant",
+   "pos": "WR",
+   "proj": 7.1,
+   "salary": 5000,
+   "team": "DEN"
+  },
+  {
+   "cpt_salary": 11100,
+   "depth": "WR2",
+   "field": true,
+   "gated": false,
+   "name": "Courtland Sutton",
+   "pos": "WR",
+   "proj": 6.8,
+   "salary": 7400,
+   "team": "DEN"
+  },
+  {
+   "cpt_salary": 8700,
+   "depth": "TE1",
+   "field": true,
+   "gated": false,
+   "name": "Pat Freiermuth",
+   "pos": "TE",
+   "proj": 6.7,
+   "salary": 5800,
+   "team": "PIT"
+  },
+  {
+   "cpt_salary": 5700,
+   "depth": "DST",
+   "field": true,
+   "gated": false,
+   "name": "Steelers",
+   "pos": "DST",
+   "proj": 7.4,
+   "salary": 3800,
+   "team": "PIT"
+  },
+  {
+   "cpt_salary": 12000,
+   "depth": "WR1",
+   "field": true,
+   "gated": false,
+   "name": "DK Metcalf",
+   "pos": "WR",
+   "proj": 6.7,
+   "salary": 8000,
+   "team": "PIT"
+  },
+  {
+   "cpt_salary": 5400,
+   "depth": "TE1",
+   "field": true,
+   "gated": false,
+   "name": "Evan Engram",
+   "pos": "TE",
+   "proj": 5.6,
+   "salary": 3600,
+   "team": "DEN"
+  },
+  {
+   "cpt_salary": 300,
+   "depth": "RB2\u00b7Q",
+   "field": true,
+   "gated": false,
+   "name": "Tyler Badie",
+   "pos": "RB",
+   "proj": 4.5,
+   "salary": 200,
+   "team": "DEN"
+  },
+  {
+   "cpt_salary": 11700,
+   "depth": "WR2",
+   "field": true,
+   "gated": false,
+   "name": "Germie Bernard",
+   "pos": "WR",
+   "proj": 5.8,
+   "salary": 7800,
+   "team": "PIT"
+  },
+  {
+   "cpt_salary": 6600,
+   "depth": "TE2",
+   "field": true,
+   "gated": false,
+   "name": "Darnell Washington",
+   "pos": "TE",
+   "proj": 4.7,
+   "salary": 4400,
+   "team": "PIT"
+  },
+  {
+   "cpt_salary": 10200,
+   "depth": "WR4",
+   "field": true,
+   "gated": true,
+   "name": "Michael Pittman Jr.",
+   "pos": "WR",
+   "proj": 4.8,
+   "salary": 6800,
+   "team": "PIT"
+  },
+  {
+   "cpt_salary": 4500,
+   "depth": "WR4",
+   "field": true,
+   "gated": true,
+   "name": "Marvin Mims Jr.",
+   "pos": "WR",
+   "proj": 4.0,
+   "salary": 3000,
+   "team": "DEN"
+  },
+  {
+   "cpt_salary": 7200,
+   "depth": "WR3",
+   "field": true,
+   "gated": false,
+   "name": "Roman Wilson",
+   "pos": "WR",
+   "proj": 4.2,
+   "salary": 4800,
+   "team": "PIT"
+  },
+  {
+   "cpt_salary": 3900,
+   "depth": "TE2",
+   "field": true,
+   "gated": false,
+   "name": "Adam Trautman",
+   "pos": "TE",
+   "proj": 2.4,
+   "salary": 2600,
+   "team": "DEN"
+  },
+  {
+   "cpt_salary": 5100,
+   "depth": "WR5",
+   "field": true,
+   "gated": true,
+   "name": "Troy Franklin",
+   "pos": "WR",
+   "proj": 2.5,
+   "salary": 3400,
+   "team": "DEN"
+  },
+  {
+   "cpt_salary": 3000,
+   "depth": "WR5",
+   "field": true,
+   "gated": true,
+   "name": "Max Hurleman",
+   "pos": "WR",
+   "proj": 2.3,
+   "salary": 2000,
+   "team": "PIT"
+  },
+  {
+   "cpt_salary": 3600,
+   "depth": "RB3",
+   "field": false,
+   "gated": true,
+   "name": "Cody Schrader",
+   "pos": "RB",
+   "proj": 0.6,
+   "salary": 2400,
+   "team": "DEN"
+  },
+  {
+   "cpt_salary": 300,
+   "depth": "RB3",
+   "field": false,
+   "gated": true,
+   "name": "Riley Nowakowski",
+   "pos": "RB",
+   "proj": 0.1,
+   "salary": 200,
+   "team": "PIT"
+  },
+  {
+   "cpt_salary": 2100,
+   "depth": "RB4",
+   "field": false,
+   "gated": true,
+   "name": "Lew Nichols",
+   "pos": "RB",
+   "proj": 0.4,
+   "salary": 1400,
+   "team": "PIT"
+  },
+  {
+   "cpt_salary": 300,
+   "depth": "RB5",
+   "field": false,
+   "gated": true,
+   "name": "Travis Homer",
+   "pos": "RB",
+   "proj": 0.1,
+   "salary": 200,
+   "team": "PIT"
+  },
+  {
+   "cpt_salary": 900,
+   "depth": "TE3",
+   "field": false,
+   "gated": true,
+   "name": "Robert Tonyan",
+   "pos": "TE",
+   "proj": 0.1,
+   "salary": 600,
+   "team": "PIT"
+  },
+  {
+   "cpt_salary": 2400,
+   "depth": "TE3",
+   "field": false,
+   "gated": true,
+   "name": "Nate Adkins",
+   "pos": "TE",
+   "proj": 1.3,
+   "salary": 1600,
+   "team": "DEN"
+  }
+ ],
+ "seconds": 2043.5,
+ "slate": {
+  "board_built_ts": 1795806854,
+  "contest": 198174394,
+  "dg": 157076,
+  "lock_ts": 1795809600,
+  "teams": [
+   "DEN",
+   "PIT"
+  ],
+  "week": 12
+ },
+ "summary": {
+  "adaptive": {
+   "allowed": 121160,
+   "best": {
+    "cash": 0.673633,
+    "first": 0.0014,
+    "net": 366.875,
+    "top01": 0.0067,
+    "top1": 0.067667
+   },
+   "best_lineup": [
+    "Jonah Coleman",
+    "Bo Nix",
+    "Jaylen Warren",
+    "Mason Rudolph",
+    "Wil Lutz",
+    "Broncos"
+   ],
+   "best_top1_gen": 0.07023,
+   "best_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "first": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "diversity_20": {
+    "concentration": {
+     "entries": 20,
+     "flags": [
+      "Bo Nix is in 18 of 20 entries (90%), above 50%",
+      "Jonah Coleman is in 18 of 20 entries (90%), above 50%",
+      "Mason Rudolph is in 17 of 20 entries (85%), above 50%",
+      "Jaylen Warren is in 13 of 20 entries (65%), above 50%",
+      "entries 1 and 8 share 5 of 6 players"
+     ],
+     "max_overlap": 5,
+     "overlap_pair": [
+      1,
+      8
+     ],
+     "players": [
+      {
+       "flag": true,
+       "forced": false,
+       "n": 18,
+       "name": "Bo Nix",
+       "pct": 90.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 18,
+       "name": "Jonah Coleman",
+       "pct": 90.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 17,
+       "name": "Mason Rudolph",
+       "pct": 85.0,
+       "team": "PIT"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 13,
+       "name": "Jaylen Warren",
+       "pct": 65.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 9,
+       "name": "Wil Lutz",
+       "pct": 45.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 8,
+       "name": "Rico Dowdle",
+       "pct": 40.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 7,
+       "name": "Jaylen Waddle",
+       "pct": 35.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Broncos",
+       "pct": 30.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Chris Boswell",
+       "pct": 30.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 5,
+       "name": "Pat Bryant",
+       "pct": 25.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Evan Engram",
+       "pct": 15.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Pat Freiermuth",
+       "pct": 15.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Courtland Sutton",
+       "pct": 10.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "DK Metcalf",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Steelers",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 1,
+       "name": "Tyler Badie",
+       "pct": 5.0,
+       "team": "DEN"
+      }
+     ],
+     "size": 6,
+     "teams": [
+      {
+       "lead_n": 15,
+       "lead_pct": 75.0,
+       "players_avg": 3.45,
+       "team": "DEN"
+      },
+      {
+       "lead_n": 5,
+       "lead_pct": 25.0,
+       "players_avg": 2.55,
+       "team": "PIT"
+      }
+     ],
+     "warn_pct": 50
+    },
+    "distinct_players": 16
+   },
+   "gated_players_in_portfolio_20": [],
+   "p10": {
+    "cash": 0.471793,
+    "net": 246.699967,
+    "top01": 0.0844,
+    "top1": 0.4501
+   },
+   "p10_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p20": {
+    "cash": 0.434112,
+    "net": 193.356583,
+    "top01": 0.1331,
+    "top1": 0.634833
+   },
+   "p20_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p5": {
+    "cash": 0.514167,
+    "net": 328.434467,
+    "top01": 0.050433,
+    "top1": 0.279267
+   },
+   "p5_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p_any_top1_gen_20": 0.63767
+  },
+  "adaptive_all": {
+   "allowed": 145964,
+   "best": {
+    "cash": 0.673633,
+    "first": 0.0014,
+    "net": 366.875,
+    "top01": 0.0067,
+    "top1": 0.067667
+   },
+   "best_lineup": [
+    "Jonah Coleman",
+    "Bo Nix",
+    "Jaylen Warren",
+    "Mason Rudolph",
+    "Wil Lutz",
+    "Broncos"
+   ],
+   "best_top1_gen": 0.07023,
+   "best_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "first": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "diversity_20": {
+    "concentration": {
+     "entries": 20,
+     "flags": [
+      "Bo Nix is in 18 of 20 entries (90%), above 50%",
+      "Jonah Coleman is in 18 of 20 entries (90%), above 50%",
+      "Mason Rudolph is in 17 of 20 entries (85%), above 50%",
+      "Jaylen Warren is in 13 of 20 entries (65%), above 50%",
+      "entries 1 and 8 share 5 of 6 players"
+     ],
+     "max_overlap": 5,
+     "overlap_pair": [
+      1,
+      8
+     ],
+     "players": [
+      {
+       "flag": true,
+       "forced": false,
+       "n": 18,
+       "name": "Bo Nix",
+       "pct": 90.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 18,
+       "name": "Jonah Coleman",
+       "pct": 90.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 17,
+       "name": "Mason Rudolph",
+       "pct": 85.0,
+       "team": "PIT"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 13,
+       "name": "Jaylen Warren",
+       "pct": 65.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 9,
+       "name": "Wil Lutz",
+       "pct": 45.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 8,
+       "name": "Rico Dowdle",
+       "pct": 40.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 7,
+       "name": "Jaylen Waddle",
+       "pct": 35.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Broncos",
+       "pct": 30.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Chris Boswell",
+       "pct": 30.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 5,
+       "name": "Pat Bryant",
+       "pct": 25.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Evan Engram",
+       "pct": 15.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Pat Freiermuth",
+       "pct": 15.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Courtland Sutton",
+       "pct": 10.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "DK Metcalf",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Steelers",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 1,
+       "name": "Tyler Badie",
+       "pct": 5.0,
+       "team": "DEN"
+      }
+     ],
+     "size": 6,
+     "teams": [
+      {
+       "lead_n": 15,
+       "lead_pct": 75.0,
+       "players_avg": 3.45,
+       "team": "DEN"
+      },
+      {
+       "lead_n": 5,
+       "lead_pct": 25.0,
+       "players_avg": 2.55,
+       "team": "PIT"
+      }
+     ],
+     "warn_pct": 50
+    },
+    "distinct_players": 16
+   },
+   "gated_players_in_portfolio_20": [],
+   "p10": {
+    "cash": 0.471793,
+    "net": 246.699967,
+    "top01": 0.0844,
+    "top1": 0.4501
+   },
+   "p10_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p20": {
+    "cash": 0.434112,
+    "net": 193.356583,
+    "top01": 0.1331,
+    "top1": 0.634833
+   },
+   "p20_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p5": {
+    "cash": 0.514167,
+    "net": 328.434467,
+    "top01": 0.050433,
+    "top1": 0.279267
+   },
+   "p5_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p_any_top1_gen_20": 0.63767
+  },
+  "conservative": {
+   "allowed": 47644,
+   "best": {
+    "cash": 0.673633,
+    "first": 0.0014,
+    "net": 366.875,
+    "top01": 0.0067,
+    "top1": 0.067667
+   },
+   "best_lineup": [
+    "Jonah Coleman",
+    "Bo Nix",
+    "Jaylen Warren",
+    "Mason Rudolph",
+    "Wil Lutz",
+    "Broncos"
+   ],
+   "best_top1_gen": 0.07023,
+   "diversity_20": {
+    "concentration": {
+     "entries": 20,
+     "flags": [
+      "Bo Nix is in 18 of 20 entries (90%), above 50%",
+      "Jonah Coleman is in 18 of 20 entries (90%), above 50%",
+      "Mason Rudolph is in 17 of 20 entries (85%), above 50%",
+      "Jaylen Warren is in 13 of 20 entries (65%), above 50%",
+      "entries 1 and 8 share 5 of 6 players"
+     ],
+     "max_overlap": 5,
+     "overlap_pair": [
+      1,
+      8
+     ],
+     "players": [
+      {
+       "flag": true,
+       "forced": false,
+       "n": 18,
+       "name": "Bo Nix",
+       "pct": 90.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 18,
+       "name": "Jonah Coleman",
+       "pct": 90.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 17,
+       "name": "Mason Rudolph",
+       "pct": 85.0,
+       "team": "PIT"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 13,
+       "name": "Jaylen Warren",
+       "pct": 65.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 9,
+       "name": "Wil Lutz",
+       "pct": 45.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 8,
+       "name": "Rico Dowdle",
+       "pct": 40.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 7,
+       "name": "Jaylen Waddle",
+       "pct": 35.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Broncos",
+       "pct": 30.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Chris Boswell",
+       "pct": 30.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 5,
+       "name": "Pat Bryant",
+       "pct": 25.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Evan Engram",
+       "pct": 15.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Pat Freiermuth",
+       "pct": 15.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Courtland Sutton",
+       "pct": 10.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "DK Metcalf",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Steelers",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 1,
+       "name": "Tyler Badie",
+       "pct": 5.0,
+       "team": "DEN"
+      }
+     ],
+     "size": 6,
+     "teams": [
+      {
+       "lead_n": 15,
+       "lead_pct": 75.0,
+       "players_avg": 3.45,
+       "team": "DEN"
+      },
+      {
+       "lead_n": 5,
+       "lead_pct": 25.0,
+       "players_avg": 2.55,
+       "team": "PIT"
+      }
+     ],
+     "warn_pct": 50
+    },
+    "distinct_players": 16
+   },
+   "gated_players_in_portfolio_20": [],
+   "p10": {
+    "cash": 0.471793,
+    "net": 246.699967,
+    "top01": 0.0844,
+    "top1": 0.4501
+   },
+   "p20": {
+    "cash": 0.434112,
+    "net": 193.356583,
+    "top01": 0.1331,
+    "top1": 0.634833
+   },
+   "p5": {
+    "cash": 0.514167,
+    "net": 328.434467,
+    "top01": 0.050433,
+    "top1": 0.279267
+   },
+   "p_any_top1_gen_20": 0.63767
+  },
+  "lift:all": {
+   "allowed": 226048,
+   "best": {
+    "cash": 0.673633,
+    "first": 0.0014,
+    "net": 366.875,
+    "top01": 0.0067,
+    "top1": 0.067667
+   },
+   "best_lineup": [
+    "Jonah Coleman",
+    "Bo Nix",
+    "Jaylen Warren",
+    "Mason Rudolph",
+    "Wil Lutz",
+    "Broncos"
+   ],
+   "best_top1_gen": 0.07023,
+   "best_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "first": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "diversity_20": {
+    "concentration": {
+     "entries": 20,
+     "flags": [
+      "Bo Nix is in 19 of 20 entries (95%), above 50%",
+      "Jonah Coleman is in 19 of 20 entries (95%), above 50%",
+      "Jaylen Warren is in 15 of 20 entries (75%), above 50%",
+      "Mason Rudolph is in 15 of 20 entries (75%), above 50%",
+      "entries 1 and 7 share 5 of 6 players"
+     ],
+     "max_overlap": 5,
+     "overlap_pair": [
+      1,
+      7
+     ],
+     "players": [
+      {
+       "flag": true,
+       "forced": false,
+       "n": 19,
+       "name": "Bo Nix",
+       "pct": 95.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 19,
+       "name": "Jonah Coleman",
+       "pct": 95.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 15,
+       "name": "Jaylen Warren",
+       "pct": 75.0,
+       "team": "PIT"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 15,
+       "name": "Mason Rudolph",
+       "pct": 75.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 7,
+       "name": "Broncos",
+       "pct": 35.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 7,
+       "name": "Jaylen Waddle",
+       "pct": 35.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 7,
+       "name": "Rico Dowdle",
+       "pct": 35.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 7,
+       "name": "Wil Lutz",
+       "pct": 35.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Chris Boswell",
+       "pct": 30.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 5,
+       "name": "Pat Bryant",
+       "pct": 25.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Evan Engram",
+       "pct": 15.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Steelers",
+       "pct": 15.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Courtland Sutton",
+       "pct": 10.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "DK Metcalf",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Pat Freiermuth",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 1,
+       "name": "Tyler Badie",
+       "pct": 5.0,
+       "team": "DEN"
+      }
+     ],
+     "size": 6,
+     "teams": [
+      {
+       "lead_n": 13,
+       "lead_pct": 65.0,
+       "players_avg": 3.5,
+       "team": "DEN"
+      },
+      {
+       "lead_n": 7,
+       "lead_pct": 35.0,
+       "players_avg": 2.5,
+       "team": "PIT"
+      }
+     ],
+     "warn_pct": 50
+    },
+    "distinct_players": 16
+   },
+   "gated_players_in_portfolio_20": [],
+   "p10": {
+    "cash": 0.488553,
+    "net": 240.923067,
+    "top01": 0.0823,
+    "top1": 0.4473
+   },
+   "p10_vs_conservative": {
+    "cash": [
+     0.01676,
+     0.000296
+    ],
+    "net": [
+     -5.7769,
+     5.070895
+    ],
+    "top01": [
+     -0.0021,
+     0.000794
+    ],
+    "top1": [
+     -0.0028,
+     0.001315
+    ]
+   },
+   "p20": {
+    "cash": 0.442818,
+    "net": 195.025583,
+    "top01": 0.134133,
+    "top1": 0.650367
+   },
+   "p20_vs_conservative": {
+    "cash": [
+     0.008707,
+     0.000361
+    ],
+    "net": [
+     1.669,
+     6.481501
+    ],
+    "top01": [
+     0.001033,
+     0.001646
+    ],
+    "top1": [
+     0.015533,
+     0.002383
+    ]
+   },
+   "p5": {
+    "cash": 0.493447,
+    "net": 292.929,
+    "top01": 0.053467,
+    "top1": 0.2836
+   },
+   "p5_vs_conservative": {
+    "cash": [
+     -0.02072,
+     0.000634
+    ],
+    "net": [
+     -35.505467,
+     12.620583
+    ],
+    "top01": [
+     0.003033,
+     0.000697
+    ],
+    "top1": [
+     0.004333,
+     0.001509
+    ]
+   },
+   "p_any_top1_gen_20": 0.65273
+  },
+  "lift:cpt_salary": {
+   "allowed": 106024,
+   "best": {
+    "cash": 0.673633,
+    "first": 0.0014,
+    "net": 366.875,
+    "top01": 0.0067,
+    "top1": 0.067667
+   },
+   "best_lineup": [
+    "Jonah Coleman",
+    "Bo Nix",
+    "Jaylen Warren",
+    "Mason Rudolph",
+    "Wil Lutz",
+    "Broncos"
+   ],
+   "best_top1_gen": 0.07023,
+   "best_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "first": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "diversity_20": {
+    "concentration": {
+     "entries": 20,
+     "flags": [
+      "Bo Nix is in 19 of 20 entries (95%), above 50%",
+      "Jonah Coleman is in 19 of 20 entries (95%), above 50%",
+      "Mason Rudolph is in 16 of 20 entries (80%), above 50%",
+      "Jaylen Warren is in 14 of 20 entries (70%), above 50%",
+      "entries 1 and 7 share 5 of 6 players"
+     ],
+     "max_overlap": 5,
+     "overlap_pair": [
+      1,
+      7
+     ],
+     "players": [
+      {
+       "flag": true,
+       "forced": false,
+       "n": 19,
+       "name": "Bo Nix",
+       "pct": 95.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 19,
+       "name": "Jonah Coleman",
+       "pct": 95.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 16,
+       "name": "Mason Rudolph",
+       "pct": 80.0,
+       "team": "PIT"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 14,
+       "name": "Jaylen Warren",
+       "pct": 70.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 8,
+       "name": "Jaylen Waddle",
+       "pct": 40.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 8,
+       "name": "Rico Dowdle",
+       "pct": 40.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Broncos",
+       "pct": 30.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Wil Lutz",
+       "pct": 30.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 5,
+       "name": "Chris Boswell",
+       "pct": 25.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 5,
+       "name": "Pat Bryant",
+       "pct": 25.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 4,
+       "name": "Evan Engram",
+       "pct": 20.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Courtland Sutton",
+       "pct": 10.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "DK Metcalf",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Pat Freiermuth",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Steelers",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Tyler Badie",
+       "pct": 10.0,
+       "team": "DEN"
+      }
+     ],
+     "size": 6,
+     "teams": [
+      {
+       "lead_n": 13,
+       "lead_pct": 65.0,
+       "players_avg": 3.55,
+       "team": "DEN"
+      },
+      {
+       "lead_n": 7,
+       "lead_pct": 35.0,
+       "players_avg": 2.45,
+       "team": "PIT"
+      }
+     ],
+     "warn_pct": 50
+    },
+    "distinct_players": 16
+   },
+   "gated_players_in_portfolio_20": [],
+   "p10": {
+    "cash": 0.488553,
+    "net": 240.923067,
+    "top01": 0.0823,
+    "top1": 0.4473
+   },
+   "p10_vs_conservative": {
+    "cash": [
+     0.01676,
+     0.000296
+    ],
+    "net": [
+     -5.7769,
+     5.070895
+    ],
+    "top01": [
+     -0.0021,
+     0.000794
+    ],
+    "top1": [
+     -0.0028,
+     0.001315
+    ]
+   },
+   "p20": {
+    "cash": 0.445285,
+    "net": 198.102017,
+    "top01": 0.1331,
+    "top1": 0.645633
+   },
+   "p20_vs_conservative": {
+    "cash": [
+     0.011173,
+     0.000346
+    ],
+    "net": [
+     4.745433,
+     5.992956
+    ],
+    "top01": [
+     0.0,
+     0.001558
+    ],
+    "top1": [
+     0.0108,
+     0.00227
+    ]
+   },
+   "p5": {
+    "cash": 0.493447,
+    "net": 292.929,
+    "top01": 0.053467,
+    "top1": 0.2836
+   },
+   "p5_vs_conservative": {
+    "cash": [
+     -0.02072,
+     0.000634
+    ],
+    "net": [
+     -35.505467,
+     12.620583
+    ],
+    "top01": [
+     0.003033,
+     0.000697
+    ],
+    "top1": [
+     0.004333,
+     0.001509
+    ]
+   },
+   "p_any_top1_gen_20": 0.64803
+  },
+  "lift:dst_vs_cpt": {
+   "allowed": 64825,
+   "best": {
+    "cash": 0.673633,
+    "first": 0.0014,
+    "net": 366.875,
+    "top01": 0.0067,
+    "top1": 0.067667
+   },
+   "best_lineup": [
+    "Jonah Coleman",
+    "Bo Nix",
+    "Jaylen Warren",
+    "Mason Rudolph",
+    "Wil Lutz",
+    "Broncos"
+   ],
+   "best_top1_gen": 0.07023,
+   "best_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "first": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "diversity_20": {
+    "concentration": {
+     "entries": 20,
+     "flags": [
+      "Jonah Coleman is in 19 of 20 entries (95%), above 50%",
+      "Bo Nix is in 18 of 20 entries (90%), above 50%",
+      "Mason Rudolph is in 16 of 20 entries (80%), above 50%",
+      "Jaylen Warren is in 13 of 20 entries (65%), above 50%",
+      "entries 1 and 8 share 5 of 6 players"
+     ],
+     "max_overlap": 5,
+     "overlap_pair": [
+      1,
+      8
+     ],
+     "players": [
+      {
+       "flag": true,
+       "forced": false,
+       "n": 19,
+       "name": "Jonah Coleman",
+       "pct": 95.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 18,
+       "name": "Bo Nix",
+       "pct": 90.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 16,
+       "name": "Mason Rudolph",
+       "pct": 80.0,
+       "team": "PIT"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 13,
+       "name": "Jaylen Warren",
+       "pct": 65.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 8,
+       "name": "Rico Dowdle",
+       "pct": 40.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 8,
+       "name": "Wil Lutz",
+       "pct": 40.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 7,
+       "name": "Jaylen Waddle",
+       "pct": 35.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Broncos",
+       "pct": 30.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Chris Boswell",
+       "pct": 30.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 5,
+       "name": "Pat Bryant",
+       "pct": 25.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Courtland Sutton",
+       "pct": 15.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Steelers",
+       "pct": 15.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "DK Metcalf",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Evan Engram",
+       "pct": 10.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Pat Freiermuth",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Tyler Badie",
+       "pct": 10.0,
+       "team": "DEN"
+      }
+     ],
+     "size": 6,
+     "teams": [
+      {
+       "lead_n": 16,
+       "lead_pct": 80.0,
+       "players_avg": 3.5,
+       "team": "DEN"
+      },
+      {
+       "lead_n": 4,
+       "lead_pct": 20.0,
+       "players_avg": 2.5,
+       "team": "PIT"
+      }
+     ],
+     "warn_pct": 50
+    },
+    "distinct_players": 16
+   },
+   "gated_players_in_portfolio_20": [],
+   "p10": {
+    "cash": 0.471793,
+    "net": 246.699967,
+    "top01": 0.0844,
+    "top1": 0.4501
+   },
+   "p10_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p20": {
+    "cash": 0.43203,
+    "net": 196.405833,
+    "top01": 0.130967,
+    "top1": 0.636333
+   },
+   "p20_vs_conservative": {
+    "cash": [
+     -0.002082,
+     0.000251
+    ],
+    "net": [
+     3.04925,
+     3.678804
+    ],
+    "top01": [
+     -0.002133,
+     0.000921
+    ],
+    "top1": [
+     0.0015,
+     0.001574
+    ]
+   },
+   "p5": {
+    "cash": 0.514167,
+    "net": 328.434467,
+    "top01": 0.050433,
+    "top1": 0.279267
+   },
+   "p5_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p_any_top1_gen_20": 0.64017
+  },
+  "lift:kdst_cpt": {
+   "allowed": 47644,
+   "best": {
+    "cash": 0.673633,
+    "first": 0.0014,
+    "net": 366.875,
+    "top01": 0.0067,
+    "top1": 0.067667
+   },
+   "best_lineup": [
+    "Jonah Coleman",
+    "Bo Nix",
+    "Jaylen Warren",
+    "Mason Rudolph",
+    "Wil Lutz",
+    "Broncos"
+   ],
+   "best_top1_gen": 0.07023,
+   "best_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "first": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "diversity_20": {
+    "concentration": {
+     "entries": 20,
+     "flags": [
+      "Bo Nix is in 18 of 20 entries (90%), above 50%",
+      "Jonah Coleman is in 18 of 20 entries (90%), above 50%",
+      "Mason Rudolph is in 17 of 20 entries (85%), above 50%",
+      "Jaylen Warren is in 13 of 20 entries (65%), above 50%",
+      "entries 1 and 8 share 5 of 6 players"
+     ],
+     "max_overlap": 5,
+     "overlap_pair": [
+      1,
+      8
+     ],
+     "players": [
+      {
+       "flag": true,
+       "forced": false,
+       "n": 18,
+       "name": "Bo Nix",
+       "pct": 90.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 18,
+       "name": "Jonah Coleman",
+       "pct": 90.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 17,
+       "name": "Mason Rudolph",
+       "pct": 85.0,
+       "team": "PIT"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 13,
+       "name": "Jaylen Warren",
+       "pct": 65.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 9,
+       "name": "Wil Lutz",
+       "pct": 45.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 8,
+       "name": "Rico Dowdle",
+       "pct": 40.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 7,
+       "name": "Jaylen Waddle",
+       "pct": 35.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Broncos",
+       "pct": 30.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Chris Boswell",
+       "pct": 30.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 5,
+       "name": "Pat Bryant",
+       "pct": 25.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Evan Engram",
+       "pct": 15.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Pat Freiermuth",
+       "pct": 15.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Courtland Sutton",
+       "pct": 10.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "DK Metcalf",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Steelers",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 1,
+       "name": "Tyler Badie",
+       "pct": 5.0,
+       "team": "DEN"
+      }
+     ],
+     "size": 6,
+     "teams": [
+      {
+       "lead_n": 15,
+       "lead_pct": 75.0,
+       "players_avg": 3.45,
+       "team": "DEN"
+      },
+      {
+       "lead_n": 5,
+       "lead_pct": 25.0,
+       "players_avg": 2.55,
+       "team": "PIT"
+      }
+     ],
+     "warn_pct": 50
+    },
+    "distinct_players": 16
+   },
+   "gated_players_in_portfolio_20": [],
+   "p10": {
+    "cash": 0.471793,
+    "net": 246.699967,
+    "top01": 0.0844,
+    "top1": 0.4501
+   },
+   "p10_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p20": {
+    "cash": 0.434112,
+    "net": 193.356583,
+    "top01": 0.1331,
+    "top1": 0.634833
+   },
+   "p20_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p5": {
+    "cash": 0.514167,
+    "net": 328.434467,
+    "top01": 0.050433,
+    "top1": 0.279267
+   },
+   "p5_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p_any_top1_gen_20": 0.63767
+  },
+  "lift:kdst_max": {
+   "allowed": 48365,
+   "best": {
+    "cash": 0.673633,
+    "first": 0.0014,
+    "net": 366.875,
+    "top01": 0.0067,
+    "top1": 0.067667
+   },
+   "best_lineup": [
+    "Jonah Coleman",
+    "Bo Nix",
+    "Jaylen Warren",
+    "Mason Rudolph",
+    "Wil Lutz",
+    "Broncos"
+   ],
+   "best_top1_gen": 0.07023,
+   "best_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "first": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "diversity_20": {
+    "concentration": {
+     "entries": 20,
+     "flags": [
+      "Bo Nix is in 19 of 20 entries (95%), above 50%",
+      "Jonah Coleman is in 18 of 20 entries (90%), above 50%",
+      "Mason Rudolph is in 16 of 20 entries (80%), above 50%",
+      "Jaylen Warren is in 13 of 20 entries (65%), above 50%",
+      "entries 1 and 8 share 5 of 6 players"
+     ],
+     "max_overlap": 5,
+     "overlap_pair": [
+      1,
+      8
+     ],
+     "players": [
+      {
+       "flag": true,
+       "forced": false,
+       "n": 19,
+       "name": "Bo Nix",
+       "pct": 95.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 18,
+       "name": "Jonah Coleman",
+       "pct": 90.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 16,
+       "name": "Mason Rudolph",
+       "pct": 80.0,
+       "team": "PIT"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 13,
+       "name": "Jaylen Warren",
+       "pct": 65.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 9,
+       "name": "Wil Lutz",
+       "pct": 45.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 8,
+       "name": "Rico Dowdle",
+       "pct": 40.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 7,
+       "name": "Broncos",
+       "pct": 35.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 7,
+       "name": "Jaylen Waddle",
+       "pct": 35.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Chris Boswell",
+       "pct": 30.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 5,
+       "name": "Pat Bryant",
+       "pct": 25.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Evan Engram",
+       "pct": 15.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Courtland Sutton",
+       "pct": 10.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "DK Metcalf",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Pat Freiermuth",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Tyler Badie",
+       "pct": 10.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 1,
+       "name": "Steelers",
+       "pct": 5.0,
+       "team": "PIT"
+      }
+     ],
+     "size": 6,
+     "teams": [
+      {
+       "lead_n": 16,
+       "lead_pct": 80.0,
+       "players_avg": 3.6,
+       "team": "DEN"
+      },
+      {
+       "lead_n": 4,
+       "lead_pct": 20.0,
+       "players_avg": 2.4,
+       "team": "PIT"
+      }
+     ],
+     "warn_pct": 50
+    },
+    "distinct_players": 16
+   },
+   "gated_players_in_portfolio_20": [],
+   "p10": {
+    "cash": 0.471793,
+    "net": 246.699967,
+    "top01": 0.0844,
+    "top1": 0.4501
+   },
+   "p10_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p20": {
+    "cash": 0.444893,
+    "net": 217.2234,
+    "top01": 0.1385,
+    "top1": 0.634933
+   },
+   "p20_vs_conservative": {
+    "cash": [
+     0.010782,
+     0.000257
+    ],
+    "net": [
+     23.866817,
+     3.711753
+    ],
+    "top01": [
+     0.0054,
+     0.000839
+    ],
+    "top1": [
+     0.0001,
+     0.001322
+    ]
+   },
+   "p5": {
+    "cash": 0.514167,
+    "net": 328.434467,
+    "top01": 0.050433,
+    "top1": 0.279267
+   },
+   "p5_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p_any_top1_gen_20": 0.63847
+  },
+  "lift:punt_max": {
+   "allowed": 47644,
+   "best": {
+    "cash": 0.673633,
+    "first": 0.0014,
+    "net": 366.875,
+    "top01": 0.0067,
+    "top1": 0.067667
+   },
+   "best_lineup": [
+    "Jonah Coleman",
+    "Bo Nix",
+    "Jaylen Warren",
+    "Mason Rudolph",
+    "Wil Lutz",
+    "Broncos"
+   ],
+   "best_top1_gen": 0.07023,
+   "best_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "first": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "diversity_20": {
+    "concentration": {
+     "entries": 20,
+     "flags": [
+      "Bo Nix is in 18 of 20 entries (90%), above 50%",
+      "Jonah Coleman is in 18 of 20 entries (90%), above 50%",
+      "Mason Rudolph is in 17 of 20 entries (85%), above 50%",
+      "Jaylen Warren is in 13 of 20 entries (65%), above 50%",
+      "entries 1 and 8 share 5 of 6 players"
+     ],
+     "max_overlap": 5,
+     "overlap_pair": [
+      1,
+      8
+     ],
+     "players": [
+      {
+       "flag": true,
+       "forced": false,
+       "n": 18,
+       "name": "Bo Nix",
+       "pct": 90.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 18,
+       "name": "Jonah Coleman",
+       "pct": 90.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 17,
+       "name": "Mason Rudolph",
+       "pct": 85.0,
+       "team": "PIT"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 13,
+       "name": "Jaylen Warren",
+       "pct": 65.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 9,
+       "name": "Wil Lutz",
+       "pct": 45.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 8,
+       "name": "Rico Dowdle",
+       "pct": 40.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 7,
+       "name": "Jaylen Waddle",
+       "pct": 35.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Broncos",
+       "pct": 30.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Chris Boswell",
+       "pct": 30.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 5,
+       "name": "Pat Bryant",
+       "pct": 25.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Evan Engram",
+       "pct": 15.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Pat Freiermuth",
+       "pct": 15.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Courtland Sutton",
+       "pct": 10.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "DK Metcalf",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Steelers",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 1,
+       "name": "Tyler Badie",
+       "pct": 5.0,
+       "team": "DEN"
+      }
+     ],
+     "size": 6,
+     "teams": [
+      {
+       "lead_n": 15,
+       "lead_pct": 75.0,
+       "players_avg": 3.45,
+       "team": "DEN"
+      },
+      {
+       "lead_n": 5,
+       "lead_pct": 25.0,
+       "players_avg": 2.55,
+       "team": "PIT"
+      }
+     ],
+     "warn_pct": 50
+    },
+    "distinct_players": 16
+   },
+   "gated_players_in_portfolio_20": [],
+   "p10": {
+    "cash": 0.471793,
+    "net": 246.699967,
+    "top01": 0.0844,
+    "top1": 0.4501
+   },
+   "p10_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p20": {
+    "cash": 0.434112,
+    "net": 193.356583,
+    "top01": 0.1331,
+    "top1": 0.634833
+   },
+   "p20_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p5": {
+    "cash": 0.514167,
+    "net": 328.434467,
+    "top01": 0.050433,
+    "top1": 0.279267
+   },
+   "p5_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p_any_top1_gen_20": 0.63767
+  },
+  "lift:punt_role": {
+   "allowed": 47644,
+   "best": {
+    "cash": 0.673633,
+    "first": 0.0014,
+    "net": 366.875,
+    "top01": 0.0067,
+    "top1": 0.067667
+   },
+   "best_lineup": [
+    "Jonah Coleman",
+    "Bo Nix",
+    "Jaylen Warren",
+    "Mason Rudolph",
+    "Wil Lutz",
+    "Broncos"
+   ],
+   "best_top1_gen": 0.07023,
+   "best_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "first": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "diversity_20": {
+    "concentration": {
+     "entries": 20,
+     "flags": [
+      "Bo Nix is in 18 of 20 entries (90%), above 50%",
+      "Jonah Coleman is in 18 of 20 entries (90%), above 50%",
+      "Mason Rudolph is in 17 of 20 entries (85%), above 50%",
+      "Jaylen Warren is in 13 of 20 entries (65%), above 50%",
+      "entries 1 and 8 share 5 of 6 players"
+     ],
+     "max_overlap": 5,
+     "overlap_pair": [
+      1,
+      8
+     ],
+     "players": [
+      {
+       "flag": true,
+       "forced": false,
+       "n": 18,
+       "name": "Bo Nix",
+       "pct": 90.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 18,
+       "name": "Jonah Coleman",
+       "pct": 90.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 17,
+       "name": "Mason Rudolph",
+       "pct": 85.0,
+       "team": "PIT"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 13,
+       "name": "Jaylen Warren",
+       "pct": 65.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 9,
+       "name": "Wil Lutz",
+       "pct": 45.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 8,
+       "name": "Rico Dowdle",
+       "pct": 40.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 7,
+       "name": "Jaylen Waddle",
+       "pct": 35.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Broncos",
+       "pct": 30.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Chris Boswell",
+       "pct": 30.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 5,
+       "name": "Pat Bryant",
+       "pct": 25.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Evan Engram",
+       "pct": 15.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Pat Freiermuth",
+       "pct": 15.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Courtland Sutton",
+       "pct": 10.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "DK Metcalf",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Steelers",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 1,
+       "name": "Tyler Badie",
+       "pct": 5.0,
+       "team": "DEN"
+      }
+     ],
+     "size": 6,
+     "teams": [
+      {
+       "lead_n": 15,
+       "lead_pct": 75.0,
+       "players_avg": 3.45,
+       "team": "DEN"
+      },
+      {
+       "lead_n": 5,
+       "lead_pct": 25.0,
+       "players_avg": 2.55,
+       "team": "PIT"
+      }
+     ],
+     "warn_pct": 50
+    },
+    "distinct_players": 16
+   },
+   "gated_players_in_portfolio_20": [],
+   "p10": {
+    "cash": 0.471793,
+    "net": 246.699967,
+    "top01": 0.0844,
+    "top1": 0.4501
+   },
+   "p10_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p20": {
+    "cash": 0.434112,
+    "net": 193.356583,
+    "top01": 0.1331,
+    "top1": 0.634833
+   },
+   "p20_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p5": {
+    "cash": 0.514167,
+    "net": 328.434467,
+    "top01": 0.050433,
+    "top1": 0.279267
+   },
+   "p5_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p_any_top1_gen_20": 0.63767
+  },
+  "lift:te_team": {
+   "allowed": 55082,
+   "best": {
+    "cash": 0.673633,
+    "first": 0.0014,
+    "net": 366.875,
+    "top01": 0.0067,
+    "top1": 0.067667
+   },
+   "best_lineup": [
+    "Jonah Coleman",
+    "Bo Nix",
+    "Jaylen Warren",
+    "Mason Rudolph",
+    "Wil Lutz",
+    "Broncos"
+   ],
+   "best_top1_gen": 0.07023,
+   "best_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "first": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "diversity_20": {
+    "concentration": {
+     "entries": 20,
+     "flags": [
+      "Bo Nix is in 18 of 20 entries (90%), above 50%",
+      "Jonah Coleman is in 18 of 20 entries (90%), above 50%",
+      "Mason Rudolph is in 17 of 20 entries (85%), above 50%",
+      "Jaylen Warren is in 13 of 20 entries (65%), above 50%",
+      "entries 1 and 8 share 5 of 6 players"
+     ],
+     "max_overlap": 5,
+     "overlap_pair": [
+      1,
+      8
+     ],
+     "players": [
+      {
+       "flag": true,
+       "forced": false,
+       "n": 18,
+       "name": "Bo Nix",
+       "pct": 90.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 18,
+       "name": "Jonah Coleman",
+       "pct": 90.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 17,
+       "name": "Mason Rudolph",
+       "pct": 85.0,
+       "team": "PIT"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 13,
+       "name": "Jaylen Warren",
+       "pct": 65.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 9,
+       "name": "Wil Lutz",
+       "pct": 45.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 8,
+       "name": "Rico Dowdle",
+       "pct": 40.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 7,
+       "name": "Jaylen Waddle",
+       "pct": 35.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Broncos",
+       "pct": 30.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Chris Boswell",
+       "pct": 30.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 5,
+       "name": "Pat Bryant",
+       "pct": 25.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Evan Engram",
+       "pct": 15.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Pat Freiermuth",
+       "pct": 15.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Courtland Sutton",
+       "pct": 10.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "DK Metcalf",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Steelers",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 1,
+       "name": "Tyler Badie",
+       "pct": 5.0,
+       "team": "DEN"
+      }
+     ],
+     "size": 6,
+     "teams": [
+      {
+       "lead_n": 15,
+       "lead_pct": 75.0,
+       "players_avg": 3.45,
+       "team": "DEN"
+      },
+      {
+       "lead_n": 5,
+       "lead_pct": 25.0,
+       "players_avg": 2.55,
+       "team": "PIT"
+      }
+     ],
+     "warn_pct": 50
+    },
+    "distinct_players": 16
+   },
+   "gated_players_in_portfolio_20": [],
+   "p10": {
+    "cash": 0.471793,
+    "net": 246.699967,
+    "top01": 0.0844,
+    "top1": 0.4501
+   },
+   "p10_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p20": {
+    "cash": 0.434112,
+    "net": 193.356583,
+    "top01": 0.1331,
+    "top1": 0.634833
+   },
+   "p20_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p5": {
+    "cash": 0.514167,
+    "net": 328.434467,
+    "top01": 0.050433,
+    "top1": 0.279267
+   },
+   "p5_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p_any_top1_gen_20": 0.63767
+  },
+  "unrestricted": {
+   "allowed": 159595,
+   "best": {
+    "cash": 0.673633,
+    "first": 0.0014,
+    "net": 366.875,
+    "top01": 0.0067,
+    "top1": 0.067667
+   },
+   "best_lineup": [
+    "Jonah Coleman",
+    "Bo Nix",
+    "Jaylen Warren",
+    "Mason Rudolph",
+    "Wil Lutz",
+    "Broncos"
+   ],
+   "best_top1_gen": 0.07023,
+   "best_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "first": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "diversity_20": {
+    "concentration": {
+     "entries": 20,
+     "flags": [
+      "Bo Nix is in 18 of 20 entries (90%), above 50%",
+      "Jonah Coleman is in 18 of 20 entries (90%), above 50%",
+      "Mason Rudolph is in 17 of 20 entries (85%), above 50%",
+      "Jaylen Warren is in 13 of 20 entries (65%), above 50%",
+      "entries 1 and 8 share 5 of 6 players"
+     ],
+     "max_overlap": 5,
+     "overlap_pair": [
+      1,
+      8
+     ],
+     "players": [
+      {
+       "flag": true,
+       "forced": false,
+       "n": 18,
+       "name": "Bo Nix",
+       "pct": 90.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 18,
+       "name": "Jonah Coleman",
+       "pct": 90.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 17,
+       "name": "Mason Rudolph",
+       "pct": 85.0,
+       "team": "PIT"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 13,
+       "name": "Jaylen Warren",
+       "pct": 65.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 9,
+       "name": "Wil Lutz",
+       "pct": 45.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 8,
+       "name": "Rico Dowdle",
+       "pct": 40.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 7,
+       "name": "Jaylen Waddle",
+       "pct": 35.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Broncos",
+       "pct": 30.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Chris Boswell",
+       "pct": 30.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 5,
+       "name": "Pat Bryant",
+       "pct": 25.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Evan Engram",
+       "pct": 15.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Pat Freiermuth",
+       "pct": 15.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Courtland Sutton",
+       "pct": 10.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "DK Metcalf",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Steelers",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 1,
+       "name": "Tyler Badie",
+       "pct": 5.0,
+       "team": "DEN"
+      }
+     ],
+     "size": 6,
+     "teams": [
+      {
+       "lead_n": 15,
+       "lead_pct": 75.0,
+       "players_avg": 3.45,
+       "team": "DEN"
+      },
+      {
+       "lead_n": 5,
+       "lead_pct": 25.0,
+       "players_avg": 2.55,
+       "team": "PIT"
+      }
+     ],
+     "warn_pct": 50
+    },
+    "distinct_players": 16
+   },
+   "gated_players_in_portfolio_20": [],
+   "p10": {
+    "cash": 0.471793,
+    "net": 246.699967,
+    "top01": 0.0844,
+    "top1": 0.4501
+   },
+   "p10_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p20": {
+    "cash": 0.434112,
+    "net": 193.356583,
+    "top01": 0.1331,
+    "top1": 0.634833
+   },
+   "p20_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p5": {
+    "cash": 0.514167,
+    "net": 328.434467,
+    "top01": 0.050433,
+    "top1": 0.279267
+   },
+   "p5_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p_any_top1_gen_20": 0.63767
+  },
+  "unrestricted_all": {
+   "allowed": 524218,
+   "best": {
+    "cash": 0.673633,
+    "first": 0.0014,
+    "net": 366.875,
+    "top01": 0.0067,
+    "top1": 0.067667
+   },
+   "best_lineup": [
+    "Jonah Coleman",
+    "Bo Nix",
+    "Jaylen Warren",
+    "Mason Rudolph",
+    "Wil Lutz",
+    "Broncos"
+   ],
+   "best_top1_gen": 0.07023,
+   "best_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "first": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "diversity_20": {
+    "concentration": {
+     "entries": 20,
+     "flags": [
+      "Bo Nix is in 18 of 20 entries (90%), above 50%",
+      "Jonah Coleman is in 18 of 20 entries (90%), above 50%",
+      "Mason Rudolph is in 17 of 20 entries (85%), above 50%",
+      "Jaylen Warren is in 13 of 20 entries (65%), above 50%",
+      "entries 1 and 8 share 5 of 6 players"
+     ],
+     "max_overlap": 5,
+     "overlap_pair": [
+      1,
+      8
+     ],
+     "players": [
+      {
+       "flag": true,
+       "forced": false,
+       "n": 18,
+       "name": "Bo Nix",
+       "pct": 90.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 18,
+       "name": "Jonah Coleman",
+       "pct": 90.0,
+       "team": "DEN"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 17,
+       "name": "Mason Rudolph",
+       "pct": 85.0,
+       "team": "PIT"
+      },
+      {
+       "flag": true,
+       "forced": false,
+       "n": 13,
+       "name": "Jaylen Warren",
+       "pct": 65.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 9,
+       "name": "Wil Lutz",
+       "pct": 45.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 8,
+       "name": "Rico Dowdle",
+       "pct": 40.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 7,
+       "name": "Jaylen Waddle",
+       "pct": 35.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Broncos",
+       "pct": 30.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 6,
+       "name": "Chris Boswell",
+       "pct": 30.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 5,
+       "name": "Pat Bryant",
+       "pct": 25.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Evan Engram",
+       "pct": 15.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 3,
+       "name": "Pat Freiermuth",
+       "pct": 15.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Courtland Sutton",
+       "pct": 10.0,
+       "team": "DEN"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "DK Metcalf",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 2,
+       "name": "Steelers",
+       "pct": 10.0,
+       "team": "PIT"
+      },
+      {
+       "flag": false,
+       "forced": false,
+       "n": 1,
+       "name": "Tyler Badie",
+       "pct": 5.0,
+       "team": "DEN"
+      }
+     ],
+     "size": 6,
+     "teams": [
+      {
+       "lead_n": 15,
+       "lead_pct": 75.0,
+       "players_avg": 3.45,
+       "team": "DEN"
+      },
+      {
+       "lead_n": 5,
+       "lead_pct": 25.0,
+       "players_avg": 2.55,
+       "team": "PIT"
+      }
+     ],
+     "warn_pct": 50
+    },
+    "distinct_players": 16
+   },
+   "gated_players_in_portfolio_20": [],
+   "p10": {
+    "cash": 0.471793,
+    "net": 246.699967,
+    "top01": 0.0844,
+    "top1": 0.4501
+   },
+   "p10_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p20": {
+    "cash": 0.434112,
+    "net": 193.356583,
+    "top01": 0.1331,
+    "top1": 0.634833
+   },
+   "p20_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p5": {
+    "cash": 0.514167,
+    "net": 328.434467,
+    "top01": 0.050433,
+    "top1": 0.279267
+   },
+   "p5_vs_conservative": {
+    "cash": [
+     0.0,
+     0.0
+    ],
+    "net": [
+     0.0,
+     0.0
+    ],
+    "top01": [
+     0.0,
+     0.0
+    ],
+    "top1": [
+     0.0,
+     0.0
+    ]
+   },
+   "p_any_top1_gen_20": 0.63767
+  }
+ },
+ "timing": {
+  "adaptive": {
+   "maxrss_mb_children": 907.0,
+   "maxrss_mb_self": 5440.8,
+   "rows": 121160,
+   "seconds": 18.9,
+   "worlds": 3000
+  },
+  "conservative": {
+   "maxrss_mb_children": 824.0,
+   "maxrss_mb_self": 5440.8,
+   "rows": 47644,
+   "seconds": 15.3,
+   "worlds": 3000
+  },
+  "unrestricted": {
+   "maxrss_mb_children": 950.4,
+   "maxrss_mb_self": 5440.8,
+   "rows": 159595,
+   "seconds": 26.7,
+   "worlds": 3000
+  },
+  "unrestricted_all": {
+   "maxrss_mb_children": 1294.4,
+   "maxrss_mb_self": 5440.8,
+   "rows": 524218,
+   "seconds": 48.4,
+   "worlds": 3000
+  }
+ },
+ "variants": {
+  "adaptive": {
+   "lifted": [],
+   "ours": [
+    "Adam Trautman",
+    "Bo Nix",
+    "Broncos",
+    "Chris Boswell",
+    "Courtland Sutton",
+    "DK Metcalf",
+    "Darnell Washington",
+    "Evan Engram",
+    "Germie Bernard",
+    "Jaylen Waddle",
+    "Jaylen Warren",
+    "Jonah Coleman",
+    "Marvin Mims Jr.",
+    "Mason Rudolph",
+    "Max Hurleman",
+    "Michael Pittman Jr.",
+    "Pat Bryant",
+    "Pat Freiermuth",
+    "Rico Dowdle",
+    "Roman Wilson",
+    "Steelers",
+    "Tyler Badie",
+    "Wil Lutz"
+   ],
+   "role_names": [
+    "Marvin Mims Jr.",
+    "Max Hurleman",
+    "Michael Pittman Jr."
+   ]
+  },
+  "adaptive_all": {
+   "lifted": [],
+   "ours": [
+    "Adam Trautman",
+    "Bo Nix",
+    "Broncos",
+    "Chris Boswell",
+    "Courtland Sutton",
+    "DK Metcalf",
+    "Darnell Washington",
+    "Evan Engram",
+    "Germie Bernard",
+    "Jaylen Waddle",
+    "Jaylen Warren",
+    "Jonah Coleman",
+    "Marvin Mims Jr.",
+    "Mason Rudolph",
+    "Max Hurleman",
+    "Michael Pittman Jr.",
+    "Nate Adkins",
+    "Pat Bryant",
+    "Pat Freiermuth",
+    "Rico Dowdle",
+    "Roman Wilson",
+    "Steelers",
+    "Tyler Badie",
+    "Wil Lutz"
+   ],
+   "role_names": [
+    "Marvin Mims Jr.",
+    "Max Hurleman",
+    "Michael Pittman Jr.",
+    "Nate Adkins"
+   ]
+  },
+  "conservative": {
+   "lifted": [],
+   "ours": [
+    "Adam Trautman",
+    "Bo Nix",
+    "Broncos",
+    "Chris Boswell",
+    "Courtland Sutton",
+    "DK Metcalf",
+    "Darnell Washington",
+    "Evan Engram",
+    "Germie Bernard",
+    "Jaylen Waddle",
+    "Jaylen Warren",
+    "Jonah Coleman",
+    "Mason Rudolph",
+    "Pat Bryant",
+    "Pat Freiermuth",
+    "Rico Dowdle",
+    "Roman Wilson",
+    "Steelers",
+    "Tyler Badie",
+    "Wil Lutz"
+   ],
+   "role_names": []
+  },
+  "everything_off": {
+   "lifted": [
+    "dst_vs_cpt",
+    "kdst_cpt",
+    "cpt_salary",
+    "kdst_max",
+    "punt_max",
+    "te_team",
+    "punt_role"
+   ],
+   "ours": [
+    "Adam Trautman",
+    "Bo Nix",
+    "Broncos",
+    "Chris Boswell",
+    "Cody Schrader",
+    "Courtland Sutton",
+    "DK Metcalf",
+    "Darnell Washington",
+    "Evan Engram",
+    "Germie Bernard",
+    "Jaylen Waddle",
+    "Jaylen Warren",
+    "Jonah Coleman",
+    "Lew Nichols",
+    "Marvin Mims Jr.",
+    "Mason Rudolph",
+    "Max Hurleman",
+    "Michael Pittman Jr.",
+    "Nate Adkins",
+    "Pat Bryant",
+    "Pat Freiermuth",
+    "Rico Dowdle",
+    "Riley Nowakowski",
+    "Robert Tonyan",
+    "Roman Wilson",
+    "Steelers",
+    "Travis Homer",
+    "Troy Franklin",
+    "Tyler Badie",
+    "Wil Lutz"
+   ],
+   "role_names": []
+  },
+  "lift:all": {
+   "lifted": [
+    "dst_vs_cpt",
+    "kdst_cpt",
+    "cpt_salary",
+    "kdst_max",
+    "punt_max",
+    "te_team",
+    "punt_role"
+   ],
+   "ours": [
+    "Adam Trautman",
+    "Bo Nix",
+    "Broncos",
+    "Chris Boswell",
+    "Courtland Sutton",
+    "DK Metcalf",
+    "Darnell Washington",
+    "Evan Engram",
+    "Germie Bernard",
+    "Jaylen Waddle",
+    "Jaylen Warren",
+    "Jonah Coleman",
+    "Mason Rudolph",
+    "Pat Bryant",
+    "Pat Freiermuth",
+    "Rico Dowdle",
+    "Roman Wilson",
+    "Steelers",
+    "Tyler Badie",
+    "Wil Lutz"
+   ],
+   "role_names": []
+  },
+  "lift:cpt_salary": {
+   "lifted": [
+    "cpt_salary"
+   ],
+   "ours": [
+    "Adam Trautman",
+    "Bo Nix",
+    "Broncos",
+    "Chris Boswell",
+    "Courtland Sutton",
+    "DK Metcalf",
+    "Darnell Washington",
+    "Evan Engram",
+    "Germie Bernard",
+    "Jaylen Waddle",
+    "Jaylen Warren",
+    "Jonah Coleman",
+    "Mason Rudolph",
+    "Pat Bryant",
+    "Pat Freiermuth",
+    "Rico Dowdle",
+    "Roman Wilson",
+    "Steelers",
+    "Tyler Badie",
+    "Wil Lutz"
+   ],
+   "role_names": []
+  },
+  "lift:dst_vs_cpt": {
+   "lifted": [
+    "dst_vs_cpt"
+   ],
+   "ours": [
+    "Adam Trautman",
+    "Bo Nix",
+    "Broncos",
+    "Chris Boswell",
+    "Courtland Sutton",
+    "DK Metcalf",
+    "Darnell Washington",
+    "Evan Engram",
+    "Germie Bernard",
+    "Jaylen Waddle",
+    "Jaylen Warren",
+    "Jonah Coleman",
+    "Mason Rudolph",
+    "Pat Bryant",
+    "Pat Freiermuth",
+    "Rico Dowdle",
+    "Roman Wilson",
+    "Steelers",
+    "Tyler Badie",
+    "Wil Lutz"
+   ],
+   "role_names": []
+  },
+  "lift:kdst_cpt": {
+   "lifted": [
+    "kdst_cpt"
+   ],
+   "ours": [
+    "Adam Trautman",
+    "Bo Nix",
+    "Broncos",
+    "Chris Boswell",
+    "Courtland Sutton",
+    "DK Metcalf",
+    "Darnell Washington",
+    "Evan Engram",
+    "Germie Bernard",
+    "Jaylen Waddle",
+    "Jaylen Warren",
+    "Jonah Coleman",
+    "Mason Rudolph",
+    "Pat Bryant",
+    "Pat Freiermuth",
+    "Rico Dowdle",
+    "Roman Wilson",
+    "Steelers",
+    "Tyler Badie",
+    "Wil Lutz"
+   ],
+   "role_names": []
+  },
+  "lift:kdst_max": {
+   "lifted": [
+    "kdst_max"
+   ],
+   "ours": [
+    "Adam Trautman",
+    "Bo Nix",
+    "Broncos",
+    "Chris Boswell",
+    "Courtland Sutton",
+    "DK Metcalf",
+    "Darnell Washington",
+    "Evan Engram",
+    "Germie Bernard",
+    "Jaylen Waddle",
+    "Jaylen Warren",
+    "Jonah Coleman",
+    "Mason Rudolph",
+    "Pat Bryant",
+    "Pat Freiermuth",
+    "Rico Dowdle",
+    "Roman Wilson",
+    "Steelers",
+    "Tyler Badie",
+    "Wil Lutz"
+   ],
+   "role_names": []
+  },
+  "lift:punt_max": {
+   "lifted": [
+    "punt_max"
+   ],
+   "ours": [
+    "Adam Trautman",
+    "Bo Nix",
+    "Broncos",
+    "Chris Boswell",
+    "Courtland Sutton",
+    "DK Metcalf",
+    "Darnell Washington",
+    "Evan Engram",
+    "Germie Bernard",
+    "Jaylen Waddle",
+    "Jaylen Warren",
+    "Jonah Coleman",
+    "Mason Rudolph",
+    "Pat Bryant",
+    "Pat Freiermuth",
+    "Rico Dowdle",
+    "Roman Wilson",
+    "Steelers",
+    "Tyler Badie",
+    "Wil Lutz"
+   ],
+   "role_names": []
+  },
+  "lift:punt_role": {
+   "lifted": [
+    "punt_role"
+   ],
+   "ours": [
+    "Adam Trautman",
+    "Bo Nix",
+    "Broncos",
+    "Chris Boswell",
+    "Courtland Sutton",
+    "DK Metcalf",
+    "Darnell Washington",
+    "Evan Engram",
+    "Germie Bernard",
+    "Jaylen Waddle",
+    "Jaylen Warren",
+    "Jonah Coleman",
+    "Mason Rudolph",
+    "Pat Bryant",
+    "Pat Freiermuth",
+    "Rico Dowdle",
+    "Roman Wilson",
+    "Steelers",
+    "Tyler Badie",
+    "Wil Lutz"
+   ],
+   "role_names": []
+  },
+  "lift:te_team": {
+   "lifted": [
+    "te_team"
+   ],
+   "ours": [
+    "Adam Trautman",
+    "Bo Nix",
+    "Broncos",
+    "Chris Boswell",
+    "Courtland Sutton",
+    "DK Metcalf",
+    "Darnell Washington",
+    "Evan Engram",
+    "Germie Bernard",
+    "Jaylen Waddle",
+    "Jaylen Warren",
+    "Jonah Coleman",
+    "Mason Rudolph",
+    "Pat Bryant",
+    "Pat Freiermuth",
+    "Rico Dowdle",
+    "Roman Wilson",
+    "Steelers",
+    "Tyler Badie",
+    "Wil Lutz"
+   ],
+   "role_names": []
+  },
+  "unrestricted": {
+   "lifted": [
+    "punt_role"
+   ],
+   "ours": [
+    "Adam Trautman",
+    "Bo Nix",
+    "Broncos",
+    "Chris Boswell",
+    "Courtland Sutton",
+    "DK Metcalf",
+    "Darnell Washington",
+    "Evan Engram",
+    "Germie Bernard",
+    "Jaylen Waddle",
+    "Jaylen Warren",
+    "Jonah Coleman",
+    "Marvin Mims Jr.",
+    "Mason Rudolph",
+    "Max Hurleman",
+    "Michael Pittman Jr.",
+    "Pat Bryant",
+    "Pat Freiermuth",
+    "Rico Dowdle",
+    "Roman Wilson",
+    "Steelers",
+    "Troy Franklin",
+    "Tyler Badie",
+    "Wil Lutz"
+   ],
+   "role_names": []
+  },
+  "unrestricted_all": {
+   "lifted": [
+    "punt_role"
+   ],
+   "ours": [
+    "Adam Trautman",
+    "Bo Nix",
+    "Broncos",
+    "Chris Boswell",
+    "Cody Schrader",
+    "Courtland Sutton",
+    "DK Metcalf",
+    "Darnell Washington",
+    "Evan Engram",
+    "Germie Bernard",
+    "Jaylen Waddle",
+    "Jaylen Warren",
+    "Jonah Coleman",
+    "Lew Nichols",
+    "Marvin Mims Jr.",
+    "Mason Rudolph",
+    "Max Hurleman",
+    "Michael Pittman Jr.",
+    "Nate Adkins",
+    "Pat Bryant",
+    "Pat Freiermuth",
+    "Rico Dowdle",
+    "Riley Nowakowski",
+    "Robert Tonyan",
+    "Roman Wilson",
+    "Steelers",
+    "Travis Homer",
+    "Troy Franklin",
+    "Tyler Badie",
+    "Wil Lutz"
+   ],
+   "role_names": []
+  }
+ },
+ "worlds": {
+  "choosing": 30000,
+  "independent": 30000,
+  "model": "engine",
+  "seed": 20261127,
+  "total": 60000
+ }
+}

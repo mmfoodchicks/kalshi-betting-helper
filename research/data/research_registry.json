@@ -365,5 +365,17 @@
   "waits_for": "R6's primary read committed first; the 2028 regular season",
   "report": "research/reports/nfl_coach_r6.md",
   "result": "research/data/nfl_coach/read_r6_2028.json"
+ },
+ {
+  "id": "dfs_eligibility_adaptive",
+  "area": "DFS boards",
+  "kind": "registered",
+  "title": "DFS eligibility: Adaptive against Conservative on independent worlds",
+  "decides": "whether the Adaptive eligibility mode may become the showdown boards' default (with the owner's sign-off): 12 prospective showdowns recorded before lock, 20-entry top-1% by > 2 SE over slates, cash and the best lineup not significantly worse",
+  "registration": "research/data/dfs_eligibility/prereg.json",
+  "script": "research/dfs_eligibility_read.py",
+  "waits_for": "12 NFL showdowns recorded before lock by research/dfs_eligibility_record.py (none yet; the recording is run by hand or a PC task -- the owner's call)",
+  "report": "research/reports/dfs_eligibility.md",
+  "result": "research/data/dfs_eligibility/read.json"
  }
 ]

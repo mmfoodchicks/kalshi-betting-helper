@@ -13858,7 +13858,7 @@ _build_d = _dts_d[_dts_d.index("def build_nfl_classic("):_dts_d.index("def build
 # switch dfs_tourney.BOARD_MODEL (legacy in the preseason), and the PC passes
 # none, so a board's model moves only with that constant
 ck("the classic build takes model (None = BOARD_MODEL) and passes it and the seed to the pool, stamps whichever simulator made the worlds and records the model and seed on the board; the PC asks for no model on either board, so the switch alone decides",
-   'seed=None, log=print, probes=None, model=None, workers=None, pick=None,\n                      fresh_inputs=False, _inputs_note=None):' in _build_d
+   'seed=None, log=print, probes=None, model=None, workers=None, pick=None,\n                      fresh_inputs=False, _inputs_note=None, eligibility=None):' in _build_d   # repinned 2026-11-27: + eligibility (tests/guards_auto_eligibility.py)
    # repinned 2026-11-26: the tournament asks for the compact pool (float32 rows; the same board,
    # tests/guards_auto_memory.py MEM6)
    and 'pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason, model=model, seed=seed,\n                                       teams=slate_teams, workers=_workers(workers), compact=True,\n                                       **(inp.pool_kwargs() if inp is not None else {})) or {}' in _build_d
@@ -23290,8 +23290,11 @@ ck("the board takes its field extras from that rule, holds the universe to 900,0
    "least-projected field-only player first (never one of ours), and its field-only list and exclusions say who "
    "the field actually holds",
    "extra = _field_extras(by_name, dx)" in _tn_src and _T_tn._FIELD_MAX_LINEUPS == 900_000
-   and "while idx is not None and len(idx) > _FIELD_MAX_LINEUPS and any(e.get(\"_field_only\") for e in ents):" in _tn_src
-   and "drop = min((e for e in ents if e.get(\"_field_only\")), key=lambda e: e[\"proj\"])" in _tn_src
+   # repinned 2026-11-27: an extra an eligibility mode made enterable (`_elig_extra`) is still dropped as an extra,
+   # so every mode holds the conservative universe (tests/guards_auto_eligibility.py EL4b); with no mode set
+   # nothing carries _elig_extra and the loop is the old one
+   and "while idx is not None and len(idx) > _FIELD_MAX_LINEUPS \\\n            and any(e.get(\"_field_only\") or e.get(\"_elig_extra\") for e in ents):" in _tn_src
+   and "drop = min((e for e in ents if e.get(\"_field_only\") or e.get(\"_elig_extra\")), key=lambda e: e[\"proj\"])" in _tn_src
    and "field_only = {e[\"name\"] for e in ents if e.get(\"_field_only\")}" in _tn_src
    and _tn_src.index("field_only = {e[\"name\"] for e in ents if e.get(\"_field_only\")}") > _tn_src.index("while idx is not None")
    and "listed" not in "".join(_T_tn._FIELD_GATES))

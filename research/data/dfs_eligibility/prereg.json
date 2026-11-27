@@ -1,0 +1,30 @@
+{
+ "id": "dfs_eligibility_adaptive",
+ "registered_utc": "2026-11-27T21:09:43Z",
+ "registered_ts": 1795813783,
+ "question": "May the Adaptive eligibility mode (dfs_eligibility) become the default for the NFL showdown tournament boards, in place of Conservative (today's depth-chart gate)?",
+ "frozen_sha256": {
+  "dfs_eligibility.py": "a4b83dbe0be9ca9c16f1b89dcb2e7b19b70916aa1511a209c3dab020d496e951",
+  "research/data/dfs_eligibility/model.json": "f03d1902a3921f93603986c86f7e74484ad9dd990955f9378dd789c83d72184d",
+  "research/dfs_eligibility_fit.py": "96a03c5e68c002785c8ee4559c67e9b5b08b6fd758a08ad2023851c591447aee",
+  "research/dfs_eligibility_record.py": "e7e2085ad03e9e427dec6c74a45193c3d7474dd0525bad73fb3dec7d37eab6ca",
+  "research/dfs_eligibility_compare.py": "684f95a5eecfe323330d4a4ac8390f68bb66cba606a6c1bd1df518b6e70fade6",
+  "research/dfs_eligibility_read.py": "208742d8fd8f857a3d3ae2f871325fea5f1d13d3245bbeeac86c86d765c524a9"
+ },
+ "sample": "Every NFL showdown draft group the PC builds on its own (app._tourney_auto's showdown rule: a $500K+ GPP) whose inputs research/dfs_eligibility_record.py recorded BEFORE its lock, locking after this registration, through the 2026-27 playoffs; in lock order, the first n_target. DEN @ PIT (157076) is excluded (the development case). A slate not recorded before lock is not in the sample and is never backfilled; a recording the harness refuses (its universe or rule set not rebuilt) is not in it either.",
+ "excluded_dg": [
+  157076
+ ],
+ "per_slate": "research/dfs_eligibility_compare.py on the recording, unchanged: 60,000 worlds from production's simulator (seed = the draft group id); worlds 0-29,999 choose each mode's top-1% ranking and its greedy 20-entry portfolio (dfs_tourney.greedy_cover on per-world top-1% indicators); worlds 30,000-59,999 only score them, against the conservative board's field at its per-world thresholds (dfs_evaluate's code, ties not split). d_s = P(any of adaptive's 20 entries in the top 1%) minus the same for conservative, on the independent worlds; cash_s the 20 entries' mean cash rate, adaptive minus conservative; d1_s the best single lineup's top-1% rate, the same difference.",
+ "primary": "D = mean of d_s over the sample, SE = sd(d_s)/sqrt(n) over slates (each slate one observation; the within-slate paired SE is reported beside, never used). PASS when D > 0 and D > 2 SE.",
+ "noninferiority": "mean(cash_s) + 2 SE >= 0 and mean(d1_s) + 2 SE >= 0: neither significantly worse.",
+ "n_target": 12,
+ "n_min": 8,
+ "read": "Once: when the 12th sampled slate is recorded and scored, or on last_read_utc with whatever was recorded; fewer than n_min slates then is INCONCLUSIVE. research/dfs_eligibility_read.py is the read; before either condition it answers NOT READY and computes nothing.",
+ "last_read_utc": "2027-02-16T12:00:00Z",
+ "last_read_ts": 1802779200,
+ "decision": "PASS on the primary and both non-inferiority checks: Adaptive MAY become the default, with the owner's sign-off. Anything else: Conservative stays. Slates where Adaptive admits nobody count as d_s = 0 (the rule's effect over the slates it runs on); the admitted-only subset is reported beside, descriptive. Unrestricted is reported beside, never decided here.",
+ "reported_never_decisive": "each slate's real DraftKings points of each mode's #1 lineup and 20 entries (Sleeper's box, after the game) and, where the owner's standings export exists, their real finish; candidate counts, runtime and memory per mode.",
+ "not_covered": "Classic: its comparison needs the whole classic board (field sampler, solves, portfolio) built per mode on the PC; it is registered separately once a classic harness exists. The house-rule audit is descriptive; lifting a rule is a separate decision.",
+ "power": "Unknown before the first slates: DEN @ PIT gives one d_s (research/reports/dfs_eligibility.md); the between-slate spread is what decides power, and an inconclusive read is insufficient evidence, never evidence of no effect."
+}

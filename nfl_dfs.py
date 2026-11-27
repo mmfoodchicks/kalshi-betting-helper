@@ -1151,7 +1151,9 @@ def _sd_allowed(p, cap_p, picked):
         # A punt needs a role. Rows carry the roster gate's tag (WR3, TE2,
         # RB1·Q ...); one the gate did not tag (no roster source) passes.
         tag = (p.get("depth") or "").split("·")[0]
-        if tag and tag not in _SD_PUNT_ROLES:
+        # `_elig_role`: an experimental eligibility mode's admitted player holds a role by its own evidence
+        # (dfs_tourney._apply_eligibility); no conservative row ever carries it
+        if tag and tag not in _SD_PUNT_ROLES and not p.get("_elig_role"):
             return False
     if pos == "TE":
         n = (1 if cap_p.get("pos") == "TE" and cap_p.get("team") == p.get("team") else 0) \
