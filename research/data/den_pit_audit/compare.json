@@ -1,0 +1,2530 @@
+{
+ "requests": {
+  "head": 120,
+  "pre": 120,
+  "head_unique": 108,
+  "pre_unique": 108,
+  "only_head": [],
+  "only_pre": [],
+  "pre_live_misses": 0,
+  "head_counts": {
+   "live": 0,
+   "hit": 120,
+   "miss": 0,
+   "beyond": 0
+  },
+  "pre_counts": {
+   "live": 0,
+   "hit": 120,
+   "miss": 0,
+   "beyond": 0
+  },
+  "same_order": true
+ },
+ "inputs": {
+  "ents_equal": true,
+  "idx_equal": true,
+  "allowed_equal": true,
+  "f_max_abs_diff": 0.0,
+  "salaries_proj_equal": true,
+  "beta": [
+   0.33089578525494856,
+   0.33089578525494856
+  ],
+  "commits": {
+   "head": "e316055eb3a23a8598ab2640bf0be88d208fb3cc",
+   "pre": "6c0194e98892f4d84bfcb78be235a945a4094055"
+  },
+  "n": 60000,
+  "seed": 20261127
+ },
+ "players": [
+  {
+   "name": "Wil Lutz",
+   "pos": "K",
+   "team": "DEN",
+   "field_only": false,
+   "mean_pre": 8.621,
+   "mean_head": 8.621,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 3.0,
+   "floor_head": 3.0,
+   "ceil_pre": 14.0,
+   "ceil_head": 14.0,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "Chris Boswell",
+   "pos": "K",
+   "team": "PIT",
+   "field_only": false,
+   "mean_pre": 7.674,
+   "mean_head": 7.674,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 2.0,
+   "floor_head": 2.0,
+   "ceil_pre": 14.0,
+   "ceil_head": 14.0,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "Broncos",
+   "pos": "DST",
+   "team": "DEN",
+   "field_only": false,
+   "mean_pre": 7.426,
+   "mean_head": 7.338,
+   "d_mean": -0.0872,
+   "d_mean_paired_se": 0.002,
+   "floor_pre": 2.0,
+   "floor_head": 2.0,
+   "ceil_pre": 14.0,
+   "ceil_head": 14.0,
+   "worlds_moved": 2370,
+   "bitwise_equal": false,
+   "d_floor_paired_se": 0.0,
+   "d_ceil_paired_se": 0.0,
+   "sd_pre": 4.898,
+   "sd_head": 4.889
+  },
+  {
+   "name": "Steelers",
+   "pos": "DST",
+   "team": "PIT",
+   "field_only": false,
+   "mean_pre": 5.254,
+   "mean_head": 5.179,
+   "d_mean": -0.0757,
+   "d_mean_paired_se": 0.0018,
+   "floor_pre": 0.0,
+   "floor_head": 0.0,
+   "ceil_pre": 11.0,
+   "ceil_head": 11.0,
+   "worlds_moved": 2313,
+   "bitwise_equal": false,
+   "d_floor_paired_se": 0.0,
+   "d_ceil_paired_se": 0.0,
+   "sd_pre": 4.564,
+   "sd_head": 4.56
+  },
+  {
+   "name": "Jonah Coleman",
+   "pos": "RB",
+   "team": "DEN",
+   "field_only": false,
+   "mean_pre": 17.41,
+   "mean_head": 17.41,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 6.599999904632568,
+   "floor_head": 6.599999904632568,
+   "ceil_pre": 30.399999618530273,
+   "ceil_head": 30.399999618530273,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "Tyler Badie",
+   "pos": "RB",
+   "team": "DEN",
+   "field_only": false,
+   "mean_pre": 4.904,
+   "mean_head": 4.904,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 0.699999988079071,
+   "floor_head": 0.699999988079071,
+   "ceil_pre": 10.5,
+   "ceil_head": 10.5,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "Bo Nix",
+   "pos": "QB",
+   "team": "DEN",
+   "field_only": false,
+   "mean_pre": 15.765,
+   "mean_head": 15.765,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 6.880000114440918,
+   "floor_head": 6.880000114440918,
+   "ceil_pre": 26.040000915527344,
+   "ceil_head": 26.040000915527344,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "Jaylen Warren",
+   "pos": "RB",
+   "team": "PIT",
+   "field_only": false,
+   "mean_pre": 13.704,
+   "mean_head": 13.704,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 5.199999809265137,
+   "floor_head": 5.199999809265137,
+   "ceil_pre": 24.600000381469727,
+   "ceil_head": 24.600000381469727,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "Rico Dowdle",
+   "pos": "RB",
+   "team": "PIT",
+   "field_only": false,
+   "mean_pre": 9.066,
+   "mean_head": 9.066,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 2.4000000953674316,
+   "floor_head": 2.4000000953674316,
+   "ceil_pre": 17.700000762939453,
+   "ceil_head": 17.700000762939453,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "Jaylen Waddle",
+   "pos": "WR",
+   "team": "DEN",
+   "field_only": false,
+   "mean_pre": 9.586,
+   "mean_head": 9.586,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 2.299999952316284,
+   "floor_head": 2.299999952316284,
+   "ceil_pre": 18.700000762939453,
+   "ceil_head": 18.700000762939453,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "Courtland Sutton",
+   "pos": "WR",
+   "team": "DEN",
+   "field_only": false,
+   "mean_pre": 6.625,
+   "mean_head": 6.625,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 0.0,
+   "floor_head": 0.0,
+   "ceil_pre": 14.0,
+   "ceil_head": 14.0,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "Pat Bryant",
+   "pos": "WR",
+   "team": "DEN",
+   "field_only": false,
+   "mean_pre": 6.937,
+   "mean_head": 6.937,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 1.100000023841858,
+   "floor_head": 1.100000023841858,
+   "ceil_pre": 14.699999809265137,
+   "ceil_head": 14.699999809265137,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "DK Metcalf",
+   "pos": "WR",
+   "team": "PIT",
+   "field_only": false,
+   "mean_pre": 6.479,
+   "mean_head": 6.479,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 0.4000000059604645,
+   "floor_head": 0.4000000059604645,
+   "ceil_pre": 13.399999618530273,
+   "ceil_head": 13.399999618530273,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "Germie Bernard",
+   "pos": "WR",
+   "team": "PIT",
+   "field_only": false,
+   "mean_pre": 5.712,
+   "mean_head": 5.712,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 1.2999999523162842,
+   "floor_head": 1.2999999523162842,
+   "ceil_pre": 11.600000381469727,
+   "ceil_head": 11.600000381469727,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "Roman Wilson",
+   "pos": "WR",
+   "team": "PIT",
+   "field_only": false,
+   "mean_pre": 3.814,
+   "mean_head": 3.814,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 0.0,
+   "floor_head": 0.0,
+   "ceil_pre": 9.399999618530273,
+   "ceil_head": 9.399999618530273,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "Mason Rudolph",
+   "pos": "QB",
+   "team": "PIT",
+   "field_only": false,
+   "mean_pre": 11.618,
+   "mean_head": 11.618,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 4.320000171661377,
+   "floor_head": 4.320000171661377,
+   "ceil_pre": 20.079999923706055,
+   "ceil_head": 20.079999923706055,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "Pat Freiermuth",
+   "pos": "TE",
+   "team": "PIT",
+   "field_only": false,
+   "mean_pre": 6.139,
+   "mean_head": 6.139,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 1.100000023841858,
+   "floor_head": 1.100000023841858,
+   "ceil_pre": 13.100000381469727,
+   "ceil_head": 13.100000381469727,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "Darnell Washington",
+   "pos": "TE",
+   "team": "PIT",
+   "field_only": false,
+   "mean_pre": 4.476,
+   "mean_head": 4.476,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 0.0,
+   "floor_head": 0.0,
+   "ceil_pre": 10.300000190734863,
+   "ceil_head": 10.300000190734863,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "Evan Engram",
+   "pos": "TE",
+   "team": "DEN",
+   "field_only": false,
+   "mean_pre": 5.551,
+   "mean_head": 5.551,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 0.0,
+   "floor_head": 0.0,
+   "ceil_pre": 12.0,
+   "ceil_head": 12.0,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "Adam Trautman",
+   "pos": "TE",
+   "team": "DEN",
+   "field_only": false,
+   "mean_pre": 2.34,
+   "mean_head": 2.34,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 0.0,
+   "floor_head": 0.0,
+   "ceil_pre": 6.199999809265137,
+   "ceil_head": 6.199999809265137,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "Michael Pittman Jr.",
+   "pos": "WR",
+   "team": "PIT",
+   "field_only": true,
+   "mean_pre": 4.72,
+   "mean_head": 4.72,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 0.0,
+   "floor_head": 0.0,
+   "ceil_pre": 10.300000190734863,
+   "ceil_head": 10.300000190734863,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "Marvin Mims Jr.",
+   "pos": "WR",
+   "team": "DEN",
+   "field_only": true,
+   "mean_pre": 4.058,
+   "mean_head": 4.058,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 0.0,
+   "floor_head": 0.0,
+   "ceil_pre": 9.199999809265137,
+   "ceil_head": 9.199999809265137,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "Troy Franklin",
+   "pos": "WR",
+   "team": "DEN",
+   "field_only": true,
+   "mean_pre": 2.383,
+   "mean_head": 2.383,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 0.0,
+   "floor_head": 0.0,
+   "ceil_pre": 6.199999809265137,
+   "ceil_head": 6.199999809265137,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  },
+  {
+   "name": "Max Hurleman",
+   "pos": "WR",
+   "team": "PIT",
+   "field_only": true,
+   "mean_pre": 2.221,
+   "mean_head": 2.221,
+   "d_mean": 0.0,
+   "d_mean_paired_se": 0.0,
+   "floor_pre": 0.0,
+   "floor_head": 0.0,
+   "ceil_pre": 5.900000095367432,
+   "ceil_head": 5.900000095367432,
+   "worlds_moved": 0,
+   "bitwise_equal": true
+  }
+ ],
+ "worlds_any_player_moved": 4595,
+ "rankings": {
+  "opt_cpt_pct": {
+   "spearman": 1.0,
+   "max_abs_diff_pts": 0.06,
+   "top10_head": [
+    "Jonah Coleman",
+    "Bo Nix",
+    "Jaylen Warren",
+    "Mason Rudolph",
+    "Rico Dowdle",
+    "Jaylen Waddle",
+    "Broncos",
+    "Pat Bryant",
+    "Wil Lutz",
+    "Courtland Sutton"
+   ],
+   "top10_pre": [
+    "Jonah Coleman",
+    "Bo Nix",
+    "Jaylen Warren",
+    "Mason Rudolph",
+    "Rico Dowdle",
+    "Jaylen Waddle",
+    "Broncos",
+    "Pat Bryant",
+    "Wil Lutz",
+    "Courtland Sutton"
+   ],
+   "diffs": {
+    "Bo Nix": 0.01,
+    "Jonah Coleman": 0.02,
+    "Jaylen Warren": 0.01,
+    "Mason Rudolph": 0.01,
+    "Wil Lutz": 0.01,
+    "Broncos": -0.06,
+    "Steelers": -0.01,
+    "DK Metcalf": 0.01
+   }
+  },
+  "opt_flex_pct": {
+   "spearman": 0.9991,
+   "max_abs_diff_pts": 0.45,
+   "top10_head": [
+    "Bo Nix",
+    "Mason Rudolph",
+    "Jonah Coleman",
+    "Jaylen Warren",
+    "Wil Lutz",
+    "Jaylen Waddle",
+    "Rico Dowdle",
+    "Broncos",
+    "Chris Boswell",
+    "Pat Bryant"
+   ],
+   "top10_pre": [
+    "Bo Nix",
+    "Mason Rudolph",
+    "Jonah Coleman",
+    "Jaylen Warren",
+    "Wil Lutz",
+    "Jaylen Waddle",
+    "Broncos",
+    "Rico Dowdle",
+    "Chris Boswell",
+    "Pat Bryant"
+   ],
+   "diffs": {
+    "Bo Nix": 0.03,
+    "Jonah Coleman": 0.02,
+    "Jaylen Warren": 0.04,
+    "Mason Rudolph": 0.04,
+    "Wil Lutz": 0.09,
+    "Jaylen Waddle": 0.04,
+    "Rico Dowdle": 0.05,
+    "Broncos": -0.45,
+    "Chris Boswell": 0.08,
+    "Pat Bryant": 0.04,
+    "Courtland Sutton": 0.02,
+    "Pat Freiermuth": 0.03,
+    "Steelers": -0.28,
+    "DK Metcalf": 0.02,
+    "Evan Engram": 0.04,
+    "Tyler Badie": 0.04,
+    "Germie Bernard": 0.03,
+    "Darnell Washington": 0.02,
+    "Michael Pittman Jr.": 0.01,
+    "Marvin Mims Jr.": 0.03,
+    "Roman Wilson": 0.02,
+    "Adam Trautman": 0.01,
+    "Troy Franklin": 0.01
+   }
+  },
+  "field_cpt_pct": {
+   "spearman": 1.0,
+   "max_abs_diff_pts": 0.0,
+   "top10_head": [
+    "Jonah Coleman",
+    "Bo Nix",
+    "Mason Rudolph",
+    "Jaylen Warren",
+    "Jaylen Waddle",
+    "Broncos",
+    "Steelers",
+    "Rico Dowdle",
+    "Wil Lutz",
+    "Chris Boswell"
+   ],
+   "top10_pre": [
+    "Jonah Coleman",
+    "Bo Nix",
+    "Mason Rudolph",
+    "Jaylen Warren",
+    "Jaylen Waddle",
+    "Broncos",
+    "Steelers",
+    "Rico Dowdle",
+    "Wil Lutz",
+    "Chris Boswell"
+   ],
+   "diffs": {}
+  },
+  "field_flex_pct": {
+   "spearman": 1.0,
+   "max_abs_diff_pts": 0.0,
+   "top10_head": [
+    "Jonah Coleman",
+    "Bo Nix",
+    "Mason Rudolph",
+    "Jaylen Warren",
+    "Broncos",
+    "Jaylen Waddle",
+    "Steelers",
+    "Rico Dowdle",
+    "Chris Boswell",
+    "Pat Bryant"
+   ],
+   "top10_pre": [
+    "Jonah Coleman",
+    "Bo Nix",
+    "Mason Rudolph",
+    "Jaylen Warren",
+    "Broncos",
+    "Jaylen Waddle",
+    "Steelers",
+    "Rico Dowdle",
+    "Chris Boswell",
+    "Pat Bryant"
+   ],
+   "diffs": {}
+  }
+ },
+ "field_duplication": {
+  "head": {
+   "model_pair_collision": 0.0001252786313172717,
+   "rows": 790222,
+   "kind": "showdown",
+   "basis": "the field's own weights over every legal lineup: sum p^2, exact",
+   "definition": "the chance two different entries hold the same lineup (dk_standings.summarize: distinct_pair_collision)",
+   "experimental": true
+  },
+  "pre": null,
+  "served": {
+   "basis": "the field's own weights over every legal lineup: sum p^2, exact",
+   "definition": "the chance two different entries hold the same lineup (dk_standings.summarize: distinct_pair_collision)",
+   "experimental": true,
+   "kind": "showdown",
+   "model_pair_collision": 0.00012582218890441448,
+   "rows": 790222
+  },
+  "pre_recomputed_with_head_code": {
+   "model_pair_collision": 0.0001252786313172717,
+   "rows": 790222,
+   "kind": "showdown",
+   "basis": "the field's own weights over every legal lineup: sum p^2, exact",
+   "definition": "the chance two different entries hold the same lineup (dk_standings.summarize: distinct_pair_collision)",
+   "experimental": true
+  }
+ },
+ "lists": {
+  "top_money": {
+   "same_order_top10": true,
+   "overlap_top10": 10,
+   "overlap_top20": 20,
+   "overlap_all": 59,
+   "n": 60,
+   "leaders": [
+    {
+     "captain": "Jonah Coleman",
+     "flex": [
+      "Wil Lutz",
+      "Broncos",
+      "Bo Nix",
+      "Jaylen Warren",
+      "Mason Rudolph"
+     ],
+     "proj": 80.8,
+     "money_pct": [
+      68.0,
+      67.8
+     ],
+     "top1_pct": [
+      7.17,
+      7.17
+     ],
+     "win_any_pct": [
+      0.1507,
+      0.149
+     ],
+     "win_pct": [
+      0.0,
+      0.0
+     ],
+     "ev": [
+      36.59,
+      36.43
+     ],
+     "roi_pct": [
+      82.9,
+      82.1
+     ],
+     "opt_pct": [
+      0.15,
+      0.15
+     ],
+     "expected_copies": [
+      110.1,
+      110.1
+     ]
+    },
+    {
+     "captain": "Jonah Coleman",
+     "flex": [
+      "Chris Boswell",
+      "Broncos",
+      "Bo Nix",
+      "Jaylen Warren",
+      "Mason Rudolph"
+     ],
+     "proj": 80.7,
+     "money_pct": [
+      66.9,
+      66.6
+     ],
+     "top1_pct": [
+      2.68,
+      2.69
+     ],
+     "win_any_pct": [
+      0.0408,
+      0.0408
+     ],
+     "win_pct": [
+      0.0,
+      0.0
+     ],
+     "ev": [
+      26.26,
+      26.16
+     ],
+     "roi_pct": [
+      31.3,
+      30.8
+     ],
+     "opt_pct": [
+      0.03,
+      0.03
+     ],
+     "expected_copies": [
+      106.5,
+      106.5
+     ]
+    },
+    {
+     "captain": "Bo Nix",
+     "flex": [
+      "Wil Lutz",
+      "Broncos",
+      "Jonah Coleman",
+      "Jaylen Warren",
+      "Mason Rudolph"
+     ],
+     "proj": 79.0,
+     "money_pct": [
+      65.0,
+      64.7
+     ],
+     "top1_pct": [
+      3.31,
+      3.3
+     ],
+     "win_any_pct": [
+      0.0164,
+      0.0147
+     ],
+     "win_pct": [
+      0.0,
+      0.0
+     ],
+     "ev": [
+      26.49,
+      26.34
+     ],
+     "roi_pct": [
+      32.5,
+      31.7
+     ],
+     "opt_pct": [
+      0.01,
+      0.01
+     ],
+     "expected_copies": [
+      60.7,
+      60.7
+     ]
+    },
+    {
+     "captain": "Bo Nix",
+     "flex": [
+      "Chris Boswell",
+      "Broncos",
+      "Jonah Coleman",
+      "Jaylen Warren",
+      "Mason Rudolph"
+     ],
+     "proj": 78.9,
+     "money_pct": [
+      61.7,
+      61.5
+     ],
+     "top1_pct": [
+      1.24,
+      1.24
+     ],
+     "win_any_pct": [
+      0.007,
+      0.007
+     ],
+     "win_pct": [
+      0.0,
+      0.0
+     ],
+     "ev": [
+      21.85,
+      21.76
+     ],
+     "roi_pct": [
+      9.2,
+      8.8
+     ],
+     "opt_pct": [
+      0.01,
+      0.01
+     ],
+     "expected_copies": [
+      58.7,
+      58.7
+     ]
+    },
+    {
+     "captain": "Jonah Coleman",
+     "flex": [
+      "Broncos",
+      "Bo Nix",
+      "Jaylen Warren",
+      "Pat Bryant",
+      "Mason Rudolph"
+     ],
+     "proj": 80.7,
+     "money_pct": [
+      59.0,
+      58.9
+     ],
+     "top1_pct": [
+      3.64,
+      3.63
+     ],
+     "win_any_pct": [
+      0.0618,
+      0.0618
+     ],
+     "win_pct": [
+      0.0,
+      0.0
+     ],
+     "ev": [
+      26.46,
+      26.4
+     ],
+     "roi_pct": [
+      32.3,
+      32.0
+     ],
+     "opt_pct": [
+      0.06,
+      0.06
+     ],
+     "expected_copies": [
+      106.5,
+      106.5
+     ]
+    },
+    {
+     "captain": "Jonah Coleman",
+     "flex": [
+      "Bo Nix",
+      "Jaylen Warren",
+      "Rico Dowdle",
+      "Mason Rudolph",
+      "Evan Engram"
+     ],
+     "proj": 78.6,
+     "money_pct": [
+      57.4,
+      57.7
+     ],
+     "top1_pct": [
+      4.47,
+      4.48
+     ],
+     "win_any_pct": [
+      0.1217,
+      0.1217
+     ],
+     "win_pct": [
+      0.0,
+      0.0
+     ],
+     "ev": [
+      37.2,
+      37.3
+     ],
+     "roi_pct": [
+      86.0,
+      86.5
+     ],
+     "opt_pct": [
+      0.12,
+      0.12
+     ],
+     "expected_copies": [
+      53.2,
+      53.2
+     ]
+    },
+    {
+     "captain": "Jonah Coleman",
+     "flex": [
+      "Tyler Badie",
+      "Bo Nix",
+      "Jaylen Warren",
+      "Jaylen Waddle",
+      "Mason Rudolph"
+     ],
+     "proj": 79.3,
+     "money_pct": [
+      57.3,
+      57.6
+     ],
+     "top1_pct": [
+      4.24,
+      4.26
+     ],
+     "win_any_pct": [
+      0.1021,
+      0.1021
+     ],
+     "win_pct": [
+      0.0,
+      0.0
+     ],
+     "ev": [
+      32.39,
+      32.5
+     ],
+     "roi_pct": [
+      61.9,
+      62.5
+     ],
+     "opt_pct": [
+      0.1,
+      0.1
+     ],
+     "expected_copies": [
+      67.0,
+      67.0
+     ]
+    },
+    {
+     "captain": "Jonah Coleman",
+     "flex": [
+      "Wil Lutz",
+      "Bo Nix",
+      "Jaylen Warren",
+      "Mason Rudolph",
+      "Evan Engram"
+     ],
+     "proj": 78.0,
+     "money_pct": [
+      57.0,
+      57.3
+     ],
+     "top1_pct": [
+      3.86,
+      3.89
+     ],
+     "win_any_pct": [
+      0.0674,
+      0.0674
+     ],
+     "win_pct": [
+      0.0,
+      0.0
+     ],
+     "ev": [
+      32.58,
+      32.73
+     ],
+     "roi_pct": [
+      62.9,
+      63.6
+     ],
+     "opt_pct": [
+      0.07,
+      0.07
+     ],
+     "expected_copies": [
+      43.6,
+      43.6
+     ]
+    },
+    {
+     "captain": "Jonah Coleman",
+     "flex": [
+      "Tyler Badie",
+      "Bo Nix",
+      "Jaylen Warren",
+      "Rico Dowdle",
+      "Mason Rudolph"
+     ],
+     "proj": 77.4,
+     "money_pct": [
+      54.9,
+      55.1
+     ],
+     "top1_pct": [
+      2.94,
+      2.94
+     ],
+     "win_any_pct": [
+      0.0503,
+      0.0503
+     ],
+     "win_pct": [
+      0.0,
+      0.0
+     ],
+     "ev": [
+      29.11,
+      29.19
+     ],
+     "roi_pct": [
+      45.6,
+      45.9
+     ],
+     "opt_pct": [
+      0.05,
+      0.05
+     ],
+     "expected_copies": [
+      35.7,
+      35.7
+     ]
+    },
+    {
+     "captain": "Jonah Coleman",
+     "flex": [
+      "Wil Lutz",
+      "Tyler Badie",
+      "Bo Nix",
+      "Jaylen Warren",
+      "Mason Rudolph"
+     ],
+     "proj": 76.8,
+     "money_pct": [
+      54.6,
+      54.9
+     ],
+     "top1_pct": [
+      2.7,
+      2.71
+     ],
+     "win_any_pct": [
+      0.0387,
+      0.0387
+     ],
+     "win_pct": [
+      0.0,
+      0.0
+     ],
+     "ev": [
+      28.98,
+      29.1
+     ],
+     "roi_pct": [
+      44.9,
+      45.5
+     ],
+     "opt_pct": [
+      0.04,
+      0.04
+     ],
+     "expected_copies": [
+      29.3,
+      29.3
+     ]
+    }
+   ]
+  },
+  "top_top1": {
+   "same_order_top10": true,
+   "overlap_top10": 10,
+   "overlap_top20": 20,
+   "overlap_all": 60,
+   "n": 60,
+   "leaders": [
+    {
+     "captain": "Jonah Coleman",
+     "flex": [
+      "Wil Lutz",
+      "Broncos",
+      "Bo Nix",
+      "Jaylen Warren",
+      "Mason Rudolph"
+     ],
+     "proj": 80.8,
+     "money_pct": [
+      68.0,
+      67.8
+     ],
+     "top1_pct": [
+      7.17,
+      7.17
+     ],
+     "win_any_pct": [
+      0.1507,
+      0.149
+     ],
+     "win_pct": [
+      0.0,
+      0.0
+     ],
+     "ev": [
+      36.59,
+      36.43
+     ],
+     "roi_pct": [
+      82.9,
+      82.1
+     ],
+     "opt_pct": [
+      0.15,
+      0.15
+     ],
+     "expected_copies": [
+      110.1,
+      110.1
+     ]
+    },
+    {
+     "captain": "Jonah Coleman",
+     "flex": [
+      "Wil Lutz",
+      "Broncos",
+      "Bo Nix",
+      "Rico Dowdle",
+      "Jaylen Waddle"
+     ],
+     "proj": 74.0,
+     "money_pct": [
+      43.8,
+      43.7
+     ],
+     "top1_pct": [
+      7.02,
+      6.98
+     ],
+     "win_any_pct": [
+      0.2244,
+      0.2244
+     ],
+     "win_pct": [
+      0.0,
+      0.0
+     ],
+     "ev": [
+      136.44,
+      136.46
+     ],
+     "roi_pct": [
+      582.2,
+      582.3
+     ],
+     "opt_pct": [
+      0.21,
+      0.21
+     ],
+     "expected_copies": [
+      11.6,
+      11.6
+     ]
+    },
+    {
+     "captain": "Jonah Coleman",
+     "flex": [
+      "Wil Lutz",
+      "Broncos",
+      "Bo Nix",
+      "Jaylen Warren",
+      "Pat Bryant"
+     ],
+     "proj": 76.2,
+     "money_pct": [
+      47.4,
+      47.3
+     ],
+     "top1_pct": [
+      6.74,
+      6.72
+     ],
+     "win_any_pct": [
+      0.3075,
+      0.3042
+     ],
+     "win_pct": [
+      0.0,
+      0.0
+     ],
+     "ev": [
+      101.29,
+      100.99
+     ],
+     "roi_pct": [
+      406.5,
+      404.9
+     ],
+     "opt_pct": [
+      0.29,
+      0.29
+     ],
+     "expected_copies": [
+      24.0,
+      24.0
+     ]
+    },
+    {
+     "captain": "Jaylen Warren",
+     "flex": [
+      "Chris Boswell",
+      "Bo Nix",
+      "Rico Dowdle",
+      "Jaylen Waddle",
+      "Mason Rudolph"
+     ],
+     "proj": 69.4,
+     "money_pct": [
+      38.8,
+      39.0
+     ],
+     "top1_pct": [
+      6.53,
+      6.56
+     ],
+     "win_any_pct": [
+      0.0886,
+      0.0886
+     ],
+     "win_pct": [
+      0.0068,
+      0.0068
+     ],
+     "ev": [
+      203.66,
+      203.85
+     ],
+     "roi_pct": [
+      918.3,
+      919.2
+     ],
+     "opt_pct": [
+      0.05,
+      0.05
+     ],
+     "expected_copies": [
+      2.5,
+      2.5
+     ]
+    },
+    {
+     "captain": "Jonah Coleman",
+     "flex": [
+      "Wil Lutz",
+      "Broncos",
+      "Bo Nix",
+      "Jaylen Waddle",
+      "Mason Rudolph"
+     ],
+     "proj": 77.9,
+     "money_pct": [
+      50.6,
+      50.5
+     ],
+     "top1_pct": [
+      6.39,
+      6.35
+     ],
+     "win_any_pct": [
+      0.0914,
+      0.0897
+     ],
+     "win_pct": [
+      0.0,
+      0.0
+     ],
+     "ev": [
+      38.36,
+      38.13
+     ],
+     "roi_pct": [
+      91.8,
+      90.6
+     ],
+     "opt_pct": [
+      0.09,
+      0.09
+     ],
+     "expected_copies": [
+      42.2,
+      42.2
+     ]
+    },
+    {
+     "captain": "Bo Nix",
+     "flex": [
+      "Chris Boswell",
+      "Jaylen Warren",
+      "Rico Dowdle",
+      "Jaylen Waddle",
+      "Mason Rudolph"
+     ],
+     "proj": 70.2,
+     "money_pct": [
+      40.4,
+      40.5
+     ],
+     "top1_pct": [
+      5.99,
+      6.01
+     ],
+     "win_any_pct": [
+      0.0579,
+      0.0579
+     ],
+     "win_pct": [
+      0.0022,
+      0.0022
+     ],
+     "ev": [
+      123.76,
+      123.84
+     ],
+     "roi_pct": [
+      518.8,
+      519.2
+     ],
+     "opt_pct": [
+      0.03,
+      0.03
+     ],
+     "expected_copies": [
+      3.3,
+      3.3
+     ]
+    },
+    {
+     "captain": "Bo Nix",
+     "flex": [
+      "Wil Lutz",
+      "Jaylen Warren",
+      "Rico Dowdle",
+      "Jaylen Waddle",
+      "Mason Rudolph"
+     ],
+     "proj": 70.3,
+     "money_pct": [
+      41.6,
+      41.8
+     ],
+     "top1_pct": [
+      5.88,
+      5.9
+     ],
+     "win_any_pct": [
+      0.048,
+      0.048
+     ],
+     "win_pct": [
+      0.0012,
+      0.0012
+     ],
+     "ev": [
+      103.69,
+      103.79
+     ],
+     "roi_pct": [
+      418.5,
+      418.9
+     ],
+     "opt_pct": [
+      0.04,
+      0.04
+     ],
+     "expected_copies": [
+      3.4,
+      3.4
+     ]
+    },
+    {
+     "captain": "Jaylen Warren",
+     "flex": [
+      "Wil Lutz",
+      "Bo Nix",
+      "Rico Dowdle",
+      "Jaylen Waddle",
+      "Mason Rudolph"
+     ],
+     "proj": 69.5,
+     "money_pct": [
+      39.9,
+      40.0
+     ],
+     "top1_pct": [
+      5.72,
+      5.74
+     ],
+     "win_any_pct": [
+      0.0656,
+      0.0656
+     ],
+     "win_pct": [
+      0.0049,
+      0.0049
+     ],
+     "ev": [
+      150.41,
+      150.53
+     ],
+     "roi_pct": [
+      652.0,
+      652.6
+     ],
+     "opt_pct": [
+      0.04,
+      0.04
+     ],
+     "expected_copies": [
+      2.6,
+      2.6
+     ]
+    },
+    {
+     "captain": "Jaylen Warren",
+     "flex": [
+      "Chris Boswell",
+      "Jonah Coleman",
+      "Bo Nix",
+      "Pat Bryant",
+      "Mason Rudolph"
+     ],
+     "proj": 76.8,
+     "money_pct": [
+      49.3,
+      49.5
+     ],
+     "top1_pct": [
+      5.7,
+      5.72
+     ],
+     "win_any_pct": [
+      0.1457,
+      0.1457
+     ],
+     "win_pct": [
+      0.0,
+      0.0
+     ],
+     "ev": [
+      55.53,
+      55.62
+     ],
+     "roi_pct": [
+      177.7,
+      178.1
+     ],
+     "opt_pct": [
+      0.13,
+      0.13
+     ],
+     "expected_copies": [
+      29.3,
+      29.3
+     ]
+    },
+    {
+     "captain": "Bo Nix",
+     "flex": [
+      "Wil Lutz",
+      "Broncos",
+      "Jonah Coleman",
+      "Rico Dowdle",
+      "Jaylen Waddle"
+     ],
+     "proj": 72.2,
+     "money_pct": [
+      40.5,
+      40.4
+     ],
+     "top1_pct": [
+      5.56,
+      5.53
+     ],
+     "win_any_pct": [
+      0.0797,
+      0.078
+     ],
+     "win_pct": [
+      0.0002,
+      0.0002
+     ],
+     "ev": [
+      97.46,
+      95.99
+     ],
+     "roi_pct": [
+      387.3,
+      380.0
+     ],
+     "opt_pct": [
+      0.07,
+      0.07
+     ],
+     "expected_copies": [
+      6.4,
+      6.4
+     ]
+    }
+   ]
+  },
+  "top_ev": {
+   "same_order_top10": false,
+   "overlap_top10": 10,
+   "overlap_top20": 19,
+   "overlap_all": 59,
+   "n": 60,
+   "leaders": [
+    {
+     "captain": "Jaylen Warren",
+     "flex": [
+      "Chris Boswell",
+      "Steelers",
+      "Rico Dowdle",
+      "Jaylen Waddle",
+      "Mason Rudolph"
+     ],
+     "proj": 62.6,
+     "money_pct": [
+      22.1,
+      22.0
+     ],
+     "top1_pct": [
+      3.8,
+      3.78
+     ],
+     "win_any_pct": [
+      0.0754,
+      0.0753
+     ],
+     "win_pct": [
+      0.0541,
+      0.054
+     ],
+     "ev": [
+      260.32,
+      258.86
+     ],
+     "roi_pct": [
+      1201.6,
+      1194.3
+     ],
+     "opt_pct": [
+      0.02,
+      0.02
+     ],
+     "expected_copies": [
+      0.3,
+      0.3
+     ]
+    },
+    {
+     "captain": "Bo Nix",
+     "flex": [
+      "Wil Lutz",
+      "Broncos",
+      "Jaylen Warren",
+      "Jaylen Waddle",
+      "Courtland Sutton"
+     ],
+     "proj": 66.0,
+     "money_pct": [
+      26.5,
+      26.4
+     ],
+     "top1_pct": [
+      3.56,
+      3.53
+     ],
+     "win_any_pct": [
+      0.0859,
+      0.0841
+     ],
+     "win_pct": [
+      0.0364,
+      0.0356
+     ],
+     "ev": [
+      252.76,
+      249.23
+     ],
+     "roi_pct": [
+      1163.8,
+      1146.2
+     ],
+     "opt_pct": [
+      0.04,
+      0.04
+     ],
+     "expected_copies": [
+      0.8,
+      0.8
+     ]
+    },
+    {
+     "captain": "Jaylen Warren",
+     "flex": [
+      "Chris Boswell",
+      "Bo Nix",
+      "Rico Dowdle",
+      "Jaylen Waddle",
+      "Mason Rudolph"
+     ],
+     "proj": 69.4,
+     "money_pct": [
+      38.8,
+      39.0
+     ],
+     "top1_pct": [
+      6.53,
+      6.56
+     ],
+     "win_any_pct": [
+      0.0886,
+      0.0886
+     ],
+     "win_pct": [
+      0.0068,
+      0.0068
+     ],
+     "ev": [
+      203.66,
+      203.85
+     ],
+     "roi_pct": [
+      918.3,
+      919.2
+     ],
+     "opt_pct": [
+      0.05,
+      0.05
+     ],
+     "expected_copies": [
+      2.5,
+      2.5
+     ]
+    },
+    {
+     "captain": "Jaylen Warren",
+     "flex": [
+      "Chris Boswell",
+      "Bo Nix",
+      "Rico Dowdle",
+      "Courtland Sutton",
+      "Mason Rudolph"
+     ],
+     "proj": 66.5,
+     "money_pct": [
+      31.7,
+      31.8
+     ],
+     "top1_pct": [
+      4.37,
+      4.38
+     ],
+     "win_any_pct": [
+      0.0599,
+      0.0599
+     ],
+     "win_pct": [
+      0.0196,
+      0.0196
+     ],
+     "ev": [
+      191.6,
+      191.71
+     ],
+     "roi_pct": [
+      858.0,
+      858.6
+     ],
+     "opt_pct": [
+      0.01,
+      0.01
+     ],
+     "expected_copies": [
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "captain": "Bo Nix",
+     "flex": [
+      "Wil Lutz",
+      "Broncos",
+      "Jaylen Warren",
+      "Jaylen Waddle",
+      "Pat Bryant"
+     ],
+     "proj": 66.3,
+     "money_pct": [
+      27.0,
+      26.9
+     ],
+     "top1_pct": [
+      3.4,
+      3.39
+     ],
+     "win_any_pct": [
+      0.0704,
+      0.068
+     ],
+     "win_pct": [
+      0.0256,
+      0.0245
+     ],
+     "ev": [
+      196.08,
+      190.91
+     ],
+     "roi_pct": [
+      880.4,
+      854.5
+     ],
+     "opt_pct": [
+      0.04,
+      0.04
+     ],
+     "expected_copies": [
+      0.9,
+      0.9
+     ]
+    },
+    {
+     "captain": "Jaylen Waddle",
+     "flex": [
+      "Chris Boswell",
+      "Bo Nix",
+      "Jaylen Warren",
+      "Rico Dowdle",
+      "Mason Rudolph"
+     ],
+     "proj": 67.9,
+     "money_pct": [
+      33.0,
+      33.1
+     ],
+     "top1_pct": [
+      4.92,
+      4.93
+     ],
+     "win_any_pct": [
+      0.0672,
+      0.0672
+     ],
+     "win_pct": [
+      0.0131,
+      0.0131
+     ],
+     "ev": [
+      188.53,
+      188.61
+     ],
+     "roi_pct": [
+      842.6,
+      843.1
+     ],
+     "opt_pct": [
+      0.03,
+      0.03
+     ],
+     "expected_copies": [
+      1.6,
+      1.6
+     ]
+    },
+    {
+     "captain": "Jaylen Warren",
+     "flex": [
+      "Chris Boswell",
+      "Steelers",
+      "Jaylen Waddle",
+      "DK Metcalf",
+      "Mason Rudolph"
+     ],
+     "proj": 61.5,
+     "money_pct": [
+      17.5,
+      17.5
+     ],
+     "top1_pct": [
+      2.61,
+      2.6
+     ],
+     "win_any_pct": [
+      0.0564,
+      0.0564
+     ],
+     "win_pct": [
+      0.0451,
+      0.0451
+     ],
+     "ev": [
+      187.29,
+      186.42
+     ],
+     "roi_pct": [
+      836.4,
+      832.1
+     ],
+     "opt_pct": [
+      0.01,
+      0.01
+     ],
+     "expected_copies": [
+      0.2,
+      0.2
+     ]
+    },
+    {
+     "captain": "Jaylen Warren",
+     "flex": [
+      "Chris Boswell",
+      "Steelers",
+      "Bo Nix",
+      "Rico Dowdle",
+      "Jaylen Waddle"
+     ],
+     "proj": 65.1,
+     "money_pct": [
+      26.3,
+      26.2
+     ],
+     "top1_pct": [
+      3.92,
+      3.93
+     ],
+     "win_any_pct": [
+      0.0499,
+      0.0504
+     ],
+     "win_pct": [
+      0.0259,
+      0.026
+     ],
+     "ev": [
+      182.6,
+      183.66
+     ],
+     "roi_pct": [
+      813.0,
+      818.3
+     ],
+     "opt_pct": [
+      0.01,
+      0.01
+     ],
+     "expected_copies": [
+      0.6,
+      0.6
+     ]
+    },
+    {
+     "captain": "Jaylen Warren",
+     "flex": [
+      "Chris Boswell",
+      "Steelers",
+      "Jaylen Waddle",
+      "Germie Bernard",
+      "Mason Rudolph"
+     ],
+     "proj": 60.6,
+     "money_pct": [
+      16.2,
+      16.1
+     ],
+     "top1_pct": [
+      2.22,
+      2.21
+     ],
+     "win_any_pct": [
+      0.0554,
+      0.0564
+     ],
+     "win_pct": [
+      0.0463,
+      0.0472
+     ],
+     "ev": [
+      181.92,
+      183.01
+     ],
+     "roi_pct": [
+      809.6,
+      815.0
+     ],
+     "opt_pct": [
+      0.02,
+      0.02
+     ],
+     "expected_copies": [
+      0.1,
+      0.1
+     ]
+    },
+    {
+     "captain": "Jaylen Warren",
+     "flex": [
+      "Chris Boswell",
+      "Bo Nix",
+      "Courtland Sutton",
+      "Mason Rudolph",
+      "Pat Freiermuth"
+     ],
+     "proj": 65.4,
+     "money_pct": [
+      24.7,
+      24.7
+     ],
+     "top1_pct": [
+      2.97,
+      2.98
+     ],
+     "win_any_pct": [
+      0.0577,
+      0.0577
+     ],
+     "win_pct": [
+      0.0281,
+      0.0281
+     ],
+     "ev": [
+      179.19,
+      179.23
+     ],
+     "roi_pct": [
+      796.0,
+      796.2
+     ],
+     "opt_pct": [
+      0.03,
+      0.03
+     ],
+     "expected_copies": [
+      0.7,
+      0.7
+     ]
+    }
+   ]
+  },
+  "top_win": {
+   "same_order_top10": false,
+   "overlap_top10": 9,
+   "overlap_top20": 20,
+   "overlap_all": 60,
+   "n": 60,
+   "leaders": [
+    {
+     "captain": "Jaylen Warren",
+     "flex": [
+      "Chris Boswell",
+      "Steelers",
+      "Rico Dowdle",
+      "Jaylen Waddle",
+      "Mason Rudolph"
+     ],
+     "proj": 62.6,
+     "money_pct": [
+      22.1,
+      22.0
+     ],
+     "top1_pct": [
+      3.8,
+      3.78
+     ],
+     "win_any_pct": [
+      0.0754,
+      0.0753
+     ],
+     "win_pct": [
+      0.0541,
+      0.054
+     ],
+     "ev": [
+      260.32,
+      258.86
+     ],
+     "roi_pct": [
+      1201.6,
+      1194.3
+     ],
+     "opt_pct": [
+      0.02,
+      0.02
+     ],
+     "expected_copies": [
+      0.3,
+      0.3
+     ]
+    },
+    {
+     "captain": "Jaylen Warren",
+     "flex": [
+      "Chris Boswell",
+      "Steelers",
+      "Jaylen Waddle",
+      "Germie Bernard",
+      "Mason Rudolph"
+     ],
+     "proj": 60.6,
+     "money_pct": [
+      16.2,
+      16.1
+     ],
+     "top1_pct": [
+      2.22,
+      2.21
+     ],
+     "win_any_pct": [
+      0.0554,
+      0.0564
+     ],
+     "win_pct": [
+      0.0463,
+      0.0472
+     ],
+     "ev": [
+      181.92,
+      183.01
+     ],
+     "roi_pct": [
+      809.6,
+      815.0
+     ],
+     "opt_pct": [
+      0.02,
+      0.02
+     ],
+     "expected_copies": [
+      0.1,
+      0.1
+     ]
+    },
+    {
+     "captain": "Jaylen Warren",
+     "flex": [
+      "Chris Boswell",
+      "Steelers",
+      "Jaylen Waddle",
+      "DK Metcalf",
+      "Mason Rudolph"
+     ],
+     "proj": 61.5,
+     "money_pct": [
+      17.5,
+      17.5
+     ],
+     "top1_pct": [
+      2.61,
+      2.6
+     ],
+     "win_any_pct": [
+      0.0564,
+      0.0564
+     ],
+     "win_pct": [
+      0.0451,
+      0.0451
+     ],
+     "ev": [
+      187.29,
+      186.42
+     ],
+     "roi_pct": [
+      836.4,
+      832.1
+     ],
+     "opt_pct": [
+      0.01,
+      0.01
+     ],
+     "expected_copies": [
+      0.2,
+      0.2
+     ]
+    },
+    {
+     "captain": "Jaylen Warren",
+     "flex": [
+      "Chris Boswell",
+      "Steelers",
+      "Rico Dowdle",
+      "Pat Bryant",
+      "Mason Rudolph"
+     ],
+     "proj": 60.0,
+     "money_pct": [
+      18.2,
+      18.1
+     ],
+     "top1_pct": [
+      2.66,
+      2.64
+     ],
+     "win_any_pct": [
+      0.0516,
+      0.0515
+     ],
+     "win_pct": [
+      0.0444,
+      0.0443
+     ],
+     "ev": [
+      174.02,
+      173.02
+     ],
+     "roi_pct": [
+      770.1,
+      765.1
+     ],
+     "opt_pct": [
+      0.01,
+      0.01
+     ],
+     "expected_copies": [
+      0.1,
+      0.1
+     ]
+    },
+    {
+     "captain": "Jaylen Warren",
+     "flex": [
+      "Chris Boswell",
+      "Steelers",
+      "Rico Dowdle",
+      "Courtland Sutton",
+      "Mason Rudolph"
+     ],
+     "proj": 59.7,
+     "money_pct": [
+      18.1,
+      18.0
+     ],
+     "top1_pct": [
+      2.7,
+      2.68
+     ],
+     "win_any_pct": [
+      0.0478,
+      0.0478
+     ],
+     "win_pct": [
+      0.0378,
+      0.0378
+     ],
+     "ev": [
+      166.24,
+      165.41
+     ],
+     "roi_pct": [
+      731.2,
+      727.0
+     ],
+     "opt_pct": [
+      0.01,
+      0.01
+     ],
+     "expected_copies": [
+      0.1,
+      0.1
+     ]
+    },
+    {
+     "captain": "Bo Nix",
+     "flex": [
+      "Wil Lutz",
+      "Broncos",
+      "Jaylen Warren",
+      "Jaylen Waddle",
+      "Courtland Sutton"
+     ],
+     "proj": 66.0,
+     "money_pct": [
+      26.5,
+      26.4
+     ],
+     "top1_pct": [
+      3.56,
+      3.53
+     ],
+     "win_any_pct": [
+      0.0859,
+      0.0841
+     ],
+     "win_pct": [
+      0.0364,
+      0.0356
+     ],
+     "ev": [
+      252.76,
+      249.23
+     ],
+     "roi_pct": [
+      1163.8,
+      1146.2
+     ],
+     "opt_pct": [
+      0.04,
+      0.04
+     ],
+     "expected_copies": [
+      0.8,
+      0.8
+     ]
+    },
+    {
+     "captain": "Jaylen Warren",
+     "flex": [
+      "Chris Boswell",
+      "Steelers",
+      "Courtland Sutton",
+      "DK Metcalf",
+      "Mason Rudolph"
+     ],
+     "proj": 58.6,
+     "money_pct": [
+      14.1,
+      14.0
+     ],
+     "top1_pct": [
+      1.85,
+      1.84
+     ],
+     "win_any_pct": [
+      0.036,
+      0.0363
+     ],
+     "win_pct": [
+      0.0332,
+      0.0335
+     ],
+     "ev": [
+      125.06,
+      124.99
+     ],
+     "roi_pct": [
+      525.3,
+      525.0
+     ],
+     "opt_pct": [
+      0.01,
+      0.01
+     ],
+     "expected_copies": [
+      0.1,
+      0.1
+     ]
+    },
+    {
+     "captain": "Jaylen Warren",
+     "flex": [
+      "Chris Boswell",
+      "Steelers",
+      "Pat Bryant",
+      "DK Metcalf",
+      "Mason Rudolph"
+     ],
+     "proj": 58.9,
+     "money_pct": [
+      14.1,
+      14.1
+     ],
+     "top1_pct": [
+      1.78,
+      1.78
+     ],
+     "win_any_pct": [
+      0.0371,
+      0.0376
+     ],
+     "win_pct": [
+      0.0325,
+      0.0329
+     ],
+     "ev": [
+      124.84,
+      126.15
+     ],
+     "roi_pct": [
+      524.2,
+      530.8
+     ],
+     "opt_pct": [
+      0.0,
+      0.0
+     ],
+     "expected_copies": [
+      0.1,
+      0.1
+     ]
+    },
+    {
+     "captain": "Jaylen Waddle",
+     "flex": [
+      "Bo Nix",
+      "Rico Dowdle",
+      "Courtland Sutton",
+      "DK Metcalf",
+      "Mason Rudolph"
+     ],
+     "proj": 61.8,
+     "money_pct": [
+      17.8,
+      17.9
+     ],
+     "top1_pct": [
+      1.98,
+      1.99
+     ],
+     "win_any_pct": [
+      0.0386,
+      0.0386
+     ],
+     "win_pct": [
+      0.031,
+      0.031
+     ],
+     "ev": [
+      143.32,
+      143.35
+     ],
+     "roi_pct": [
+      616.6,
+      616.8
+     ],
+     "opt_pct": [
+      0.02,
+      0.02
+     ],
+     "expected_copies": [
+      0.2,
+      0.2
+     ]
+    },
+    {
+     "captain": "Bo Nix",
+     "flex": [
+      "Rico Dowdle",
+      "Jaylen Waddle",
+      "Courtland Sutton",
+      "Mason Rudolph",
+      "Pat Freiermuth"
+     ],
+     "proj": 64.0,
+     "money_pct": [
+      21.6,
+      21.7
+     ],
+     "top1_pct": [
+      2.61,
+      2.61
+     ],
+     "win_any_pct": [
+      0.0484,
+      0.0485
+     ],
+     "win_pct": [
+      0.0308,
+      0.031
+     ],
+     "ev": [
+      157.67,
+      158.7
+     ],
+     "roi_pct": [
+      688.3,
+      693.5
+     ],
+     "opt_pct": [
+      0.01,
+      0.01
+     ],
+     "expected_copies": [
+      0.4,
+      0.4
+     ]
+    }
+   ]
+  }
+ },
+ "portfolio": {
+  "5": [
+   28.3,
+   28.3
+  ],
+  "10": [
+   45.3,
+   45.3
+  ],
+  "20": [
+   63.8,
+   63.8
+  ]
+ },
+ "timings": {
+  "head": {
+   "sims_s": 235.1,
+   "enumerate_s": 16.1,
+   "score_s": 1135.5,
+   "portfolio_s": 444.6,
+   "total_s": 1831.4
+  },
+  "pre": {
+   "sims_s": 237.1,
+   "enumerate_s": 16.5,
+   "score_s": 1136.5,
+   "portfolio_s": 438.9,
+   "total_s": 1829.0
+  },
+  "served": {
+   "enumerate_s": 4.1,
+   "portfolio_s": 249.1,
+   "score_s": 354.0,
+   "sims_s": 30.8,
+   "total_s": 638.0
+  }
+ },
+ "simulator": {
+  "head": {
+   "model": "engine-deep",
+   "version": 2,
+   "n": 60000,
+   "seed": 20261127
+  },
+  "pre": {
+   "model": "engine-deep",
+   "version": 1,
+   "n": 60000,
+   "seed": 20261127
+  },
+  "served": {
+   "model": "engine-deep",
+   "version": 2,
+   "n": 60000,
+   "seed": null
+  }
+ },
+ "dst_correction": {
+  "PIT": {
+   "mean_old": 5.2545,
+   "mean_new": 5.1787,
+   "d_mean": -0.0757,
+   "d_mean_paired_se": 0.0018,
+   "sd_old": 4.564,
+   "sd_new": 4.56,
+   "worlds_moved": 2313,
+   "moved_pct": 3.855,
+   "moved_up": 0,
+   "moved_down": 2313,
+   "floor_old": 0.0,
+   "floor_new": 0.0,
+   "ceil_old": 11.0,
+   "ceil_new": 11.0,
+   "pool_head_equals_new": true,
+   "pool_pre_equals_old": true,
+   "opp_kick_punt_return_tds": 1455,
+   "opp_pick_sixes": 4228,
+   "opp_return_pts_old_rule_excluded": 39507
+  },
+  "DEN": {
+   "mean_old": 7.4255,
+   "mean_new": 7.3383,
+   "d_mean": -0.0872,
+   "d_mean_paired_se": 0.002,
+   "sd_old": 4.898,
+   "sd_new": 4.889,
+   "worlds_moved": 2370,
+   "moved_pct": 3.95,
+   "moved_up": 0,
+   "moved_down": 2370,
+   "floor_old": 2.0,
+   "floor_new": 2.0,
+   "ceil_old": 14.0,
+   "ceil_new": 14.0,
+   "pool_head_equals_new": true,
+   "pool_pre_equals_old": true,
+   "opp_kick_punt_return_tds": 1449,
+   "opp_pick_sixes": 4019,
+   "opp_return_pts_old_rule_excluded": 38010
+  },
+  "replayed_pool_equals_head_build": true,
+  "box_means": {
+   "PIT": {
+    "pts": 17.178,
+    "pass_att": 29.845,
+    "comp": 18.555,
+    "pass_yds": 178.318,
+    "td_pass": 0.893,
+    "int": 0.656,
+    "sacks": 2.507,
+    "rush_att": 27.743,
+    "rush_yds": 119.839,
+    "td_rush": 0.75,
+    "fum_lost": 0.332,
+    "kneels": 0.565,
+    "td_ret": 0.091,
+    "ret_pts": 0.633,
+    "td_def": 0.067,
+    "blk": 0.055,
+    "fg_made": 1.699,
+    "fg_0_39": 0.912,
+    "fg_40_49": 0.48,
+    "fg_50p": 0.307,
+    "xp_made": 1.483,
+    "two_made": 0.08,
+    "drives": 10.945,
+    "plays": 60.661,
+    "safety_conceded": 0.03
+   },
+   "DEN": {
+    "pts": 21.405,
+    "pass_att": 30.271,
+    "comp": 19.536,
+    "pass_yds": 204.624,
+    "td_pass": 1.252,
+    "int": 0.649,
+    "sacks": 1.595,
+    "rush_att": 29.197,
+    "rush_yds": 127.43,
+    "td_rush": 0.932,
+    "fum_lost": 0.327,
+    "kneels": 1.083,
+    "td_ret": 0.095,
+    "ret_pts": 0.658,
+    "td_def": 0.07,
+    "blk": 0.054,
+    "fg_made": 1.835,
+    "fg_0_39": 1.033,
+    "fg_40_49": 0.495,
+    "fg_50p": 0.306,
+    "xp_made": 2.009,
+    "two_made": 0.079,
+    "drives": 11.002,
+    "plays": 62.146,
+    "safety_conceded": 0.016
+   }
+  }
+ }
+}
