@@ -37,7 +37,8 @@ def run(ck):
     r1 = next(e for e in R.REGISTRY if e["id"] == "coach_r1")
     before = R.status(r1, now=_utc("2027-01-05T00:00:00Z"))
     after = R.status(r1, now=_utc("2027-01-07T00:00:00Z"))
-    c3 = next(e for e in R.REGISTRY if e["id"] == "acc_c3")
+    # C3 was read on 2026-11-27 (a read entry is never due); its due date still exercises the flag unread
+    c3 = dict(next(e for e in R.REGISTRY if e["id"] == "acc_c3"), result=None)
     c3_soon = R.status(c3, now=_utc("2026-11-27T00:00:00Z"))
     c3_late = R.status(c3, now=_utc("2026-12-07T00:00:00Z"))
     rush = R.status(next(e for e in R.REGISTRY if e["id"] == "nfl_rush"))

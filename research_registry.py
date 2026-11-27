@@ -122,8 +122,9 @@ REGISTRY = [
      "decides": "replay 2024 and 2025 week by week: the compressed engine's win totals, playoff / CFP odds against "
                 "Phi(margin/18) college and Phi(margin/13.2) NFL, scored on real outcomes; the analytic resolution "
                 "replaces the engine only if it wins both seasons by > 2 SE",
-     "registration": "research/reports/accuracy_gaps.md", "script": None, "due_by": "2026-12-06T00:00:00Z",
-     "waits_for": None, "report": "research/reports/accuracy_gaps.md", "result": None},
+     "registration": "research/reports/accuracy_gaps.md", "script": "research/c3_season_replay.py",
+     "due_by": "2026-12-06T00:00:00Z", "waits_for": None, "report": "research/reports/c3_season_replay.md",
+     "result": "research/data/c3_season_replay.json"},
     {"id": "acc_g2", "area": "Accuracy batch (13.2)", "kind": "dated",
      "title": "G2: a market-implied college preseason prior (stored opening lines)",
      "decides": "K_m chosen on 2024, tested on 2025 AND 2026 weeks 1-6, > 2 SE each season; ships for the 2027 "
