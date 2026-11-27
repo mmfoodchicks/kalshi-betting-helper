@@ -305,7 +305,9 @@ def _pass_checks(ck, np, BC, tmp):
            "checkpointed, and says so",
            stopped_p and pres == pref and nwp[0] == N - 2 * (jobs[0][1] - jobs[0][0]) and psmall == pref
            and small_files == [] and "would not fit" in (b4.resumed.get("makeit") or "")
-           and 'rank="top1", workers=1):' in inspect.getsource(T.portfolio_vs_field),
+           # the S4 pin's prefix: the rank default and the workers argument as they were (the portfolio caps
+           # appended `limits=None` after them, 2026-11-26)
+           and 'rank="top1", workers=1' in inspect.getsource(T.portfolio_vs_field),
            f"rescored {nwp[0]}; {b4.resumed}")
     finally:
         T._range_jobs = jobs_real
