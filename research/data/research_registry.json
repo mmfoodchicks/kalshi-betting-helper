@@ -182,11 +182,11 @@
   "title": "C3: the season simulators (NFL playoffs, college CFP) against the analytic resolution",
   "decides": "replay 2024 and 2025 week by week: the compressed engine's win totals, playoff / CFP odds against Phi(margin/18) college and Phi(margin/13.2) NFL, scored on real outcomes; the analytic resolution replaces the engine only if it wins both seasons by > 2 SE",
   "registration": "research/reports/accuracy_gaps.md",
-  "script": null,
+  "script": "research/c3_season_replay.py",
   "due_by": "2026-12-06T00:00:00Z",
   "waits_for": null,
-  "report": "research/reports/accuracy_gaps.md",
-  "result": null
+  "report": "research/reports/c3_season_replay.md",
+  "result": "research/data/c3_season_replay.json"
  },
  {
   "id": "acc_g2",
