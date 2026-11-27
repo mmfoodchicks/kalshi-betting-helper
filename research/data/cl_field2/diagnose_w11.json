@@ -1,0 +1,771 @@
+{
+ "week": 11,
+ "contest": 197882014,
+ "draft_group": 156561,
+ "entries": 147015,
+ "role": "development (both weeks; n = 2 slates)",
+ "sources": {
+  "board_players": 223,
+  "covered_by_both_logs": 185,
+  "kalshi_covered": 180,
+  "kalshi_means_refused": 24,
+  "level_offsets": {
+   "sleeper_raw|QB": -1.094,
+   "sleeper_raw|RB": -0.408,
+   "sleeper_raw|WR": -0.127,
+   "sleeper_raw|TE": -0.205,
+   "espn_raw|QB": -1.122,
+   "espn_raw|RB": -0.758,
+   "espn_raw|WR": -0.52,
+   "espn_raw|TE": 0.307
+  },
+  "mean_abs_difference": {
+   "board_vs_sleeper_raw": 0.502,
+   "board_vs_espn_raw": 1.026,
+   "sleeper_raw_vs_espn_raw": 1.097
+  }
+ },
+ "replica": {
+  "rows": 147015,
+  "steer_mae_by_pass": [
+   1.8414,
+   0.6004,
+   0.2906,
+   0.2067,
+   0.1625,
+   0.1289,
+   0.1224,
+   0.1126,
+   0.1045,
+   0.0999
+  ],
+  "mae_to_targets_pct_points": 0.085
+ },
+ "optimum_projection": {
+  "board": 144.5,
+  "sleeper_raw": 144.56,
+  "espn_raw": 144.34,
+  "consensus": 141.82
+ },
+ "deficit": {
+  "mean_real_points": {
+   "real_field": 137.7,
+   "served_field": 122.52
+  },
+  "D": 15.18,
+  "D_check_sum_over_players": 15.18,
+  "D_proj": 7.4,
+  "D_resid": 7.78,
+  "D_excluded": 0.01,
+  "D_resid_permutation": {
+   "null_sd": 4.25,
+   "null_mean": -0.33,
+   "p_at_least_this_large": 0.0388,
+   "perms": 20000
+  },
+  "split_real_points": {
+   "allocation": -0.13,
+   "salary": 3.7,
+   "selection": 11.62,
+   "total": 15.18,
+   "by_position": {
+    "QB": {
+     "count_real": 1.0,
+     "count_served": 1.0,
+     "salary_real": 6119,
+     "salary_served": 6226,
+     "value_real": 23.34,
+     "value_served": 21.34,
+     "points_per_1000": 3.822,
+     "allocation": 0.0,
+     "salary": -0.41,
+     "selection": 2.41
+    },
+    "RB": {
+     "count_real": 2.564,
+     "count_served": 2.466,
+     "salary_real": 6468,
+     "salary_served": 6423,
+     "value_real": 21.8,
+     "value_served": 17.31,
+     "points_per_1000": 2.849,
+     "allocation": 1.69,
+     "salary": 0.33,
+     "selection": 11.2
+    },
+    "WR": {
+     "count_real": 3.29,
+     "count_served": 3.534,
+     "salary_real": 5885,
+     "salary_served": 5696,
+     "value_real": 13.27,
+     "value_served": 12.67,
+     "points_per_1000": 4.611,
+     "allocation": -3.08,
+     "salary": 2.87,
+     "selection": -0.89
+    },
+    "TE": {
+     "count_real": 1.146,
+     "count_served": 1.0,
+     "salary_real": 4002,
+     "salary_served": 4304,
+     "value_real": 7.19,
+     "value_served": 8.68,
+     "points_per_1000": 1.983,
+     "allocation": 1.27,
+     "salary": -0.69,
+     "selection": -1.02
+    },
+    "DST": {
+     "count_real": 1.0,
+     "count_served": 1.0,
+     "salary_real": 3223,
+     "salary_served": 2719,
+     "value_real": 6.57,
+     "value_served": 5.06,
+     "points_per_1000": 3.17,
+     "allocation": 0.0,
+     "salary": 1.59,
+     "selection": -0.08
+    }
+   }
+  },
+  "split_projection": {
+   "allocation": 0.01,
+   "salary": 2.56,
+   "selection": 4.83,
+   "total": 7.4,
+   "by_position": {
+    "QB": {
+     "count_real": 1.0,
+     "count_served": 1.0,
+     "salary_real": 6119,
+     "salary_served": 6226,
+     "value_real": 19.03,
+     "value_served": 19.6,
+     "points_per_1000": 3.65,
+     "allocation": 0.0,
+     "salary": -0.39,
+     "selection": -0.18
+    },
+    "RB": {
+     "count_real": 2.564,
+     "count_served": 2.466,
+     "salary_real": 6468,
+     "salary_served": 6423,
+     "value_real": 17.26,
+     "value_served": 15.67,
+     "points_per_1000": 2.758,
+     "allocation": 1.53,
+     "salary": 0.32,
+     "selection": 3.76
+    },
+    "WR": {
+     "count_real": 3.29,
+     "count_served": 3.534,
+     "salary_real": 5885,
+     "salary_served": 5696,
+     "value_real": 13.18,
+     "value_served": 12.24,
+     "points_per_1000": 2.802,
+     "allocation": -2.98,
+     "salary": 1.74,
+     "selection": 1.36
+    },
+    "TE": {
+     "count_real": 1.146,
+     "count_served": 1.0,
+     "salary_real": 4002,
+     "salary_served": 4304,
+     "value_real": 8.79,
+     "value_served": 10.0,
+     "points_per_1000": 2.82,
+     "allocation": 1.46,
+     "salary": -0.98,
+     "selection": -0.41
+    },
+    "DST": {
+     "count_real": 1.0,
+     "count_served": 1.0,
+     "salary_real": 3223,
+     "salary_served": 2719,
+     "value_real": 7.96,
+     "value_served": 5.79,
+     "points_per_1000": 3.701,
+     "allocation": 0.0,
+     "salary": 1.86,
+     "selection": 0.31
+    }
+   }
+  },
+  "chalk": {
+   "real_top10_owned_contribution": 33.42,
+   "public_overweights_contribution": 44.68,
+   "public_underweights_contribution": -29.5,
+   "sum_own_sq": {
+    "real": 1.6465,
+    "served": 0.8795
+   }
+  },
+  "quantile_gap_real_minus_served": {
+   "P10": 13.0,
+   "P50": 15.52,
+   "P90": 16.88,
+   "P99": 14.64
+  },
+  "score_sd": {
+   "real": 23.74,
+   "served": 22.56
+  },
+  "players_largest_contribution": [
+   {
+    "name": "Emmett Johnson",
+    "pos": "RB",
+    "salary": 6000,
+    "own_real_pct": 70.7,
+    "own_served_pct": 28.8,
+    "proj": 19.1,
+    "sleeper_raw": 19.3,
+    "espn_raw": 19.5,
+    "fpts": 27.3,
+    "contribution": 11.43
+   },
+   {
+    "name": "Jonah Coleman",
+    "pos": "RB",
+    "salary": 6300,
+    "own_real_pct": 34.5,
+    "own_served_pct": 15.7,
+    "proj": 17.2,
+    "sleeper_raw": 17.1,
+    "espn_raw": 18.6,
+    "fpts": 37.9,
+    "contribution": 7.14
+   },
+   {
+    "name": "Dak Prescott",
+    "pos": "QB",
+    "salary": 6700,
+    "own_real_pct": 21.7,
+    "own_served_pct": 13.2,
+    "proj": 21.3,
+    "sleeper_raw": 20.9,
+    "espn_raw": 21.8,
+    "fpts": 38.9,
+    "contribution": 3.31
+   },
+   {
+    "name": "George Pickens",
+    "pos": "WR",
+    "salary": 6800,
+    "own_real_pct": 25.9,
+    "own_served_pct": 14.9,
+    "proj": 15.5,
+    "sleeper_raw": 14.6,
+    "espn_raw": 15.1,
+    "fpts": 26.8,
+    "contribution": 2.95
+   },
+   {
+    "name": "CeeDee Lamb",
+    "pos": "WR",
+    "salary": 8800,
+    "own_real_pct": 34.7,
+    "own_served_pct": 26.1,
+    "proj": 22.4,
+    "sleeper_raw": 20.9,
+    "espn_raw": 21.9,
+    "fpts": 33.2,
+    "contribution": 2.88
+   },
+   {
+    "name": "Tony Pollard",
+    "pos": "RB",
+    "salary": 6500,
+    "own_real_pct": 35.4,
+    "own_served_pct": 17.4,
+    "proj": 18.0,
+    "sleeper_raw": 17.3,
+    "espn_raw": 20.1,
+    "fpts": 14.0,
+    "contribution": 2.53
+   },
+   {
+    "name": "Cam Ward",
+    "pos": "QB",
+    "salary": 5500,
+    "own_real_pct": 14.5,
+    "own_served_pct": 4.1,
+    "proj": 16.9,
+    "sleeper_raw": 16.6,
+    "espn_raw": 17.4,
+    "fpts": 23.2,
+    "contribution": 2.4
+   },
+   {
+    "name": "Bucky Irving",
+    "pos": "RB",
+    "salary": 7000,
+    "own_real_pct": 5.8,
+    "own_served_pct": 17.2,
+    "proj": 17.4,
+    "sleeper_raw": 18.1,
+    "espn_raw": 16.9,
+    "fpts": 19.0,
+    "contribution": -2.16
+   },
+   {
+    "name": "Carnell Tate",
+    "pos": "WR",
+    "salary": 5500,
+    "own_real_pct": 23.1,
+    "own_served_pct": 11.9,
+    "proj": 14.4,
+    "sleeper_raw": 12.9,
+    "espn_raw": 12.7,
+    "fpts": 13.8,
+    "contribution": 1.54
+   },
+   {
+    "name": "Ladd McConkey",
+    "pos": "WR",
+    "salary": 5000,
+    "own_real_pct": 1.1,
+    "own_served_pct": 7.3,
+    "proj": 10.3,
+    "sleeper_raw": 12.1,
+    "espn_raw": 10.3,
+    "fpts": 20.7,
+    "contribution": -1.29
+   },
+   {
+    "name": "Josh Allen",
+    "pos": "QB",
+    "salary": 7700,
+    "own_real_pct": 6.7,
+    "own_served_pct": 14.0,
+    "proj": 23.9,
+    "sleeper_raw": 24.6,
+    "espn_raw": 23.7,
+    "fpts": 17.2,
+    "contribution": -1.24
+   },
+   {
+    "name": "Zay Flowers",
+    "pos": "WR",
+    "salary": 7400,
+    "own_real_pct": 5.1,
+    "own_served_pct": 12.1,
+    "proj": 15.2,
+    "sleeper_raw": 15.2,
+    "espn_raw": 13.7,
+    "fpts": 16.4,
+    "contribution": -1.15
+   },
+   {
+    "name": "Tetairoa McMillan",
+    "pos": "WR",
+    "salary": 6900,
+    "own_real_pct": 4.2,
+    "own_served_pct": 9.8,
+    "proj": 14.6,
+    "sleeper_raw": 14.7,
+    "espn_raw": 13.4,
+    "fpts": 19.1,
+    "contribution": -1.06
+   },
+   {
+    "name": "Omarion Hampton",
+    "pos": "RB",
+    "salary": 5200,
+    "own_real_pct": 15.8,
+    "own_served_pct": 6.7,
+    "proj": 10.3,
+    "sleeper_raw": 10.0,
+    "espn_raw": 12.9,
+    "fpts": 10.3,
+    "contribution": 0.93
+   },
+   {
+    "name": "Javonte Williams",
+    "pos": "RB",
+    "salary": 7300,
+    "own_real_pct": 12.2,
+    "own_served_pct": 16.0,
+    "proj": 20.8,
+    "sleeper_raw": 21.2,
+    "espn_raw": 18.8,
+    "fpts": 24.1,
+    "contribution": -0.91
+   }
+  ],
+  "source_shift": {
+   "sleeper_raw": -0.67,
+   "espn_raw": 3.02,
+   "consensus": 1.18,
+   "kalshi": 4.13,
+   "salary": -4.87
+  },
+  "source_accuracy_proj_3_plus": {
+   "board": {
+    "mae": 4.626,
+    "corr": 0.6987,
+    "bias": 0.193,
+    "n": 173
+   },
+   "sleeper_raw": {
+    "mae": 4.641,
+    "corr": 0.6982,
+    "bias": 0.198,
+    "n": 173
+   },
+   "espn_raw": {
+    "mae": 4.681,
+    "corr": 0.7084,
+    "bias": 0.099,
+    "n": 173
+   },
+   "consensus": {
+    "mae": 4.643,
+    "corr": 0.7092,
+    "bias": 0.149,
+    "n": 173
+   },
+   "kalshi": {
+    "mae": 4.649,
+    "corr": 0.7065,
+    "bias": 0.109,
+    "n": 173
+   },
+   "salary": {
+    "mae": 4.508,
+    "corr": 0.6716,
+    "bias": -0.242,
+    "n": 173
+   }
+  }
+ },
+ "behaviour": {
+  "real": {
+   "all": {
+    "entries": 147015,
+    "at_cap_pct": 48.45,
+    "left_100_300_pct": 42.45,
+    "left_400_1000_pct": 8.36,
+    "left_1100_plus_pct": 0.74,
+    "salary_mean": 49874.4,
+    "naked_qb_pct": 12.74,
+    "double_stack_pct": 36.14,
+    "one_swap_optimal_board_pct": 0.39,
+    "one_swap_gain_board_mean": 3.053,
+    "one_swap_optimal_sleeper_raw_pct": 0.22,
+    "one_swap_gain_sleeper_raw_mean": 3.126,
+    "one_swap_optimal_espn_raw_pct": 0.99,
+    "one_swap_gain_espn_raw_mean": 3.279,
+    "one_swap_optimal_consensus_pct": 0.58,
+    "one_swap_gain_consensus_mean": 2.724,
+    "gap_to_optimum_board_median": 19.3,
+    "gap_to_optimum_sleeper_raw_median": 20.19,
+    "gap_to_optimum_espn_raw_median": 18.33,
+    "gap_to_optimum_consensus_median": 16.58
+   },
+   "structure": {
+    "resolved_entries": 147015,
+    "unresolved_entries": 0,
+    "salary_mean": 49874.4,
+    "salary_median": 49900.0,
+    "salary_at_cap_pct": 48.45,
+    "salary_left_100_or_less_pct": 72.29,
+    "salary_49500_plus_pct": 96.31,
+    "salary_48000_or_less_pct": 0.18,
+    "salary_quantiles": {
+     "0.01": 49100.0,
+     "0.05": 49500.0,
+     "0.25": 49800.0,
+     "0.5": 49900.0,
+     "0.75": 50000.0
+    },
+    "stack_pct": [
+     12.74,
+     51.12,
+     33.45,
+     2.69
+    ],
+    "bring_back_pct": 43.98,
+    "qb_with_own_rb_pct": 24.33,
+    "dst_vs_own_qb_pct": 0.306,
+    "max_from_one_team_pct": {
+     "1": 1.5,
+     "2": 43.04,
+     "3": 46.18,
+     "4": 8.18,
+     "5": 0.98
+    },
+    "templates_pct": {
+     "QB+0": 9.24,
+     "QB+0 +bring-back": 3.5,
+     "QB+1": 28.74,
+     "QB+1 +bring-back": 22.38,
+     "QB+2": 16.56,
+     "QB+2 +bring-back": 16.89,
+     "QB+3": 1.48,
+     "QB+3 +bring-back": 1.2
+    }
+   },
+   "by_entrant_entries": {
+    "1": {
+     "entries": 30791,
+     "at_cap_pct": 49.06,
+     "left_100_300_pct": 41.9,
+     "left_400_1000_pct": 8.37,
+     "left_1100_plus_pct": 0.67,
+     "salary_mean": 49876.9,
+     "naked_qb_pct": 20.75,
+     "double_stack_pct": 22.3,
+     "one_swap_optimal_board_pct": 0.32,
+     "one_swap_gain_board_mean": 3.133,
+     "one_swap_optimal_sleeper_raw_pct": 0.17,
+     "one_swap_gain_sleeper_raw_mean": 3.174,
+     "one_swap_optimal_espn_raw_pct": 0.92,
+     "one_swap_gain_espn_raw_mean": 3.42,
+     "one_swap_optimal_consensus_pct": 0.49,
+     "one_swap_gain_consensus_mean": 2.847,
+     "gap_to_optimum_board_median": 19.9,
+     "gap_to_optimum_sleeper_raw_median": 20.87,
+     "gap_to_optimum_espn_raw_median": 18.92,
+     "gap_to_optimum_consensus_median": 17.21
+    },
+    "2-19": {
+     "entries": 67816,
+     "at_cap_pct": 49.02,
+     "left_100_300_pct": 42.57,
+     "left_400_1000_pct": 7.84,
+     "left_1100_plus_pct": 0.58,
+     "salary_mean": 49880.7,
+     "naked_qb_pct": 13.92,
+     "double_stack_pct": 34.36,
+     "one_swap_optimal_board_pct": 0.38,
+     "one_swap_gain_board_mean": 3.045,
+     "one_swap_optimal_sleeper_raw_pct": 0.21,
+     "one_swap_gain_sleeper_raw_mean": 3.107,
+     "one_swap_optimal_espn_raw_pct": 1.03,
+     "one_swap_gain_espn_raw_mean": 3.329,
+     "one_swap_optimal_consensus_pct": 0.58,
+     "one_swap_gain_consensus_mean": 2.756,
+     "gap_to_optimum_board_median": 19.6,
+     "gap_to_optimum_sleeper_raw_median": 20.42,
+     "gap_to_optimum_espn_raw_median": 18.51,
+     "gap_to_optimum_consensus_median": 16.78
+    },
+    "20-149": {
+     "entries": 24708,
+     "at_cap_pct": 47.77,
+     "left_100_300_pct": 42.94,
+     "left_400_1000_pct": 8.37,
+     "left_1100_plus_pct": 0.92,
+     "salary_mean": 49870.4,
+     "naked_qb_pct": 7.09,
+     "double_stack_pct": 46.24,
+     "one_swap_optimal_board_pct": 0.45,
+     "one_swap_gain_board_mean": 2.996,
+     "one_swap_optimal_sleeper_raw_pct": 0.28,
+     "one_swap_gain_sleeper_raw_mean": 3.087,
+     "one_swap_optimal_espn_raw_pct": 1.1,
+     "one_swap_gain_espn_raw_mean": 3.173,
+     "one_swap_optimal_consensus_pct": 0.65,
+     "one_swap_gain_consensus_mean": 2.632,
+     "gap_to_optimum_board_median": 18.8,
+     "gap_to_optimum_sleeper_raw_median": 19.71,
+     "gap_to_optimum_espn_raw_median": 17.83,
+     "gap_to_optimum_consensus_median": 16.11
+    },
+    "150+": {
+     "entries": 23700,
+     "at_cap_pct": 46.7,
+     "left_100_300_pct": 42.34,
+     "left_400_1000_pct": 9.81,
+     "left_1100_plus_pct": 1.14,
+     "salary_mean": 49857.5,
+     "naked_qb_pct": 4.84,
+     "double_stack_pct": 48.7,
+     "one_swap_optimal_board_pct": 0.45,
+     "one_swap_gain_board_mean": 3.033,
+     "one_swap_optimal_sleeper_raw_pct": 0.27,
+     "one_swap_gain_sleeper_raw_mean": 3.16,
+     "one_swap_optimal_espn_raw_pct": 0.83,
+     "one_swap_gain_espn_raw_mean": 3.065,
+     "one_swap_optimal_consensus_pct": 0.63,
+     "one_swap_gain_consensus_mean": 2.571,
+     "gap_to_optimum_board_median": 18.7,
+     "gap_to_optimum_sleeper_raw_median": 19.47,
+     "gap_to_optimum_espn_raw_median": 17.75,
+     "gap_to_optimum_consensus_median": 15.96
+    }
+   },
+   "by_copies": {
+    "1": {
+     "entries": 126911,
+     "at_cap_pct": 46.79,
+     "left_100_300_pct": 43.13,
+     "left_400_1000_pct": 9.22,
+     "left_1100_plus_pct": 0.86,
+     "salary_mean": 49865.8,
+     "naked_qb_pct": 14.01,
+     "double_stack_pct": 33.63,
+     "one_swap_optimal_board_pct": 0.29,
+     "one_swap_gain_board_mean": 3.174,
+     "one_swap_optimal_sleeper_raw_pct": 0.16,
+     "one_swap_gain_sleeper_raw_mean": 3.25,
+     "one_swap_optimal_espn_raw_pct": 0.63,
+     "one_swap_gain_espn_raw_mean": 3.454,
+     "one_swap_optimal_consensus_pct": 0.39,
+     "one_swap_gain_consensus_mean": 2.868,
+     "gap_to_optimum_board_median": 20.1,
+     "gap_to_optimum_sleeper_raw_median": 20.85,
+     "gap_to_optimum_espn_raw_median": 19.26,
+     "gap_to_optimum_consensus_median": 17.36
+    },
+    "2-5": {
+     "entries": 14114,
+     "at_cap_pct": 56.8,
+     "left_100_300_pct": 39.63,
+     "left_400_1000_pct": 3.53,
+     "left_1100_plus_pct": 0.04,
+     "salary_mean": 49922.1,
+     "naked_qb_pct": 5.17,
+     "double_stack_pct": 51.89,
+     "one_swap_optimal_board_pct": 0.89,
+     "one_swap_gain_board_mean": 2.384,
+     "one_swap_optimal_sleeper_raw_pct": 0.45,
+     "one_swap_gain_sleeper_raw_mean": 2.477,
+     "one_swap_optimal_espn_raw_pct": 2.69,
+     "one_swap_gain_espn_raw_mean": 2.345,
+     "one_swap_optimal_consensus_pct": 1.43,
+     "one_swap_gain_consensus_mean": 1.955,
+     "gap_to_optimum_board_median": 15.2,
+     "gap_to_optimum_sleeper_raw_median": 17.18,
+     "gap_to_optimum_espn_raw_median": 12.91,
+     "gap_to_optimum_consensus_median": 12.38
+    },
+    "6-20": {
+     "entries": 4005,
+     "at_cap_pct": 61.12,
+     "left_100_300_pct": 37.43,
+     "left_400_1000_pct": 1.45,
+     "left_1100_plus_pct": 0.0,
+     "salary_mean": 49941.2,
+     "naked_qb_pct": 3.92,
+     "double_stack_pct": 59.0,
+     "one_swap_optimal_board_pct": 1.06,
+     "one_swap_gain_board_mean": 2.089,
+     "one_swap_optimal_sleeper_raw_pct": 0.81,
+     "one_swap_gain_sleeper_raw_mean": 2.156,
+     "one_swap_optimal_espn_raw_pct": 4.0,
+     "one_swap_gain_espn_raw_mean": 1.834,
+     "one_swap_optimal_consensus_pct": 2.34,
+     "one_swap_gain_consensus_mean": 1.571,
+     "gap_to_optimum_board_median": 13.3,
+     "gap_to_optimum_sleeper_raw_median": 16.01,
+     "gap_to_optimum_espn_raw_median": 10.18,
+     "gap_to_optimum_consensus_median": 10.36
+    },
+    "21+": {
+     "entries": 1985,
+     "at_cap_pct": 69.32,
+     "left_100_300_pct": 29.12,
+     "left_400_1000_pct": 1.56,
+     "left_1100_plus_pct": 0.0,
+     "salary_mean": 49955.8,
+     "naked_qb_pct": 3.12,
+     "double_stack_pct": 38.79,
+     "one_swap_optimal_board_pct": 1.73,
+     "one_swap_gain_board_mean": 1.979,
+     "one_swap_optimal_sleeper_raw_pct": 1.73,
+     "one_swap_gain_sleeper_raw_mean": 1.817,
+     "one_swap_optimal_espn_raw_pct": 5.86,
+     "one_swap_gain_espn_raw_mean": 1.661,
+     "one_swap_optimal_consensus_pct": 3.36,
+     "one_swap_gain_consensus_mean": 1.326,
+     "gap_to_optimum_board_median": 12.0,
+     "gap_to_optimum_sleeper_raw_median": 14.38,
+     "gap_to_optimum_espn_raw_median": 8.66,
+     "gap_to_optimum_consensus_median": 9.17
+    }
+   }
+  },
+  "served": {
+   "all": {
+    "entries": 147015,
+    "at_cap_pct": 35.64,
+    "left_100_300_pct": 28.09,
+    "left_400_1000_pct": 13.6,
+    "left_1100_plus_pct": 22.67,
+    "salary_mean": 49219.6,
+    "naked_qb_pct": 17.37,
+    "double_stack_pct": 33.6,
+    "one_swap_optimal_board_pct": 0.09,
+    "one_swap_gain_board_mean": 5.386,
+    "one_swap_optimal_sleeper_raw_pct": 0.04,
+    "one_swap_gain_sleeper_raw_mean": 5.512,
+    "one_swap_optimal_espn_raw_pct": 0.02,
+    "one_swap_gain_espn_raw_mean": 5.911,
+    "one_swap_optimal_consensus_pct": 0.06,
+    "one_swap_gain_consensus_mean": 5.206,
+    "gap_to_optimum_board_median": 26.8,
+    "gap_to_optimum_sleeper_raw_median": 27.08,
+    "gap_to_optimum_espn_raw_median": 29.02,
+    "gap_to_optimum_consensus_median": 25.37
+   },
+   "structure": {
+    "resolved_entries": 147015,
+    "unresolved_entries": 0,
+    "salary_mean": 49219.6,
+    "salary_median": 49900.0,
+    "salary_at_cap_pct": 35.64,
+    "salary_left_100_or_less_pct": 51.04,
+    "salary_49500_plus_pct": 69.67,
+    "salary_48000_or_less_pct": 14.8,
+    "salary_quantiles": {
+     "0.01": 44000.0,
+     "0.05": 46100.0,
+     "0.25": 49100.0,
+     "0.5": 49900.0,
+     "0.75": 50000.0
+    },
+    "stack_pct": [
+     17.37,
+     49.03,
+     28.8,
+     4.81
+    ],
+    "bring_back_pct": 34.89,
+    "qb_with_own_rb_pct": 16.66,
+    "dst_vs_own_qb_pct": 0.555,
+    "max_from_one_team_pct": {
+     "1": 2.73,
+     "2": 49.65,
+     "3": 36.33,
+     "4": 10.03,
+     "5": 1.2
+    },
+    "templates_pct": {
+     "QB+0": 11.39,
+     "QB+0 +bring-back": 5.98,
+     "QB+1": 31.91,
+     "QB+1 +bring-back": 17.11,
+     "QB+2": 18.64,
+     "QB+2 +bring-back": 10.15,
+     "QB+3": 3.16,
+     "QB+3 +bring-back": 1.65
+    }
+   }
+  }
+ },
+ "real_top20_gap_to_optimum_median": {
+  "board": 11.65,
+  "sleeper_raw": 14.12,
+  "espn_raw": 9.42,
+  "consensus": 8.74
+ }
+}

@@ -1,0 +1,814 @@
+{
+ "entries": 147015,
+ "real": {
+  "C": 1.0041611851540488e-05,
+  "sum_own_sq": 1.6465,
+  "mean_real_points": 137.7,
+  "owner_side": {
+   "real_top20_in_field_top200": 20,
+   "median_copies_over_real": 1.0,
+   "copies_mass_pct": {
+    "1": 86.325,
+    "2-10": 11.314,
+    "11+": 2.36
+   },
+   "salary_mean": 49874.4,
+   "categories": {
+    "stack_0": 12.74,
+    "stack_1": 51.12,
+    "stack_2": 33.45,
+    "stack_3+": 2.69,
+    "bring_back": 43.98
+   },
+   "score_quantiles": {
+    "P50": 137.24,
+    "P90": 168.94,
+    "P99": 191.8
+   }
+  },
+  "salary_mean": 49874.4,
+  "stack_pct": [
+   12.74,
+   51.12,
+   33.45,
+   2.69
+  ],
+  "at_cap_pct": 48.45
+ },
+ "fields": {
+  "F0": {
+   "measure": {
+    "C": 1.462065200102655e-08,
+    "P8": 1.2677400785700236e-07,
+    "P7": 4.311611767948298e-06,
+    "own_top40_mae": 7.246,
+    "joint_mae": 2.257,
+    "salary_mean": 49219.6,
+    "salary_mean_abs_err": 654.8,
+    "stack_pct": [
+     17.37,
+     49.03,
+     28.8,
+     4.81
+    ],
+    "stack_l1": 13.49,
+    "salary_at_cap_pct": 35.64,
+    "bring_back_pct": 34.89,
+    "mean_overlap": 0.8794,
+    "score_w1": 15.18,
+    "entries_in_duplicated_lineups_pct": 0.196
+   },
+   "collision_over_real": 0.00146,
+   "owner_side": {
+    "real_top20_in_field_top200": 0,
+    "median_copies_over_real": 0.0,
+    "copies_mass_pct": {
+     "1": 99.804,
+     "2-10": 0.196,
+     "11+": 0.0
+    },
+    "salary_mean": 49219.6,
+    "categories": {
+     "stack_0": 17.37,
+     "stack_1": 49.03,
+     "stack_2": 28.8,
+     "stack_3+": 4.81,
+     "bring_back": 34.89
+    },
+    "score_quantiles": {
+     "P50": 121.72,
+     "P90": 152.06,
+     "P99": 177.16
+    }
+   },
+   "owner_verdict": {
+    "1_recall_10_of_20_in_top_200": false,
+    "2_median_copies_ratio_0.5_to_2": false,
+    "3_collision_within_2x": false,
+    "4_unique_share_within_5pp": false,
+    "4_mass_2_to_10_within_2x": false,
+    "4_mass_11_plus_within_2x": false,
+    "5_top40_ownership_mae": true,
+    "5_salary_mean": true,
+    "5_stack_categories": true,
+    "5_score_quantiles_no_worse": true,
+    "all": false
+   },
+   "owner_detail": {
+    "salary_abs_err": {
+     "model": 654.8,
+     "production": 654.8
+    },
+    "category_abs_err_pp": {
+     "stack_0": {
+      "model": 4.63,
+      "production": 4.63
+     },
+     "stack_1": {
+      "model": 2.09,
+      "production": 2.09
+     },
+     "stack_2": {
+      "model": 4.65,
+      "production": 4.65
+     },
+     "stack_3+": {
+      "model": 2.12,
+      "production": 2.12
+     },
+     "bring_back": {
+      "model": 9.09,
+      "production": 9.09
+     }
+    },
+    "score_quantile_abs_err": {
+     "P50": {
+      "model": 15.52,
+      "production": 15.52
+     },
+     "P90": {
+      "model": 16.88,
+      "production": 16.88
+     },
+     "P99": {
+      "model": 14.64,
+      "production": 14.64
+     }
+    }
+   },
+   "diagnostics": {
+    "mean_real_points": 122.52,
+    "D_real_minus_field": 15.18,
+    "sum_own_sq": 0.8795,
+    "top_owned_pct": 28.8,
+    "top40_mae": 7.246,
+    "at_cap_pct": 35.64,
+    "salary_mean": 49219.6,
+    "naked_qb_pct": 17.37,
+    "bring_back_pct": 34.89
+   },
+   "diagnostic_verdict": {
+    "D1_score_gap_closes_3_points": false,
+    "D2_sum_own_sq_within_1.33x": false,
+    "D3_top40_mae_better_by_0.5pp": false,
+    "all": false
+   }
+  },
+  "F1": {
+   "measure": {
+    "C": 6.051839499159091e-08,
+    "P8": 5.849186158132203e-07,
+    "P7": 1.76036351523246e-05,
+    "own_top40_mae": 5.578,
+    "joint_mae": 1.723,
+    "salary_mean": 49219.9,
+    "salary_mean_abs_err": 654.5,
+    "stack_pct": [
+     17.37,
+     49.03,
+     28.8,
+     4.81
+    ],
+    "stack_l1": 13.49,
+    "salary_at_cap_pct": 39.17,
+    "bring_back_pct": 34.89,
+    "mean_overlap": 1.1292,
+    "score_w1": 8.73,
+    "entries_in_duplicated_lineups_pct": 0.749
+   },
+   "collision_over_real": 0.00603,
+   "owner_side": {
+    "real_top20_in_field_top200": 0,
+    "median_copies_over_real": 0.0,
+    "copies_mass_pct": {
+     "1": 99.251,
+     "2-10": 0.749,
+     "11+": 0.0
+    },
+    "salary_mean": 49219.9,
+    "categories": {
+     "stack_0": 17.37,
+     "stack_1": 49.03,
+     "stack_2": 28.8,
+     "stack_3+": 4.81,
+     "bring_back": 34.89
+    },
+    "score_quantiles": {
+     "P50": 128.46,
+     "P90": 157.66,
+     "P99": 181.06
+    }
+   },
+   "owner_verdict": {
+    "1_recall_10_of_20_in_top_200": false,
+    "2_median_copies_ratio_0.5_to_2": false,
+    "3_collision_within_2x": false,
+    "4_unique_share_within_5pp": false,
+    "4_mass_2_to_10_within_2x": false,
+    "4_mass_11_plus_within_2x": false,
+    "5_top40_ownership_mae": true,
+    "5_salary_mean": true,
+    "5_stack_categories": true,
+    "5_score_quantiles_no_worse": true,
+    "all": false
+   },
+   "owner_detail": {
+    "salary_abs_err": {
+     "model": 654.5,
+     "production": 654.8
+    },
+    "category_abs_err_pp": {
+     "stack_0": {
+      "model": 4.63,
+      "production": 4.63
+     },
+     "stack_1": {
+      "model": 2.09,
+      "production": 2.09
+     },
+     "stack_2": {
+      "model": 4.65,
+      "production": 4.65
+     },
+     "stack_3+": {
+      "model": 2.12,
+      "production": 2.12
+     },
+     "bring_back": {
+      "model": 9.09,
+      "production": 9.09
+     }
+    },
+    "score_quantile_abs_err": {
+     "P50": {
+      "model": 8.78,
+      "production": 15.52
+     },
+     "P90": {
+      "model": 11.28,
+      "production": 16.88
+     },
+     "P99": {
+      "model": 10.74,
+      "production": 14.64
+     }
+    }
+   },
+   "diagnostics": {
+    "mean_real_points": 128.97,
+    "D_real_minus_field": 8.73,
+    "sum_own_sq": 1.1292,
+    "top_owned_pct": 48.7,
+    "top40_mae": 5.578,
+    "at_cap_pct": 39.17,
+    "salary_mean": 49219.9,
+    "naked_qb_pct": 17.37,
+    "bring_back_pct": 34.89
+   },
+   "diagnostic_verdict": {
+    "D1_score_gap_closes_3_points": true,
+    "D2_sum_own_sq_within_1.33x": false,
+    "D3_top40_mae_better_by_0.5pp": true,
+    "all": false
+   },
+   "b6_loss": {
+    "loss": 19.8579,
+    "parts": {
+     "C": 7.3744,
+     "P8": 4.8174,
+     "P7": 4.1334,
+     "own_top40_mae": 0.7698,
+     "joint_mae": 0.7634,
+     "salary_mean_abs_err": 0.9995,
+     "stack_l1": 1.0
+    }
+   }
+  },
+  "F2_w0.05": {
+   "measure": {
+    "C": 5.5428927522879135e-08,
+    "P8": 5.479968427220204e-07,
+    "P7": 1.70128867828654e-05,
+    "own_top40_mae": 5.555,
+    "joint_mae": 1.707,
+    "salary_mean": 49251.7,
+    "salary_mean_abs_err": 622.7,
+    "stack_pct": [
+     20.43,
+     47.53,
+     27.48,
+     4.56
+    ],
+    "stack_l1": 19.12,
+    "salary_at_cap_pct": 39.15,
+    "bring_back_pct": 34.14,
+    "mean_overlap": 1.1537,
+    "score_w1": 8.26,
+    "entries_in_duplicated_lineups_pct": 0.696
+   },
+   "collision_over_real": 0.00552,
+   "owner_side": {
+    "real_top20_in_field_top200": 0,
+    "median_copies_over_real": 0.0,
+    "copies_mass_pct": {
+     "1": 99.304,
+     "2-10": 0.696,
+     "11+": 0.0
+    },
+    "salary_mean": 49251.7,
+    "categories": {
+     "stack_0": 20.43,
+     "stack_1": 47.53,
+     "stack_2": 27.48,
+     "stack_3+": 4.56,
+     "bring_back": 34.14
+    },
+    "score_quantiles": {
+     "P50": 128.98,
+     "P90": 158.14,
+     "P99": 181.36
+    }
+   },
+   "owner_verdict": {
+    "1_recall_10_of_20_in_top_200": false,
+    "2_median_copies_ratio_0.5_to_2": false,
+    "3_collision_within_2x": false,
+    "4_unique_share_within_5pp": false,
+    "4_mass_2_to_10_within_2x": false,
+    "4_mass_11_plus_within_2x": false,
+    "5_top40_ownership_mae": true,
+    "5_salary_mean": true,
+    "5_stack_categories": false,
+    "5_score_quantiles_no_worse": true,
+    "all": false
+   },
+   "owner_detail": {
+    "salary_abs_err": {
+     "model": 622.7,
+     "production": 654.8
+    },
+    "category_abs_err_pp": {
+     "stack_0": {
+      "model": 7.69,
+      "production": 4.63
+     },
+     "stack_1": {
+      "model": 3.59,
+      "production": 2.09
+     },
+     "stack_2": {
+      "model": 5.97,
+      "production": 4.65
+     },
+     "stack_3+": {
+      "model": 1.87,
+      "production": 2.12
+     },
+     "bring_back": {
+      "model": 9.84,
+      "production": 9.09
+     }
+    },
+    "score_quantile_abs_err": {
+     "P50": {
+      "model": 8.26,
+      "production": 15.52
+     },
+     "P90": {
+      "model": 10.8,
+      "production": 16.88
+     },
+     "P99": {
+      "model": 10.44,
+      "production": 14.64
+     }
+    }
+   },
+   "diagnostics": {
+    "mean_real_points": 129.44,
+    "D_real_minus_field": 8.26,
+    "sum_own_sq": 1.1537,
+    "top_owned_pct": 49.9,
+    "top40_mae": 5.555,
+    "at_cap_pct": 39.15,
+    "salary_mean": 49251.7,
+    "naked_qb_pct": 20.43,
+    "bring_back_pct": 34.14
+   },
+   "diagnostic_verdict": {
+    "D1_score_gap_closes_3_points": true,
+    "D2_sum_own_sq_within_1.33x": false,
+    "D3_top40_mae_better_by_0.5pp": true,
+    "all": false
+   },
+   "b6_loss": {
+    "loss": 20.4865,
+    "parts": {
+     "C": 7.5011,
+     "P8": 4.9114,
+     "P7": 4.1826,
+     "own_top40_mae": 0.7666,
+     "joint_mae": 0.7563,
+     "salary_mean_abs_err": 0.951,
+     "stack_l1": 1.4173
+    }
+   }
+  },
+  "F2_w0.1": {
+   "measure": {
+    "C": 5.3300604763236026e-08,
+    "P8": 5.401313020885567e-07,
+    "P7": 1.6781269745152936e-05,
+    "own_top40_mae": 5.535,
+    "joint_mae": 1.694,
+    "salary_mean": 49283.2,
+    "salary_mean_abs_err": 591.2,
+    "stack_pct": [
+     23.57,
+     45.94,
+     26.17,
+     4.32
+    ],
+    "stack_l1": 24.92,
+    "salary_at_cap_pct": 39.11,
+    "bring_back_pct": 33.44,
+    "mean_overlap": 1.1795,
+    "score_w1": 7.79,
+    "entries_in_duplicated_lineups_pct": 0.669
+   },
+   "collision_over_real": 0.00531,
+   "owner_side": {
+    "real_top20_in_field_top200": 0,
+    "median_copies_over_real": 0.0,
+    "copies_mass_pct": {
+     "1": 99.331,
+     "2-10": 0.669,
+     "11+": 0.0
+    },
+    "salary_mean": 49283.2,
+    "categories": {
+     "stack_0": 23.57,
+     "stack_1": 45.94,
+     "stack_2": 26.17,
+     "stack_3+": 4.32,
+     "bring_back": 33.44
+    },
+    "score_quantiles": {
+     "P50": 129.52,
+     "P90": 158.56,
+     "P99": 181.6
+    }
+   },
+   "owner_verdict": {
+    "1_recall_10_of_20_in_top_200": false,
+    "2_median_copies_ratio_0.5_to_2": false,
+    "3_collision_within_2x": false,
+    "4_unique_share_within_5pp": false,
+    "4_mass_2_to_10_within_2x": false,
+    "4_mass_11_plus_within_2x": false,
+    "5_top40_ownership_mae": true,
+    "5_salary_mean": true,
+    "5_stack_categories": false,
+    "5_score_quantiles_no_worse": true,
+    "all": false
+   },
+   "owner_detail": {
+    "salary_abs_err": {
+     "model": 591.2,
+     "production": 654.8
+    },
+    "category_abs_err_pp": {
+     "stack_0": {
+      "model": 10.83,
+      "production": 4.63
+     },
+     "stack_1": {
+      "model": 5.18,
+      "production": 2.09
+     },
+     "stack_2": {
+      "model": 7.28,
+      "production": 4.65
+     },
+     "stack_3+": {
+      "model": 1.63,
+      "production": 2.12
+     },
+     "bring_back": {
+      "model": 10.54,
+      "production": 9.09
+     }
+    },
+    "score_quantile_abs_err": {
+     "P50": {
+      "model": 7.72,
+      "production": 15.52
+     },
+     "P90": {
+      "model": 10.38,
+      "production": 16.88
+     },
+     "P99": {
+      "model": 10.2,
+      "production": 14.64
+     }
+    }
+   },
+   "diagnostics": {
+    "mean_real_points": 129.9,
+    "D_real_minus_field": 7.8,
+    "sum_own_sq": 1.1796,
+    "top_owned_pct": 51.1,
+    "top40_mae": 5.535,
+    "at_cap_pct": 39.11,
+    "salary_mean": 49283.2,
+    "naked_qb_pct": 23.57,
+    "bring_back_pct": 33.44
+   },
+   "diagnostic_verdict": {
+    "D1_score_gap_closes_3_points": true,
+    "D2_sum_own_sq_within_1.33x": false,
+    "D3_top40_mae_better_by_0.5pp": true,
+    "all": false
+   },
+   "b6_loss": {
+    "loss": 20.9569,
+    "parts": {
+     "C": 7.5576,
+     "P8": 4.9323,
+     "P7": 4.2024,
+     "own_top40_mae": 0.7639,
+     "joint_mae": 0.7506,
+     "salary_mean_abs_err": 0.9029,
+     "stack_l1": 1.8473
+    }
+   }
+  },
+  "F2_w0.2": {
+   "measure": {
+    "C": 5.38558193961864e-08,
+    "P8": 5.483669858106539e-07,
+    "P7": 1.7783802300716994e-05,
+    "own_top40_mae": 5.545,
+    "joint_mae": 1.674,
+    "salary_mean": 49343.9,
+    "salary_mean_abs_err": 530.5,
+    "stack_pct": [
+     29.7,
+     42.99,
+     23.46,
+     3.85
+    ],
+    "stack_l1": 36.24,
+    "salary_at_cap_pct": 39.04,
+    "bring_back_pct": 31.9,
+    "mean_overlap": 1.2356,
+    "score_w1": 6.9,
+    "entries_in_duplicated_lineups_pct": 0.69
+   },
+   "collision_over_real": 0.00536,
+   "owner_side": {
+    "real_top20_in_field_top200": 0,
+    "median_copies_over_real": 0.0,
+    "copies_mass_pct": {
+     "1": 99.31,
+     "2-10": 0.69,
+     "11+": 0.0
+    },
+    "salary_mean": 49343.9,
+    "categories": {
+     "stack_0": 29.7,
+     "stack_1": 42.99,
+     "stack_2": 23.46,
+     "stack_3+": 3.85,
+     "bring_back": 31.9
+    },
+    "score_quantiles": {
+     "P50": 130.46,
+     "P90": 159.3,
+     "P99": 181.96
+    }
+   },
+   "owner_verdict": {
+    "1_recall_10_of_20_in_top_200": false,
+    "2_median_copies_ratio_0.5_to_2": false,
+    "3_collision_within_2x": false,
+    "4_unique_share_within_5pp": false,
+    "4_mass_2_to_10_within_2x": false,
+    "4_mass_11_plus_within_2x": false,
+    "5_top40_ownership_mae": true,
+    "5_salary_mean": true,
+    "5_stack_categories": false,
+    "5_score_quantiles_no_worse": true,
+    "all": false
+   },
+   "owner_detail": {
+    "salary_abs_err": {
+     "model": 530.5,
+     "production": 654.8
+    },
+    "category_abs_err_pp": {
+     "stack_0": {
+      "model": 16.96,
+      "production": 4.63
+     },
+     "stack_1": {
+      "model": 8.13,
+      "production": 2.09
+     },
+     "stack_2": {
+      "model": 9.99,
+      "production": 4.65
+     },
+     "stack_3+": {
+      "model": 1.16,
+      "production": 2.12
+     },
+     "bring_back": {
+      "model": 12.08,
+      "production": 9.09
+     }
+    },
+    "score_quantile_abs_err": {
+     "P50": {
+      "model": 6.78,
+      "production": 15.52
+     },
+     "P90": {
+      "model": 9.64,
+      "production": 16.88
+     },
+     "P99": {
+      "model": 9.84,
+      "production": 14.64
+     }
+    }
+   },
+   "diagnostics": {
+    "mean_real_points": 130.79,
+    "D_real_minus_field": 6.9,
+    "sum_own_sq": 1.2356,
+    "top_owned_pct": 53.5,
+    "top40_mae": 5.545,
+    "at_cap_pct": 39.04,
+    "salary_mean": 49343.9,
+    "naked_qb_pct": 29.7,
+    "bring_back_pct": 31.9
+   },
+   "diagnostic_verdict": {
+    "D1_score_gap_closes_3_points": true,
+    "D2_sum_own_sq_within_1.33x": false,
+    "D3_top40_mae_better_by_0.5pp": true,
+    "all": false
+   },
+   "b6_loss": {
+    "loss": 21.5754,
+    "parts": {
+     "C": 7.5427,
+     "P8": 4.9104,
+     "P7": 4.1187,
+     "own_top40_mae": 0.7652,
+     "joint_mae": 0.7417,
+     "salary_mean_abs_err": 0.8102,
+     "stack_l1": 2.6864
+    }
+   }
+  }
+ },
+ "week": 11,
+ "role": "development",
+ "frozen": {
+  "source": "kalshi",
+  "sigma": 0.25,
+  "tau": 0.0,
+  "alpha": 0.5,
+  "w": null,
+  "n_pool_min": 10000
+ },
+ "steer": {
+  "rows": 147015,
+  "steer_mae_by_pass": [
+   2.3398,
+   0.9509,
+   0.5655,
+   0.4303,
+   0.3701,
+   0.32,
+   0.2959,
+   0.2703,
+   0.2675,
+   0.2585
+  ],
+  "mae_to_targets_pct_points": 0.237
+ },
+ "pool": 29403,
+ "target_sum_own_sq": 1.1718,
+ "top15_real_owned": [
+  {
+   "name": "Emmett Johnson",
+   "real_pct": 70.7,
+   "served_pct": 28.8,
+   "target_pct": 51.1,
+   "F1_pct": 48.7
+  },
+  {
+   "name": "Tony Pollard",
+   "real_pct": 35.4,
+   "served_pct": 17.4,
+   "target_pct": 25.4,
+   "F1_pct": 24.5
+  },
+  {
+   "name": "CeeDee Lamb",
+   "real_pct": 34.7,
+   "served_pct": 26.1,
+   "target_pct": 20.4,
+   "F1_pct": 21.0
+  },
+  {
+   "name": "Jonah Coleman",
+   "real_pct": 34.5,
+   "served_pct": 15.7,
+   "target_pct": 27.9,
+   "F1_pct": 26.8
+  },
+  {
+   "name": "George Pickens",
+   "real_pct": 25.9,
+   "served_pct": 14.9,
+   "target_pct": 17.7,
+   "F1_pct": 18.2
+  },
+  {
+   "name": "Carnell Tate",
+   "real_pct": 23.1,
+   "served_pct": 11.9,
+   "target_pct": 18.8,
+   "F1_pct": 19.3
+  },
+  {
+   "name": "Dak Prescott",
+   "real_pct": 21.7,
+   "served_pct": 13.2,
+   "target_pct": 10.8,
+   "F1_pct": 11.1
+  },
+  {
+   "name": "Mark Andrews",
+   "real_pct": 20.9,
+   "served_pct": 4.7,
+   "target_pct": 10.4,
+   "F1_pct": 10.3
+  },
+  {
+   "name": "Elic Ayomanor",
+   "real_pct": 20.0,
+   "served_pct": 8.4,
+   "target_pct": 18.3,
+   "F1_pct": 18.9
+  },
+  {
+   "name": "James Cook III",
+   "real_pct": 16.7,
+   "served_pct": 14.1,
+   "target_pct": 12.9,
+   "F1_pct": 12.8
+  },
+  {
+   "name": "Jordyn Tyson",
+   "real_pct": 16.5,
+   "served_pct": 4.2,
+   "target_pct": 7.6,
+   "F1_pct": 7.7
+  },
+  {
+   "name": "Omarion Hampton",
+   "real_pct": 15.8,
+   "served_pct": 6.7,
+   "target_pct": 8.0,
+   "F1_pct": 7.7
+  },
+  {
+   "name": "Colston Loveland",
+   "real_pct": 15.6,
+   "served_pct": 9.1,
+   "target_pct": 15.6,
+   "F1_pct": 15.4
+  },
+  {
+   "name": "Steelers",
+   "real_pct": 15.0,
+   "served_pct": 5.3,
+   "target_pct": 6.5,
+   "F1_pct": 5.2
+  },
+  {
+   "name": "Garrett Wilson",
+   "real_pct": 14.6,
+   "served_pct": 10.6,
+   "target_pct": 10.3,
+   "F1_pct": 10.5
+  }
+ ],
+ "seconds": 464
+}
