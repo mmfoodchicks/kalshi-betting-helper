@@ -958,6 +958,22 @@ data-only `sim-history` branch (which never deploys):
   the tie rule are UNVERIFIED (`TIE_RULE` "loss", the conservative reading, until the owner confirms). A player
   not found, or found twice, waits for the owner. The record is SQL sums: hit rate with its interval, Vigil's
   calibration on the picks it priced, paper ROI on settled entries (void refunds are Pick6 credits, labelled).
+- **The crypto terminal** (2026-11-27, `crypto_terminal.py`, `static/crypto.js`, the Crypto tab; the owner asked
+  for it back in this sprint's backlog; READ-ONLY and paper: nothing places an order). Kalshi's 15-minute up/down and
+  hourly above/below contracts on BTC, ETH, SOL, XRP and DOGE, each priced off ITS OWN rules text (the simple average
+  of CF Benchmarks' 60 seconds before the close; ETH's index is "ERTI"; DOGE's strike from `custom_strike`, since
+  `floor_strike` is rounded; range, one-touch, a wrong index or a text/field disagreement refused, shown unpriced).
+  The level is the median of four exchanges, labelled a proxy (CF Benchmarks is licensed). The model is a driftless
+  walk at recent one-minute volatility with the settlement average's variance exact; where no volatility reconciles
+  it with Kalshi's price the card says the market is reading a different level. **Kalshi's price beat it on the
+  held-out week at every look** (`research/reports/crypto_validation.md`: +0.0057 to +0.0329 nats, z 2.3-4.8;
+  the paper strategy's +4.04c in sample was +0.56 +/- 1.09c held out), so every edge reads "unproven" until the
+  live record decides (500 markets over 10 days, 2 SE). The record is its own file (`crypto_record.db` beside
+  predlog.db, `cx_forecasts`): rows at fixed looks 60 s+ before the close (nothing logged has seen the settlement
+  window), graded off Kalshi's result, read by SQL sums into a summary file the background owner writes -- web
+  requests read only that file. 14 days of every look, then the decision look to 180 days, capped at 300,000 rows
+  (~53 MB). Measured in the guards (`tests/guards_auto_crypto.py`): 400 recorder passes 0.0 MB RSS growth, a
+  200,000-row read +0.4 MB. `VIGIL_CRYPTO=off` stops it without a code change.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 
@@ -1120,7 +1136,8 @@ so a self-pulling batch file corrupts itself); all logic lives in Python.
   dropped once (`store.drop_crypto_tables`, secure_delete OFF: Debian's SQLite
   zeroes freed pages through the WAL, 181 MB for a 1M-row copy; then a VACUUM,
   193 -> 13 MB on a copy, 0.29 s). A read that
-  grows with a table belongs in SQL, never a fetchall. Every worker now ledgers
+  grows with a table belongs in SQL, never a fetchall. (The paper crypto terminal that came back on 2026-11-27 was
+  built against exactly this: its own file, SQL sums, a summary file for pages, a row cap -- above.) Every worker now ledgers
   `MEM-worker` past 600 MB with its requests in flight and every thread's
   frames (in the row's `tb`): read the error-log snapshot first.
 - The slate builds in a **fresh subprocess** every few minutes; anything cached
