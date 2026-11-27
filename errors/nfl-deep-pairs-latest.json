@@ -3913,9 +3913,9 @@
    "close_mkt_ts": 1795741667,
    "close_time": 1795915200,
    "event_ts": 1795742400,
-   "graded": 0,
+   "graded": 1,
    "mkt": 0.5841584158415841,
-   "outcome": null,
+   "outcome": 1,
    "prob": 0.5708,
    "shadow": {
     "nfl_book": {
@@ -3937,9 +3937,9 @@
    "close_mkt_ts": 1795741667,
    "close_time": 1795915200,
    "event_ts": 1795742400,
-   "graded": 0,
+   "graded": 1,
    "mkt": 0.4158415841584158,
-   "outcome": null,
+   "outcome": 0,
    "prob": 0.4292,
    "shadow": {
     "nfl_book": {
