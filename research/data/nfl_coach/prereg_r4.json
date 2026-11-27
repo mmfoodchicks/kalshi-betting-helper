@@ -1,0 +1,88 @@
+{
+ "block_sha256": "98308727af262a2520cd55b1d52a41ea0889ffb2ff77a2418a35e3bbfcbb8e72",
+ "criteria": {
+  "1": "tests/guards_auto_nfl_coach_r4.py exits 0",
+  "2": "decision joint gain > 2 SE (SE over pulled team-games)",
+  "3": "each of personnel, call and completion > -1 SE",
+  "4": "realism (a guardrail): the lead back's carries CRPS and the top two targets' CRPS, R4 - R3 <= +2 SE"
+ },
+ "dependence": "2026 weeks 13-18 are R1's, R2-H1's and R3's registered games; 2027 is fresh. R1's statistics are game-level, R2-H1's who-got-the-ball on every snap, R3's the quarterback's pull and his line, R4's what happens AFTER a pull (the backup's calls and efficiency, the second unit's workload). Different questions, frozen before any of those games was played; errors are correlated through the shared weeks, so joint passes are not independent confirmations. R4 is fitted on 2016-2024, its rule checked on 2025-2026 weeks 1-12, and tuned on no read (none has been run). R4 plays R3's pull unchanged: R3's verdict is not an input. Any change to R4 or to an R1/R2/R3 file it plays on fails the pinned hashes and moves R4 to fresh games under a new registration.",
+ "files": {
+  "nfl_coach_sim.py": "631a398b024f85adf9d275ce7c02ebbe3deb8dd2160bed062b3fb4e136f244e2",
+  "nfl_coach_sim_r2.py": "67ae6c8e54cdd68f57f04719fdb914d489dc4b622560ceb615b71166c39eccca",
+  "nfl_coach_sim_r3.py": "acd00092a91300c4ccd5f244b8d76dc0fa6a75337e4ddf1a857805c4c2cbe06c",
+  "nfl_coach_sim_r4.py": "f9249362d216be1160bc9bb3a8bb70d52586266d5e1697d6bae2c80da38523f3",
+  "nfl_deep_sim.py": "22a221d7810495db3f8f7bb1bef7c4e16c3bbbf282902a95f133cecdabc29820",
+  "nfl_pbp.py": "660234badefc3e3b5f0e1417a48431e4ad8ff33aab5df8a207834faa4862865d",
+  "research/data/nfl_coach_r2_tables.json": "e589314e654897e81e665e4a25eba9bd845b9fed71790e747a518f54ee4daa1b",
+  "research/data/nfl_coach_r3_tables.json": "6dfdc15cfb89ea660b126f0a7906bc023d817a46e524acb4c7b33f09ca979977",
+  "research/data/nfl_coach_r4_tables.json": "8ce1bce2c8c9e5b9387a75f647f75b4ba612d90c952c9c4b26a62b4eb5984291",
+  "research/data/nfl_coach_tables.json": "ffe45e30f03c6f5d0879834c7c43f08ca7463525399ded0f9a2a9937df2189d8",
+  "research/nfl_coach_data.py": "3c7a8680e1a9cf5e2efd14ff6fed7ad26d4ce21775f05e97faf21912e3f846ad",
+  "research/nfl_coach_eval.py": "fbd5a9998bebb38f253185e948891be57a73435d2c3774f9254268d76a50b91d",
+  "research/nfl_coach_r2_data.py": "ed17b05c9b2544f782b7befb307b7ae27dcc63d2b581d0b8f877feab7d59ada1",
+  "research/nfl_coach_r2_eval.py": "7c3feeb2c2c11aec524db13566a4399826123a3834ff5edad9b8bf96e02f2a99",
+  "research/nfl_coach_r3_eval.py": "95ff8554f5c905b4b9ef1fb4e1fe1b3c42e69db3a00a07bbe9fddb3fef32928a",
+  "research/nfl_coach_r3_qb.py": "916140d754ec5aec036686ecd39391df2b9f05f7e4e3d94ab6dd4525faa90685",
+  "research/nfl_coach_r4_data.py": "a98124e44c435bd129a0c26d8e184dcf13e0e7204f9efd47e68f492c08832135",
+  "research/nfl_coach_r4_eval.py": "4e64f2e6d3fd7a4be37090c83c63b4279bac5918f3e3624466ccce32cb1bc973",
+  "research/nfl_coach_r4_evidence.py": "b75353e6fca559a4df21f8edf2d46d5243621d1294a0608da215bf79ec6bf7c6",
+  "research/nfl_coach_r4_fit.py": "4cb45103c899e6f58a1b2df4763be98591e5686348dbf41e2fbcba943166db2c",
+  "research/nfl_coach_r4_read.py": "ed5b854c3918aa0efae60c7cd3f0788fbbdddf92058b8eb8b58b9a54a1051742",
+  "tests/guards_auto_nfl_coach_r4.py": "7e036ec4bb0527d4e69df31ca8e0c56e50d216c30cfda707ab6f7774e38ed234"
+ },
+ "min_pulled_team_games": 80,
+ "not_before_utc": "2028-01-13T06:00:00Z",
+ "power": "development: the joint gain +0.330 +/- 0.119 a pulled team-game (2025, 102 pulled team-games) and +0.524 +/- 0.149 (2026 weeks 1-12, 48); per-game SD ~1.1-1.2, so at ~125 pulled team-games (2026 weeks 13-18 ~25, 2027 ~100) SE ~0.10 and z ~3.2-5.0: criterion 2 power ~0.9-1.0. Criterion 3: every component positive in both development seasons (personnel +0.26/+0.39, call +0.046/+0.088, completion +0.024/+0.042), so ~0.95 jointly. Criterion 4: R4 - R3 realism -0.007/+0.015 (lead back) and -0.013/-0.013 (top two) with |z| < 0.8, a 2-SE guardrail holding ~0.95 jointly. Overall ~0.8-0.9.",
+ "requires_r1_read": true,
+ "settings": {
+  "files": "play_by_play_<season>.csv.gz, players.csv, injuries_<season>.csv in the read's directory (nflverse, fresh); week 18's kind from the descriptions alone",
+  "level_curve_n": 1000,
+  "seed": "per game: the last 8 bytes of the nflverse game id, little-endian, mod 2^31",
+  "sims": 100,
+  "workers": 4
+ },
+ "statistics": {
+  "decision": "nfl_coach_r4_eval.collect_with_calls / decision / summarize on every pulled team-game in the window: the starters' cell rates (or xpass for the call) against them moved by R4's frozen effects, log score summed per pulled team-game (positive = R4 better); joint = personnel + call + completion",
+  "realism": "nfl_coach_r4_eval.realism: R4 minus R3 per team-game of the CRPS of the real lead back's carries and the real top two targets' targets, both from the same seeds (negative = R4 better)"
+ },
+ "version": "coach-r4.0",
+ "what": "personnel-aware decisions after a quarterback substitution (nfl_coach_sim_r4): the call, completion and interceptions with the backup in, the second unit's carries and targets after a strategic pull, by the kind of pull (injury from the play descriptions and the next week's report, else strategic)",
+ "window": [
+  {
+   "season": 2026,
+   "weeks": [
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+   ]
+  },
+  {
+   "season": 2027,
+   "weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+   ]
+  }
+ ],
+ "written_utc": "2026-11-27T10:47:03Z"
+}

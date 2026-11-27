@@ -279,3 +279,16 @@ python3 tests/guards_auto_nfl_coach_r3.py
 | `research/nfl_coach_r3_prereg.py`, `research/data/nfl_coach/prereg_r3.json` | the registration |
 | `research/nfl_coach_r3_read.py` | the registered read (not run) |
 | `tests/guards_auto_nfl_coach_r3.py` | 23 guards, section NQ (self-registered, AUTO) |
+
+## G. Erratum, 2026-11-27 (found while building R4; nothing R3's registration pins was edited)
+
+**`nfl_coach_sim_r3.simulate` does not give its two arms the same deal draws.** It seeds each arm's deal
+generator from `len(out["r2"])`. That is game j for the R2 arm, but j + 1 for the R3 arm, because R2's lines have
+already been appended by then. Sections B.1 and C say "the same deal draws", and that is wrong.
+
+- **What the two arms do share:** the same games, so the comparison is still paired by game. The carriers and
+  targets are drawn independently in each arm, which adds noise to the R3 - R2 difference but no bias.
+- **The development figures in C stand as measured.** The registered read runs this same code, so its statistic
+  is what was registered, with a little more variance than the text implied.
+- **Guard NQ3 is unaffected.** It checks R3's deal against R2's on one generator directly and passes.
+- **R4 does share deal draws with R3's dealing.** Guard N4-3 holds it to the R2 arm's seeds.
