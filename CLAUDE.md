@@ -904,7 +904,18 @@ data-only `sim-history` branch (which never deploys):
   no-huddle do not; pooled the random walk gains +0.147 (z 4.4) but its no-huddle loss trips the rule's 1-SE veto,
   so full history stays and nothing enters R1-R5. League drift explains a tenth to a sixth of the trailing-pull
   gap. A per-table scheme (random walk for clock, targets, pull) would be R6, a new engine version, tested
-  prospectively -- the owner's call, and on which games.
+  prospectively -- the owner's call, and on which games. **R6** (approved by the owner 2026-11-27;
+  `nfl_coach_sim_r6.py`, `coach-r6.0`; `research/reports/nfl_coach_r6.md`, `prereg_r6.json` block 7ef4defe, commit
+  35809d1): R5 with the three drifting tables moved by the evo study's league random walk projected to 2027 --
+  pace x1.014 through R1's own pace setting, backs' target odds x0.896 in the deal (league-level; may partly
+  double-count usage a roster already carries), the pull +0.0095 log-odds (R5's hazard already up-weighted recent
+  seasons, so it barely moves); the call and no-huddle R1's. Drift off = R5 draw for draw; R1-R5 and R5's amendment
+  byte-identical. Walk-forward +0.082 nats a game (z 7.7; clock +0.055, targets +0.022, pull +0.006), negative in
+  the 2019-20 folds, positive from 2021. Primary 2027 (read on/after 2028-01-13, after R1), replication 2028 with
+  the same frozen tables; joint power ~0.65 at the development mean, ~0.79 at the 2025-26 level. The 2027 family is
+  now four (R2-H2, R4, R5-2027, R6; Holm z 2.241 / 2.128 / 1.960 / 1.645; `family_2027_r6.py` -- the three-test file
+  R5's amendment pins stands as registered). R6's report section F holds the evidence-first DEFENSIVE plan (FTN
+  from 2022 under CC BY-SA, persistence before any decision model, no lawful coordinator source); nothing built.
 - **The deep engine's market anchor spreads 1.21x too wide** (2026-11-27, `research/data/c3_margin_scale.json`,
   C3 addendum): `nfl_deep_data.market_margins` converts Kalshi's win totals to points with
   `nfl_season._PTS_PER_WIN` 2.25, the drive engine's constant (set to undo ITS compression; the drive season sim

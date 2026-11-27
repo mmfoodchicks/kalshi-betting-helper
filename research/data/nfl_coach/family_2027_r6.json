@@ -1,0 +1,164 @@
+{
+ "family": {
+  "definition": "the primary criterion of every coaching read whose primary window is the 2027 regular season (R4's window adds 2026 weeks 13-18); C4 stays in R1's owner-approved family; C3-N is not coaching; the replications (R5 2028, R6 2028) are not members",
+  "holm_familywise_one_sided": 0.05,
+  "holm_z_thresholds": [
+   2.2414,
+   2.128,
+   1.96,
+   1.6449
+  ],
+  "power": {
+   "R2-H2": {
+    "effect_over_se": 3.231,
+    "holm_first_step": 0.8388,
+    "holm_last_step": 0.9436,
+    "own_rule_z2": 0.8908
+   },
+   "R2-H2 (last two seasons)": {
+    "effect_over_se": 1.923,
+    "holm_first_step": 0.3751,
+    "holm_last_step": 0.6096,
+    "own_rule_z2": 0.4693
+   },
+   "R4": {
+    "effect_over_se": 3.2,
+    "holm_first_step": 0.8311,
+    "holm_last_step": 0.94,
+    "own_rule_z2": 0.8849
+   },
+   "R5 (2027 floor, 30)": {
+    "effect_over_se": 2.739,
+    "holm_first_step": 0.6905,
+    "holm_last_step": 0.863,
+    "own_rule_z2": 0.7699
+   },
+   "R5 (2027, ~45)": {
+    "effect_over_se": 3.354,
+    "holm_first_step": 0.8671,
+    "holm_last_step": 0.9563,
+    "own_rule_z2": 0.9121
+   },
+   "R6 (2025-26 level)": {
+    "effect_over_se": 3.675,
+    "holm_first_step": 0.9241,
+    "holm_last_step": 0.9788,
+    "own_rule_z2": 0.953
+   },
+   "R6 (dev mean, pull excluded)": {
+    "effect_over_se": 2.639,
+    "holm_first_step": 0.6544,
+    "holm_last_step": 0.8398,
+    "own_rule_z2": 0.7385
+   }
+  },
+  "tests": [
+   "R2-H2 criterion 2",
+   "R4 criterion 2",
+   "R5 criterion 2 (2027 amendment)",
+   "R6 criterion 2 (2027 primary)"
+  ],
+  "uncorrected_familywise_if_independent": 0.0879
+ },
+ "pairs_with_r6": {
+  "R6 x R2-H2": {
+   "2025": {
+    "corr_of_means": -0.0932,
+    "nA_games": 272,
+    "nB_units": 431,
+    "shared_games": 222
+   },
+   "2026": {
+    "corr_of_means": 0.0142,
+    "nA_games": 164,
+    "nB_units": 229,
+    "shared_games": 116
+   }
+  },
+  "R6 x R4": {
+   "2025": {
+    "corr_of_means": -0.0417,
+    "nA_games": 272,
+    "nB_units": 102,
+    "shared_games": 82
+   },
+   "2026": {
+    "corr_of_means": -0.0449,
+    "nA_games": 164,
+    "nB_units": 48,
+    "shared_games": 38
+   }
+  },
+  "R6 x R5": {
+   "2025": {
+    "corr_of_means": 0.0526,
+    "nA_games": 272,
+    "nB_units": 57,
+    "shared_games": 49
+   },
+   "2026": {
+    "corr_of_means": 0.0312,
+    "nA_games": 164,
+    "nB_units": 27,
+    "shared_games": 25
+   }
+  }
+ },
+ "pairs_without_r6": {
+  "R2-H2 x R4": {
+   "2025": {
+    "corr_of_means": -0.0959,
+    "nA": 431,
+    "nB": 102,
+    "rho_se": 0.115,
+    "rho_shared": -0.2546,
+    "shared": 79
+   },
+   "2026": {
+    "corr_of_means": 0.0512,
+    "nA": 229,
+    "nB": 48,
+    "rho_se": 0.183,
+    "rho_shared": 0.1625,
+    "shared": 33
+   }
+  },
+  "R2-H2 x R5": {
+   "2025": {
+    "corr_of_means": 0.023,
+    "nA": 431,
+    "nB": 57,
+    "rho_se": 0.162,
+    "rho_shared": 0.0878,
+    "shared": 41
+   },
+   "2026": {
+    "corr_of_means": -0.0539,
+    "nA": 229,
+    "nB": 27,
+    "rho_se": 0.243,
+    "rho_shared": -0.212,
+    "shared": 20
+   }
+  },
+  "R4 x R5": {
+   "2025": {
+    "corr_of_means": 0.2155,
+    "nA": 102,
+    "nB": 57,
+    "rho_se": 0.136,
+    "rho_shared": 0.2883,
+    "shared": 57
+   },
+   "2026": {
+    "corr_of_means": 0.0833,
+    "nA": 48,
+    "nB": 27,
+    "rho_se": 0.204,
+    "rho_shared": 0.111,
+    "shared": 27
+   }
+  }
+ },
+ "three_test_analysis": "research/data/nfl_coach/family_2027.json, as R5's amendment registered it"
+}
