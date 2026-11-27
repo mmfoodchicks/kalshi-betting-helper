@@ -133,6 +133,14 @@ pooled over player-weeks: 1 is a calibrated spread, above 1 too narrow, below 1 
 The lines are half-points chosen off the projection only (never a model output), so both paths are scored
 on the same lines. Lines of one player-week are correlated, so the log losses are not independent samples.
 
+The DraftKings rows above score points REBUILT from each path's stat lines. The week board's Sim and Best
+ball cards show something slightly different -- percentiles of its points array pinned to the projection
+(`floor = 10th and ceiling = 90th percentile`, boom = points at least 1.5x the projection). Measured as the
+card computes them (the eval's `card` block, read off the same seeded call, so no other figure moved; 5,738
+player-weeks): real DraftKings scores fell under the card's floor **37.5%** of the time and over its
+ceiling **19.3%** (10% each if calibrated), and a boom game came **22.5%** of the time against **11.7%**
+shown.
+
 ### The owner's specific questions
 
 **Touchdown-reception correlation.** Within a receiver's worlds, corr(receptions, receiving TDs): legacy
@@ -206,3 +214,27 @@ need the per-event draws here instead of `np.rint`.
   figures are exact "as the board's own worlds count it -- a model probability, not a calibrated one".
 - Production: unchanged. `nfl_dfs_sim.py` is untouched by this commit, and guard DA4 pins the legacy
   simulator's seeded output byte for byte.
+
+### The follow-up: every week-board probability labelled (labels only)
+
+- Wherever a week-board probability shows, it now says the board is measured overconfident, in the muted
+  style of the existing modeled labels (escaped, no inline handler):
+  - the NFL tab's Pick 6 view, every ledger pick Vigil priced off the week board, and the ledger's rules
+    say: "From the week board's continuous model, measured overconfident: against 257 real 2025-26 games its
+    spreads run too narrow (real variance 3.4-4.4x its own for receptions, receiving and rushing yards;
+    passing yards 0.88x), so its More / Less figures are too extreme" (`pick6_ledger.WEEK_BOARD_CAVEAT`,
+    the page's `NFL_WEEK_PROP_CAVEAT` word for word);
+  - the Sim and Best ball cards quote their own floor, ceiling and boom figures from above
+    (`NFL_WEEK_CARD_CAVEAT`).
+  - "Spreads 3-4x too narrow" is a VARIANCE ratio: the realized squared error over the model's variance. In
+    standard deviations the board is about 1.8-2.1x too narrow.
+- Every ledger pick now keeps WHICH model gave Vigil's figure (`model_kind`):
+  - `nfl_week_hist` (the week board's histograms, any line) or `nfl_week_lean` (the Pick 6 view's own lean
+    line) -- both the continuous week board;
+  - `mlb_sheet` and `lol_board` for the other two sports.
+  - Picks saved before the column take their kind from their source text, which has always opened with
+    the board's name.
+  - The record's calibration can be split by source later.
+- No figure moved: guards P14-P16 hold every probability to the board's own count and every template's
+  numbers to what it printed before, and DA4 still pins the board byte for byte. DA4 now looks for an
+  IMPORT of `nfl_discrete_alloc` (the caveat cites this report by name).

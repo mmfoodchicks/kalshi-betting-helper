@@ -185,6 +185,29 @@ SPORTS = {
 _SOURCE = {"sleeper": "Sleeper's weekly box score", "mlb": "MLB's statsapi box score",
            "espn": "ESPN's box score"}
 
+# Which model gave Vigil's figure, kept on every pick (`model_kind`, 2026-11-27) so the record's
+# calibration can be split by source later. Both NFL kinds are the WEEK BOARD's continuous model
+# (nfl_dfs_sim.simulate_game) read two ways -- never the tournament engine, which deals integer events.
+MODEL_KINDS = {
+    "nfl_week_hist": "NFL week board (continuous model): its stat histograms, any half-point or whole line",
+    "nfl_week_lean": "NFL week board (continuous model): the Pick 6 view's own lean line",
+    "mlb_sheet": "the baseball Pick 6 sheet's game sim",
+    "lol_board": "the LoL Pick 6 board",
+}
+# Each pricer's source text opens with these (the migration reads old rows' kinds back from them).
+_KIND_PREFIX = (("nfl_week_hist", "NFL week sim"), ("nfl_week_lean", "NFL Pick 6 board"),
+                ("mlb_sheet", "baseball Pick 6 sheet"), ("lol_board", "LoL Pick 6 board"))
+# Shown wherever a week-board probability is (this ledger's NFL picks, its rules; static/app.js's Pick 6
+# view carries the same text, guard P15 holds the two equal). Measured 2026-11-27 against 257 real games,
+# 2025 weeks 1-12 and 2026 weeks 1-5 (research/data/nfl_discrete_alloc_eval.json, moments -> spread ->
+# legacy -> realized_over_model: the realized squared error of the box around the board's mean over the
+# board's own variance) -- receptions 3.403, receiving yards 4.386, rushing yards 3.377, passing yards
+# 0.88. A label only: no figure moves.
+WEEK_BOARD_CAVEAT = ("From the week board's continuous model, measured overconfident: against 257 real 2025-26 "
+                     "games its spreads run too narrow (real variance 3.4-4.4x its own for receptions, receiving "
+                     "and rushing yards; passing yards 0.88x), so its More / Less figures are too extreme "
+                     "(research/reports/nfl_discrete_alloc.md).")
+
 # The rules the grader implements, each with its basis (DraftKings' own pages
 # as the owner read them, or this ledger's rule) and its source. The card
 # draws this list; the guards pin each id beside the code that implements it.
@@ -277,8 +300,9 @@ RULES = [
              "P(side | not a tie), the one the record scores (a tie is void), with the outright P(side) and "
              "P(tie) shown beside it. Without the histograms, the Pick 6 board's one line a player and stat. "
              "Baseball: every line the Pick 6 sheet's sim tracked. LoL: the Pick 6 board's line. Any other "
-             "stat or sport, or a later entry, says \"no model figure\" and is left out of the calibration.",
-     "source": "this ledger's own rule"},
+             "stat or sport, or a later entry, says \"no model figure\" and is left out of the calibration. "
+             "Every NFL figure here: " + WEEK_BOARD_CAVEAT + " Each pick keeps which model gave its figure.",
+     "source": "this ledger's own rule; research/reports/nfl_discrete_alloc.md (the week board measured)"},
 ]
 
 
@@ -335,7 +359,8 @@ def _ensure():
                 void_cause TEXT,                 -- a void's cause: dnp | tie | pardon | owner
                 kind TEXT DEFAULT 'full',        -- a KINDS key: only 'full' can be pardoned
                 p_outright REAL,                 -- a whole-number line: Vigil's modeled P(side), ties counted
-                p_tie REAL                       -- ...and its modeled P(tie); p_model is then P(side | no tie)
+                p_tie REAL,                      -- ...and its modeled P(tie); p_model is then P(side | no tie)
+                model_kind TEXT                  -- a MODEL_KINDS key: which model gave p_model; NULL = none
             )""")
         c.execute("CREATE INDEX IF NOT EXISTS idx_pick6_picks_entry ON pick6_picks(entry_id)")
         c.execute("CREATE INDEX IF NOT EXISTS idx_pick6_picks_result ON pick6_picks(result)")
@@ -347,12 +372,18 @@ def _ensure():
                 errlog.note("P6L-migrate", e)
         cols = {r[1] for r in c.execute("PRAGMA table_info(pick6_picks)")}
         for col in ("review TEXT", "evidence TEXT", "void_cause TEXT",   # tables made before 2026-11-27's rules
-                    "kind TEXT DEFAULT 'full'", "p_outright REAL", "p_tie REAL"):
+                    "kind TEXT DEFAULT 'full'", "p_outright REAL", "p_tie REAL", "model_kind TEXT"):
             if col.split()[0] not in cols:
                 try:
                     c.execute(f"ALTER TABLE pick6_picks ADD COLUMN {col}")
                 except Exception as e:
                     errlog.note("P6L-migrate", e)       # a sibling worker added it first
+        if "model_kind" not in cols:
+            # Picks priced before the column: each pricer's source text has always opened with its board's
+            # name, so the kind is read back from it exactly (a pick with no figure keeps NULL).
+            for kind, prefix in _KIND_PREFIX:
+                c.execute("UPDATE pick6_picks SET model_kind = ? WHERE model_kind IS NULL AND p_model IS NOT NULL "
+                          "AND model_src LIKE ?", (kind, prefix + "%"))
     _ensured[0] = True
 
 
@@ -530,7 +561,7 @@ def _nfl_prob(game_date, pick, now):
                 p_more = nfl_dfs_sim.hist_over(h, dists["n"], pick["line"])
                 if p_more is None:
                     return None, "Vigil's sim prices half-point and whole-number lines only"
-                return _side_prob(p_more, "More", pick["side"]), f"{tag}, any line"
+                return _side_prob(p_more, "More", pick["side"]), f"{tag}, any line", {"model": "nfl_week_hist"}
             # A whole-number line: DraftKings voids a tie, so the figure the
             # record scores (it leaves ties out) is P(side | not a tie); the
             # outright P(side) and the modeled P(tie) are kept beside it.
@@ -541,7 +572,7 @@ def _nfl_prob(game_date, pick, now):
             return (cond, (f"{tag}, whole line, MODELED (not a calibrated real-world rate): More "
                            f"{100 * mtl['more']:.1f}%, tie {100 * mtl['tie']:.1f}% (the continuous sim's mass within half a unit: a rounding convention, not a simulated count), Less {100 * mtl['less']:.1f}%; "
                            f"{pick['side']} {100 * cond:.1f}% if not a tie (a tie is void)"),
-                    {"p_outright": round(side_p, 4), "p_tie": round(mtl["tie"], 4)})
+                    {"p_outright": round(side_p, 4), "p_tie": round(mtl["tie"], 4), "model": "nfl_week_hist"})
     if pick["stat"] not in labels:
         return None, f"no NFL week-{week} stat histograms built in the last 6 h for this player (the PC builds them)"
     board, age = boardshare.get(f"nfl_sim_board_{season}_w{week}_0", _MODEL_MAX_AGE_S)
@@ -559,7 +590,7 @@ def _nfl_prob(game_date, pick, now):
     if abs(float(r["line"]) - pick["line"]) > 1e-9:
         return None, f"Vigil's board prices this at {r['line']} only"
     return (_side_prob(float(r["prob"]) / 100.0, r["side"], pick["side"]),
-            f"NFL Pick 6 board, week {week}, {int(age // 60)} min old")
+            f"NFL Pick 6 board, week {week}, {int(age // 60)} min old", {"model": "nfl_week_lean"})
 
 
 def _mlb_prob(game_date, pick, now):
@@ -585,7 +616,8 @@ def _mlb_prob(game_date, pick, now):
             kref = c.get("kref") or {}
             if (c.get("side", "yes") == "yes" and kref.get("t") == t and kref.get("line") == int(round(N))
                     and _norm(kref.get("player")) == nm):
-                return _side_prob(float(c["marg"]), "More", pick["side"]), f"baseball Pick 6 sheet, {g.get('matchup')}"
+                return (_side_prob(float(c["marg"]), "More", pick["side"]), f"baseball Pick 6 sheet, {g.get('matchup')}",
+                        {"model": "mlb_sheet"})
     return None, "no cached baseball sim has this player at this line"
 
 
@@ -603,7 +635,8 @@ def _lol_prob(game_date, pick, now):
         if _norm(r.get("player")) == nm and r.get("stat") == labels[pick["stat"]]:
             if abs(float(r["line"]) - pick["line"]) > 1e-9:
                 return None, f"Vigil's board prices this at {r['line']} only"
-            return _side_prob(float(r["prob"]) / 100.0, r["side"], pick["side"]), f"LoL Pick 6 board, {int(age // 60)} min old"
+            return (_side_prob(float(r["prob"]) / 100.0, r["side"], pick["side"]), f"LoL Pick 6 board, {int(age // 60)} min old",
+                    {"model": "lol_board"})
     return None, "Vigil's LoL board has no lean for this player and stat"
 
 
@@ -611,9 +644,10 @@ _PRICERS = {"nfl": _nfl_prob, "mlb": _mlb_prob, "lol": _lol_prob}
 
 
 def model_prob(sport, game_date, pick, historical=False, now=None):
-    """(Vigil's P(this side wins), where it came from) or (None, why none); a
-    whole-number NFL line adds a third item, {"p_outright", "p_tie"}, and its
-    figure is then P(side | not a tie) -- the one the record scores."""
+    """(Vigil's P(this side wins), where it came from, {"model": a MODEL_KINDS key})
+    or (None, why none); a whole-number NFL line's third item also carries
+    "p_outright" and "p_tie", and its figure is then P(side | not a tie) -- the
+    one the record scores."""
     if historical:
         return None, "saved after its game date: no pre-game figure"
     if pick.get("stat") == "custom":
@@ -1360,6 +1394,7 @@ def add_entry(d, now=None, today=None, pricer=None):
         p["p_model"], p["model_src"] = got[0], got[1]
         extra = got[2] if len(got) > 2 else {}
         p["p_outright"], p["p_tie"] = extra.get("p_outright"), extra.get("p_tie")
+        p["model_kind"] = extra.get("model") if p["p_model"] is not None else None
     with store._lock, store._conn() as c:
         cur = c.execute("""INSERT INTO pick6_entries (created_at, sport, game_date, entry_type, schedule, stake,
                            n_picks, historical, status, notes) VALUES (?,?,?,?,?,?,?,?, 'open', ?)""",
@@ -1368,10 +1403,10 @@ def add_entry(d, now=None, today=None, pricer=None):
         eid = cur.lastrowid
         for i, p in enumerate(e["picks"]):
             c.execute("""INSERT INTO pick6_picks (entry_id, idx, sport, player, stat, stat_label, line, side,
-                         p_model, model_src, kind, p_outright, p_tie, result, note)
-                         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?, 'pending', ?)""",
+                         p_model, model_src, kind, p_outright, p_tie, model_kind, result, note)
+                         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'pending', ?)""",
                       (eid, i, e["sport"], p["player"], p["stat"], p["stat_label"], p["line"], p["side"],
-                       p["p_model"], p["model_src"], p["kind"], p["p_outright"], p["p_tie"],
+                       p["p_model"], p["model_src"], p["kind"], p["p_outright"], p["p_tie"], p["model_kind"],
                        None if SPORTS[e["sport"]]["grader"] and p["stat"] != "custom"
                        else "graded by hand: type his final stat"))
     return entry(eid)
@@ -1489,9 +1524,11 @@ def listing(limit=30, offset=0, ids=None):
             e["picks"] = []
         for r in c.execute(f"""SELECT id, entry_id, idx, player, stat, stat_label, line, side, p_model, model_src,
                                result, actual, graded_by, graded_at, note, review, evidence, void_cause, kind,
-                               p_outright, p_tie FROM pick6_picks
+                               p_outright, p_tie, model_kind FROM pick6_picks
                                WHERE entry_id IN ({','.join('?' * len(by))}) ORDER BY entry_id, idx""", list(by)):
             p = dict(r)
+            # said beside the figure itself: the week board's More / Less figures are overconfident
+            p["model_caveat"] = WEEK_BOARD_CAVEAT if (p["model_kind"] or "").startswith("nfl_week") else None
             ev = json.loads(p.pop("evidence")) if p.get("evidence") else None
             p["evidence"] = _ev_text(ev) if ev else None
             p["decisions"] = list(DECISIONS.get(p["review"] or "", ())) if p["result"] == "review" else []

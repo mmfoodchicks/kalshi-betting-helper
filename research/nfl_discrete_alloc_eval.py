@@ -83,7 +83,12 @@ def _legacy_world(g, n, seed):
         comps = {"pass_yd": np.asarray(c["pass_yd"]), "pass_td": np.asarray(c["pass_td"]), "int": np.asarray(c["int"]),
                  "rush_yd": np.asarray(c["rush_yd"]), "rush_td": np.asarray(c["rush_td"]), "rec": np.asarray(c["rec"]),
                  "rec_yd": np.asarray(c["rec_yd"]), "rec_td": np.asarray(c["rec_td"]), "fum": np.asarray(c["fum"])}
-        out.append({"comps": comps, "dk": D._dk(comps)})
+        r = by[p["name"]]
+        # the Sim / Best ball cards' OWN figures (floor / ceiling / boom off the points array pinned to the
+        # projection), read off the same call -- no extra draw, so every other figure is unchanged
+        out.append({"comps": comps, "dk": D._dk(comps),
+                    "card": {"floor": r["floor"], "ceiling": r["ceiling"], "boom_pct": r["boom_pct"],
+                             "proj": r["proj_pts"]}})
     return out
 
 
@@ -151,6 +156,7 @@ def main(argv=None):
     corr = {p: collections.defaultdict(list) for p in paths}
     obs_pairs = collections.defaultdict(list)
     floor_ceil = {p: collections.Counter() for p in paths}
+    card = collections.Counter()                          # the legacy board's own card figures vs real points
     tdc = {p: [] for p in paths}
     tdc_obs = []
     bonus = {p: {s: collections.Counter() for s in ("rec_yd", "rush_yd", "pass_yd")} for p in paths}
@@ -210,6 +216,13 @@ def main(argv=None):
                     pr = float((v == a_).mean()) if p == "discrete" else float(((v > a_ - 0.5) & (v <= a_ + 0.5)).mean())
                     exact[p][0] += math.log(max(pr, CLIP))
                     exact[p][1] += 1
+                if p == "legacy":
+                    cd = w[i]["card"]
+                    card["n"] += 1
+                    card["below_floor"] += int(act["dk"] < cd["floor"])
+                    card["above_ceiling"] += int(act["dk"] > cd["ceiling"])
+                    card["boom_pred"] += cd["boom_pct"] / 100.0
+                    card["boom_obs"] += int(act["dk"] >= 1.5 * cd["proj"])
                 dk = w[i]["dk"]
                 pit[p].append(_pit(dk, act["dk"], rng))
                 lo, hi = np.quantile(dk, [0.1, 0.9])
@@ -335,6 +348,15 @@ def main(argv=None):
                                 "mean_q90": round(floor_ceil[p]["q90"] / max(floor_ceil[p]["n"], 1), 2),
                                 "worlds_on_dk_lattice": round(floor_ceil[p]["on_lattice"] / max(floor_ceil[p]["n"], 1), 4)}
                             for p in paths}
+    res["card"] = {"definition": "the week board's OWN Sim / Best ball figures per player-week "
+                                 "(nfl_dfs_sim.simulate_game: floor = 10th and ceiling = 90th percentile of its "
+                                 "points pinned to the projection, boom = P(points >= 1.5 x projection)) against "
+                                 "his real DraftKings points",
+                   "n": card["n"],
+                   "actual_below_floor": round(card["below_floor"] / max(card["n"], 1), 4),
+                   "actual_above_ceiling": round(card["above_ceiling"] / max(card["n"], 1), 4),
+                   "boom_pred_pct": round(100 * card["boom_pred"] / max(card["n"], 1), 2),
+                   "boom_obs_pct": round(100 * card["boom_obs"] / max(card["n"], 1), 2)}
     res["fp_ties"] = {"definition": "share of worlds in which two same-team pass catchers (WR-WR, TE-WR) score "
                                     "exactly the same DraftKings points; observed: share of real pairs",
                       **{p: round(ties[p][0] / max(ties[p][1], 1), 5) for p in paths},

@@ -4467,6 +4467,16 @@ async function loadNFLSim(attempt) {
     box.innerHTML = `<div class="empty">NFL sim unavailable.</div>`;
   }
 }
+// The week board (nfl_dfs_sim.simulate_game, a continuous model) measured against 257 real games, 2025
+// weeks 1-12 and 2026 weeks 1-5 (research/reports/nfl_discrete_alloc.md; figures from
+// research/data/nfl_discrete_alloc_eval.json -- the prop text is pick6_ledger.WEEK_BOARD_CAVEAT word for
+// word, the card text reads its "card" block: the board's OWN floor / ceiling / boom). Labels only: every
+// figure on these views is unchanged. Guard P15 holds the wording to the JSON.
+const NFL_WEEK_PROP_CAVEAT = "From the week board's continuous model, measured overconfident: against 257 real 2025-26 games its spreads run too narrow (real variance 3.4-4.4x its own for receptions, receiving and rushing yards; passing yards 0.88x), so its More / Less figures are too extreme (research/reports/nfl_discrete_alloc.md).";
+const NFL_WEEK_CARD_CAVEAT = "From the week board's continuous model, measured overconfident: against 257 real 2025-26 games, 37.5% of real DraftKings scores fell under its floor and 19.3% over its ceiling (10% each if calibrated), and a boom game came 22.5% of the time against 11.7% shown (research/reports/nfl_discrete_alloc.md).";
+function _nflWeekCaveat(text) {
+  return `<div class="small nfl-week-caveat" style="color:var(--muted);margin:2px 0 8px">${escapeHtml(text)}</div>`;
+}
 function renderNFLSim() {
   const d = _nflSimData; if (!d) return;
   $("nflSimSummary").innerHTML = `Week ${d.week} · <b>${d.n_games}</b> games · ${nf(d.n_sims)} sims each. <i style="color:var(--muted)">${d.note}</i>`;
@@ -4475,7 +4485,7 @@ function renderNFLSim() {
   renderNFLSimCards(d);
 }
 function renderNFLSimCards(d) {
-  $("nflSimResults").innerHTML = d.games.map((g) => {
+  $("nflSimResults").innerHTML = _nflWeekCaveat(NFL_WEEK_CARD_CAVEAT) + d.games.map((g) => {
     const rows = g.players.slice(0, 12).map((p) => `<div class="nfl-simrow">
       <span class="nfl-srpos">${p.pos}</span>
       <span class="nfl-srname">${p.name} <span class="small" style="color:var(--faint)">${p.team}${p.opp ? " v " + p.opp : ""}</span></span>
@@ -4500,6 +4510,7 @@ function renderNFLBest(d) {
       <span class="small" style="color:var(--muted)">QB↔WR corr ${s.qb_wr_corr}</span></div>`).join("");
   $("nflSimResults").innerHTML =
     `<div class="small" style="margin:2px 0 6px"><b>🥇 Ceiling board</b> - best-ball values the 90th-percentile game. ${d.has_adp ? "ADP = your Sleeper consensus rank." : ""}</div>
+     ${_nflWeekCaveat(NFL_WEEK_CARD_CAVEAT)}
      <div class="futrow nflbestrow rchead"><span class="fr-rank">#</span><span class="fr-team">Player</span><span class="fr-num">proj</span><span class="fr-num">ceil</span><span class="fr-num">boom</span></div>
      ${rows}
      <div class="small" style="margin:14px 0 6px"><b>🔗 Top stacks</b> - a QB + his two best pass-catchers, combined 90th-percentile ceiling (the correlation is why stacking wins best ball).</div>
@@ -4514,6 +4525,7 @@ function renderNFLPick6(d) {
       <span class="p6prob"><b>${p.prob}%</b><span class="p6proj">proj ${p.proj}</span></span></div>`).join("");
   $("nflSimResults").innerHTML =
     `<div class="small" style="margin:2px 0 8px">Correlation-aware prop More/Less from the game sim (yards &amp; receptions). DK &amp; PrizePicks set the line - take ours where it clears theirs. Same-game legs are correlated - the sim already knows.</div>
+     ${_nflWeekCaveat(NFL_WEEK_PROP_CAVEAT)}
      <div class="p6list">${rows}</div>`;
 }
 async function loadNFL() {
