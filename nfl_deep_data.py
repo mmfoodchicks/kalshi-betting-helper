@@ -76,56 +76,6 @@ _ANCHOR_PRIOR_GAMES = None
 # the real game agree. With the old int(round()) rounding the same level moved
 # the margin by 9-72% of this.
 _ENGINE_PTS_ELASTICITY = 1.42
-
-# THE MARKET ANCHOR'S POINTS PER WIN (2026-11-27; research/reports/deep_anchor_fix.md).
-#
-# market_margins turned Kalshi's rest-of-season pace into a margin at nfl_season._PTS_PER_WIN, 2.25. That
-# constant was fitted so the COMPRESSED drive engine gives the market's wins back (1.66 / 0.74). The deep
-# engine does not compress: its realized margin on the anchored one is 1.007. A deep season seeded with
-# market-like wins therefore returned them at slope 1.206 +/- 0.031, 1.21x the market's spread
-# (research/c3_margin_scale.py).
-#
-# The owner (2026-11-27): "Fix the deep-engine market anchor immediately after the registered 100-game read,
-# preserving its original result and model version." So the fix ships OFF. Flipping ANCHOR_V2 is the
-# one-line commit. Guard DA2 refuses it until research/data/nfl_deep_weight_read.json, the read's own
-# written result, is committed. The read must grade the engine as it stood.
-#
-# MARKET_PTS_PER_WIN_V2 was measured by the constant's own criterion (research/deep_anchor_scale.py;
-# research/data/deep_anchor_scale.json):
-#   - the replicates are 24 real seasons (2002-2025), each its own schedule, the wins schedule-inclusive as a
-#     market's are;
-#   - K* = 1.8635, 95% interval 1.8385-1.8865;
-#   - verified at 1.86 on fresh seeds: slope 1.0002 +/- 0.0064, against a tolerance of 1 +/- 0.03 with
-#     SE <= 0.01;
-#   - win error 0.196 wins, against 0.167 for the exact analytic resolution.
-#
-# ANCHOR_VERSION rides everywhere a world or payload could outlive the flip:
-#   - every profile's `anchor` block, which also enters the pool cache's inputs hash;
-#   - the deep season payload's `engine` stamp;
-#   - the DFS engine's SIM_MODEL_VERSION;
-#   - nfl_game_sim._deep_profiles, which refuses a nightly payload of another version.
-ANCHOR_V2 = False
-MARKET_PTS_PER_WIN_V2 = 1.86          # research/data/deep_anchor_scale.json k_ship (K* 1.8635, guard DA3)
-ANCHOR_VERSION = 2 if ANCHOR_V2 else 1
-
-
-def market_pts_per_win(v2=None):
-    """Points of margin per win of market pace for the deep engine's anchor: 2.25 (version 1, the drive
-    engine's constant, as read by the registered deep-weight read) until the switch flips."""
-    import nfl_season
-    on = ANCHOR_V2 if v2 is None else v2
-    return MARKET_PTS_PER_WIN_V2 if on else nfl_season._PTS_PER_WIN
-
-
-def anchor_version_of(profiles):
-    """The anchor version a set of profiles was built under (1 when the stamp predates versioning)."""
-    for p in (profiles or {}).values():
-        a = (p or {}).get("anchor") or {}
-        if a.get("source"):
-            return int(a.get("version") or 1)
-    return ANCHOR_VERSION
-
-
 _ROSTER_WEIGHT = 0.5
 _ROSTER_CLAMP = (0.85, 1.12)
 _LEVEL_CLAMP = (0.80, 1.25)
@@ -287,8 +237,7 @@ def market_margins(season, recs=None):
     else:
         mkt = nfl_season._ratings(str(season))
         src = "nfl_season_ratings"
-    k = market_pts_per_win()
-    return {ab: (w - 8.5) * k for ab, w in mkt.items()}, src
+    return {ab: (w - 8.5) * nfl_season._PTS_PER_WIN for ab, w in mkt.items()}, src
 
 
 def apply_anchor(profs, season, T, recs=None):
@@ -313,8 +262,7 @@ def apply_anchor(profs, season, T, recs=None):
         prof["level"] = round(lvl, 4)
         prof["anchor"] = {"source": src, "market_margin": round(mm[ab], 2),
                           "engine_margin": round(own, 2), "weight_market": round(w, 3),
-                          "target_margin": round(target, 2),
-                          "version": ANCHOR_VERSION, "pts_per_win": market_pts_per_win()}
+                          "target_margin": round(target, 2)}
 
 
 def roster_factors(season, week):

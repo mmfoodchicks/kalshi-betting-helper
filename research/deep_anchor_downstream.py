@@ -1,8 +1,8 @@
 """What the deep-anchor fix moves downstream, BEFORE it is deployed (2026-11-27; research/reports/deep_anchor_fix.md).
 
-The fix is built behind nfl_deep_data.ANCHOR_V2 and stays OFF until the registered 100-game deep-weight read
-is committed. This script builds the same production inputs both ways. "v1" is the switch off (2.25), "v2" is
-the switch on (MARKET_PTS_PER_WIN_V2). Every random draw is shared between the two (common seeds), so each
+The fix is staged as research/data/deep_anchor_flip.patch (nfl_deep_data.py is frozen until the registered 100-game
+deep-weight read). This script builds the same production inputs both ways from the patched module. "v1" is the
+switch inside it off (2.25), "v2" on (MARKET_PTS_PER_WIN_V2). Every random draw is shared between the two (common seeds), so each
 delta is the anchor's alone.
 
 No outcome of any registered window is read. Results before a week are inputs, as production reads them; no
@@ -103,16 +103,18 @@ def ladder_at(end_ts):
 
 
 def build(store, ladder, v2):
-    """Production's build_profiles with the switch set to v2, the ladder fixed."""
-    orig_mw, orig_flag = nfl_season._market_wins, D.ANCHOR_V2
+    """Production's build_profiles from the PATCHED nfl_deep_data (research/data/deep_anchor_flip.patch), the
+    switch set to v2, the ladder fixed. nfl_deep_data.py itself is frozen until the deep-weight read; this
+    result was first produced while the same code sat in the file (commit 8aed79e, switch toggled), and the
+    patch is that code byte for byte with the switch on."""
+    from research import deep_anchor_patch as Pt
+    mod = Pt.load(v2)
+    orig_mw = nfl_season._market_wins
     try:
         nfl_season._market_wins = lambda: dict(ladder)
-        D.ANCHOR_V2 = v2
-        D.ANCHOR_VERSION = 2 if v2 else 1
-        profs, _q = D.build_profiles(SEASON, store=store)
+        profs, _q = mod.build_profiles(SEASON, store=store)
     finally:
-        nfl_season._market_wins, D.ANCHOR_V2 = orig_mw, orig_flag
-        D.ANCHOR_VERSION = 2 if orig_flag else 1
+        nfl_season._market_wins = orig_mw
     return profs
 
 
@@ -284,7 +286,8 @@ def one_week(label, store, ladder, week, games, do_dfs=True):
     for v2 in (False, True):
         tag = "v2" if v2 else "v1"
         profs = build(store, ladder, v2)
-        r = {"anchor_version": D.anchor_version_of(profs),
+        import nfl_game_sim as G
+        r = {"anchor_version": G.anchor_version(profs),
              "pts_per_win": next(p["anchor"]["pts_per_win"] for p in profs.values() if p.get("anchor")),
              "games": game_dists(D.with_roster(profs, D.roster_factors(SEASON, week) or {}), games, label),
              "season": season_probs(profs, store)}
@@ -332,7 +335,9 @@ def main(argv):
     skip_board = "--skip-board" in argv
     full = P.season_records(SEASON)
     sched = P.regular_schedule(full, set(nfl_season._DIV_OF))
-    out = {"season": SEASON, "k_v1": nfl_season._PTS_PER_WIN, "k_v2": D.MARKET_PTS_PER_WIN_V2, "weeks": {}}
+    from research import deep_anchor_patch as Pt
+    out = {"season": SEASON, "k_v1": nfl_season._PTS_PER_WIN, "k_v2": Pt.load(True).MARKET_PTS_PER_WIN_V2,
+           "weeks": {}}
     # current: week 12's games not yet final, the live ladder
     cur_w = min(g["week"] for g in sched if not g["final"])
     cur_games = [g for g in sched if g["week"] == cur_w and not g["final"]]

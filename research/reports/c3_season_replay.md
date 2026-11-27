@@ -232,7 +232,8 @@ is asked for; the margin it is asked for is the problem.
 
    **Proposed fix.** Give the deep anchor its own constant, measured by the same criterion. The two points
    measured here bracket it at 1.81-1.87, and the analytic slope-1 figure is 1.842. Measure it at higher n
-   before shipping.
+   before shipping. *Measured 2026-11-27: 1.86 (K* 1.8635, 95% 1.8385-1.8865, 24 real seasons; staged as a patch,
+   `research/reports/deep_anchor_fix.md`).*
 
    **Proposed guard.** The deep season seeded through `market_margins` returns slope 1 +/- 0.05. The drive
    season sim keeps 2.25 at slope 1.04.

@@ -1072,6 +1072,17 @@ _DEEP_PROFILES_TTL = 6 * 3600
 _deep_prof_cache = {"key": None, "t": 0.0, "profiles": None, "src": None, "src_ts": None, "factors": None}
 
 
+def anchor_version(profiles):
+    """The market-anchor version a set of deep profiles was built under: the stamp the anchor block carries
+    from the flip (research/data/deep_anchor_flip.patch; research/reports/deep_anchor_fix.md), 1 for a block
+    built before it, None when no profile was anchored at all."""
+    for p in (profiles or {}).values():
+        a = (p or {}).get("anchor") or {}
+        if a.get("source"):
+            return int(a.get("version") or 1)
+    return None
+
+
 def _deep_profiles(season, week):
     """This week's unit profiles for the deep layer: the nightly deep run's
     profiles when a run for this season is on disk (the same levels the
@@ -1088,11 +1099,11 @@ def _deep_profiles(season, week):
     try:
         import deep_cache
         payload, ts = deep_cache.load("nfl_deep")
-        # a nightly run built under another market-anchor version is never served after the switch flips
-        # (nfl_deep_data.ANCHOR_V2): its levels are the old conversion's, so the profiles are rebuilt here
+        # a nightly run built under another market-anchor version is never served after the flip
+        # (research/data/deep_anchor_flip.patch): its levels are the old conversion's, so they are rebuilt here
         if (isinstance(payload, dict) and payload.get("profiles") and int(payload.get("season") or 0) == int(season)
                 and ts and _time.time() - ts < 36 * 3600
-                and nfl_deep_data.anchor_version_of(payload["profiles"]) == nfl_deep_data.ANCHOR_VERSION):
+                and anchor_version(payload["profiles"]) in (None, getattr(nfl_deep_data, "ANCHOR_VERSION", 1))):
             base, src, src_ts = payload["profiles"], "nightly", ts
     except Exception as _e:
         errlog.note("NFLG-deep-load", _e)

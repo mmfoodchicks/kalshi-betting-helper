@@ -1,14 +1,17 @@
-"""Guards for the deep engine's market-anchor fix, built OFF (2026-11-27; nfl_deep_data.ANCHOR_V2,
-research/reports/deep_anchor_fix.md).
+"""Guards for the deep engine's market-anchor fix, STAGED as a patch (2026-11-27; research/deep_anchor_patch.py,
+research/data/deep_anchor_flip.patch, research/reports/deep_anchor_fix.md).
 
     python3 tests/guards_auto_deep_anchor.py      # exits 1 on any failed check
 
 The owner: "Fix the deep-engine market anchor immediately after the registered 100-game read, preserving its
-original result and model version." What these pin:
-- the switch is off and production converts at 2.25 exactly as before;
-- the switch cannot be committed on before the deep-weight read's own result file is;
-- the shipped constant is the measured one and meets its stated tolerance;
-- a flip versions everything a world or payload could outlive it in;
+original result and model version." nfl_deep_data.py is frozen until that read (the coaching guards pin it
+byte for byte: "the deep weight's read sits on" it), so the fix is a patch the flip applies.
+
+What these pin:
+- production is the read's file and converts at 2.25;
+- the patch cannot land before the read's own result file is committed;
+- the patched file is the measured fix and meets its stated tolerance;
+- the flip versions everything a world or payload could outlive it in;
 - no file a registered read pins was touched.
 """
 import hashlib
@@ -38,7 +41,10 @@ def run(ck):
     import nfl_deep_data as D
     import nfl_season
     import pool_cache
+    from research import deep_anchor_patch as Pt
     ladder = {ab: 8.5 + (i % 9 - 4) * 0.7 for i, ab in enumerate(sorted(nfl_season._DIV_OF))}
+    here = _sha("nfl_deep_data.py")
+    flipped = here == Pt.DEEP_DATA_FLIPPED_SHA
     orig_mw = nfl_season._market_wins
     try:
         nfl_season._market_wins = lambda: dict(ladder)
@@ -46,19 +52,22 @@ def run(ck):
     finally:
         nfl_season._market_wins = orig_mw
     old = {ab: (w - 8.5) * 2.25 for ab, w in nfl_season.market_pace(ladder, {}).items()}
-    ck("DA1 the switch is OFF and production is unchanged: ANCHOR_V2 False, version 1, the deep anchor converts "
-       "Kalshi's pace at nfl_season._PTS_PER_WIN (2.25) -- market_margins returns the old formula's margins "
-       "exactly",
-       D.ANCHOR_V2 is False and D.ANCHOR_VERSION == 1 and D.market_pts_per_win() == nfl_season._PTS_PER_WIN == 2.25
-       and src == "kalshi_win_totals_rest_of_season" and mm == old, f"{D.ANCHOR_V2} {D.market_pts_per_win()}")
+    ck("DA1 production is the file the deep-weight read grades (nfl_deep_data.py at its pinned sha256) and converts "
+       "Kalshi's pace at nfl_season._PTS_PER_WIN (2.25) -- or, after the flip, exactly the patched file",
+       (here == Pt.DEEP_DATA_PINNED_SHA and src == "kalshi_win_totals_rest_of_season" and mm == old
+        and not hasattr(D, "ANCHOR_V2")) or flipped, here[:16])
 
-    gated = (not D.ANCHOR_V2) or (_tracked(READ_RESULT)
-                                  and bool(json.load(open(os.path.join(_ROOT, READ_RESULT))).get("triggered")))
-    ck("DA2 the switch cannot flip before the registered deep-weight read is committed: ANCHOR_V2 may be True only "
-       "beside research/data/nfl_deep_weight_read.json, tracked in git and triggered (the read writes it only after "
-       "its 100th game), so the read grades the engine as it stood",
-       gated, f"ANCHOR_V2 {D.ANCHOR_V2}, read result tracked {_tracked(READ_RESULT)}")
+    gated = (not flipped) or (_tracked(READ_RESULT)
+                              and bool(json.load(open(os.path.join(_ROOT, READ_RESULT))).get("triggered")))
+    ok_apply, why = Pt.check()
+    ck("DA2 the flip cannot land before the registered deep-weight read is committed: the patched nfl_deep_data.py "
+       "may stand only beside research/data/nfl_deep_weight_read.json, tracked and triggered (the read writes it "
+       "only after its 100th game); until then the patch still applies cleanly to the frozen file and yields "
+       "exactly the pinned flipped bytes",
+       gated and (flipped or (ok_apply and Pt.flipped_sha() == Pt.DEEP_DATA_FLIPPED_SHA)),
+       f"flipped {flipped} read tracked {_tracked(READ_RESULT)} apply {ok_apply} {why}")
 
+    M2, M1 = Pt.load(True), Pt.load(False)
     from research import deep_anchor_scale as S
     m = json.load(open(S.OUT))
     data = json.load(open(S.SEASONS_PATH))["seasons"]
@@ -68,86 +77,99 @@ def run(ck):
     sl, ma = [], []
     for s in S.SEASONS:
         sd, games, G = S.season_setup(data[str(s)])
-        mm = S.margins(sd, G, k_an)
-        ew = S.expected_wins(sd, games, [MS._phi((mm[h] - mm[a] + 2.2) / 13.2) for h, a in games])
+        mmg = S.margins(sd, G, k_an)
+        ew = S.expected_wins(sd, games, [MS._phi((mmg[h] - mmg[a] + 2.2) / 13.2) for h, a in games])
         sl.append(S.slope(sd, ew))
         ma.append(sum(abs(ew[t] - sd[t]) for t in sd) / len(sd))
     mae_an = sum(ma) / len(ma)
-    k_an = k_an if abs(sum(sl) / len(sl) - 1.0) < 1e-3 else float("nan")
+    k_ok = abs(sum(sl) / len(sl) - 1.0) < 1e-3
     v = m["verify"]
-    ck("DA3 the shipped constant is the MEASURED one (research/deep_anchor_scale.py: 24 real seasons, each its own "
+    ck("DA3 the patch ships the MEASURED constant (research/deep_anchor_scale.py: 24 real seasons, each its own "
        "schedule, the deep engine anchored through production's apply_anchor): K* by interpolation, its bootstrap "
        "interval holding the shipped value, and the verification on fresh seeds within the stated tolerance -- "
-       "slope 1 +/- 0.03 with SE <= 0.01, win error at most the exact analytic reference + 0.10 (recomputed here "
-       "from the committed seasons)",
-       D.MARKET_PTS_PER_WIN_V2 == m["k_ship"] and m["passes"] is True
+       "slope 1 +/- 0.03 with SE <= 0.01, win error at most the exact analytic reference + 0.10 (re-evaluated "
+       "here from the committed seasons)",
+       M2.ANCHOR_V2 is True and M2.MARKET_PTS_PER_WIN_V2 == m["k_ship"] and m["passes"] is True
        and m["k_star_95"][0] <= m["k_ship"] <= m["k_star_95"][1] + 0.005
        and abs(v["slope"] - 1.0) <= 0.03 and v["se"] <= 0.01 and v["mae_wins"] <= mae_an + 0.10
-       and abs(k_an - m["analytic_reference"]["k_slope1"]) < 1e-3 and abs(mae_an - m["analytic_reference"]["mae_wins"]) < 1e-3
+       and k_ok and abs(mae_an - m["analytic_reference"]["mae_wins"]) < 1e-3
        and len(data) == 24 and m["replicates"].startswith("seasons 2002-2025"),
-       f"k {D.MARKET_PTS_PER_WIN_V2} vs {m.get('k_ship')}; verify {v}; analytic {k_an:.4f} {mae_an:.4f}")
+       f"k {M2.MARKET_PTS_PER_WIN_V2} vs {m.get('k_ship')}; verify {v}; analytic {mae_an:.4f} k_ok {k_ok}")
 
-    # the flip's plumbing, exercised with the switch forced on for the call
+    # the flip's plumbing: the patched module both ways, swapped in for the production loader's import
     import deep_cache
     import nfl_deep_sim as E
     import nfl_game_sim as G
     T = E.tables()
     L = E.league_profile(T)
 
-    def anchored(v2):
+    def anchored(mod):
         profs = {ab: json.loads(json.dumps(dict(L, abbr=ab, g=0))) for ab in nfl_season._DIV_OF}
-        sv = (D.ANCHOR_V2, D.ANCHOR_VERSION, nfl_season._market_wins)
+        sv = nfl_season._market_wins
         try:
-            D.ANCHOR_V2, D.ANCHOR_VERSION = v2, (2 if v2 else 1)
             nfl_season._market_wins = lambda: dict(ladder)
-            D.apply_anchor(profs, 2026, T, recs={})
+            mod.apply_anchor(profs, 2026, T, recs={})
         finally:
-            D.ANCHOR_V2, D.ANCHOR_VERSION, nfl_season._market_wins = sv
+            nfl_season._market_wins = sv
         return profs
-    p1, p2 = anchored(False), anchored(True)
+    p1, p2 = anchored(M1), anchored(M2)
     a1, a2 = p1["KC"]["anchor"], p2["KC"]["anchor"]
     h1 = pool_cache.inputs_hash(games=[], profiles=p1, drive={}, weight=0.3, dst={}, kickers={})
     h2 = pool_cache.inputs_hash(games=[], profiles=p2, drive={}, weight=0.3, dst={}, kickers={})
-    # a nightly payload of the other version is refused by the slate / DFS loader
-    sv = (deep_cache.load, D.build_profiles, D.roster_factors, dict(G._deep_prof_cache), D.ANCHOR_V2, D.ANCHOR_VERSION)
+    # a nightly payload of the other version is refused by the slate / DFS loader once the patch is in
+    unstamped = anchored(M1)                           # a nightly payload from before the patch: no version stamp
+    for _p in unstamped.values():
+        for _k in ("version", "pts_per_win"):
+            (_p.get("anchor") or {}).pop(_k, None)
+    sv = (deep_cache.load, dict(G._deep_prof_cache), sys.modules["nfl_deep_data"])
     built = []
     try:
-        deep_cache.load = lambda key: ({"profiles": p1, "season": 2026}, 9e18) if key == "nfl_deep" else (None, None)
-        D.build_profiles = lambda season, **kw: (built.append(1) or p2, {})
-        D.roster_factors = lambda season, week: {}
-        D.ANCHOR_V2, D.ANCHOR_VERSION = True, 2
+        for mod in (M1, M2):
+            mod.roster_factors = lambda season, week: {}
+            mod.build_profiles = (lambda b: (lambda season, **kw: (built.append(b) or (p2 if b == 2 else p1), {})))(
+                mod.ANCHOR_VERSION)
+        deep_cache.load = lambda key: ({"profiles": unstamped, "season": 2026}, 9e18) if key == "nfl_deep" else (None, None)
+        sys.modules["nfl_deep_data"] = M2
         G._deep_prof_cache.update(key=None, profiles=None)
         got_v2 = G._deep_profiles(2026, 12)
-        D.ANCHOR_V2, D.ANCHOR_VERSION = False, 1
+        sys.modules["nfl_deep_data"] = M1
         G._deep_prof_cache.update(key=None, profiles=None)
         got_v1 = G._deep_profiles(2026, 12)
     finally:
-        deep_cache.load, D.build_profiles, D.roster_factors = sv[0], sv[1], sv[2]
+        deep_cache.load = sv[0]
         G._deep_prof_cache.clear()
-        G._deep_prof_cache.update(sv[3])
-        D.ANCHOR_V2, D.ANCHOR_VERSION = sv[4], sv[5]
-    ck("DA4 a flip versions everything that could outlive it: every anchored profile stamps its anchor version and "
-       "points per win (so the pool cache's inputs hash changes and no version-1 world is reused); "
+        G._deep_prof_cache.update(sv[1])
+        sys.modules["nfl_deep_data"] = sv[2]
+    ck("DA4 the flip versions everything that could outlive it: the patched file stamps every anchored profile's "
+       "version and points per win (so the pool cache's inputs hash changes and no version-1 world is reused); "
        "nfl_deep_data.py is in the pool cache's code files; the deep season payload stamps the version; the "
-       "slate / DFS loader refuses a nightly payload of another version and rebuilds; v2 levels are flatter "
-       "than v1's",
-       a1["version"] == 1 and a1["pts_per_win"] == 2.25 and a2["version"] == 2
-       and a2["pts_per_win"] == D.MARKET_PTS_PER_WIN_V2 and h1 != h2 and "nfl_deep_data.py" in pool_cache._CODE_FILES
+       "slate / DFS loader serves today's unstamped nightly payload while version 1 holds and refuses it once "
+       "version 2 is in; v2 levels are flatter than v1's",
+       a1["version"] == 1 and a1["pts_per_win"] == 2.25 and a2["version"] == 2 and a2["pts_per_win"] == 1.86
+       and h1 != h2 and "nfl_deep_data.py" in pool_cache._CODE_FILES
        and "anchor_version" in inspect.getsource(__import__("nfl_deep_season").run_deep)
-       and D.anchor_version_of(p1) == 1 and D.anchor_version_of(p2) == 2
-       and got_v2 is p2 and built == [1] and got_v1 is p1
+       and G.anchor_version(unstamped) == 1 and G.anchor_version(p2) == 2 and G.anchor_version({}) is None
+       and got_v2 is p2 and built == [2] and got_v1 is unstamped
        and abs(p2["KC"]["level"] - 1) <= abs(p1["KC"]["level"] - 1),
        f"a1 {a1} a2 {a2} built {built}")
 
     dfs_pin = json.load(open(os.path.join(_ROOT, "research", "data", "nfl_coach", "prereg_dfs.json")))["files"]
     r1_pin = json.load(open(os.path.join(_ROOT, "research", "data", "nfl_coach", "prereg_r1.json"))).get("files") or {}
+    # every coaching registration that pins an engine file (R1-R4, C4, the DFS read): none may have moved
+    import glob
+    pins_ok = True
+    for f in glob.glob(os.path.join(_ROOT, "research", "data", "nfl_coach", "prereg_*.json")):
+        files = (json.load(open(f)).get("files") or {})
+        for rel in ("nfl_deep_sim.py", "nfl_dfs_engine.py", "nfl_pbp.py"):
+            if rel in files and _sha(rel) != files[rel]:
+                pins_ok = False
     ev = open(os.path.join(_ROOT, "research", "nfl_dfs_engine_eval.py")).read()
     va = open(os.path.join(_ROOT, "research", "nfl_deep_validate.py")).read()
     ck("DA5 no pinned file was touched and the PD-anchored research harnesses cannot see the switch: "
        "nfl_dfs_engine.py and nfl_deep_sim.py match the coaching DFS registration's sha256 (and nfl_deep_sim.py "
        "R1's), and nfl_dfs_engine_eval / nfl_deep_validate convert at nfl_season._PTS_PER_WIN with market_margins "
        "replaced, never at market_pts_per_win",
-       _sha("nfl_dfs_engine.py") == dfs_pin["nfl_dfs_engine.py"] and _sha("nfl_deep_sim.py") == dfs_pin["nfl_deep_sim.py"]
+       pins_ok and _sha("nfl_dfs_engine.py") == dfs_pin["nfl_dfs_engine.py"] and _sha("nfl_deep_sim.py") == dfs_pin["nfl_deep_sim.py"]
        and (not r1_pin.get("nfl_deep_sim.py") or _sha("nfl_deep_sim.py") == r1_pin["nfl_deep_sim.py"])
        and "nfl_season._PTS_PER_WIN" in ev and "D.market_margins = lambda" in ev and "market_pts_per_win" not in ev
        and "nfl_season._PTS_PER_WIN" in va and "market_pts_per_win" not in va,
@@ -160,7 +182,7 @@ def run(ck):
     ck("DA6 the downstream evaluation was run on the shipped constant, both weeks (current and past), both "
        "anchors on shared seeds, with game, season and DFS figures, and the classic board both ways beside its "
        "own seed-to-seed yardstick (same lists)",
-       ds.get("k_v2") == D.MARKET_PTS_PER_WIN_V2 and ds.get("k_v1") == 2.25 and set(wk) == {"current", "past"}
+       ds.get("k_v2") == M2.MARKET_PTS_PER_WIN_V2 and ds.get("k_v1") == 2.25 and set(wk) == {"current", "past"}
        and all(w["v1"]["anchor_version"] == 1 and w["v2"]["anchor_version"] == 2 and "season" in w["v1"]
                and w.get("dfs_v1", {}).get("mean_by_pos") for w in wk.values())
        and bd.get("lists") and set(bd.get("noise_v1_seed_vs_seed") or {}) == set(bd["lists"]),

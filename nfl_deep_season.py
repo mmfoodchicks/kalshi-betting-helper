@@ -465,7 +465,11 @@ def run_deep(season=None, n_seasons=2000, workers=None, seed=None, profiles=None
     out["quality"]["ok"] = publishable(out)
     out["engine"] = {"form_sd": E._FORM_SD, "hfa_yds": E._HFA_YDS,
                      "tables_built": (T.raw.get("fit") or {}).get("built"),
-                     "anchor_version": D.anchor_version_of(profiles), "anchor_pts_per_win": D.market_pts_per_win()}
+                     # the market anchor's version and conversion (research/reports/deep_anchor_fix.md): 1 and
+                     # 2.25 until research/data/deep_anchor_flip.patch lands in nfl_deep_data
+                     "anchor_version": getattr(D, "ANCHOR_VERSION", 1),
+                     "anchor_pts_per_win": (D.market_pts_per_win() if hasattr(D, "market_pts_per_win")
+                                            else nfl_season._PTS_PER_WIN)}
     return out
 
 

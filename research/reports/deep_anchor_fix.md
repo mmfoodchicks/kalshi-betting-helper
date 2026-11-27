@@ -1,8 +1,13 @@
-# The deep engine's market anchor: the fix, built OFF (2026-11-27)
+# The deep engine's market anchor: the fix, staged (2026-11-27)
 
-The fix moves the deep engine's market anchor from 2.25 to 1.86 points of margin per win. It is built behind
-one switch, `nfl_deep_data.ANCHOR_V2`, which is off, so production is unchanged. The deep-weight read must be
-committed before the switch may be flipped; guard DA2 enforces that.
+The fix moves the deep engine's market anchor from 2.25 to 1.86 points of margin per win. Production is
+unchanged.
+
+The fix is staged as a patch, not a switch inside the file. `nfl_deep_data.py` is frozen until the registered
+deep-weight read: four coaching guard files pin it byte for byte, "the deep weight's read sits on" it. The full
+suite showed this, so even a switch left off would have broken the freeze. The patch,
+`research/data/deep_anchor_flip.patch`, cannot land before the read's result file is committed; guard DA2
+enforces that.
 
 ## The owner's decision
 
@@ -45,40 +50,57 @@ returned slopes of 0.78-0.98 (mean 0.90), against 1.00 for the real assignment.
 Guard DA3 pins the shipped value to the measurement, and recomputes the analytic reference exactly from the
 committed seasons.
 
-## 2. The switch and the versions
+## 2. The patch, the switch inside it, and the versions
 
-The flip is ONE line, `ANCHOR_V2 = True` in `nfl_deep_data.py`. Everything else follows from it.
+**Why a patch.** The brief asked for a one-line switch, but `nfl_deep_data.py` cannot change at all before the
+read. Its sha256 is pinned by NC0, NR0, NQ0 and N4-0 (`tests/guards_auto_nfl_coach*.py`). So:
 
-- **The constants.** `ANCHOR_VERSION` becomes 2, and `market_pts_per_win()` returns 1.86 instead of
-  `nfl_season._PTS_PER_WIN`.
-- **The stamps.**
-  - Every anchored profile's `anchor` block stamps `version` and `pts_per_win`.
-  - The deep season payload's `engine` stamps `anchor_version` and `anchor_pts_per_win`.
-  - The anchor block is in each profile, and the profiles are in the pool cache's inputs hash, so a version-1
-    world cannot be read back after the flip. `nfl_deep_data.py` is now in `pool_cache._CODE_FILES` as well.
-  - (DA4 checks that the two hashes differ.)
-- **The loader.** `nfl_game_sim._deep_profiles` refuses a nightly deep payload of another anchor version and
-  rebuilds. That loader feeds both the slate's deep figure and the DFS worlds. Without the refusal, version-1
-  levels would have served for up to 36 hours after the flip.
-- **The futures board.** The deep season futures board shows the last nightly payload until the next run,
-  under 24 hours. The flip checklist below queues that rerun.
-- **The DFS engine's stamp.** `nfl_dfs_engine.SIM_MODEL_VERSION` is NOT bumped, and its board stamp does not
-  change. `nfl_dfs_engine.py` is pinned by sha256 in the coaching DFS registration (`prereg_dfs.json`), whose
-  read refuses a changed file. A DFS board built after the flip says so through its profiles' anchor block and
-  through the pool cache key, not through the engine's version number.
-- **Pinned files.** `nfl_dfs_engine.py` and `nfl_deep_sim.py` are untouched (DA5 checks their pins).
+- **The fix is staged.** `research/data/deep_anchor_flip.patch` (79 lines) carries the whole fix for that file.
+  It adds `ANCHOR_V2 = True`, `MARKET_PTS_PER_WIN_V2 = 1.86`, `ANCHOR_VERSION`, `market_pts_per_win()` (used by
+  `market_margins`), and the `version` / `pts_per_win` stamp in every anchor block.
+- **It is checked against the frozen file.** `research/deep_anchor_patch.py` applies it to the frozen file in a
+  scratch directory (`git apply`). It pins the result's sha256 (`cb64ce6e...`) and loads the patched module in
+  memory either way for the guards and the downstream evaluation.
+- **The downstream numbers are the patch's code.** They were first produced while the same code sat in the
+  file (local commit 8aed79e). That commit is superseded here, and its `nfl_deep_data.py` is the patch's
+  result with the switch toggled.
 
-**Flip checklist** (the orchestrator, after `research/data/nfl_deep_weight_read.json` is committed):
-1. Set `ANCHOR_V2 = True` in `nfl_deep_data.py`. Guard DA2 passes only with the read's result committed.
-2. Run the suite.
-3. Queue an `nfl_deep` rerun.
-4. Note the flip commit's UTC time. The prospective test's rule (section 6.9) reports games before and after
+**Already in production, reading the version defensively** (version 1 when nothing is stamped):
+- **The loader.** `nfl_game_sim.anchor_version(profiles)` reads the stamp. `_deep_profiles` serves a nightly
+  payload only if its version matches the loaded `nfl_deep_data`'s (1 today). After the flip it rebuilds rather
+  than serve version-1 levels for up to 36 hours. That loader feeds both the slate's deep figure and the DFS
+  worlds.
+- **The payload.** The deep season payload's `engine` stamps `anchor_version` and `anchor_pts_per_win`.
+- **The pool cache.** `nfl_deep_data.py` is in `pool_cache._CODE_FILES`, so the flip changes the code
+  signature. The patched anchor block's stamp also changes the inputs hash. Either way no cached version-1 world
+  is reused (DA4).
+- **The futures board.** It shows the last nightly payload until the next run, under 24 hours. The checklist
+  queues that rerun.
+
+**What is NOT bumped.**
+- `nfl_dfs_engine.SIM_MODEL_VERSION` stays as it is. `nfl_dfs_engine.py` is pinned by sha256 in the coaching
+  DFS registration (`prereg_dfs.json`), whose read refuses a changed file. A DFS board built after the flip
+  says so through its profiles' anchor block and the pool cache key.
+- `nfl_dfs_engine.py`, `nfl_deep_sim.py` and `nfl_pbp.py` are untouched, against every coaching registration's
+  pins (DA5).
+
+**Flip checklist** (the orchestrator, after `research/data/nfl_deep_weight_read.json` is committed and
+triggered). Steps 1 and 2 go in ONE commit:
+1. Run `git apply research/data/deep_anchor_flip.patch`.
+2. In `tests/guards_auto_nfl_coach.py`, `_r2.py`, `_r3.py` and `_r4.py`, set the pinned `nfl_deep_data.py`
+   sha256 to `cb64ce6e077e62ec9ec2c91de5441428b4bb44c53e000794797199a67e5c0ced`. Those pins protected the read,
+   which is now done. Leave every registration file (`prereg_*.json`) alone: none of them pins
+   `nfl_deep_data.py`.
+3. Run the suite. DA2 passes only with the read's result tracked and triggered. NC0, NR0, NQ0 and N4-0 pass
+   on the new pin.
+4. Queue an `nfl_deep` rerun.
+5. Note the flip commit's UTC time. The prospective test's rule (section 6.9) reports games before and after
    an engine change.
 
 ## 3. Downstream, before deployment (`research/deep_anchor_downstream.py`, `research/data/deep_anchor_downstream.json`)
 
-The same production inputs were built both ways on shared seeds, using production's `build_profiles` with the
-switch and Sleeper's roster factors. No outcome was read.
+The same production inputs were built both ways on shared seeds, using production's `build_profiles` (the
+patched module, switch off and on) and Sleeper's roster factors. No outcome was read.
 - **Current:** 2026 week 12's games not yet final, on the live ladder.
 - **Past:** 2026 week 9, with the store cut before it and the ladder rebuilt from Kalshi's daily candlesticks.
 
@@ -171,11 +193,13 @@ the flip.
   resolution; there is no deep engine.
 - **Accuracy batch reads** (B1, B4/H2, C1, N1, N2, tennis, G2), **weather stage 2**, **the rushing model**
   and **the matchup model**. None of them reads the NFL deep anchor.
-- **R3.** No R3 registration exists in this tree.
+- **Coaching R3 and R4** (`prereg_r3`, `prereg_r4`, merged after this was first written). Each pins only
+  `nfl_deep_sim.py` (untouched); neither its engines nor its read scripts touch the market anchor, `build_profiles`
+  or `_deep_profiles`.
 
 **Can be changed by the flip:**
 - **The NFL deep-weight 100-game read** (`nfl_deep_weight_read.py`). It grades the live `nfl_deep` shadow rows,
-  so a flip before it is committed would grade a different engine. DA2 blocks the flip until
+  so a flip before it is committed would grade a different engine. DA2 blocks the patch until
   `research/data/nfl_deep_weight_read.json` is tracked and triggered. The read writes that file only after its
   100th game has settled, and every one of those games has kicked off, so the read grades anchor version 1
   only. Its result and that model version are preserved: the file is never rewritten, and the rows it read are
@@ -200,6 +224,8 @@ the flip.
 
 ## 5. What is NOT done
 
-The switch is not flipped. No production number moves today. Two things change today: profiles carry two more
-anchor-block keys, and `nfl_deep_data.py` is in the pool cache's code files. Both change the pool cache key
-once, so the PC rebuilds its cached worlds one time; every number is unchanged.
+The patch is not applied, and no production number moves today. `nfl_deep_data.py` is byte-identical to the
+file the read grades (DA1, and the coaching pins).
+
+One thing changes today: `pool_cache.py` (including its new `nfl_deep_data.py` entry) is in the pool cache's
+code signature, so the PC refiles its cached worlds once. The worlds are the same; only their key changes.
