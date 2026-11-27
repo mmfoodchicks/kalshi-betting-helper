@@ -8607,6 +8607,16 @@ import time as _tm33
 
 _oldc33 = dict(_km33._cache)
 _oldb33 = _km33._build_index
+# Isolated (2026-11-27): the index's disk copy lives in one directory every process on the machine
+# shares (VIGIL_SIM_CACHE_DIR or the system temp's kalshi_idx). With two suites running at once -- an
+# agent's in its worktree and the orchestrator's -- one suite's background refresh filed {"FRESH"} there
+# and the other's expired index read it back instead of serving its own last-good copy: the check failed
+# "answered in 0ms". The check now runs on a private directory, and waits for the refresh to FINISH
+# (up to 10 s) instead of a fixed second a loaded machine could miss. The bar is unchanged: last-good
+# answered at once (< 0.4 s), exactly one background build, and the new book takes over.
+import tempfile as _tf33
+_oldd33 = _km33._IDX_DISK
+_km33._IDX_DISK = _tf33.mkdtemp(prefix="kidx-guard-")
 try:
     _km33._cache["data"] = {"SENTINEL-WARM": {}}
     _km33._cache["ts"] = _tm33.time()
@@ -8631,7 +8641,9 @@ try:
     _t033 = _tm33.time()
     _got33 = _km33.index()
     _dt33 = _tm33.time() - _t033
-    _tm33.sleep(1.0)
+    _wait33 = _tm33.time() + 10.0
+    while _tm33.time() < _wait33 and (_calls33["n"] < 1 or _km33._refresh["busy"]):
+        _tm33.sleep(0.05)
     ck("an expired index serves last-good INSTANTLY and refreshes behind",
        "STALE-GOOD" in _got33 and _dt33 < 0.4 and _calls33["n"] == 1
        and "FRESH" in _km33.index(),
@@ -8640,6 +8652,7 @@ try:
 finally:
     _km33._build_index = _oldb33
     _km33._cache.update(_oldc33)
+    _km33._IDX_DISK = _oldd33
 ck("the index TTL matches how pre-game asks actually move",
    _km33._TTL >= 180,
    "60s meant the book expired mid-build, always")
