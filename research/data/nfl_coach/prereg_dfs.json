@@ -1,0 +1,82 @@
+{
+ "arms": {
+  "coach": "the same code, seeds, anchor targets, Sleeper usage deal and allocation noise; games by nfl_coach_sim through research.nfl_coach_dfs.coach_games on the caller's base tables",
+  "engine": "nfl_dfs_engine as shipped (ENV_SD, ATT_WEIGHT), games by nfl_deep_sim",
+  "harness": "research.nfl_dfs_engine_eval._week run twice a week; fit seasons 2023-2025; K 400"
+ },
+ "block_sha256": "c1817fdf01de067427cd84953296161410aa1c1bc57ecec3c3f26d885e80b877",
+ "candidate": "coach-r1.0",
+ "data": "player-week DraftKings points for those weeks, built at the read by research.hist_data.build and passed with --table. No committed file holds a 2026 player-week after week 5.",
+ "dry_run": "--dry plays 2026 weeks 2-5 (SEEN) end to end and writes no result; it must complete on the PC before the date. A fix it forces is committed with a NEW registration before any week 13-18 row is built.",
+ "files": {
+  "nfl_coach_sim.py": "631a398b024f85adf9d275ce7c02ebbe3deb8dd2160bed062b3fb4e136f244e2",
+  "nfl_deep_sim.py": "22a221d7810495db3f8f7bb1bef7c4e16c3bbbf282902a95f133cecdabc29820",
+  "nfl_dfs_engine.py": "ea910abe866c09c7232906e376174d8ec04cc00f48c099186f167fbf48f47ebd",
+  "nfl_pbp.py": "660234badefc3e3b5f0e1417a48431e4ad8ff33aab5df8a207834faa4862865d",
+  "research/data/nfl_coach/prereg_r1.json": "44dbb2c95c3c3f499cc2cbe07295ed5bb4098116efd1db4db8a4bbcfc7511400",
+  "research/data/nfl_coach_tables.json": "ffe45e30f03c6f5d0879834c7c43f08ca7463525399ded0f9a2a9937df2189d8",
+  "research/nfl_coach_data.py": "3c7a8680e1a9cf5e2efd14ff6fed7ad26d4ce21775f05e97faf21912e3f846ad",
+  "research/nfl_coach_dfs.py": "39bf2c53fe219a4b7fc923c8ea1099d1f40c6cbe5f9b512017c7c98f647e25ee",
+  "research/nfl_coach_dfs_read.py": "01e0f8208d7bafe7ab7aee24b369c0c1d4cfa83b2fdec7e3d50652ac87bd5484",
+  "research/nfl_coach_eval.py": "fbd5a9998bebb38f253185e948891be57a73435d2c3774f9254268d76a50b91d",
+  "research/nfl_coach_reg.py": "f3caeb2a323dcfad288d53a8df0a3ec68dcd62560d01cada422caf8bc62bdd30",
+  "research/nfl_deep_weight_read.py": "d12b7e34df75d552b3e3eff61f72df2e9d7f68bac8e2842c058ac07612072ec2",
+  "research/nfl_dfs_engine_eval.py": "9c3f11c4c2bfe8c32d7c1e94d35c1da51008dc238d8127d6eca889829757e132"
+ },
+ "independent_of": "R1's verdict and the criterion-4 confirmatory test; run whatever they say",
+ "meaning": {
+  "NOT ESTABLISHED": "no DFS gain shown for coach-r1.0 on 96 games; the upper bound is printed; not re-read and not extended",
+  "PASS": "eligible for a DFS shadow build; any production use is the owner's word and its own test",
+  "WORSE": "the coaching engine is not used for DFS worlds as it stands"
+ },
+ "not_before_utc": "2027-01-06T06:00:00Z",
+ "not_measurable": "late-game usage: the deal sees a game's totals, not its plays (audit 2.6); that is R2",
+ "power": {
+  "effect_with_80pct_power": 0.0344,
+  "note": "0.006 and 0.017 are the gains the passing-volume anchor showed on 2026 and 2025",
+  "power_at_0.006": 0.068,
+  "power_at_0.017": 0.279,
+  "se_assumed_at_96_games": 0.0122,
+  "source": "0.0150 on 63 games for another pair of engine arms (nfl_dfs_engine.md), scaled",
+  "t_critical": 1.985
+ },
+ "registered_utc": "2026-11-27",
+ "rule": {
+  "extension": "none",
+  "guardrails": {
+   "dst": "paired CRPS difference <= +1 SE",
+   "k": "paired CRPS difference <= +1 SE",
+   "pair_rmse": "coach <= engine + 0.01",
+   "pit_ks": "coach <= engine + 0.01"
+  },
+  "looks": 1,
+  "one_sided_alpha": 0.025,
+  "outcomes": {
+   "NOT ESTABLISHED": "guardrails hold, the primary does not",
+   "PASS": "primary and every guardrail",
+   "WORSE": "a guardrail fails"
+  },
+  "primary": "offence CRPS (roled player-weeks), coach minus engine, SE clustered by game: t < -t(0.975, games - 1)"
+ },
+ "same_games_as_r1": "R1 reads game-level clock counts and the winner; this reads player points. The candidate is frozen and pinned in both registrations and neither read can change it, so neither informs the other. Its false-positive rate is its own (a DFS claim), not part of the win-probability family.",
+ "secondary_not_gating": [
+  "the role-pair table (QB-WR, same-team stacks, cross-team) against real",
+  "cross-team pair RMSE",
+  "per-role CRPS and PIT",
+  "defenses and kickers",
+  "world summary: attempts, completions, yards against Sleeper and real"
+ ],
+ "what": "independent DFS read: production's DFS worlds against worlds whose games the coaching engine plays",
+ "window": {
+  "min_games": 85,
+  "season": 2026,
+  "weeks": [
+   13,
+   14,
+   15,
+   16,
+   17,
+   18
+  ]
+ }
+}

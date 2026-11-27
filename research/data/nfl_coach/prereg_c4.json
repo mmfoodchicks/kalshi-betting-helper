@@ -1,0 +1,116 @@
+{
+ "block_sha256": "bacf92f1102d98dacd9c62d03874442ef1fa47d2ce6dcd5850bdf99342606638",
+ "candidate": "coach-r1.0",
+ "error_control": {
+  "confirmatory_alpha": 0.02573,
+  "crossing_probability_under_no_effect": 0.02573,
+  "family": "R1's criterion 4 and this test",
+  "family_one_sided_alpha": 0.05,
+  "final_z": 1.9656,
+  "futility": "look 1 stops when candidate minus control >= 0; not credited to alpha",
+  "looks": 2,
+  "r1_alpha_how": "P(t > 2.0) on 89 df: 'more than 2 SE' at the fewest games R1 accepts",
+  "r1_criterion_4_alpha": 0.02427,
+  "shape": "O'Brien-Fleming: z boundary c / sqrt(information fraction)",
+  "small_sample": "each z boundary becomes the Student t value of the same tail probability on games - 1 df",
+  "split": "Bonferroni: the two tests' rates add to the family rate whatever their dependence"
+ },
+ "files": {
+  "nfl_coach_sim.py": "631a398b024f85adf9d275ce7c02ebbe3deb8dd2160bed062b3fb4e136f244e2",
+  "nfl_deep_sim.py": "22a221d7810495db3f8f7bb1bef7c4e16c3bbbf282902a95f133cecdabc29820",
+  "nfl_pbp.py": "660234badefc3e3b5f0e1417a48431e4ad8ff33aab5df8a207834faa4862865d",
+  "research/data/nfl_coach/prereg_r1.json": "44dbb2c95c3c3f499cc2cbe07295ed5bb4098116efd1db4db8a4bbcfc7511400",
+  "research/data/nfl_coach_tables.json": "ffe45e30f03c6f5d0879834c7c43f08ca7463525399ded0f9a2a9937df2189d8",
+  "research/nfl_coach_c4_confirm.py": "128a2a89045eaa590c850bcde3a13c57c4904c837a37c74bfe57bc9d1ebad78d",
+  "research/nfl_coach_data.py": "3c7a8680e1a9cf5e2efd14ff6fed7ad26d4ce21775f05e97faf21912e3f846ad",
+  "research/nfl_coach_eval.py": "fbd5a9998bebb38f253185e948891be57a73435d2c3774f9254268d76a50b91d",
+  "research/nfl_coach_reg.py": "f3caeb2a323dcfad288d53a8df0a3ec68dcd62560d01cada422caf8bc62bdd30",
+  "research/nfl_deep_weight_read.py": "d12b7e34df75d552b3e3eff61f72df2e9d7f68bac8e2842c058ac07612072ec2"
+ },
+ "looks": [
+  {
+   "look": 1,
+   "min_games": 125,
+   "not_before_utc": "2027-11-11T12:00:00Z",
+   "planned_games": 136,
+   "weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "z_boundary": 2.7798
+  },
+  {
+   "final": true,
+   "look": 2,
+   "min_games": 260,
+   "not_before_utc": "2028-01-12T12:00:00Z",
+   "planned_games": 272,
+   "weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+   ],
+   "z_boundary": 1.9656
+  }
+ ],
+ "meaning": {
+  "CONFIRMED": "criterion 4 is met on fresh games at the family rate; R1's registered verdict stays FAIL and both are reported",
+  "NOT CONFIRMED": "a better late-state win probability is NOT ESTABLISHED for coach-r1.0, with the largest gain the data do not exclude (95%) printed beside it; the question is closed for this candidate. Realism (criteria 1-3) is a separate verdict."
+ },
+ "power": {
+  "at_development_effects_nats": {
+   "0.0012": 0.043,
+   "0.0054": 0.184,
+   "0.0072": 0.291
+  },
+  "effect_with_80pct_power_nats": 0.0143,
+  "note": "the development estimates were 0.0012, 0.0054 and 0.0072 nats: at those sizes this test will usually not confirm",
+  "sd_per_game_assumed": 0.084,
+  "se_at_final_look": 0.00509
+ },
+ "r1_registration": "ba0bae085ed537d91a14844076d473828c44f1b26089d4a80f36a13fa75514ae",
+ "r1_verdict": "preserved; this test never changes it",
+ "registered_utc": "2026-11-27",
+ "season": 2027,
+ "season_type": "REG",
+ "settings": {
+  "checkpoints_q4_clock": [
+   300,
+   120
+  ],
+  "form_sd": {
+   "coach": 0.0,
+   "control": 0.0
+  },
+  "level_curve_n": 2500,
+  "p_clip": 0.002,
+  "playouts": 1000
+ },
+ "statistic": "per game, log loss of the home-win probability from the real state at the first snap at or inside 5:00 and 2:00 of the fourth quarter, candidate minus control, averaged over the checkpoints the game has; the mean over games, SE over games",
+ "stopping": "CONFIRMED at either look ends it; futility at look 1 ends it; look 2 is final. No third look, no third test, no added season.",
+ "used_only_if": "research/data/nfl_coach/read_r1.json exists and its verdict fails criterion 4 and passes the other four; otherwise this test never runs",
+ "what": "confirmatory test of R1 criterion 4 (late-state win probability) on fresh games",
+ "why_these_games": "every game after R1's window that R1's pinned code can play: the 2026 postseason (13 games) needs postseason overtime, which nfl_coach_eval does not pass, so it is left out"
+}
