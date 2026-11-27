@@ -237,3 +237,94 @@ python3 tests/guards_auto_nfl_coach_r4.py
 | `research/nfl_coach_r4_prereg.py`, `research/data/nfl_coach/prereg_r4.json` | the registration |
 | `research/nfl_coach_r4_read.py` | the registered read (not run) |
 | `tests/guards_auto_nfl_coach_r4.py` | 21 guards, section N4 (AUTO) |
+
+## H. The owner's checks after reading R4 (2026-11-27; report only, R4's registration unchanged)
+
+### H.1 The injury report is a training label, never a play-time input
+
+These are all the inputs R4 reads while a game is played (`nfl_coach_sim_r4.py`):
+
+- **The pull** (`_Track._decide`) reads two things from the drive's FIRST snap: the offence's margin and the game
+  seconds left. The margin comes from the score logged before that snap; the seconds come from its period and
+  clock. Add R3's coefficients and `prng`.
+- **The kind of pull** is `p_injury(X, margin, seconds)`, a four-term logistic on that same state, drawn on `prng`.
+- **A return** draws on `prng` against the tables' rate and drive counts.
+- **The shifts and the second unit** read the tables' effects for the kind that was drawn, plus the current
+  margin.
+
+R4 reads nothing else. No report, no play description, no player status, no season or week, and nothing from
+after the snap. The next week's injury report and the descriptions' "was injured" are read in exactly one place,
+`research/nfl_coach_r4_fit.py` (`reports`, `make_cls`). There they label the 2016-2024 pulls, and those labels fit
+`type_coef` and the per-kind effects. The tables hold aggregates only.
+
+Guards in `tests/guards_auto_nfl_coach_r5.py`, which apply to R5 as well:
+
+- **N5-T1** parses the engine's source. It requires that the engine imports only the engines and the standard
+  library, opens a file only in `tables()`, and names no report, description, season, week or player id. It also
+  requires that `Tables` reads only the fitted values.
+- **N5-T2** checks that the tables contain no player id, game id or play text.
+- **N5-T3** intercepts every call to the hazard and to `p_injury` over 30 played games with 25 pulls. The
+  arguments must be exactly the first-snap margin and seconds of each identified drive, as R3's post-game parser
+  recovers them from the log. The calls must also come in the right order: up to and including the pull drive,
+  then none.
+
+What the decision is conditioned on: it is drawn at the drive's first quarterback-identifying snap. That is
+whether the drive has one, which is the same condition the fit used. The identifying snap's own outcome is never
+read. One consequence: the first identifying snap of a pulled drive is played under the starter's shifts. The deal
+still credits the whole drive to the backup, as R3 does. This is documented, not hidden, and the same holds in R5.
+
+### H.2 Classification sensitivity (`research/nfl_coach_r4_checks.py`, `research/data/nfl_coach/r4_checks.json`)
+
+Two groups of pulls can be labelled either way:
+
+- **A1** (73 fit pulls): the play does not name the starter, but the next report lists him. Labelled injury; the
+  listing may predate the game.
+- **A2** (111 fit pulls): not named, not reported, and the game not decided. Labelled strategic; it could be an
+  unrecorded injury or a benching.
+
+Every shift was refitted with each group flipped and with both flipped, under R4's own rule (3 SE on the fit
+seasons, same sign in development), and the development gain was recomputed with each variant's own labels.
+
+| variant | fit injury / strategic | strategic: call lead, trail, close | comp | lead back OR | top-two OR | injury: comp, int | dev joint gain 2025 / 2026 |
+|---|---|---|---|---|---|---|---|
+| as registered | 197 / 523 | +0.158, -0.131, -0.185 | -0.128 | 0.48 | 0.74 | -0.127, +0.371 | +0.33 +/- 0.12 / +0.52 +/- 0.15 |
+| A1 as strategic | 124 / 596 | refused, -0.125, -0.148 | -0.118 | 0.54 | 0.83 | -0.151, refused | +0.21 +/- 0.12 / +0.49 +/- 0.14 |
+| A2 as injury | 308 / 412 | +0.233, refused, refused | refused | 0.28 | 0.63 | -0.116, +0.318 (close -0.174) | +0.30 +/- 0.08 / +0.37 +/- 0.14 |
+| both flipped | 235 / 485 | refused x3 | -0.132 | 0.44 | refused | -0.125, refused (close -0.202) | +0.12 +/- 0.10 / +0.28 +/- 0.10 |
+
+How each effect held up:
+
+- **Robust:**
+  - The strategic lead back's odds ratio survives every variant, ranging from 0.28 to 0.54.
+  - The injury backup's completion shift survives every variant (-0.12 to -0.15).
+  - The development joint gain stays positive in all four.
+- **Fragile:**
+  - The top-two odds ratio and the strategic completion shift each survive 3 of 4.
+  - The strategic call shifts depend on the labels: each margin's shift is refused in at least one variant, and
+    the leading call is refused under A1 and under both flipped.
+  - The injury interception shift is refused when A1 moves to strategic.
+
+Two caveats:
+
+- **What the brackets cover.** Labelling a group all one way and then all the other brackets the moved
+  statistics. A fitted-probability weighting would land between the extremes for the effect sizes, though not
+  necessarily for the rule's keep or refuse decisions.
+- **What this means for the claims.** R4's registered read uses the registered labels and stands as written.
+  The labels decide how much of the call claim survives, but not the personnel claim or the completion claim.
+
+### H.3 The second unit: per-snap odds, not one sit decision
+
+R4 multiplies the lead back's odds (x0.48) and the top two targets' odds (x0.74) on every snap after a strategic
+pull. It never forces them out together, and it never seats anyone: each keeps a reduced share.
+
+The real decisions are mostly whole-game (2016-2024, 293 strategic pulls with 3+ backs' carries after):
+
+| after a strategic pull | real 2016-2024 | R4 simulated |
+|---|---|---|
+| the lead back gets no carry for the rest of the game | 50.2% | 4.2% |
+| his share of the backs' carries, quartiles | 0, 0, 0.60 | 0.38, 0.50, 0.61 |
+| both top-two targets get nothing (3+ targets after) | 19.6% | 2.0% |
+
+R4's mean shift is about right, but the shape is wrong: the real distribution is bimodal, sit or play. R5 draws
+the decision per player (`research/reports/nfl_coach_r5.md`). Its simulated rates are 48.8% for the back and
+21.3% for the top two, against the real 51.3% and 24.5% on R5's own definitions.

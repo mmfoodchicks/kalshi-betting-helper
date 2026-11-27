@@ -1,0 +1,78 @@
+{
+ "block_sha256": "d20d0e137cadebdd1134d9fd9bbdcb676971c0ca3c187a7e2c717d2766b1a65b",
+ "criteria": {
+  "1": "tests/guards_auto_nfl_coach_r5.py exits 0",
+  "2": "unit gain > 2 SE (SE over strategic pulled team-games)",
+  "3": "hazard gain > -2 SE (a guardrail)"
+ },
+ "dependence": "2026 weeks 13-18 are R1's, R2-H1's, R3's and R4's registered games and 2027 is R4's, so R5 takes the 2028 regular season, which no registered window and no development set has seen (C3-N reads 2027 for the deep engine; nothing coaching reads 2028). R5 is R4 with two changes; its unit statistic conditions on the real pulls, so it does not depend on R4's verdict, but both are built on R3's pull and R4's labels: a defect there is shared. R5 was fitted on 2016-2024 (second unit) and 2016-2025 (hazard); 2025 and 2026 weeks 1-12 were read in development, including the season-by-season corner that motivated the regime candidates, so no development figure is a test. Any change to an R5 file or to an R1-R4 file it plays on fails the pinned hashes and moves R5 to fresh games under a new registration.",
+ "files": {
+  "nfl_coach_sim.py": "631a398b024f85adf9d275ce7c02ebbe3deb8dd2160bed062b3fb4e136f244e2",
+  "nfl_coach_sim_r2.py": "67ae6c8e54cdd68f57f04719fdb914d489dc4b622560ceb615b71166c39eccca",
+  "nfl_coach_sim_r3.py": "acd00092a91300c4ccd5f244b8d76dc0fa6a75337e4ddf1a857805c4c2cbe06c",
+  "nfl_coach_sim_r4.py": "f9249362d216be1160bc9bb3a8bb70d52586266d5e1697d6bae2c80da38523f3",
+  "nfl_coach_sim_r5.py": "b23b0cdddfb46829e043c8d9a1e756192617fe44eccecef295caa28adee473e5",
+  "nfl_deep_sim.py": "22a221d7810495db3f8f7bb1bef7c4e16c3bbbf282902a95f133cecdabc29820",
+  "nfl_pbp.py": "660234badefc3e3b5f0e1417a48431e4ad8ff33aab5df8a207834faa4862865d",
+  "research/data/nfl_coach_r2_tables.json": "e589314e654897e81e665e4a25eba9bd845b9fed71790e747a518f54ee4daa1b",
+  "research/data/nfl_coach_r3_tables.json": "6dfdc15cfb89ea660b126f0a7906bc023d817a46e524acb4c7b33f09ca979977",
+  "research/data/nfl_coach_r4_tables.json": "8ce1bce2c8c9e5b9387a75f647f75b4ba612d90c952c9c4b26a62b4eb5984291",
+  "research/data/nfl_coach_r5_tables.json": "fcf3521e7c7b5323e5147b71f6d60708543bcfeb6fd5fe654e7e9ff588c7da43",
+  "research/data/nfl_coach_tables.json": "ffe45e30f03c6f5d0879834c7c43f08ca7463525399ded0f9a2a9937df2189d8",
+  "research/nfl_coach_data.py": "3c7a8680e1a9cf5e2efd14ff6fed7ad26d4ce21775f05e97faf21912e3f846ad",
+  "research/nfl_coach_r2_data.py": "ed17b05c9b2544f782b7befb307b7ae27dcc63d2b581d0b8f877feab7d59ada1",
+  "research/nfl_coach_r3_qb.py": "916140d754ec5aec036686ecd39391df2b9f05f7e4e3d94ab6dd4525faa90685",
+  "research/nfl_coach_r4_data.py": "a98124e44c435bd129a0c26d8e184dcf13e0e7204f9efd47e68f492c08832135",
+  "research/nfl_coach_r4_evidence.py": "b75353e6fca559a4df21f8edf2d46d5243621d1294a0608da215bf79ec6bf7c6",
+  "research/nfl_coach_r4_fit.py": "4cb45103c899e6f58a1b2df4763be98591e5686348dbf41e2fbcba943166db2c",
+  "research/nfl_coach_r5_eval.py": "4bfd23a2fb5bc439741ec775751c5672d247fa414e2cc19773c226ba23b06804",
+  "research/nfl_coach_r5_fit.py": "d2729c454d84d80dad6dc4a81add3fe1837d3ba2507216a43c5a506303057249",
+  "research/nfl_coach_r5_read.py": "8cb32e19231274504a970f52926e3276d0b6b9816c47eff790d41f9f4805b7c5",
+  "tests/guards_auto_nfl_coach_r5.py": "eebc86f4ee56dc7e17be0936adeddf986a588e9ea67d9419bab324956524bca8"
+ },
+ "min_strategic_pulled_team_games": 30,
+ "not_before_utc": "2029-01-16T06:00:00Z",
+ "power": "Development, 2025 / 2026 weeks 1-12 (the second unit fitted on 2016-2024 only): +1.34 / +1.51 nats a strategic pulled team-game over R4 (SD 2.68 / 2.62; z 3.8 / 3.0). The 2028 window should hold ~45 strategic pulled team-games (424 in 2016-2024; 57 in 2025): SE ~0.40, power ~0.91 at +1.34, ~0.37 at half of it; at the 30-game floor ~0.77. Hazard guardrail: development gain +0.0007 +/- 0.0024 a team-game (2026), so with no true difference criterion 3 fails ~2.3% of the time. Corner secondary: R5 expects ~4.5 pulls a season there, critical count 9 (one-sided 5%); power ~0.71 if the 2022-2026 excess (x2.3) persists, ~0.24 at x1.5. Power is the chance the test passes IF R5 is better by the stated amount, not the probability that it is.",
+ "requires_reads": [
+  "R1",
+  "R4"
+ ],
+ "secondary": "reported, never part of the verdict: the trailing corner's real pulls against R5's expectation, one-sided Poisson P(X >= real) < 0.05 = the post-2021 excess persists on fresh games (the evidence a corner-specific term would need)",
+ "settings": {
+  "files": "play_by_play_2028.csv.gz, players.csv, injuries_2028.csv in the read's directory (nflverse, fresh); the kind of pull is R4's classifier (descriptions, the next week's report; week 18's from the descriptions alone)",
+  "simulation": "none: every statistic is a likelihood of what happened, at the frozen tables"
+ },
+ "statistics": {
+  "cell": "nfl_coach_r5_fit.cell (trailing 17-27 at the drive's first snap, 2:01-8:00 left): real pulls against R4's and R5's expected",
+  "hazard": "nfl_coach_r5_eval.hazard_score over every team-game: the pull's log loss, R4's (R3's hazard) minus R5's, per team-game (positive = R5 better)",
+  "unit": "nfl_coach_r5_eval.unit_score over every strategic pulled team-game in the window (nfl_coach_r5_fit.unit_rows): log-likelihood of the lead back's and the top two targets' touches after the pull, R5 minus R4 (positive = R5 better)"
+ },
+ "version": "coach-r5.0",
+ "what": "the second unit after a STRATEGIC quarterback pull as drawn per-player decisions (the lead back sits with q_b, each of the top two targets with q_w given the back's decision, a player who plays at his season share shifted by d) against R4's per-snap odds; R3's hazard form refitted on 2016-2025 (every richer form was refused) as a guardrail; the trailing corner R3 missed as a registered secondary",
+ "window": [
+  {
+   "season": 2028,
+   "weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+   ]
+  }
+ ],
+ "written_utc": "2026-11-27T14:48:26Z"
+}

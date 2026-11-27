@@ -313,5 +313,18 @@
   "waits_for": "R1's read committed first; 2026 weeks 13-18 and the 2027 regular season",
   "report": "research/reports/nfl_coach_r4.md",
   "result": "research/data/nfl_coach/read_r4.json"
+ },
+ {
+  "id": "coach_r5",
+  "area": "Coaching engine",
+  "kind": "registered",
+  "title": "Coaching R5: the second unit as drawn decisions after a strategic quarterback pull",
+  "decides": "the lead back's and the top two targets' touches after a strategic pull: log-likelihood gain over R4 above 2 SE; R3's hazard refitted not worse by 2 SE; the trailing corner R3 missed reported as a secondary (does the post-2021 excess persist)",
+  "registration": "research/data/nfl_coach/prereg_r5.json",
+  "script": "research/nfl_coach_r5_read.py",
+  "not_before": "2029-01-16T06:00:00Z",
+  "waits_for": "R1's and R4's reads committed first; the 2028 regular season (fresh: no registered window or development set holds it)",
+  "report": "research/reports/nfl_coach_r5.md",
+  "result": "research/data/nfl_coach/read_r5.json"
  }
 ]
