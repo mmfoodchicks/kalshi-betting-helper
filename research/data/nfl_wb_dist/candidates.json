@@ -1,0 +1,36 @@
+{
+  "id": "nfl_wb_dist_candidates",
+  "written_utc": "2026-11-27",
+  "status": "written and committed BEFORE any candidate below was scored; production's own diagnostics (the integer-stats study, research/reports/nfl_discrete_alloc.md) had already been read",
+  "question": "Which, if any, replacement for the NFL week board's player distributions (nfl_dfs_sim.simulate_game, the continuous legacy model) gives better-calibrated per-player statistics?",
+  "development": {
+    "data": "research/data/player_weeks_2022_2025.csv.gz (2025 weeks 1-12) and research/data/player_weeks_2026.csv.gz (2026 weeks 1-5: all that table holds; weeks 6-12 were never built into it and are NOT read)",
+    "already_used": "the same 257 games the integer-stats study read: this is development data, seen",
+    "fit": "every fitted parameter is fitted on 2025 weeks 1-12 for the development comparison (scored out of sample on 2026 weeks 1-5), then refitted on all development games for the frozen registration",
+    "sealed": "2026 week 13 on is never read during development (asserted in the harness)"
+  },
+  "production": {
+    "id": "P",
+    "what": "nfl_dfs_sim.simulate_game as it runs (with_components; DraftKings points = its pinned points array); the baseline every candidate is compared with"
+  },
+  "candidates": [
+    {"id": "A", "name": "constrained simulator",
+     "what": "nfl_dfs_csim.simulate_game with its committed Stage 2E parameters (research/data/csim_params.json, fitted on 2022-2024 only); counts drawn, yards rounded (np.rint); nothing refitted here",
+     "fitted_here": []},
+    {"id": "B", "name": "discrete allocation, quarterback fix",
+     "what": "nfl_discrete_alloc.simulate_game(pass_latent_scale=k): event counts, conservation exact; the team passing multiplier's deviation from 1 scaled by k",
+     "fitted_here": ["k: the grid 0.0, 0.1, ..., 1.0; the k whose development quarterbacks' passing-yard realized-over-model variance ratio is closest to 1 (ties to the larger k)"]},
+    {"id": "C", "name": "production with a per-position x statistic quantile mapping",
+     "what": "production's worlds, each marginal mapped through G^-1 o F: F the world's own CDF, G the development empirical CDF of production's randomized PIT for that position and statistic (knots at 0, 0.05, ..., 1; each knot (count + 20 x t) / (N + 20), linear between knots, monotone). Corrects mean bias, spread and asymmetric tails per cell without one shared factor; the joint structure (copula) of production's worlds is kept; the mapped box is no longer one consistent stat line (each marginal is mapped on its own)",
+     "fitted_here": ["G per position (QB, RB, WR, TE) x statistic (pass_yd, pass_td, int, rush_yd, rush_td, rec, rec_yd, rec_td, dk): 19 interior knot values a cell"]}
+  ],
+  "scored": {
+    "stats_by_position": {"QB": ["pass_yd", "pass_td", "int", "rush_yd", "dk"], "RB": ["rush_yd", "rush_td", "rec", "rec_yd", "dk"],
+                          "WR": ["rec", "rec_yd", "rec_td", "dk"], "TE": ["rec", "rec_yd", "rec_td", "dk"]},
+    "applies_when": "the projected mean is at least: yards 5, receptions 0.5, TDs and interceptions 0.05, DraftKings points 1",
+    "lines": "fixed off the PROJECTION only (never a model output): yards round(m x f) + 0.5 and receptions floor(m x f) + 0.5 for f in 0.5, 0.75, 1, 1.25, 1.5 (distinct, > 0); TDs and interceptions 0.5 (passing TDs 0.5, 1.5, 2.5); DraftKings points round(m x f) + 0.25 for f in 0.5, 1, 1.5 (no tie is reachable: DK scores move in 0.04 / 0.1 steps)",
+    "probability": "P(X > L) = (worlds above L + 0.5) / (n + 1), the same rule for every model",
+    "metrics": "per position x statistic: mean bias (actual - model mean), realized-over-model variance, half-line log loss and Brier, a 10-bin calibration curve, 50/80/90% central interval coverage and the floor (under the 10th percentile) / ceiling (over the 90th) split off the randomized PIT, zero mass and TD lumpiness (P(0), P(2+)) model vs real; joint: within-world DraftKings-point correlation by pair type (QB-WR, QB-TE, QB-RB, WR-WR, WR-TE, RB-WR, QB-QB opponents) against the observed correlation of residuals",
+    "workload_and_shape": "descriptive, production and the real box: Sleeper's projected targets and carries against the real ones (bias, dispersion index), residual skew, zero mass, TD lumpiness"
+  }
+}
