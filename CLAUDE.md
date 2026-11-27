@@ -1078,6 +1078,18 @@ data-only `sim-history` branch (which never deploys):
   requests read only that file. 14 days of every look, then the decision look to 180 days, capped at 300,000 rows
   (~53 MB). Measured in the guards (`tests/guards_auto_crypto.py`): 400 recorder passes 0.0 MB RSS growth, a
   200,000-row read +0.4 MB. `VIGIL_CRYPTO=off` stops it without a code change.
+  **V2 stage 1** (2026-11-27; the owner's workflow: $10 Quick Order buys, cash out, maybe flip sides inside the
+  15 minutes; `research/reports/crypto_moves.md`, rule committed first in eceaf12): the movement model PASSED its
+  held-out test at 1, 3 and 5 minutes but is only a 1-3 point mean-reversion tilt; a settlement drift from it does
+  not ship, and trading inside the window at REAL quotes lost 4.59c a trade +/- 0.75. The chart is vendored
+  Lightweight Charts 4.1.3 (static/vendor, Apache-2.0 licence kept; no CDN) with 15 s / 30 s bars built in the
+  BROWSER from Coinbase's public WebSocket (the server holds no stream), EMAs, VWAP, Bollinger, a forecast band and
+  signal markers; panels for momentum/reversal, "what if" with the strike-touch probability, a banner that the model
+  is losing to Kalshi, Kalshi's YES/NO price chart, paper positions. **CF Benchmarks via Kalshi**
+  (`/trade-api/v2/cfbenchmarks/values?id=BRTI`, the `cfbenchmarks_value` WebSocket with the 60-second averages)
+  needs SIGNED Kalshi API-key requests and an account entitlement -- not used; the four-exchange proxy stays until
+  the owner supplies a key (env, never committed). Stage 2 (Beginner Mode in dollars, the random-walk null for the
+  final reversal, the hybrid hold / cash-out / switch research) is in progress.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 
