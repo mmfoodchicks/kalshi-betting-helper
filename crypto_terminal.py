@@ -596,7 +596,7 @@ def research():
     with a deploy)."""
     if not _RESEARCH:
         base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "research", "data", "crypto")
-        for k, f in (("moves", "moves.json"), ("settlement_v1", "validation.json")):
+        for k, f in (("moves", "moves.json"), ("settlement_v1", "validation.json"), ("hybrid", "hybrid.json")):
             try:
                 with open(os.path.join(base, f), encoding="utf-8") as fh:
                     _RESEARCH[k] = json.load(fh)
@@ -614,6 +614,11 @@ def research():
             "proxy": m.get("proxy"), "untested": m.get("untested"),
             "settlement_v1": {"decision": v.get("decision"), "heldout_300": (v.get("heldout") or {}).get("300", {})
                               .get("pooled")},
+            "hybrid": (_RESEARCH.get("hybrid") or {}).get("r2_hybrid"),
+            "final_reversal": {k: {x: v.get(x) for x in ("passed", "challenger_gain_vs_null", "se_days",
+                                                         "null_calibration_heldout", "base_rate_heldout")}
+                               for k, v in ((_RESEARCH.get("hybrid") or {}).get("r1_final_reversal") or {}).items()
+                               if isinstance(v, dict) and "passed" in v},
             "report": "research/reports/crypto_moves.md"}
 
 
@@ -727,7 +732,9 @@ def direction_now(coin):
                          f"&end={datetime.fromtimestamp(t1, timezone.utc):%Y-%m-%dT%H:%M:%SZ}")
         g = move_grid([r for r in rows if int(r[0]) <= end], end - (DIR_MINUTES - 1) * 60, end + 60)
         f = move_features(g)
-        out = {"as_of": end + 60, "horizons": {}, "marks": []}
+        out = {"as_of": end + 60, "horizons": {}, "marks": [],
+               "bars": [[b[0], b[2], b[3], b[4]] for b in g[-16:]],          # t, high, low, close
+               "feat": f[-1] if f else None}
         if not f or f[-1] is None:
             return out
         trail = (g[-1][4] > g[-6][4]) - (g[-1][4] < g[-6][4])
@@ -755,6 +762,106 @@ def direction_now(coin):
                     out["marks"].append([g[i][0], round(pr, 3), tr])
         return out
     return _cached(("direction", coin), 30, fetch)
+
+
+# ---- the FINAL reversal (v2 stage 2; research/crypto_hybrid.py R1, rule committed first in df45623) --------
+# The random walk answers "was that the last dip?" analytically (first passage): P(no new low below the
+# window's low L before the close) = 2 Phi(ln(x/L) / (sigma sqrt tau)) - 1, likewise for the high, and the
+# reflection principle for touching the strike again. On held-out history that null was badly calibrated
+# (said 4%, hit 13%; said 45%, hit 52%: minute data and ticks hold more "no new extreme" than a continuous walk)
+# and a momentum challenger beat it past 2 SE for all three questions, so the panel shows the challenger with
+# the null beside it. Historical extremes were training LABELS only; nothing here reads a future bar.
+SWING_RATIO = 0.132     # realized / walk-predicted remaining zigzag legs of 2 one-minute SDs, held-out (0.201 / 1.519)
+
+
+def _logit(p):
+    p = min(max(p, 1e-4), 1 - 1e-4)
+    return math.log(p / (1 - p))
+
+
+def final_reversal(m15, direction, sigma_s=None):
+    """For the open 15-minute window: P(the low so far is the final low), P(the high so far is the final
+    high), P(the level touches the strike again) -- the walk's null and the challenger that beat it -- plus
+    the expected remaining swings (the walk's figure scaled by what was measured), the expected time to the
+    next 2-SD move against the current leg, and the moves the YES and NO contracts need to pay a round trip."""
+    if not m15 or not m15.get("rule") or not direction or not direction.get("bars") or not direction.get("feat"):
+        return None
+    R = ((_RESEARCH.get("hybrid") or {}).get("r1_final_reversal")) if _RESEARCH else None
+    if R is None:
+        research()
+        R = (_RESEARCH.get("hybrid") or {}).get("r1_final_reversal") or {}
+    T = m15["close_ts"]
+    t = direction["as_of"]
+    bars = [b for b in direction["bars"] if T - 900 <= b[0] < t]
+    tau = T - t
+    if not bars or tau <= 0:
+        return None
+    f = direction["feat"]
+    sig = sigma_s or (VOL_MULT * f["sig"] / math.sqrt(60.0))
+    x, lo, hi = bars[-1][3], min(b[2] for b in bars), max(b[1] for b in bars)
+    k = m15["rule"]["strike"]
+    sd = sig * math.sqrt(tau)
+    null = {"final_low": max(0.0, 2 * _phi(math.log(x / lo) / sd) - 1) if x >= lo else 0.0,
+            "final_high": max(0.0, 2 * _phi(math.log(hi / x) / sd) - 1) if hi >= x else 0.0,
+            "touch": min(1.0, 2 * (1 - _phi(abs(math.log(x / k)) / sd)))}
+    out = {"as_of": t, "tau_s": tau, "level": x, "window_low": lo, "window_high": hi, "null": {}, "model": {}}
+    for lab, pn in null.items():
+        d = R.get(lab) or {}
+        out["null"][lab] = round(pn, 4)
+        if d.get("passed") and d.get("weights"):
+            w = d["weights"]
+            z = w[0] + w[1] * _logit(pn) + sum(wi * f[n] for wi, n in zip(w[2:], d["weight_names"][2:]))
+            out["model"][lab] = round(1 / (1 + math.exp(-z)), 4)
+    delta = 2 * f["sig"]                                       # a "meaningful" move: 2 one-minute SDs
+    out["swings_expected"] = round(SWING_RATIO * sig ** 2 * tau / delta ** 2, 2)
+    # the current leg: from whichever extreme came last; the time for the walk's drawdown from the leg's
+    # extreme to reach delta (reflected Brownian motion: (delta^2 - d^2) / sigma^2)
+    i_lo = max(i for i, b in enumerate(bars) if b[2] == lo)
+    i_hi = max(i for i, b in enumerate(bars) if b[1] == hi)
+    up = i_lo > i_hi
+    ext = max(b[1] for b in bars[i_lo:]) if up else min(b[2] for b in bars[i_hi:])
+    dd = abs(math.log(ext / x))
+    out["leg"] = "up" if up else "down"
+    out["next_reversal_s"] = round(max(0.0, delta ** 2 - dd ** 2) / sig ** 2) if dd < delta else 0
+    out["persist_to_close"] = round(_survive(dd, delta, sig, tau), 4)
+    # executable: how far the level must move for a $10 buy now to be sold for a profit after both fees
+    need = {}
+    for side in ("yes", "no"):
+        ask, bid = m15.get(f"{side}_ask"), m15.get(f"{side}_bid")
+        if ask is None or bid is None:
+            continue
+        n = contracts_for_dollars(1000, ask)
+        if n <= 0:
+            continue
+        cost = n * ask + order_fee_c(ask, n)
+        be = (cost + 1.0) / n                                  # the bid that returns the cost after its own fee
+        while be < 100 and n * be - order_fee_c(be, n) < cost:
+            be += 0.5
+        need[side] = {"contracts": n, "cost_c": cost, "breakeven_bid_c": round(be, 1),
+                      "move_c": round(be - bid, 1)}
+    out["round_trip"] = need
+    return out
+
+
+def _survive(d, delta, sig, tau, terms=4000):
+    """P(a driftless walk's drawdown from its running extreme, now d, stays under delta for tau seconds):
+    reflected at 0, absorbed at delta -- the heat equation's cosine series. Near tau = 0 the series is only
+    conditionally convergent (partial sums swing by ~4/(pi N)), so it stops once the terms are negligible and
+    otherwise returns the mean of the last two partial sums (error ~1/N^2)."""
+    if d >= delta:
+        return 0.0
+    a = sig ** 2 * tau / delta ** 2
+    s = prev = 0.0
+    for k in range(terms):
+        n = 2 * k + 1
+        e = math.exp(-(n * math.pi) ** 2 * a / 8)
+        prev = s
+        s += (4 / math.pi) * ((-1) ** k) / n * math.cos(n * math.pi * d / (2 * delta)) * e
+        if e < 1e-15:
+            break
+    else:
+        s = 0.5 * (s + prev)
+    return min(1.0, max(0.0, s))
 
 
 def board(coin):
@@ -790,6 +897,7 @@ def board(coin):
     try:
         q = m15_market(coin)
         out["m15"] = price_row(q, level, sigma, now) if q else None
+        out["final"] = final_reversal(out["m15"], out.get("direction"))      # the research's own sigma
     except Exception as e:
         errlog.note("CRYPTO-m15", e, path=coin)
         out["m15"] = None
@@ -1266,13 +1374,20 @@ def _market_now(ticker, coin):
     return price_row(q, px.get("price"), realised_vol(coin), time.time()), m
 
 
-def paper_open(ticker, coin, side, qty=1):
+def paper_open(ticker, coin, side, qty=None, dollars=None):
+    """A paper buy at the ask the server reads now: `dollars` sizes it the way Kalshi's dollar Quick Order
+    does (the most contracts the amount buys after the order's fee), else `qty` contracts."""
     coin = str(coin or "").upper()
     if side not in ("yes", "no") or not _series_ok(ticker, coin):
         raise ValueError("bad ticker or side")
-    qty = int(qty)
-    if not 1 <= qty <= 100:
-        raise ValueError("quantity 1 to 100")
+    if dollars is not None:
+        dollars = float(dollars)
+        if not 1 <= dollars <= 100:
+            raise ValueError("$1 to $100")
+    else:
+        qty = int(qty) if qty is not None else 1
+        if not 1 <= qty <= 100:
+            raise ValueError("quantity 1 to 100")
     _ensure_paper()
     with contextlib.closing(_conn()) as c:
         if c.execute(f"SELECT COUNT(*) FROM {PAPER_TABLE} WHERE status = 'open'").fetchone()[0] >= MAX_OPEN:
@@ -1283,6 +1398,11 @@ def paper_open(ticker, coin, side, qty=1):
     ask = row.get(f"{side}_ask")
     if ask is None:
         raise ValueError(f"no {side.upper()} ask: nothing to buy at")
+    if dollars is not None:
+        per = _fee(ticker, ask)
+        qty = contracts_for_dollars(dollars * 100.0, ask, per / kalshi_fee_c(ask) if kalshi_fee_c(ask) else 1.0)
+        if qty < 1:
+            raise ValueError(f"${dollars:g} does not buy one contract at {ask:g}c after the fee")
     p = row.get("p_model")
     now = time.time()
     with _db_lock, contextlib.closing(_conn()) as c, c:
@@ -1291,7 +1411,8 @@ def paper_open(ticker, coin, side, qty=1):
                         (ticker, coin, side, qty, row["close_ts"], now, ask, order_fee_cents(ticker, ask, qty),
                          (p if side == "yes" else 1 - p) if p is not None else None))
         pid = cur.lastrowid
-    return {"id": pid, "ticker": ticker, "side": side, "qty": qty, "entry_c": ask}
+    return {"id": pid, "ticker": ticker, "side": side, "qty": qty, "entry_c": ask,
+            "cost_c": ask * qty + order_fee_cents(ticker, ask, qty)}
 
 
 def paper_close(pid):

@@ -3419,7 +3419,7 @@ def api_crypto_paper_open():
     d = request.get_json(silent=True) or {}
     try:
         return jsonify(crypto_terminal.paper_open(str(d.get("ticker") or ""), d.get("coin"), d.get("side"),
-                                                  d.get("qty") or 1))
+                                                  qty=d.get("qty"), dollars=d.get("dollars")))
     except (ValueError, TypeError) as e:
         return jsonify({"error": str(e)}), 400
     except Exception as e:
