@@ -464,7 +464,8 @@ def run_deep(season=None, n_seasons=2000, workers=None, seed=None, profiles=None
     out["quality"] = quality
     out["quality"]["ok"] = publishable(out)
     out["engine"] = {"form_sd": E._FORM_SD, "hfa_yds": E._HFA_YDS,
-                     "tables_built": (T.raw.get("fit") or {}).get("built")}
+                     "tables_built": (T.raw.get("fit") or {}).get("built"),
+                     "anchor_version": D.anchor_version_of(profiles), "anchor_pts_per_win": D.market_pts_per_win()}
     return out
 
 

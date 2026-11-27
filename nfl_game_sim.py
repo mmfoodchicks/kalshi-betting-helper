@@ -1088,8 +1088,11 @@ def _deep_profiles(season, week):
     try:
         import deep_cache
         payload, ts = deep_cache.load("nfl_deep")
+        # a nightly run built under another market-anchor version is never served after the switch flips
+        # (nfl_deep_data.ANCHOR_V2): its levels are the old conversion's, so the profiles are rebuilt here
         if (isinstance(payload, dict) and payload.get("profiles") and int(payload.get("season") or 0) == int(season)
-                and ts and _time.time() - ts < 36 * 3600):
+                and ts and _time.time() - ts < 36 * 3600
+                and nfl_deep_data.anchor_version_of(payload["profiles"]) == nfl_deep_data.ANCHOR_VERSION):
             base, src, src_ts = payload["profiles"], "nightly", ts
     except Exception as _e:
         errlog.note("NFLG-deep-load", _e)
