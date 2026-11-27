@@ -55,7 +55,8 @@ def _asset_version():
     page reload fetches the new UI without needing a server restart."""
     try:
         latest = max(os.path.getmtime(os.path.join(_STATIC_DIR, f))
-                     for f in ("app.js", "matchups.js", "nflview.js", "dfspick.js", "style.css", "sw.js"))
+                     for f in ("app.js", "matchups.js", "nflview.js", "dfspick.js", "pick6log.js", "style.css",
+                               "sw.js"))
         return str(int(latest))
     except OSError:
         return _ASSET_VERSION
@@ -5363,6 +5364,79 @@ def api_baseball_pick6_eval():
     except Exception as e:
         return jsonify({"error": f"baseball data failed: {e}"}), 502
     return jsonify(baseball.pick6_eval(games, pk, legs))
+
+
+# The Pick6 PAPER ledger (pick6_ledger.py; the owner's backlog item 7). Every
+# route sits behind the app's basic auth like the rest; the writes are the
+# owner's typed entries, so a malformed one is a 400 naming the field, and the
+# reads are a page of entries plus SQL sums (never the whole table).
+@app.route("/api/pick6/ledger", methods=["GET"])
+def api_pick6_ledger():
+    import pick6_ledger
+    try:
+        limit = int(request.args.get("limit", 30))
+        offset = int(request.args.get("offset", 0))
+    except ValueError:
+        return jsonify({"error": "bad limit/offset"}), 400
+    try:
+        return jsonify({"entries": pick6_ledger.listing(limit=limit, offset=offset),
+                        "record": pick6_ledger.record(), **pick6_ledger.meta()})
+    except Exception as e:
+        errlog.note("P6L-read", e)
+        return jsonify({"error": f"ledger read failed: {e}"}), 502
+
+
+@app.route("/api/pick6/ledger", methods=["POST"])
+def api_pick6_ledger_add():
+    import pick6_ledger
+    d = request.get_json(force=True, silent=True)
+    try:
+        return jsonify(pick6_ledger.add_entry(d)), 201
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/pick6/ledger/<int:entry_id>/schedule", methods=["POST"])
+def api_pick6_ledger_schedule(entry_id):
+    import pick6_ledger
+    d = request.get_json(force=True, silent=True) or {}
+    try:
+        e = pick6_ledger.add_schedule_rows(entry_id, d.get("text"))
+    except ValueError as ex:
+        return jsonify({"error": str(ex)}), 400
+    return (jsonify(e), 200) if e else (jsonify({"error": "no such entry"}), 404)
+
+
+@app.route("/api/pick6/ledger/pick/<int:pick_id>", methods=["POST"])
+def api_pick6_ledger_pick(pick_id):
+    import pick6_ledger
+    d = request.get_json(force=True, silent=True) or {}
+    try:
+        e = pick6_ledger.set_pick(pick_id, actual=d.get("actual"), void=bool(d.get("void")),
+                                  reset=bool(d.get("reset")))
+    except ValueError as ex:
+        return jsonify({"error": str(ex)}), 400
+    return (jsonify(e), 200) if e else (jsonify({"error": "no such pick"}), 404)
+
+
+@app.route("/api/pick6/ledger/grade", methods=["POST"])
+def api_pick6_ledger_grade():
+    """One grading pass now (the background owner runs one an hour). The box
+    reads are network calls, capped per pass (pick6_ledger._MAX_FETCH); a pass
+    already running answers busy instead of starting a second."""
+    import pick6_ledger
+    try:
+        n = pick6_ledger.grade_now()
+    except Exception as e:
+        errlog.note("P6L-grade", e)
+        return jsonify({"error": f"grading failed: {e}"}), 502
+    return jsonify({"graded": n, "busy": n is None})
+
+
+@app.route("/api/pick6/ledger/<int:entry_id>", methods=["DELETE"])
+def api_pick6_ledger_delete(entry_id):
+    import pick6_ledger
+    return jsonify({"ok": pick6_ledger.delete_entry(entry_id)})
 
 
 @app.route("/api/baseball/sgp")
