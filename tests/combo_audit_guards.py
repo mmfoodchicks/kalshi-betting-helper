@@ -22743,7 +22743,7 @@ ck("listing merges the deep store's index with the committed one, one row a cont
    "committed summary wins over the deep store's for the same contest (it was made from the FINAL export on purpose), "
    "and a contest only in the deep store still reads from it",
    sorted(r["contest_id"] for r in _cs_list) == [555, 196653900, 196786588, 196786690, 197645153, 197882014,
-                                                  197912905, 198005475, 198150093]
+                                                  197897298, 197912905, 198005475, 198130093, 198150093]
    and next(r for r in _cs_list if r["contest_id"] == 196653900)["name"].startswith("NFL $2.75M")
    and (_cs_s1 or {}).get("entries") == 158904 and (_cs_s2 or {}).get("from") == "deep",
    str([(r["contest_id"], r.get("name")) for r in _cs_list]))
