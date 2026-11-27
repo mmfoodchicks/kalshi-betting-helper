@@ -1,0 +1,473 @@
+{
+ "form_sd": {
+  "coach": 0.0,
+  "control": 0.0
+ },
+ "playouts": 300,
+ "seasons": {
+  "2024": {
+   "coach": {
+    "def_timeout_rate_21": [
+     0.8942,
+     83.2
+    ],
+    "def_timeout_rate_32": [
+     0.6005,
+     92.6
+    ],
+    "def_timeout_rate_53": [
+     0.374,
+     197.4
+    ],
+    "home_win": 0.5447,
+    "kneels_q2": 0.3148,
+    "kneels_q4": 1.3203,
+    "leader_runoff_s": 41.9,
+    "margin_resid_sd": 12.534,
+    "ot": 0.0615,
+    "pregame_logloss": 0.6005,
+    "q2_pts": 4.3054,
+    "q2_snaps": 8.5144,
+    "q4_pts": 2.3852,
+    "q4_snaps": 5.2139,
+    "spikes": 0.1511,
+    "timeouts": 6.941,
+    "total": 44.674,
+    "total_crps": 7.0981,
+    "total_resid_sd": 12.561
+   },
+   "control": {
+    "def_timeout_rate_21": [
+     null,
+     0.0
+    ],
+    "def_timeout_rate_32": [
+     null,
+     0.0
+    ],
+    "def_timeout_rate_53": [
+     null,
+     0.0
+    ],
+    "home_win": 0.5409,
+    "kneels_q2": 0.0,
+    "kneels_q4": 1.6853,
+    "leader_runoff_s": 26.79,
+    "margin_resid_sd": 12.558,
+    "ot": 0.0512,
+    "pregame_logloss": 0.59326,
+    "q2_pts": 2.9498,
+    "q2_snaps": 6.5812,
+    "q4_pts": 1.7587,
+    "q4_snaps": 3.7846,
+    "spikes": 0.0,
+    "timeouts": 0.0,
+    "total": 44.5023,
+    "total_crps": 7.0516,
+    "total_resid_sd": 12.666
+   },
+   "games": 272,
+   "pregame_logloss_diff": [
+    0.00725,
+    0.00823
+   ],
+   "real": {
+    "def_timeout_rate_21": [
+     0.954,
+     87
+    ],
+    "def_timeout_rate_32": [
+     0.5641,
+     117
+    ],
+    "def_timeout_rate_53": [
+     0.2741,
+     197
+    ],
+    "home_win": 0.5331,
+    "kneels_q2": [
+     0.3566,
+     0.0291
+    ],
+    "kneels_q4": [
+     1.1287,
+     0.0649
+    ],
+    "leader_runoff_s": 41.76,
+    "margin_resid_sd": 12.605,
+    "ot": [
+     0.0588,
+     0.0143
+    ],
+    "q2_pts": [
+     4.6324,
+     0.2305
+    ],
+    "q2_snaps": [
+     8.9816,
+     0.1533
+    ],
+    "q4_pts": [
+     2.7978,
+     0.2243
+    ],
+    "q4_snaps": [
+     5.5846,
+     0.2082
+    ],
+    "spikes": [
+     0.261,
+     0.0318
+    ],
+    "timeouts": [
+     7.364,
+     0.1351
+    ],
+    "total": [
+     45.8235,
+     0.7951
+    ],
+    "total_resid_sd": 12.552
+   },
+   "total_crps_diff": [
+    0.0465,
+    0.074
+   ],
+   "wp": {
+    "120": {
+     "control": 0.20796,
+     "diff": -0.00146,
+     "n": 272,
+     "se": 0.00839
+    },
+    "300": {
+     "control": 0.24978,
+     "diff": -0.00103,
+     "n": 272,
+     "se": 0.00351
+    },
+    "900": {
+     "control": 0.33051,
+     "diff": 0.00519,
+     "n": 272,
+     "se": 0.00376
+    }
+   },
+   "wp_late": {
+    "diff": -0.00124,
+    "n": 272,
+    "se": 0.00465
+   }
+  },
+  "2025": {
+   "coach": {
+    "def_timeout_rate_21": [
+     0.8933,
+     84.1
+    ],
+    "def_timeout_rate_32": [
+     0.5987,
+     91.2
+    ],
+    "def_timeout_rate_53": [
+     0.3678,
+     195.7
+    ],
+    "home_win": 0.5389,
+    "kneels_q2": 0.3462,
+    "kneels_q4": 1.3093,
+    "leader_runoff_s": 41.94,
+    "margin_resid_sd": 12.407,
+    "ot": 0.0604,
+    "pregame_logloss": 0.60993,
+    "q2_pts": 4.3354,
+    "q2_snaps": 8.4824,
+    "q4_pts": 2.3684,
+    "q4_snaps": 5.2104,
+    "spikes": 0.1477,
+    "timeouts": 6.9001,
+    "total": 45.0657,
+    "total_crps": 7.486,
+    "total_resid_sd": 12.648
+   },
+   "control": {
+    "def_timeout_rate_21": [
+     null,
+     0.0
+    ],
+    "def_timeout_rate_32": [
+     null,
+     0.0
+    ],
+    "def_timeout_rate_53": [
+     null,
+     0.0
+    ],
+    "home_win": 0.539,
+    "kneels_q2": 0.0,
+    "kneels_q4": 1.6933,
+    "leader_runoff_s": 26.69,
+    "margin_resid_sd": 12.545,
+    "ot": 0.0531,
+    "pregame_logloss": 0.6195,
+    "q2_pts": 2.9421,
+    "q2_snaps": 6.5742,
+    "q4_pts": 1.8069,
+    "q4_snaps": 3.7996,
+    "spikes": 0.0,
+    "timeouts": 0.0,
+    "total": 44.9012,
+    "total_crps": 7.5629,
+    "total_resid_sd": 12.971
+   },
+   "games": 272,
+   "pregame_logloss_diff": [
+    -0.00957,
+    0.01019
+   ],
+   "real": {
+    "def_timeout_rate_21": [
+     0.9744,
+     78
+    ],
+    "def_timeout_rate_32": [
+     0.6854,
+     89
+    ],
+    "def_timeout_rate_53": [
+     0.3408,
+     179
+    ],
+    "home_win": 0.5386,
+    "kneels_q2": [
+     0.3162,
+     0.0292
+    ],
+    "kneels_q4": [
+     1.2757,
+     0.0695
+    ],
+    "leader_runoff_s": 41.17,
+    "margin_resid_sd": 12.271,
+    "ot": [
+     0.0515,
+     0.0134
+    ],
+    "q2_pts": [
+     4.8787,
+     0.2343
+    ],
+    "q2_snaps": [
+     8.761,
+     0.14
+    ],
+    "q4_pts": [
+     2.4485,
+     0.2323
+    ],
+    "q4_snaps": [
+     5.3309,
+     0.2206
+    ],
+    "spikes": [
+     0.2904,
+     0.033
+    ],
+    "timeouts": [
+     7.3456,
+     0.1308
+    ],
+    "total": [
+     46.0257,
+     0.8376
+    ],
+    "total_resid_sd": 13.186
+   },
+   "total_crps_diff": [
+    -0.0769,
+    0.0767
+   ],
+   "wp": {
+    "120": {
+     "control": 0.22124,
+     "diff": -0.00346,
+     "n": 272,
+     "se": 0.00635
+    },
+    "300": {
+     "control": 0.3076,
+     "diff": -0.011,
+     "n": 272,
+     "se": 0.00675
+    },
+    "900": {
+     "control": 0.41169,
+     "diff": 0.00869,
+     "n": 272,
+     "se": 0.0071
+    }
+   },
+   "wp_late": {
+    "diff": -0.00723,
+    "n": 272,
+    "se": 0.00506
+   }
+  },
+  "2026": {
+   "coach": {
+    "def_timeout_rate_21": [
+     0.893,
+     49.3
+    ],
+    "def_timeout_rate_32": [
+     0.6054,
+     57.6
+    ],
+    "def_timeout_rate_53": [
+     0.373,
+     122.9
+    ],
+    "home_win": 0.5566,
+    "kneels_q2": 0.3354,
+    "kneels_q4": 1.3248,
+    "leader_runoff_s": 41.8,
+    "margin_resid_sd": 12.564,
+    "ot": 0.0588,
+    "pregame_logloss": 0.61204,
+    "q2_pts": 4.2717,
+    "q2_snaps": 8.4635,
+    "q4_pts": 2.3527,
+    "q4_snaps": 5.17,
+    "spikes": 0.145,
+    "timeouts": 6.8785,
+    "total": 45.0726,
+    "total_crps": 7.512,
+    "total_resid_sd": 12.787
+   },
+   "control": {
+    "def_timeout_rate_21": [
+     null,
+     0.0
+    ],
+    "def_timeout_rate_32": [
+     null,
+     0.0
+    ],
+    "def_timeout_rate_53": [
+     null,
+     0.0
+    ],
+    "home_win": 0.5453,
+    "kneels_q2": 0.0,
+    "kneels_q4": 1.6844,
+    "leader_runoff_s": 26.66,
+    "margin_resid_sd": 12.42,
+    "ot": 0.0519,
+    "pregame_logloss": 0.61606,
+    "q2_pts": 2.9236,
+    "q2_snaps": 6.5441,
+    "q4_pts": 1.8332,
+    "q4_snaps": 3.8127,
+    "spikes": 0.0,
+    "timeouts": 0.0,
+    "total": 45.0605,
+    "total_crps": 7.3391,
+    "total_resid_sd": 12.815
+   },
+   "games": 164,
+   "pregame_logloss_diff": [
+    -0.00402,
+    0.01304
+   ],
+   "real": {
+    "def_timeout_rate_21": [
+     0.9545,
+     66
+    ],
+    "def_timeout_rate_32": [
+     0.6316,
+     57
+    ],
+    "def_timeout_rate_53": [
+     0.2549,
+     102
+    ],
+    "home_win": 0.5152,
+    "kneels_q2": [
+     0.2073,
+     0.0318
+    ],
+    "kneels_q4": [
+     1.3171,
+     0.0868
+    ],
+    "leader_runoff_s": 40.52,
+    "margin_resid_sd": 11.903,
+    "ot": [
+     0.0732,
+     0.0204
+    ],
+    "q2_pts": [
+     4.7927,
+     0.3066
+    ],
+    "q2_snaps": [
+     9.061,
+     0.1955
+    ],
+    "q4_pts": [
+     2.8537,
+     0.2985
+    ],
+    "q4_snaps": [
+     5.3171,
+     0.2911
+    ],
+    "spikes": [
+     0.372,
+     0.0555
+    ],
+    "timeouts": [
+     7.25,
+     0.1748
+    ],
+    "total": [
+     46.2073,
+     1.1074
+    ],
+    "total_resid_sd": 13.087
+   },
+   "total_crps_diff": [
+    0.1729,
+    0.1061
+   ],
+   "wp": {
+    "120": {
+     "control": 0.2401,
+     "diff": -0.00813,
+     "n": 164,
+     "se": 0.00989
+    },
+    "300": {
+     "control": 0.27506,
+     "diff": -0.00262,
+     "n": 164,
+     "se": 0.00784
+    },
+    "900": {
+     "control": 0.37822,
+     "diff": -0.00138,
+     "n": 164,
+     "se": 0.00588
+    }
+   },
+   "wp_late": {
+    "diff": -0.00537,
+    "n": 164,
+    "se": 0.00708
+   }
+  }
+ },
+ "sims": 80,
+ "version": "coach-r1.0"
+}

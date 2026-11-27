@@ -1,0 +1,69 @@
+{
+ "also": "and not before the window's last game date + 30 h + 48 h by the data itself",
+ "arms": {
+  "anchor": "both: league profile, each team's level_off set so the arm's own expected points equal (total_line +/- spread_line) / 2, neutral field; level curve n per level below",
+  "candidate": "nfl_coach_sim.play_game on the same base tables plus its coach tables",
+  "control": "nfl_deep_sim.play_game on this file's `base` tables (production's fit on 2016-2023), kickoff era 2025+"
+ },
+ "block_sha256": "ba0bae085ed537d91a14844076d473828c44f1b26089d4a80f36a13fa75514ae",
+ "candidate": "coach-r1.0",
+ "control_form_default": 0.08,
+ "criteria": {
+  "1_scenarios": "tests/guards_auto_nfl_coach.py exits 0 (the eleven scenario tests and the rest)",
+  "2_fidelity": "snaps and points inside 2:00 of the second and of the fourth quarter, per game: for EACH of the four, |control - real| - |candidate - real| > the real mean's standard error",
+  "3_level": "points per game, margin SD about the spread, total SD about the total, home win rate, overtime rate: for each, |candidate - real| <= |control - real| + one standard error of the real figure",
+  "4_late_state_wp": "from the real state at the first snap at or inside 5:00 and 2:00 of the fourth quarter both arms play the game out; log loss on the real result (a tie scores half), candidate minus control averaged within a game, mean over games < -2 standard errors",
+  "5_pregame": "moneyline log loss and total CRPS, candidate minus control paired by game, each <= +1 standard error (non-inferiority; no gain is claimed)"
+ },
+ "decision": "PASS only if all five hold. A FAIL is final for this candidate; nothing is re-read; a revised engine is judged on games after the window. A PASS changes no production path by itself.",
+ "files": {
+  "nfl_coach_sim.py": "631a398b024f85adf9d275ce7c02ebbe3deb8dd2160bed062b3fb4e136f244e2",
+  "nfl_deep_sim.py": "22a221d7810495db3f8f7bb1bef7c4e16c3bbbf282902a95f133cecdabc29820",
+  "nfl_pbp.py": "660234badefc3e3b5f0e1417a48431e4ad8ff33aab5df8a207834faa4862865d",
+  "research/data/nfl_coach_tables.json": "ffe45e30f03c6f5d0879834c7c43f08ca7463525399ded0f9a2a9937df2189d8",
+  "research/nfl_coach_data.py": "3c7a8680e1a9cf5e2efd14ff6fed7ad26d4ce21775f05e97faf21912e3f846ad",
+  "research/nfl_coach_eval.py": "fbd5a9998bebb38f253185e948891be57a73435d2c3774f9254268d76a50b91d",
+  "research/nfl_coach_r1_read.py": "2079ea9d4ad040321ed774e8ee63ea155a38b4a06e724ffa0b1c5e268ae84d0d",
+  "tests/guards_auto_nfl_coach.py": "68a3c629f60ee935414cf93a5f6d19a1fa338279e905e7729575a6c441b3df50"
+ },
+ "not_before_utc": "2027-01-06T06:00:00Z",
+ "power_stated_before_the_read": "see research/reports/nfl_coach_r1.md section 6: on the development seasons criterion 4's point estimate is about one standard error at 272 games",
+ "registered_utc": "2026-11-27",
+ "sealed_never_read": "2026 week 13 on; nfl_coach_data.load_season drops those rows unparsed for every caller but the read",
+ "seasons": {
+  "can_only_block": 2025,
+  "development_seen_by_the_audit": "2026 weeks 1-12",
+  "fit": "2016-2023",
+  "select": 2024
+ },
+ "settings": {
+  "checkpoints_q4_clock": [
+   900,
+   300,
+   120
+  ],
+  "form_sd": {
+   "coach": 0.0,
+   "control": 0.0
+  },
+  "level_curve_n": 2500,
+  "p_clip": 0.002,
+  "playouts": 1000,
+  "seeds": "random.Random(game id hash) per game and arm, as nfl_coach_eval.game_job",
+  "sims": 200
+ },
+ "what": "R1 of the NFL coaching engine: explicit clock management and fine time/score states, league level",
+ "window": {
+  "min_games": 90,
+  "season": 2026,
+  "season_type": "REG",
+  "weeks": [
+   13,
+   14,
+   15,
+   16,
+   17,
+   18
+  ]
+ }
+}
