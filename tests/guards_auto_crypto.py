@@ -23,6 +23,7 @@ removal taught, and the terminal's own claims:
     python3 tests/guards_auto_crypto.py      # exits 1 on any failed check
 """
 import contextlib
+import inspect
 import json
 import math
 import os
@@ -243,11 +244,13 @@ def run(ck):
     with _db(CT) as path:
         _fill(CT, path, 50_000, time.time())
         real = CT._conn
-        with _patched((CT, "_conn", lambda: _CountConn(real(), sink)),
+        with _patched((CT, "_conn", lambda **kw: _CountConn(real(**kw), sink)),
                       (CT, "_kalshi", lambda p: {"markets": []}), (CT.time, "sleep", lambda s: None)):
             CT.record()
             CT.record(coin="BTC", kind="m15", look=300)
             CT.record_by()
+            CT.record_extra()
+            CT.paper_positions()
             CT.grade_tick(time.time())
             CT.prune(time.time())
     worst = max((c.n for c in sink), default=0)
@@ -348,6 +351,8 @@ def run(ck):
                 if k % 9 == 0:
                     CT.grade_tick(sim["now"] + 3600)
                     CT.record()
+                    CT.record_extra()
+                    CT.paper_positions()
             return logged
         passes(0, 60)
         import gc
@@ -440,14 +445,28 @@ def run(ck):
                        "method=", "data=") if w in src]
     ck("CX-PAPER the module names no order endpoint, no credential, and builds no request with a body or a method",
        not bad and src.count("urllib.request.Request(") == 1, str(bad))
-    jsbad = [w for w in ("method:", "POST", "/portfolio", "/orders") if w in js]
+    # v2: the tab may POST, but only to Vigil's own paper ledger, through one function that refuses any other URL;
+    # its one WebSocket is Coinbase's public market-data feed, and it only ever sends a subscribe
+    jsbad = [w for w in ("/portfolio", "/orders", "KALSHI-ACCESS", "Authorization") if w in js]
     urls = re.findall(r'getJSON\("([^"?]+)', js)
-    ck("CX-PAPER the tab only GETs /api/crypto/* (no method, no POST)",
-       not jsbad and urls and all(u.startswith("/api/crypto/") for u in urls) and js.count("fetch(") == 1, f"{jsbad} {urls}")
+    posts = re.findall(r'postJSON\("([^"]+)"', js)
+    post_fn = js[js.index("function postJSON("):js.index("// ---- the live feed")]
+    sends = re.findall(r"\.send\(([^;]+)\);", js)
+    ck("CX-PAPER the tab GETs /api/crypto/* and POSTs only to /api/crypto/paper/* (a guard inside postJSON refuses "
+       "anything else); one WebSocket, Coinbase's public feed, sending only a subscribe",
+       not jsbad and urls and all(u.startswith("/api/crypto/") for u in urls) and js.count("fetch(") == 2
+       and posts and all(u.startswith("/api/crypto/paper/") for u in posts) and js.count('method: "POST"') == 1
+       and 'url.indexOf("/api/crypto/paper/") !== 0' in post_fn and js.count("new WebSocket(") == 1
+       and 'WS_URL = "wss://ws-feed.exchange.coinbase.com"' in js and len(sends) == 1 and '"subscribe"' in sends[0],
+       f"{jsbad} {urls} {posts} {sends}")
     import app as _app
     rules = [r for r in _app.app.url_map.iter_rules() if r.rule.startswith("/api/crypto")]
-    ck("CX-PAPER the crypto routes answer GET only",
-       len(rules) == 3 and all((r.methods or set()) <= {"GET", "HEAD", "OPTIONS"} for r in rules),
+    posts_r = sorted(r.rule for r in rules if "POST" in (r.methods or set()))
+    ck("CX-PAPER the crypto routes answer GET only, but for the two paper-ledger routes (POST only), which write a "
+       "row to the terminal's own file and read Kalshi by GET; the open takes no price from the page",
+       len(rules) == 8 and posts_r == ["/api/crypto/paper/close", "/api/crypto/paper/open"]
+       and all((r.methods or set()) <= ({"POST", "OPTIONS"} if r.rule in posts_r else {"GET", "HEAD", "OPTIONS"}) for r in rules)
+       and "price" not in inspect.signature(CT.paper_open).parameters,
        str([(r.rule, sorted(r.methods or ())) for r in rules]))
 
     # ---- CX-DROP ---------------------------------------------------------------------------------------------
@@ -483,12 +502,27 @@ def run(ck):
        in appjs and "initCrypto()" in appjs and not inline and "function h(x)" in js and "paper only" in sec
        and "Nothing here places an order" in sec and "BTC" not in html and 'h(rule.says)' in js and 'h(d.note)' in js and 'h(err && err.message)' in js, str(inline))
     arm = js[js.index("function arm()"):js.index("function getJSON")]
-    ck("CX-UI one refresh timer: cleared before it is armed, armed only while the tab is on screen and the page visible, "
-       "a setTimeout chain (no setInterval)",
-       "clearTimeout(st.timer)" in arm and "if (!onScreen()) return;" in arm and "setInterval" not in js
-       and "document.hidden" in js and 'classList.contains("hidden")' in js)
-    ck("CX-UI phone width: the ladder and the record tables scroll inside their own box; the chart is a viewBox SVG at 100% width",
-       js.count('overflow-x:auto') >= 2 and 'width="100%"' in js and "viewBox" in js)
+    ck("CX-UI one refresh timer: cleared before it is armed, armed only while the tab is on screen and the page visible "
+       "(the live socket closed when it is not), a setTimeout chain (no setInterval)",
+       "clearTimeout(st.timer)" in arm and "if (!onScreen()) { closeWS(); return; }" in arm and "setInterval" not in js
+       and "document.hidden" in js and 'classList.contains("hidden")' in js and "if (!onScreen()) { closeWS(); return; }" in js)
+    ck("CX-UI bounded buffers in the browser: every bar buffer capped at MAXBARS (480), the session's fair-price line at 120, "
+       "chart redraws coalesced to one per animation frame",
+       "MAXBARS = 480" in js and "if (b.length > MAXBARS) b.splice(0, b.length - MAXBARS);" in js
+       and "if (pts.length > 120) pts.splice(0, pts.length - 120);" in js and "requestAnimationFrame(" in js)
+    lib = os.path.join(_ROOT, "static", "vendor", "lightweight-charts-4.1.3.standalone.production.js")
+    import hashlib
+    with open(lib, "rb") as f:
+        lib_sha = hashlib.sha256(f.read()).hexdigest()
+    ck("CX-UI the chart library is vendored and pinned: TradingView Lightweight Charts 4.1.3 from the npm tarball, its "
+       "sha256 fixed, its Apache-2.0 licence beside it, loaded from static/ only when the tab opens, the attribution "
+       "its README asks for on the page; the tables scroll inside their own box at phone width",
+       lib_sha == "0c146b9bfbc6e5f19da1a0de876dae43023c332d5157d82f7575f9b7653ee519"
+       and os.path.exists(os.path.join(_ROOT, "static", "vendor", "lightweight-charts-LICENSE.txt"))
+       and 'LIB = "/static/vendor/lightweight-charts-4.1.3.standalone.production.js"' in js
+       and "lightweight-charts" not in html.replace(sec, "") and "tradingview.com" in sec
+       and "cdn" not in js.lower() and js.count('overflow-x:auto') >= 2, lib_sha)
+    run_v2(ck, CT)
 
     # ---- CX-VAL ----------------------------------------------------------------------------------------------
     vpath = os.path.join(_ROOT, "research", "data", "crypto", "validation.json")
@@ -512,6 +546,177 @@ def run(ck):
        "Kalshi by 2 SE (the decision string says which way), so edges_proven rests on the live record alone",
        not (p.get("se") and p["diff"] < -2 * p["se"]) and saved["decision"]["edges"].startswith("unproven")
        and 'rec.get("decided") == "model"' in src)
+
+
+def run_v2(ck, CT):
+    """v2 (2026-11-27): the what-if panel, the crossing probability, the signals, paper positions at executable
+    prices, the intrawindow record, and the movement research's harness (CXM)."""
+    # ---- what if, crossing, signal ----
+    rule = {"op": ">=", "strike": 100.0}
+    sg, tau = 8e-5, 400.0
+    w = CT.what_if(rule, 100.02, sg, tau)
+    ok = len(w) == 2 * len(CT.WHATIF_BP) and all(abs(x["p"] - round(CT.p_yes(rule, 100.02 * math.exp(x["bp"] / 1e4), sg,
+                                                                             tau - 60), 4)) < 1e-12 for x in w)
+    ck("CXV2-WHATIF the what-if fair value is the v1 model a minute on (tau - 60) at the level moved by +-4/8/16 bp "
+       "(about $25/50/100 on bitcoin at $61k), rising with the move, and empty once a minute would reach the window",
+       ok and [x["p"] for x in w] == sorted(x["p"] for x in w) and CT.what_if(rule, 100.0, sg, 119.0) == [], str(w)[:200])
+    sd = math.sqrt(sg ** 2 * tau + CT.PROXY_SD ** 2)
+    pc = CT.p_cross(100.3, 100.0, sg, tau)
+    ck("CXV2-CROSS the crossing chance is the reflection principle, 2 x (1 - Phi(|ln(L/K)| / sd)) with the proxy's sd "
+       "inside: 1 at the strike, symmetric, falling with distance",
+       abs(pc - round(2 * (1 - CT._phi(math.log(1.003) / sd)), 4)) < 1e-12 and CT.p_cross(100.0, 100.0, sg, tau) == 1.0
+       and CT.p_cross(99.7, 100.0, sg, tau) == CT.p_cross(100.0, 99.7, sg, tau) and CT.p_cross(101, 100, sg, tau) < pc)
+    s1 = CT.signal({"edge": {"yes": 5.0, "no": -9.0}})
+    s2 = CT.signal({"edge": {"yes": 1.0, "no": 4.0}})
+    s3 = CT.signal({"edge": {"yes": 2.9, "no": 2.9}})
+    s4 = CT.signal({"edge": {"yes": 9.0}, "in_window": True})
+    ck("CXV2-SIGNAL the paper signal is the v1 rule (fee-in edge at the ask 3c+), the larger side; none inside the window",
+       (s1["code"], s2["code"], s3["code"], s4["code"]) == ("yes_entry", "no_entry", "none", "none"))
+    # ---- paper positions, at executable prices the SERVER reads ----
+    book = {"yes_bid_dollars": "0.4400", "yes_ask_dollars": "0.4500", "no_bid_dollars": "0.5300", "no_ask_dollars": "0.5600"}
+    fx = json.loads(_read("research", "data", "crypto", "rule_fixtures.json"))["markets"]
+    tm = next(m for m in fx if m["ticker"].startswith("KXBTC15M"))
+    state = {"result": "", "status": "active", "ask": "0.4500", "bid": "0.4400"}
+    now0 = time.time()
+
+    def mk(t):
+        return dict(tm, ticker=t, status=state["status"], result=state["result"], close_time=time.strftime(
+            "%Y-%m-%dT%H:%M:%SZ", time.gmtime(now0 + 600)), **dict(book, yes_ask_dollars=state["ask"], yes_bid_dollars=state["bid"]))
+
+    def fake_k(path):
+        if path.startswith("/markets/"):
+            return {"market": mk(path.split("/markets/")[1])}
+        if "tickers=" in path:
+            return {"markets": [mk(t) for t in path.split("tickers=")[1].split(",")]}
+        return {}
+    with _db(CT), _patched((CT, "_kalshi", fake_k), (CT, "proxy", lambda c, fresh=False: {"price": 61600.0}),
+                           (CT, "realised_vol", lambda c: 7e-5), (CT, "_fee", lambda t, c: 7.0 * c / 100 * (1 - c / 100))):
+        T = "KXBTC15M-TEST-00"
+        a = CT.paper_open(T, "BTC", "yes", 3)
+        pos = CT.paper_positions()
+        state.update(ask="0.4800", bid="0.4700")
+        c1 = CT.paper_close(a["id"])
+        b = CT.paper_open(T, "BTC", "no", 1)
+        refused = []
+        for args in ((T, "ETH", "yes", 1), ("KXNFLGAME-X", "BTC", "yes", 1), (T, "BTC", "maybe", 1), (T, "BTC", "yes", 0)):
+            try:
+                CT.paper_open(*args)
+                refused.append(False)
+            except ValueError:
+                refused.append(True)
+        with _patched((CT, "MAX_OPEN", 1)):
+            try:
+                CT.paper_open(T, "BTC", "yes", 1)
+                refused.append(False)
+            except ValueError:
+                refused.append(True)
+        state["ask"] = None
+        try:
+            CT.paper_open(T, "BTC", "yes", 1)
+            refused.append(False)
+        except ValueError:
+            refused.append(True)
+        state.update(status="finalized", result="no")
+        with contextlib.closing(CT._conn()) as cc, cc:
+            cc.execute(f"UPDATE {CT.PAPER_TABLE} SET close_ts = ? WHERE id = ?", (now0 - 200, b["id"]))
+        CT.settle_paper(now0)
+        rec = CT.paper_positions()["record"]
+        ev = (pos["open"] or [{}])[0].get("eval") or {}
+    fee3_45, fee3_47, fee1_56 = math.ceil(7 * 3 * .45 * .55), math.ceil(7 * 3 * .47 * .53), math.ceil(7 * .56 * .44)
+    want = (47 * 3 - fee3_47) - (45 * 3 + fee3_45) + (100 - 56 - fee1_56)
+    ck("CXV2-PAPER a paper buy is at the ask the SERVER reads (3 YES at 45c, fee rounded up per order: "
+       f"{fee3_45}c), a paper sell at the bid (47c, fee {fee3_47}c), a position left open settles at Kalshi's result with "
+       "no fee (1 NO at 56c settled NO); the record is SQL sums of exactly that",
+       a["entry_c"] == 45.0 and c1["exit_c"] == 47.0 and b["entry_c"] == 56.0 and rec["positions"] == 2
+       and abs(rec["pnl_c"] - want) < 1e-9 and rec["fees_c"] == fee3_45 + fee3_47 + fee1_56, f"{a} {c1} {b} {rec} want={want}")
+    ck("CXV2-PAPER refused: another coin's or another series' ticker, a side that is not yes/no, a zero quantity, an "
+       f"open position past MAX_OPEN ({CT.MAX_OPEN}), and a one-sided book with no ask to buy at", refused == [True] * 6,
+       str(refused))
+    ck("CXV2-HOLD hold, sell and the other side judged apart: selling is the bid less the exit fee, holding is 100 x the "
+       "model's chance of the side (and Kalshi's mid beside it), and buying the other side is its own fee-in edge at its "
+       "own ask -- never implied by the sell",
+       ev.get("close_value_c") == 44 * 3 - math.ceil(7 * 3 * .44 * .56) and ev.get("bid_c") == 44.0
+       and abs(ev["hold_value_model_c"] - round(100 * ev["p_side"] * 3, 1)) < 0.06 and ev["hold_value_kalshi_mid_c"] == 44.5 * 3
+       and ev["verdict_by_model"] == ("close" if ev["close_value_c"] > ev["hold_value_model_c"] else "hold")
+       and ev["other_side"]["side"] == "no" and ev["other_side"]["ask_c"] == 56.0
+       and ev["other_side"]["worth_it_by_model"] == (ev["other_side"]["edge_c"] is not None and ev["other_side"]["edge_c"] >= 3),
+       str(ev)[:300])
+    # ---- the intrawindow record, by hand ----
+    with _db(CT) as path:
+        rows = [("T1", 600, 0.7, 50.0, 52.0), ("T1", 300, 0.7, 60.0, 62.0), ("T2", 600, 0.2, 40.0, 42.0),
+                ("T2", 300, 0.2, 68.0, 70.0), ("T3", 600, 0.5, 49.0, 51.0), ("T3", 300, 0.5, 49.0, 51.0)]
+        with contextlib.closing(sqlite3.connect(path)) as cc, cc:
+            for i, (t, lk, p, yb, ya) in enumerate(rows):
+                cc.execute(f"""INSERT INTO {CT.TABLE} (ticker, look_s, coin, kind, logged_ts, close_ts, tau_s, p_model,
+                               yes_bid, yes_ask, no_ask) VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                           (t, lk, "BTC", "m15", 1000.0 + i, 2000.0 + i // 2, lk, p, yb, ya, 100 - yb))
+        iw = CT.record_extra()["intrawindow"]
+    f = lambda x: 7 * x * (100 - x) / 10000.0                                         # noqa: E731
+    want = [(60 - f(60)) - (52 + f(52)), (30 - f(30)) - (60 + f(60))]
+    ck("CXV2-INTRA the intrawindow record enters at the 10-minute look's ask on the side the rule picks and sells at the "
+       "5-minute look's bid of THAT side (NO bid = 100 - YES ask), fee on both legs; a market with no edge is no trade",
+       iw.get("trades") == 2 and abs(iw["total_c"] - round(sum(want), 1)) < 1e-9, f"{iw} {want}")
+
+    # ---- the movement research harness (research/crypto_moves.py) ----
+    sys.path.insert(0, os.path.join(_ROOT, "research"))
+    import crypto_moves as M
+    t0 = 1794528000
+    raw = []
+    for i in range(420):
+        if i % 37 == 5:
+            continue                                                            # gaps: minutes with no trade
+        c = 100.0 * math.exp(0.002 * math.sin(i / 7.0) + 0.0007 * math.cos(i / 3.1))
+        raw.append([t0 + 60 * i, c * 0.999, c * 1.001, c * (1 + 0.0002 * math.sin(i)), c, 1.0 + (i * 13) % 7])
+    g = M.grid(raw, t0, t0 + 420 * 60)
+    f1 = M.features(g)
+    k = 360
+    raw2 = [r if r[0] <= t0 + 60 * k else [r[0], r[1] * 1.07, r[2] * 1.07, r[3] * 0.9, r[4] * 1.05, r[5] * 9] for r in raw]
+    f2 = M.features(M.grid(raw2, t0, t0 + 420 * 60))
+    ck("CXM-LEAK every research feature at minute t uses minutes up to t only: rewriting every later candle leaves every "
+       "earlier feature identical (and the later ones move)", f1[:k + 1] == f2[:k + 1] and f1[k + 5] != f2[k + 5]
+       and all(x is None for x in f1[:M.WARM]) and f1[M.WARM] is not None)
+    ck("CXM-SAME production's direction features are the research's own (crypto_terminal.move_grid / move_features equal "
+       "on a series with gaps)", CT.move_grid(raw, t0, t0 + 420 * 60) == g and CT.move_features(g) == f1)
+    dsrc = inspect.getsource(M.direction)
+    ck("CXM-SPLIT the harness fits on development minutes only (before 2026-11-13), forward-chains inside them, and "
+       "scores the held-out fortnight once; the targets are the closes h minutes AFTER the feature minute",
+       M.SPLIT == 1794528000 and M.END == 1795737600 and "r[0] < SPLIT" in dsrc and "r[0] >= SPLIT" in dsrc
+       and "day(r[0]) < 14" in dsrc and "g[i + hh][4] > c" in inspect.getsource(M.rows_for))
+    mv = json.loads(_read("research", "data", "crypto", "moves.json"))
+    d = mv["direction"]
+    ck("CXM-VERDICT by the rule written first: the all-feature logistic passed at 1, 3 and 5 minutes (+0.7 / +1.4 / "
+       "+2.0 millinats a minute, z 2.8 / 3.8 / 3.6, every coin) -- a 1-3 point tilt; the settlement drift did not ship; "
+       "trading on the model inside the window lost on held-out quotes",
+       all(d[h]["passed"] for h in ("1", "3", "5")) and abs(d["1"]["gain_vs_rw_nats"] - 0.000707) < 1e-9
+       and abs(d["5"]["gain_vs_rw_nats"] - 0.002044) < 1e-9 and mv["settlement_drift"]["ships"] is False
+       and mv["intrawindow"]["profitable"] is False and mv["intrawindow"]["heldout"]["per_trade_c"] < 0)
+    # the live direction applies the committed weights to the last COMPLETE minute's features
+    end = int(time.time()) // 60 * 60 - 60
+    base = [[t, 100.0 * math.exp(0.003 * math.sin(t / 420.0)), 0, 0, 0, 1.0 + (t // 60) % 5]
+            for t in range(end - 900 * 60, end + 120, 60)]
+    cand = [[t, c * 0.999, c * 1.001, c, c, v] for t, c, _a, _b, _c, v in base]
+
+    def fake_get(url, timeout=6):
+        q = dict(x.split("=") for x in url.split("?")[1].split("&"))
+        s_, e_ = (datetime_ts(q["start"]), datetime_ts(q["end"]))
+        return [r for r in cand if s_ <= r[0] <= e_][::-1]
+    CT._cache.pop(("direction", "BTC"), None)
+    with _patched((CT, "_get", fake_get)):
+        dn = CT.direction_now("BTC")
+    CT._cache.pop(("direction", "BTC"), None)
+    gg = M.grid([r for r in cand if r[0] <= end], end - 899 * 60, end + 60)
+    ff = M.features(gg)[-1]
+    dd = CT.research()["direction"]["5"]
+    z = dd["weights"][0] + sum(wt * ff[n] for wt, n in zip(dd["weights"][1:], dd["weight_names"][1:]))
+    ck("CXM-LIVE the panel's live direction is the committed 5-minute model on the last complete minute (the minute in "
+       "progress dropped), its features the research's own",
+       dn.get("as_of") == end + 60 and abs(dn["horizons"]["5"]["p_up"] - round(1 / (1 + math.exp(-z)), 4)) < 1e-12,
+       str(dn)[:200])
+
+
+def datetime_ts(s):
+    from datetime import datetime as _dt
+    return int(_dt.fromisoformat(s.replace("Z", "+00:00")).timestamp())
 
 
 if __name__ == "__main__":
