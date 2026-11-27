@@ -818,8 +818,19 @@ data-only `sim-history` branch (which never deploys):
     the newest REAL cached slate (`gpu_bench --source cache` refuses synthetic), once per bench version, never
     within 3 h of an NFL slate's start or with the lobby unreadable, GPU skipped above 83 C (nvidia-smi), 45-min
     cap a run; reports via the PC's token door to `/api/pc/bench` (last 20) and `errors/pc-bench-latest.json`.
-    Nothing the server says shapes what runs. Guards PB. The tournament scoring pass is
-    still CPU-only: measure it on a real slate (`--source cache`) before moving it.
+    Nothing the server says shapes what runs. Guards PB. **The PC's real-slate bench** (2026-11-27,
+    Thursday's showdown worlds): every bucket and threshold equal, evaluator 139.6 s CPU vs 3.3 s GPU at
+    batch 250 (3.9 s at 50; 2.2 GB VRAM), tournament kernel 211.5 s vs 5.1 s. **The tournament scoring pass on
+    the GPU** (`dfs_tourney._score_range_dev`, 2026-11-27): the products, buckets and the field's integer
+    COUNTS on the device; the per-world tables and gathers in the CPU's own arithmetic, the histogram rebuilt
+    from the counts to the CPU's doubles (`_uniform_sums`: n copies of 1/M added in order) -- so a UNIFORM
+    field only (classic; the showdown universe stays on the CPU); the first range's first chunk recomputed the
+    CPU's way and compared, any difference or error back to the CPU (`TOURN-gpu-mismatch` / `TOURN-gpu`); the
+    board stamps `timings.score_device`. The best-of-candidates tally may break exact ties differently and the
+    classic board never reads it. Off unless `VIGIL_TOURNEY_GPU=1`, which pc_worker sets only when CuPy is
+    installed, "gpu" is not false, and the PC's own bench config `score` (the whole pass, CPU pool vs GPU, every
+    figure compared, CLASSIC slates only) found it exact for the scoring code now running
+    (`dfs_tourney.score_path_sig`). Guards GS1-GS5 (numpy standing in for CuPy must give the CPU's sums exactly).
 - **Showdown vs Classic on real results** (`research/dfs_format_validation.py`, report
   `research/reports/dfs_format_validation.md`). It grades every exported board on real DraftKings points
   against the projection-optimal lineup on the board's own pool. No 2-6-game classic has been graded yet,

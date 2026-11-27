@@ -81,7 +81,7 @@ def run(ck):
         else:
             os.environ["VIGIL_SIM_CACHE_DIR"] = saved_env
     last = posts[-1][1] if posts else {}
-    fixed = [W._GPU_BENCH_CONFIGS[0]["worlds"], W._GPU_BENCH_CONFIGS[1]["worlds"]]
+    fixed = [c["worlds"] for c in W._GPU_BENCH_CONFIGS]
     ck("PB2 the task never starts with an NFL slate under three hours away, or when the lobby cannot be read; with "
        "no real slate cached it reports that and waits six hours; on real data it runs every fixed configuration, "
        "posts one report (real_data true) and never runs that bench version again",

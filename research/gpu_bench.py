@@ -138,6 +138,9 @@ def _peak_ram_mb():
             return None
 
 
+_META = {}          # the artifact the cache inputs came from (the score kernel reads its contests)
+
+
 def inputs(args, np):
     """(X players x worlds float32, idx field rows x 9 int, w field weights, label)."""
     if args.source in ("cache", "auto"):
@@ -156,10 +159,24 @@ def inputs(args, np):
             if not ents or not arts:
                 print(f"[bench] no real slate to read: {len(ents)} worlds-cache entries, {len(arts)} evaluator "
                       "artifacts (a board built since 2026-11-26 leaves both); using synthetic inputs")
+            want = getattr(args, "require_kind", None)
+            if want and arts:
+                kinds = []
+                for _t, ap_ in arts:
+                    try:
+                        with open(os.path.join(ap_, "meta.json")) as f:
+                            kinds.append((_t, ap_) if json.load(f).get("kind") == want else None)
+                    except (OSError, ValueError):
+                        kinds.append(None)
+                arts = [k for k in kinds if k]
+                if not arts:
+                    raise RuntimeError(f"no real slate to benchmark: no {want} slate's evaluator artifact yet")
             if ents and arts:
                 path = sorted(arts)[-1][1]
                 with open(os.path.join(path, "meta.json")) as f:
                     meta = json.load(f)
+                _META.clear()
+                _META.update(meta)
                 idx = np.load(os.path.join(path, "field_idx.npy")).astype(np.int64)
                 # the newest cached worlds that hold every player of the newest artifact's slate, the most
                 # worlds first (a tournament build's 180,000 before an evaluator's 40,000); at most four looked at
@@ -290,6 +307,67 @@ def _mis(a, b):
     return None if a is None or b is None else int((a != b).sum())
 
 
+def score_kernel(args, np, X, idx, label):
+    """The tournament's scoring pass (dfs_tourney.run_vs_field) on the CPU's process pool and on the GPU
+    (dfs_tourney._score_range_dev), on the same real worlds and field: every contest's every figure for every
+    candidate must be EQUAL (the device path is built to give the CPU's sums exactly; the classic board does
+    not read the best-of-candidates tally, reported apart). Candidates are the first --cands field lineups, as
+    a board's are drawn from the same sampler."""
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    import dfs_tourney as T
+    P = X.shape[0]
+    Wf = T.lineup_matrix(idx, P)
+    Wc = np.ascontiguousarray(Wf[: max(1, min(args.cands, len(idx)))])
+    wf = np.full(len(idx), 1.0 / len(idx))
+    cons = _META.get("contests") or []
+    grids = [T.payout_grid(max(2, int(c["capacity"])), c.get("payouts") or [], float(c.get("entry_fee") or 1.0),
+                           int(c.get("places_paid") or 1)) for c in cons if c.get("payouts")]
+    if not grids:
+        grids = [T.payout_grid(150000, [{"from": 1, "to": 1, "prize": 1e6}, {"from": 2, "to": 30000, "prize": 40.0}],
+                               20.0, 30000)]
+    rep = {"kernel": "score", "inputs": label, "players": int(P), "worlds": int(X.shape[1]), "field": int(len(idx)),
+           "candidates": int(Wc.shape[0]), "contests": len(grids), "chunk": args.chunk, "cpu_threads": args.threads,
+           "slate_kind": _META.get("kind")}
+    ch = T.chunk_for(max(Wc.shape[0], Wf.shape[0]) * args.threads, args.chunk)
+    a = time.time()
+    cpu = T.run_vs_field(Wc, Wf, wf, X, grids, chunk=ch, workers=args.threads, gpu=False)
+    rep["cpu_s"] = round(time.time() - a, 2)
+    rep["cpu_peak_ram_mb"] = _peak_ram_mb()
+    rep["gpu_stats_before"] = _gpu_stats()
+    hot = (rep["gpu_stats_before"] or {}).get("temp_c")
+    if hot is not None and hot >= args.max_gpu_temp:
+        rep["gpu"] = {"error": f"skipped: GPU at {hot} C, at or above --max-gpu-temp {args.max_gpu_temp}"}
+        return rep
+    try:
+        import cupy as cp
+    except ImportError:
+        rep["gpu"] = {"error": "CuPy is not installed"}
+        return rep
+    try:
+        cp.cuda.Device(0).use()
+        pool = cp.get_default_memory_pool()
+        a = time.time()
+        dev = T.run_vs_field(Wc, Wf, wf, X, grids, chunk=ch, workers=args.threads, gpu=cp)
+        rep["gpu"] = {"seconds": round(time.time() - a, 2), "device": dict(T.LAST_SCORE_DEVICE),
+                      "peak_vram_mb": round(pool.total_bytes() / 1024 / 1024, 1)}
+    except Exception as e:
+        rep["gpu"] = {"error": f"{type(e).__name__}: {e}"}
+        return rep
+    diff = {}
+    for gi, (x, y) in enumerate(zip(cpu[0], dev[0])):
+        for k in x:
+            n = int(np.count_nonzero(x[k] != y[k]))
+            if n:
+                diff[f"contest{gi}.{k}"] = n
+    rep["agreement"] = {"figures_compared": int(sum(len(x) * len(x[next(iter(x))]) for x in cpu[0])),
+                        "figures_differing": diff, "exact": not diff and rep["gpu"]["device"].get("device") == "gpu",
+                        "best_of_candidates_tally_differs": int(np.count_nonzero(cpu[1] != dev[1])),
+                        "ran_on": rep["gpu"]["device"].get("device"), "why": rep["gpu"]["device"].get("why")}
+    rep["speedup"] = round(rep["cpu_s"] / max(1e-9, rep["gpu"]["seconds"]), 2)
+    rep["gpu_stats_after"] = _gpu_stats()
+    return rep
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--source", choices=("auto", "cache", "synthetic"), default="auto")
@@ -310,6 +388,12 @@ def main():
     ap.add_argument("--max-gpu-temp", type=float, default=83.0,
                     help="skip the GPU runs (or stop between them) when nvidia-smi reads the GPU at or above this")
     ap.add_argument("--threads", type=int, default=max(1, (os.cpu_count() or 2) // 2))
+    ap.add_argument("--kernel", choices=("threshold", "score"), default="threshold",
+                    help="threshold: the evaluator's field-threshold kernel (the default); score: the tournament's "
+                         "whole scoring pass, CPU process pool against the GPU path, every figure compared")
+    ap.add_argument("--cands", type=int, default=20000, help="score kernel: candidates (the first N field lineups)")
+    ap.add_argument("--require-kind", default=None,
+                    help="cache inputs only from this kind of slate's evaluator artifact (e.g. classic)")
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--cpu-only", action="store_true")
     ap.add_argument("--gpu-only", action="store_true")
@@ -324,6 +408,14 @@ def main():
     prio = _lower_priority()
     import numpy as np
     X, idx, w, label = inputs(args, np)
+    if args.kernel == "score":
+        rep = score_kernel(args, np, X, idx, label)
+        rep.update(when=time.strftime("%Y-%m-%d %H:%M:%S"), host=platform.platform(), numpy=np.__version__)
+        out = args.out or f"gpu_bench_score_{time.strftime('%Y%m%d_%H%M%S')}.json"
+        with open(out, "w") as f:
+            json.dump(rep, f, indent=1, default=str)
+        print(f"[bench] score kernel: {rep.get('agreement')} cpu {rep.get('cpu_s')} s, gpu {rep.get('gpu')}")
+        return 0
     rep = {"when": time.strftime("%Y-%m-%d %H:%M:%S"), "host": platform.platform(), "python": sys.version.split()[0],
            "numpy": np.__version__, "inputs": label, "players": int(X.shape[0]), "worlds": int(X.shape[1]),
            "field": int(len(idx)), "chunk": args.chunk, "hist": args.hist, "hist_batch": args.hist_batch,

@@ -882,7 +882,12 @@ def _world_tables(b, f, F_grid, E_log=None, nE=0):
     bucket's own mass. Everything per-lineup in a world is then a gather by
     bucket -- the old per-(lineup, world) binary search was 90% of the run
     (measured: 20s of a 33s chunk on 225,000 lineups)."""
-    hist = np.bincount(b, weights=f, minlength=_NB)
+    return _tables_from_hist(np.bincount(b, weights=f, minlength=_NB), F_grid, E_log, nE)
+
+
+def _tables_from_hist(hist, F_grid, E_log=None, nE=0):
+    """_world_tables' second half: the tables read off one world's field histogram (the GPU scoring path
+    builds the histogram another way, to the same doubles, and reads it here)."""
     strictly = np.cumsum(hist[::-1])[::-1] - hist
     pos = np.searchsorted(F_grid, np.clip(strictly, 0.0, 1.0))
     iF = np.minimum(pos, len(F_grid) - 1)
@@ -1078,6 +1083,159 @@ def _score_range(job):
     return acc, acc2, opt
 
 
+# ---- the scoring pass on the PC's GPU (2026-11-27) ----------------------------------------------------
+# The owner's RTX 4070 SUPER ran the field-threshold kernel on a real cached slate 41x the CPU with every
+# bucket and threshold equal (pc-bench, 2026-11-27: 211.5 s against 5.1 s at 250 worlds a histogram). The
+# scoring pass does the same three heavy things per world -- the score products, the 0.01-point buckets, the
+# field's histogram over its 300,000 lineups -- and then a few small ones (the field mass above each bucket,
+# the payout grid's index, the candidates' gathers). The heavy three go to the GPU; the small ones stay on
+# the CPU, in the CPU's own arithmetic, so the sums are the CPU pass's bit for bit:
+#   * the histogram leaves the GPU as integer COUNTS (exact in any order), and the double the CPU's
+#     np.bincount(weights=1/M) puts in a bin holding n lineups is n copies of 1/M added one at a time,
+#     which is _S_TAB[n] (np.cumsum adds in order) -- so only a uniform-weight field (the classic board's)
+#     takes this path, the showdown's weighted universe stays on the CPU;
+#   * the buckets equal the CPU's wherever a score sits off a bucket's edge -- always on DraftKings'
+#     0.02-point lattice (a 9-player sum of float32 lattice values is within 1e-4 of its lattice point,
+#     the edge is half a hundredth away);
+#   * the first chunk of every range is ALSO computed the CPU's way and compared cell by cell (buckets,
+#     counts, the range's sums); any difference or error sends the whole pass back to the CPU, ledgered
+#     TOURN-gpu-mismatch / TOURN-gpu.
+# `opt` (how often each candidate is the best of the candidates) comes from the GPU's float32 products, so
+# where two candidates TIE exactly for a world's best its tie-break can differ from the CPU's; the classic
+# board never reads it (build_nfl_classic discards run_vs_field's opt), and the check above leaves it out.
+# Off unless VIGIL_TOURNEY_GPU=1 (nothing sets it yet: the real-slate bench decides, research/gpu_bench.py
+# --kernel score).
+_S_TAB = {}
+
+
+def _uniform_sums(M):
+    """[the double np.bincount accumulates for a bin of n lineups weighted 1/M, n = 0..M]."""
+    if M not in _S_TAB:
+        _S_TAB.clear()
+        _S_TAB[M] = np.concatenate([[0.0], np.cumsum(np.full(M, 1.0 / M))])
+    return _S_TAB[M]
+
+
+def _gpu_xp():
+    """CuPy when this process may use the GPU for the scoring pass, else None."""
+    import os
+    if os.environ.get("VIGIL_TOURNEY_GPU") != "1":
+        return None
+    try:
+        try:
+            import cupy
+        except ImportError:
+            return None
+        cupy.cuda.Device(0).use()
+        return cupy
+    except Exception as e:
+        errlog.note("TOURN-gpu-init", e)
+        return None
+
+
+def _xp_buckets(xp, St):
+    """_buckets on the device: the same multiply, add and clip, then the same truncation."""
+    St = St * xp.float32(_RES)
+    St += xp.float32(0.5)
+    xp.clip(St, 0, _NB - 1, out=St)
+    return St.astype(xp.int32)
+
+
+def _score_range_dev(job, xp, verify=True):
+    """_score_range with the products, buckets and field counts on `xp` (CuPy, or numpy in the guards).
+    Returns (acc, acc2, opt), the CPU pass's sums exactly; raises _GpuMismatch when the first chunk's
+    CPU check disagrees."""
+    a, b, chunk = job
+    WcT, X, wf = _PAR["WcT"], _PAR["X"], _PAR["wf"]
+    same = "WfT" not in _PAR
+    WfT = WcT if same else _PAR["WfT"]
+    ci = _PAR.get("cand_idx")
+    G, G2, F_grid, E_log, nE = _PAR["G"], _PAR["G2"], _PAR["F_grid"], _PAR["E_log"], _PAR["nE"]
+    S = _uniform_sums(len(wf))
+    K = WcT.shape[1] if ci is None else len(ci)
+    acc = np.zeros((K, G.shape[1]), dtype=np.float64)
+    acc2 = np.zeros((K, G2.shape[1]), dtype=np.float64)
+    opt = np.zeros(WcT.shape[1], dtype=np.int64)
+    ck, first = _PAR.get("ckpt"), a
+    if ck:
+        got = build_ckpt.range_load(ck, a, b, chunk)
+        if got is not None and all(k in got for k in ("acc", "acc2", "opt")) and got["acc"].shape == acc.shape \
+                and got["acc2"].shape == acc2.shape and got["opt"].shape == opt.shape:
+            acc, acc2, opt, first = got["acc"], got["acc2"], got["opt"], got["next"]
+    host = (lambda v: v.get()) if hasattr(xp, "asnumpy") else (lambda v: np.asarray(v))
+    WcT_d = xp.asarray(WcT)
+    WfT_d = WcT_d if same else xp.asarray(WfT)
+    ci_d = xp.asarray(ci) if ci is not None else None
+    t_save, checked = time.time(), not verify
+    for start in range(first, b, chunk):
+        stop = min(b, start + chunk)
+        Xc = np.ascontiguousarray(X[:, start:stop].T)
+        Xc_d = xp.asarray(Xc)
+        Sc = Xc_d @ WcT_d
+        opt += host(xp.bincount(xp.argmax(Sc, axis=1), minlength=WcT.shape[1])).astype(np.int64)
+        Bc_d = _xp_buckets(xp, Sc)
+        del Sc
+        Bf_d = Bc_d if same else _xp_buckets(xp, Xc_d @ WfT_d)
+        if ci_d is not None:
+            Bc_d = Bc_d[:, ci_d]
+        c = stop - start
+        offs = (xp.arange(c, dtype=xp.int64) * _NB)[:, None]
+        # int32 counts (a bin holds at most M lineups): half the bytes across the bus of int64
+        cnt = host(xp.bincount((Bf_d.astype(xp.int64) + offs).ravel(), minlength=c * _NB)
+                   .astype(xp.int32)).reshape(c, _NB)
+        Bc = host(Bc_d)
+        if not checked:
+            # the CPU's own way on this chunk: every bucket and count, then the chunk's sums
+            Sc_h = Xc @ WcT
+            Bc_h = _buckets(Sc_h)
+            Bf_h = Bc_h if same else _buckets(Xc @ WfT)
+            if ci is not None:
+                Bc_h = Bc_h[:, ci]
+            cnt_h = np.stack([np.bincount(Bf_h[j], minlength=_NB) for j in range(c)])
+            if not (np.array_equal(Bc, Bc_h) and np.array_equal(cnt, cnt_h)):
+                raise _GpuMismatch(f"chunk at world {start}: buckets {int((Bc != Bc_h).sum())} differ, "
+                                   f"counts {int((cnt != cnt_h).sum())}")
+            ref, ref2 = acc.copy(), acc2.copy()
+            for j in range(c):
+                iF, iFE = _world_tables(Bf_h[j], wf, F_grid, E_log, nE)
+                ref += G[iF][Bc_h[j]]
+                ref2 += G2[iFE][Bc_h[j]]
+        for j in range(c):
+            iF, iFE = _tables_from_hist(S[cnt[j]], F_grid, E_log, nE)
+            bj = Bc[j]
+            acc += G[iF][bj]
+            acc2 += G2[iFE][bj]
+        if not checked:
+            if not (np.array_equal(acc, ref) and np.array_equal(acc2, ref2)):
+                raise _GpuMismatch(f"chunk at world {start}: the sums differ")
+            checked = True
+        if ck and (stop >= b or time.time() - t_save >= ck["every"]):
+            build_ckpt.range_save(ck, a, b, chunk, stop, acc=acc, acc2=acc2, opt=opt)
+            t_save = time.time()
+    return acc, acc2, opt
+
+
+class _GpuMismatch(Exception):
+    pass
+
+
+# What computed the latest scoring pass, for the board's timings (the GPU, or the CPU and why).
+LAST_SCORE_DEVICE = {}
+
+
+def score_path_sig():
+    """A hash of every function the device scoring path and its CPU reference run: the PC's bench validates
+    the GPU against THIS code, and the worker turns the GPU on only while the code is the code validated
+    (pc_worker._apply_limits) -- an edit to any of them waits for the next real-slate comparison."""
+    import hashlib
+    import inspect
+    h = hashlib.sha256()
+    for fn in (run_vs_field, _score_range, _score_range_dev, _world_tables, _tables_from_hist, _buckets,
+               _xp_buckets, _uniform_sums, _grid_table, _tie_table, _log_index, chunk_for, _range_jobs):
+        h.update(inspect.getsource(fn).encode())
+    return h.hexdigest()[:16]
+
+
 def _pass_checkpoint(name, checkpoint, jobs, N, save_bytes, *parts):
     """The range functions' checkpoint spec for one pass of the build being
     checkpointed (`checkpoint`, else the entry point's _CKPT), or None. The
@@ -1100,7 +1258,8 @@ def _pass_checkpoint(name, checkpoint, jobs, N, save_bytes, *parts):
         return None
 
 
-def run_vs_field(Wc, Wf, wf, X, grids, chunk=500, progress=None, workers=1, cand_idx=None, checkpoint=None):
+def run_vs_field(Wc, Wf, wf, X, grids, chunk=500, progress=None, workers=1, cand_idx=None, checkpoint=None,
+                 gpu=None):
     """Score candidates against a field in every world. Wc (K, P) candidate
     lineup weights, Wf (M, P) the field's lineups with probability wf (M,)
     summing to one (showdown: every legal lineup and the field model;
@@ -1140,8 +1299,42 @@ def run_vs_field(Wc, Wf, wf, X, grids, chunk=500, progress=None, workers=1, cand
     if spec:
         extra["ckpt"] = spec
     t0 = time.time()
-    parts = _par_map(_score_range, jobs, w, arrays, extra,
-                     progress=(lambda k: progress(jobs[k - 1][1], N, time.time() - t0)) if progress else None)
+    parts = None
+    LAST_SCORE_DEVICE.clear()
+    # gpu: None = the environment decides (_gpu_xp), False = the CPU, else the device module itself (the
+    # guards hand in numpy, which must give the CPU pass's sums exactly)
+    xp = _gpu_xp() if gpu is None else (None if gpu is False else gpu)
+    if xp is not None and bool(np.all(np.asarray(wf) == np.asarray(wf)[0])):
+        try:
+            _PAR.clear()
+            _PAR.update(arrays)
+            _PAR.update(extra)
+            parts = []
+            for k, jb in enumerate(jobs):
+                # the first range's first chunk is checked against the CPU's own arithmetic
+                parts.append(_score_range_dev(jb, xp, verify=(k == 0)))
+                if progress:
+                    progress(jb[1], N, time.time() - t0)
+            LAST_SCORE_DEVICE.update(device="gpu" if hasattr(xp, "asnumpy") else "device stand-in",
+                                     seconds=round(time.time() - t0, 1))
+        except _GpuMismatch as e:
+            errlog.note("TOURN-gpu-mismatch", msg=str(e))
+            parts = None
+            LAST_SCORE_DEVICE.update(device="cpu", why=f"GPU check failed: {e}")
+        except Exception as e:
+            errlog.note("TOURN-gpu", e)
+            parts = None
+            LAST_SCORE_DEVICE.update(device="cpu", why=f"GPU error: {type(e).__name__}: {e}"[:200])
+        finally:
+            _PAR.clear()
+    elif xp is not None:
+        LAST_SCORE_DEVICE.update(device="cpu", why="a weighted field (the showdown universe) stays on the CPU")
+    if parts is None:
+        t0 = time.time()
+        parts = _par_map(_score_range, jobs, w, arrays, extra,
+                         progress=(lambda k: progress(jobs[k - 1][1], N, time.time() - t0)) if progress else None)
+        LAST_SCORE_DEVICE.setdefault("device", "cpu")
+        LAST_SCORE_DEVICE["seconds"] = round(time.time() - t0, 1)
     acc = sum(p[0] for p in parts)
     acc2 = sum(p[1] for p in parts)
     opt = sum(p[2] for p in parts)
@@ -3761,6 +3954,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     res, opt_c, _n = run_vs_field(
         Wc, Wf, wf, Xe, grids, chunk=ch, workers=_workers(workers),
         progress=lambda done, n, dt: log(f"[tourney]   {done:,}/{n:,} worlds, {dt:.0f}s"))
+    score_dev = dict(LAST_SCORE_DEVICE)          # the GPU, or the CPU and why (VIGIL_TOURNEY_GPU, the PC only)
     t5 = time.time()
     ok = np.where(allowed)[0]
     cand = ok[np.argsort(-res[0]["top1"][ok])][:int(candidates)] if len(ok) else ok
@@ -3948,4 +4142,4 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                         "field_s": round(t3 - t2, 1), "candidates_s": round(t4 - t3, 1),
                         "score_s": round(t5 - t4, 1), "portfolio_s": round(t6 - t5, 1),
                         **({"pick_s": round(t_pk, 1)} if pk else {}),
-                        "total_s": round(t6 - t0, 1)}})
+                        "total_s": round(t6 - t0, 1), "score_device": score_dev}})

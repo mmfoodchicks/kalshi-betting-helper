@@ -146,6 +146,21 @@ def _apply_limits(env=None):
     # build, ~2.3 GB, stays in memory), the file beside the worlds cache.
     env.setdefault("VIGIL_SCRATCH_DIR", os.path.join(env.get("VIGIL_SIM_CACHE_DIR") or os.path.join(_HERE, "pc-simcache"),
                                                      "scratch"))
+    # The tournament's scoring pass on the GPU (dfs_tourney._score_range_dev): only where CuPy is installed,
+    # vigil-pc.cfg does not say "gpu": false, and this PC's own bench compared the GPU path with the CPU's on a
+    # real classic slate, every figure equal, for the scoring code that is running now (_task_gpu_bench,
+    # "score_exact"). Each pass still checks its first chunk against the CPU and falls back on any difference.
+    import importlib.util
+    sdir_b = env.get("VIGIL_SIM_CACHE_DIR") or os.path.join(_HERE, "pc-simcache")
+    try:
+        with open(os.path.join(sdir_b, "gpu_bench_state.json")) as fh:
+            ok = (json.load(fh).get("score_exact") or {}).get("sig")
+    except (OSError, ValueError, AttributeError):
+        ok = None                                # no bench state yet: the CPU scores
+    if (ok and _cfg_value("gpu") is not False and importlib.util.find_spec("cupy") is not None
+            and ok == _score_sig()):
+        env["VIGIL_TOURNEY_GPU"] = "1"
+        notes.append("tournament scoring on the GPU (validated on this PC against the CPU, every figure equal)")
     mk = _cfg_value("makeit_ram_gb")
     ram = _ram_gb()
     try:
@@ -1534,12 +1549,25 @@ _GPU_BENCH_CONFIGS = (
     {"name": "evaluator", "worlds": 40000, "field": 300000, "batches": "50,250"},
     # the tournament board's: 160,000 scoring worlds, the same field
     {"name": "tournament", "worlds": 160000, "field": 300000, "batches": "50,250"},
+    # the tournament's WHOLE scoring pass, the CPU's process pool against the GPU path (dfs_tourney
+    # ._score_range_dev), every figure compared -- on a CLASSIC slate only (the path is the uniform field's);
+    # until a classic board has left its worlds and artifact, this one waits and the others stand
+    {"name": "score", "kernel": "score", "worlds": 160000, "field": 300000, "cands": 20000,
+     "require_kind": "classic", "batches": "250"},
 )
 # three hours, written as seconds: the schedule guard keeps the three-hour product expression out of this
 # file (an old rebuild-on-age rule it was written to catch); this is a deadline margin, not an age
 _GPU_BENCH_CLEAR_S = 10_800
 _GPU_BENCH_RETRY_S = 6 * 3600
 _GPU_BENCH_TIMEOUT_S = 45 * 60
+
+
+def _score_sig():
+    try:
+        import dfs_tourney
+        return dfs_tourney.score_path_sig()
+    except Exception as e:                       # numpy missing on a stand-in: no comparison to match
+        return f"unavailable: {type(e).__name__}"
 
 
 def _gpu_bench_key():
@@ -1578,6 +1606,11 @@ def _task_gpu_bench(url, tok, run=None, now_left=None):
     key = _gpu_bench_key()
     if state.get("done") == key:
         return "done"
+    done_cfg = set((state.get("done_configs") or {}).get(key) or [])
+    # the scoring-pass comparison belongs to the scoring code it compared: a new version of that code is a
+    # new comparison (and the GPU stays off for it until then, _apply_limits)
+    if (state.get("score_exact") or {}).get("sig") not in (None, _score_sig()):
+        done_cfg.discard("score")
     if state.get("tried_key") == key and time.time() - float(state.get("tried_ts") or 0) < _GPU_BENCH_RETRY_S:
         return "waiting"
     try:
@@ -1591,12 +1624,16 @@ def _task_gpu_bench(url, tok, run=None, now_left=None):
     _task_note("GPU benchmark on real cached data")
     results, real = [], True
     for cfg in _GPU_BENCH_CONFIGS:
+        if cfg["name"] in done_cfg:
+            continue                      # reported on real data under this bench version already
         if run is None:
             _yield_point(f"GPU benchmark ({cfg['name']})")
         out = os.path.join(sdir, f"gpu_bench_{cfg['name']}.json")
         cmd = [sys.executable, os.path.join(_HERE, "research", "gpu_bench.py"), "--source", "cache",
                "--worlds", str(cfg["worlds"]), "--field", str(cfg["field"]), "--gpu-batches", cfg["batches"],
                "--force", "--out", out]
+        if cfg.get("kernel"):
+            cmd += ["--kernel", cfg["kernel"], "--cands", str(cfg["cands"]), "--require-kind", cfg["require_kind"]]
         t0, rep, err = time.time(), None, None
         try:
             if os.path.exists(out):
@@ -1614,7 +1651,13 @@ def _task_gpu_bench(url, tok, run=None, now_left=None):
         results.append({"config": dict(cfg), "report": rep, "error": err, "wall_s": round(time.time() - t0, 1)})
         if rep is None or not str(rep.get("inputs", "")).startswith("cache:"):
             real = False
-            break
+            continue                      # this one waits (e.g. no classic slate yet); the others still run
+        done_cfg.add(cfg["name"])
+        if cfg.get("kernel") == "score" and (rep.get("agreement") or {}).get("exact"):
+            state["score_exact"] = {"key": key, "sig": _score_sig(), "inputs": rep.get("inputs"),
+                                    "speedup": rep.get("speedup"), "ts": time.time()}
+    if not results:
+        return "done"
     payload = {"key": key, "commit": _git_commit(), "ts": time.time(), "real_data": real, "results": results}
     try:
         _api(url, tok, "/api/pc/bench", data=json.dumps(payload).encode(),
@@ -1623,7 +1666,8 @@ def _task_gpu_bench(url, tok, run=None, now_left=None):
         print(f"[vigil-pc] GPU benchmark report not delivered ({type(e).__name__}); next cycle retries")
         return "undelivered"
     state.update(tried_key=key, tried_ts=time.time())
-    if real:
+    state["done_configs"] = {key: sorted(done_cfg)}
+    if all(c["name"] in done_cfg for c in _GPU_BENCH_CONFIGS):
         state["done"] = key
     try:
         with open(spath, "w") as fh:
