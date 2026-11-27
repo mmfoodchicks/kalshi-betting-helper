@@ -2647,6 +2647,13 @@ _PC_BENCH = "pcbench_log"
 _PC_BENCH_KEEP = 20
 
 
+@app.route("/api/research/registry")
+def api_research_registry():
+    """Every registered test, its read date and where it stands (research_registry; the Research tab)."""
+    import research_registry
+    return jsonify(research_registry.listing())
+
+
 @app.route("/api/pc/bench", methods=["GET", "POST"])
 def api_pc_bench():
     if request.method == "POST":
