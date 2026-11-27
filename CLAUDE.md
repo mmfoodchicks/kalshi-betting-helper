@@ -867,6 +867,24 @@ data-only `sim-history` branch (which never deploys):
   locking after it (2026-11-29, 12-06), each read once, need the owner's standings exports.
   `dfs_field_capture.py` (from `mlb_recorder`, every 30 min) freezes DraftKings' FPPG / opponent rank /
   status and ESPN's start and roster percentages at each kickoff, inside the props log's weekly store.
+- **Owner decisions, 2026-11-27** (coaching and C3).
+  - The 5% family-wise one-sided false-positive rate for R1's criterion 4 and its confirmatory test is
+    APPROVED, on the condition that the calculation covers every scheduled look and the conditional
+    eligibility (the confirmatory runs only when R1 fails criterion 4 alone); R1's own verdict stands
+    permanently. Power is the chance a test passes IF the engine is better by a given amount, never the
+    probability that it is better: a failed test can be insufficient evidence.
+  - The coaching DFS read and R2's H1 MAY use 2026 weeks 13-18 (frozen implementation, endpoints and
+    criteria; the dependence between tests acknowledged). If R2 is modified using R1's held-out results,
+    R2 moves to fresh games.
+  - Offensive coordinators stay OUT. A future enhancement, once reliable historical assignments exist: head
+    coach, offensive and defensive coordinators, and the ACTUAL offensive and defensive play callers, which
+    can differ and change mid-season.
+  - R3 = quarterback blowout substitutions first (learned from score, time, possession, quarterback
+    availability and team tendencies, never hand-set thresholds; conservation exact), later running backs
+    and receivers; the coaching-change prior after it or in parallel.
+  - C3: the suspected double compression correction (`nfl_season._PTS_PER_WIN` fed into Phi(./13.2)) is to
+    be classified as an implementation error or a modeling proposal; the original replay stands; any new
+    comparison is registered on fresh data.
 - **Owner decisions, 2026-11-26.**
   - DraftKings D/ST points allowed include kickoff, punt and blocked-kick return TDs. They exclude the
     opponent defense's pick-six and fumble-return TDs (their conversions count). Verified on the official
