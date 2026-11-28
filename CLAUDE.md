@@ -1186,6 +1186,24 @@ data-only `sim-history` branch (which never deploys):
   `VIGIL_CRYPTO_BOOK=on` (a 5 s poll there would share the boards' Kalshi budget). PC off = nothing recorded (the
   tab says so). The 5/15/30/60 s re-score reads `cx_book` once, after 14 full days. Guards 72 in
   `tests/guards_auto_crypto.py`.
+  **UI v3** (2026-11-28, `research/reports/crypto_scenarios.md`, rule first in 7ddb640): 15 Minute / Hourly /
+  Daily tabs whose open, close, strike and rules are Kalshi's own market data, never a clock rule (Daily = the 5 PM
+  ET event within 26 h; a missing one says so, a failed load retries next refresh). The chart spans the market's
+  own window (`crypto_terminal.window_candles`: one Coinbase call of at most 300 bars, ONE cache key per coin x
+  granularity so the key set stays bounded as windows roll; the models still read their full trailing history),
+  an optional grey previous window, overlays that never stretch the price axis (a far target is a badge off the
+  chart), a minimum range for a quiet window, Reset Zoom / Auto Scale / Fit, 500 px desktop / 340 px phone.
+  Beginner Mode: a line by default, the forecast band (50/80/95%, median line) OFF by default. **Direction**:
+  every bar reads "Direction uncertain" -- the model beats the random walk at 1/3/5 min, but the rule required
+  every lean size above a threshold to beat a coin flip by 2 SE and the largest leans failed; a looser threshold
+  is a registered change on FRESH minutes, never a re-read. 30 s is "untested" (no sub-minute history).
+  **Scenarios** (up / sideways / down, sideways = within 2 one-minute EWMA SDs): VALIDATED vs the random walk at
+  3 min, 5 min and the close (+5.7 / +5.9 / +13.6 millinats a row, z 4.5-4.8, all five coins), but at 3 and 5 min
+  the gain is how FAR, not which way (a breakdown after the verdict, labelled so), so up/down split evenly there;
+  only the close shows a direction (+2.3 +/- 0.9). Probabilities only, no drawn scenario path. Same held-out
+  fortnight as the direction test: not independent evidence. Final reversal shows the random walk's "meaningful"
+  move beside the validated any-size figures, never a predicted turn. Each paper position has a value graph off
+  Kalshi's bids after the fee.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 
