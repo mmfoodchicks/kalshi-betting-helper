@@ -1119,6 +1119,17 @@ def _split_picked(wanted):
             {dg: r for dg, r in wanted.items() if not r.get("pick")})
 
 
+def _pick_mode(pick):
+    """(eligibility mode or None, the pick without it -- None when it set nothing else). The mode is the tab's
+    selector (dfs_eligibility, experimental); the builders' own pick never sees the key."""
+    if not pick or not pick.get("mode"):
+        return None, pick
+    rest = {k: v for k, v in pick.items() if k != "mode"}
+    if not any(rest.get(k) for k in ("exclude", "force", "captain", "rules", "portfolio")):
+        rest = None
+    return pick["mode"], rest
+
+
 _PICK_RETRY_S = 6 * 3600     # a refused picked Build is tried again this often, or at once on a new press
 
 
@@ -1185,7 +1196,10 @@ def _picked_builds(url, tok, kind, picked, listed):
         except ValueError as e:
             _report_attempt(url, tok, dg, req, f"player picker: {e}", kind=kind)
             continue
-        why = "queued from the tab with the player picker"
+        # the eligibility mode the tab's selector set (experimental; only ever on this picked path -- every
+        # scheduled build stays conservative); a pick that set nothing else builds with no player pick
+        elig, pick = _pick_mode(pick)
+        why = "queued from the tab with the player picker" + (f" (eligibility: {elig}, experimental)" if elig else "")
         _yield_point(f"{kind} board {dg} (your picks) - requested by PC request: {why}")
         print(f"[vigil-pc] tourney {dg}: building the picked {kind} board - {why}...")
         t0 = time.time()
@@ -1204,12 +1218,13 @@ def _picked_builds(url, tok, kind, picked, listed):
                     import pc_profiles
                     print(f"[vigil-pc] tourney {dg}: profile {prof['name']} - {prof['why']}")
                     art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, log=print, pick=pick,
-                                                        **pc_profiles.build_kwargs(prof), **_fresh_kw(pk_window))
+                                                        eligibility=elig, **pc_profiles.build_kwargs(prof),
+                                                        **_fresh_kw(pk_window))
                 else:
                     art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=_cl_sims(st, plain, picked=True),
-                                                        log=print, pick=pick, **_fresh_kw(pk_window))
+                                                        log=print, pick=pick, eligibility=elig, **_fresh_kw(pk_window))
             else:
-                art = dfs_tourney.build_nfl_showdown(dg, n_sims=60000, log=print, pick=pick)
+                art = dfs_tourney.build_nfl_showdown(dg, n_sims=60000, log=print, pick=pick, eligibility=elig)
         except Exception as e:
             _mem_report(url, tok, None, None, mem, dg, f"{kind} picked", f"{type(e).__name__}: {e}")
             print(f"[vigil-pc] tourney {dg}: picked build failed ({type(e).__name__}: {e})")
@@ -1852,6 +1867,49 @@ def _task_profile_probe(url, tok, run=None, now_left=None, slate=None, free_gb=N
     return "reported" if rep is not None else "refused"
 
 
+def _task_sd_capture(url, tok, now=None):
+    """Every NFL showdown's pre-lock input snapshot (sd_capture; the owner, 2026-11-27): the captures owed now --
+    each showdown once LEAD_S before lock and once CLOSE_S before it, never within MIN_LEAD_S of lock -- run here,
+    in the cycle, between builds (never beside one), the richest slates first. Each capture is its own child
+    process (recorded network, the deep files it read, one worker, seeded) and is replayed once with the network
+    forbidden: the manifest says whether the board came back bit for bit. The store is bounded
+    (sd_capture.MAX_KEEP, MAX_GB) under pc-simcache; a short summary goes to /api/pc/captures. "sd_capture": false
+    in vigil-pc.cfg switches it off."""
+    import dk
+    import sd_capture
+    if _cfg_value("sd_capture") is False:
+        return []
+    try:
+        slates = dk.slates("nfl") or []
+        contests = dk.contests("nfl") or []
+    except Exception as e:
+        print(f"[vigil-pc] showdown capture: DK lobby failed ({type(e).__name__}: {e})")
+        return []
+    pool = {}
+    for c in contests:
+        dg = c.get("draft_group_id")
+        pool[dg] = max(pool.get(dg, 0.0), float(c.get("prize_pool") or 0))
+    t = time.time() if now is None else now
+    owed = sd_capture.due(slates, t, sd_capture.captured())
+    owed.sort(key=lambda x: (-pool.get(x[0], 0.0), x[2]))
+    rows = []
+    for dg, label, lock in owed:
+        if time.time() >= lock - sd_capture.MIN_LEAD_S:
+            continue                          # its window closed while an earlier capture ran: never after lock
+        _yield_point(f"showdown capture {dg} ({label})")
+        print(f"[vigil-pc] showdown capture {dg} ({label}, {int((lock - time.time()) / 60)} min before lock)...")
+        row = sd_capture.capture(dg, label, lock)
+        print(f"[vigil-pc] showdown capture {dg}: {row.get('status')}, replay {row.get('replay')}")
+        rows.append(row)
+    if rows:
+        try:
+            _api(url, tok, "/api/pc/captures", data=json.dumps({"captures": rows}, default=str).encode(),
+                 headers={"Content-Type": "application/json"})
+        except Exception as e:
+            print(f"[vigil-pc] showdown capture summary not sent ({type(e).__name__}: {e})")
+    return rows
+
+
 def _cycle(url, tok):
     total = 0
     _fetch_params(url, tok)
@@ -1874,8 +1932,12 @@ def _cycle(url, tok):
     # boards_main every BOARDS_S), so a long tournament or deep build no longer
     # holds them back -- the server builds a board itself once the PC's copy
     # ages past boardshare.PC_GRACE_S, which is what the PC is here to prevent.
-    for label, fn in (("showdown tourney", lambda: _task_showdown_tourney(url, tok)),
+    # the showdown captures come first and again after the classic board: each is time-boxed to its windows
+    # before lock, and a long build in between cannot be interrupted (sd_capture)
+    for label, fn in (("showdown captures", lambda: _task_sd_capture(url, tok)),
+                      ("showdown tourney", lambda: _task_showdown_tourney(url, tok)),
                       ("classic tourney", lambda: _task_classic_tourney(url, tok)),
+                      ("showdown captures (2)", lambda: _task_sd_capture(url, tok)),
                       ("deep nightly", lambda: _task_deep(url, tok)),
                       ("standings", _task_standings),
                       # last: after every build the cycle owes (pc_worker._task_gpu_bench's rules)
@@ -1995,6 +2057,80 @@ def _eval_final_worlds(board):
 EVAL_GPU_HIST_BATCH = 250
 
 
+# ---- the crypto book recorder (2026-11-28) -------------------------------------------------------------------
+# Kalshi's best bid / ask for the five open 15-minute crypto markets, every ~5 s, from the PC's own IP (on the
+# server it would share the app's Kalshi budget with every board), into a local SQLite under pc-simcache with
+# the server's own caps, uploaded every three minutes through the token door into the server's cx_book, where
+# the 5 / 15 / 30 / 60 s delay re-score reads it (research/crypto_regimes.py). One HTTP call a pass, doubled on
+# each 429 up to 60 s; "crypto_book": false in vigil-pc.cfg switches it off.
+def _book_paths():
+    base = os.environ.get("VIGIL_SIM_CACHE_DIR") or os.path.join(_HERE, "pc-simcache")
+    os.makedirs(base, exist_ok=True)
+    return os.path.join(base, "crypto_book_pc.db"), os.path.join(base, "crypto_book_pc.json")
+
+
+def book_once(state, now, url, tok, api=None):
+    """One step of the lane: a paced read, and an upload when one is due. `state` carries the upload marker
+    and the times; returns the seconds to sleep."""
+    import crypto_terminal as CT
+    api = api or _api
+    try:
+        CT.book_tick(now)
+    except Exception as e:                       # a refused or failed read: the next pass tries again
+        print(f"[vigil-pc] book read failed ({type(e).__name__}: {e})")
+    if now - state.get("uploaded_at", 0) >= CT.BOOK_UPLOAD_S:
+        rows = CT.book_export(state.get("after_ts", 0), CT.BOOK_UPLOAD_MAX_ROWS)
+        if len(rows) == CT.BOOK_UPLOAD_MAX_ROWS and rows[0][1] != rows[-1][1]:
+            # a full batch may cut one moment's markets in two: send only whole moments, so the marker
+            # (the last moment sent) neither skips nor repeats a row
+            rows = [r for r in rows if r[1] < rows[-1][1]]
+        if rows:
+            try:
+                api(url, tok, "/api/crypto/book", data=json.dumps({"rows": rows}).encode(),
+                    headers={"Content-Type": "application/json"}, timeout=30)
+                state["after_ts"] = rows[-1][1]
+            except Exception as e:
+                print(f"[vigil-pc] book upload failed ({type(e).__name__}: {e}); kept for the next one")
+        state["uploaded_at"] = now
+    if now - state.get("pruned_at", 0) >= 6 * 3600:
+        CT.prune(now)
+        state["pruned_at"] = now
+    return CT._book["every"]
+
+
+def book_main():
+    if _cfg_value("crypto_book") is False:
+        print("[vigil-pc] crypto book recorder off (vigil-pc.cfg)")
+        return 0
+    url, tok = _config()
+    try:
+        os.nice(10)
+    except (AttributeError, OSError):
+        pass
+    db, marker = _book_paths()
+    os.environ["CRYPTO_DB"] = db
+    import crypto_terminal as CT
+    if not CT.ENABLED:
+        return 0
+    CT.init_db()
+    state = {}
+    if os.path.exists(marker):
+        try:
+            with open(marker) as fh:
+                state = json.load(fh)
+        except (OSError, ValueError):
+            state = {}
+    print("[vigil-pc] crypto book recorder: every ~5 s, uploads every 3 min")
+    while True:
+        wait = book_once(state, time.time(), url, tok)
+        try:
+            with open(marker, "w") as fh:
+                json.dump({"after_ts": state.get("after_ts", 0)}, fh)
+        except OSError as e:
+            print(f"[vigil-pc] book marker not saved ({e})")
+        time.sleep(wait)
+
+
 def eval_main():
     """The evaluator's poller: every EVAL_POLL_S, the server's pending
     evaluation requests, answered one by one. pc_loop keeps one running beside
@@ -2075,4 +2211,6 @@ if __name__ == "__main__":
         sys.exit(boards_main() or 0)
     if "--eval" in sys.argv[1:]:
         sys.exit(eval_main() or 0)
+    if "--book" in sys.argv[1:]:
+        sys.exit(book_main() or 0)
     sys.exit(main() or 0)

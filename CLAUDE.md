@@ -795,8 +795,24 @@ data-only `sim-history` branch (which never deploys):
   lifting it raised the 20 entries' top-1% by 1.1 points (4.7 SE); no DST beside the other team's captain 12.6%, no
   K/DST captain 7.8%. Any rule change gets its own registered test. A default change needs
   `research/data/dfs_eligibility/prereg.json` (12 future showdowns recorded before lock, adaptive > conservative on
-  the entries' top-1% by 2 SE, not worse on cash, the owner's sign-off; due at the 12th slate or 2027-02-16); the
-  recorder (`research/dfs_eligibility_record.py`) is manual today.
+  the entries' top-1% by 2 SE, not worse on cash, the owner's sign-off; due at the 12th slate or 2027-02-16).
+  **Follow-up** (2026-11-28, report section 10, guards SC): showdowns are CAPTURED on the PC (`sd_capture.py`,
+  `pc_worker._task_sd_capture`, between builds): a LEAD look (6-2 h before lock) and a CLOSE look (50-15 min); every
+  HTTP answer through `research/den_pit_audit/netreplay.py`, every deep file as first read, a fixed seed, one worker,
+  no cache/checkpoints/GPU, the commit, versions, `score_path_sig` and every file's sha256 stamped; a capture whose
+  last answer came at or after lock is deleted; each is REPLAYED offline at once and must rebuild the board bit for
+  bit (CLE @ LV: 99 requests, 70 MB, exact). 40 captures / 8 GB in `pc-simcache/sd-captures`; summaries to
+  `/api/pc/captures` and `errors/sd-captures-latest.json`; `"sd_capture": false` stops it. The PRIMARY snapshot is
+  the lead look that replayed exact, named in both registrations; a slate without one is out, never replaced by its
+  close look. The house rules have their own registration (`research/data/dfs_house_rules/prereg.json`): six rules
+  each lifted alone (the $11,000 captain floor, K/DST captains, DST beside the opposing captain, two K/DST, one TE
+  per team, cheap punts), Holm at 5%, the optimizer's own 20 entries on independent worlds with SEs over SLATES, the
+  same 12 slates. The tab's player picker carries the eligibility mode (Conservative default; the experimental modes
+  labelled 🧪); only `_picked_builds` passes a mode. Every board row carries `rare`: `best` (an integer count of
+  worlds the lineup scored most, of n) beside `win` (the duplication-adjusted outright first place, a sum of
+  probabilities, with and without ties), top 0.1%, and the Clopper-Pearson 95% bound 1 - 0.025^(1/n) at zero --
+  from what the scoring pass already returns (`score_path_sig` unchanged, guard SC8). Scoring each capture is manual
+  (~40 min a slate); a per-world count of outright first places waits for the GPU validation.
 - **The 2026-11-26 sprint** (`research/reports/sprint_2026_11_26.md`): the owner's Phase 0-10 backlog
   reconciled item by item (done / partial / missing / rejected / blocked), four audits with their scripts
   (`research/sprint_2026_11_26/`), and the readability pass (`tests/guards_ui.py`, section UI: the page's
@@ -1140,9 +1156,19 @@ data-only `sim-history` branch (which never deploys):
   hold -$638, trade-only -$814, take-profit +15c -$712, the learned time-aware hybrid +$141 (+4.2c a window +/- 17.8)
   -- NO strategy is profitable past 2 SE; the hybrid learned to trust Kalshi's mid over Vigil's model. The proxy is
   off the official minute average by only 1.6-3.7 bp; the live record's 20.8 bp is mostly the price's own move in the
-  last minute. Not yet: live logging of the direction and reversal predictions (only v1's settlement rows are graded
-  live), the 30-second horizon, order-book imbalance, regime-switching models. Browser buffers capped at 480 bars, the
-  feed closed when the tab hides; the library's sha256 pinned. Guards 60 in `tests/guards_auto_crypto.py`.
+  last minute. Browser buffers capped at 480 bars, the feed closed when the tab hides; the library's sha256 pinned.
+  **Stage 3** (2026-11-28, `research/reports/crypto_regimes.md`, rule first in a1057e7): the direction and
+  final-reversal forecasts are logged LIVE (`cx_preds`, at every 15-minute look, from the last complete minute, 60 s+
+  before the close, graded off Coinbase candles; their own record on the tab, apart from any P/L). Regime-switching
+  and path-simulation models did NOT beat the challenger (80,640 held-out looks). On minute data the hybrid makes
+  +41.0c a window +/- 17.1 at ZERO delay (a ceiling no order reaches -- Kalshi's book lags the exchanges by
+  seconds) and +4.2c +/- 17.8 at one minute. The Kalshi BOOK recorder (`cx_book`, a row when the best bid/ask moves
+  or once a minute) runs on the PC (`pc_worker.py --book`, a pc_loop lane like `--eval`, one call ~5 s from the
+  PC's own IP, doubling backoff on 429, nice 10; `"crypto_book": false` switches it off), uploads through the
+  token-only `POST /api/crypto/book` (5,000 rows / 512 KB a call, rows validated); OFF on the server unless
+  `VIGIL_CRYPTO_BOOK=on` (a 5 s poll there would share the boards' Kalshi budget). PC off = nothing recorded (the
+  tab says so). The 5/15/30/60 s re-score reads `cx_book` once, after 14 full days. Guards 72 in
+  `tests/guards_auto_crypto.py`.
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 

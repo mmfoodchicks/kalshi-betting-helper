@@ -29,10 +29,14 @@ def _mean_se(xs):
 
 
 def eligible(c, reg):
-    """A slate is in the sample when its recording was made before its lock, its lock is after the registration,
-    and it is not a development slate."""
+    """A slate is in the sample when its recording is the registration's primary snapshot (sd_capture's look of
+    that label) and replayed exact, was made before its lock, locks after the registration, and is not a
+    development slate."""
     meta = c.get("meta") or {}
-    return (meta.get("recorded_before_lock") is True and meta.get("recorded_ts") is not None
+    # the snapshot the registration named in advance (the owner: "We shouldn't retrospectively choose whichever
+    # snapshot produced better results"), replayed exact; any other look is diagnostic and never enters
+    return (meta.get("label") == reg["primary_snapshot"] and meta.get("replay") == "exact"
+            and meta.get("recorded_before_lock") is True and meta.get("recorded_ts") is not None
             and meta.get("lock_ts") is not None and meta["recorded_ts"] < meta["lock_ts"]
             and meta["lock_ts"] > reg["registered_ts"] and int(meta.get("dg") or 0) not in reg["excluded_dg"])
 

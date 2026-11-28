@@ -1,0 +1,74 @@
+{
+ "id": "dfs_house_rules",
+ "registered_utc": "2026-11-27T21:58:58Z",
+ "registered_ts": 1795816738,
+ "question": "Should any of the showdown boards' house rules be lifted? The owner (2026-11-27): \"Register a separate prospective test for removing the $11,000 captain salary restriction. Also investigate defense/kicker captain eligibility, opposing defense restrictions and the other artificial roster gates independently and jointly. Distinguish optimal-lineup eligibility from actual optimizer performance. Evaluate uncertainty across independent slates, not just simulated worlds.\"",
+ "frozen_sha256": {
+  "research/dfs_eligibility_compare.py": "de3898bcac8a66240f21e627e4b9a0e36c5eb54a594696fd9b0ef43c112b8de8",
+  "research/dfs_eligibility_record.py": "e7e2085ad03e9e427dec6c74a45193c3d7474dd0525bad73fb3dec7d37eab6ca",
+  "research/dfs_house_rules_read.py": "fa7a0e21e0cd4f2e20a000a10241d22fc1b1899128a1087593f049a4183e26c5",
+  "research/dfs_eligibility_read.py": "497ad62dc586875c33ae5e17317da6ff7d30f4b511048b0c3490ebda5dacaf08",
+  "sd_capture.py": "79ed129eb9845e451b1fcce594786522e2579c007ffce030f97bc16857c707ab",
+  "research/den_pit_audit/netreplay.py": "94dadcbd0affa4251ed2aebf8cb7d3b89201c5e258bd036c78f6dec48234b325"
+ },
+ "primaries": {
+  "H1_captain_salary": "lift:cpt_salary",
+  "H2_kdst_captain": "lift:kdst_captain",
+  "H3_dst_beside_opposing_captain": "lift:dst_vs_cpt",
+  "H4_two_kickers_defenses": "lift:kdst_max",
+  "H5_one_tight_end_a_team": "lift:te_team",
+  "H6_cheap_punts": "lift:punts"
+ },
+ "primary_definitions": {
+  "H1": "the $11,000 captain floor (nfl_dfs._SD_MIN_CPT_SALARY, binding when three such captains exist) lifted",
+  "H2": "kickers and defenses may captain, exempt from the salary floor (the only way one can where it binds); every other captain keeps the floor",
+  "H3": "a defense may sit beside the opposing team's captain",
+  "H4": "more than two kickers/defenses allowed",
+  "H5": "more than one tight end a team allowed",
+  "H6": "the two-punt cap and the punt-role rule (a $2,000-or-under player must be RB1-2, WR1-3 or TE1) lifted"
+ },
+ "secondary": "lift:all",
+ "secondary_definition": "every house rule lifted jointly (the depth gate kept): reported, decides nothing",
+ "statistic": "per slate s, d_s = P(any of the variant's 20 chosen entries in the top 1%) minus the same for conservative, both portfolios chosen by the variant's own ranking on worlds 0-29,999 and scored on the independent worlds 30,000-59,999 against the conservative board's field (research/dfs_eligibility_compare.py, unchanged). This is the optimizer's performance; the share of worlds whose hindsight-optimal lineup a rule removes (optimal-lineup eligibility) is reported beside it and never decides.",
+ "uncertainty": "one number per slate; D = mean d_s, SE = sd(d_s)/sqrt(n) over SLATES (clustered: the within-slate paired SE over worlds is never used); t = D/SE, one-sided p from Student's t with n - 1 degrees of freedom.",
+ "multiplicity": "Holm's step-down across the six primaries at a family-wise one-sided 5% (alpha_familywise_one_sided); the joint secondary is outside the family and decides nothing.",
+ "alpha_familywise_one_sided": 0.05,
+ "noninferiority": "a rule that passes must also not be significantly worse on cash: mean(cash_s) + 2 SE >= 0.",
+ "real_results": "where the games are final (lock + 48 h), each variant's 20 entries' mean real DraftKings points minus conservative's (Sleeper's box), SE over slates: reported, never decisive.",
+ "sample": "the eligibility registration's sample exactly (research/data/dfs_eligibility/prereg.json): showdowns the PC records before lock (sd_capture, the lead look; the close look when the lead was missed), locking after this registration, in lock order; DEN @ PIT (157076) excluded -- its one-slate figures (captain floor +1.1 points top 1%, 4.7 SE over worlds) are the hypothesis, never evidence.",
+ "excluded_dg": [
+  157076
+ ],
+ "n_target": 12,
+ "n_min": 8,
+ "last_read_utc": "2027-02-16T12:00:00Z",
+ "last_read_ts": 1802779200,
+ "read": "once: at the 12th slate, or on last_read_utc with whatever was recorded (fewer than n_min: INCONCLUSIVE); research/dfs_house_rules_read.py, which answers NOT READY before either.",
+ "decision": "a primary that Holm rejects, with D > 0 and cash non-inferior, MAY be lifted in production with the owner's sign-off; anything else keeps the rule. The joint relaxation is never adopted from this read.",
+ "power": "unknown before the first slates; an inconclusive read is insufficient evidence, never evidence that a rule is harmless or harmful.",
+ "primary_snapshot": "lead",
+ "primary_snapshot_rule": "the primary snapshot is the LEAD look (sd_capture: 6 h to 2 h before lock), named before any slate is read (the owner: \"designate which pre-lock snapshot is used for the primary research test in advance. We shouldn't retrospectively choose whichever snapshot produced better results\"); it must have replayed exact. The close look (50 to 15 minutes before lock) and any hand recording are diagnostic only and never enter the primary read; a slate whose lead look is missing, refused or not exact is not in the sample (never replaced by its close look). The read scripts refuse any other label.",
+ "amendments": [
+  {
+   "utc": "2026-11-28T00:32:49Z",
+   "before_any_read": true,
+   "what": "named the primary snapshot (primary_snapshot: lead) and made the read refuse any other; the primary snapshot is the LEAD look (sd_capture: 6 h to 2 h before lock), named before any slate is read (the owner: \"designate which pre-lock snapshot is used for the primary research test in advance. We shouldn't retrospectively choose whichever snapshot produced better results\"); it must have replayed exact. The close look (50 to 15 minutes before lock) and any hand recording are diagnostic only and never enter the primary read; a slate whose lead look is missing, refused or not exact is not in the sample (never replaced by its close look). The read scripts refuse any other label.",
+   "frozen_sha256_before": {
+    "research/dfs_eligibility_compare.py": "de3898bcac8a66240f21e627e4b9a0e36c5eb54a594696fd9b0ef43c112b8de8",
+    "research/dfs_eligibility_record.py": "e7e2085ad03e9e427dec6c74a45193c3d7474dd0525bad73fb3dec7d37eab6ca",
+    "research/dfs_house_rules_read.py": "fa7a0e21e0cd4f2e20a000a10241d22fc1b1899128a1087593f049a4183e26c5",
+    "research/dfs_eligibility_read.py": "208742d8fd8f857a3d3ae2f871325fea5f1d13d3245bbeeac86c86d765c524a9",
+    "sd_capture.py": "3cb7a756cd2478db0a27db85525729a1afc790d1702bd4f434d0bf9aabb70b4d",
+    "research/den_pit_audit/netreplay.py": "94dadcbd0affa4251ed2aebf8cb7d3b89201c5e258bd036c78f6dec48234b325"
+   }
+  },
+  {
+   "utc": "2026-11-28T00:53:41Z",
+   "before_any_read": true,
+   "what": "sd_capture.py: its numpy imports guarded by try/except ImportError (the suite's import rule); no behaviour change on the PC",
+   "frozen_sha256_before": {
+    "sd_capture.py": "5e0a6206a86fbb2bfa0ba4581117c71e2e6c2ec91d6913acbdcb7bc3892143dc"
+   }
+  }
+ ]
+}

@@ -1995,6 +1995,47 @@ def _apply_eligibility(mode, kept, extra, dx, week, preseason):
     return stamp
 
 
+def _cp95_zero(n):
+    """The exact Clopper-Pearson 95% upper bound (two-sided) for 0 events in n trials, in percent."""
+    return round(100.0 * (1.0 - 0.025 ** (1.0 / n)), 4) if n > 0 else None
+
+
+def rare_counts(win_sole, win_any, top01, n_worlds, weighted, best_worlds=None, best_n=None, best_what=None):
+    """How much simulation stands behind a lineup's rare figures (the owner, 2026-11-27: "add underlying
+    simulated event counts or effective sample sizes to rare DFS outcome estimates, particularly first-place
+    probabilities", and "distinguish between the number of simulated games where a lineup was best and its
+    duplication-adjusted probability of winning outright"). Read from what the scoring pass already returns, so
+    the pass is untouched (score_path_sig). Two different things, labelled apart:
+      best  -- an integer COUNT: the worlds in which this lineup scored the most (`best_what` says against what:
+               showdown, every legal lineup -- the field's whole support; classic, every possible lineup, on the
+               generation worlds), of `best_n`, with the zero-count bound;
+      win   -- the DUPLICATION-ADJUSTED outright first place: a mean of per-world probabilities after ties and the
+               field's expected copies (the board's win_pct), so its worlds' worth (the probability summed over
+               the worlds) is not a count; `with_ties` is first or better, and the gap is the duplication split.
+    Where a count (or worlds' worth) rounds to 0 the exact Clopper-Pearson 95% upper bound for 0 in n,
+    1 - 0.025^(1/n), says how large the chance could still be."""
+    n = int(n_worlds or 0)
+    out = {"win": {"of_worlds": n, "pct": round(100.0 * float(win_sole), 4),
+                   "worlds_worth": round(float(win_sole) * n, 1),
+                   "what": "duplication-adjusted outright first place: a mean of per-world probabilities after "
+                           "ties and the field's expected copies" + (" against a weighted field" if weighted else
+                                                                     " against the sampled field")}}
+    if win_any is not None:
+        out["win"]["with_ties_worlds_worth"] = round(float(win_any) * n, 1)
+    if round(out["win"]["worlds_worth"]) == 0 and n:
+        out["win"]["cp95_upper_pct"] = _cp95_zero(n)
+    if top01 is not None:
+        out["top01"] = {"of_worlds": n, "worlds_worth": round(float(top01) * n, 1)}
+        if round(out["top01"]["worlds_worth"]) == 0 and n:
+            out["top01"]["cp95_upper_pct"] = _cp95_zero(n)
+    if best_worlds is not None and best_n:
+        k, m = int(best_worlds), int(best_n)
+        out["best"] = {"count": k, "of_worlds": m, "pct": round(100.0 * k / m, 4), "what": best_what or ""}
+        if k == 0:
+            out["best"]["cp95_upper_pct"] = _cp95_zero(m)
+    return out
+
+
 def _elig_row(e):
     """A board row's eligibility keys: only on an experimental-mode board (conservative rows carry none)."""
     return {k: e[k] for k in ("elig", "elig_flags") if e.get(k)}
@@ -2307,6 +2348,9 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
                 "expected_copies": round(float(copies[i]), 1),
                 "opt_worlds": int(res["opt"][i]),
                 "opt_pct": round(100.0 * float(res["opt"][i]) / res["n_worlds"], 2),
+                "rare": rare_counts(res["win_sole"][i], res["win"][i], res["top01"][i], res["n_worlds"], True,
+                                    best_worlds=res["opt"][i], best_n=res["n_worlds"],
+                                    best_what="scored the most of every legal lineup (the field's whole support)"),
                 "rank_by": rank_by}
     by_win = ok[np.argsort(-res["win_sole"][ok])][:top]
     by_ev = ok[np.argsort(-res["ev"][ok])][:top]
@@ -4595,6 +4639,9 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                 "roi_pct": round(100.0 * (float(r["ev"][i]) - fee) / fee, 1),
                 "expected_copies": round(float(copies), 1),
                 "opt_worlds": int(is_opt[i]), "opt_pct": round(100.0 * float(is_opt[i]) / n_opt, 2),
+                "rare": rare_counts(r["win_sole"][i], r["win"][i], r["top01"][i], _n, False,
+                                    best_worlds=is_opt[i], best_n=n_opt,
+                                    best_what="was the best possible lineup (every player; the generation worlds)"),
                 "allowed": bool(allowed[i]), "rank_by": rank_by,
                 **({"source": _PICK_SOURCES[int(src_k[i])]} if pk else {})}
     results = {}

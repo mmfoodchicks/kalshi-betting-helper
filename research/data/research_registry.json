@@ -403,5 +403,17 @@
   "waits_for": "the component block (prereg_def_2028_components.json, naming the read script) committed before 2028-09-01; the 2028 regular season",
   "report": "research/reports/nfl_def_persist.md",
   "result": "research/data/nfl_coach/read_def_2028.json"
+ },
+ {
+  "id": "dfs_house_rules",
+  "area": "DFS boards",
+  "kind": "registered",
+  "title": "Showdown house rules: each lifted against conservative on independent slates",
+  "decides": "whether any of six showdown house rules (the $11,000 captain floor first) may be lifted: the optimizer's 20 chosen entries' top 1% on independent worlds, SE over 12 slates, Holm across the six; the joint relaxation a secondary",
+  "registration": "research/data/dfs_house_rules/prereg.json",
+  "script": "research/dfs_house_rules_read.py",
+  "waits_for": "12 NFL showdowns recorded before lock (sd_capture on the PC) and scored by research/dfs_eligibility_compare.py",
+  "report": "research/reports/dfs_eligibility.md",
+  "result": "research/data/dfs_house_rules/read.json"
  }
 ]

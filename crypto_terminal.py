@@ -596,7 +596,8 @@ def research():
     with a deploy)."""
     if not _RESEARCH:
         base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "research", "data", "crypto")
-        for k, f in (("moves", "moves.json"), ("settlement_v1", "validation.json"), ("hybrid", "hybrid.json")):
+        for k, f in (("moves", "moves.json"), ("settlement_v1", "validation.json"), ("hybrid", "hybrid.json"),
+                     ("regimes", "regimes.json")):
             try:
                 with open(os.path.join(base, f), encoding="utf-8") as fh:
                     _RESEARCH[k] = json.load(fh)
@@ -615,6 +616,8 @@ def research():
             "settlement_v1": {"decision": v.get("decision"), "heldout_300": (v.get("heldout") or {}).get("300", {})
                               .get("pooled")},
             "hybrid": (_RESEARCH.get("hybrid") or {}).get("r2_hybrid"),
+            "zero_delay_heldout": (((_RESEARCH.get("regimes") or {}).get("r4_delay") or {}).get("zero_delay") or {})
+            .get("heldout"),
             "final_reversal": {k: {x: v.get(x) for x in ("passed", "challenger_gain_vs_null", "se_days",
                                                          "null_calibration_heldout", "base_rate_heldout")}
                                for k, v in ((_RESEARCH.get("hybrid") or {}).get("r1_final_reversal") or {}).items()
@@ -977,6 +980,7 @@ def init_db():
             # partial: only the ungraded rows (a few hundred at any time) are
             # indexed; a full (result, close_ts) index cost ~60 bytes on every row
             c.execute(f"CREATE INDEX IF NOT EXISTS cx_open ON {TABLE} (close_ts) WHERE result IS NULL")
+            _create_v3(c)
 
 
 def _log_row(c, coin, kind, look, row, level, sigma, n_sources, now):
@@ -1033,10 +1037,19 @@ def log_tick(now=None):
                 h = hourly_markets(coin, now, fresh=True)
                 for r in sorted(h["markets"], key=lambda r: abs(r["rule"]["strike"] - level))[:HOURLY_STRIKES]:
                     rows.append(("hourly", cph, price_row(r, level, sigma, now)))
+            pred = None
+            if cp15:
+                try:
+                    dn = direction_now(coin)
+                    pred = (dn, final_reversal(rows[0][2], dn))
+                except Exception as e:
+                    errlog.note("CRYPTO-pred", e, path=coin)
             if rows:
                 with _db_lock, contextlib.closing(_conn()) as c, c:
                     for kind, cp, row in rows:
                         n += bool(_log_row(c, coin, kind, cp, row, level, sigma, px.get("n_sources"), now))
+                    if pred:
+                        log_pred(c, coin, cp15, rows[0][2], pred[0], pred[1], now)
         except Exception as e:
             errlog.note("CRYPTO-log", e, path=coin)
     return n
@@ -1089,6 +1102,7 @@ def prune(now=None):
                 # kept every row tied at the cut: 1,005 under a 1,000 cap)
                 c.execute(f"""DELETE FROM {TABLE} WHERE (ticker, look_s) IN
                               (SELECT ticker, look_s FROM {TABLE} ORDER BY close_ts LIMIT ?)""", (over,))
+            _prune_v3(c, now)
         # executescript steps the pragma to completion; a plain execute steps it
         # once and frees ONE page (measured: 1,056 free pages, one returned)
         c.executescript("PRAGMA incremental_vacuum;")
@@ -1569,7 +1583,8 @@ def _summary_path():
 
 
 def write_summary():
-    data = {"ts": time.time(), "record": record(), "by": record_by(), "extra": record_extra()}
+    data = {"ts": time.time(), "record": record(), "by": record_by(), "extra": record_extra(),
+            "preds": record_preds(), "book": book_status()}
     path = _summary_path()
     tmp = f"{path}.{os.getpid()}.tmp"
     with open(tmp, "w", encoding="utf-8") as f:
@@ -1590,6 +1605,7 @@ def summary():
     except (OSError, ValueError) as e:
         errlog.note("CRYPTO-summary-read", e)
     return _cached(("summary",), SUMMARY_TTL, lambda: {"ts": time.time(), "record": record(), "by": record_by(),
+                                                        "preds": record_preds(), "book": book_status(),
                                                         "extra": record_extra()})
 
 
@@ -1605,6 +1621,297 @@ def record_summary():
     except Exception as e:
         errlog.note("CRYPTO-record", e)
         return None
+
+
+# ---- v2 stage 3: the LIVE record of the direction and final-reversal predictions, and the book recorder ----
+# Predicting another dip and trading on it are separate achievements (the owner): cx_preds holds the forecasts
+# alone, logged at the 15-minute looks before the outcome from the last COMPLETE minute, graded off Coinbase's
+# candles after the close (the same source the forecasts read); cx_book holds Kalshi's best bid / ask for the
+# open 15-minute markets every ~5 s so the strategies can be re-scored at 5 / 15 / 30 / 60 s delays
+# (research/crypto_regimes.py R4b, read once after 14 days).
+PRED_TABLE = "cx_preds"
+PRED_KEEP_DAYS = 180
+PRED_MAX_ROWS = 300_000          # 1,920 rows a day (5 coins x 96 windows x 4 looks): 156 days, under the keep
+BOOK_TABLE = "cx_book"
+# OFF on the server unless VIGIL_CRYPTO_BOOK=on (2026-11-28): ~720 Kalshi reads an hour shares the app's Kalshi
+# budget with every board -- the NFL / college indexes keep their last good copy on a refused page, the
+# Matchups grader stops at its first refusal, predlog grades off Kalshi -- so a climbing 429 rate here costs
+# real features, and the owner is away and cannot flip a variable. The PC records instead, on its own IP
+# (pc_worker.py --book, pc_loop's book lane), and uploads through its token door into this table
+# (book_ingest); with the PC off nothing is recorded, and the tab says so.
+def _book_on(env):
+    return str(env.get("VIGIL_CRYPTO_BOOK", "off")).strip().lower() in ("on", "1", "true", "yes")
+
+
+BOOK_ON = _book_on(os.environ)
+# Pacing, measured 2026-11-27 from this sandbox's egress: one batched read of the five open markets came back
+# 429 on about one call in ten at every spacing tried (5 s, 1 s, 0.2 s) -- the shared IP's budget, not the
+# rate -- and the best bid / ask moved every 5-15 s. So: one call per pass, every 5 s, doubled on each 429 up
+# to 60 s and eased back by a fifth per success; a row only when the book moved, or a minute's heartbeat.
+BOOK_EVERY_S = 5.0
+BOOK_MAX_EVERY_S = 60.0
+BOOK_HEARTBEAT_S = 60
+BOOK_KEEP_DAYS = 10
+BOOK_MAX_ROWS = 500_000
+_book = {"every": BOOK_EVERY_S, "last": {}, "calls": 0, "r429": 0, "rows": 0}
+
+
+def _create_v3(c):
+    c.execute(f"""CREATE TABLE IF NOT EXISTS {PRED_TABLE} (
+        coin TEXT NOT NULL, close_ts REAL NOT NULL, look_s INTEGER NOT NULL, as_of REAL NOT NULL,
+        logged_ts REAL NOT NULL, level REAL, low REAL, high REAL, strike REAL, trail INTEGER,
+        p1 REAL, p3 REAL, p5 REAL, fl_null REAL, fl_model REAL, fh_null REAL, fh_model REAL, tc_null REAL,
+        tc_model REAL, y1 INTEGER, y3 INTEGER, y5 INTEGER, y_fl INTEGER, y_fh INTEGER, y_tc INTEGER, graded INTEGER,
+        PRIMARY KEY (coin, close_ts, look_s)) WITHOUT ROWID""")
+    c.execute(f"CREATE INDEX IF NOT EXISTS cx_preds_open ON {PRED_TABLE} (close_ts) WHERE graded IS NULL")
+    c.execute(f"""CREATE TABLE IF NOT EXISTS {BOOK_TABLE} (
+        coin INTEGER NOT NULL, ts INTEGER NOT NULL, close_ts INTEGER NOT NULL, yb INTEGER, ya INTEGER,
+        ybs INTEGER, yas INTEGER, PRIMARY KEY (coin, ts)) WITHOUT ROWID""")
+
+
+def _prune_v3(c, now):
+    c.execute(f"DELETE FROM {PRED_TABLE} WHERE close_ts < ?", (now - PRED_KEEP_DAYS * 86400,))
+    over = c.execute(f"SELECT COUNT(*) FROM {PRED_TABLE}").fetchone()[0] - PRED_MAX_ROWS
+    if over > 0:
+        c.execute(f"""DELETE FROM {PRED_TABLE} WHERE (coin, close_ts, look_s) IN
+                      (SELECT coin, close_ts, look_s FROM {PRED_TABLE} ORDER BY close_ts LIMIT ?)""", (over,))
+    c.execute(f"DELETE FROM {BOOK_TABLE} WHERE ts < ?", (now - BOOK_KEEP_DAYS * 86400,))
+    over = c.execute(f"SELECT COUNT(*) FROM {BOOK_TABLE}").fetchone()[0] - BOOK_MAX_ROWS
+    if over > 0:
+        c.execute(f"""DELETE FROM {BOOK_TABLE} WHERE (coin, ts) IN
+                      (SELECT coin, ts FROM {BOOK_TABLE} ORDER BY ts LIMIT ?)""", (over,))
+
+
+def log_pred(c, coin, look, row, direction, final, now):
+    """One forecast row: refused unless its minute is complete before `now` and the market is at least a
+    settlement window from its close."""
+    if not direction or not final or row is None or direction.get("as_of") is None:
+        return False
+    if direction["as_of"] > now or row["close_ts"] - now < WINDOW_S:
+        return False
+    H = direction.get("horizons") or {}
+    pu = lambda h: (H.get(h) or {}).get("p_up")                                  # noqa: E731
+    nl, md = final.get("null") or {}, final.get("model") or {}
+    c.execute(f"""INSERT OR IGNORE INTO {PRED_TABLE} (coin, close_ts, look_s, as_of, logged_ts, level, low, high,
+                  strike, trail, p1, p3, p5, fl_null, fl_model, fh_null, fh_model, tc_null, tc_model)
+                  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              (coin, row["close_ts"], look, direction["as_of"], now, final["level"], final["window_low"],
+               final["window_high"], row["rule"]["strike"], direction.get("trailing_5m"), pu("1"), pu("3"), pu("5"),
+               nl.get("final_low"), md.get("final_low"), nl.get("final_high"), md.get("final_high"),
+               nl.get("touch"), md.get("touch")))
+    return True
+
+
+def _candles_between(coin, t0, t1):
+    """Coinbase one-minute candles with start in [t0, t1] (at most 300): {start: (high, low, close)}."""
+    sym = COINS[coin]["coinbase"]
+    rows = _get(f"https://api.exchange.coinbase.com/products/{sym}/candles?granularity=60"
+                f"&start={datetime.fromtimestamp(t0, timezone.utc):%Y-%m-%dT%H:%M:%SZ}"
+                f"&end={datetime.fromtimestamp(t1, timezone.utc):%Y-%m-%dT%H:%M:%SZ}")
+    return {int(r[0]): (float(r[2]), float(r[1]), float(r[4])) for r in rows}
+
+
+def label_pred(bars, as_of, level, low, high, strike, close_ts):
+    """The outcomes of one forecast from the bars AFTER it (start >= as_of): direction at 1/3/5 minutes from
+    the close of the bar ending at as_of + 60h against the level; final low / high / touch over the rest of
+    the window. None where a needed bar is missing."""
+    out = {}
+    for h in (1, 3, 5):
+        b = bars.get(int(as_of + 60 * (h - 1)))
+        out[f"y{h}"] = None if not b or b[2] == level else int(b[2] > level)
+    rest = [bars.get(int(t)) for t in range(int(as_of), int(close_ts), 60)]
+    if not rest or any(b is None for b in rest):
+        out.update(y_fl=None, y_fh=None, y_tc=None)
+    else:
+        out.update(y_fl=int(min(b[1] for b in rest) >= low), y_fh=int(max(b[0] for b in rest) <= high),
+                   y_tc=int(any(b[1] <= strike <= b[0] for b in rest)))
+    return out
+
+
+def grade_preds(now=None, limit=200):
+    """Grade forecasts whose window has closed: one candle read per coin per pass covering the oldest due
+    rows; a row whose bars never arrive is void after DEAD_S (graded -1, never scored)."""
+    now = now or time.time()
+    with _db_lock, contextlib.closing(_conn()) as c:
+        due = [r for r in c.execute(
+            f"""SELECT coin, close_ts, look_s, as_of, level, low, high, strike FROM {PRED_TABLE}
+                WHERE graded IS NULL AND close_ts < ? ORDER BY close_ts LIMIT ?""", (now - 120, limit))]
+    graded = 0
+    for coin in sorted({r[0] for r in due}):
+        rs = [r for r in due if r[0] == coin]
+        t0 = int(min(r[3] for r in rs))
+        try:
+            bars = _candles_between(coin, t0, t0 + 299 * 60)
+        except Exception as e:
+            errlog.note("CRYPTO-pred-grade", e, path=coin)
+            continue
+        with _db_lock, contextlib.closing(_conn()) as c, c:
+            for _c, close_ts, look, as_of, level, low, high, strike in rs:
+                lab = label_pred(bars, as_of, level, low, high, strike, close_ts)
+                if lab["y_fl"] is None and close_ts > now - DEAD_S:
+                    continue
+                c.execute(f"""UPDATE {PRED_TABLE} SET y1 = ?, y3 = ?, y5 = ?, y_fl = ?, y_fh = ?, y_tc = ?, graded = ?
+                              WHERE coin = ? AND close_ts = ? AND look_s = ?""",
+                          (lab["y1"], lab["y3"], lab["y5"], lab["y_fl"], lab["y_fh"], lab["y_tc"],
+                           1 if lab["y_fl"] is not None else -1, coin, close_ts, look))
+                graded += 1
+    return graded
+
+
+def _ll_sql(p, y):
+    q = f"MIN(MAX({p}, 0.0001), 0.9999)"
+    return f"(-({y} * LN({q}) + (1 - {y}) * LN(1 - {q})))"
+
+
+def record_preds():
+    """The live record of the forecasts, as SQL sums: each direction horizon against the coin flip, each
+    final-reversal question model against the walk's null, on the same rows; SE of the paired mean (rows of
+    one window share a path, so it is optimistic -- the panel flags small samples)."""
+    parts, keys = [], []
+    for h in ("1", "3", "5"):
+        p, y = f"p{h}", f"y{h}"
+        d = f"({_ll_sql(p, y)} - LN(2.0))"
+        w = f"{p} IS NOT NULL AND {y} IS NOT NULL"
+        parts += [f"SUM(CASE WHEN {w} THEN 1 ELSE 0 END)", f"SUM(CASE WHEN {w} THEN {d} END)",
+                  f"SUM(CASE WHEN {w} THEN {d} * {d} END)"]
+        keys.append(("direction_" + h, "vs a coin flip"))
+    for lab, a, b, y in (("final_low", "fl_model", "fl_null", "y_fl"), ("final_high", "fh_model", "fh_null", "y_fh"),
+                         ("touch", "tc_model", "tc_null", "y_tc")):
+        d = f"({_ll_sql(a, y)} - {_ll_sql(b, y)})"
+        w = f"{a} IS NOT NULL AND {b} IS NOT NULL AND {y} IS NOT NULL"
+        parts += [f"SUM(CASE WHEN {w} THEN 1 ELSE 0 END)", f"SUM(CASE WHEN {w} THEN {d} END)",
+                  f"SUM(CASE WHEN {w} THEN {d} * {d} END)"]
+        keys.append((lab, "model vs the walk's null"))
+    q = f"SELECT COUNT(*), {', '.join(parts)} FROM {PRED_TABLE} WHERE graded = 1"
+    try:
+        with contextlib.closing(_conn()) as c:
+            r = c.execute(q).fetchone()
+    except sqlite3.OperationalError as e:
+        if "no such table" in str(e):
+            return {"graded": 0}
+        raise
+    out = {"graded": r[0] or 0}
+    for i, (k, vs) in enumerate(keys):
+        n, s1, s2 = r[1 + 3 * i], r[2 + 3 * i], r[3 + 3 * i]
+        if not n:
+            out[k] = {"n": 0, "vs": vs}
+            continue
+        m = s1 / n
+        se = math.sqrt(max(0.0, s2 / n - m * m) / n) if n > 1 else None
+        out[k] = {"n": n, "vs": vs, "diff_nats": round(m, 5), "se": round(se, 5) if se else None,
+                  "better": bool(se and m < -2 * se), "worse": bool(se and m > 2 * se)}
+    return out
+
+
+def m15_ticker(series, close_ts):
+    """Kalshi's 15-minute ticker from its close: <series>-YYMONDDHHMM-MM in Eastern time
+    (KXBTC15M-26NOV270445-45 closes 04:45 EST = 09:45 UTC on 2026-11-27, read live)."""
+    et = datetime.fromtimestamp(close_ts, timezone.utc).astimezone(_et())
+    return f"{series}-{et:%y}{et.strftime('%b').upper()}{et:%d}{et:%H}{et:%M}-{et:%M}"
+
+
+def book_tick(now=None):
+    """One paced read of the five open 15-minute markets' best bid / ask (GET, no retry: a 429 backs off the
+    whole recorder instead). A row per market only when its book moved, or on the minute's heartbeat."""
+    import urllib.error
+    import kalshi
+    now = now or time.time()
+    close = next_close(now, 900)
+    tickers = {m15_ticker(COINS[c]["m15"], close): i for i, c in enumerate(COINS)}
+    _book["calls"] += 1
+    try:
+        d = _get(kalshi.BASE + "/markets?tickers=" + ",".join(tickers), timeout=8)
+    except urllib.error.HTTPError as e:
+        if e.code == 429:
+            _book["r429"] += 1
+            _book["every"] = min(BOOK_MAX_EVERY_S, _book["every"] * 2)
+            return 0
+        raise
+    _book["every"] = max(BOOK_EVERY_S, _book["every"] * 0.8)
+    rows = []
+    for m in (d or {}).get("markets") or []:
+        ci = tickers.get(m.get("ticker"))
+        if ci is None:
+            continue
+        yb, ya = _cents(m.get("yes_bid_dollars")), _cents(m.get("yes_ask_dollars"))
+        key = (int(close), yb, ya)
+        last = _book["last"].get(ci)
+        if last and last[0] == key and now - last[1] < BOOK_HEARTBEAT_S:
+            continue
+        _book["last"][ci] = (key, now)
+        rows.append((ci, int(now), int(close), int(round(yb * 10)) if yb is not None else None,
+                     int(round(ya * 10)) if ya is not None else None,
+                     int(_f(m.get("yes_bid_size_fp")) or 0), int(_f(m.get("yes_ask_size_fp")) or 0)))
+    if rows:
+        with _db_lock, contextlib.closing(_conn()) as c, c:
+            c.executemany(f"INSERT OR IGNORE INTO {BOOK_TABLE} VALUES (?,?,?,?,?,?,?)", rows)
+        _book["rows"] += len(rows)
+    return len(rows)
+
+
+BOOK_UPLOAD_MAX_ROWS = 5000      # one upload: ~200 KB of JSON; a day is ~40,000 rows, so a few minutes' batch is ~100
+BOOK_UPLOAD_S = 180              # the PC uploads every three minutes
+
+
+def book_export(after_ts, limit=BOOK_UPLOAD_MAX_ROWS):
+    """The PC's side: the local snapshots newer than `after_ts`, oldest first, at most `limit` (bounded)."""
+    with contextlib.closing(_conn()) as c:
+        return [list(r) for r in c.execute(
+            f"SELECT coin, ts, close_ts, yb, ya, ybs, yas FROM {BOOK_TABLE} WHERE ts > ? ORDER BY ts, coin LIMIT ?",
+            (int(after_ts), int(limit)))]
+
+
+def book_ingest(rows, now=None):
+    """The server's side of the PC's upload: every row checked (a known coin, a snapshot no more than a day old
+    nor a minute ahead, inside its own 15-minute window, prices 0-100c in tenths, sizes whole), the rest dropped;
+    at most BOOK_UPLOAD_MAX_ROWS a call (the route refuses more). Returns (inserted, dropped)."""
+    now = now or time.time()
+    ok = []
+    for r in rows[:BOOK_UPLOAD_MAX_ROWS]:
+        try:
+            ci, ts, close, yb, ya, ybs, yas = (None if v is None else int(v) for v in r)
+        except (TypeError, ValueError):
+            continue
+        if not (0 <= (ci if ci is not None else -1) < len(COINS)) or ts is None or close is None:
+            continue
+        if not (now - 86400 <= ts <= now + 60) or close % 900 or not (close - 900 <= ts <= close):
+            continue
+        if any(v is not None and not 0 <= v <= 1000 for v in (yb, ya)) or any(v is None or v < 0 for v in (ybs, yas)):
+            continue
+        ok.append((ci, ts, close, yb, ya, ybs, yas))
+    if ok:
+        init_db()
+        with _db_lock, contextlib.closing(_conn()) as c, c:
+            before = c.total_changes
+            c.executemany(f"INSERT OR IGNORE INTO {BOOK_TABLE} VALUES (?,?,?,?,?,?,?)", ok)
+            ins = c.total_changes - before
+    else:
+        ins = 0
+    return ins, len(rows) - len(ok)
+
+
+def book_status():
+    try:
+        with contextlib.closing(_conn()) as c:
+            n, lo, hi = c.execute(f"SELECT COUNT(*), MIN(ts), MAX(ts) FROM {BOOK_TABLE}").fetchone()
+    except sqlite3.OperationalError as e:
+        if "no such table" in str(e):
+            return {"rows": 0}
+        raise
+    return {"rows": n, "first_ts": lo, "last_ts": hi, "days": round(((hi or 0) - (lo or 0)) / 86400, 2),
+            "every_s": round(_book["every"], 1), "calls": _book["calls"], "r429": _book["r429"],
+            "rescore_after_days": 14, "on_server": BOOK_ON, "recorded_on": "server" if BOOK_ON else "pc"}
+
+
+def _book_loop():
+    while True:
+        try:
+            time.sleep(_book["every"])
+            if ENABLED and BOOK_ON:
+                book_tick()
+        except Exception as e:
+            errlog.note("CRYPTO-book", e)
+            time.sleep(30)
 
 
 # ---- the background loop (the app's background owner only) -----------------
@@ -1646,7 +1953,8 @@ def _loop():
                 # the summary is ~2 s of SQLite at steady state (231k rows): only
                 # when something was graded, or the file is an hour old
                 sp = _summary_path()
-                if grade_tick(now) or not os.path.exists(sp) or now - os.path.getmtime(sp) > 3600:
+                gp = grade_preds(now)
+                if grade_tick(now) or gp or not os.path.exists(sp) or now - os.path.getmtime(sp) > 3600:
                     write_summary()
                 settle_paper(now)
             if now - last_prune > 6 * 3600:
@@ -1668,3 +1976,5 @@ def start_background():
     _started = True
     init_db()
     threading.Thread(target=_loop, daemon=True, name="crypto-record").start()
+    if BOOK_ON:
+        threading.Thread(target=_book_loop, daemon=True, name="crypto-book").start()

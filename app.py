@@ -2682,6 +2682,31 @@ def api_pc_bench():
     return jsonify({"runs": _tourney_json(_PC_BENCH).get("runs") or []})
 
 
+_PC_CAPTURES = "pccapture_log"
+_PC_CAPTURES_KEEP = 80
+
+
+@app.route("/api/pc/captures", methods=["GET", "POST"])
+def api_pc_captures():
+    """The PC's showdown snapshots (sd_capture): a short row each -- the slate, the look (lead / close), captured /
+    refused / failed, whether the replay came back exact, the manifest's sha256 -- never the snapshot itself, which
+    stays on the PC's disk. POST through the token door; the error-log workflow pulls the list to sim-history."""
+    if request.method == "POST":
+        if not _pc_auth_ok():
+            return jsonify({"error": "auth"}), 403
+        d = request.get_json(force=True, silent=True)
+        if not isinstance(d, dict) or not isinstance(d.get("captures"), list):
+            return jsonify({"error": "a report is {captures: [...]}"}), 400
+        if len(json.dumps(d)) > 100_000:
+            return jsonify({"error": "report too large"}), 413
+        now = time.time()
+        rows = [dict(r, received_ts=now) for r in d["captures"] if isinstance(r, dict)]
+        kept = ((_tourney_json(_PC_CAPTURES).get("captures") or []) + rows)[-_PC_CAPTURES_KEEP:]
+        _tourney_json_save(_PC_CAPTURES, {"captures": kept})
+        return jsonify({"ok": True, "kept": len(kept)})
+    return jsonify({"captures": _tourney_json(_PC_CAPTURES).get("captures") or []})
+
+
 @app.route("/api/dfs/eval/requests")
 def api_dfs_eval_requests():
     """The PC's door: the evaluation requests not yet answered, oldest first."""
@@ -3008,6 +3033,10 @@ def api_simulate_dfs():
             pick = nfl_dfs.pick_parse(d.get("pick"))
         except ValueError as e:
             return jsonify({"error": f"player picker: {e}", "pick_refused": True}), 400
+        if pick and pick.get("mode"):
+            # the eligibility modes are a tournament-board experiment (Build on the PC); the sheet stays conservative
+            return jsonify({"error": "player picker: an eligibility mode is for Build on the PC; the lineup sheet "
+                                     "uses the conservative gate", "pick_refused": True}), 400
         try:
             # 0 / absent is "the slate's own week" (its dates, else its
             # kickoff, else this week); the picker defaulted to Week 1 and an
@@ -3373,7 +3402,7 @@ def api_crypto_record():
         # read is one cached computation on a bounded key
         s = crypto_terminal.summary()
         rec = crypto_terminal.record_cached(coin, kind, int(look) if look else None) if (coin or kind or look) else s.get("record")
-        return jsonify({"record": rec, "by": s.get("by"), "extra": s.get("extra"), "as_of": s.get("ts"), "paper_only": True,
+        return jsonify({"record": rec, "by": s.get("by"), "extra": s.get("extra"), "preds": s.get("preds"), "book": s.get("book"), "as_of": s.get("ts"), "paper_only": True,
                         "decide": {"markets": crypto_terminal.DECIDE_MIN, "days": crypto_terminal.DECIDE_DAYS}})
     except Exception as e:
         errlog.note("CRYPTO-record-api", e)
@@ -3425,6 +3454,29 @@ def api_crypto_paper_open():
     except Exception as e:
         errlog.note("CRYPTO-paper-open", e)
         return jsonify({"error": f"paper open failed: {type(e).__name__}"}), 502
+
+
+@app.route("/api/crypto/book", methods=["POST"])
+def api_crypto_book():
+    """The PC's book recorder uploads its snapshots here (pc_worker.py --book): the token door only, a body of
+    at most 512 KB and BOOK_UPLOAD_MAX_ROWS rows, every row checked by crypto_terminal.book_ingest."""
+    import crypto_terminal
+    if not _pc_auth_ok():
+        return jsonify({"error": "auth"}), 403
+    if (request.content_length or 0) > 512_000:
+        return jsonify({"error": "too large"}), 413
+    d = request.get_json(silent=True) or {}
+    rows = d.get("rows")
+    if not isinstance(rows, list):
+        return jsonify({"error": "rows"}), 400
+    if len(rows) > crypto_terminal.BOOK_UPLOAD_MAX_ROWS:
+        return jsonify({"error": "too many rows"}), 413
+    try:
+        ins, dropped = crypto_terminal.book_ingest(rows)
+        return jsonify({"ok": True, "inserted": ins, "dropped": dropped})
+    except Exception as e:
+        errlog.note("CRYPTO-book-ingest", e)
+        return jsonify({"error": f"ingest failed: {type(e).__name__}"}), 502
 
 
 @app.route("/api/crypto/paper/close", methods=["POST"])

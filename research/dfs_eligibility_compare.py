@@ -150,6 +150,9 @@ def rule_masks(ents, idx, ours):
     role = np.array([(not t) or (t in nfl_dfs._SD_PUNT_ROLES) for t in tag])
     out["_role"] = role
     out["punt_role"] = ~(punt_f & ~role[fl]).any(axis=1)
+    # the salary floor with kickers and defenses exempt: the only way a kicker or defense captain can exist on a
+    # slate where the floor binds (research/data/dfs_house_rules/prereg.json, H2)
+    out["_cpt_salary_xkd"] = out["cpt_salary"] | np.isin(P, ("K", "DST"))
     return out
 
 
@@ -261,11 +264,16 @@ def main():
     for r in RULES:
         variants[f"lift:{r}"] = (base, (r,), None)
     variants["lift:all"] = (base, RULES, None)
+    # the house-rule registration's combined primaries (research/data/dfs_house_rules/prereg.json)
+    variants["lift:kdst_captain"] = (base, ("kdst_cpt", "cpt_salary"), None)
+    variants["lift:punts"] = (base, ("punt_max", "punt_role"), None)
     variants["everything_off"] = (set(names), RULES, None)
     masks_by = {}
     for v, (ours, lift, role) in variants.items():
         mk = rule_masks(ents, idx, ours)
         masks_by[v] = allowed(mk, lift=lift, role_names=role, ents=ents, idx=idx)
+        if v == "lift:kdst_captain":
+            masks_by[v] &= mk["_cpt_salary_xkd"]          # the floor still binds every other captain
     n_cons = int(masks_by["conservative"].sum())
     check = {"field_rows": int(frows.sum()), "board_legal": board["lineups_legal"],
              "conservative_allowed": n_cons, "board_allowed": board["lineups_allowed"],
@@ -366,6 +374,8 @@ def main():
                                                      for j in idx[r] if ents[j]["gated"]})
         s["best_lineup"] = [names[j] for j in idx[chosen[v]["top1"][0]]]
         s["p_any_top1_gen_20"] = chosen[v]["p_any_gen"][-1]
+        # the entries themselves, captain first, so their REAL points can be read once the game is final
+        s["portfolio_20"] = [[names[j] for j in idx[r]] for r in chosen[v]["portfolio"][:max(SIZES)]]
         summary[v] = s
     # ---- optimal-lineup coverage on the independent worlds: the best of ALL legal lineups (DraftKings' rules
     # only, every gated player) against the best each variant may enter ----
