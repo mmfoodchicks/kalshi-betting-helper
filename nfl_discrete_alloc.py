@@ -103,12 +103,18 @@ def _dk(c):
             + o["rec_100"] * (np.asarray(g("rec_yd")) >= 100) + o["fumble_lost"] * g("fum"))
 
 
-def simulate_game(game, n=4000, rng=None):
+def simulate_game(game, n=4000, rng=None, pass_latent_scale=1.0):
     """One game, n worlds, on the legacy model's inputs (nfl_dfs_sim.weekly_games'
     game dict). Returns {"players": [{name, pos, team, comps {stat: int (n,)},
     dk (n,)}], "conservation": {team: {"cmp", "pass_yd", "pass_td"}: worlds
     where the quarterback's line differs from his receivers' sums -- 0 by
-    construction}}."""
+    construction}}.
+
+    pass_latent_scale (the registered test's candidate B, research/nfl_wb_dist.py):
+    the team passing multiplier's deviation from 1 is scaled by it. The per-event
+    draws already carry the noise the legacy multiplier stood in for, so the
+    quarterback's yards ran twice too wide (realized over model 0.473); 1.0 is the
+    allocator exactly as it was, draw for draw."""
     if np is None:
         raise RuntimeError("numpy is required for the experimental allocator")
     S = _legacy()
@@ -131,6 +137,8 @@ def simulate_game(game, n=4000, rng=None):
     for t in teams:
         idx = [i for i, p in enumerate(players) if p.get("team") == t]
         pass_f = env * ql[t] * (1 - S._SCRIPT_PASS * sc[t])
+        if pass_latent_scale != 1.0:
+            pass_f = np.maximum(0.0, 1.0 + pass_latent_scale * (pass_f - 1.0))
         qbs = [i for i in idx if (players[i].get("pos") or "").upper() == "QB"
                and (players[i]["means"].get("pass_yd") or 0) > 0]
         q = max(qbs, key=lambda i: players[i]["means"]["pass_yd"]) if qbs else None
