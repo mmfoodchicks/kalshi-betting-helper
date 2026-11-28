@@ -469,7 +469,10 @@ def run_deep(season=None, n_seasons=2000, workers=None, seed=None, profiles=None
                      # 2.25 until research/data/deep_anchor_flip.patch lands in nfl_deep_data
                      "anchor_version": getattr(D, "ANCHOR_VERSION", 1),
                      "anchor_pts_per_win": (D.market_pts_per_win() if hasattr(D, "market_pts_per_win")
-                                            else nfl_season._PTS_PER_WIN)}
+                                            else nfl_season._PTS_PER_WIN),
+                     # the engine's own version (research/reports/fumble_td_fix.md): 1 until
+                     # research/data/fumble_td_flip.patch lands (2: fumble-return touchdowns played)
+                     "engine_version": getattr(E, "ENGINE_VERSION", 1)}
     return out
 
 

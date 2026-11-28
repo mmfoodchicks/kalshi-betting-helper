@@ -355,11 +355,18 @@ def run(ck):
        "a pick-six's (or defensive fumble TD's) six do not but its try does, a shutout of the offence survives an "
        "opponent's return six, the safeties this defense scored stay out, blocks and this unit's own return TDs pay, "
        "and the tiers hold at their edges", not bad, str(bad))
+    # 2026-11-28: from nfl_deep_sim.ENGINE_VERSION 2 (the staged fumble-return TD, research/reports/
+    # fumble_td_fix.md) a lost fumble can be returned for a touchdown too; before it a pick-six is the only kind,
+    # and that stronger claim is still held while version 1 is production.
+    import nfl_deep_sim as _E_c2c
+    v2 = getattr(_E_c2c, "ENGINE_VERSION", 1) >= 2
     td_bad = 0
     for me, op in ((bh, ba), (ba, bh)):
-        td_bad += int(((me["td_def"] > me["td_ret"]) | (me["td_def"] > op["int"])).sum())
-    ck("C2c on the engine's own games every defensive touchdown is one of the other offence's interceptions and one "
-       "of this side's return touchdowns (a pick-six is the only kind it plays)", td_bad == 0, f"{td_bad} worlds off")
+        takeaways = op["int"] + (op["fum_lost"] if v2 else 0)
+        td_bad += int(((me["td_def"] > me["td_ret"]) | (me["td_def"] > takeaways)).sum())
+    ck("C2c on the engine's own games every defensive touchdown is one of this side's return touchdowns and one of "
+       "the other offence's interceptions (engine version 1: a pick-six is the only kind it plays) or, from "
+       "version 2, its interceptions and lost fumbles", td_bad == 0, f"{td_bad} worlds off (engine v{2 if v2 else 1})")
     ck("C3 the kicker is his own field goals by DK's distance tiers (3/4/5) plus his tries, in every world",
        k_bad == 0, f"{k_bad} worlds off")
     # what one unit loses the other gains: an interception costs the QB a point

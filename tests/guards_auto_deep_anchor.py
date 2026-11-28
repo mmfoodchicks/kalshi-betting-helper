@@ -155,25 +155,26 @@ def run(ck):
 
     dfs_pin = json.load(open(os.path.join(_ROOT, "research", "data", "nfl_coach", "prereg_dfs.json")))["files"]
     r1_pin = json.load(open(os.path.join(_ROOT, "research", "data", "nfl_coach", "prereg_r1.json"))).get("files") or {}
-    # every coaching registration that pins an engine file (R1-R4, C4, the DFS read): none may have moved
-    import glob
-    pins_ok = True
-    for f in glob.glob(os.path.join(_ROOT, "research", "data", "nfl_coach", "prereg_*.json")):
-        files = (json.load(open(f)).get("files") or {})
-        for rel in ("nfl_deep_sim.py", "nfl_dfs_engine.py", "nfl_pbp.py"):
-            if rel in files and _sha(rel) != files[rel]:
-                pins_ok = False
+    # every coaching registration that pins an engine file (R1-R6, C4, the DFS read): none may have moved.
+    # 2026-11-28, option (c) (research/registered_pins.py): checked at each registration commit, where its read
+    # runs; live, the engine files are the read's bytes or -- behind the deep-weight read's gate -- exactly a
+    # staged flip's (this anchor's, the fumble-return TD's).
+    from research import registered_pins as REGP
+    moved = {f: m for f in REGP.REGISTRATIONS for m in [REGP.moved(f)] if m}
+    pins_ok = not moved
     ev = open(os.path.join(_ROOT, "research", "nfl_dfs_engine_eval.py")).read()
     va = open(os.path.join(_ROOT, "research", "nfl_deep_validate.py")).read()
     ck("DA5 no pinned file was touched and the PD-anchored research harnesses cannot see the switch: "
        "nfl_dfs_engine.py and nfl_deep_sim.py match the coaching DFS registration's sha256 (and nfl_deep_sim.py "
-       "R1's), and nfl_dfs_engine_eval / nfl_deep_validate convert at nfl_season._PTS_PER_WIN with market_margins "
-       "replaced, never at market_pts_per_win",
-       pins_ok and _sha("nfl_dfs_engine.py") == dfs_pin["nfl_dfs_engine.py"] and _sha("nfl_deep_sim.py") == dfs_pin["nfl_deep_sim.py"]
-       and (not r1_pin.get("nfl_deep_sim.py") or _sha("nfl_deep_sim.py") == r1_pin["nfl_deep_sim.py"])
+       "R1's) -- at the registration commits, and live unless a staged flip landed behind the read's gate "
+       "(option (c)) -- and nfl_dfs_engine_eval / nfl_deep_validate convert at nfl_season._PTS_PER_WIN with "
+       "market_margins replaced, never at market_pts_per_win",
+       pins_ok and REGP.live_ok("nfl_dfs_engine.py", dfs_pin["nfl_dfs_engine.py"])
+       and REGP.live_ok("nfl_deep_sim.py", dfs_pin["nfl_deep_sim.py"])
+       and (not r1_pin.get("nfl_deep_sim.py") or REGP.live_ok("nfl_deep_sim.py", r1_pin["nfl_deep_sim.py"]))
        and "nfl_season._PTS_PER_WIN" in ev and "D.market_margins = lambda" in ev and "market_pts_per_win" not in ev
        and "nfl_season._PTS_PER_WIN" in va and "market_pts_per_win" not in va,
-       "a pinned file or a research harness changed")
+       f"a pinned file or a research harness changed {moved}")
 
     # The flip against the worlds cache and the frozen inputs of a resumable build (build_ckpt, 2026-11-27):
     # the pool cache's code signature over a tree holding the PATCHED nfl_deep_data.py must differ from

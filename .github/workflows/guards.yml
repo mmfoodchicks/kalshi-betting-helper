@@ -19,7 +19,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
+      # The whole history (2026-11-28): the registered reads run from their registration commits, and the
+      # guards check every registration's pins AT those commits (research/registered_pins.py, option (c)) --
+      # a shallow clone has none of them and would fail every one, correctly. ~120 MB measured.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
