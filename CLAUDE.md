@@ -1079,6 +1079,19 @@ data-only `sim-history` branch (which never deploys):
   plays QB passing yards ~2x too wide and +2.7% / +4.4% high: NOT shipped; a registered test first (the constrained
   model, which already draws counts, is the nearer candidate). The 99.6-vs-100 bonus question is immaterial
   (0.13-0.19% of mass): the week board's bonuses run low because its spread is narrow. Guards DA1-DA5.
+  **The registered replacement test** (owner-approved 2026-11-27, `research/nfl_wb_dist.py`,
+  `research/reports/nfl_wb_dist.md`, `research/data/nfl_wb_dist/prereg.json`, candidates committed first in 88a3fed,
+  registration 8c9fa95, guards WB1-WB7). The asymmetric misses are SHAPE, not mean: pass catchers have zero-yard games
+  17-27% of the time and the week board gives zero ~0 mass (a mean times a continuous factor); targets run 1.37-1.48x
+  Poisson (RB carries 1.98) and the board draws no workload; spread errors run 0.72 (QB pass TDs, too wide) to 8.52
+  (RB receiving yards); teammates 0.16-0.38 too correlated. Development (fit 2025, scored 2026 wk 1-5): A the
+  constrained simulator +0.099 nats a line (z 7.2), B the discrete allocation with a fitted QB term +0.112 (z 30), C a
+  per-position x stat quantile map of production +0.101 (z 27.6) -- A and B bring 80% coverage to 72-85% and put
+  15-25% on zero; C cannot create a zero and fails the vetoes. Registered read: 2026 weeks 14-18 (week 13 excluded
+  whole: Thanksgiving had kicked off), Holm over A/B/C, vetoes on any position x stat cell (2 SE), pooled 80% coverage
+  in 0.70-0.90, pair correlations; read once on/after 2027-01-13; nothing changes until it passes and the owner signs
+  off. Pinned: `nfl_dfs_sim.py`, `nfl_dfs_csim.py`, `dk_scoring.py` (a changed file means the read runs from the
+  registration commit's tree).
 - **The crypto terminal** (2026-11-27, `crypto_terminal.py`, `static/crypto.js`, the Crypto tab; the owner asked
   for it back in this sprint's backlog; READ-ONLY and paper: nothing places an order). Kalshi's 15-minute up/down and
   hourly above/below contracts on BTC, ETH, SOL, XRP and DOGE, each priced off ITS OWN rules text (the simple average
