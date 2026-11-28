@@ -3380,9 +3380,16 @@ def api_crypto_candles():
         return jsonify({"error": "bad params"}), 400
     if not crypto_terminal.ENABLED:
         return jsonify({"coin": coin, "gran": gran, "off": True, "candles": []})
+    start, end = request.args.get("start"), request.args.get("end")
     try:
+        if start and end:
+            # one market window (the chart's span); the models never read this
+            return jsonify({"coin": coin, "gran": gran, "source": "Coinbase Exchange public candles",
+                            "candles": crypto_terminal.window_candles(coin, gran, int(float(start)), int(float(end)))})
         return jsonify({"coin": coin, "gran": gran, "source": "Coinbase Exchange public candles",
                         "candles": crypto_terminal.candles(coin, gran)})
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         errlog.note("CRYPTO-candles", e, path=f"{coin}:{gran}")
         return jsonify({"error": f"candles failed: {type(e).__name__}"}), 502

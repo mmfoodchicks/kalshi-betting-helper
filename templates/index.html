@@ -536,19 +536,28 @@
         <h2>🪙 Crypto terminal <span class="chip">paper only</span></h2>
         <select id="cxCoin" style="width:auto" aria-label="coin"></select>
       </div>
-      <p class="sub" style="margin:2px 0 8px">Kalshi's 15-minute and hourly crypto contracts, each priced off the rule it settles on: a simple average of the 60 seconds of CF Benchmarks' index before the close, read from the market's own rules. The index is licensed, so the live level is a proxy, the median of four exchanges, shown with each source. The model is a random walk at recent volatility. It is the benchmark to beat, and every edge it prints is unproven until the record below decides. Nothing here places an order.</p>
+      <p class="sub" style="margin:2px 0 8px">Kalshi's 15-minute, hourly and daily crypto contracts, each priced off the rule it settles on: a simple average of the 60 seconds of CF Benchmarks' index before the close, read from the market's own rules. Every open and close time and every target comes from Kalshi's own market data. The index is licensed, so the live level is a proxy (the median of four exchanges; the chart's live line is Coinbase's). The model is a random walk at recent volatility, the benchmark to beat: every edge it prints is unproven until the record decides. Nothing here places an order.</p>
       <div id="cxMode" style="margin:4px 0"></div>
       <div id="cxHonest"></div>
-      <div id="cxBeginner"></div>
-      <div id="cxChartBar" class="row-between" style="margin:6px 0"></div>
-      <div id="cxChart" style="width:100%;min-height:300px"></div>
+      <div id="cxTabs" role="tablist" aria-label="market" style="margin:6px 0"></div>
+      <div id="cxStats"></div>
+      <div id="cxCtl" class="row-between" style="margin:6px 0;gap:6px;flex-wrap:wrap"></div>
+      <div id="cxChartBar" class="row-between" style="margin:6px 0;flex-wrap:wrap"></div>
+      <div id="cxChartWrap" style="display:flex;flex-direction:column;width:100%">
+        <div id="cxChart" style="width:100%;height:500px"></div>
+        <div id="cxOff" class="hidden" style="align-self:flex-start;margin:2px 0;padding:2px 8px;border-radius:6px;font-size:0.8rem;border:1px solid var(--hold,#fbbf24)"></div>
+      </div>
       <p id="cxChartNote" class="sub" style="margin:2px 0;font-size:0.75rem"></p>
+      <div id="cxNow"></div>
+      <div id="cxBeginner"></div>
+      <div id="cxPaper"></div>
+      <details id="cxKBox" style="margin:8px 0">
+        <summary class="sub">Kalshi's YES / NO price for this market</summary>
+        <div id="cxContract" style="width:100%;min-height:200px"></div>
+        <p id="cxContractNote" class="sub" style="margin:2px 0;font-size:0.75rem"></p>
+      </details>
       <div id="cxMomentum"></div>
       <div id="cxBoard"></div>
-      <h3 style="margin:12px 0 4px">Kalshi's price for the open 15-minute market</h3>
-      <div id="cxContract" style="width:100%;min-height:200px"></div>
-      <p id="cxContractNote" class="sub" style="margin:2px 0;font-size:0.75rem"></p>
-      <div id="cxPaper"></div>
       <div id="cxRecord"></div>
       <p class="sub" style="margin:8px 0 0;font-size:0.72rem">Charts: TradingView Lightweight Charts&trade;, Copyright (c) 2023 TradingView, Inc., <a href="https://www.tradingview.com/" target="_blank" rel="noopener">tradingview.com</a> (Apache 2.0). Live prices in this tab come from Coinbase's public feed, straight to this browser.</p>
     </section>

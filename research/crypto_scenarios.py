@@ -267,5 +267,41 @@ def main():
           {k: v["threshold"] for k, v in out["uncertain"].items()})
 
 
+def decompose():
+    """DESCRIPTIVE, written after the verdict above (2026-11-28) and deciding nothing the rule decided: how much of
+    each validated scenario model's held-out gain is HOW FAR the price moves (a meaningful move or sideways) and how
+    much is WHICH WAY (up given a meaningful move). The rule calls a recovery or a decline "supported" wherever the
+    model passed; the page words that evidence by this split, so a gain that is all volatility is never shown as a
+    directional call. Same fits (each horizon's chosen lambda on all of development), same held-out rows."""
+    import numpy as np
+    data = {c: rows(c) for c in CM.COINS}
+    dev = [r for c in CM.COINS for r in data[c] if r[0] < CM.SPLIT]
+    test = [r for c in CM.COINS for r in data[c] if r[0] >= CM.SPLIT]
+    out = json.load(open(OUT))
+    S = out["scenarios"]
+    mu, sd = S["mu"], S["sd"]
+    dec = {}
+    for key in HZ:
+        _, Xa, ya, oa = _design(np, dev, key, mu, sd)
+        B = _fit(np, Xa, ya, oa, S[key]["lambda"])
+        kb, Xb, yb, ob = _design(np, test, key, mu, sd)
+        Pc, Pn = _probs(np, B, Xb, ob), np.exp(ob)
+        mc, mn = Pc[:, 0] + Pc[:, 2], Pn[:, 0] + Pn[:, 2]
+        moved = yb != 1
+        mag = np.where(moved, -np.log(mc) + np.log(mn), -np.log(1 - mc) + np.log(1 - mn))
+        upc = Pc[:, 0] / mc
+        way = np.where(moved, -np.log(np.where(yb == 0, upc, 1 - upc)) + np.log(0.5), 0.0)
+        days = np.array([_day(r[0]) for r in kb])
+        part = {}
+        for name, d in (("how_far", mag), ("which_way", way)):
+            dm = np.array([d[days == k].mean() for k in sorted(set(days.tolist()))])
+            part[name] = {"gain_nats": round(-float(d.mean()), 6), "se_days": round(float(dm.std(ddof=1) / math.sqrt(len(dm))), 6)}
+        part["which_way_supported"] = part["which_way"]["gain_nats"] > 2 * part["which_way"]["se_days"]
+        dec[key] = part
+    out["decomposition"] = dec
+    json.dump(out, open(OUT, "w"), indent=1, sort_keys=True)
+    print(dec)
+
+
 if __name__ == "__main__":
-    main()
+    decompose() if sys.argv[1:] == ["decompose"] else main()
