@@ -674,6 +674,714 @@
     }
    ],
    "ts": 1795796265.8153787
+  },
+  {
+   "commit": "c214716cdd34c18bf99acf03db8c3666666c8b9e",
+   "key": "deep-v2",
+   "kind": "profile_probe",
+   "real_data": true,
+   "received_ts": 1795826210.2886343,
+   "results": [
+    {
+     "budget_s": 35489,
+     "dg": 157066,
+     "error": null,
+     "estimate_gb": 13.7,
+     "free_gb": 455.6,
+     "ram_gb": 341.00553131103516,
+     "report": {
+      "agreement": {
+       "both_built": true,
+       "comparable": true,
+       "entropy_copied": true,
+       "equal": true,
+       "first_differences": [],
+       "inputs_copied": true,
+       "inputs_digests_equal": true,
+       "refused": null,
+       "rng": {
+        "B": "the interrupted build's own",
+        "C": "the interrupted build's own"
+       },
+       "seed": {
+        "B": null,
+        "C": null
+       }
+      },
+      "board_memory": {
+       "B": {
+        "build_added_gb": null,
+        "process_peak_gb": 6.93,
+        "process_scope": "this process only; the build's pool workers are child processes",
+        "process_start_gb": 0.09,
+        "sample_s": 1.0,
+        "seconds": 1534.4,
+        "system_peak_used_gb": null,
+        "system_start_used_gb": null,
+        "system_total_gb": null,
+        "system_unreadable_samples": 1511
+       },
+       "C": {
+        "build_added_gb": null,
+        "process_peak_gb": 7.05,
+        "process_scope": "this process only; the build's pool workers are child processes",
+        "process_start_gb": 0.07,
+        "sample_s": 1.0,
+        "seconds": 7295.2,
+        "system_peak_used_gb": null,
+        "system_start_used_gb": null,
+        "system_total_gb": null,
+        "system_unreadable_samples": 7188
+       }
+      },
+      "checkpoint_after_A1": {
+       "builds": 1,
+       "bytes": 1627056,
+       "inputs": 1
+      },
+      "counts": {
+       "field_n": 300000,
+       "n_sims": 550000,
+       "opt_worlds": 50000
+      },
+      "dg": 157066,
+      "drift": {
+       "first_read_digests": {
+        "depth_dx": "394734d9b860d90e",
+        "depth_kept": "fe1d28afcf3a3509",
+        "depth_roster": "3ace7ea667d83989",
+        "depth_status": "746c54343e7adadd",
+        "details": "fcbbec1d2ec81c2e",
+        "drive": "edd1154e45c7ee1c",
+        "dst": "3b6dd2dc758ecf07",
+        "games": "fbc2058390f885ce",
+        "kickers": "3c8bc5b106a00b31",
+        "profiles": "d404ac15307e48ad",
+        "slate_csv": "bcfd38914a2cbe1e",
+        "slate_rest": "03fa575ab7029f7d",
+        "week": "c413376e672b0cb4",
+        "week_stamp": "f612aec6c8cab89e",
+        "weight": "221764976efe0413"
+       },
+       "first_read_ts": 1795809892.6264565,
+       "later": [
+        {
+         "moved": [
+          "details",
+          "drive",
+          "games",
+          "profiles",
+          "slate_csv",
+          "slate_rest",
+          "week_stamp"
+         ],
+         "player_fields_moved": {
+          "means": 90,
+          "proj_pts": 54,
+          "recon": 91
+         },
+         "players_added": 0,
+         "players_removed": 0,
+         "seconds_after_first": 1513,
+         "tag": "A2 killed in scoring"
+        },
+        {
+         "moved": [
+          "depth_dx",
+          "depth_kept",
+          "depth_roster",
+          "depth_status",
+          "details",
+          "drive",
+          "dst",
+          "games",
+          "kickers",
+          "profiles",
+          "slate_csv",
+          "slate_rest",
+          "week_stamp"
+         ],
+         "player_fields_moved": {
+          "means": 140,
+          "name": 2,
+          "opp": 2,
+          "pos": 2,
+          "proj_pts": 101,
+          "recon": 143,
+          "team": 2
+         },
+         "players_added": 0,
+         "players_removed": 2,
+         "seconds_after_first": 5317,
+         "tag": "A3 killed in the portfolio pass"
+        },
+        {
+         "moved": [
+          "depth_dx",
+          "depth_kept",
+          "depth_roster",
+          "depth_status",
+          "details",
+          "drive",
+          "dst",
+          "games",
+          "kickers",
+          "profiles",
+          "slate_csv",
+          "slate_rest",
+          "week_stamp"
+         ],
+         "player_fields_moved": {
+          "means": 141,
+          "name": 3,
+          "opp": 3,
+          "pos": 3,
+          "proj_pts": 111,
+          "recon": 143,
+          "team": 3
+         },
+         "players_added": 0,
+         "players_removed": 3,
+         "seconds_after_first": 7448,
+         "tag": "B resumed to the end"
+        },
+        {
+         "moved": [
+          "depth_dx",
+          "depth_kept",
+          "depth_roster",
+          "depth_status",
+          "details",
+          "drive",
+          "dst",
+          "games",
+          "kickers",
+          "profiles",
+          "slate_csv",
+          "slate_rest",
+          "week_stamp"
+         ],
+         "player_fields_moved": {
+          "means": 181,
+          "name": 8,
+          "opp": 8,
+          "pos": 8,
+          "proj_pts": 138,
+          "recon": 184,
+          "team": 8
+         },
+         "players_added": 2,
+         "players_removed": 6,
+         "seconds_after_first": 9002,
+         "tag": "C fresh"
+        }
+       ]
+      },
+      "estimate_gb": 4.3,
+      "finished_ts": 1795826208.6793041,
+      "fresh_checkpoint": {
+       "inputs": {
+        "age_s": 8994.6,
+        "as_of": 1795809917.9179103,
+        "digests": {
+         "depth_dx": "74e18fb61bd567d5",
+         "depth_kept": "e4df6370eb5e0fce",
+         "depth_roster": "3ace7ea667d83989",
+         "depth_status": "86582a0ed8526e63",
+         "details": "fcbbec1d2ec81c2e",
+         "drive": "edd1154e45c7ee1c",
+         "dst": "3b6dd2dc758ecf07",
+         "games": "fbc2058390f885ce",
+         "kickers": "3c8bc5b106a00b31",
+         "profiles": "d404ac15307e48ad",
+         "slate_csv": "bcfd38914a2cbe1e",
+         "slate_rest": "03fa575ab7029f7d",
+         "week": "c413376e672b0cb4",
+         "week_stamp": "f612aec6c8cab89e",
+         "weight": "221764976efe0413",
+         "worlds_key": "b29bc38ec2315daa"
+        },
+        "frozen": true,
+        "key": "c0cfc87204cf526ed1403527db098c3c56c7c7e7",
+        "operation": "Resume existing build",
+        "pinned": true,
+        "why": null
+       },
+       "key": "747defdb5486f927a86ee772d302aab88ab18627",
+       "resumed": {
+        "rng": "the interrupted build's own"
+       }
+      },
+      "keys": {
+       "build": {
+        "A1 killed in the best-lineup solves": "747defdb5486f927a86ee772d302aab88ab18627",
+        "A2 killed in scoring": "747defdb5486f927a86ee772d302aab88ab18627",
+        "A3 killed in the portfolio pass": "747defdb5486f927a86ee772d302aab88ab18627",
+        "B resumed to the end": "747defdb5486f927a86ee772d302aab88ab18627",
+        "C fresh": "747defdb5486f927a86ee772d302aab88ab18627"
+       },
+       "operation": {
+        "A1 killed in the best-lineup solves": "Start fresh build",
+        "A2 killed in scoring": "Resume existing build",
+        "A3 killed in the portfolio pass": "Resume existing build",
+        "B resumed to the end": "Resume existing build",
+        "C fresh": "Resume existing build"
+       },
+       "request": {
+        "A1 killed in the best-lineup solves": "c0cfc87204cf526ed1403527db098c3c56c7c7e7",
+        "A2 killed in scoring": "c0cfc87204cf526ed1403527db098c3c56c7c7e7",
+        "A3 killed in the portfolio pass": "c0cfc87204cf526ed1403527db098c3c56c7c7e7",
+        "B resumed to the end": "c0cfc87204cf526ed1403527db098c3c56c7c7e7",
+        "C fresh": "c0cfc87204cf526ed1403527db098c3c56c7c7e7"
+       }
+      },
+      "kill_frac": 0.4,
+      "portfolio_kill_s": 90.0,
+      "profile": "deep",
+      "resumed": {
+       "inputs": {
+        "age_s": 7441.4,
+        "as_of": 1795809917.9179103,
+        "digests": {
+         "depth_dx": "74e18fb61bd567d5",
+         "depth_kept": "e4df6370eb5e0fce",
+         "depth_roster": "3ace7ea667d83989",
+         "depth_status": "86582a0ed8526e63",
+         "details": "fcbbec1d2ec81c2e",
+         "drive": "edd1154e45c7ee1c",
+         "dst": "3b6dd2dc758ecf07",
+         "games": "fbc2058390f885ce",
+         "kickers": "3c8bc5b106a00b31",
+         "profiles": "d404ac15307e48ad",
+         "slate_csv": "bcfd38914a2cbe1e",
+         "slate_rest": "03fa575ab7029f7d",
+         "week": "c413376e672b0cb4",
+         "week_stamp": "f612aec6c8cab89e",
+         "weight": "221764976efe0413",
+         "worlds_key": "b29bc38ec2315daa"
+        },
+        "frozen": true,
+        "key": "c0cfc87204cf526ed1403527db098c3c56c7c7e7",
+        "operation": "Resume existing build",
+        "pinned": true,
+        "why": null
+       },
+       "key": "747defdb5486f927a86ee772d302aab88ab18627",
+       "resumed": {
+        "optimal": "from the checkpoint",
+        "rng": "the interrupted build's own",
+        "score": "500,000 of 500,000 worlds (60 of 60 ranges finished) from the checkpoint"
+       }
+      },
+      "runs": [
+       {
+        "build_added_gb": null,
+        "build_key": "747defdb5486f927a86ee772d302aab88ab18627",
+        "completed": false,
+        "cpu_temp": "not readable without administrator rights",
+        "disk_peak_gb": {
+         "checkpoints": 1.402,
+         "scratch": 0.0,
+         "worlds_cache": 0.648
+        },
+        "gpu_peak_load_pct": 37.0,
+        "gpu_peak_power_w": 67.35,
+        "gpu_peak_temp_c": 61.0,
+        "kill": "solve",
+        "killed_at_s": 1512.5,
+        "log_tail": [
+         "[tourney] classic 157066: Start fresh build -- no frozen inputs for this request (request c0cfc87204cf526ed1403527db098c3c56c7c7e7)",
+         "[tourney] classic 157066: 407 players, 2 contest(s) NFL $2.5M Fantasy Football Millionaire [, NFL $2.25M Fantasy Football Millionaire ; simulating week 12 x 550,000 (engine)...",
+         "[tourney] classic 157066: checkpoint 747defdb5486f927a86ee772d302aab88ab18627 (new)",
+         "[tourney] classic 157066: pool 201 players (40 field-only) x 550,000 worlds (1340s); the best lineup of each of 50,000 worlds...",
+         "[tourney]   49,920/50,000 worlds solved, 145s"
+        ],
+        "operation": "Start fresh build",
+        "operation_why": "no frozen inputs for this request",
+        "request_key": "c0cfc87204cf526ed1403527db098c3c56c7c7e7",
+        "returncode": 1,
+        "scoring_frac_seen": 0.0,
+        "seconds": 1513.1,
+        "system_memory": "unreadable",
+        "system_peak_used_gb": null,
+        "system_start_used_gb": null,
+        "system_total_gb": null,
+        "system_unreadable_samples": 695,
+        "tag": "A1 killed in the best-lineup solves",
+        "versions": {
+         "commit": "c214716cdd34c18bf99acf03db8c3666666c8b9e",
+         "deep_weight": 0.3,
+         "inputs_code": "5a370ca9e9947179",
+         "scoring_code": "93cbeeac3330a9b8",
+         "sim_model": "engine-deep",
+         "sim_model_version": 2,
+         "simulator_code": "daa0341df82ebd82",
+         "tourney_engine": 10,
+         "tourney_version": 3
+        },
+        "vram_peak_mb": 5144.0
+       },
+       {
+        "build_added_gb": null,
+        "build_key": "747defdb5486f927a86ee772d302aab88ab18627",
+        "completed": false,
+        "cpu_temp": "not readable without administrator rights",
+        "disk_peak_gb": {
+         "checkpoints": 0.907,
+         "scratch": 0.0,
+         "worlds_cache": 0.648
+        },
+        "gpu_peak_load_pct": 10.0,
+        "gpu_peak_power_w": 35.16,
+        "gpu_peak_temp_c": 60.0,
+        "kill": "score",
+        "killed_at_s": 3801.9,
+        "log_tail": [
+         "[tourney]   108,342/500,000 worlds, 1898s",
+         "[tourney]   116,676/500,000 worlds, 1898s",
+         "[tourney]   125,010/500,000 worlds, 1898s",
+         "[tourney]   133,344/500,000 worlds, 1902s",
+         "[tourney]   141,678/500,000 worlds, 1902s",
+         "[tourney]   150,012/500,000 worlds, 1902s",
+         "[tourney]   158,346/500,000 worlds, 1910s",
+         "[tourney]   166,680/500,000 worlds, 1911s",
+         "[tourney]   175,014/500,000 worlds, 3689s",
+         "[tourney]   183,348/500,000 worlds, 3695s",
+         "[tourney]   191,682/500,000 worlds, 3695s",
+         "[tourney]   200,016/500,000 worlds, 3701s"
+        ],
+        "operation": "Resume existing build",
+        "operation_why": "inputs frozen 1515s ago",
+        "request_key": "c0cfc87204cf526ed1403527db098c3c56c7c7e7",
+        "returncode": 1,
+        "scoring_frac_seen": 0.4,
+        "seconds": 3803.5,
+        "system_memory": "unreadable",
+        "system_peak_used_gb": null,
+        "system_start_used_gb": null,
+        "system_total_gb": null,
+        "system_unreadable_samples": 1753,
+        "tag": "A2 killed in scoring",
+        "versions": {
+         "commit": "c214716cdd34c18bf99acf03db8c3666666c8b9e",
+         "deep_weight": 0.3,
+         "inputs_code": "5a370ca9e9947179",
+         "scoring_code": "93cbeeac3330a9b8",
+         "sim_model": "engine-deep",
+         "sim_model_version": 2,
+         "simulator_code": "daa0341df82ebd82",
+         "tourney_engine": 10,
+         "tourney_version": 3
+        },
+        "vram_peak_mb": 2941.0
+       },
+       {
+        "build_added_gb": null,
+        "build_key": "747defdb5486f927a86ee772d302aab88ab18627",
+        "completed": false,
+        "cpu_temp": "not readable without administrator rights",
+        "disk_peak_gb": {
+         "checkpoints": 1.349,
+         "scratch": 0.0,
+         "worlds_cache": 0.648
+        },
+        "gpu_peak_load_pct": 9.0,
+        "gpu_peak_power_w": 33.56,
+        "gpu_peak_temp_c": 60.0,
+        "kill": "portfolio",
+        "killed_at_s": 2130.2,
+        "log_tail": [
+         "[tourney]   416,700/500,000 worlds, 1913s",
+         "[tourney]   425,034/500,000 worlds, 1916s",
+         "[tourney]   433,368/500,000 worlds, 1920s",
+         "[tourney]   441,702/500,000 worlds, 1920s",
+         "[tourney]   450,036/500,000 worlds, 1920s",
+         "[tourney]   458,370/500,000 worlds, 1920s",
+         "[tourney]   466,704/500,000 worlds, 1920s",
+         "[tourney]   475,038/500,000 worlds, 1922s",
+         "[tourney]   483,372/500,000 worlds, 1928s",
+         "[tourney]   491,706/500,000 worlds, 1932s",
+         "[tourney]   500,000/500,000 worlds, 1932s",
+         "[tourney] classic 157066: scored (1941s); portfolios of 20 per contest from the 1,200 strongest..."
+        ],
+        "operation": "Resume existing build",
+        "operation_why": "inputs frozen 5317s ago",
+        "request_key": "c0cfc87204cf526ed1403527db098c3c56c7c7e7",
+        "returncode": 1,
+        "scoring_frac_seen": 1.0,
+        "seconds": 2131.6,
+        "system_memory": "unreadable",
+        "system_peak_used_gb": null,
+        "system_start_used_gb": null,
+        "system_total_gb": null,
+        "system_unreadable_samples": 983,
+        "tag": "A3 killed in the portfolio pass",
+        "versions": {
+         "commit": "c214716cdd34c18bf99acf03db8c3666666c8b9e",
+         "deep_weight": 0.3,
+         "inputs_code": "5a370ca9e9947179",
+         "scoring_code": "93cbeeac3330a9b8",
+         "sim_model": "engine-deep",
+         "sim_model_version": 2,
+         "simulator_code": "daa0341df82ebd82",
+         "tourney_engine": 10,
+         "tourney_version": 3
+        },
+        "vram_peak_mb": 2959.0
+       },
+       {
+        "build_added_gb": null,
+        "build_key": "747defdb5486f927a86ee772d302aab88ab18627",
+        "completed": true,
+        "cpu_temp": "not readable without administrator rights",
+        "disk_peak_gb": {
+         "checkpoints": 5.797,
+         "scratch": 0.0,
+         "worlds_cache": 0.648
+        },
+        "gpu_peak_load_pct": 6.0,
+        "gpu_peak_power_w": 35.22,
+        "gpu_peak_temp_c": 60.0,
+        "kill": null,
+        "killed_at_s": null,
+        "log_tail": [
+         "[tourney]   416,700/500,000 worlds, 5s",
+         "[tourney]   425,034/500,000 worlds, 5s",
+         "[tourney]   433,368/500,000 worlds, 5s",
+         "[tourney]   441,702/500,000 worlds, 5s",
+         "[tourney]   450,036/500,000 worlds, 5s",
+         "[tourney]   458,370/500,000 worlds, 6s",
+         "[tourney]   466,704/500,000 worlds, 6s",
+         "[tourney]   475,038/500,000 worlds, 6s",
+         "[tourney]   483,372/500,000 worlds, 6s",
+         "[tourney]   491,706/500,000 worlds, 6s",
+         "[tourney]   500,000/500,000 worlds, 6s",
+         "[tourney] classic 157066: scored (17s); portfolios of 20 per contest from the 1,200 strongest..."
+        ],
+        "operation": "Resume existing build",
+        "operation_why": "inputs frozen 7441s ago",
+        "request_key": "c0cfc87204cf526ed1403527db098c3c56c7c7e7",
+        "returncode": 0,
+        "scoring_frac_seen": 1.0,
+        "seconds": 1554.0,
+        "system_memory": "unreadable",
+        "system_peak_used_gb": null,
+        "system_start_used_gb": null,
+        "system_total_gb": null,
+        "system_unreadable_samples": 723,
+        "tag": "B resumed to the end",
+        "versions": {
+         "commit": "c214716cdd34c18bf99acf03db8c3666666c8b9e",
+         "deep_weight": 0.3,
+         "inputs_code": "5a370ca9e9947179",
+         "scoring_code": "93cbeeac3330a9b8",
+         "sim_model": "engine-deep",
+         "sim_model_version": 2,
+         "simulator_code": "daa0341df82ebd82",
+         "tourney_engine": 10,
+         "tourney_version": 3
+        },
+        "vram_peak_mb": 2958.0
+       },
+       {
+        "build_added_gb": null,
+        "build_key": "747defdb5486f927a86ee772d302aab88ab18627",
+        "completed": true,
+        "cpu_temp": "not readable without administrator rights",
+        "disk_peak_gb": {
+         "checkpoints": 5.797,
+         "scratch": 0.0,
+         "worlds_cache": 0.653
+        },
+        "gpu_peak_load_pct": 6.0,
+        "gpu_peak_power_w": 35.67,
+        "gpu_peak_temp_c": 60.0,
+        "kill": null,
+        "killed_at_s": null,
+        "log_tail": [
+         "[tourney]   416,700/500,000 worlds, 5589s",
+         "[tourney]   425,034/500,000 worlds, 5589s",
+         "[tourney]   433,368/500,000 worlds, 5592s",
+         "[tourney]   441,702/500,000 worlds, 5592s",
+         "[tourney]   450,036/500,000 worlds, 5592s",
+         "[tourney]   458,370/500,000 worlds, 5592s",
+         "[tourney]   466,704/500,000 worlds, 5592s",
+         "[tourney]   475,038/500,000 worlds, 5592s",
+         "[tourney]   483,372/500,000 worlds, 5594s",
+         "[tourney]   491,706/500,000 worlds, 5595s",
+         "[tourney]   500,000/500,000 worlds, 5595s",
+         "[tourney] classic 157066: scored (5600s); portfolios of 20 per contest from the 1,200 strongest..."
+        ],
+        "operation": "Resume existing build",
+        "operation_why": "inputs frozen 8995s ago",
+        "request_key": "c0cfc87204cf526ed1403527db098c3c56c7c7e7",
+        "returncode": 0,
+        "scoring_frac_seen": 1.0,
+        "seconds": 7314.5,
+        "system_memory": "unreadable",
+        "system_peak_used_gb": null,
+        "system_start_used_gb": null,
+        "system_total_gb": null,
+        "system_unreadable_samples": 3367,
+        "tag": "C fresh",
+        "versions": {
+         "commit": "c214716cdd34c18bf99acf03db8c3666666c8b9e",
+         "deep_weight": 0.3,
+         "inputs_code": "5a370ca9e9947179",
+         "scoring_code": "93cbeeac3330a9b8",
+         "sim_model": "engine-deep",
+         "sim_model_version": 2,
+         "simulator_code": "daa0341df82ebd82",
+         "tourney_engine": 10,
+         "tourney_version": 3
+        },
+        "vram_peak_mb": 2960.0
+       }
+      ],
+      "stages": [
+       "A1 killed in the best-lineup solves",
+       "A2 killed in scoring",
+       "A3 killed in the portfolio pass",
+       "B resumed to the end",
+       "C fresh"
+      ],
+      "started_ts": 1795809891.717481,
+      "timings": {
+       "B": {
+        "candidates_s": 19.5,
+        "field_s": 43.8,
+        "optimal_s": 1.5,
+        "portfolio_s": 1446.2,
+        "score_device": {
+         "device": "cpu",
+         "seconds": 6.0
+        },
+        "score_s": 16.7,
+        "sims_s": 5.5,
+        "total_s": 1533.2
+       },
+       "C": {
+        "candidates_s": 19.5,
+        "field_s": 42.9,
+        "optimal_s": 146.1,
+        "portfolio_s": 1479.7,
+        "score_device": {
+         "device": "cpu",
+         "seconds": 5595.6
+        },
+        "score_s": 5599.8,
+        "sims_s": 6.0,
+        "total_s": 7294.0
+       }
+      },
+      "version": 2,
+      "versions": {
+       "A1 killed in the best-lineup solves": {
+        "commit": "c214716cdd34c18bf99acf03db8c3666666c8b9e",
+        "deep_weight": 0.3,
+        "inputs_code": "5a370ca9e9947179",
+        "scoring_code": "93cbeeac3330a9b8",
+        "sim_model": "engine-deep",
+        "sim_model_version": 2,
+        "simulator_code": "daa0341df82ebd82",
+        "tourney_engine": 10,
+        "tourney_version": 3
+       },
+       "A2 killed in scoring": {
+        "commit": "c214716cdd34c18bf99acf03db8c3666666c8b9e",
+        "deep_weight": 0.3,
+        "inputs_code": "5a370ca9e9947179",
+        "scoring_code": "93cbeeac3330a9b8",
+        "sim_model": "engine-deep",
+        "sim_model_version": 2,
+        "simulator_code": "daa0341df82ebd82",
+        "tourney_engine": 10,
+        "tourney_version": 3
+       },
+       "A3 killed in the portfolio pass": {
+        "commit": "c214716cdd34c18bf99acf03db8c3666666c8b9e",
+        "deep_weight": 0.3,
+        "inputs_code": "5a370ca9e9947179",
+        "scoring_code": "93cbeeac3330a9b8",
+        "sim_model": "engine-deep",
+        "sim_model_version": 2,
+        "simulator_code": "daa0341df82ebd82",
+        "tourney_engine": 10,
+        "tourney_version": 3
+       },
+       "B resumed to the end": {
+        "commit": "c214716cdd34c18bf99acf03db8c3666666c8b9e",
+        "deep_weight": 0.3,
+        "inputs_code": "5a370ca9e9947179",
+        "scoring_code": "93cbeeac3330a9b8",
+        "sim_model": "engine-deep",
+        "sim_model_version": 2,
+        "simulator_code": "daa0341df82ebd82",
+        "tourney_engine": 10,
+        "tourney_version": 3
+       },
+       "C fresh": {
+        "commit": "c214716cdd34c18bf99acf03db8c3666666c8b9e",
+        "deep_weight": 0.3,
+        "inputs_code": "5a370ca9e9947179",
+        "scoring_code": "93cbeeac3330a9b8",
+        "sim_model": "engine-deep",
+        "sim_model_version": 2,
+        "simulator_code": "daa0341df82ebd82",
+        "tourney_engine": 10,
+        "tourney_version": 3
+       }
+      }
+     }
+    }
+   ],
+   "ts": 1795826210.1691277
+  },
+  {
+   "commit": "795e511eba0b4715db6244d9971c7bd07ac8bec9",
+   "key": "775b910d62d096ea",
+   "real_data": false,
+   "received_ts": 1795826824.3506935,
+   "results": [
+    {
+     "config": {
+      "batches": "250",
+      "cands": 20000,
+      "field": 300000,
+      "kernel": "score",
+      "name": "score",
+      "require_kind": "classic",
+      "worlds": 160000
+     },
+     "error": "Traceback (most recent call last):\n  File \"D:\\Games\\Kalshi Betting\\kalshi-betting-helper\\research\\gpu_bench.py\", line 537, in <module>\n    sys.exit(main())\n             ~~~~^^\n  File \"D:\\Games\\Kalshi Betting\\kalshi-betting-helper\\research\\gpu_bench.py\", line 410, in main\n    X, idx, w, label = inputs(args, np)\n                       ~~~~~~^^^^^^^^^^\n  File \"D:\\Games\\Kalshi Betting\\kalshi-betting-helper\\research\\gpu_bench.py\", line 173, in inputs\n    raise RuntimeError(f\"no real slate to benchmark: no {want} slate's evaluator artifact yet\")\nRuntimeError: no real slate to benchmark: no classic slate's evaluator artifact yet\n",
+     "report": null,
+     "wall_s": 0.7
+    }
+   ],
+   "ts": 1795826824.239831
+  },
+  {
+   "commit": "c6dd35dd1242eabe05c04cf1172c9314de0d95d0",
+   "key": "775b910d62d096ea",
+   "real_data": false,
+   "received_ts": 1795848652.3224778,
+   "results": [
+    {
+     "config": {
+      "batches": "250",
+      "cands": 20000,
+      "field": 300000,
+      "kernel": "score",
+      "name": "score",
+      "require_kind": "classic",
+      "worlds": 160000
+     },
+     "error": "Traceback (most recent call last):\n  File \"D:\\Games\\Kalshi Betting\\kalshi-betting-helper\\research\\gpu_bench.py\", line 537, in <module>\n    sys.exit(main())\n             ~~~~^^\n  File \"D:\\Games\\Kalshi Betting\\kalshi-betting-helper\\research\\gpu_bench.py\", line 410, in main\n    X, idx, w, label = inputs(args, np)\n                       ~~~~~~^^^^^^^^^^\n  File \"D:\\Games\\Kalshi Betting\\kalshi-betting-helper\\research\\gpu_bench.py\", line 173, in inputs\n    raise RuntimeError(f\"no real slate to benchmark: no {want} slate's evaluator artifact yet\")\nRuntimeError: no real slate to benchmark: no classic slate's evaluator artifact yet\n",
+     "report": null,
+     "wall_s": 0.5
+    }
+   ],
+   "ts": 1795848652.084401
   }
  ]
 }
