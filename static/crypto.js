@@ -490,7 +490,7 @@
         ". Meaningful swings left: about " + num(F.swings_expected, 1) + ". Next swing against this move in about " +
         h(left(F.next_reversal_s)) + " on average; this move lasting to the close: " + pct(F.persist_to_close) + " (random walk).");
     }
-    var r = (st.rec || {}).record || {}, hy = ((R.hybrid || {}).heldout || {}).S4 || {};
+    var r = (st.rec || {}).record || {}, hy = ((R.hybrid || {}).heldout || {}).S4 || {}, z4 = (R.zero_delay_heldout || {}).S4 || {};
     var losing = r.same_rows_model_logloss != null && r.same_rows_model_logloss > r.same_rows_kalshi_logloss;
     return '<div class="card" style="margin:8px 0;padding:10px 12px">' +
       '<div style="font-size:1.05rem"><b>' + h(st.coin) + " " + h(px(lv)) + "</b> is <b>" + (diff == null ? "–" :
@@ -509,7 +509,10 @@
       '<p class="sub" style="margin:4px 0;color:var(--hold)">' + (losing ? "Vigil's settlement model is losing to Kalshi's " +
         "own price on the live record. " : "") + "No strategy tested has made money after fees and spreads: on held-out " +
         "windows the best (a time-aware hold / cash-out / switch rule) made " + (hy.per_window_c == null ? "–" :
-        usd(hy.per_window_c) + " a window ± " + usd(hy.se_c)) + ", indistinguishable from not trading. Paper only.</p></div>";
+        usd(hy.per_window_c) + " a window ± " + usd(hy.se_c)) + ", indistinguishable from not trading" +
+        (z4.per_window_c == null ? "" : "; filled instantly at the very quote it saw it would have made " + usd(z4.per_window_c) +
+          " ± " + usd(z4.se_c) + " a window -- a ceiling no real order reaches, and the edge was gone a minute later") +
+        ". Paper only.</p></div>";
   }
 
   function setMode(mode) {
@@ -637,10 +640,33 @@
         (iw.per_trade_c > 0 ? "+" : "") + num(iw.per_trade_c, 2) + "c a trade ± " + num(iw.se_c, 2) + ", total " +
         num(iw.total_c, 0) + "c, worst drawdown " + num(iw.max_drawdown_c, 0) + "c, turnover " + num(iw.turnover_c, 0) + "c" :
         "no completed trades yet") + "</div></div>" +
+      predsHtml(x.preds, x.book) +
       (by ? '<details style="margin-top:6px"><summary class="sub">By coin, contract and look</summary>' +
         '<div style="overflow-x:auto"><table style="width:100%;font-size:0.82rem"><tr style="color:var(--muted)"><th>coin</th>' +
         '<th>contract</th><th style="text-align:right">look</th><th style="text-align:right">rows</th>' +
         '<th style="text-align:right">model LL</th><th style="text-align:right">Kalshi LL</th></tr>' + by + "</table></div></details>" : "");
+  }
+
+  // the forecasts' own live record, kept apart from any money record (the owner: predicting another dip is a
+  // different achievement from trading on it profitably)
+  function predsHtml(P, B) {
+    P = P || {};
+    var names = {direction_1: "direction, 1 min", direction_3: "direction, 3 min", direction_5: "direction, 5 min",
+                 final_low: "final low", final_high: "final high", touch: "touch the target again"};
+    var rows = Object.keys(names).map(function (k) {
+      var x = P[k] || {};
+      if (!x.n) return "";
+      return "<li>" + h(names[k]) + " (" + h(x.vs) + "): " + num(1000 * x.diff_nats, 1) + " ± " + num(1000 * (x.se || 0), 1) +
+        " millinats over " + h(x.n) + " forecasts" + (x.better ? " · <b>better</b>" : x.worse ? " · <b>worse</b>" : " · not decided") + "</li>";
+    }).join("");
+    B = B || {};
+    return '<div class="card" style="margin:8px 0;padding:10px 12px"><b>Live record: the forecasts</b> ' +
+      '<span class="sub">logged at each look before the outcome, graded after the close; negative is better</span>' +
+      (rows ? '<ul style="margin:4px 0 4px 18px;padding:0">' + rows + "</ul>" :
+        '<p class="sub" style="margin:4px 0">No forecasts graded yet.</p>') +
+      '<div class="stats">Kalshi book recorder: ' + h(B.rows || 0) + " snapshots over " + num(B.days || 0, 1) + " day(s), every " +
+      num(B.every_s, 0) + " s, " + h(B.r429 || 0) + " rate-limited reads; the 5/15/30/60-second delay test reads it once after " +
+      h(B.rescore_after_days || 14) + " days.</div></div>";
   }
 
   function render(d) {

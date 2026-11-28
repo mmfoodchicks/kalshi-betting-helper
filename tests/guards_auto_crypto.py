@@ -799,6 +799,119 @@ def run_v3(ck, CT):
        'mode: "beginner"' in js and "setMode(st.mode)" in js and "dollars: dol" in js and 'TECH = ["cxChartBar", "cxMomentum", "cxBoard", "cxRecord"]' in js
        and "cash out now (bid" in js and "The low may have been the final one" in js and "Paper only." in js
        and "dollars" in inspect.signature(CT.paper_open).parameters)
+    run_v4(ck, CT)
+
+
+def run_v4(ck, CT):
+    """v2 stage 3 (2026-11-27): the forecasts' live record (cx_preds), the Kalshi book recorder (cx_book), and
+    research/crypto_regimes.py (rule a1057e7)."""
+    T = 1795800600.0
+    now = T - 600
+    direc = {"as_of": now - 20, "horizons": {"1": {"p_up": 0.52}, "3": {"p_up": 0.47}, "5": {"p_up": 0.55}},
+             "trailing_5m": 1}
+    final = {"level": 100.0, "window_low": 99.5, "window_high": 100.4, "null": {"final_low": 0.6, "final_high": 0.3,
+                                                                               "touch": 0.5},
+             "model": {"final_low": 0.7, "final_high": 0.25, "touch": 0.45}}
+    row = {"close_ts": T, "rule": {"strike": 100.2}}
+    bars = {int(now - 20 + 60 * i): (100.0 + h_, 100.0 - l_, 100.0 + c_) for i, (h_, l_, c_) in
+            enumerate([(0.1, 0.1, 0.05), (0.3, 0.1, -0.02), (0.25, 0.2, 0.1), (0.2, 0.3, 0.0), (0.5, 0.1, 0.3),
+                       (0.1, 0.1, 0.0), (0.1, 0.1, 0.0), (0.1, 0.1, 0.0), (0.1, 0.1, 0.0), (0.1, 0.1, 0.0), (0.1, 0.1, 0.0)])}
+    lab = CT.label_pred(bars, now - 20, 100.0, 99.5, 100.4, 100.2, T)
+    ck("CXP-LABEL a forecast is graded only off bars that START at or after its minute: direction at 1/3/5 minutes "
+       "from the closes ending then, the final low / high and the touch over the rest of the window",
+       lab == {"y1": 1, "y3": 1, "y5": 1, "y_fl": 1, "y_fh": 0, "y_tc": 1}, str(lab))
+    with _db(CT) as path:
+        with contextlib.closing(CT._conn()) as c, c:
+            ok1 = CT.log_pred(c, "BTC", 600, row, direc, final, now)
+            ok2 = CT.log_pred(c, "BTC", 300, row, dict(direc, as_of=now + 5), final, now)
+            ok3 = CT.log_pred(c, "ETH", 60, dict(row, close_ts=now + 59), direc, final, now)
+        with _patched((CT, "_candles_between", lambda coin, t0, t1: bars)):
+            g = CT.grade_preds(T + 200)
+        rp = CT.record_preds()
+        with contextlib.closing(sqlite3.connect(path)) as c:
+            got = c.execute(f"SELECT y1, y3, y5, y_fl, y_fh, y_tc, graded FROM {CT.PRED_TABLE}").fetchall()
+    llf = lambda p, y: -(y * math.log(p) + (1 - y) * math.log(1 - p))                  # noqa: E731
+    ck("CXP-LOG a forecast is logged only from a COMPLETE minute before now and a settlement window or more before the "
+       "close, graded after the close, and its record is SQL sums: direction against a coin flip, each final question "
+       "model against the walk's null on the same row",
+       ok1 and not ok2 and not ok3 and g == 1 and got == [(1, 1, 1, 1, 0, 1, 1)]
+       and abs(rp["direction_1"]["diff_nats"] - round(llf(0.52, 1) - math.log(2), 5)) < 1e-9
+       and abs(rp["final_low"]["diff_nats"] - round(llf(0.7, 1) - llf(0.6, 1), 5)) < 1e-9
+       and abs(rp["touch"]["diff_nats"] - round(llf(0.45, 1) - llf(0.5, 1), 5)) < 1e-9, f"{ok1} {ok2} {ok3} {g} {got} {rp}")
+    ck("CXB-TICKER the 15-minute ticker the recorder reads is built from the close in Eastern time "
+       "(KXBTC15M-26NOV270445-45 closes 09:45 UTC on 2026-11-27, read live)",
+       CT.m15_ticker("KXBTC15M", 1795772700) == "KXBTC15M-26NOV270445-45")
+    import urllib.error
+    calls = {"n": 0, "mode": "ok", "px": 0.45}
+
+    def fake_get(url, timeout=6):
+        calls["n"] += 1
+        if calls["mode"] == "429":
+            raise urllib.error.HTTPError(url, 429, "too many", {}, None)
+        tk = url.split("tickers=")[1].split(",")
+        return {"markets": [{"ticker": t, "yes_bid_dollars": f"{calls['px'] - 0.01:.4f}",
+                             "yes_ask_dollars": f"{calls['px']:.4f}", "yes_bid_size_fp": "10", "yes_ask_size_fp": "12"}
+                            for t in tk]}
+    with _db(CT) as path, _patched((CT, "_get", fake_get), (CT, "_book", {"every": CT.BOOK_EVERY_S, "last": {}, "calls": 0,
+                                                                          "r429": 0, "rows": 0})):
+        t0 = 1795800000.0
+        a = CT.book_tick(t0)
+        b = CT.book_tick(t0 + 5)                           # unchanged book: no row
+        calls["px"] = 0.47
+        cnew = CT.book_tick(t0 + 10)                        # moved: a row per market
+        d = CT.book_tick(t0 + 75)                          # unchanged but a minute on: the heartbeat
+        calls["mode"] = "429"
+        ev = []
+        for i in range(6):
+            CT.book_tick(t0 + 100 + i)
+            ev.append(CT._book["every"])
+        calls["mode"] = "ok"
+        for i in range(30):
+            CT.book_tick(t0 + 200 + i)
+        back = CT._book["every"]
+        n_calls = calls["n"]
+        import gc
+        gc.collect()
+        m0 = _rss_mb()
+        for i in range(3000):
+            calls["px"] = 0.40 + 0.01 * (i % 7)
+            CT.book_tick(t0 + 400 + 5 * i)
+        gc.collect()
+        m1 = _rss_mb()
+        with contextlib.closing(sqlite3.connect(path)) as c:
+            c.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            nb = c.execute(f"SELECT COUNT(*) FROM {CT.BOOK_TABLE}").fetchone()[0]
+        bpr = os.path.getsize(path) / max(nb, 1)
+        with _patched((CT, "BOOK_MAX_ROWS", 1000)):
+            CT.prune(t0 + 400 + 5 * 3000)
+        with contextlib.closing(sqlite3.connect(path)) as c:
+            capped = c.execute(f"SELECT COUNT(*) FROM {CT.BOOK_TABLE}").fetchone()[0]
+    ck("CXB-PACE the book recorder makes ONE read a pass, writes a market only when its book moved or on the minute's "
+       "heartbeat, doubles its spacing on each 429 up to 60 s and eases back to 5 s on success",
+       (a, b, cnew, d) == (5, 0, 5, 5) and ev == [10.0, 20.0, 40.0, 60.0, 60.0, 60.0] and back == CT.BOOK_EVERY_S
+       and n_calls == 40, f"{(a, b, cnew, d)} {ev} {back} {n_calls}")
+    ck(f"CXB-MEM 3,000 recorder passes leave the worker flat (under 5 MB) and the table bounded by its row cap; measured "
+       f"{bpr:.0f} bytes a snapshot, so the {CT.BOOK_MAX_ROWS:,}-row cap holds the table under "
+       f"{CT.BOOK_MAX_ROWS * bpr / 1e6:.0f} MB of the shared 1 GB disk (10 days kept)",
+       m1 - m0 < 5.0 and capped == 1000 and nb > 3000 and CT.BOOK_MAX_ROWS * bpr < 45e6, f"{m1 - m0:.1f} {nb} {capped} {bpr}")
+    sys.path.insert(0, os.path.join(_ROOT, "research"))
+    import crypto_regimes as RG
+    snaps = [(100, 40.0, 42.0), (104, 41.0, 43.0), (112, 44.0, 46.0), (131, 45.0, 47.0), (170, 50.0, 52.0)]
+    fills = [RG.fill_at(snaps, 100, dd) for dd in RG.DELAYS]
+    ck("CXR-DELAY a delayed fill is the first book snapshot at or after decision + delay, never one before it, and the "
+       "decision sees only the latest snapshot at or before its moment",
+       fills == [snaps[2], snaps[3], snaps[3], snaps[4]] and RG.quote_at(snaps, 111) == snaps[1]
+       and RG.quote_at(snaps, 99) is None and "h = g[j - 299:j + 1]" in inspect.getsource(RG.r3_rows))
+    rj = json.loads(_read("research", "data", "crypto", "regimes.json"))
+    lab = rj["r3_final_reversal_models"]["labels"]
+    z = rj["r4_delay"]
+    ck("CXR-VERDICT by the rule written first: neither the regime-switching null nor the path simulation beat R1's "
+       "challenger on any question (it stays on the panel); with fills at the very quote decided on, the hybrid made "
+       "+41.0c a window +/- 17.1 held out -- a ceiling -- against +4.2c +/- 17.8 a minute later",
+       all(not lab[k]["compare"][f"{m}_vs_challenger"]["beats"] for k in ("final_low", "final_high", "touch")
+           for m in ("regime", "pathsim"))
+       and abs(z["zero_delay"]["heldout"]["S4"]["per_window_c"] - 40.99) < 0.01
+       and abs(z["one_minute_delay_heldout"]["S4"]["per_window_c"] - 4.239) < 1e-9)
 
 
 def datetime_ts(s):

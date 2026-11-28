@@ -3373,7 +3373,7 @@ def api_crypto_record():
         # read is one cached computation on a bounded key
         s = crypto_terminal.summary()
         rec = crypto_terminal.record_cached(coin, kind, int(look) if look else None) if (coin or kind or look) else s.get("record")
-        return jsonify({"record": rec, "by": s.get("by"), "extra": s.get("extra"), "as_of": s.get("ts"), "paper_only": True,
+        return jsonify({"record": rec, "by": s.get("by"), "extra": s.get("extra"), "preds": s.get("preds"), "book": s.get("book"), "as_of": s.get("ts"), "paper_only": True,
                         "decide": {"markets": crypto_terminal.DECIDE_MIN, "days": crypto_terminal.DECIDE_DAYS}})
     except Exception as e:
         errlog.note("CRYPTO-record-api", e)
