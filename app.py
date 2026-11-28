@@ -3373,7 +3373,7 @@ def api_crypto_record():
         # read is one cached computation on a bounded key
         s = crypto_terminal.summary()
         rec = crypto_terminal.record_cached(coin, kind, int(look) if look else None) if (coin or kind or look) else s.get("record")
-        return jsonify({"record": rec, "by": s.get("by"), "extra": s.get("extra"), "as_of": s.get("ts"), "paper_only": True,
+        return jsonify({"record": rec, "by": s.get("by"), "extra": s.get("extra"), "preds": s.get("preds"), "book": s.get("book"), "as_of": s.get("ts"), "paper_only": True,
                         "decide": {"markets": crypto_terminal.DECIDE_MIN, "days": crypto_terminal.DECIDE_DAYS}})
     except Exception as e:
         errlog.note("CRYPTO-record-api", e)
@@ -3425,6 +3425,29 @@ def api_crypto_paper_open():
     except Exception as e:
         errlog.note("CRYPTO-paper-open", e)
         return jsonify({"error": f"paper open failed: {type(e).__name__}"}), 502
+
+
+@app.route("/api/crypto/book", methods=["POST"])
+def api_crypto_book():
+    """The PC's book recorder uploads its snapshots here (pc_worker.py --book): the token door only, a body of
+    at most 512 KB and BOOK_UPLOAD_MAX_ROWS rows, every row checked by crypto_terminal.book_ingest."""
+    import crypto_terminal
+    if not _pc_auth_ok():
+        return jsonify({"error": "auth"}), 403
+    if (request.content_length or 0) > 512_000:
+        return jsonify({"error": "too large"}), 413
+    d = request.get_json(silent=True) or {}
+    rows = d.get("rows")
+    if not isinstance(rows, list):
+        return jsonify({"error": "rows"}), 400
+    if len(rows) > crypto_terminal.BOOK_UPLOAD_MAX_ROWS:
+        return jsonify({"error": "too many rows"}), 413
+    try:
+        ins, dropped = crypto_terminal.book_ingest(rows)
+        return jsonify({"ok": True, "inserted": ins, "dropped": dropped})
+    except Exception as e:
+        errlog.note("CRYPTO-book-ingest", e)
+        return jsonify({"error": f"ingest failed: {type(e).__name__}"}), 502
 
 
 @app.route("/api/crypto/paper/close", methods=["POST"])

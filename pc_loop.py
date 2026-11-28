@@ -231,6 +231,36 @@ def _stop_eval():
         p.kill()
 
 
+_BOOK_PROC = [None]             # the crypto book recorder (pc_worker.py --book)
+
+
+def _book_lane():
+    """Keep one `pc_worker.py --book` recorder running (one paced Kalshi read every ~5 s and an upload every
+    three minutes; nice 10, no build's CPU); restarted if it exits, stopped by an update (_stop_book)."""
+    while True:
+        try:
+            p = subprocess.Popen([sys.executable, os.path.join(_HERE, "pc_worker.py"), "--book"], cwd=_HERE)
+        except (OSError, subprocess.SubprocessError) as e:
+            print(f"[vigil-pc] book recorder could not start ({type(e).__name__}: {e})")
+            time.sleep(60)
+            continue
+        _BOOK_PROC[0] = p
+        p.wait()
+        _BOOK_PROC[0] = None
+        time.sleep(60)
+
+
+def _stop_book():
+    p = _BOOK_PROC[0]
+    if p is None or p.poll() is not None:
+        return
+    p.terminate()
+    try:
+        p.wait(timeout=30)
+    except subprocess.TimeoutExpired:
+        p.kill()
+
+
 def _boards_loop():
     """A boards pass every BOARDS_S, start to start, on a daemon thread: the
     main loop's exit-to-restart after an update does not wait on it -- it stops
@@ -249,6 +279,7 @@ def main():
     threading.Thread(target=_heartbeat, daemon=True).start()
     threading.Thread(target=_boards_loop, daemon=True).start()
     threading.Thread(target=_eval_loop, daemon=True).start()
+    threading.Thread(target=_book_lane, daemon=True).start()
     rc = _run_cycle()                              # fresh start = fresh cycle
     last_cycle = time.time()
     while True:
@@ -261,6 +292,7 @@ def main():
                 print("[vigil-pc] restarting on the new code...")
                 _stop_boards()
                 _stop_eval()
+                _stop_book()
                 sys.exit(0)                   # the .bat loop restarts us fresh
         # a cycle that stopped early for an update the pull could not take
         # runs again now, on the current code with yielding off (_run_cycle)

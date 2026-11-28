@@ -1,0 +1,284 @@
+{
+ "r3_final_reversal_models": {
+  "heldout_rows": 80640,
+  "labels": {
+   "final_high": {
+    "compare": {
+     "challenger_vs_null": {
+      "beats": true,
+      "coins_better": 5,
+      "gain": 0.029595,
+      "se_days": 0.00419
+     },
+     "pathsim_vs_challenger": {
+      "beats": false,
+      "coins_better": 1,
+      "gain": -0.00832,
+      "se_days": 0.004366
+     },
+     "pathsim_vs_null": {
+      "beats": false,
+      "coins_better": 3,
+      "gain": 0.021275,
+      "se_days": 0.004813
+     },
+     "regime_vs_challenger": {
+      "beats": false,
+      "coins_better": 1,
+      "gain": -0.020605,
+      "se_days": 0.003183
+     },
+     "regime_vs_null": {
+      "beats": true,
+      "coins_better": 5,
+      "gain": 0.00899,
+      "se_days": 0.002772
+     }
+    },
+    "logloss": {
+     "challenger": 0.50418,
+     "null": 0.53377,
+     "pathsim": 0.5125,
+     "regime": 0.52478
+    }
+   },
+   "final_low": {
+    "compare": {
+     "challenger_vs_null": {
+      "beats": true,
+      "coins_better": 4,
+      "gain": 0.023893,
+      "se_days": 0.006895
+     },
+     "pathsim_vs_challenger": {
+      "beats": false,
+      "coins_better": 1,
+      "gain": -0.001923,
+      "se_days": 0.004835
+     },
+     "pathsim_vs_null": {
+      "beats": false,
+      "coins_better": 2,
+      "gain": 0.02197,
+      "se_days": 0.005546
+     },
+     "regime_vs_challenger": {
+      "beats": false,
+      "coins_better": 0,
+      "gain": -0.019964,
+      "se_days": 0.004136
+     },
+     "regime_vs_null": {
+      "beats": false,
+      "coins_better": 4,
+      "gain": 0.00393,
+      "se_days": 0.003587
+     }
+    },
+    "logloss": {
+     "challenger": 0.51126,
+     "null": 0.53516,
+     "pathsim": 0.51319,
+     "regime": 0.53123
+    }
+   },
+   "touch": {
+    "compare": {
+     "challenger_vs_null": {
+      "beats": true,
+      "coins_better": 4,
+      "gain": 0.007346,
+      "se_days": 0.001925
+     },
+     "pathsim_vs_challenger": {
+      "beats": false,
+      "coins_better": 1,
+      "gain": -0.005109,
+      "se_days": 0.00213
+     },
+     "pathsim_vs_null": {
+      "beats": false,
+      "coins_better": 1,
+      "gain": 0.002237,
+      "se_days": 0.003073
+     },
+     "regime_vs_challenger": {
+      "beats": false,
+      "coins_better": 1,
+      "gain": -0.006293,
+      "se_days": 0.001533
+     },
+     "regime_vs_null": {
+      "beats": false,
+      "coins_better": 4,
+      "gain": 0.001052,
+      "se_days": 0.001691
+     }
+    },
+    "logloss": {
+     "challenger": 0.50101,
+     "null": 0.50835,
+     "pathsim": 0.50611,
+     "regime": 0.5073
+    }
+   }
+  },
+  "regime_cuts_dev": [
+   -0.288,
+   -0.0296
+  ],
+  "regime_scales_dev": {
+   "final_high": [
+    0.7,
+    0.8,
+    0.9
+   ],
+   "final_low": [
+    0.8,
+    0.8,
+    0.9
+   ],
+   "touch": [
+    0.8,
+    0.9,
+    1.0
+   ]
+  }
+ },
+ "r4_delay": {
+  "one_minute_delay_heldout": {
+   "S1": {
+    "entries": 1093,
+    "fees_dollars": 375.1,
+    "max_drawdown_dollars": 761.53,
+    "net_dollars": -638.03,
+    "per_window_c": -19.218,
+    "profitable": false,
+    "se_c": 14.215,
+    "windows": 3320
+   },
+   "S2": {
+    "entries": 1093,
+    "fees_dollars": 623.31,
+    "max_drawdown_dollars": 918.06,
+    "net_dollars": -814.15,
+    "per_window_c": -24.523,
+    "profitable": false,
+    "se_c": 9.118,
+    "windows": 3320
+   },
+   "S3": {
+    "entries": 1093,
+    "fees_dollars": 564.81,
+    "max_drawdown_dollars": 784.17,
+    "net_dollars": -712.2,
+    "per_window_c": -21.452,
+    "profitable": false,
+    "se_c": 9.577,
+    "windows": 3320
+   },
+   "S4": {
+    "entries": 633,
+    "entries_by_time_left": {
+     "10-14 min": 95,
+     "5-10 min": 165,
+     "under 5 min": 373
+    },
+    "fees_dollars": 332.11,
+    "max_drawdown_dollars": 459.65,
+    "net_dollars": 140.72,
+    "per_window_c": 4.239,
+    "profitable": false,
+    "se_c": 17.75,
+    "windows": 3320
+   }
+  },
+  "zero_delay": {
+   "dev": {
+    "S1": {
+     "entries": 901,
+     "fees_dollars": 310.77,
+     "max_drawdown_dollars": 354.96,
+     "net_dollars": 370.41,
+     "per_window_c": 11.157,
+     "profitable": false,
+     "se_c": 12.699,
+     "windows": 3320
+    },
+    "S2": {
+     "entries": 901,
+     "fees_dollars": 502.32,
+     "max_drawdown_dollars": 1035.51,
+     "net_dollars": -972.92,
+     "per_window_c": -29.305,
+     "profitable": false,
+     "se_c": 7.062,
+     "windows": 3320
+    },
+    "S3": {
+     "entries": 901,
+     "fees_dollars": 472.1,
+     "max_drawdown_dollars": 640.19,
+     "net_dollars": -518.38,
+     "per_window_c": -15.614,
+     "profitable": false,
+     "se_c": 8.012,
+     "windows": 3320
+    },
+    "S4": {
+     "entries": 442,
+     "fees_dollars": 215.71,
+     "max_drawdown_dollars": 163.15,
+     "net_dollars": 1201.37,
+     "per_window_c": 36.186,
+     "profitable": true,
+     "se_c": 13.212,
+     "windows": 3320
+    }
+   },
+   "heldout": {
+    "S1": {
+     "entries": 1093,
+     "fees_dollars": 375.51,
+     "max_drawdown_dollars": 669.62,
+     "net_dollars": -490.68,
+     "per_window_c": -14.78,
+     "profitable": false,
+     "se_c": 12.817,
+     "windows": 3320
+    },
+    "S2": {
+     "entries": 1093,
+     "fees_dollars": 628.29,
+     "max_drawdown_dollars": 1181.43,
+     "net_dollars": -1154.24,
+     "per_window_c": -34.766,
+     "profitable": false,
+     "se_c": 6.675,
+     "windows": 3320
+    },
+    "S3": {
+     "entries": 1093,
+     "fees_dollars": 570.08,
+     "max_drawdown_dollars": 826.77,
+     "net_dollars": -605.11,
+     "per_window_c": -18.226,
+     "profitable": false,
+     "se_c": 9.159,
+     "windows": 3320
+    },
+    "S4": {
+     "entries": 700,
+     "fees_dollars": 335.27,
+     "max_drawdown_dollars": 325.7,
+     "net_dollars": 1360.86,
+     "per_window_c": 40.99,
+     "profitable": true,
+     "se_c": 17.055,
+     "windows": 3320
+    }
+   }
+  }
+ },
+ "r4b_recorded": "pending: needs 14 days of cx_book snapshots (crypto_terminal's book recorder)"
+}

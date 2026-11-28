@@ -1995,6 +1995,80 @@ def _eval_final_worlds(board):
 EVAL_GPU_HIST_BATCH = 250
 
 
+# ---- the crypto book recorder (2026-11-28) -------------------------------------------------------------------
+# Kalshi's best bid / ask for the five open 15-minute crypto markets, every ~5 s, from the PC's own IP (on the
+# server it would share the app's Kalshi budget with every board), into a local SQLite under pc-simcache with
+# the server's own caps, uploaded every three minutes through the token door into the server's cx_book, where
+# the 5 / 15 / 30 / 60 s delay re-score reads it (research/crypto_regimes.py). One HTTP call a pass, doubled on
+# each 429 up to 60 s; "crypto_book": false in vigil-pc.cfg switches it off.
+def _book_paths():
+    base = os.environ.get("VIGIL_SIM_CACHE_DIR") or os.path.join(_HERE, "pc-simcache")
+    os.makedirs(base, exist_ok=True)
+    return os.path.join(base, "crypto_book_pc.db"), os.path.join(base, "crypto_book_pc.json")
+
+
+def book_once(state, now, url, tok, api=None):
+    """One step of the lane: a paced read, and an upload when one is due. `state` carries the upload marker
+    and the times; returns the seconds to sleep."""
+    import crypto_terminal as CT
+    api = api or _api
+    try:
+        CT.book_tick(now)
+    except Exception as e:                       # a refused or failed read: the next pass tries again
+        print(f"[vigil-pc] book read failed ({type(e).__name__}: {e})")
+    if now - state.get("uploaded_at", 0) >= CT.BOOK_UPLOAD_S:
+        rows = CT.book_export(state.get("after_ts", 0), CT.BOOK_UPLOAD_MAX_ROWS)
+        if len(rows) == CT.BOOK_UPLOAD_MAX_ROWS and rows[0][1] != rows[-1][1]:
+            # a full batch may cut one moment's markets in two: send only whole moments, so the marker
+            # (the last moment sent) neither skips nor repeats a row
+            rows = [r for r in rows if r[1] < rows[-1][1]]
+        if rows:
+            try:
+                api(url, tok, "/api/crypto/book", data=json.dumps({"rows": rows}).encode(),
+                    headers={"Content-Type": "application/json"}, timeout=30)
+                state["after_ts"] = rows[-1][1]
+            except Exception as e:
+                print(f"[vigil-pc] book upload failed ({type(e).__name__}: {e}); kept for the next one")
+        state["uploaded_at"] = now
+    if now - state.get("pruned_at", 0) >= 6 * 3600:
+        CT.prune(now)
+        state["pruned_at"] = now
+    return CT._book["every"]
+
+
+def book_main():
+    if _cfg_value("crypto_book") is False:
+        print("[vigil-pc] crypto book recorder off (vigil-pc.cfg)")
+        return 0
+    url, tok = _config()
+    try:
+        os.nice(10)
+    except (AttributeError, OSError):
+        pass
+    db, marker = _book_paths()
+    os.environ["CRYPTO_DB"] = db
+    import crypto_terminal as CT
+    if not CT.ENABLED:
+        return 0
+    CT.init_db()
+    state = {}
+    if os.path.exists(marker):
+        try:
+            with open(marker) as fh:
+                state = json.load(fh)
+        except (OSError, ValueError):
+            state = {}
+    print("[vigil-pc] crypto book recorder: every ~5 s, uploads every 3 min")
+    while True:
+        wait = book_once(state, time.time(), url, tok)
+        try:
+            with open(marker, "w") as fh:
+                json.dump({"after_ts": state.get("after_ts", 0)}, fh)
+        except OSError as e:
+            print(f"[vigil-pc] book marker not saved ({e})")
+        time.sleep(wait)
+
+
 def eval_main():
     """The evaluator's poller: every EVAL_POLL_S, the server's pending
     evaluation requests, answered one by one. pc_loop keeps one running beside
@@ -2075,4 +2149,6 @@ if __name__ == "__main__":
         sys.exit(boards_main() or 0)
     if "--eval" in sys.argv[1:]:
         sys.exit(eval_main() or 0)
+    if "--book" in sys.argv[1:]:
+        sys.exit(book_main() or 0)
     sys.exit(main() or 0)
