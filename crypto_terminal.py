@@ -1633,7 +1633,17 @@ PRED_TABLE = "cx_preds"
 PRED_KEEP_DAYS = 180
 PRED_MAX_ROWS = 300_000          # 1,920 rows a day (5 coins x 96 windows x 4 looks): 156 days, under the keep
 BOOK_TABLE = "cx_book"
-BOOK_ON = os.environ.get("VIGIL_CRYPTO_BOOK", "on").strip().lower() not in ("off", "0", "false", "no")
+# OFF on the server unless VIGIL_CRYPTO_BOOK=on (2026-11-28): ~720 Kalshi reads an hour shares the app's Kalshi
+# budget with every board -- the NFL / college indexes keep their last good copy on a refused page, the
+# Matchups grader stops at its first refusal, predlog grades off Kalshi -- so a climbing 429 rate here costs
+# real features, and the owner is away and cannot flip a variable. The PC records instead, on its own IP
+# (pc_worker.py --book, pc_loop's book lane), and uploads through its token door into this table
+# (book_ingest); with the PC off nothing is recorded, and the tab says so.
+def _book_on(env):
+    return str(env.get("VIGIL_CRYPTO_BOOK", "off")).strip().lower() in ("on", "1", "true", "yes")
+
+
+BOOK_ON = _book_on(os.environ)
 # Pacing, measured 2026-11-27 from this sandbox's egress: one batched read of the five open markets came back
 # 429 on about one call in ten at every spacing tried (5 s, 1 s, 0.2 s) -- the shared IP's budget, not the
 # rate -- and the best bid / ask moved every 5-15 s. So: one call per pass, every 5 s, doubled on each 429 up
@@ -1839,6 +1849,47 @@ def book_tick(now=None):
     return len(rows)
 
 
+BOOK_UPLOAD_MAX_ROWS = 5000      # one upload: ~200 KB of JSON; a day is ~40,000 rows, so a few minutes' batch is ~100
+BOOK_UPLOAD_S = 180              # the PC uploads every three minutes
+
+
+def book_export(after_ts, limit=BOOK_UPLOAD_MAX_ROWS):
+    """The PC's side: the local snapshots newer than `after_ts`, oldest first, at most `limit` (bounded)."""
+    with contextlib.closing(_conn()) as c:
+        return [list(r) for r in c.execute(
+            f"SELECT coin, ts, close_ts, yb, ya, ybs, yas FROM {BOOK_TABLE} WHERE ts > ? ORDER BY ts, coin LIMIT ?",
+            (int(after_ts), int(limit)))]
+
+
+def book_ingest(rows, now=None):
+    """The server's side of the PC's upload: every row checked (a known coin, a snapshot no more than a day old
+    nor a minute ahead, inside its own 15-minute window, prices 0-100c in tenths, sizes whole), the rest dropped;
+    at most BOOK_UPLOAD_MAX_ROWS a call (the route refuses more). Returns (inserted, dropped)."""
+    now = now or time.time()
+    ok = []
+    for r in rows[:BOOK_UPLOAD_MAX_ROWS]:
+        try:
+            ci, ts, close, yb, ya, ybs, yas = (None if v is None else int(v) for v in r)
+        except (TypeError, ValueError):
+            continue
+        if not (0 <= (ci if ci is not None else -1) < len(COINS)) or ts is None or close is None:
+            continue
+        if not (now - 86400 <= ts <= now + 60) or close % 900 or not (close - 900 <= ts <= close):
+            continue
+        if any(v is not None and not 0 <= v <= 1000 for v in (yb, ya)) or any(v is None or v < 0 for v in (ybs, yas)):
+            continue
+        ok.append((ci, ts, close, yb, ya, ybs, yas))
+    if ok:
+        init_db()
+        with _db_lock, contextlib.closing(_conn()) as c, c:
+            before = c.total_changes
+            c.executemany(f"INSERT OR IGNORE INTO {BOOK_TABLE} VALUES (?,?,?,?,?,?,?)", ok)
+            ins = c.total_changes - before
+    else:
+        ins = 0
+    return ins, len(rows) - len(ok)
+
+
 def book_status():
     try:
         with contextlib.closing(_conn()) as c:
@@ -1849,7 +1900,7 @@ def book_status():
         raise
     return {"rows": n, "first_ts": lo, "last_ts": hi, "days": round(((hi or 0) - (lo or 0)) / 86400, 2),
             "every_s": round(_book["every"], 1), "calls": _book["calls"], "r429": _book["r429"],
-            "rescore_after_days": 14, "on": BOOK_ON}
+            "rescore_after_days": 14, "on_server": BOOK_ON, "recorded_on": "server" if BOOK_ON else "pc"}
 
 
 def _book_loop():

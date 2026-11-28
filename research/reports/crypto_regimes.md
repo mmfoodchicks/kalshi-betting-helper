@@ -70,16 +70,21 @@ fee included. Held-out results, 3,320 windows:
   null.
 - Retention is 180 days or 300,000 rows; 1,920 rows a day.
 
-**Kalshi's book (`cx_book`).**
+**Kalshi's book (`cx_book`).** It is recorded ON THE PC, not the server (changed 2026-11-28).
 
-- One batched read of the five open 15-minute markets every 5 s, from the server's background owner.
-- A row is written only when the book moved, or on a minute's heartbeat. Rows are 30 bytes, measured.
-- Retention is 10 days, capped at 500,000 rows, about 15 MB.
-- Pacing: one read a pass, doubled after each 429 up to 60 s, and eased back on success.
-- A probe from this sandbox's egress got 429 on about one read in ten at every spacing tried (5 s, 1 s, 0.2 s).
-  That looks like the shared IP's budget, not the rate.
-- **On the server**, it shares Kalshi's limit with every other board. If the ledger shows its 429s climbing, or
-  other boards starving, move it to the PC (`VIGIL_CRYPTO_BOOK=off` on Render).
+- **Why not the server:** a 5-second recorder there would make ~720 Kalshi reads an hour from the app's IP. That
+  budget is shared with every board, so a climbing 429 rate would cost real features. The server's recorder
+  is therefore OFF unless `VIGIL_CRYPTO_BOOK=on`.
+- **On the PC:** `pc_worker.py --book`, a lane `pc_loop` keeps running (niced), makes one batched read of the five
+  open 15-minute markets every 5 s from the PC's own IP.
+  - The spacing doubles after each 429, up to 60 s, and eases back on success.
+  - A row is written only when the book moved, or on a minute's heartbeat. Rows are 30 bytes, measured.
+  - The local SQLite lives under `pc-simcache` with the server's caps: 10 days or 500,000 rows, about 15 MB.
+- **Upload:** every three minutes through the token door (`POST /api/crypto/book`), whole moments only, at most
+  5,000 rows and 512 KB a call. Every row is checked before it enters the server's `cx_book`.
+- **With the PC off, nothing is recorded.** The tab says so, and shows how old the newest snapshot is.
+- **The probe:** from this sandbox's egress, about one read in ten came back 429 at every spacing tried (5 s, 1 s,
+  0.2 s). That looks like the shared IP's budget, not the rate. The PC has its own.
 
 **The 5/15/30/60 s re-score** (`rescore_delays`) reads `cx_book` once, after 14 full days. It uses the frozen R2
 strategies with each window's rule and result from the live record. Until then, the minute bracket above is all

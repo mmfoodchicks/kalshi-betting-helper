@@ -664,9 +664,10 @@
       '<span class="sub">logged at each look before the outcome, graded after the close; negative is better</span>' +
       (rows ? '<ul style="margin:4px 0 4px 18px;padding:0">' + rows + "</ul>" :
         '<p class="sub" style="margin:4px 0">No forecasts graded yet.</p>') +
-      '<div class="stats">Kalshi book recorder: ' + h(B.rows || 0) + " snapshots over " + num(B.days || 0, 1) + " day(s), every " +
-      num(B.every_s, 0) + " s, " + h(B.r429 || 0) + " rate-limited reads; the 5/15/30/60-second delay test reads it once after " +
-      h(B.rescore_after_days || 14) + " days.</div></div>";
+      '<div class="stats">Kalshi book recorder (' + (B.recorded_on === "server" ? "on the server" :
+        "on the PC, uploaded every 3 minutes: when the PC is off nothing is recorded") + "): " + h(B.rows || 0) +
+      " snapshots over " + num(B.days || 0, 1) + " day(s)" + (B.last_ts ? ", the newest " + h(left(Date.now() / 1000 - B.last_ts)) +
+      " ago" : "") + "; the 5/15/30/60-second delay test reads it once after " + h(B.rescore_after_days || 14) + " days.</div></div>";
   }
 
   function render(d) {

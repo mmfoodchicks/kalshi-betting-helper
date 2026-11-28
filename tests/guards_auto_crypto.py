@@ -462,9 +462,9 @@ def run(ck):
     import app as _app
     rules = [r for r in _app.app.url_map.iter_rules() if r.rule.startswith("/api/crypto")]
     posts_r = sorted(r.rule for r in rules if "POST" in (r.methods or set()))
-    ck("CX-PAPER the crypto routes answer GET only, but for the two paper-ledger routes (POST only), which write a "
-       "row to the terminal's own file and read Kalshi by GET; the open takes no price from the page",
-       len(rules) == 8 and posts_r == ["/api/crypto/paper/close", "/api/crypto/paper/open"]
+    ck("CX-PAPER the crypto routes answer GET only, but for the two paper-ledger routes and the PC's token-only book upload (POST only), which write "
+       "rows to the terminal's own file and read Kalshi by GET; the open takes no price from the page",
+       len(rules) == 9 and posts_r == ["/api/crypto/book", "/api/crypto/paper/close", "/api/crypto/paper/open"]
        and all((r.methods or set()) <= ({"POST", "OPTIONS"} if r.rule in posts_r else {"GET", "HEAD", "OPTIONS"}) for r in rules)
        and "price" not in inspect.signature(CT.paper_open).parameters,
        str([(r.rule, sorted(r.methods or ())) for r in rules]))
@@ -800,6 +800,7 @@ def run_v3(ck, CT):
        and "cash out now (bid" in js and "The low may have been the final one" in js and "Paper only." in js
        and "dollars" in inspect.signature(CT.paper_open).parameters)
     run_v4(ck, CT)
+    run_v5(ck, CT)
 
 
 def run_v4(ck, CT):
@@ -912,6 +913,68 @@ def run_v4(ck, CT):
            for m in ("regime", "pathsim"))
        and abs(z["zero_delay"]["heldout"]["S4"]["per_window_c"] - 40.99) < 0.01
        and abs(z["one_minute_delay_heldout"]["S4"]["per_window_c"] - 4.239) < 1e-9)
+
+
+def run_v5(ck, CT):
+    """2026-11-28: the book recorder moves to the PC. On the server it would share the app's Kalshi budget with
+    every board, so it is OFF there by default; the PC records on its own IP and uploads through its token door."""
+    src = _read("crypto_terminal.py")
+    sb = inspect.getsource(CT.start_background)
+    ck("CXB2-OFF the server's book recorder is off unless VIGIL_CRYPTO_BOOK=on (unset is off), the forecast logging "
+       "(cx_preds, one look a window) is not tied to it, and the background owner starts the recorder thread only when on",
+       CT._book_on({}) is False and CT._book_on({"VIGIL_CRYPTO_BOOK": "on"}) is True
+       and CT._book_on({"VIGIL_CRYPTO_BOOK": "off"}) is False and "if BOOK_ON:" in sb and "_book_loop" in sb
+       and "BOOK_ON" not in inspect.getsource(CT.log_tick))
+    import pc_loop
+    import pc_worker
+    lane = inspect.getsource(pc_loop._book_lane)
+    main_src = inspect.getsource(pc_loop.main)
+    bm = inspect.getsource(pc_worker.book_main)
+    ck("CXB2-LANE the PC keeps one `pc_worker.py --book` process (restarted if it exits, stopped for an update), "
+       "niced, its database under pc-simcache (gitignored), switchable off in vigil-pc.cfg",
+       '"--book"' in lane and "_book_lane" in main_src and "_stop_book()" in main_src and "os.nice(10)" in bm
+       and '"crypto_book"' in bm and "pc-simcache" in inspect.getsource(pc_worker._book_paths)
+       and "pc-simcache/" in _read(".gitignore"))
+    posted = []
+
+    def fake_api(url, tok, path, data=None, headers=None, timeout=90):
+        posted.append((path, len(json.loads(data)["rows"])))
+        return {"ok": True}
+    with _db(CT) as path, _patched((CT, "book_tick", lambda now: 0)):
+        t0 = 1795800000
+        rows = [(ci, t0 + 5 * i, t0 + 900 - t0 % 900 if False else (t0 // 900 + 1) * 900, 450, 460, 10, 12)
+                for i in range(1200) for ci in range(5)]
+        with contextlib.closing(sqlite3.connect(path)) as c, c:
+            c.executemany(f"INSERT OR IGNORE INTO {CT.BOOK_TABLE} VALUES (?,?,?,?,?,?,?)", rows)
+        st = {}
+        waits = [pc_worker.book_once(st, t0 + 10 * k, "u", "t", api=fake_api) for k in range(40)]
+    sizes = [n for p_, n in posted]
+    ck("CXB2-PACE the lane sleeps the recorder's own backoff between passes (5 s, doubled on a 429), uploads at most "
+       f"every {CT.BOOK_UPLOAD_S} s and at most {CT.BOOK_UPLOAD_MAX_ROWS:,} rows a call, oldest first, and never "
+       "re-sends what the server took",
+       all(w == CT._book["every"] for w in waits) and sizes and max(sizes) <= CT.BOOK_UPLOAD_MAX_ROWS
+       and len(posted) == 2 and sum(sizes) == 6000 and all(p_ == "/api/crypto/book" for p_, _n in posted), str(posted))
+    import app as _app
+    client = _app.app.test_client()
+    good = [[0, int(time.time()) - 30, (int(time.time()) // 900 + 1) * 900, 450, 460, 3, 4]]
+    bad = [[9, int(time.time()), 0, 1, 1, 1, 1], [0, int(time.time()) + 3600, 0, 1, 1, 1, 1], ["x"]]
+    with _db(CT) as path, _patched((_app, "_SIM_TOKEN", "guard-token"), (_app, "_pc_note_seen", lambda *a, **k: None)):
+        r_none = client.post("/api/crypto/book", json={"rows": good})
+        r_bad = client.post("/api/crypto/book", json={"rows": good}, headers={"X-Sim-Token": "wrong"})
+        r_many = client.post("/api/crypto/book", json={"rows": good * (CT.BOOK_UPLOAD_MAX_ROWS + 1)},
+                             headers={"X-Sim-Token": "guard-token"})
+        r_ok = client.post("/api/crypto/book", json={"rows": good + bad}, headers={"X-Sim-Token": "guard-token"})
+        with contextlib.closing(sqlite3.connect(path)) as c:
+            n = c.execute(f"SELECT COUNT(*) FROM {CT.BOOK_TABLE}").fetchone()[0]
+    ck("CXB2-DOOR the upload is token-only (none or a wrong token: 403), capped at 512 KB and "
+       f"{CT.BOOK_UPLOAD_MAX_ROWS:,} rows (413), and every row is checked (an unknown coin, a snapshot from the future, "
+       "a malformed row are dropped)",
+       r_none.status_code == 403 and r_bad.status_code == 403 and r_many.status_code == 413 and r_ok.status_code == 200
+       and r_ok.get_json() == {"ok": True, "inserted": 1, "dropped": 3} and n == 1,
+       f"{r_none.status_code} {r_bad.status_code} {r_many.status_code} {r_ok.get_json()} {n}")
+    js = _read("static", "crypto.js")
+    ck("CXB2-TAB the tab says where the book is recorded and that nothing is recorded while the PC is off",
+       "when the PC is off nothing is recorded" in js and '"recorded_on": "server" if BOOK_ON else "pc"' in src)
 
 
 def datetime_ts(s):
