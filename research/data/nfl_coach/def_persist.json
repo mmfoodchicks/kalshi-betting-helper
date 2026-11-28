@@ -1,0 +1,257 @@
+{
+ "adaptation_league": {
+  "placebo": {
+   "coef": 0.0631,
+   "plays": 111448,
+   "se": 0.0608,
+   "z": 1.04
+  },
+  "real": {
+   "coef": 0.0963,
+   "plays": 111448,
+   "se": 0.0641,
+   "z": 1.5
+  }
+ },
+ "adaptation_real": false,
+ "credit": "FTN Data via nflverse (CC BY-SA 4.0) and nflverse-data play-by-play (CC BY 4.0)",
+ "halftime_placebo_q1_q2": {
+  "p_one_sided": 0.0035,
+  "r": 0.15,
+  "spearman_brown": 0.2609,
+  "team_seasons": 352
+ },
+ "persisting": [
+  "blitz",
+  "rushers",
+  "box",
+  "timeouts"
+ ],
+ "rule_sha256": "7ea3fbff816f56d2970b1c714a0fa454d6d224f0e270c16c4965404f627f62dc",
+ "tendencies": {
+  "adaptation": {
+   "holm": false,
+   "persists": false,
+   "split_half": {
+    "p_one_sided": 0.49625,
+    "r": 0.0072,
+    "spearman_brown": 0.0142,
+    "team_seasons": 128
+   },
+   "team_games": 2174,
+   "year_over_year": {
+    "all": {
+     "p_one_sided": 0.55672,
+     "pairs": 96,
+     "r": -0.0076
+    },
+    "head_coach_changed": {
+     "p_one_sided": 0.18191,
+     "pairs": 20,
+     "r": 0.2149
+    },
+    "same_head_coach": {
+     "p_one_sided": 0.62469,
+     "pairs": 76,
+     "r": -0.0364
+    }
+   }
+  },
+  "blitz": {
+   "holm": true,
+   "persists": true,
+   "split_half": {
+    "p_one_sided": 0.0005,
+    "r": 0.7317,
+    "spearman_brown": 0.8451,
+    "team_seasons": 128
+   },
+   "team_games": 2169,
+   "year_over_year": {
+    "all": {
+     "p_one_sided": 0.0005,
+     "pairs": 96,
+     "r": 0.571
+    },
+    "head_coach_changed": {
+     "p_one_sided": 0.35132,
+     "pairs": 20,
+     "r": 0.0789
+    },
+    "same_head_coach": {
+     "p_one_sided": 0.0005,
+     "pairs": 76,
+     "r": 0.6363
+    }
+   }
+  },
+  "box": {
+   "holm": true,
+   "persists": true,
+   "split_half": {
+    "p_one_sided": 0.0005,
+    "r": 0.504,
+    "spearman_brown": 0.6702,
+    "team_seasons": 128
+   },
+   "team_games": 2174,
+   "year_over_year": {
+    "all": {
+     "p_one_sided": 0.0005,
+     "pairs": 96,
+     "r": 0.4733
+    },
+    "head_coach_changed": {
+     "p_one_sided": 0.45277,
+     "pairs": 20,
+     "r": 0.1018
+    },
+    "same_head_coach": {
+     "p_one_sided": 0.0005,
+     "pairs": 76,
+     "r": 0.5315
+    }
+   }
+  },
+  "halftime": {
+   "holm": false,
+   "persists": false,
+   "split_half": {
+    "p_one_sided": 0.75712,
+    "r": -0.04,
+    "spearman_brown": -0.0833,
+    "team_seasons": 352
+   },
+   "team_games": 5587,
+   "year_over_year": {
+    "all": {
+     "p_one_sided": 0.81909,
+     "pairs": 320,
+     "r": -0.0507
+    },
+    "head_coach_changed": {
+     "p_one_sided": 0.97001,
+     "pairs": 78,
+     "r": -0.2152
+    },
+    "same_head_coach": {
+     "p_one_sided": 0.35382,
+     "pairs": 242,
+     "r": 0.0146
+    }
+   }
+  },
+  "prevent": {
+   "holm": false,
+   "persists": false,
+   "split_half": {
+    "p_one_sided": 0.16992,
+    "r": 0.0953,
+    "spearman_brown": 0.174,
+    "team_seasons": 110
+   },
+   "team_games": 520,
+   "year_over_year": {
+    "all": {
+     "p_one_sided": 0.02949,
+     "pairs": 87,
+     "r": 0.1766
+    },
+    "head_coach_changed": {
+     "p_one_sided": 0.5942,
+     "pairs": 15,
+     "r": -0.1967
+    },
+    "same_head_coach": {
+     "p_one_sided": 0.03698,
+     "pairs": 72,
+     "r": 0.1785
+    }
+   }
+  },
+  "redzone": {
+   "holm": false,
+   "persists": false,
+   "split_half": {
+    "p_one_sided": 0.07896,
+    "r": 0.0648,
+    "spearman_brown": 0.1217,
+    "team_seasons": 352
+   },
+   "team_games": 5484,
+   "year_over_year": {
+    "all": {
+     "p_one_sided": 0.0005,
+     "pairs": 320,
+     "r": 0.2011
+    },
+    "head_coach_changed": {
+     "p_one_sided": 0.02399,
+     "pairs": 78,
+     "r": 0.2234
+    },
+    "same_head_coach": {
+     "p_one_sided": 0.004,
+     "pairs": 242,
+     "r": 0.1758
+    }
+   }
+  },
+  "rushers": {
+   "holm": true,
+   "persists": true,
+   "split_half": {
+    "p_one_sided": 0.0005,
+    "r": 0.6489,
+    "spearman_brown": 0.7871,
+    "team_seasons": 128
+   },
+   "team_games": 2169,
+   "year_over_year": {
+    "all": {
+     "p_one_sided": 0.0005,
+     "pairs": 96,
+     "r": 0.5003
+    },
+    "head_coach_changed": {
+     "p_one_sided": 0.36882,
+     "pairs": 20,
+     "r": 0.0943
+    },
+    "same_head_coach": {
+     "p_one_sided": 0.0005,
+     "pairs": 76,
+     "r": 0.5498
+    }
+   }
+  },
+  "timeouts": {
+   "holm": true,
+   "persists": true,
+   "split_half": {
+    "p_one_sided": 0.002,
+    "r": 0.1436,
+    "spearman_brown": 0.2511,
+    "team_seasons": 352
+   },
+   "team_games": 5351,
+   "year_over_year": {
+    "all": {
+     "p_one_sided": 0.0005,
+     "pairs": 320,
+     "r": 0.344
+    },
+    "head_coach_changed": {
+     "p_one_sided": 0.03048,
+     "pairs": 78,
+     "r": 0.2188
+    },
+    "same_head_coach": {
+     "p_one_sided": 0.0005,
+     "pairs": 242,
+     "r": 0.3799
+    }
+   }
+  }
+ }
+}

@@ -377,5 +377,18 @@
   "waits_for": "12 NFL showdowns recorded before lock by research/dfs_eligibility_record.py (none yet; the recording is run by hand or a PC task -- the owner's call)",
   "report": "research/reports/dfs_eligibility.md",
   "result": "research/data/dfs_eligibility/read.json"
+ },
+ {
+  "id": "def_2028",
+  "area": "Coaching engine (defence)",
+  "kind": "registered",
+  "title": "Defensive coaching (R7), the 2028 confirmatory family: framework now, components later",
+  "decides": "each frozen defensive component's held-out decision log score over the league table, Holm at family-wise one-sided 5% within its own family (never the 2027 one); none below -1 SE. Only tendencies that persisted (blitz, pass rushers, box, defensive timeouts) and then pass a development decision-model rule may enter",
+  "registration": "research/data/nfl_coach/prereg_def_2028.json",
+  "script": "research/nfl_def_prereg_2028.py",
+  "not_before": "2029-01-16T06:00:00Z",
+  "waits_for": "the component block (prereg_def_2028_components.json, naming the read script) committed before 2028-09-01; the 2028 regular season",
+  "report": "research/reports/nfl_def_persist.md",
+  "result": "research/data/nfl_coach/read_def_2028.json"
  }
 ]
