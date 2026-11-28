@@ -16,6 +16,10 @@ const _PK_CAP = 50000;
 // for unset. They ride the same `pick` as the names and bind OUR lineups only -- the server says so on the result.
 const _PK_RULE_KEYS = ["stack", "bring", "team_max", "min_salary"];
 const _PK_PORT_KEYS = ["player_pct", "team_pct", "max_overlap"];
+// The eligibility modes (dfs_eligibility; the owner approved the selector 2026-11-27). Conservative is the
+// production default and the absence of the key; the other two are experimental and always say so.
+const _PK_MODES = [["", "Conservative (production default)"], ["adaptive", "Adaptive (experimental)"],
+  ["unrestricted", "Unrestricted (experimental)"]];
 
 function _pkEsc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -75,12 +79,12 @@ function _pkSave(ctx) {
   const s = _PK[ctx];
   try {
     localStorage.setItem(_pkStoreKey(ctx), JSON.stringify({ exclude: s.exclude, force: s.force, captain: s.captain,
-      rules: s.rules, port: s.port }));
+      rules: s.rules, port: s.port, mode: s.mode || "" }));
   } catch (e) { /* a private window: the picks live for this page only */ }
 }
 function _pkRestore(ctx) {
   const s = _PK[ctx];
-  s.exclude = []; s.force = []; s.captain = null; s.rules = {}; s.port = {};
+  s.exclude = []; s.force = []; s.captain = null; s.rules = {}; s.port = {}; s.mode = "";
   try {
     const v = JSON.parse(localStorage.getItem(_pkStoreKey(ctx)) || "null");
     if (!v) return;
@@ -89,6 +93,7 @@ function _pkRestore(ctx) {
     s.force = (v.force || []).filter(on);
     s.captain = s.showdown && on(v.captain) ? v.captain : null;
     const pick = (o, keys) => { const out = {}; for (const k of keys) if (o && o[k] != null && o[k] !== "") out[k] = String(o[k]); return out; };
+    s.mode = ctx === "pc" && _PK_MODES.some((m) => m[0] === v.mode) ? v.mode : "";
     s.rules = pick(v.rules, _PK_RULE_KEYS);
     s.port = pick(v.port, _PK_PORT_KEYS);
     s.port.players = ((v.port || {}).players || []).filter(on).map((p) => ({ name: p.name, team: p.team, id: p.id || "", max_pct: String(p.max_pct) }));
@@ -260,7 +265,10 @@ function _pkControls(ctx) {
   }).join("");
   const n = _pkSetCount(ctx);
   const where = ctx === "pc" ? "the board's portfolio (held at 5, 10 and 20 entries)" : "a Run of several lineups";
-  return `<details class="pk-more"${s.more ? " open" : ""}><summary class="small" data-pk-more="${ctx}" style="cursor:pointer;margin:4px 0">Roster rules and portfolio caps${n ? ` <b>(${n} set)</b>` : ""}</summary>`
+  const mode = ctx === "pc" ? `<div class="small" style="margin:4px 0">${lab("Eligibility: ", sel("opt", "mode", _PK_MODES, s.mode || ""))}`
+    + (s.mode ? ` <b style="color:#e0a656">🧪 experimental: ${_pkEsc(s.mode)} widens OUR lineups past the depth chart (the field and the projections are unchanged); production builds stay conservative until the registered test says otherwise</b>` : ` <span class="pk-faint">conservative is the production default</span>`)
+    + `</div>` : "";
+  return mode + `<details class="pk-more"${s.more ? " open" : ""}><summary class="small" data-pk-more="${ctx}" style="cursor:pointer;margin:4px 0">Roster rules and portfolio caps${n ? ` <b>(${n} set)</b>` : ""}</summary>`
     + `<div class="small pk-note">Your lineups only: the field you are scored against is never restricted. DraftKings' rules always hold, and the house rules bend only for players you force.${s.showdown ? " The stack and bring-back rules are classic rules." : ""}</div>`
     + `<div class="small"><b>Every lineup</b></div>${row(roster)}`
     + `<div class="small"><b>Portfolio caps</b> <span class="pk-faint">${_pkEsc(where)}; a share of the entries, at least one entry for any cap above 0</span></div>${row(port)}`
@@ -284,8 +292,10 @@ function dfsPickPayload(ctx, dg) {
   for (const k of _PK_PORT_KEYS) if (po[k] != null && po[k] !== "") port[k] = Number(po[k]);
   if ((po.players || []).length) port.players = po.players.map((p) => Object.assign(_pkEntry(p), { max_pct: Number(p.max_pct) }));
   const hasR = Object.keys(rules).length > 0, hasP = Object.keys(port).length > 0;
-  if (!s.exclude.length && !s.force.length && !s.captain && !hasR && !hasP) return null;
+  const mode = ctx === "pc" && s.mode ? s.mode : "";
+  if (!s.exclude.length && !s.force.length && !s.captain && !hasR && !hasP && !mode) return null;
   const out = { exclude: s.exclude.map(_pkEntry), force: s.force.map(_pkEntry), captain: s.captain ? _pkEntry(s.captain) : null };
+  if (mode) out.mode = mode;
   if (hasR) out.rules = rules;
   if (hasP) out.portfolio = port;
   return out;
@@ -402,8 +412,11 @@ document.addEventListener("change", (e) => {
     if (!s) return;
     if (set) {
       const [grp, key] = set.split(".");
-      const bag = grp === "rules" ? s.rules : s.port;
-      if (t.value === "" || t.value == null) delete bag[key]; else bag[key] = String(t.value);
+      if (grp === "opt") s.mode = _PK_MODES.some((m) => m[0] === t.value) ? t.value : "";
+      else {
+        const bag = grp === "rules" ? s.rules : s.port;
+        if (t.value === "" || t.value == null) delete bag[key]; else bag[key] = String(t.value);
+      }
     } else {
       const r = s.pool[parseInt(cap, 10)];
       const p = r && (s.port.players || []).find((x) => x.name === r.name && x.team === r.team);

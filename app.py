@@ -2682,6 +2682,31 @@ def api_pc_bench():
     return jsonify({"runs": _tourney_json(_PC_BENCH).get("runs") or []})
 
 
+_PC_CAPTURES = "pccapture_log"
+_PC_CAPTURES_KEEP = 80
+
+
+@app.route("/api/pc/captures", methods=["GET", "POST"])
+def api_pc_captures():
+    """The PC's showdown snapshots (sd_capture): a short row each -- the slate, the look (lead / close), captured /
+    refused / failed, whether the replay came back exact, the manifest's sha256 -- never the snapshot itself, which
+    stays on the PC's disk. POST through the token door; the error-log workflow pulls the list to sim-history."""
+    if request.method == "POST":
+        if not _pc_auth_ok():
+            return jsonify({"error": "auth"}), 403
+        d = request.get_json(force=True, silent=True)
+        if not isinstance(d, dict) or not isinstance(d.get("captures"), list):
+            return jsonify({"error": "a report is {captures: [...]}"}), 400
+        if len(json.dumps(d)) > 100_000:
+            return jsonify({"error": "report too large"}), 413
+        now = time.time()
+        rows = [dict(r, received_ts=now) for r in d["captures"] if isinstance(r, dict)]
+        kept = ((_tourney_json(_PC_CAPTURES).get("captures") or []) + rows)[-_PC_CAPTURES_KEEP:]
+        _tourney_json_save(_PC_CAPTURES, {"captures": kept})
+        return jsonify({"ok": True, "kept": len(kept)})
+    return jsonify({"captures": _tourney_json(_PC_CAPTURES).get("captures") or []})
+
+
 @app.route("/api/dfs/eval/requests")
 def api_dfs_eval_requests():
     """The PC's door: the evaluation requests not yet answered, oldest first."""
@@ -3008,6 +3033,10 @@ def api_simulate_dfs():
             pick = nfl_dfs.pick_parse(d.get("pick"))
         except ValueError as e:
             return jsonify({"error": f"player picker: {e}", "pick_refused": True}), 400
+        if pick and pick.get("mode"):
+            # the eligibility modes are a tournament-board experiment (Build on the PC); the sheet stays conservative
+            return jsonify({"error": "player picker: an eligibility mode is for Build on the PC; the lineup sheet "
+                                     "uses the conservative gate", "pick_refused": True}), 400
         try:
             # 0 / absent is "the slate's own week" (its dates, else its
             # kickoff, else this week); the picker defaulted to Week 1 and an

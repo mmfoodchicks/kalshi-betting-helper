@@ -223,7 +223,7 @@ jobs:
                       "mx-record-nba:/api/matchups/record?sport=nba" "mx-record-nfl:/api/matchups/record?sport=nfl" \
                       "calib-params:/api/calibration/params" \
                       "nfl-deep-pairs:/api/predlog/paired?owner=nfl&shadow=nfl_deep,nfl_book" \
-                      "pc-bench:/api/pc/bench"; do
+                      "pc-bench:/api/pc/bench" "sd-captures:/api/pc/captures"; do
             curl -sS -o /tmp/rec.json --max-time 60 "${AUTH[@]}" "$APP_URL${spec#*:}" || true
             NAME="${spec%%:*}" python3 - <<'PY' || true
           import json, os
