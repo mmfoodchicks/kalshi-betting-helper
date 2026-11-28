@@ -321,7 +321,17 @@ def pick_parse(raw):
         out["rules"] = rules
     if port:
         out["portfolio"] = port
-    if not (out["exclude"] or out["force"] or out["captain"] or rules or port):
+    # the eligibility mode (dfs_eligibility; the owner approved the selector 2026-11-27): an experimental mode
+    # rides the pick, so a Build with one is always the `_pick` board and never a scheduled one; conservative
+    # (the production default) is the absence of the key, so every pick without a mode parses as before
+    mode = raw.get("mode")
+    if mode not in (None, "", "conservative"):
+        import dfs_eligibility
+        try:
+            out["mode"] = dfs_eligibility.mode_of(mode)
+        except ValueError as e:
+            raise ValueError(f"pick.mode: {e}")
+    if not (out["exclude"] or out["force"] or out["captain"] or rules or port or out.get("mode")):
         return None
     return out
 
@@ -341,6 +351,8 @@ def pick_dump(pp):
         if po.get("players"):
             po["players"] = [{"name": n, "team": t, "id": i, "max_pct": c} for n, t, i, c in po["players"]]
         out["portfolio"] = po
+    if pp.get("mode"):
+        out["mode"] = pp["mode"]
     return out
 
 

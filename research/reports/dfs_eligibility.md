@@ -404,6 +404,140 @@ field's thresholds and the candidates' top-1% pass.
   depth charts. Pittman is the counterexample: by projection he was PIT's second receiver, and by depth order its
   fourth.
 
+## 10. Follow-ups the owner approved (2026-11-27, evening)
+
+### 10.1 Every showdown captured before lock (`sd_capture.py`, `pc_worker._task_sd_capture`)
+
+The owner: "Automatically capture every Showdown's complete pre-lock input snapshot, model version, configuration
+and seeds. Preserve everything necessary for exact replay and prevent post-lock data leakage."
+
+**When.** The PC captures each showdown twice, in its cycle and between builds (never beside one):
+- the lead look, between 6 h and 2 h before lock;
+- the close look, between 50 and 15 minutes before lock, after the inactives;
+- never within 10 minutes of lock.
+
+The richest slates go first. A long build in the cycle can make a window pass unused; a capture is never taken
+late to make up for it.
+
+**What a capture is.** A child process runs the eligibility recorder: the production gate and the production
+simulator, seeded with the draft group id, on one worker. While it runs:
+- every HTTP answer is recorded in order, through the audit's harness (`research/den_pit_audit/netreplay.py`,
+  guards RPL);
+- every deep-store file it reads is copied as first read (`deep_orig/`), and its writes stay in the snapshot, never
+  in the PC's store;
+- every disk cache is private and empty: no worlds cache, no checkpoints, no GPU.
+
+**What the manifest holds.**
+- The commit, the showdown and classic engine versions, the board model, the simulator version, the scoring-path
+  signature and the eligibility model's sha256.
+- The seed and the world count.
+- The sha256 of every file in the snapshot.
+
+**Post-lock leakage is refused three ways.**
+- A capture never starts within 10 minutes of lock.
+- The recorder refuses a locked slate.
+- A snapshot whose last network answer, or whose end, came at or after lock is deleted and listed `refused`.
+
+**Store.** At most 40 snapshots and 8 GB under `pc-simcache/sd-captures` (gitignored), oldest first. A short row
+per capture goes to `/api/pc/captures` through the token door. The error-log workflow pulls it to sim-history as
+`errors/sd-captures-latest.json`. `"sd_capture": false` in vigil-pc.cfg switches it off.
+
+**Exact replay is the test.** Right after each capture a second child plays it back:
+- with the network forbidden (a request the recording does not hold fails the replay);
+- with the deep store a copy of what the capture first read;
+- with the clock shifted to the capture's.
+
+Every file must come back bit for bit: the board, all 60,000 worlds of every player, DraftKings' pool, the
+contest, Sleeper's rows and the history. The manifest says `replay: exact` or names the first difference.
+- **Measured on a real slate**, CLE @ LV (157086) here, 2026-11-27: 99 network requests, 70 MB, capture plus replay
+  190 s, `replay: exact`.
+- **Guarded hermetically** by SC2: a probe build captured by the same child, with a 429 then a 200, a deep read, a
+  deep write, the clock and seeded worlds. The live store is then changed and the network removed, and the replay
+  must still come back exact.
+
+### 10.2 The house-rule registration (`research/data/dfs_house_rules/prereg.json`, `research/dfs_house_rules_read.py`)
+
+It is separate from the eligibility registration, and its rule was hashed before any recorded slate was scored.
+
+**Six primaries**, each one house rule lifted alone against conservative:
+
+| primary | rule lifted |
+|---|---|
+| H1 | the $11,000 captain floor |
+| H2 | kicker and defense captains, exempt from that floor (the only way one can exist where it binds) |
+| H3 | a defense beside the opposing team's captain |
+| H4 | more than two kickers/defenses |
+| H5 | more than one tight end per team |
+| H6 | the cheap-punt rules (the two-punt cap and the punt role) |
+
+- **Multiplicity:** Holm across the six, at a family-wise one-sided 5%.
+- **Secondary:** every rule lifted jointly, reported only.
+
+**The statistic is the optimizer's performance.** Each variant's own 20 chosen entries are scored on the
+independent worlds: P(any in the top 1%), the variant minus conservative.
+- The SE is taken over SLATES (Student's t, n - 1 degrees of freedom), never over worlds.
+- A passing rule must also not be significantly worse on cash.
+- Optimal-lineup eligibility (how often a rule removes the hindsight optimum) is reported beside it and never
+  decides.
+- The entries' real DraftKings points, once the games are final, are reported with SEs over slates and never
+  decide.
+
+**Sample and read.** The same 12 prospective showdowns as the eligibility test, read once (same dates).
+
+**The primary snapshot is named in advance.** Both registrations, amended before any slate was read, take only
+the LEAD look (6 h to 2 h before lock), and only one that replayed exact. The owner: "We shouldn't retrospectively
+choose whichever snapshot produced better results."
+- The close look is diagnostic only.
+- A slate whose lead look is missing, refused or not exact is out of the sample. It is never replaced by its close
+  look.
+- Every capture stamps its label and its replay verdict on the recording, and the reads refuse any other label
+  (SC9). The harness
+gained the two combined variants (H2, H6) and keeps every variant's 20 entries by name. The eligibility
+registration records this as an amendment made before any slate was scored, and carries its new hash.
+
+**Status.** DEN @ PIT's +1.1 points for the captain floor (4.7 SE over worlds, one slate) is the hypothesis, not
+evidence.
+
+### 10.3 The Conservative / Adaptive / Unrestricted selector (the tab's Build on the PC)
+
+**On the tab.** An "Eligibility" control sits in the player picker. "Conservative (production default)" is the
+default. "Adaptive (experimental)" and "Unrestricted (experimental)" carry a 🧪 line saying they widen only our
+lineups, that the field and projections are unchanged, and that production stays conservative until the registered
+test says otherwise. An experimental board says so under its player table (`dfsEligNote`).
+
+**How the mode travels.**
+- The mode rides the pick (`nfl_dfs.pick_parse`: `mode`, refused if misspelled). A Build with one is always the
+  picked board.
+- `pc_worker._picked_builds` is the only place a mode reaches a builder. No scheduled build passes one (SC6, EL1).
+- The lineup sheet refuses a mode.
+
+### 10.4 Rare outcomes carry their simulation (`dfs_tourney.rare_counts`)
+
+The owner asked for "event counts or effective sample sizes" on rare outcomes, then: "distinguish between the
+number of simulated games where a lineup was best and its duplication-adjusted probability of winning outright".
+
+Every board row, showdown and classic, now carries `rare`, with the two kept apart:
+
+- **`best`, a COUNT.** The worlds in which the lineup scored the most, with the worlds it is out of.
+  - Showdown: of every legal lineup (the field's whole support), over the scoring worlds.
+  - Classic: the best possible lineup over every player, on the generation worlds.
+- **`win`, the duplication-adjusted outright first place.** This is the board's win%: a mean of per-world
+  probabilities after ties and the field's expected copies.
+  - Its "worlds' worth" is that probability summed over the worlds. It is not a count.
+  - It is shown outright and with ties; the gap between the two is the duplication split.
+- **Top 0.1%**, shown beside them the same way.
+
+Where a count (or worlds' worth) is 0, the row carries the exact Clopper-Pearson 95% upper bound,
+1 - 0.025^(1/n). The tab prints all of this under the first-place column (and top 0.1% on classic), labelled and
+escaped: "outright, dup-adjusted: ..." and "best in k of n worlds".
+
+**The scoring pass is untouched.** Everything is read from what the pass already returns: its means, and the `opt`
+tally it already counts. `score_path_sig` stays the validated `b0bf761df43c7f49` until Saturday night's GPU
+validation (guard SC8).
+
+**Deferred until after that validation.** A per-world count of the worlds where the lineup actually finished
+outright first in the field (rather than the probability) would need the pass to keep a count beside each mean.
+
 ## 9. Files
 
 - `dfs_eligibility.py`: the modes, the model's features, `assess`, `week_context`.

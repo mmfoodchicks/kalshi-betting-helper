@@ -99,13 +99,18 @@ def run(ck):
     finally:
         E.week_context = saved
     callers = []
+    import pc_worker as _pw
     for fn in ("pc_worker.py", "app.py", "pc_loop.py"):
         src = open(os.path.join(_ROOT, fn)).read()
+        if fn == "pc_worker.py":
+            # the owner's selector (approved 2026-11-27) reaches the builders only on the picked path
+            src = src.replace(inspect.getsource(_pw._picked_builds), "")
         if "eligibility=" in src:
             callers.append(fn)
     ck("EL1 conservative is the default everywhere and touches nothing: the builders default to None, None and "
        "'conservative' return no stamp without reading the week, every row is unchanged and carries no eligibility "
-       "key, and no production caller passes a mode (the board is today's byte for byte)",
+       "key, and no scheduled build passes a mode -- only the owner's picked Build does (the board is today's byte for "
+       "byte)",
        sig_sd is None and sig_cl is None and E.DEFAULT == "conservative" and got == [None, None, None]
        and (kept, extra) == before and T._elig_row(kept[0]) == {} and not callers,
        f"{sig_sd} {sig_cl} {got} {callers}")

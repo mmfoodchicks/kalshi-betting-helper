@@ -8,8 +8,9 @@
   "research/data/dfs_eligibility/model.json": "f03d1902a3921f93603986c86f7e74484ad9dd990955f9378dd789c83d72184d",
   "research/dfs_eligibility_fit.py": "96a03c5e68c002785c8ee4559c67e9b5b08b6fd758a08ad2023851c591447aee",
   "research/dfs_eligibility_record.py": "e7e2085ad03e9e427dec6c74a45193c3d7474dd0525bad73fb3dec7d37eab6ca",
-  "research/dfs_eligibility_compare.py": "684f95a5eecfe323330d4a4ac8390f68bb66cba606a6c1bd1df518b6e70fade6",
-  "research/dfs_eligibility_read.py": "208742d8fd8f857a3d3ae2f871325fea5f1d13d3245bbeeac86c86d765c524a9"
+  "research/dfs_eligibility_compare.py": "de3898bcac8a66240f21e627e4b9a0e36c5eb54a594696fd9b0ef43c112b8de8",
+  "research/dfs_eligibility_read.py": "497ad62dc586875c33ae5e17317da6ff7d30f4b511048b0c3490ebda5dacaf08",
+  "sd_capture.py": "79ed129eb9845e451b1fcce594786522e2579c007ffce030f97bc16857c707ab"
  },
  "sample": "Every NFL showdown draft group the PC builds on its own (app._tourney_auto's showdown rule: a $500K+ GPP) whose inputs research/dfs_eligibility_record.py recorded BEFORE its lock, locking after this registration, through the 2026-27 playoffs; in lock order, the first n_target. DEN @ PIT (157076) is excluded (the development case). A slate not recorded before lock is not in the sample and is never backfilled; a recording the harness refuses (its universe or rule set not rebuilt) is not in it either.",
  "excluded_dg": [
@@ -26,5 +27,36 @@
  "decision": "PASS on the primary and both non-inferiority checks: Adaptive MAY become the default, with the owner's sign-off. Anything else: Conservative stays. Slates where Adaptive admits nobody count as d_s = 0 (the rule's effect over the slates it runs on); the admitted-only subset is reported beside, descriptive. Unrestricted is reported beside, never decided here.",
  "reported_never_decisive": "each slate's real DraftKings points of each mode's #1 lineup and 20 entries (Sleeper's box, after the game) and, where the owner's standings export exists, their real finish; candidate counts, runtime and memory per mode.",
  "not_covered": "Classic: its comparison needs the whole classic board (field sampler, solves, portfolio) built per mode on the PC; it is registered separately once a classic harness exists. The house-rule audit is descriptive; lifting a rule is a separate decision.",
- "power": "Unknown before the first slates: DEN @ PIT gives one d_s (research/reports/dfs_eligibility.md); the between-slate spread is what decides power, and an inconclusive read is insufficient evidence, never evidence of no effect."
+ "power": "Unknown before the first slates: DEN @ PIT gives one d_s (research/reports/dfs_eligibility.md); the between-slate spread is what decides power, and an inconclusive read is insufficient evidence, never evidence of no effect.",
+ "amendments": [
+  {
+   "utc": "2026-11-27T21:58:58Z",
+   "before_any_read": true,
+   "what": "research/dfs_eligibility_compare.py gained the house-rule registration's two combined variants (lift:kdst_captain, lift:punts) and keeps each variant's 20 entries by name; the adaptive and conservative paths, the worlds, the choosing and the scoring are unchanged. No slate had been scored. The capture task (sd_capture) is now how recordings are made, before lock.",
+   "compare_sha256_before": "684f95a5eecfe323330d4a4ac8390f68bb66cba606a6c1bd1df518b6e70fade6"
+  },
+  {
+   "utc": "2026-11-28T00:32:49Z",
+   "before_any_read": true,
+   "what": "named the primary snapshot (primary_snapshot: lead) and made the read refuse any other; the primary snapshot is the LEAD look (sd_capture: 6 h to 2 h before lock), named before any slate is read (the owner: \"designate which pre-lock snapshot is used for the primary research test in advance. We shouldn't retrospectively choose whichever snapshot produced better results\"); it must have replayed exact. The close look (50 to 15 minutes before lock) and any hand recording are diagnostic only and never enter the primary read; a slate whose lead look is missing, refused or not exact is not in the sample (never replaced by its close look). The read scripts refuse any other label.",
+   "frozen_sha256_before": {
+    "dfs_eligibility.py": "a4b83dbe0be9ca9c16f1b89dcb2e7b19b70916aa1511a209c3dab020d496e951",
+    "research/data/dfs_eligibility/model.json": "f03d1902a3921f93603986c86f7e74484ad9dd990955f9378dd789c83d72184d",
+    "research/dfs_eligibility_fit.py": "96a03c5e68c002785c8ee4559c67e9b5b08b6fd758a08ad2023851c591447aee",
+    "research/dfs_eligibility_record.py": "e7e2085ad03e9e427dec6c74a45193c3d7474dd0525bad73fb3dec7d37eab6ca",
+    "research/dfs_eligibility_compare.py": "de3898bcac8a66240f21e627e4b9a0e36c5eb54a594696fd9b0ef43c112b8de8",
+    "research/dfs_eligibility_read.py": "208742d8fd8f857a3d3ae2f871325fea5f1d13d3245bbeeac86c86d765c524a9"
+   }
+  },
+  {
+   "utc": "2026-11-28T00:53:41Z",
+   "before_any_read": true,
+   "what": "sd_capture.py: its numpy imports guarded by try/except ImportError (the suite's import rule); no behaviour change on the PC",
+   "frozen_sha256_before": {
+    "sd_capture.py": "5e0a6206a86fbb2bfa0ba4581117c71e2e6c2ec91d6913acbdcb7bc3892143dc"
+   }
+  }
+ ],
+ "primary_snapshot": "lead",
+ "primary_snapshot_rule": "the primary snapshot is the LEAD look (sd_capture: 6 h to 2 h before lock), named before any slate is read (the owner: \"designate which pre-lock snapshot is used for the primary research test in advance. We shouldn't retrospectively choose whichever snapshot produced better results\"); it must have replayed exact. The close look (50 to 15 minutes before lock) and any hand recording are diagnostic only and never enter the primary read; a slate whose lead look is missing, refused or not exact is not in the sample (never replaced by its close look). The read scripts refuse any other label."
 }

@@ -1119,6 +1119,17 @@ def _split_picked(wanted):
             {dg: r for dg, r in wanted.items() if not r.get("pick")})
 
 
+def _pick_mode(pick):
+    """(eligibility mode or None, the pick without it -- None when it set nothing else). The mode is the tab's
+    selector (dfs_eligibility, experimental); the builders' own pick never sees the key."""
+    if not pick or not pick.get("mode"):
+        return None, pick
+    rest = {k: v for k, v in pick.items() if k != "mode"}
+    if not any(rest.get(k) for k in ("exclude", "force", "captain", "rules", "portfolio")):
+        rest = None
+    return pick["mode"], rest
+
+
 _PICK_RETRY_S = 6 * 3600     # a refused picked Build is tried again this often, or at once on a new press
 
 
@@ -1185,7 +1196,10 @@ def _picked_builds(url, tok, kind, picked, listed):
         except ValueError as e:
             _report_attempt(url, tok, dg, req, f"player picker: {e}", kind=kind)
             continue
-        why = "queued from the tab with the player picker"
+        # the eligibility mode the tab's selector set (experimental; only ever on this picked path -- every
+        # scheduled build stays conservative); a pick that set nothing else builds with no player pick
+        elig, pick = _pick_mode(pick)
+        why = "queued from the tab with the player picker" + (f" (eligibility: {elig}, experimental)" if elig else "")
         _yield_point(f"{kind} board {dg} (your picks) - requested by PC request: {why}")
         print(f"[vigil-pc] tourney {dg}: building the picked {kind} board - {why}...")
         t0 = time.time()
@@ -1204,12 +1218,13 @@ def _picked_builds(url, tok, kind, picked, listed):
                     import pc_profiles
                     print(f"[vigil-pc] tourney {dg}: profile {prof['name']} - {prof['why']}")
                     art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, log=print, pick=pick,
-                                                        **pc_profiles.build_kwargs(prof), **_fresh_kw(pk_window))
+                                                        eligibility=elig, **pc_profiles.build_kwargs(prof),
+                                                        **_fresh_kw(pk_window))
                 else:
                     art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=_cl_sims(st, plain, picked=True),
-                                                        log=print, pick=pick, **_fresh_kw(pk_window))
+                                                        log=print, pick=pick, eligibility=elig, **_fresh_kw(pk_window))
             else:
-                art = dfs_tourney.build_nfl_showdown(dg, n_sims=60000, log=print, pick=pick)
+                art = dfs_tourney.build_nfl_showdown(dg, n_sims=60000, log=print, pick=pick, eligibility=elig)
         except Exception as e:
             _mem_report(url, tok, None, None, mem, dg, f"{kind} picked", f"{type(e).__name__}: {e}")
             print(f"[vigil-pc] tourney {dg}: picked build failed ({type(e).__name__}: {e})")
@@ -1852,6 +1867,49 @@ def _task_profile_probe(url, tok, run=None, now_left=None, slate=None, free_gb=N
     return "reported" if rep is not None else "refused"
 
 
+def _task_sd_capture(url, tok, now=None):
+    """Every NFL showdown's pre-lock input snapshot (sd_capture; the owner, 2026-11-27): the captures owed now --
+    each showdown once LEAD_S before lock and once CLOSE_S before it, never within MIN_LEAD_S of lock -- run here,
+    in the cycle, between builds (never beside one), the richest slates first. Each capture is its own child
+    process (recorded network, the deep files it read, one worker, seeded) and is replayed once with the network
+    forbidden: the manifest says whether the board came back bit for bit. The store is bounded
+    (sd_capture.MAX_KEEP, MAX_GB) under pc-simcache; a short summary goes to /api/pc/captures. "sd_capture": false
+    in vigil-pc.cfg switches it off."""
+    import dk
+    import sd_capture
+    if _cfg_value("sd_capture") is False:
+        return []
+    try:
+        slates = dk.slates("nfl") or []
+        contests = dk.contests("nfl") or []
+    except Exception as e:
+        print(f"[vigil-pc] showdown capture: DK lobby failed ({type(e).__name__}: {e})")
+        return []
+    pool = {}
+    for c in contests:
+        dg = c.get("draft_group_id")
+        pool[dg] = max(pool.get(dg, 0.0), float(c.get("prize_pool") or 0))
+    t = time.time() if now is None else now
+    owed = sd_capture.due(slates, t, sd_capture.captured())
+    owed.sort(key=lambda x: (-pool.get(x[0], 0.0), x[2]))
+    rows = []
+    for dg, label, lock in owed:
+        if time.time() >= lock - sd_capture.MIN_LEAD_S:
+            continue                          # its window closed while an earlier capture ran: never after lock
+        _yield_point(f"showdown capture {dg} ({label})")
+        print(f"[vigil-pc] showdown capture {dg} ({label}, {int((lock - time.time()) / 60)} min before lock)...")
+        row = sd_capture.capture(dg, label, lock)
+        print(f"[vigil-pc] showdown capture {dg}: {row.get('status')}, replay {row.get('replay')}")
+        rows.append(row)
+    if rows:
+        try:
+            _api(url, tok, "/api/pc/captures", data=json.dumps({"captures": rows}, default=str).encode(),
+                 headers={"Content-Type": "application/json"})
+        except Exception as e:
+            print(f"[vigil-pc] showdown capture summary not sent ({type(e).__name__}: {e})")
+    return rows
+
+
 def _cycle(url, tok):
     total = 0
     _fetch_params(url, tok)
@@ -1874,8 +1932,12 @@ def _cycle(url, tok):
     # boards_main every BOARDS_S), so a long tournament or deep build no longer
     # holds them back -- the server builds a board itself once the PC's copy
     # ages past boardshare.PC_GRACE_S, which is what the PC is here to prevent.
-    for label, fn in (("showdown tourney", lambda: _task_showdown_tourney(url, tok)),
+    # the showdown captures come first and again after the classic board: each is time-boxed to its windows
+    # before lock, and a long build in between cannot be interrupted (sd_capture)
+    for label, fn in (("showdown captures", lambda: _task_sd_capture(url, tok)),
+                      ("showdown tourney", lambda: _task_showdown_tourney(url, tok)),
                       ("classic tourney", lambda: _task_classic_tourney(url, tok)),
+                      ("showdown captures (2)", lambda: _task_sd_capture(url, tok)),
                       ("deep nightly", lambda: _task_deep(url, tok)),
                       ("standings", _task_standings),
                       # last: after every build the cycle owes (pc_worker._task_gpu_bench's rules)

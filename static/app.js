@@ -8644,6 +8644,31 @@ function _dfsTourneyTried(d) {
 // The eligibility modes (dfs_eligibility, research/reports/dfs_eligibility.md): only an experimental-mode board
 // carries `elig` / `elig_flags` on a player and `eligibility` on the board; a conservative board shows nothing new.
 // Flags are information -- returning from an absence, a workload the history cannot vouch for -- never a number.
+// How much simulation stands behind a rare figure (dfs_tourney.rare_counts), two things labelled apart: the COUNT of
+// worlds in which the lineup scored best, and the duplication-adjusted outright first place (the board's win%),
+// whose worlds' worth is a sum of probabilities, not a count. The exact 95% upper bound where either is 0.
+function dfsRareTag(r, kind) {
+  const c = r && r.rare;
+  if (!c) return "";
+  const nf = (x) => Number(x || 0).toLocaleString();
+  const line = (t, tip) => `<div class="small" style="color:var(--muted);white-space:nowrap" title="${escapeHtml(tip || "")}">${t}</div>`;
+  if (kind === "top01") {
+    const t = c.top01;
+    if (!t) return "";
+    return line(t.cp95_upper_pct != null ? `~0 of ${nf(t.of_worlds)} worlds; under ${escapeHtml(String(t.cp95_upper_pct))}% (95%)`
+      : `${escapeHtml(String(t.worlds_worth))} worlds' worth of ${nf(t.of_worlds)}`, "a mean of per-world probabilities");
+  }
+  const w = c.win, b = c.best;
+  let out = "";
+  if (w) {
+    const ties = w.with_ties_worlds_worth != null && w.with_ties_worlds_worth !== w.worlds_worth ? `, ${escapeHtml(String(w.with_ties_worlds_worth))} with ties` : "";
+    out += line(`outright, dup-adjusted: ${w.cp95_upper_pct != null ? `~0 of ${nf(w.of_worlds)} worlds, under ${escapeHtml(String(w.cp95_upper_pct))}% (95%)` : `${escapeHtml(String(w.worlds_worth))} worlds' worth of ${nf(w.of_worlds)}${ties}`}`, w.what);
+  }
+  if (b) {
+    out += line(`best in ${escapeHtml(String(b.count))} of ${nf(b.of_worlds)} worlds${b.cp95_upper_pct != null ? ` (under ${escapeHtml(String(b.cp95_upper_pct))}%, 95%)` : ""}`, b.what);
+  }
+  return out;
+}
 function dfsEligTag(p) {
   const fl = Array.isArray(p.elig_flags) ? p.elig_flags : [];
   let s = p.elig === "admitted" ? " · admitted by workload" : "";
@@ -8711,7 +8736,7 @@ function renderDfsTourney(d) {
   };
   const table = (rows, list) => rows.length ? `<div style="overflow-x:auto"><table class="small" style="border-collapse:collapse;width:100%;margin-top:4px">
     <tr style="color:var(--muted);text-align:right"><th style="text-align:left">#</th><th style="text-align:left">lineup</th><th>$</th><th>proj</th><th title="finishes in the top 1% of the field">top 1%</th>${classic ? `<th title="finishes in the top 0.1% of the field">top 0.1%</th>` : ""}${exp ? `<th title="experimental: ${expWhy}">experimental win</th>` : `<th title="share of simulated games this lineup finishes first OUTRIGHT - the field mass on its exact score is split the way DraftKings splits it">win</th>`}${list === "top_money" ? `<th title="finishes in a place that pays MORE than the entry fee - the ranking column of this list">win money</th>` : `<th title="finishes in the money">cash</th>`}${exp ? `<th title="experimental: rides on the first-place estimate; ${expWhy}">experimental EV</th>` : `<th title="expected payout, every tied position split equally as DraftKings splits it">EV</th>`}<th title="${classic ? "not estimable on a classic board: the sampled field draws identical lineups 100-400x too rarely (week 1's real pair collision 3.87e-6 against the model's 1.0e-8, research/sprint_2026_11_26/dfs), so its copies read about zero whatever the real field does" : "expected identical lineups in the field"}">copies</th><th></th></tr>
-    ${rows.map((r, i) => `<tr style="text-align:right;border-top:1px solid var(--line,#333)"><td style="text-align:left">${i + 1}</td><td style="text-align:left;white-space:normal">${lineupCell(r)}</td><td>${nf(r.salary)}</td><td>${r.proj != null ? r.proj : "-"}</td><td><b>${pct(r.top1_pct, 1)}</b></td>${classic ? `<td>${pct(r.top01_pct, 2)}</td>` : ""}<td>${pct(r.win_pct, 3)}</td>${list === "top_money" ? `<td><b>${pct(r.money_pct != null ? r.money_pct : r.cash_pct, 1)}</b></td>` : `<td>${pct(r.cash_pct, 0)}</td>`}<td class="${roiCls(r.roi_pct)}" title="ignoring ties it would be ${money(evNoTieOf(r))}">${money(evOf(r))}</td><td>${classic ? `<span style="color:var(--muted)" title="not estimable on a classic board: see the column header">n/a</span>` : r.expected_copies}</td><td><a href="#" onclick="dfsTourneyCopy('${list}',${i});return false" title="copy the names">📋</a></td></tr>`).join("")}
+    ${rows.map((r, i) => `<tr style="text-align:right;border-top:1px solid var(--line,#333)"><td style="text-align:left">${i + 1}</td><td style="text-align:left;white-space:normal">${lineupCell(r)}</td><td>${nf(r.salary)}</td><td>${r.proj != null ? r.proj : "-"}</td><td><b>${pct(r.top1_pct, 1)}</b></td>${classic ? `<td>${pct(r.top01_pct, 2)}${dfsRareTag(r, "top01")}</td>` : ""}<td>${pct(r.win_pct, 3)}${dfsRareTag(r, "first")}</td>${list === "top_money" ? `<td><b>${pct(r.money_pct != null ? r.money_pct : r.cash_pct, 1)}</b></td>` : `<td>${pct(r.cash_pct, 0)}</td>`}<td class="${roiCls(r.roi_pct)}" title="ignoring ties it would be ${money(evNoTieOf(r))}">${money(evOf(r))}</td><td>${classic ? `<span style="color:var(--muted)" title="not estimable on a classic board: see the column header">n/a</span>` : r.expected_copies}</td><td><a href="#" onclick="dfsTourneyCopy('${list}',${i});return false" title="copy the names">📋</a></td></tr>`).join("")}
   </table></div>` : `<div class="small" style="color:var(--muted)">none</div>`;
   // the portfolio: every prefix of the greedy cover is itself the best cover of that size
   let sizeBtns = "", portRows = [];
