@@ -981,7 +981,24 @@ data-only `sim-history` branch (which never deploys):
   seeds, weeks 12 and 9): 17+ blowouts 32.4 -> 30.0% / 28.5 -> 26.4%, totals unchanged, deep home-win figures 2.5-2.8
   points on average, playoff odds 1-2, DFS projections hundredths, correlations unchanged; the classic board moves
   less than its own seed-to-seed spread at reduced size. The OWNER'S CALL: flip right after the read or after the
-  12-06 Millionaire locks (cl_field2's second registered contest would otherwise be a v2 board).
+  12-06 Millionaire locks (cl_field2's second registered contest would otherwise be a v2 board) -- he chose right
+  after the read, outside any slate build.
+- **Fumble-return touchdowns, STAGED OFF with the anchor** (2026-11-28, `research/reports/fumble_td_fix.md`, guards
+  FT1-FT13). Real seasons return 0.040 lost fumbles a team-game for a TD (2016-25; 8.6% of lost fumbles from
+  scrimmage); the engine played none (`nfl_deep_fit` kept them in the lost-fumble RATE, dropped them from the spot
+  table). The patch (`research/data/fumble_td_flip.patch`) returns a lost fumble for a TD by play kind (a
+  strip-sack ~2x a run or catch) and 20-yard zone (own 1-19 3-4x midfield), fitted 2016-24 by a rule written first
+  (461abe0), held out on 2025 + 2026 wk 1-12 once (+0.0176 nats a fumble, 1.5 SE; 24 TDs vs 32.5 expected, inside
+  the rule). Scored as the pick-six is (`td_ret`, `td_def`, `_return_td`); switch off = the old engine draw for draw.
+  D/ST tail on 436 real games: P(>=15) 6.39 -> 7.35% (real 8.6 +/- 0.9), P(>=20) 1.41 -> 1.84 (2.06 +/- 0.48),
+  P(>=25) 0.25 -> 0.38 (0.57 +/- 0.26); the D/ST-TD share overshoots (9.5 -> 11.8% vs 9.5) because the engine's OWN
+  pick-six rate runs high (0.077 vs 0.046-0.070) -- reported, not changed. Both patches together re-verify the
+  anchor's 1.86 at slope 0.9934 +/- 0.0065 (within 1 +/- 0.03). **Option (c), approved by the owner**: the nine
+  registrations that pin the engine each run from their own REGISTRATION COMMIT (`research/reports/
+  registered_reads_runbook.md`, `registered_pins.py prepare`); the guards check the pins there, every read refuses
+  the patched live tree (FT12), and no registration file changed. The flip is one commit with the anchor's (the
+  section H checklist); until `nfl_deep_weight_read.json` is committed exactly the gate's 28 checks fail on a
+  patched tree.
 - **Classic field, second pass** (2026-11-27, `research/reports/cl_field2.md`, development weeks 10-11):
   the served field's 15-29 point deficit is per-player ownership (one chalk back carries most of it);
   steering onto a noisy-optimizer share of Sleeper's line moved by Kalshi's prop means (F1c) closed it to
