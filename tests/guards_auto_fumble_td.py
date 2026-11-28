@@ -210,12 +210,19 @@ def run(ck):
 
     r1 = "research/data/nfl_coach/prereg_r1.json"
     sv_reg, sv_live, sv_gate = dict(RP.REGISTRATIONS), RP.live_sha, RP.deep_read_committed
+    real_live = sv_live
+    # the live tree simulated AS REGISTERED (every R1 file at its pin), so the mechanism reads the same whatever
+    # state this tree is in (before the flip, after it, or a scratch tree with the gate closed)
+    pins_r1 = json.load(open(os.path.join(_ROOT, r1)))["files"]
+    sv_live = (lambda real: (lambda rel: pins_r1.get(rel) or real(rel)))(RP.live_sha)
     try:
         RP.REGISTRATIONS[r1] = ("0" * 40, sv_reg[r1][1])
         lost = RP.moved(r1)
         RP.REGISTRATIONS[r1] = (sv_reg["research/data/nfl_coach/prereg_r6.json"][0], sv_reg[r1][1])
         wrong = RP.moved(r1)
         RP.REGISTRATIONS[r1] = sv_reg[r1]
+        RP.live_sha = sv_live
+        clean = RP.live_problems(r1)
         RP.live_sha = lambda rel: "f" * 64 if rel == "nfl_coach_sim.py" else sv_live(rel)
         frozen = RP.live_problems(r1)
         RP.live_sha = lambda rel: Pt.FLIPPED_SHA["nfl_deep_sim.py"] if rel == "nfl_deep_sim.py" else sv_live(rel)
@@ -228,13 +235,13 @@ def run(ck):
     finally:
         RP.REGISTRATIONS.clear()
         RP.REGISTRATIONS.update(sv_reg)
-        RP.live_sha, RP.deep_read_committed = sv_live, sv_gate
+        RP.live_sha, RP.deep_read_committed = real_live, sv_gate
     ck("FT10 the checks still FAIL when the registered version is lost or altered: a registration commit not in "
        "the clone (a shallow CI checkout, a rewritten history), a commit that did not add the prereg, a frozen "
        "engine moved live, the patched engine before the read's gate, any bytes but the staged flip's after it",
-       lost and "not in this clone" in lost[0] and wrong and frozen == ["nfl_coach_sim.py"]
+       lost and "not in this clone" in lost[0] and wrong and clean == [] and frozen == ["nfl_coach_sim.py"]
        and closed == ["nfl_deep_sim.py"] and opened == [] and other == ["nfl_deep_sim.py"],
-       [lost, wrong, frozen, closed, opened, other])
+       [lost, wrong, clean, frozen, closed, opened, other])
 
     wf = open(os.path.join(_ROOT, ".github", "workflows", "guards.yml")).read()
     ck("FT11 CI checks out the whole history (fetch-depth 0): the pins are read at the registration commits",

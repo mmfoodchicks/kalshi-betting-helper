@@ -38,10 +38,14 @@ then it flips together with the market-anchor fix. Files:
   | P(D/ST >= 20) | 1.41% | 1.84% | 2.06 +/- 0.48% |
   | P(D/ST >= 25) | 0.25% | 0.38% | 0.57 +/- 0.26% |
 
-  The mean moves away (6.17 -> 6.37 against the real 6.09 +/- 0.17). The share of team-games with a D/ST
-  touchdown overshoots (9.5% -> 11.8% against 9.5 +/- 1.0%). Both excesses come from the engine's OWN pick-six
-  rate: 0.077 a team-game, against 0.046 in this window and 0.070 over 2016-2025. That error predates this
-  fix. Production's 9.5% matched the real 9.5% only because two errors cancelled. Reported, not changed (D).
+  Two figures move away from the real ones:
+  - the share of team-games with a D/ST touchdown overshoots (9.5% -> 11.8% against 9.5 +/- 1.0%);
+  - the mean goes from inside one SE to 1.6 SE above (6.17 -> 6.37 against 6.09 +/- 0.17).
+
+  The touchdown excess is the engine's OWN pick-six rate: 0.077 a team-game, against 0.046 in this window and
+  0.070 over 2016-2025. That error predates this fix. Production's 9.5% matched the real 9.5% only because two
+  errors cancelled: too many pick-sixes, no fumble returns. The mean also carries the engine's low lost-fumble
+  rate, which pulls the other way. Both are reported, not changed (D).
 - **Option (c).** Nine registrations pin the engine. Each now runs from its own registration commit, and the
   current guards check the pins there; the registrations themselves are untouched. Every read refuses the
   patched live tree (guard FT12).
@@ -264,7 +268,7 @@ after its first fumble-return TD, so the per-season "paired" change is close to 
 | **R1** (eaca95d), **R2** H1/H2 (dfc026e), **R3** (59b15fc), **R4** (c569318), **R5** 2028 (79f2bee), **R5-2027** (416ba98), **R6** (35809d1), **C4** (33c49ab), **coaching DFS** (33c49ab) | Pin `nfl_deep_sim.py` (DFS also `nfl_dfs_engine.py`). Their control arms ARE production's engine. | Unaffected | Run at their registration commits (runbook), where the control arm is the read's engine. The live tree's reads refuse (FT12). Live-tree DEVELOPMENT of a coaching engine after the flip compares against a v2 control: state the engine version. |
 | **NFL deep weight, prospective** (rule section 6: fresh games, 0.30, O'Brien-Fleming looks) | Grades the live deep engine | Not started | Start its window AT the flip, so one engine version is graded. Rows carry the version through `simulator` / `ENGINE_VERSION`. |
 | **cl_field2** (3d9194f; Millionaires 11-29 and 12-06) | Its boards' worlds are the DFS engine's | 11-29 is a v1 board | A flip between them makes 12-06 a v2 board. Same as the anchor: flip after the 12-06 lock, or record that the two contests ran different engines. |
-| **DFS eligibility default** (`dfs_eligibility/prereg.json`, 12 showdowns) | Both arms share each board's worlds | — | The paired comparison is unaffected within a slate. Slates on either side of the flip differ in engine; boards stamp it. |
+| **DFS eligibility default** and **house rules** (`dfs_eligibility/prereg.json`, `dfs_house_rules/prereg.json`; 12 showdowns each, the LEAD `sd_capture` snapshot) | Both arms share each slate's worlds; neither pins the engine (their frozen files are the harnesses and `sd_capture.py`) | — | The paired comparison is unaffected within a slate. Slates on either side of the flip differ in engine; the capture stamps the commit and simulator versions. A capture replayed after the flip will not replay exact on the live tree; replay it from its stamped commit, as option (c) does. |
 | **S7 prospective, sd_dup** | Judge the FIELD on real contests | — | The field's ownership comes from the board's worlds, so a slate after the flip is a v2 board. Note it per contest. |
 | **NFL market anchor 8.3** (`game_xref.md`, weeks 9-18) | The raw DRIVE sim only (`p_home_raw`) | Unaffected | Unaffected |
 | **C3-N** (analytic 1.842 vs the drive engine) | Not the deep engine | Unaffected | Unaffected |
@@ -314,5 +318,22 @@ In short:
 
 - **The rule and its reads:** the rule commit (461abe0), the fit (`research/data/fumble_td_fit.json`), and the
   held-out read, once.
-- **The unpatched tree:** **[I-UNPATCHED]**.
-- **A scratch tree with both patches applied:** **[I-PATCHED]**.
+- **The unpatched tree** (this branch, the work branch merged at da330b1):
+  `python3 tests/combo_audit_guards.py; SUITE=$?` gave **4,361 passed, 0 failed, exit 0**. The first run, at
+  873baf9 before the newest merge, gave 4,339 / 0.
+- **A scratch tree with both patches applied** (`git apply` of the anchor's and this patch; never pushed):
+  - **Gate open.** The deep-weight read's result was simulated by a committed `{"triggered": true}`. The suite
+    gave **4,361 passed, 0 failed, exit 0**. The first scratch run found exactly two checks blind after the
+    flip (DA7 and FT8 compared against the live tree); both now build their before and after sides, fixed in
+    this branch.
+  - **Gate closed.** No read result. Exactly the gate's checks fail, and nothing else:
+    - FT2 and DA2;
+    - the live-pin checks NC0, NR0, NQ0, N4-0 and N5-0, for `nfl_deep_sim.py` and `nfl_deep_data.py`;
+    - the registration checks that include the live engine: NC10, NR0a, NR9b, NQ0a, NQ7b, N4-0a, N4-9b, N5-0a,
+      N5-8b, N5A-3, N6-0, N6-10, EVO-8, DEF-7, DA5 and FT9.
+
+    That is 28 checks. Each fails because a staged file is live while `nfl_deep_weight_read.json` is absent.
+- **Outside the suite:**
+  - `registered_pins.py prepare` built R6's read tree. The read, with git's real dirty check, said it would
+    run after R1's read, and the tree was removed.
+  - The viewer guards pass on the patched engine (36/36).
