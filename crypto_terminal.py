@@ -240,6 +240,31 @@ def candles(coin, gran=60):
     return _cached(("candles", coin, gran), 15 if gran <= 300 else 60, fetch)
 
 
+def window_candles(coin, gran, start, end):
+    """Coinbase candles for ONE market window [start, end), at most 300 (one call): what the chart draws. The
+    models read their own trailing history (realised_vol, direction_now); the window never limits them. Cached on
+    (coin, gran) with the window inside the value, so the key set stays bounded as windows roll."""
+    gran = int(gran)
+    if gran not in _GRANS:
+        raise ValueError(f"granularity {gran} not offered")
+    start = int(start) - int(start) % gran
+    end = min(int(end), int(time.time()) + gran)
+    if end <= start or (end - start) // gran > 300:
+        raise ValueError("window too long for one call")
+    sym = COINS[coin]["coinbase"]
+
+    def fetch():
+        raw = _get(f"https://api.exchange.coinbase.com/products/{sym}/candles?granularity={gran}"
+                   f"&start={datetime.fromtimestamp(start, timezone.utc):%Y-%m-%dT%H:%M:%SZ}"
+                   f"&end={datetime.fromtimestamp(end, timezone.utc):%Y-%m-%dT%H:%M:%SZ}")
+        rows = [[int(r[0]), float(r[3]), float(r[2]), float(r[1]), float(r[4]), float(r[5])] for r in reversed(raw)]
+        return {"start": start, "rows": [r for r in rows if start <= r[0] < end]}
+    val = _cached(("wcandles", coin, gran), 15, fetch)
+    if val.get("start") != start:
+        val = _cached(("wcandles", coin, gran), 15, fetch, fresh=True)
+    return val["rows"]
+
+
 def ewma_sigma(closes, halflife_min=None, mult=None):
     """Per-SECOND volatility of log price from one-minute closes, oldest first:
     an EWMA of squared one-minute log returns (the newest weighs most,
@@ -440,7 +465,9 @@ def _quote(m, coin):
     """The compact row kept from one market (the raw hourly event answer is
     ~360 KB for bitcoin; only these fields survive the call)."""
     return {"ticker": m.get("ticker"), "rule": parse_rule(m, coin), "close_ts": _ts(m.get("close_time")),
-            "yes_bid": _cents(m.get("yes_bid_dollars")), "yes_ask": _cents(m.get("yes_ask_dollars")),
+            "open_ts": _ts(m.get("open_time")), "event": m.get("event_ticker"),
+            "yes_bid": _cents(m.get("yes_bid_dollars")), "yes_bid_size": _f(m.get("yes_bid_size_fp")),
+            "yes_ask_size": _f(m.get("yes_ask_size_fp")), "yes_ask": _cents(m.get("yes_ask_dollars")),
             "no_bid": _cents(m.get("no_bid_dollars")), "no_ask": _cents(m.get("no_ask_dollars")),
             "volume": _f(m.get("volume_fp"))}
 
@@ -597,7 +624,7 @@ def research():
     if not _RESEARCH:
         base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "research", "data", "crypto")
         for k, f in (("moves", "moves.json"), ("settlement_v1", "validation.json"), ("hybrid", "hybrid.json"),
-                     ("regimes", "regimes.json")):
+                     ("regimes", "regimes.json"), ("scenarios", "scenarios.json")):
             try:
                 with open(os.path.join(base, f), encoding="utf-8") as fh:
                     _RESEARCH[k] = json.load(fh)
@@ -622,7 +649,78 @@ def research():
                                                          "null_calibration_heldout", "base_rate_heldout")}
                                for k, v in ((_RESEARCH.get("hybrid") or {}).get("r1_final_reversal") or {}).items()
                                if isinstance(v, dict) and "passed" in v},
+            "scenarios": {k: {x: v.get(x) for x in ("passed", "gain_vs_null_nats", "se_days", "by_coin_diff_vs_null",
+                                                     "heldout_rates", "null_rates_mean", "heldout_rows")}
+                          for k, v in (((_RESEARCH.get("scenarios") or {}).get("scenarios")) or {}).items()
+                          if isinstance(v, dict) and "passed" in v},
+            "uncertain": ((_RESEARCH.get("scenarios") or {}).get("uncertain")),
             "report": "research/reports/crypto_moves.md"}
+
+
+# ---- the movement outlook (UI v3, research/crypto_scenarios.py, rule committed first in 7ddb640) ------------
+# Direction bars at 30 s / 1 / 3 / 5 minutes and up / sideways / down scenarios at 3 and 5 minutes and to the
+# 15-minute close. Every figure says what it is: VALIDATED (beat the random walk on held-out minutes by the rule),
+# the RANDOM WALK's own (the null), UNCERTAIN (a validated model whose lean is inside the band where its leans
+# were no better than a coin flip on development), or UNTESTED (30 s: no sub-minute history is held). A horizon
+# longer than the time left is not shown. No path is drawn: probabilities only.
+def outlook(direction, m15=None):
+    _ = research()
+    S = _RESEARCH.get("scenarios") or {}
+    sc, unc, dec = S.get("scenarios") or {}, S.get("uncertain") or {}, S.get("decomposition") or {}
+    hz = (direction or {}).get("horizons") or {}
+    tau = (m15 or {}).get("tau_s")
+    out = {"direction": [{"h_s": 30, "status": "untested", "p_up": None,
+                          "why": "no sub-minute history is held to test a 30-second forecast on"}],
+           "scenarios": [], "band": "the meaningful move, 2 one-minute SDs", "tested": bool(sc)}
+    for h in ("1", "3", "5"):
+        d = hz.get(h) or {}
+        row = {"h_s": 60 * int(h), "p_up": d.get("p_up")}
+        u = unc.get(h) or {}
+        thr = u.get("threshold")
+        if not d.get("passed") or d.get("p_up") is None:
+            row.update(status="null", p_up=0.5, why="no indicator beat the random walk at this horizon")
+        elif not unc:
+            row.update(status="uncertain", why="the lean's noise band is not measured yet")
+        elif thr is None or abs(d["p_up"] - 0.5) < thr:
+            row.update(status="uncertain", threshold=thr,
+                       why="inside the band where this model's leans were no better than a coin flip on development"
+                       if thr is not None else "the rule found no lean size from which every lean beat a coin flip on development")
+        else:
+            row.update(status="validated", threshold=thr, heldout=u.get("heldout"))
+        out["direction"].append(row)
+    f = (direction or {}).get("feat")
+    mu, sd = sc.get("mu") or {}, sc.get("sd") or {}
+    keys = [("3", 3), ("5", 5)]
+    if tau is not None and 60 <= tau < 900:
+        keys.append(("close", max(1, min(14, int(tau // 60)))))
+    for key, h in keys:
+        pu = 1 - _phi(2.0 / (VOL_MULT * math.sqrt(h)))
+        p = [pu, 1 - 2 * pu, pu]
+        v = sc.get(key) or {}
+        src, way = "null", None
+        if v.get("passed") and f and mu:
+            x = [1.0] + [(f[k] - mu[k]) / (sd[k] or 1.0) for k in v["weight_names"][1:] if k != "ln_h"]
+            if key == "close":
+                x.append(math.log(h))
+            zu = math.log(p[0]) + sum(a * b for a, b in zip(v["weights_up"], x))
+            zd = math.log(p[2]) + sum(a * b for a, b in zip(v["weights_down"], x))
+            zs = math.log(p[1])
+            m = max(zu, zd, zs)
+            e = [math.exp(zu - m), math.exp(zs - m), math.exp(zd - m)]
+            p = [y / sum(e) for y in e]
+            src = "validated"
+            # which way, apart from how far (crypto_scenarios.decompose): where the held-out gain was all in HOW
+            # FAR the price moves (3 and 5 minutes), the moved mass is split evenly -- a lean the evidence does not
+            # carry is never printed as a direction
+            way = bool((dec.get(key) or {}).get("which_way_supported"))
+            if not way:
+                p = [(p[0] + p[2]) / 2, p[1], (p[0] + p[2]) / 2]
+        out["scenarios"].append({"key": key, "h_s": 60 * h, "up": round(p[0], 4), "sideways": round(p[1], 4),
+                                 "down": round(p[2], 4), "source": src, "tested": bool(v), "which_way": way,
+                                 "gain_vs_null_nats": v.get("gain_vs_null_nats"), "se_days": v.get("se_days")})
+    if f and f.get("sig"):
+        out["band_frac"] = round(2 * f["sig"], 6)
+    return out
 
 
 # ---- the direction model (v2): the research's own features, its passed weights -------------------------
@@ -817,6 +915,7 @@ def final_reversal(m15, direction, sigma_s=None):
             out["model"][lab] = round(1 / (1 + math.exp(-z)), 4)
     delta = 2 * f["sig"]                                       # a "meaningful" move: 2 one-minute SDs
     out["swings_expected"] = round(SWING_RATIO * sig ** 2 * tau / delta ** 2, 2)
+    out["meaningful"] = meaningful(m15["rule"], x, lo, hi, delta, sig, tau)
     # the current leg: from whichever extreme came last; the time for the walk's drawdown from the leg's
     # extreme to reach delta (reflected Brownian motion: (delta^2 - d^2) / sigma^2)
     i_lo = max(i for i, b in enumerate(bars) if b[2] == lo)
@@ -846,6 +945,24 @@ def final_reversal(m15, direction, sigma_s=None):
     return out
 
 
+def meaningful(rule, x, lo, hi, delta, sig, tau):
+    """UI v3 (2026-11-28): what "meaningful" means, in price and in contract value, and the walk's chance of a
+    MEANINGFUL new extreme. A marginal new low (a cent past the old one) breaks "the low held" -- the figure the
+    challenger was validated on -- but it is no reversal anyone could trade, so the page shows beside it the walk's
+    chance of a new low at least one meaningful move (2 one-minute SDs, the swing count's own unit) past the old
+    one. That figure is the RANDOM WALK's and UNVALIDATED: the walk's any-size final low was the figure the
+    challenger beat (said 4% where 13% held, crypto_hybrid.md), so it is labelled, never blended."""
+    sd = sig * math.sqrt(tau)
+    out = {"move_frac": round(delta, 6), "move_usd": round(x * (math.exp(delta) - 1), 6),
+           "basis": "2 one-minute standard deviations of the recent volatility"}
+    p0, pu, pd = (p_yes(rule, v, sig, tau) for v in (x, x * math.exp(delta), x * math.exp(-delta)))
+    out["yes_c_per_contract"] = round(50 * (abs(pu - p0) + abs(p0 - pd)), 2) if None not in (p0, pu, pd) else None
+    if sd > 0:
+        out["new_low_walk"] = round(min(1.0, 2 * (1 - _phi((math.log(x / lo) + delta) / sd))), 4)
+        out["new_high_walk"] = round(min(1.0, 2 * (1 - _phi((math.log(hi / x) + delta) / sd))), 4)
+    return out
+
+
 def _survive(d, delta, sig, tau, terms=4000):
     """P(a driftless walk's drawdown from its running extreme, now d, stays under delta for tau seconds):
     reflected at 0, absorbed at delta -- the heat equation's cosine series. Near tau = 0 the series is only
@@ -865,6 +982,120 @@ def _survive(d, delta, sig, tau, terms=4000):
     else:
         s = 0.5 * (s + prev)
     return min(1.0, max(0.0, s))
+
+
+# ---- the market windows (UI v3, 2026-11-28): 15 Minute, Hourly, Daily ------------------------------------------
+# Every time, strike and rule comes from Kalshi's own metadata (open_time, close_time, the strike fields, the
+# rules text), never a clock rule: the markets differ by coin and Kalshi can move them. Daily is the event that
+# closes at 5 PM Eastern (event tickers <series>-YYMONDD17, read 2026-11-28 for all five coins); a coin with
+# none open within 26 hours has no Daily tab. The previous window keeps ITS OWN strike.
+def _settled_m15(coin):
+    """The last settled 15-minute market: its window, its own strike and its official settlement average."""
+    series = COINS[coin]["m15"]
+
+    def fetch():
+        ms = (_kalshi(f"/markets?series_ticker={series}&status=settled&limit=1") or {}).get("markets") or []
+        if not ms:
+            return None
+        m = ms[0]
+        r = parse_rule(m, coin)
+        return {"ticker": m.get("ticker"), "open_ts": _ts(m.get("open_time")), "close_ts": _ts(m.get("close_time")),
+                "strike": r["strike"] if r else None, "settle": _f(m.get("expiration_value")),
+                "result": str(m.get("result") or "").lower() or None}
+    return _cached(("settled15", coin), 60, fetch)
+
+
+def _event_settle(event):
+    """A settled event's official value (every strike of one event shares it) and its strikes."""
+    ms = (_kalshi(f"/markets?event_ticker={event}&limit=400") or {}).get("markets") or []
+    vals = [_f(m.get("expiration_value")) for m in ms if _f(m.get("expiration_value"))]
+    strikes = [r["strike"] for r in (parse_rule(m) for m in ms) if r and r.get("op") == ">"]
+    return (vals[0] if vals else None), strikes, (ms[0] if ms else {})
+
+
+def _prev_hour(coin, close_ts):
+    series = COINS[coin]["hourly"]
+    prev_close = close_ts - 3600
+    ev = hourly_event_ticker(series, datetime.fromtimestamp(prev_close, timezone.utc))
+
+    def fetch():
+        settle, strikes, m = _event_settle(ev)
+        own = min(strikes, key=lambda k: abs(k - settle)) if settle and strikes else None
+        return {"event": ev, "open_ts": prev_close - 3600, "close_ts": prev_close, "settle": settle, "strike": own,
+                "strike_basis": "the strike nearest its settlement value (an hourly event lists many strikes)"}
+    val = _cached(("prevhour", coin), 120, fetch)
+    return val if val.get("event") == ev else _cached(("prevhour", coin), 120, fetch, fresh=True)
+
+
+def daily_event(coin, now=None):
+    """The open event of the coin's hourly series that closes at 5 PM Eastern within the next 26 hours, or None."""
+    series = COINS[coin]["hourly"]
+    now = now or time.time()
+
+    def fetch():
+        evs = (_kalshi(f"/events?series_ticker={series}&status=open&limit=50") or {}).get("events") or []
+        out = []
+        for e in evs:
+            t = _ts(e.get("strike_date") or e.get("close_time"))
+            if t and datetime.fromtimestamp(t, timezone.utc).astimezone(_et()).hour == 17:
+                out.append((t, e.get("event_ticker")))
+        return sorted(out)
+    for t, ev in _cached(("dailyev", coin), 300, fetch):
+        if now < t <= now + 26 * 3600:
+            return ev, t
+    return None
+
+
+def _ladder_window(coin, ev, level, sigma, now, kind):
+    ms = (_kalshi(f"/markets?event_ticker={ev}&limit=400") or {}).get("markets") or []
+    rows = [_quote(m, coin) for m in ms]
+    rows = [r for r in rows if r["rule"] and r["rule"]["op"] == ">"]
+    if not rows or not level:
+        return None
+    tgt = min(rows, key=lambda r: abs(r["rule"]["strike"] - level))
+    row = price_row(tgt, level, sigma, now)
+    return {"kind": kind, "event": ev, "ticker": row["ticker"], "open_ts": row.get("open_ts"),
+            "close_ts": row["close_ts"], "strikes": len(rows), "target": row,
+            "target_basis": "the listed strike nearest the level now (the event lists %d)" % len(rows)}
+
+
+def windows(coin, out, level, sigma, now):
+    """The three tabs' windows for the board: times and targets from Kalshi's metadata."""
+    w = {}
+    m = out.get("m15")
+    if m:
+        w["m15"] = {"kind": "m15", "ticker": m["ticker"], "open_ts": m.get("open_ts") or (m["close_ts"] - 900),
+                    "close_ts": m["close_ts"], "target": m}
+        try:
+            w["m15"]["previous"] = _settled_m15(coin)
+        except Exception as e:
+            errlog.note("CRYPTO-prev15", e, path=coin)
+    h = out.get("hourly")
+    if h and h.get("markets") and level:
+        tgt = min(h["markets"], key=lambda r: abs(r["rule"]["strike"] - level))
+        w["hourly"] = {"kind": "hourly", "event": h["event"], "ticker": tgt["ticker"],
+                       "open_ts": tgt.get("open_ts") or (h["close_ts"] - 3600), "close_ts": h["close_ts"],
+                       "target": tgt, "target_basis": "the listed strike nearest the level now"}
+        try:
+            w["hourly"]["previous"] = _prev_hour(coin, h["close_ts"])
+        except Exception as e:
+            errlog.note("CRYPTO-prevhour", e, path=coin)
+    try:
+        d = daily_event(coin, now)
+        # the event's name travels apart from its window, so the page can tell "Kalshi lists no daily market" from
+        # "the daily market's ladder could not be read this time" (a None is refetched next board, never cached)
+        w["daily_event"] = d[0] if d else None
+        w["daily"] = None
+        if d:
+            val = _cached(("dailywin", coin), 30, lambda: _ladder_window(coin, d[0], level, sigma, now, "daily"))
+            if not val or val["event"] != d[0]:
+                val = _cached(("dailywin", coin), 30, lambda: _ladder_window(coin, d[0], level, sigma, now, "daily"),
+                              fresh=True)
+            w["daily"] = val
+    except Exception as e:
+        errlog.note("CRYPTO-daily", e, path=coin)
+        w["daily"] = None
+    return w
 
 
 def board(coin):
@@ -901,6 +1132,7 @@ def board(coin):
         q = m15_market(coin)
         out["m15"] = price_row(q, level, sigma, now) if q else None
         out["final"] = final_reversal(out["m15"], out.get("direction"))      # the research's own sigma
+        out["outlook"] = outlook(out.get("direction"), out["m15"])
     except Exception as e:
         errlog.note("CRYPTO-m15", e, path=coin)
         out["m15"] = None
@@ -916,6 +1148,11 @@ def board(coin):
     except Exception as e:
         errlog.note("CRYPTO-hourly", e, path=coin)
         out["hourly"] = None
+    try:
+        out["windows"] = windows(coin, out, level, sigma, now)
+    except Exception as e:
+        errlog.note("CRYPTO-windows", e, path=coin)
+        out["windows"] = {}
     return out
 
 
@@ -1513,17 +1750,67 @@ def paper_positions():
         except Exception as e:
             errlog.note("CRYPTO-paper-quote", e)
     out = []
+    live = {o[1] for o in opens}
+    for k in [k for k in _POSHIST if k not in live]:
+        _POSHIST.pop(k, None)                    # bounded: only open positions' tickers are kept
     for pid, tk, coin, side, qty, close_ts, ets, ec, ef, pe in opens:
         r = rows.get(tk)
+        ev = evaluate(r, side, qty, ec, ef) if r else None
+        try:
+            vh = position_value(tk, side, qty, ets, ec, ef, ev)
+        except Exception as e:
+            errlog.note("CRYPTO-posvalue", e, path=tk)
+            vh = None
         out.append({"id": pid, "ticker": tk, "coin": coin, "side": side, "qty": qty, "close_ts": close_ts,
                     "entry_ts": ets, "entry_c": ec, "entry_fee_c": ef, "p_entry": pe, "held_s": round(now - ets),
-                    "tau_s": round(close_ts - now, 1),
-                    "eval": evaluate(r, side, qty, ec, ef) if r else None})
+                    "tau_s": round(close_ts - now, 1), "eval": ev, "value": vh})
     m = (tot or 0.0) / n if n else None
     return {"open": out, "recent": recent, "paper_only": True,
             "record": {"positions": n or 0, "pnl_c": round(tot or 0.0, 1), "per_position_c": round(m, 2) if n else None,
                        "se_c": round(math.sqrt(max(0.0, s2 / n - m * m) / n), 2) if n and n > 1 else None,
                        "win_rate": round(wins / n, 3) if n else None, "fees_c": round(fees or 0.0, 1)}}
+
+
+_POSHIST = {}
+
+
+def position_value(ticker, side, qty, entry_ts, entry_c, entry_fee_c, ev=None):
+    """The paper position's estimated CASH-OUT value over time, in cents for the whole position: at each minute
+    since entry, what selling at that minute's BID would have returned after Kalshi's per-order fee (NO bid =
+    100 - YES ask), from Kalshi's own one-minute candlesticks; the live point from the current bid. Beside it:
+    the cost (spent, fee in), the break-even, the high and low since entry, the payout if right, and the
+    remaining upside and downside of selling now. Cached a minute per open ticker (bounded by MAX_OPEN)."""
+    series = ticker.split("-")[0]
+    now = int(time.time())
+
+    def fetch():
+        d = _kalshi(f"/series/{series}/markets/{ticker}/candlesticks?start_ts={int(entry_ts) - 60}&end_ts={now}"
+                    "&period_interval=1") or {}
+        return [(k.get("end_period_ts"), _cents((k.get("yes_bid") or {}).get("close_dollars")),
+                 _cents((k.get("yes_ask") or {}).get("close_dollars"))) for k in (d.get("candlesticks") or [])[-1440:]]
+    hit = _POSHIST.get(ticker)
+    if not hit or now - hit[0] > 60:
+        hit = (now, fetch())
+        _POSHIST[ticker] = hit
+    pts = []
+    for t, yb, ya in hit[1]:
+        if not t or t < entry_ts:
+            continue
+        bid = yb if side == "yes" else (100.0 - ya if ya is not None else None)
+        if bid is None or bid <= 0:
+            continue
+        pts.append([int(t), round(bid * qty - order_fee_c(bid, qty), 1)])
+    cur = (ev or {}).get("close_value_c")
+    if cur is not None:
+        pts.append([now, cur])
+    cost = entry_c * qty + entry_fee_c
+    vals = [v for _t, v in pts]
+    return {"points": pts[-240:], "cost_c": cost, "payout_c": 100.0 * qty,
+            "high_c": max(vals) if vals else None, "low_c": min(vals) if vals else None,
+            "now_c": cur, "upside_c": round(100.0 * qty - cur, 1) if cur is not None else None,
+            "downside_c": cur, "entry_ts": entry_ts,
+            "basis": "Kalshi's one-minute bids since entry, sold at the bid after the per-order fee; a real cash-out "
+                     "fills seconds later at whatever the book then shows"}
 
 
 def settle_paper(now=None):

@@ -19,6 +19,8 @@ removal taught, and the terminal's own claims:
   CX-UI      the tab: escaped, no inline handlers, one timer that never polls a hidden screen;
   CX-VAL     the committed validation figures are what the committed frame and code compute, and the
              production constants are the development week's choice.
+  CXU / CXS  UI v3 (2026-11-28): market windows from Kalshi's metadata, window-only candles, the paper
+             position's value, "meaningful" moves, the movement outlook and scenarios, the chart helpers.
 
     python3 tests/guards_auto_crypto.py      # exits 1 on any failed check
 """
@@ -801,6 +803,7 @@ def run_v3(ck, CT):
        and "dollars" in inspect.signature(CT.paper_open).parameters)
     run_v4(ck, CT)
     run_v5(ck, CT)
+    run_v6(ck, CT)
 
 
 def run_v4(ck, CT):
@@ -956,7 +959,8 @@ def run_v5(ck, CT):
        and len(posted) == 2 and sum(sizes) == 6000 and all(p_ == "/api/crypto/book" for p_, _n in posted), str(posted))
     import app as _app
     client = _app.app.test_client()
-    good = [[0, int(time.time()) - 30, (int(time.time()) // 900 + 1) * 900, 450, 460, 3, 4]]
+    t_ok = int(time.time()) - 30          # its window from ITS OWN time: (now // 900 + 1) * 900 failed in the first 30 s of a window
+    good = [[0, t_ok, (t_ok // 900 + 1) * 900, 450, 460, 3, 4]]
     bad = [[9, int(time.time()), 0, 1, 1, 1, 1], [0, int(time.time()) + 3600, 0, 1, 1, 1, 1], ["x"]]
     with _db(CT) as path, _patched((_app, "_SIM_TOKEN", "guard-token"), (_app, "_pc_note_seen", lambda *a, **k: None)):
         r_none = client.post("/api/crypto/book", json={"rows": good})
@@ -975,6 +979,277 @@ def run_v5(ck, CT):
     js = _read("static", "crypto.js")
     ck("CXB2-TAB the tab says where the book is recorded and that nothing is recorded while the PC is off",
        "when the PC is off nothing is recorded" in js and '"recorded_on": "server" if BOOK_ON else "pc"' in src)
+
+
+def run_v6(ck, CT):
+    """UI v3 (2026-11-28): market windows from Kalshi's metadata, window-only candles, the paper position's value
+    over time, "meaningful" in price and contract value, the movement outlook (direction bars, scenarios), and the
+    tab's pure chart helpers (through node when it is installed)."""
+    import shutil
+    import subprocess
+    from datetime import datetime, timezone
+    fx = json.loads(_read("research", "data", "crypto", "rule_fixtures.json"))["markets"]
+    m15 = dict(next(m for m in fx if m["ticker"].startswith("KXBTC15M")))
+    lad = next(m for m in fx if m["ticker"].startswith("KXBTCD"))
+    now = 1795832000.0                                     # 2026-11-28 02:13 UTC = 21:13 ET Nov 27
+    et17 = datetime(2026, 11, 28, 22, 0, tzinfo=timezone.utc).timestamp()      # 17:00 EST Nov 28
+
+    def ladder(ev, strikes, close):
+        out = []
+        for k in strikes:
+            m = dict(lad)
+            m.update(ticker=f"{ev}-T{k:.2f}", event_ticker=ev, floor_strike=k, close_time=datetime.fromtimestamp(close, timezone.utc)
+                     .strftime("%Y-%m-%dT%H:%M:%SZ"), open_time=datetime.fromtimestamp(close - 90000, timezone.utc)
+                     .strftime("%Y-%m-%dT%H:%M:%SZ"), yes_bid_dollars="0.40", yes_ask_dollars="0.42",
+                     rules_primary=lad["rules_primary"].replace("69799.99", f"{k:.2f}"), expiration_value="60124.99")
+            out.append(m)
+        return out
+    state = {"events": [], "fail_ladder": False, "calls": 0}
+
+    def fake_k(path):
+        state["calls"] += 1
+        if path.startswith("/events?"):
+            return {"events": state["events"]}
+        if "status=settled" in path:
+            s = dict(m15)
+            s.update(expiration_value="61700.5", result="yes")
+            return {"markets": [s]}
+        if path.startswith("/markets?event_ticker="):
+            ev = path.split("=")[1].split("&")[0]
+            if state["fail_ladder"]:
+                return {"markets": []}
+            return {"markets": ladder(ev, [60049.99, 60099.99, 60149.99, 60199.99], et17 if ev.endswith("17") else now + 1800)}
+        return {}
+    ev_daily = {"event_ticker": "KXBTCD-26NOV2817", "strike_date": "2026-11-28T22:00:00Z"}
+    ev_other = {"event_ticker": "KXBTCD-26NOV2722", "strike_date": "2026-11-28T03:00:00Z"}
+    ev_far = {"event_ticker": "KXBTCD-26DEC0417", "strike_date": "2026-12-04T22:00:00Z"}
+    with _patched((CT, "_kalshi", fake_k)):
+        CT._cache.clear()
+        state["events"] = [ev_other, ev_daily, ev_far]
+        d1 = CT.daily_event("BTC", now)
+        CT._cache.clear()
+        state["events"] = [ev_other, ev_far]
+        d2 = CT.daily_event("BTC", now)
+        CT._cache.clear()
+        d3 = CT.daily_event("BTC", et17 + 60)             # after the 17:00 close: Dec 4 is more than 26 h away
+    ck("CXU-DAILY Daily is the event Kalshi lists closing at 5 PM Eastern within 26 hours, read from the events' own "
+       "close (strike_date), never a clock rule: present, absent (only the 10 PM hourly and next week's Friday), and "
+       "after the close", d1 == ("KXBTCD-26NOV2817", et17) and d2 is None and d3 is None, f"{d1} {d2} {d3}")
+
+    row15 = {"ticker": m15["ticker"], "close_ts": now + 300, "open_ts": now - 600, "rule": {"strike": 61659.25, "op": ">="}}
+    hourly = {"event": "KXBTCD-26NOV2722", "close_ts": now + 2700,
+              "markets": [{"ticker": f"KXBTCD-26NOV2722-T{k}", "rule": {"strike": k, "op": ">"}, "open_ts": now - 900}
+                          for k in (60049.99, 60099.99, 60149.99)]}
+    with _patched((CT, "_kalshi", fake_k)):
+        CT._cache.clear()
+        state["events"] = [ev_other, ev_daily]
+        state["fail_ladder"] = False
+        W1 = CT.windows("BTC", {"m15": row15, "hourly": hourly}, 60120.0, 9e-5, now)
+        CT._cache.clear()
+        state["fail_ladder"] = True
+        W2 = CT.windows("BTC", {"m15": row15, "hourly": hourly}, 60120.0, 9e-5, now)
+        n0 = state["calls"]
+        W3 = CT.windows("BTC", {"m15": row15, "hourly": hourly}, 60120.0, 9e-5, now)
+        refetched = state["calls"] > n0
+        CT._cache.clear()
+    pv, ph, dw = W1["m15"].get("previous") or {}, W1["hourly"].get("previous") or {}, W1.get("daily") or {}
+    ck("CXU-WIN each tab's window comes from Kalshi's metadata: the 15-minute market's own open and close, the previous "
+       "15-minute market with ITS OWN strike and official settlement, the previous hour's strike the one nearest its "
+       "settlement value (stated), the daily market's open and close from its own fields, and a daily ladder that "
+       "could not be read says so (daily_event kept) and is fetched again next board, never cached as absent",
+       W1["m15"]["open_ts"] == now - 600 and W1["m15"]["close_ts"] == now + 300 and pv.get("strike") == 61659.25
+       and pv.get("settle") == 61700.5 and pv.get("result") == "yes" and ph.get("strike") == 60099.99
+       and "nearest its settlement" in ph.get("strike_basis", "") and ph.get("close_ts") == now + 2700 - 3600
+       and dw.get("close_ts") == et17 and dw.get("open_ts") == et17 - 90000 and dw.get("event") == "KXBTCD-26NOV2817"
+       and W1["hourly"]["target"]["rule"]["strike"] == 60099.99 and W2.get("daily") is None
+       and W2.get("daily_event") == "KXBTCD-26NOV2817" and refetched and W3.get("daily") is None,
+       f"{pv} {ph} {dw.get('close_ts')} {W2.get('daily_event')} {refetched}")
+
+    # window candles: one call, at most 300 bars, a bounded cache key whatever the window
+    calls = []
+
+    def fake_get(url):
+        calls.append(url)
+        return [[t, 1.0, 2.0, 1.5, 1.7, 3.0] for t in range(int(now) - 6000, int(now), 60)][::-1]
+    with _patched((CT, "_get", fake_get)):
+        CT._cache.clear()
+        a = CT.window_candles("BTC", 60, now - 900, now)
+        b = CT.window_candles("BTC", 60, now - 3600, now + 3600)
+        keys = [k for k in CT._cache if k and k[0] == "wcandles"]
+        try:
+            CT.window_candles("BTC", 60, now - 90000, now)
+            long_ok = False
+        except ValueError:
+            long_ok = True
+        try:
+            CT.window_candles("BTC", 15, now - 900, now)
+            g15 = False
+        except ValueError:
+            g15 = True
+        CT._cache.clear()
+    ck("CXU-CANDLES the chart's window candles are the window only ([open, close), one call, <= 300 bars; a longer "
+       "window or a granularity Coinbase does not serve is refused), and the cache key is (coin, granularity) whatever "
+       "the window, so it cannot grow as windows roll",
+       a and all(now - 900 - 60 <= r[0] < now for r in a) and len(b) <= 300 and keys == [("wcandles", "BTC", 60)]
+       and long_ok and g15 and len(calls) == 2, f"{len(a)} {len(b)} {keys} {long_ok} {g15} {len(calls)}")
+
+    # the position's value over time: Kalshi's bids sold after the per-order fee, NO's bid the mirror of YES's ask
+    cs = {"candlesticks": [{"end_period_ts": int(now) - 600 + 60 * i, "yes_bid": {"close_dollars": "0.30"},
+                            "yes_ask": {"close_dollars": "0.33"}} for i in range(1500)]}     # 1,500 minutes: both caps bite
+    with _patched((CT, "_kalshi", lambda p: cs), (CT.time, "time", lambda: now + 89400)):
+        CT._POSHIST.clear()
+        vy = CT.position_value("KXBTC15M-26NOV272130-30", "yes", 19, now - 600, 40.0, 32.0,
+                               {"close_value_c": 709.0})
+        vn = CT.position_value("KXBTC15M-26NOV272145-45", "no", 5, now - 600, 60.0, 8.0, None)
+    p0 = vy["points"][0]
+    fee = CT.order_fee_c(30.0, 19)
+    ck("CXU-POS the paper position's graph: each minute's cash-out is the bid x quantity less Kalshi's per-order fee "
+       "(NO's bid = 100 - YES's ask), the live point the current executable value, the cost the spend with its fee "
+       "(the break-even line), upside = the payout - now, downside = now; at most 240 points, one cache entry per "
+       "open ticker",
+       abs(p0[1] - round(30.0 * 19 - fee, 1)) < 1e-9 and vy["cost_c"] == 40.0 * 19 + 32.0 and vy["payout_c"] == 1900.0
+       and vy["now_c"] == 709.0 and vy["upside_c"] == 1191.0 and vy["downside_c"] == 709.0 and len(vy["points"]) <= 240
+       and abs(vn["points"][0][1] - round((100 - 33.0) * 5 - CT.order_fee_c(67.0, 5), 1)) < 1e-9
+       and vn["now_c"] is None and len(CT._POSHIST) == 2, f"{p0} {fee} {vn['points'][:1]}")
+    psrc = inspect.getsource(CT.paper_positions)
+    ck("CXU-POS-BOUND the value cache drops every ticker that is no longer an open position (MAX_OPEN bounds the rest)",
+       "_POSHIST.pop(k, None)" in psrc and "if k not in live" in psrc)
+    CT._POSHIST.clear()
+
+    # "meaningful": a meaningful new low is a SUBSET of any new low, so the walk's chance of it can never exceed the
+    # walk's chance of any new low; the contract value of the move is the model's own fair-price change
+    rule = {"strike": 61000.0, "op": ">=", "kind": "above"}
+    x, lo, hi, sig, tau, dl = 61010.0, 60950.0, 61080.0, 9e-5, 400.0, 2 * 9e-5 * math.sqrt(60)
+    M = CT.meaningful(rule, x, lo, hi, dl, sig, tau)
+    sd = sig * math.sqrt(tau)
+    any_low = 1 - max(0.0, 2 * CT._phi(math.log(x / lo) / sd) - 1)
+    any_high = 1 - max(0.0, 2 * CT._phi(math.log(hi / x) / sd) - 1)
+    pu, p0_, pd = (CT.p_yes(rule, v, sig, tau) for v in (x * math.exp(dl), x, x * math.exp(-dl)))
+    ck("CXU-MEAN a meaningful move is 2 one-minute SDs in dollars; the walk's chance of a MEANINGFUL new low (high) is "
+       "below its chance of any new low (high), and its value on the contract is the model's fair-YES change, in cents",
+       abs(M["move_usd"] - x * (math.exp(dl) - 1)) < 1e-6 and 0 < M["new_low_walk"] < any_low
+       and 0 < M["new_high_walk"] < any_high and abs(M["yes_c_per_contract"] - round(50 * (abs(pu - p0_) + abs(p0_ - pd)), 2)) < 1e-9,
+       f"{M} {any_low:.4f} {any_high:.4f}")
+
+    # the outlook: 30 s untested; a lean only past the measured noise band; the walk's scenarios analytic
+    saved = dict(CT._RESEARCH)
+    try:
+        CT.research()
+        CT._RESEARCH["scenarios"] = {"uncertain": {"1": {"threshold": 0.02}, "3": {"threshold": None},
+                                                   "5": {"threshold": 0.01, "heldout": {"at_or_above": {"hit": 0.53}}}},
+                                     "scenarios": {}}
+        dirn = {"horizons": {"1": {"passed": True, "p_up": 0.51}, "3": {"passed": True, "p_up": 0.6},
+                             "5": {"passed": True, "p_up": 0.485}}, "feat": None}
+        O = CT.outlook(dirn, {"tau_s": 250.0})
+        O2 = CT.outlook({"horizons": {"1": {"passed": False}}}, {"tau_s": 30.0})
+    finally:
+        CT._RESEARCH.clear()
+        CT._RESEARCH.update(saved)
+    st = {r["h_s"]: r for r in O["direction"]}
+    sc = {r["key"]: r for r in O["scenarios"]}
+    walk3 = 1 - CT._phi(2.0 / (CT.VOL_MULT * math.sqrt(3)))
+    ck("CXU-OUT the direction bars: 30 s is UNTESTED (no sub-minute history), a validated model's lean inside its "
+       "measured noise band (or with no band at all) is UNCERTAIN, past it VALIDATED with its held-out hit rate, a "
+       "horizon that failed is the random walk; the scenarios are the walk's analytic odds unless a model was "
+       "validated, they sum to 1, and the 15-minute close is a scenario only with 1 to 14 minutes left",
+       st[30]["status"] == "untested" and st[60]["status"] == "uncertain" and st[180]["status"] == "uncertain"
+       and st[300]["status"] == "validated" and st[300]["heldout"]["at_or_above"]["hit"] == 0.53
+       and {r["status"] for r in O2["direction"][1:]} == {"null"}
+       and abs(sc["3"]["up"] - round(walk3, 4)) < 1e-9 and sc["3"]["source"] == "null" and sc["close"]["h_s"] == 240
+       and all(abs(r["up"] + r["sideways"] + r["down"] - 1) < 1e-3 for r in O["scenarios"])
+       and "close" not in {r["key"] for r in O2["scenarios"]}, f"{st} {sc}")
+    sj = os.path.join(_ROOT, "research", "data", "crypto", "scenarios.json")
+    if os.path.exists(sj):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("crypto_scenarios", os.path.join(_ROOT, "research", "crypto_scenarios.py"))
+        RS = importlib.util.module_from_spec(spec)
+        sys.path.insert(0, os.path.join(_ROOT, "research"))
+        spec.loader.exec_module(RS)
+        S = json.load(open(sj))
+        ok = all(abs(S["null_by_h"][h][0] - (1 - CT._phi(2.0 / (CT.VOL_MULT * math.sqrt(int(h)))))) < 1e-4 for h in S["null_by_h"])
+        ck("CXS the scenario research's walk is production's (VOL_MULT, the 2-SD band) and its committed verdicts "
+           "are read by the page exactly (a scenario shows validated figures only where the rule passed)",
+           RS.VOL_MULT == CT.VOL_MULT and ok and set(S["scenarios"]) >= {"3", "5", "close", "mu", "sd"}
+           and all(isinstance(S["scenarios"][k]["passed"], bool) for k in ("3", "5", "close")),
+           str({k: S["scenarios"][k].get("passed") for k in ("3", "5", "close")}))
+        sc_, dec_ = S["scenarios"], S.get("decomposition") or {}
+        osrc = inspect.getsource(CT.outlook)
+        ck("CXS-VERDICT by the rule written first (7ddb640): the scenario model beat the walk at 3 min, 5 min and the "
+           "close (gain = the null's held-out log loss minus the model's, nats a row: 0.00565 / 0.00588 / 0.01357); "
+           "the decomposition (descriptive, after the verdict) puts 3 and 5 minutes' gain in HOW FAR it moves, so the "
+           "page splits up and down evenly there and shows a direction only to the close; no lean-size threshold "
+           "exists, so every direction bar reads Direction uncertain",
+           all(sc_[k]["passed"] for k in ("3", "5", "close")) and abs(sc_["3"]["gain_vs_null_nats"] - 0.005653) < 1e-9
+           and abs(sc_["5"]["gain_vs_null_nats"] - 0.00588) < 1e-9 and abs(sc_["close"]["gain_vs_null_nats"] - 0.013568) < 1e-9
+           and [dec_[k]["which_way_supported"] for k in ("3", "5", "close")] == [False, False, True]
+           and all(v["threshold"] is None for v in S["uncertain"].values())
+           and "p = [(p[0] + p[2]) / 2, p[1], (p[0] + p[2]) / 2]" in osrc and "if not way:" in osrc,
+           str(dec_))
+    else:
+        ck("CXS the scenario research's figures are committed", False, "research/data/crypto/scenarios.json missing")
+
+    # the tab: static contract
+    js = _read("static", "crypto.js")
+    html = _read("templates", "index.html")
+    sec = html[html.index('<div id="tab-crypto"'):html.index("<!-- /tab-crypto -->")]
+    ck("CXU-TAB the tab is market-first: tabs, the numbers above the chart, the outlook below it, the off-chart target "
+       "badge; overlays (band, median, EMAs, VWAP, Bollinger, the previous target) are kept out of the autoscale; the "
+       "band is OFF by default and 50/80/95% when on; a figure with no validated lean reads Direction uncertain; no "
+       "scenario path is drawn; browser buffers bounded (the window's candles at MAXPTS, the trailing at MAXBARS)",
+       all(f'id="{i}"' in sec for i in ("cxTabs", "cxStats", "cxCtl", "cxChartWrap", "cxOff", "cxNow", "cxKBox"))
+       and "autoscaleInfoProvider: keep ? undefined : none" in js and "bandu: line(c, acc, 1, 2), bandl: line(c, acc, 1, 2)" in js
+       and 'med: line(c, "rgba(91,140,255,0.8)", 1, 1)' in js and "band: 0," in js
+       and "var BAND_Z = {50: 0.6745, 80: 1.2816, 95: 1.96};" in js and "Direction uncertain" in js
+       and "no scenario path is drawn" in js and "st.hist = c[1].candles.slice(-MAXPTS)" in js
+       and "st.trail = res[4].candles.slice(-MAXBARS)" in js and "BTC" not in html)
+    node = shutil.which("node")
+    if not node:
+        ck("CXU-JS the chart helpers (node not installed here: static checks only)", "window.cxPure = {" in js)
+        return
+    prog = r"""
+global.window = {}; global.document = {};
+require(process.argv[1]);
+const P = window.cxPure, out = {};
+const m15 = {open_ts: 9000, close_ts: 9900, previous: {open_ts: 8100}};
+const day = {open_ts: 0, close_ts: 90000};
+out.p15 = P.plan(m15, false, "beginner", 60, "line");
+out.p15c = P.plan(m15, true, "beginner", 60, "candles");
+out.pday = P.plan(day, false, "beginner", 60, "line");
+out.grid = P.gridTimes(out.pday).length;
+const hist = [[9000, 1, 2, 0.5, 10, 1], [9060, 1, 2, 0.5, 11, 1], [9120, 1, 2, 0.5, 12, 1]];
+const live = [[9075, 0, 0, 0, 20, 0], [9090, 0, 0, 0, 21, 0], [9120, 0, 0, 0, 22, 0]];
+out.line = P.lineData(hist, live, 60, 15, 9000, 9900);
+out.cand = P.candleData(hist, [[9120, 12, 30, 1, 25, 2]], 60, 60, 9000, 9900);
+out.near = P.scaleRange(100, 110, 112, 0);
+out.far = P.scaleRange(100, 110, 200, 0);
+out.quiet = P.scaleRange(100, 100.5, null, 20);
+const pts = []; for (let t = 0; t <= 600; t += 15) pts.push({time: t, value: 100 * Math.exp(0.0004 * t / 15)});
+out.obs = P.observed(pts, 0.0001, 615);
+const flat = pts.map((x) => ({time: x.time, value: 100}));
+out.flat = P.observed(flat, 0.0001, 615);
+out.svg = P.svgValue({points: [[0, 500], [60, 700]], cost_c: 600, entry_ts: 0}, 600, 90);
+console.log(JSON.stringify(out));
+"""
+    try:
+        r = subprocess.run([node, "-e", prog, os.path.join(_ROOT, "static", "crypto.js")], capture_output=True, text=True,
+                           timeout=60)
+        o = json.loads(r.stdout)
+    except (subprocess.SubprocessError, ValueError, OSError) as e:
+        ck("CXU-JS the chart helpers run under node", False, repr(e))
+        return
+    ln = o["line"]
+    ck("CXU-JS the chart's grid is the market's window (15 s over 15 minutes, one REST call of 1-minute candles; 5 "
+       "minutes over a day, <= 300 bars), the previous window widens it to its own open; the line takes the live "
+       "feed's bars where it has them and each REST minute's close at the slot where that close happened, never both "
+       "for one minute; the axis includes a near target, leaves a far one to the badge, never zooms a quiet window "
+       "below its floor; observed direction reads rising / sideways against the walk's own 3-minute move; the value "
+       "graph draws the break-even line",
+       o["p15"]["step"] == 15 and o["p15"]["rest"] == 60 and o["p15c"]["start"] == 8100 and o["p15c"]["step"] == 60
+       and o["pday"]["rest"] == 300 and o["pday"]["step"] == 300 and o["grid"] <= 600 + 2 * o["pday"]["pad"]
+       and [x["time"] for x in ln] == [9045, 9075, 9090, 9120] and [x["value"] for x in ln] == [10, 20, 21, 22]
+       and o["cand"][-1][2] == 30 and o["cand"][-1][4] == 25 and o["near"]["targetIn"] and not o["far"]["targetIn"]
+       and o["far"]["hi"] < 120 and o["quiet"]["hi"] - o["quiet"]["lo"] >= 20 and o["obs"]["dir"] == "rising"
+       and o["flat"]["dir"] == "sideways" and "stroke-dasharray" in o["svg"] and "<polyline" in o["svg"], r.stdout[:600])
 
 
 def datetime_ts(s):
