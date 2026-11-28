@@ -933,6 +933,18 @@ data-only `sim-history` branch (which never deploys):
   now four (R2-H2, R4, R5-2027, R6; Holm z 2.241 / 2.128 / 1.960 / 1.645; `family_2027_r6.py` -- the three-test file
   R5's amendment pins stands as registered). R6's report section F holds the evidence-first DEFENSIVE plan (FTN
   from 2022 under CC BY-SA, persistence before any decision model, no lawful coordinator source); nothing built.
+  **Defense, step 1: persistence** (2026-11-28, `research/nfl_def_persist.py`, `research/reports/nfl_def_persist.md`,
+  rule first in 70278a5, guards DEF; FTN 2022-25 credited "FTN Data via nflverse", CC BY-SA 4.0 -- derived files
+  carry the credit). Each play against its same-season league cell; split-half and year-over-year against 2,000
+  team-label shuffles, Holm over eight. PERSIST: blitz frequency (split-half 0.73, YoY 0.57), pass rushers (0.65 /
+  0.50), box count vs the offence's personnel (0.50 / 0.47) -- all three hold with the same head coach (0.53-0.64) and
+  fall to ~0.1 after a change (20 pairs: a coordinator-shaped trait no lawful source can name) -- and defensive
+  timeouts in the last 2:00 (0.14 / 0.34, partly surviving a change). DO NOT: red-zone TDs allowed (defensive
+  quality, not a red-zone trait), prevent (too few plays), halftime adjustment (below its own placebo), in-game
+  adaptation (z 1.5 vs placebo 1.0; the offence's was z 18). nflverse leaves posteam/defteam empty on timeout rows
+  (possession taken from the last row naming it). The 2028 confirmatory test (`prereg_def_2028.json`, block
+  106dd77b, its OWN Holm family, never 2027's) is hashed in two stages: the framework now, the component block once
+  the decision models are chosen, before 2028-09-01 or no read. Nothing enters R1-R6; a defensive engine is R7.
 - **The deep engine's market anchor spreads 1.21x too wide** (2026-11-27, `research/data/c3_margin_scale.json`,
   C3 addendum): `nfl_deep_data.market_margins` converts Kalshi's win totals to points with
   `nfl_season._PTS_PER_WIN` 2.25, the drive engine's constant (set to undo ITS compression; the drive season sim
