@@ -377,5 +377,31 @@
   "waits_for": "12 NFL showdowns recorded before lock by research/dfs_eligibility_record.py (none yet; the recording is run by hand or a PC task -- the owner's call)",
   "report": "research/reports/dfs_eligibility.md",
   "result": "research/data/dfs_eligibility/read.json"
+ },
+ {
+  "id": "nfl_wb_dist",
+  "area": "NFL week board",
+  "kind": "registered",
+  "title": "Week-board player distributions: the constrained simulator, the discrete allocation (QB term) and a quantile map against production",
+  "decides": "whether a replacement for the week board's player distributions may be recommended to the owner: the per-line log-loss gain over production clustered by game under Holm (one-sided, family-wise 5%, three candidates), no position x statistic cell worse by 2 SE, 80% coverage in 0.70-0.90 and nearer 0.80 than production, pair correlations no further from the observed than production's",
+  "registration": "research/data/nfl_wb_dist/prereg.json",
+  "script": "research/nfl_wb_dist.py",
+  "not_before": "2027-01-13T06:00:00Z",
+  "waits_for": "2026 weeks 14-18 played and research/data/player_weeks_2026.csv.gz rebuilt by research/hist_data.py (fewer than 60 games: 2027 weeks 1-6 pooled)",
+  "report": "research/reports/nfl_wb_dist.md",
+  "result": "research/data/nfl_wb_dist/read.json"
+ },
+ {
+  "id": "def_2028",
+  "area": "Coaching engine (defence)",
+  "kind": "registered",
+  "title": "Defensive coaching (R7), the 2028 confirmatory family: framework now, components later",
+  "decides": "each frozen defensive component's held-out decision log score over the league table, Holm at family-wise one-sided 5% within its own family (never the 2027 one); none below -1 SE. Only tendencies that persisted (blitz, pass rushers, box, defensive timeouts) and then pass a development decision-model rule may enter",
+  "registration": "research/data/nfl_coach/prereg_def_2028.json",
+  "script": "research/nfl_def_prereg_2028.py",
+  "not_before": "2029-01-16T06:00:00Z",
+  "waits_for": "the component block (prereg_def_2028_components.json, naming the read script) committed before 2028-09-01; the 2028 regular season",
+  "report": "research/reports/nfl_def_persist.md",
+  "result": "research/data/nfl_coach/read_def_2028.json"
  }
 ]

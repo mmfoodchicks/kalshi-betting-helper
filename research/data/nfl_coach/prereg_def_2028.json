@@ -1,0 +1,58 @@
+{
+ "block_sha256": "106dd77bbabc3c1d5ec63fe4f9adaaafa8d212e624cbcd01ed8dc67ece923dc3",
+ "criteria_form": {
+  "1": "R7's guards exit 0",
+  "2": "each component's gain > its Holm step (one-sided, the family above)",
+  "3": "no component below -1 SE"
+ },
+ "eligibility": {
+  "1": "the tendency PERSISTED under def_rule.json (def_persist.json, pinned here: ['blitz', 'rushers', 'box', 'timeouts'])",
+  "2": "its development decision model passed a rule written before its development numbers (fit 2022-2024, chosen on 2025, checked on 2026 weeks 1-12 where the data exist)",
+  "3": "the component block (prereg_def_2028_components.json) is written, hashed, committed and added to the registry before 2028-09-01T00:00:00Z, naming each component, the R7 engine files (new files: nothing enters R1-R6), the read script and each component's power; with no such block by then, no confirmatory read happens"
+ },
+ "family": {
+  "members": "the primary criterion of each component frozen in the component block, and nothing else",
+  "method": "Holm, family-wise one-sided 0.05",
+  "name": "the 2028 defensive family",
+  "not": "never a member of the 2027 coaching family (R2-H2, R4, R5, R6)"
+ },
+ "files": {
+  "research/data/nfl_coach/def_persist.json": "8c3fbbb05652799a041214bb14acbd127f36cacd3a3930e724ba0fc35eda2b2a",
+  "research/data/nfl_coach/def_rule.json": "7ea3fbff816f56d2970b1c714a0fa454d6d224f0e270c16c4965404f627f62dc",
+  "research/nfl_def_persist.py": "7e8302f3ff4f2d11191f06b8ba586b4a1053ca057030cded2dc2e021a53e035e"
+ },
+ "hashed_now_vs_later": "this framework now (before any defensive model exists); the component block when the components are chosen, which can only be after the decision-model development",
+ "owner_decision": {
+  "date": "2026-11-27",
+  "words": "Use a separate 2028 confirmatory test for R6 defensive intelligence rather than expanding the existing 2027 shared-games testing family. Development and exploratory research can continue beforehand."
+ },
+ "statistic_form": "per component, the held-out log score of the defence's decision (or of its measured consequence) under R7 minus under the same season-less league table, per team-game, SE clustered by game; the tables frozen in the component block, nothing refitted on 2028",
+ "version": "def-framework-1",
+ "window": {
+  "not_before_utc": "2029-01-16T06:00:00Z",
+  "season": 2028,
+  "season_type": "REG",
+  "weeks": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18
+  ]
+ },
+ "writer_sha256": "4c5f57ff024864cc8a87318b71fda375068714b26040e318be115494634085bd",
+ "written_utc": "2026-11-27T21:52:31Z"
+}

@@ -1,0 +1,144 @@
+{
+ "id": "nfl_wb_dist",
+ "registered_utc": "2026-11-27T22:02:58Z",
+ "registered_ts": 1795816978,
+ "question": "May a replacement for the NFL week board's player distributions (nfl_dfs_sim.simulate_game, the continuous model measured overconfident) take its place, with the owner's sign-off?",
+ "candidates_commit": "88a3fed",
+ "candidates": "research/data/nfl_wb_dist/candidates.json (A the constrained simulator as fitted on 2022-24; B the discrete allocation, quarterback term k; C production with a per-position x statistic quantile map)",
+ "frozen": {
+  "k": 0.2,
+  "gmap_hash": "dea8bbddf723a25f7100fb3bfb93edf9ec70442199b9929741cd738452c96be2",
+  "fitted_on": "2025 weeks 1-12 and 2026 weeks 1-5 (all development games)"
+ },
+ "frozen_sha256": {
+  "research/nfl_wb_dist.py": "ffb5774f9c044f120f33f511dd50adfbfbfbb61bc527b34031a54598323b021a",
+  "research/data/nfl_wb_dist/frozen.json": "0edca48ecd19d863a801c470ef9c99dfbb71a790332cf5757604eca5e228e4cd",
+  "research/data/nfl_wb_dist/candidates.json": "5431ac25099b4cba9dcda79ed7f107219f8a641f8c4f5184878968667ca5fd4b",
+  "nfl_discrete_alloc.py": "2b8ece3b1929c7adfc70aa470c4511d755d4ca283b8175df3daa4e871beaaf1f",
+  "nfl_dfs_sim.py": "fb246989e4d22420e33f26a390ae7f8de98e948fb320d0a55682d978c6dd5c6f",
+  "nfl_dfs_csim.py": "641e9adaa644d28625c14d3d610460d104f4fbbf343c9c913884bae4352a7368",
+  "research/data/csim_params.json": "fd7af24b1a7cc86b215f86bfdc0f2627a1ecd11d0bb8dc427ec87fd2a228dfc1",
+  "dk_scoring.py": "8a8cb5dae5644c76afa2df909a7d367fd2f4322cc959ddc707169df77e8a0830"
+ },
+ "worlds": 2000,
+ "seeds": "game i of the sample in (season, week, game key) order: production random.seed(1000 + i); A and B numpy default_rng(1000 + i); the randomized PIT's uniform a crc32 of the player-week and statistic",
+ "sample": {
+  "window": {
+   "2026": [
+    14,
+    18
+   ]
+  },
+  "rule": "every 2026 regular-season game of weeks 14-18 in research/data/player_weeks_2026.csv.gz once it is rebuilt by research/hist_data.py after the read date (Sleeper's weekly projections and box scores, the development table's own source): QB / RB / WR / TE with a projection and a kept box. Week 13 is EXCLUDED whole: its Thanksgiving and Friday games had kicked off before this registration, and the table carries no kickoff time to split it.",
+  "n_min_games": 60,
+  "extension": {
+   "2027": [
+    1,
+    6
+   ]
+  },
+  "extension_rule": "if fewer than 60 games arrive, the read waits for 2027 weeks 1-6 (the same rule, research/data/player_weeks_2027.csv.gz) and pools them",
+  "planned_games": 72,
+  "other_tests_on_these_games": "the coaching registrations (R1, R2-H1, the coaching DFS read) also read 2026 weeks 13-18. They test different models and questions (game-flow engines, not per-player box distributions) and are NOT this test's family: no multiplicity correction is shared; the dependence (the same games) is acknowledged."
+ },
+ "primary": "for each candidate: the per-line log-loss gain over production, pooled over every scored line (the lines of candidates.json: off the projection only) and clustered by game -- sum over games of (production's log loss - the candidate's) / sum of lines, its SE the game-cluster ratio estimator's; z = gain / SE",
+ "primary_rule": {
+  "holm_z": [
+   2.128,
+   1.96,
+   1.645
+  ]
+ },
+ "holm": "one-sided, family-wise 5% over the three candidates: the largest z must clear 2.128, the next 1.960, the third 1.645; testing stops at the first failure",
+ "veto": {
+  "cell_z": 2.0,
+  "cover80_band": [
+   0.7,
+   0.9
+  ]
+ },
+ "veto_rules": [
+  "no position x statistic cell worse than production by more than 2 SE (cell z < -2)",
+  "80% central-interval coverage (randomized PIT) pooled over every scored cell inside 0.70-0.90 AND nearer 0.80 than production's",
+  "mean absolute difference between the model's within-world DraftKings-point correlation and the observed residual correlation, over the pair types, no larger than production's"
+ ],
+ "decision": {
+  "pass": "a candidate passes when its primary clears its Holm threshold and no veto trips; if several pass, the one with the largest z is RECOMMENDED. Nothing changes the week board until the owner signs off; the board stays labelled overconfident until then",
+  "fail": "no candidate passes: production stays, labelled; a failed test can be insufficient evidence, never proof that production is right"
+ },
+ "power": {
+  "method": "normal approximation off the development out-of-sample gain and its SE (2026 weeks 1-5, 79 games), scaled to 72 prospective games, at the strictest Holm threshold 2.128",
+  "values": {
+   "A": {
+    "at_dev_gain": 1.0,
+    "at_half": 0.904
+   },
+   "B": {
+    "at_dev_gain": 1.0,
+    "at_half": 1.0
+   },
+   "C": {
+    "at_dev_gain": 1.0,
+    "at_half": 1.0
+   }
+  },
+  "note": "power is the chance the test passes IF a candidate is better by the stated gain, never the probability that it is better; the development effects are large, so the test is well powered even at half of them"
+ },
+ "rule_on_development": {
+  "verdict": {
+   "A": {
+    "cells_worse_2se": [],
+    "corr_mae": 0.0309,
+    "corr_mae_production": 0.2084,
+    "corr_ok": true,
+    "cover80": 0.779,
+    "cover80_production": 0.5075,
+    "cover_ok": true,
+    "holm_threshold": 1.645,
+    "passes": true,
+    "primary_pass": true,
+    "z": 7.19
+   },
+   "B": {
+    "cells_worse_2se": [],
+    "corr_mae": 0.039,
+    "corr_mae_production": 0.2084,
+    "corr_ok": true,
+    "cover80": 0.7662,
+    "cover80_production": 0.5075,
+    "cover_ok": true,
+    "holm_threshold": 2.128,
+    "passes": true,
+    "primary_pass": true,
+    "z": 30.11
+   },
+   "C": {
+    "cells_worse_2se": [
+     "QB|int"
+    ],
+    "corr_mae": 0.2997,
+    "corr_mae_production": 0.2084,
+    "corr_ok": false,
+    "cover80": 0.6205,
+    "cover80_production": 0.5075,
+    "cover_ok": false,
+    "holm_threshold": 1.96,
+    "passes": false,
+    "primary_pass": true,
+    "z": 27.61
+   },
+   "recommended": "B"
+  },
+  "note": "the same rule applied to the development games, for reading only: it decides nothing"
+ },
+ "read": {
+  "not_before_utc": "2027-01-13T06:00:00Z",
+  "not_before_ts": 1799820000,
+  "runbook": [
+   "after 2027-01-13 06:00 UTC: rebuild research/data/player_weeks_2026.csv.gz with research/hist_data.py for 2026 weeks 1-18 (its raw Sleeper files; the development games, 2026 weeks 1-5, are pinned by window and do not change)",
+   "check out the registration commit's tree (a git worktree) if any frozen file has changed since; the read refuses otherwise",
+   "python3 research/nfl_wb_dist.py read -> research/data/nfl_wb_dist/read.json, read once, committed with the report's result section"
+  ]
+ },
+ "production_until_then": "unchanged: nfl_dfs_sim.simulate_game is the week board, labelled overconfident (pick6_ledger.WEEK_BOARD_CAVEAT); nothing imports the harness"
+}

@@ -1,0 +1,32 @@
+{
+ "what": "Step 1 of defensive coaching intelligence (research/reports/nfl_coach_r6.md section F; the owner, 2026-11-27: a separate 2028 confirmatory test, development first): which defensive tendencies PERSIST, and with which staff continuity. Only those go on to a decision model.",
+ "written_utc": "2026-11-27T23:40:00Z",
+ "written_before": "any persistence statistic of any tendency was computed",
+ "data": {
+  "ftn": "FTN charting via nflverse, 2022-2025 (credit 'FTN Data via nflverse'; CC BY-SA 4.0: derived data published share-alike). 2026 FTN is not held.",
+  "pbp": "nflverse play-by-play 2016 to 2026 week 12 through R2's sealed loader (R1's seal: 2026 week 13 on never read); raw rows only for timeouts, under the same seal",
+  "staff": "the head coach (nflverse home_coach / away_coach, the team-season's most frequent). No lawful structured source names defensive coordinators or play-callers, so coordinator continuity is NOT tested"
+ },
+ "residuals": "every play-level outcome is taken against the SAME season's league mean in its cell, so neither situation mix nor league drift reads as a team trait; a team-game's value = sum of residuals / plays (or per drive / per opportunity)",
+ "tendencies": {
+  "blitz": "FTN n_blitzers >= 1 on dropbacks (pass, sack, scramble), cell = down x distance (1-2, 3-6, 7-10, 11+) x offence score state (5) x field zone (4)",
+  "rushers": "FTN n_pass_rushers (>= 1) on dropbacks, same cell, the mean",
+  "box": "FTN n_defense_box (>= 1) on scrimmage plays, cell = down x distance x zone x FTN n_offense_backfield (0, 1, 2, 3+) x qb_location -- the offence's personnel as FTN charts it (participation's personnel is not used: its source is not audited)",
+  "prevent": "FTN n_pass_rushers <= 3 on dropbacks in the fourth quarter's last 4:00 with the defence ahead by 9+, against the season's league rate there",
+  "redzone": "touchdown on an offensive drive that reached the defence's 20 (pbp 2016-2026), against the season's league rate",
+  "halftime": "per defence-game, the second half's EPA a play allowed minus the first half's (pbp 2016-2026); its placebo is the same difference across the Q1 -> Q2 boundary, which no halftime separates",
+  "adaptation": "the box residual on plays after the defence's 10th snap regressed on the offence's in-game success gap so far (run success minus pass success, each shrunk by 10 plays at the league rates); league-level coefficient (SE clustered by game) against an ORDER-SHUFFLED placebo (the same game's plays in a random order); then each team-season's slope as the tendency",
+  "timeouts": "defensive timeouts in the last 2:00 of a half per opponent snap there with a defensive timeout left, against the season's league rate by half x score state (pbp 2016-2026, raw rows); the head-coach term"
+ },
+ "tests": {
+  "split_half": "team-season values from odd-order vs even-order games, correlated across team-seasons (pooled seasons); one-sided permutation p against 2,000 shuffles of team labels within season",
+  "year_over_year": "team-season s against s+1, all franchise pairs, one-sided permutation p (2,000 shuffles of s+1's teams); reported apart for pairs with the same head coach and with a change",
+  "family": "Holm over the eight split-half tests (blitz, rushers, box, prevent, redzone, halftime, adaptation slope, timeouts) at a family-wise one-sided 0.05"
+ },
+ "decision": {
+  "persists": "Holm-significant split-half AND year-over-year p < 0.05 (one-sided); halftime additionally needs its split-half r above the Q1 -> Q2 placebo's",
+  "adaptation_real": "league coefficient z > 3 with the order-shuffled placebo |z| < 2 (a league mechanism, reported apart from whether its team slopes persist)",
+  "with_the_coach": "descriptive: year-over-year r with the same head coach against r after a change, each with its permutation p; no coordinator claim is made",
+  "consequence": "only tendencies that persist go on to a decision model (fit 2022-2024, chosen on 2025 by a rule written first, checked on 2026 weeks 1-12) and into the 2028 confirmatory family (prereg_def_2028.json); nothing enters R1-R6"
+ }
+}
