@@ -16,6 +16,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+from research import registered_pins as REGP  # noqa: E402  (option (c), 2026-11-28)
 
 PINNED = {
     "nfl_deep_sim.py": "22a221d7810495db3f8f7bb1bef7c4e16c3bbbf282902a95f133cecdabc29820",
@@ -111,12 +112,11 @@ def run(ck):
     print("  -- N5. The coaching engine R5 (the trailing pull, the second unit drawn), R4's inputs traced, R3's "
           "stream offset checked, the registration")
     for rel, want in PINNED.items():
-        ck(f"N5-0 {rel} is byte-identical to the file the deep weight's read sits on", _sha(rel) == want)
+        ck(f"N5-0 {rel} is byte-identical to the file the deep weight's read sits on (or, once that read is committed, exactly a staged flip's bytes)", REGP.live_ok(rel, want))
     moved = []
     for reg in ("prereg_r1.json", "prereg_r2.json", "prereg_r3.json", "prereg_r4.json"):
-        r = json.load(open(os.path.join(ROOT, "research", "data", "nfl_coach", reg)))
-        moved += [rel for rel, h in r["files"].items() if _sha(rel) != h]
-    ck("N5-0a every file R1's to R4's registrations pin is byte-identical (R5 is new files)", not moved, moved)
+        moved += REGP.moved("research/data/nfl_coach/" + reg)
+    ck("N5-0a [option (c): pins checked at the registration commit; live, only research/registered_pins.py's named exceptions] every file R1's to R4's registrations pin is byte-identical (R5 is new files)", not moved, moved)
     src = open(os.path.join(ROOT, "nfl_coach_sim_r5.py")).read()
     ck("N5-0b R5 plays R1's own snaps, writes no predlog bucket, and no production module imports it",
        "def _snap" not in src and "C._snap(S, box, sides, T, rng)" in src and "log_shadow" not in src
@@ -347,19 +347,22 @@ def run(ck):
        and reg["window"] == [{"season": 2028, "weeks": list(range(1, 19))}]
        and reg["not_before_utc"] == "2029-01-16T06:00:00Z" and reg["requires_reads"] == ["R1", "R4"]
        and all(x in reg["dependence"] for x in ("R1", "R4", "2027", "2028")))
-    moved = [rel for rel, hh in reg["files"].items() if _sha(rel) != hh]
-    ck("N5-8b every file the registration pins matches its sha256", not moved
+    moved = REGP.moved("research/data/nfl_coach/prereg_r5.json")
+    ck("N5-8b [option (c): pins checked at the registration commit; live, only research/registered_pins.py's named exceptions] every file the registration pins matches its sha256", not moved
        and "tests/guards_auto_nfl_coach_r5.py" in reg["files"] and "nfl_coach_sim_r4.py" in reg["files"], moved)
-    w = [RR.refusal(now_utc="2028-06-01T00:00:00Z", dirty=False, reg=reg, earlier_read={"R1": 1, "R4": 1},
-                    already=False),
-         RR.refusal(now_utc="2029-02-01T00:00:00Z", dirty=True, reg=reg, earlier_read={"R1": 1, "R4": 1},
-                    already=False),
-         RR.refusal(now_utc="2029-02-01T00:00:00Z", dirty=False, reg=reg, earlier_read={"R1": 1}, already=False),
-         RR.refusal(now_utc="2029-02-01T00:00:00Z", dirty=False, reg=reg, earlier_read={"R1": 1, "R4": 1},
-                    already=True),
-         RR.refusal(now_utc="2029-02-01T00:00:00Z", dirty=False, reg=reg, earlier_read={"R1": 1, "R4": 1},
-                    already=False)]
-    ck("N5-9 the read refuses before its date, a dirty tree, before R4's read and a second read, and would run "
+    # option (c), 2026-11-28: the read runs from its registration commit (research/reports/registered_reads_runbook.md),
+    # so whether it WOULD run is asked of that commit's tree; the live tree may hold a staged fix.
+    with REGP.registered_view("research/data/nfl_coach/prereg_r5.json", RR):
+        w = [RR.refusal(now_utc="2028-06-01T00:00:00Z", dirty=False, reg=reg, earlier_read={"R1": 1, "R4": 1},
+                        already=False),
+             RR.refusal(now_utc="2029-02-01T00:00:00Z", dirty=True, reg=reg, earlier_read={"R1": 1, "R4": 1},
+                        already=False),
+             RR.refusal(now_utc="2029-02-01T00:00:00Z", dirty=False, reg=reg, earlier_read={"R1": 1}, already=False),
+             RR.refusal(now_utc="2029-02-01T00:00:00Z", dirty=False, reg=reg, earlier_read={"R1": 1, "R4": 1},
+                        already=True),
+             RR.refusal(now_utc="2029-02-01T00:00:00Z", dirty=False, reg=reg, earlier_read={"R1": 1, "R4": 1},
+                        already=False)]
+    ck("N5-9 [would-run asked of the registration commit's tree, option (c)] the read refuses before its date, a dirty tree, before R4's read and a second read, and would run "
        "after", "before" in (w[0] or "") and "dirty" in (w[1] or "") and "R4" in (w[2] or "")
        and "already" in (w[3] or "") and w[4] is None, w)
     good = {"guards_exit": 0, "unit": {"gain_per_pulled_team_game": 0.9, "se": 0.2},

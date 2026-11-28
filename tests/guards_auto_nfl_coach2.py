@@ -102,14 +102,20 @@ def run(ck):
        and "did not fail criterion 4 alone" in (CF.refusal(1, late, False, reg, _read(two)) or "")
        and "did not fail criterion 4 alone" in (CF.refusal(1, late, False, reg, _read(five)) or "")
        and CF.r1_allows(_read(only4)) and not CF.r1_allows({"verdict": {"criteria": {"4_late_state_wp": False}}}))
-    ck("NF7 and before its date, on a dirty tree, for a third look, and for look 2 once look 1 ended the test",
-       "before" in (CF.refusal(1, early, False, reg, _read(only4)) or "")
-       and "dirty" in (CF.refusal(1, late, True, reg, _read(only4)) or "")
-       and CF.refusal(1, late, False, reg, _read(only4)) is None
-       and "no third" in (CF.refusal(3, late, False, reg, _read(only4)) or "")
-       and "ended the test" in (CF.refusal(2, "2028-02-01T00:00:00Z", False, reg, _read(only4),
-                                           {"decision": {"stop": True, "outcome": "x"}}) or "")
-       and CF.refusal(2, "2028-02-01T00:00:00Z", False, reg, _read(only4), {"decision": {"stop": False}}) is None)
+    # 2026-11-28 (option (c), research/registered_pins.py): the confirmatory test runs from C4's registration
+    # commit's tree (research/reports/registered_reads_runbook.md), so "it would run" is asked there; the live
+    # tree may hold a staged engine fix once the deep-weight read is committed.
+    from research import registered_pins as REGP
+    with REGP.registered_view("research/data/nfl_coach/prereg_c4.json", RG):
+        nf7 = ("before" in (CF.refusal(1, early, False, reg, _read(only4)) or "")
+               and "dirty" in (CF.refusal(1, late, True, reg, _read(only4)) or "")
+               and CF.refusal(1, late, False, reg, _read(only4)) is None
+               and "no third" in (CF.refusal(3, late, False, reg, _read(only4)) or "")
+               and "ended the test" in (CF.refusal(2, "2028-02-01T00:00:00Z", False, reg, _read(only4),
+                                                   {"decision": {"stop": True, "outcome": "x"}}) or "")
+               and CF.refusal(2, "2028-02-01T00:00:00Z", False, reg, _read(only4), {"decision": {"stop": False}}) is None)
+    ck("NF7 and before its date, on a dirty tree, for a third look, and for look 2 once look 1 ended the test "
+       "(and would run in its registration commit's tree)", nf7)
     se = 0.0072
     d_win = CF.decide(1, -3.0 * se, se, 136, reg)
     d_go = CF.decide(1, -1.0 * se, se, 136, reg)

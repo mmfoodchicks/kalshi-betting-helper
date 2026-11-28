@@ -42,8 +42,12 @@ def run(ck):
     from research import nfl_coach_data as CD
 
     print("  -- NC. The experimental coaching engine (R1): production untouched, the eleven scenarios, the seal")
+    # 2026-11-28 (option (c), research/registered_pins.py): the live file may also be a STAGED flip's exact bytes
+    # (the fumble-return TD, the market anchor), and only once the deep-weight read's result is committed.
+    from research import registered_pins as RP
     for rel, want in PINNED.items():
-        ck(f"NC0 {rel} is byte-identical to the file the deep weight's read sits on", _sha(rel) == want, _sha(rel)[:16])
+        ck(f"NC0 {rel} is byte-identical to the file the deep weight's read sits on (or, once that read is "
+           "committed, exactly a staged flip's bytes)", RP.live_ok(rel, want), _sha(rel)[:16])
     src = open(os.path.join(ROOT, "nfl_coach_sim.py")).read()
     ck("NC0b the experimental engine writes to no predlog bucket and is imported by no production module",
        "predlog" not in src.replace("predlog bucket", "") and "log_shadow" not in src
@@ -340,11 +344,16 @@ def run(ck):
     # ---- the registration
     reg_p = os.path.join(ROOT, "research", "data", "nfl_coach", "prereg_r1.json")
     reg = json.load(open(reg_p))
-    files_ok = all(_sha(rel) == h for rel, h in reg["files"].items())
-    ck("NC10 the R1 registration pins the read, the engine, the tables and the measuring code by sha256, and they match",
-       files_ok and {"research/nfl_coach_r1_read.py", "nfl_coach_sim.py", "research/data/nfl_coach_tables.json",
-                     "research/nfl_coach_eval.py", "research/nfl_coach_data.py"} <= set(reg["files"]),
-       [rel for rel, h in reg["files"].items() if _sha(rel) != h])
+    # 2026-11-28 (option (c)): the pins are checked at R1's registration commit, where the read runs
+    # (research/reports/registered_reads_runbook.md); live, only a named exception may differ (a staged flip
+    # behind the deep-weight read's gate, this current guard file). Fails when the registered version is lost or
+    # altered, or a frozen file moves.
+    moved_r1 = RP.moved("research/data/nfl_coach/prereg_r1.json")
+    ck("NC10 the R1 registration pins the read, the engine, the tables and the measuring code by sha256, and they match "
+       "at its registration commit (eaca95d) with nothing frozen moved live",
+       not moved_r1 and {"research/nfl_coach_r1_read.py", "nfl_coach_sim.py", "research/data/nfl_coach_tables.json",
+                         "research/nfl_coach_eval.py", "research/nfl_coach_data.py"} <= set(reg["files"]),
+       moved_r1)
     body = json.dumps({k: v for k, v in reg.items() if k != "block_sha256"}, sort_keys=True, separators=(",", ":"))
     ck("NC11 the registration block's own hash holds, the window is 2026 weeks 13-18 and the read date is fixed",
        hashlib.sha256(body.encode()).hexdigest() == reg["block_sha256"] and reg["window"]["weeks"] == [13, 14, 15, 16, 17, 18]
@@ -353,9 +362,11 @@ def run(ck):
     from research import nfl_coach_r1_read as RR
     why = RR.refusal(now_utc="2026-12-01T00:00:00Z", dirty=False)
     why2 = RR.refusal(now_utc="2027-01-08T00:00:00Z", dirty=True)
-    ck("NC12 the read refuses before its date and refuses a dirty tree", bool(why) and "before" in why
-       and bool(why2) and "dirty" in why2 and RR.refusal(now_utc="2027-01-08T00:00:00Z", dirty=False) is None,
-       f"{why} | {why2}")
+    with RP.registered_view("research/data/nfl_coach/prereg_r1.json", RR):     # the tree the read runs in
+        runs = RR.refusal(now_utc="2027-01-08T00:00:00Z", dirty=False)
+    ck("NC12 the read refuses before its date and refuses a dirty tree, and would run in its registration "
+       "commit's tree", bool(why) and "before" in why and bool(why2) and "dirty" in why2 and runs is None,
+       f"{why} | {why2} | {runs}")
     v = RR.verdict({"games": 60,
                     "real": {"q2_snaps": [9.0, 0.3], "q2_pts": [4.7, 0.4], "q4_snaps": [5.4, 0.3], "q4_pts": [2.5, 0.3],
                              "total": [45.0, 1.7], "ot": [0.05, 0.03], "margin_resid_sd": 13.0, "total_resid_sd": 13.0,

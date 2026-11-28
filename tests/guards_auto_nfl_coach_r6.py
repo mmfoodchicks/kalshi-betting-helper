@@ -14,6 +14,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+from research import registered_pins as REGP  # noqa: E402  (option (c), 2026-11-28)
 SUMS = (("car", "rush_att"), ("rush_yd", "rush_yds"), ("rush_td", "td_rush"), ("rec", "comp"),
         ("rec_yd", "pass_yds"), ("rec_td", "td_pass"), ("pass_att", "pass_att"), ("pass_cmp", "comp"),
         ("pass_yd", "pass_yds"), ("pass_td", "td_pass"), ("int", "int"), ("sacks", "sacks"),
@@ -51,10 +52,9 @@ def run(ck):
     moved = []
     for reg in ("prereg_r1.json", "prereg_r2.json", "prereg_r3.json", "prereg_r4.json", "prereg_r5.json",
                 "prereg_r5_2027.json"):
-        r = json.load(open(os.path.join(ROOT, "research", "data", "nfl_coach", reg)))
-        moved += [rel for rel, h in r["files"].items() if _sha(rel) != h]
+        moved += REGP.moved("research/data/nfl_coach/" + reg)
     src = open(os.path.join(ROOT, "nfl_coach_sim_r6.py")).read()
-    ck("N6-0 R1-R5 and their registrations are untouched (every pinned file byte-identical); R6 copies none of "
+    ck("N6-0 [option (c): pins checked at the registration commit; live, only research/registered_pins.py's named exceptions] R1-R5 and their registrations are untouched (every pinned file byte-identical); R6 copies none of "
        "R1's clock or snap code, writes no predlog bucket, and no production module imports it",
        not moved and "def _snap" not in src and "def _gap" not in src and "C._snap(S, box, sides, T, rng)" in src
        and "log_shadow" not in src and not any("nfl_coach_sim_r6" in open(os.path.join(ROOT, f)).read()
@@ -149,8 +149,8 @@ def run(ck):
        and len(json.load(open(FM.OUT))["family"]["tests"]) == 3)
     reg = RR.prereg()
     body = json.dumps({k: v for k, v in reg.items() if k != "block_sha256"}, sort_keys=True, separators=(",", ":"))
-    moved = [rel for rel, hh in reg["files"].items() if _sha(rel) != hh]
-    ck("N6-10 the registration: its hash holds; primary 2027 (on/after 2028-01-13, after R1's read), replication "
+    moved = REGP.moved("research/data/nfl_coach/prereg_r6.json")
+    ck("N6-10 [option (c): pins checked at the registration commit; live, only research/registered_pins.py's named exceptions] the registration: its hash holds; primary 2027 (on/after 2028-01-13, after R1's read), replication "
        "2028 (on/after 2029-01-16, after the primary); the components frozen; every pinned file matches",
        hashlib.sha256(body.encode()).hexdigest() == reg["block_sha256"] and not moved
        and reg["windows"]["primary"]["season"] == 2027 and reg["windows"]["replication"]["season"] == 2028
@@ -159,16 +159,19 @@ def run(ck):
        and reg["components_frozen"]["drifting"] == ["clock", "rb_target", "pull"]
        and "tests/guards_auto_nfl_coach_r6.py" in reg["files"], moved)
     ok_ = {"R1": 1, "R6-primary": 1}
-    w = [RR.refusal("primary", now_utc="2027-12-01T00:00:00Z", dirty=False, reg=reg, earlier_read=ok_, already=False),
-         RR.refusal("primary", now_utc="2028-02-01T00:00:00Z", dirty=True, reg=reg, earlier_read=ok_, already=False),
-         RR.refusal("primary", now_utc="2028-02-01T00:00:00Z", dirty=False, reg=reg, earlier_read={}, already=False),
-         RR.refusal("replication", now_utc="2029-02-01T00:00:00Z", dirty=False, reg=reg, earlier_read={"R1": 1},
-                    already=False),
-         RR.refusal("primary", now_utc="2028-02-01T00:00:00Z", dirty=False, reg=reg, earlier_read=ok_, already=True),
-         RR.refusal("primary", now_utc="2028-02-01T00:00:00Z", dirty=False, reg=reg, earlier_read=ok_, already=False),
-         RR.refusal("replication", now_utc="2029-02-01T00:00:00Z", dirty=False, reg=reg, earlier_read=ok_,
-                    already=False)]
-    ck("N6-11 the reads refuse before their dates, a dirty tree, the primary before R1's read, the replication "
+    # option (c), 2026-11-28: the read runs from its registration commit (research/reports/registered_reads_runbook.md),
+    # so whether it WOULD run is asked of that commit's tree; the live tree may hold a staged fix.
+    with REGP.registered_view("research/data/nfl_coach/prereg_r6.json", RR):
+        w = [RR.refusal("primary", now_utc="2027-12-01T00:00:00Z", dirty=False, reg=reg, earlier_read=ok_, already=False),
+             RR.refusal("primary", now_utc="2028-02-01T00:00:00Z", dirty=True, reg=reg, earlier_read=ok_, already=False),
+             RR.refusal("primary", now_utc="2028-02-01T00:00:00Z", dirty=False, reg=reg, earlier_read={}, already=False),
+             RR.refusal("replication", now_utc="2029-02-01T00:00:00Z", dirty=False, reg=reg, earlier_read={"R1": 1},
+                        already=False),
+             RR.refusal("primary", now_utc="2028-02-01T00:00:00Z", dirty=False, reg=reg, earlier_read=ok_, already=True),
+             RR.refusal("primary", now_utc="2028-02-01T00:00:00Z", dirty=False, reg=reg, earlier_read=ok_, already=False),
+             RR.refusal("replication", now_utc="2029-02-01T00:00:00Z", dirty=False, reg=reg, earlier_read=ok_,
+                        already=False)]
+    ck("N6-11 [would-run asked of the registration commit's tree, option (c)] the reads refuse before their dates, a dirty tree, the primary before R1's read, the replication "
        "before the primary, a second read; and would run after",
        "before" in (w[0] or "") and "dirty" in (w[1] or "") and "R1" in (w[2] or "") and "R6-primary" in (w[3] or "")
        and "already" in (w[4] or "") and w[5] is None and w[6] is None, w)

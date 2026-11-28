@@ -12,6 +12,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+from research import registered_pins as REGP  # noqa: E402  (option (c), 2026-11-28)
 # prereg_r5.json as committed in 79f2bee, before the amendment existed
 ORIGINAL_SHA_BLOCK = "d20d0e137cadebdd1134d9fd9bbdcb676971c0ca3c187a7e2c717d2766b1a65b"
 
@@ -44,21 +45,24 @@ def run(ck):
        and am["window"] == [{"season": 2027, "weeks": list(range(1, 19))}]
        and am["not_before_utc"] == "2028-01-13T06:00:00Z" and am["requires_reads"] == ["R1", "R4"]
        and "REPLICATION" in am["read_order"] and "replication" in am["replication"])
-    moved = [rel for rel, h in am["files"].items() if _sha(rel) != h]
-    ck("N5A-3 the implementation is frozen: every R5 file prereg_r5.json pins, plus the wrapper, this guard and "
+    moved = REGP.moved("research/data/nfl_coach/prereg_r5_2027.json")
+    ck("N5A-3 [option (c): pins checked at the registration commit; live, only research/registered_pins.py's named exceptions] the implementation is frozen: every R5 file prereg_r5.json pins, plus the wrapper, this guard and "
        "the family analysis, matches its sha256", not moved and set(orig["files"]) <= set(am["files"])
        and "tests/guards_auto_nfl_coach_r5_2027.py" in am["files"], moved)
     ok = {"R1": 1, "R4": 1}
-    w = [RA.refusal(now_utc="2027-12-01T00:00:00Z", dirty=False, reg=am, earlier_read=ok, already=False),
-         RA.refusal(now_utc="2028-02-01T00:00:00Z", dirty=True, reg=am, earlier_read=ok, already=False),
-         RA.refusal(now_utc="2028-02-01T00:00:00Z", dirty=False, reg=am, earlier_read={"R1": 1}, already=False),
-         RA.refusal(now_utc="2028-02-01T00:00:00Z", dirty=False, reg=am, earlier_read=ok, already=True),
-         RA.refusal(now_utc="2028-02-01T00:00:00Z", dirty=False, reg=dict(am, amends=dict(am["amends"],
-                                                                                         file_sha256="0" * 64)),
-                    earlier_read=ok, already=False),
-         RA.refusal(now_utc="2028-02-01T00:00:00Z", dirty=False, reg=am, earlier_read=ok, already=False)]
+    # option (c), 2026-11-28: the read runs from its registration commit (research/reports/registered_reads_runbook.md),
+    # so whether it WOULD run is asked of that commit's tree; the live tree may hold a staged fix.
+    with REGP.registered_view("research/data/nfl_coach/prereg_r5_2027.json", RA.RR):
+        w = [RA.refusal(now_utc="2027-12-01T00:00:00Z", dirty=False, reg=am, earlier_read=ok, already=False),
+             RA.refusal(now_utc="2028-02-01T00:00:00Z", dirty=True, reg=am, earlier_read=ok, already=False),
+             RA.refusal(now_utc="2028-02-01T00:00:00Z", dirty=False, reg=am, earlier_read={"R1": 1}, already=False),
+             RA.refusal(now_utc="2028-02-01T00:00:00Z", dirty=False, reg=am, earlier_read=ok, already=True),
+             RA.refusal(now_utc="2028-02-01T00:00:00Z", dirty=False, reg=dict(am, amends=dict(am["amends"],
+                                                                                             file_sha256="0" * 64)),
+                        earlier_read=ok, already=False),
+             RA.refusal(now_utc="2028-02-01T00:00:00Z", dirty=False, reg=am, earlier_read=ok, already=False)]
     from research import nfl_coach_r5_read as RR
-    ck("N5A-4 the 2027 read refuses before its date, a dirty tree, before R4's read, a second read and a changed "
+    ck("N5A-4 [would-run asked of the registration commit's tree, option (c)] the 2027 read refuses before its date, a dirty tree, before R4's read, a second read and a changed "
        "original; would run after; and leaves the original read's paths as they were",
        "before" in (w[0] or "") and "dirty" in (w[1] or "") and "R4" in (w[2] or "") and "already" in (w[3] or "")
        and "original" in (w[4] or "") and w[5] is None and RR.PREREG.endswith("prereg_r5.json")

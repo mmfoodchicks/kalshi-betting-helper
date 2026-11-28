@@ -16,6 +16,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+from research import registered_pins as REGP  # noqa: E402  (option (c), 2026-11-28)
 
 PINNED = {
     "nfl_deep_sim.py": "22a221d7810495db3f8f7bb1bef7c4e16c3bbbf282902a95f133cecdabc29820",
@@ -60,12 +61,11 @@ def run(ck):
     print("  -- NQ. The coaching engine R3 (the quarterback's substitution): production, R1 and R2 untouched, "
           "the learned hazard, the pull that stays, conservation, the registration")
     for rel, want in PINNED.items():
-        ck(f"NQ0 {rel} is byte-identical to the file the deep weight's read sits on", _sha(rel) == want)
+        ck(f"NQ0 {rel} is byte-identical to the file the deep weight's read sits on (or, once that read is committed, exactly a staged flip's bytes)", REGP.live_ok(rel, want))
     moved = []
     for reg in ("prereg_r1.json", "prereg_r2.json"):
-        r = json.load(open(os.path.join(ROOT, "research", "data", "nfl_coach", reg)))
-        moved += [rel for rel, h in r["files"].items() if _sha(rel) != h]
-    ck("NQ0a every file R1's and R2's registrations pin is still byte-identical (R3 is new files only)",
+        moved += REGP.moved("research/data/nfl_coach/" + reg)
+    ck("NQ0a [option (c): pins checked at the registration commit; live, only research/registered_pins.py's named exceptions] every file R1's and R2's registrations pin is still byte-identical (R3 is new files only)",
        not moved, moved)
     src = open(os.path.join(ROOT, "nfl_coach_sim_r3.py")).read()
     ck("NQ0b R3 writes no predlog bucket, no production module imports it, and it imports R1 and R2 "
@@ -213,15 +213,18 @@ def run(ck):
        and reg["window"] == [{"season": 2026, "weeks": list(range(13, 19))}]
        and reg["not_before_utc"] == "2027-01-06T06:00:00Z" and reg["requires_r1_read"]
        and "R1" in reg["dependence"] and "R2" in reg["dependence"])
-    moved = [rel for rel, hh in reg["files"].items() if _sha(rel) != hh]
-    ck("NQ7b every file the registration pins matches its sha256", not moved and
+    moved = REGP.moved("research/data/nfl_coach/prereg_r3.json")
+    ck("NQ7b [option (c): pins checked at the registration commit; live, only research/registered_pins.py's named exceptions] every file the registration pins matches its sha256", not moved and
        "tests/guards_auto_nfl_coach_r3.py" in reg["files"] and "nfl_coach_sim_r2.py" in reg["files"], moved)
-    w = [RR.refusal(now_utc="2026-12-01T00:00:00Z", dirty=False, reg=reg, r1_read=True, already=False),
-         RR.refusal(now_utc="2027-02-01T00:00:00Z", dirty=True, reg=reg, r1_read=True, already=False),
-         RR.refusal(now_utc="2027-02-01T00:00:00Z", dirty=False, reg=reg, r1_read=False, already=False),
-         RR.refusal(now_utc="2027-02-01T00:00:00Z", dirty=False, reg=reg, r1_read=True, already=True),
-         RR.refusal(now_utc="2027-02-01T00:00:00Z", dirty=False, reg=reg, r1_read=True, already=False)]
-    ck("NQ8 the read refuses before its date, a dirty tree, before R1's read and a second read, and would run "
+    # option (c), 2026-11-28: the read runs from its registration commit (research/reports/registered_reads_runbook.md),
+    # so whether it WOULD run is asked of that commit's tree; the live tree may hold a staged fix.
+    with REGP.registered_view("research/data/nfl_coach/prereg_r3.json", RR):
+        w = [RR.refusal(now_utc="2026-12-01T00:00:00Z", dirty=False, reg=reg, r1_read=True, already=False),
+             RR.refusal(now_utc="2027-02-01T00:00:00Z", dirty=True, reg=reg, r1_read=True, already=False),
+             RR.refusal(now_utc="2027-02-01T00:00:00Z", dirty=False, reg=reg, r1_read=False, already=False),
+             RR.refusal(now_utc="2027-02-01T00:00:00Z", dirty=False, reg=reg, r1_read=True, already=True),
+             RR.refusal(now_utc="2027-02-01T00:00:00Z", dirty=False, reg=reg, r1_read=True, already=False)]
+    ck("NQ8 [would-run asked of the registration commit's tree, option (c)] the read refuses before its date, a dirty tree, before R1's read and a second read, and would run "
        "on a clean tree after R1's", "before" in (w[0] or "") and "dirty" in (w[1] or "") and "R1" in (w[2] or "")
        and "already" in (w[3] or "") and w[4] is None, w)
     good = {"guards_exit": 0, "stage1": {"gain_per_team_game": 0.28, "se": 0.07},

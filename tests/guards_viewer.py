@@ -146,8 +146,10 @@ def _continuity(lg, ev, V):
                     bad.append(("td flag vs banner", j))
                 exp, exp_kind = None, "try"
             elif le.get("six"):
-                if e.get("b") != "int":
-                    bad.append(("pick-six banner", j))
+                # a pick-six, or (the deep engine from ENGINE_VERSION 2, research/reports/fumble_td_fix.md) a
+                # lost fumble returned for a touchdown: its banner is the turnover's
+                if e.get("b") != ("fum" if le.get("to") == "fum" else "int"):
+                    bad.append(("return-six banner", j))
                 exp, exp_kind = None, "rtd"
             elif le.get("sf"):
                 if e.get("b") != "sf":

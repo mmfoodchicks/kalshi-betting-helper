@@ -13,6 +13,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+from research import registered_pins as REGP  # noqa: E402  (option (c), 2026-11-28)
 # research/data/nfl_coach/evo_rule.json as committed in ae6e018, before any score was computed
 RULE_SHA = "7f139636e0ec3f3ff4b071d98df3af53d12a463113a172270e71cef00be5c8d2"
 
@@ -76,9 +77,8 @@ def run(ck):
     moved = []
     for reg in ("prereg_r1.json", "prereg_r2.json", "prereg_r3.json", "prereg_r4.json", "prereg_r5.json",
                 "prereg_r5_2027.json"):
-        r_ = json.load(open(os.path.join(ROOT, "research", "data", "nfl_coach", reg)))
-        moved += [rel for rel, h in r_["files"].items() if _sha(rel) != h]
-    ck("EVO-8 nothing is built into R1-R5: every file their registrations (and R5's amendment) pin is "
+        moved += REGP.moved("research/data/nfl_coach/" + reg)
+    ck("EVO-8 [option (c): pins checked at the registration commit; live, only research/registered_pins.py's named exceptions] nothing is built into R1-R5: every file their registrations (and R5's amendment) pin is "
        "byte-identical", not moved, moved)
     hl = out["detail"]["T3_clock"]["half_life"]
     ck("EVO-9 the half-life is descriptive and defined as the fixed h with the lowest pooled walk-forward loss "

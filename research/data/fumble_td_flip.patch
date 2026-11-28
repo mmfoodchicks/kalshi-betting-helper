@@ -1,0 +1,136 @@
+--- a/nfl_deep_sim.py
++++ b/nfl_deep_sim.py
+@@ -96,6 +96,23 @@
+ _ONSIDE_RECOVERY = 0.12     # league-typical since the 2018 rule change; a rule, not fitted
+ _KO_MAX_YTG = 99
+ 
++# Fumble-return touchdowns (research/fumble_td_fit.py; research/reports/fumble_td_fix.md). Until this the
++# engine played none: research/nfl_deep_fit.py keeps the touchdowns in the lost-fumble RATE but drops them
++# from the spot table (`fum_spot`, non-TD rows only), so every lost fumble handed the ball over at a spot.
++# Real regular seasons 2016-2024: 8.7% of lost fumbles from scrimmage were returned for a touchdown, about a
++# quarter of the defense's and return teams' touchdowns, and the D/ST's scoring tail is made of them.
++# Kind + the snap's field position, chosen by a one-SE rule over forward-chained seasons 2019-2024 and fitted
++# on 2016-2024 (2,238 fumbles, 194 TDs): a strip-sack is about twice a run's or a catch's, and a fumble at
++# the offense's own 1-19 four times one at midfield. Held out (2025 and 2026 weeks 1-12, read once): better
++# than a constant by 0.0176 nats a fumble (1.5 SE), 24 TDs against 32.5 expected (z -1.6, inside the rule's
++# 95%). A switch, so the patched file with it off is the old engine draw for draw (the guards play both).
++# ENGINE_VERSION is the deep engine's own stamp: 1 had no fumble-return touchdown.
++FUMBLE_TD = True
++ENGINE_VERSION = 2
++_FUM_TD_LOGIT = -2.014726                     # a sack fumble snapped from the offense's 41-60
++_FUM_TD_KIND = {"sack": 0.0, "comp": -1.09657, "rush": -0.842067}
++_FUM_TD_ZONE = (-0.82295, -0.123724, 0.0, 0.260844, 1.459356)    # yards to go at the snap 1-20 ... 81-99
++
+ _T = {"tables": None, "path": None}
+ 
+ 
+@@ -131,6 +148,13 @@
+     if z < -35:
+         return 0.0
+     return 1.0 / (1.0 + math.exp(-z))
++
++
++def _fum_td(kind, ytg):
++    """The chance a lost fumble of `kind` (sack / comp / rush), snapped with `ytg` to go, is returned for a
++    touchdown (the fitted logit: kind + the snap's 20-yard zone)."""
++    z = (ytg > 20) + (ytg > 40) + (ytg > 60) + (ytg > 80)
++    return _sig(_FUM_TD_LOGIT + _FUM_TD_KIND[kind] + _FUM_TD_ZONE[z])
+ 
+ 
+ def _stoch(x, rng):
+@@ -368,8 +392,8 @@
+             # every game plays exactly as it did.
+             "fg_0_39": 0, "fg_40_49": 0, "fg_50p": 0, "xp_made": 0, "two_made": 0,
+             "ret_pts": 0, "blk": 0,
+-            # touchdowns this side's DEFENSE scored on a return (pick-six;
+-            # the engine plays no fumble-return TD): DraftKings leaves their
++            # touchdowns this side's DEFENSE scored on a return (pick-six,
++            # fumble return from scrimmage): DraftKings leaves their
+             # six -- not their try -- out of the other D/ST's points allowed,
+             # while a kickoff or punt return TD counts (the owner, verified on
+             # the official classic and showdown rules, 2026-11-26). A counter.
+@@ -848,6 +872,7 @@
+     lg = S["log"] is not None
+     kind = "run"                   # the log's name for the play (never read by the game)
+     ret = 0
++    six = False                    # a lost fumble returned for a touchdown
+     if rng.random() < p_pass:
+         # sack -> interception -> completion -> yards
+         if rng.random() < _sig(_logit(T.sack.get((down, db), T.league["sack"])) + me.d_sack):
+@@ -871,7 +896,10 @@
+             bx["sack_yds"] += -yds
+             if rng.random() < T.fum["sack"] * me.fum_mult:
+                 bx["fum_lost"] += 1
+-                turnover_ytg = max(1, min(99, 100 - (ytg - yds) - T.fum_spot.draw(rng)))
++                if FUMBLE_TD and rng.random() < _fum_td("sack", ytg):
++                    six = True
++                else:
++                    turnover_ytg = max(1, min(99, 100 - (ytg - yds) - T.fum_spot.draw(rng)))
+                 to_kind = "fum"
+         else:
+             bx["pass_att"] += 1
+@@ -903,7 +931,10 @@
+                 bx["pass_yds"] += yds
+                 if not td and rng.random() < T.fum["comp"] * me.fum_mult:
+                     bx["fum_lost"] += 1
+-                    turnover_ytg = max(1, min(99, 100 - (ytg - yds) - T.fum_spot.draw(rng)))
++                    if FUMBLE_TD and rng.random() < _fum_td("comp", ytg):
++                        six = True
++                    else:
++                        turnover_ytg = max(1, min(99, 100 - (ytg - yds) - T.fum_spot.draw(rng)))
+                     to_kind = "fum"
+                 elif rng.random() < T.oob["comp"]:
+                     cls = "oob"
+@@ -921,11 +952,25 @@
+         bx["rush_yds"] += yds
+         if not td and rng.random() < T.fum["rush"] * me.fum_mult:
+             bx["fum_lost"] += 1
+-            turnover_ytg = max(1, min(99, 100 - (ytg - yds) - T.fum_spot.draw(rng)))
++            if FUMBLE_TD and rng.random() < _fum_td("rush", ytg):
++                six = True
++            else:
++                turnover_ytg = max(1, min(99, 100 - (ytg - yds) - T.fum_spot.draw(rng)))
+             to_kind = "fum"
+         elif rng.random() < T.oob["rush"]:
+             cls = "oob"
+     # ---- resolve
++    if six:
++        # a lost fumble returned for a touchdown, told and scored as the pick-six is: the defense's six
++        # (td_def, so nfl_dfs_engine.off_points leaves it out of the other D/ST's points allowed), the try,
++        # then the kickoff the rules owe. Checked before the safety: the defense has the ball.
++        box[1 - off]["td_ret"] += 1
++        box[1 - off]["td_def"] += 1
++        if lg:
++            _ev(S, box, kind, o=off, d=down, t=dist, y=ytg, yd=yds, ret=0, td=0, six=1, to="fum")
++        _run_clock(S, box, sides, T, rng, "to", me.tempo, defer_end=True)
++        _return_td(S, box, sides, T, rng, 1 - off)
++        return
+     if td:
+         _score(S, box, off, 6)
+         if lg:
+--- a/nfl_dfs_engine.py
++++ b/nfl_dfs_engine.py
+@@ -64,7 +64,10 @@
+ # version a board's `simulator` stamp carries, so a board built after the fix
+ # says so; it is not ENGINE, so no board is rebuilt for it (-0.08 D/ST points a
+ # game on average, 3.9% of worlds moved, measured on 20,000 league games).
+-SIM_MODEL_VERSION = 2
++# 3: the deep engine plays fumble-return touchdowns (nfl_deep_sim.ENGINE_VERSION 2,
++# research/reports/fumble_td_fix.md); they count in td_def, so off_points leaves
++# their six out of points allowed as DraftKings does.
++SIM_MODEL_VERSION = 3
+ 
+ # Anchoring the deep engine to the blended level: one measuring pass at the
+ # profiles' own level (which IS the deep engine's expectation for the
+@@ -482,8 +485,9 @@
+     kick and punt returns and their tries too), so a D/ST that gave up a
+     kickoff-return touchdown was paid as though it had not. Safeties stay
+     out as before: the owner's table does not list them, an open question.
+-    Not played by the engine at all: fumble-return and blocked-kick return
+-    touchdowns, defensive two-point returns."""
++    A fumble returned for a touchdown is a defensive touchdown too (td_def,
++    since nfl_deep_sim.ENGINE_VERSION 2). Not played by the engine at all:
++    blocked-kick return touchdowns, defensive two-point returns."""
+     return box["pts"] - 6 * box["td_def"] - 2 * opp_box["safety_conceded"]
+ 
+ 

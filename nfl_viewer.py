@@ -620,10 +620,20 @@ def tell(log, players, roles, teams, seed, flav=None):
                     fr = _draw(rng, dfn.get("fr"))
                     cr += [[ca, "fl", 1], [ff, "ff", 1], [fr, "fr", 1]]
                     ev["xi"] = _ax(o, y - yd)
-                    ev["x1"] = _ax(1 - o, e["ty"])
                     df = fr if fr is not None else ff
-                    txt += (f" -- FUMBLES, forced by {name(ff, teams[1 - o])}, recovered by "
-                            f"{name(fr, teams[1 - o])} at {_spot(teams, 1 - o, e['ty'])}.")
+                    if e.get("six"):
+                        # a fumble returned for a touchdown (the deep engine from ENGINE_VERSION 2,
+                        # research/reports/fumble_td_fix.md): no spot, the recoverer scores, told as the
+                        # pick-six is. The engine before that version never logs one.
+                        cr.append([df, "dtd", 1])
+                        pending_ret = df
+                        ev["x1"] = _ax(1 - o, 0)
+                        txt += (f" -- FUMBLES, forced by {name(ff, teams[1 - o])}, recovered by "
+                                f"{name(fr, teams[1 - o])} and returned for a TOUCHDOWN.")
+                    else:
+                        ev["x1"] = _ax(1 - o, e["ty"])
+                        txt += (f" -- FUMBLES, forced by {name(ff, teams[1 - o])}, recovered by "
+                                f"{name(fr, teams[1 - o])} at {_spot(teams, 1 - o, e['ty'])}.")
                     ban = "fum"
                 else:
                     if k != "sack":

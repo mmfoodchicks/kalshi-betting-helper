@@ -64,9 +64,13 @@ def run(ck):
     moved = []
     for reg in ("prereg_r1.json", "prereg_r2.json", "prereg_r3.json", "prereg_r4.json", "prereg_r5.json",
                 "prereg_r5_2027.json", "prereg_r6.json"):
-        r_ = json.load(open(os.path.join(ROOT, "research", "data", "nfl_coach", reg)))
-        moved += [rel for rel, hh in r_["files"].items() if _sha(rel) != hh]
-    ck("DEF-7 nothing enters R1-R6: every file their registrations pin is byte-identical", not moved, moved)
+        # option (c), 2026-11-28 (research/registered_pins.py): each registration's pins are checked at its
+        # registration commit, where its read runs; live, only the named exceptions may differ (a staged engine
+        # flip behind the deep-weight read's gate, the current coaching guard files)
+        from research import registered_pins as REGP
+        moved += REGP.moved("research/data/nfl_coach/" + reg)
+    ck("DEF-7 [option (c): pins checked at the registration commit; live, only research/registered_pins.py's "
+       "named exceptions] nothing enters R1-R6: every file their registrations pin is byte-identical", not moved, moved)
     fw = json.load(open(os.path.join(ROOT, "research", "data", "nfl_coach", "prereg_def_2028.json")))
     body = json.dumps({k: v for k, v in fw.items() if k != "block_sha256"}, sort_keys=True, separators=(",", ":"))
     fam27 = json.load(open(os.path.join(ROOT, "research", "data", "nfl_coach", "family_2027_r6.json")))
