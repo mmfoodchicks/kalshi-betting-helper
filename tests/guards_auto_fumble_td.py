@@ -160,28 +160,35 @@ def run(ck):
     import nfl_dfs_sim
     import pool_cache
     src = Pt.patched_sources()
-    tmp = tempfile.mkdtemp(prefix="fumble_td_sig_")
+    # both sides built (so the check reads the same before and after the flip): the live code with the READ's
+    # two files (git, R1's registration commit, sha-checked) against the live code with the patched two
+    commit = RP.REGISTRATIONS["research/data/nfl_coach/prereg_r1.json"][0]
+    old = {rel: _git("show", f"{commit}:{rel}").stdout for rel in Pt.TARGETS}
+    assert all(hashlib.sha256(old[rel]).hexdigest() == Pt.PINNED_SHA[rel] for rel in Pt.TARGETS)
+    call = {"season": "2026", "week": 13, "n": 1000}
     sv_here, sv_sig = pool_cache._HERE, dict(pool_cache._code_sig)
+    sigs = []
     try:
-        for rel in pool_cache._CODE_FILES:
-            dst = os.path.join(tmp, rel)
-            os.makedirs(os.path.dirname(dst), exist_ok=True)
-            shutil.copy(os.path.join(_ROOT, rel), dst)
-        for rel, text in src.items():
-            with open(os.path.join(tmp, rel), "w") as fh:
-                fh.write(text)
-        call = {"season": "2026", "week": 13, "n": 1000}
-        pool_cache._HERE = _ROOT
-        pool_cache._code_sig.clear()
-        before, k_before = pool_cache.code_sig(), pool_cache.key(call, "x")
-        pool_cache._HERE = tmp
-        pool_cache._code_sig.clear()
-        after, k_after = pool_cache.code_sig(), pool_cache.key(call, "x")
+        for files in (old, {rel: text.encode() for rel, text in src.items()}):
+            tmp = tempfile.mkdtemp(prefix="fumble_td_sig_")
+            try:
+                for rel in pool_cache._CODE_FILES:
+                    dst = os.path.join(tmp, rel)
+                    os.makedirs(os.path.dirname(dst), exist_ok=True)
+                    shutil.copy(os.path.join(_ROOT, rel), dst)
+                for rel, data in files.items():
+                    with open(os.path.join(tmp, rel), "wb") as fh:
+                        fh.write(data)
+                pool_cache._HERE = tmp
+                pool_cache._code_sig.clear()
+                sigs.append((pool_cache.code_sig(), pool_cache.key(call, "x")))
+            finally:
+                shutil.rmtree(tmp, ignore_errors=True)
     finally:
         pool_cache._HERE = sv_here
         pool_cache._code_sig.clear()
         pool_cache._code_sig.update(sv_sig)
-        shutil.rmtree(tmp, ignore_errors=True)
+    (before, k_before), (after, k_after) = sigs
     pp = inspect.getsource(nfl_dfs_sim.player_pool)
     ck("FT8 the flip invalidates the worlds cache and a resumable build's frozen inputs (both files are in "
        "pool_cache's code files: a new code signature, so every worlds key changes and a pinned build raises "
